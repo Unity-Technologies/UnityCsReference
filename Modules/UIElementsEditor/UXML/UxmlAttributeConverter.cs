@@ -230,6 +230,13 @@ namespace UnityEditor.UIElements
                 return true;
             }
 
+            if (type == typeof(TemplateContainer.TemplateUXML))
+            {
+                converterType = typeof(TemplateContainerConverter);
+                s_RegisteredConverterTypes[type] = converterType;
+                return true;
+            }
+
             return false;
         }
 
@@ -720,6 +727,32 @@ namespace UnityEditor.UIElements
             if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.AssetEntryExists(result, typeof(T)))
                 visualTreeAsset.RegisterAssetEntry(result, typeof(T), obj);
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Specialized converter for TemplateContainer which can have an attribute "template" that is either a string or a file reference.
+    /// </summary>
+    internal class TemplateContainerConverter : IUxmlAttributeConverter
+    {
+        public object FromString(string value, CreationContext cc)
+        {
+            var result = new TemplateContainer.TemplateUXML();
+            if (UxmlAttributeConverter.TryConvertFromString(typeof(VisualTreeAsset), value, cc, out var asset).success)
+                result.templateAsset = asset as VisualTreeAsset;
+            result.templateId = value;
+            return result;
+        }
+
+        public string ToString(object value, VisualTreeAsset visualTreeAsset)
+        {
+            var templateUxml = (TemplateContainer.TemplateUXML)value;
+
+            if (!string.IsNullOrEmpty(templateUxml.templateId))
+                return templateUxml.templateId;
+            if (templateUxml.templateAsset != null)
+                return UxmlAttributeConverter.TryConvertToString(templateUxml.templateAsset, visualTreeAsset, out var result) ? result : string.Empty;
+            return null;
         }
     }
 
@@ -1488,6 +1521,27 @@ namespace UnityEditor.UIElements
         {
             var material = value.material;
             return material != null ? URIHelpers.MakeAssetUri(material) : k_EmptyState;
+        }
+    }
+
+    internal class UIAnimationClipAttributeConverter : UxmlAttributeConverter<UIAnimationClip>
+    {
+        public override UIAnimationClip FromString(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value.AsSpan().Trim().Equals("none", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var assetPath = Path.GetFileNameWithoutExtension(value);
+            var response = URIHelpers.ValidateAssetURL(assetPath, value);
+            if (response.result == URIValidationResult.OK && response.resolvedQueryAsset is UIAnimationClip clip)
+                return clip;
+
+            return null;
+        }
+
+        public override string ToString(UIAnimationClip value)
+        {
+            return value != null ? URIHelpers.MakeAssetUri(value) : "none";
         }
     }
 

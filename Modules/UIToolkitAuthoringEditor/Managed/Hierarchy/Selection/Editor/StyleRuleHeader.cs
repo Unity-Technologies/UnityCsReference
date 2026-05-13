@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -16,42 +15,6 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 partial class StyleRuleHeader : UISelectionObjectHeader
 {
-    [Serializable]
-    public new class UxmlSerializedData : UISelectionObjectHeader.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(RuleName), "rule-name"),
-                }
-                , true);
-        }
-
-#pragma warning disable 649
-        [SerializeField] private string RuleName;
-
-        [SerializeField, UxmlIgnore, HideInInspector] private UxmlAttributeFlags RuleName_UxmlAttributeFlags;
-#pragma warning restore 649
-
-        public override object CreateInstance()
-        {
-            return new StyleRuleHeader();
-        }
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-            var ve = (StyleRuleHeader)obj;
-            if (ShouldWriteAttributeValue(RuleName_UxmlAttributeFlags))
-                ve.RuleName = RuleName;
-        }
-    }
-
     public static readonly BindingId ElementProperty = nameof(Rule);
     public static readonly BindingId RuleNameProperty = nameof(RuleName);
 

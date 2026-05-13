@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
@@ -51,14 +50,9 @@ namespace UnityEditor.Experimental.GraphView
         Huge
     }
 
-    public class StickyNote : GraphElement, IResizable
+    [UxmlElement]
+    public partial class StickyNote : GraphElement, IResizable
     {
-        [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : GraphElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new StickyNote();
-        }
-
         StickyNoteTheme m_Theme = StickyNoteTheme.Classic;
         public StickyNoteTheme theme
         {

@@ -238,9 +238,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.CreateGraphProcessors();
 
-            var overridden = Graph.GetType().GetMethod(nameof(GraphToolkit.Editor.Graph.OnGraphChanged)).DeclaringType != typeof(Graph);
+            var declaringType = Graph?.GetType().GetMethod(nameof(GraphToolkit.Editor.Graph.OnGraphChanged))?.DeclaringType;
+            var overridden = declaringType != null && declaringType != typeof(Graph);
 
-            if( overridden )
+            if (overridden)
                 GetGraphProcessorContainer().AddGraphProcessor(new GraphProcessorImp(this));
         }
 
@@ -258,11 +259,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
             else
             {
-                bool isSerializable = valueType.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(valueType);
-
                 if (defaultValue != null)
                 {
-                    if (!isSerializable)
+                    if (!InternalTypeHelpers.IsTypeSerializable(valueType))
                         throw new ArgumentException($"The type '{valueType.Name}' is not serializable. " +
                                                     $"You cannot provide a default value for it as it will be lost.", nameof(defaultValue));
 
@@ -401,8 +400,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             if (valueType == null)
                 throw new ArgumentNullException(nameof(valueType));
 
-            bool isSerializable = valueType.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(valueType);
-            if (!isSerializable)
+            if (!InternalTypeHelpers.IsTypeSerializable(valueType))
             {
                 throw new ArgumentException($"The type '{valueType.Name}' is not serializable. Constant nodes require serializable types.", nameof(valueType));
             }
@@ -724,7 +722,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanPasteVariable(VariableDeclarationModelBase originalModel)
         {
-            return originalModel is VariableDeclarationModel && 
+            return originalModel is VariableDeclarationModel &&
                    SupportedTypes.Contains(originalModel.DataType.Resolve());
         }
 
@@ -868,6 +866,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         void InitializeSupportedTypes()
         {
+            using var _ = BlockAssetDirtyScope();
             m_SupportedTypes = new List<Type>();
             var supportedTypes = new HashSet<Type>();
             var nodeCreationData = new GraphNodeCreationData(this, Vector2.zero, SpawnFlags.Orphan);

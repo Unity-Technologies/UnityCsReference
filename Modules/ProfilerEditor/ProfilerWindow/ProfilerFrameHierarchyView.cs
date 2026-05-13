@@ -522,14 +522,15 @@ namespace UnityEditorInternal.Profiling
                     m_TreeView.SetFrameDataView(frameDataView);
                     m_TreeView.OnGUI(rect, updateViewLive);
 
-                    if (m_TreeView.HasSelection() && m_TreeView.proxySelectionInfo.hasProxySelection)
+                    if (m_TreeView.proxySelectionInfo.hasProxySelection)
                     {
                         if (m_TreeView.proxySelectionInfo.cachedDisplayContent == null)
                         {
                             var diff = Math.Abs(m_TreeView.proxySelectionInfo.pathLengthDifferenceForProxy);
                             m_TreeView.proxySelectionInfo.cachedDisplayContent = new GUIContent(
                                 BaseStyles.selectionExtraInfoHierarhcyView + string.Format(
-                                    BaseStyles.proxySampleMessage,
+                                    (EditorPrefs.GetBool(CPUOrGPUProfilerModule.k_Hide0msSamplesPrefKey) ? BaseStyles.proxySampleMessage + " " + BaseStyles.proxySampleMessageHidden0msSamples :
+                                    BaseStyles.proxySampleMessage),
                                     m_TreeView.proxySelectionInfo.nonProxyName, diff,
                                     diff == 1 ? BaseStyles.proxySampleMessageScopeSingular : BaseStyles.proxySampleMessageScopePlural),
                                 BaseStyles.warningTriangle.image);
@@ -541,28 +542,10 @@ namespace UnityEditorInternal.Profiling
                         {
                             var selection = m_TreeView.GetSelection();
                             var selectedId = (selection != null && selection.Count > 0) ? selection[0] : ProfilerFrameDataHierarchyView.invalidTreeViewId;
-                            if (selectedId >= 0)
+
+                            if (m_TreeView.proxySelectionInfo.nonProxySampleStack != null)
                             {
-                                var menu = new GenericMenu();
-
-                                // Show Sample Selection:
-                                var rawSampleIndices = new List<int>(frameDataView.GetItemMergedSamplesCount(selectedId));
-                                frameDataView.GetItemRawFrameDataViewIndices(selectedId, rawSampleIndices);
-                                var actualMarkerIdPath = new List<int>(frameDataView.GetItemDepth(selectedId));
-                                using (var iterator = new RawFrameDataView(frameDataView.frameIndex, frameDataView.threadIndex))
-                                {
-                                    string name = null;
-                                    var rawIndex = ProfilerTimelineGUI.GetItemMarkerIdPath(iterator, cpuModule, rawSampleIndices[0], ref name, ref actualMarkerIdPath);
-                                }
-
-                                var actualMarkerPath = new List<string>(actualMarkerIdPath.Count);
-                                foreach (var id in actualMarkerIdPath)
-                                {
-                                    if ((frameDataView.GetMarkerFlags(id) & Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor) != 0)
-                                        actualMarkerPath.Add(string.Format("EditorOnly [{0}]", frameDataView.GetMarkerName(id)));
-                                    else
-                                        actualMarkerPath.Add(frameDataView.GetMarkerName(id));
-                                }
+                                // Build the selected sample stack text first (LHS)
 
                                 // admittedly, it'd be nice to only generate the text if sample selection option was chosen...
                                 // however, that would need to happen in an OnGui call and not within the callback of the generic menu,
@@ -579,21 +562,61 @@ namespace UnityEditorInternal.Profiling
                                     }
                                     selectedSampleStackText = sampleStackSb.ToString();
                                 }
-                                string actualSampleStackText = null;
-                                if (actualMarkerPath != null && actualMarkerPath.Count > 0)
-                                {
-                                    sampleStackSb.Clear();
 
-                                    for (int i = actualMarkerPath.Count - 1; i >= 0; i--)
+                                GUIContent selectionSampleStackContent = selectedSampleStackText != null ? new GUIContent(selectedSampleStackText) : null;
+                                GUIContent actualSampleStackContent;
+                                Vector2 sampleStackWindowSize;
+
+                                if (m_TreeView.IsProxySampleHiddenByFilter(m_TreeView.proxySelectionInfo))
+                                {
+                                    actualSampleStackContent = new GUIContent(BaseStyles.sampleHiddenText);
+                                    sampleStackWindowSize = SelectedSampleStackWindow.CalculateSize(selectionSampleStackContent, actualSampleStackContent);
+                                }
+                                else if (selectedId >= 0)
+                                {   // Sample changed - show the diff (build RHS from current frame)
+
+                                    // Show Sample Selection:
+                                    var rawSampleIndices = new List<int>(frameDataView.GetItemMergedSamplesCount(selectedId));
+                                    frameDataView.GetItemRawFrameDataViewIndices(selectedId, rawSampleIndices);
+                                    var actualMarkerIdPath = new List<int>(frameDataView.GetItemDepth(selectedId));
+                                    using (var iterator = new RawFrameDataView(frameDataView.frameIndex, frameDataView.threadIndex))
                                     {
-                                        sampleStackSb.AppendLine(actualMarkerPath[i]);
+                                        string name = null;
+                                        var rawIndex = ProfilerTimelineGUI.GetItemMarkerIdPath(iterator, cpuModule, rawSampleIndices[0], ref name, ref actualMarkerIdPath);
                                     }
-                                    actualSampleStackText = sampleStackSb.ToString();
+
+                                    var actualMarkerPath = new List<string>(actualMarkerIdPath.Count);
+                                    foreach (var id in actualMarkerIdPath)
+                                    {
+                                        if ((frameDataView.GetMarkerFlags(id) & Unity.Profiling.LowLevel.MarkerFlags.AvailabilityEditor) != 0)
+                                            actualMarkerPath.Add(string.Format("EditorOnly [{0}]", frameDataView.GetMarkerName(id)));
+                                        else
+                                            actualMarkerPath.Add(frameDataView.GetMarkerName(id));
+                                    }
+
+                                    string actualSampleStackText = null;
+                                    if (actualMarkerPath != null && actualMarkerPath.Count > 0)
+                                    {
+                                        sampleStackSb.Clear();
+
+                                        for (int i = actualMarkerPath.Count - 1; i >= 0; i--)
+                                        {
+                                            sampleStackSb.AppendLine(actualMarkerPath[i]);
+                                        }
+                                        actualSampleStackText = sampleStackSb.ToString();
+                                    }
+
+                                    actualSampleStackContent = actualSampleStackText != null ? new GUIContent(actualSampleStackText) : null;
+                                    sampleStackWindowSize = SelectedSampleStackWindow.CalculateSize(selectionSampleStackContent, actualSampleStackContent);
+                                }
+                                else
+                                {
+                                    // No selection at all
+                                    actualSampleStackContent = null;
+                                    sampleStackWindowSize = SelectedSampleStackWindow.CalculateSize(selectionSampleStackContent, actualSampleStackContent);
                                 }
 
-                                var selectionSampleStackContent = selectedSampleStackText != null ? new GUIContent(selectedSampleStackText) : null;
-                                var actualSampleStackContent = actualSampleStackText != null ? new GUIContent(actualSampleStackText) : null;
-                                var sampleStackWindowSize = SelectedSampleStackWindow.CalculateSize(selectionSampleStackContent, actualSampleStackContent);
+                                var menu = new GenericMenu();
                                 menu.AddItem(BaseStyles.showSelectedSampleStacks, false, () =>
                                 {
                                     SelectedSampleStackWindow.ShowSampleStackWindow(GUIUtility.GUIToScreenRect(rectForSampleStackButton).position, sampleStackWindowSize, selectionSampleStackContent, actualSampleStackContent);

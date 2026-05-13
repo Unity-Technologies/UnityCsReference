@@ -7,52 +7,17 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Unity.Properties;
 using Unity.Profiling;
-using System.Diagnostics;
 
 
 namespace UnityEditor
 {
-    class StatsField : VisualElement, IPrefixLabel
+    [UxmlElement]
+    partial class StatsField : VisualElement, IPrefixLabel
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData),
-                    new UxmlAttributeNames[]
-                    {
-                        new(nameof(label), "label"), new(nameof(value), "value"),
-                    }, true);
-            }
-#pragma warning disable 649
-            [SerializeField, MultilineTextField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            [SerializeField, MultilineTextField] string value;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-
-#pragma warning restore 649
-
-            public override object CreateInstance() => new StatsField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (StatsField)obj;
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                    e.label = label;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.value = value;
-                
-            }
-        }
-
         private Label m_LabelText;
         private Label m_ValueText;
 
+        [UxmlAttribute, MultilineTextField]
         public string label
         {
             get => m_LabelText.text;
@@ -61,7 +26,7 @@ namespace UnityEditor
 
         public Label labelElement => m_LabelText;
 
-        [CreateProperty]
+        [CreateProperty, UxmlAttribute, MultilineTextField]
         public string value
         {
             get => m_ValueText.text;

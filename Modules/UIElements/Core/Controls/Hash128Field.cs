@@ -19,18 +19,6 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         Hash128Input integerInput => (Hash128Input)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextInputBaseField<Hash128>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextInputBaseField<Hash128>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new Hash128Field();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

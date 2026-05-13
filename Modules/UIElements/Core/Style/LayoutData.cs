@@ -117,4 +117,7 @@ struct LayoutData : IStyleDataGroup<LayoutData>
         this = other;
     }
 
+    public void Dispose()
+    {
+    }
 }

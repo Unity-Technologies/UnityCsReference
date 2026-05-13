@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,63 +16,9 @@ namespace UnityEditor.Overlays
         DockedAfter
     }
 
-    class OverlayContainer : VisualElement
+    [UxmlElement]
+    partial class OverlayContainer : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(horizontal), "horizontal"),
-                    new(nameof(supportedOverlayLayout), "supported-overlay-layout"),
-                }, true);
-            }
-
-#pragma warning disable 649
-            [SerializeField] string supportedOverlayLayout;
-            [SerializeField] bool horizontal;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontal_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags supportedOverlayLayout_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new OverlayContainer();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (OverlayContainer)obj;
-                if (ShouldWriteAttributeValue(horizontal_UxmlAttributeFlags))
-                    e.isHorizontal = horizontal;
-
-                e.m_SupportedOverlayLayouts = Layout.Panel;
-                if (ShouldWriteAttributeValue(supportedOverlayLayout_UxmlAttributeFlags))
-                {
-                    var split = supportedOverlayLayout?.Split(' ');
-                    if (split?.Length > 0)
-                    {
-                        foreach (var layout in split)
-                        {
-                            switch (layout.ToLower())
-                            {
-                                case "horizontal":
-                                    e.m_SupportedOverlayLayouts |= Layout.HorizontalToolbar;
-                                    break;
-
-                                case "vertical":
-                                    e.m_SupportedOverlayLayouts |= Layout.VerticalToolbar;
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         public const string className = "unity-overlay-container";
         public const string horizontalClassName = className + "-horizontal";
         public const string verticalClassName = className + "-vertical";
@@ -107,6 +52,46 @@ namespace UnityEditor.Overlays
         public virtual Layout preferredLayout => Layout.Panel;
         public virtual bool resizingAllowed => true;
 
+        [UxmlAttribute]
+        string supportedOverlayLayout
+        {
+            get
+            {
+                var hasHorizontal = (m_SupportedOverlayLayouts & Layout.HorizontalToolbar) != 0;
+                var hasVertical = (m_SupportedOverlayLayouts & Layout.VerticalToolbar) != 0;
+
+                if (hasHorizontal && hasVertical)
+                    return "horizontal vertical";
+                if (hasHorizontal)
+                    return "horizontal";
+                if (hasVertical)
+                    return "vertical";
+                return null;
+            }
+            set
+            {
+                m_SupportedOverlayLayouts = Layout.Panel;
+                var split = value?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (split?.Length > 0)
+                {
+                    foreach (var layout in split)
+                    {
+                        switch (layout.ToLower())
+                        {
+                            case "horizontal":
+                                m_SupportedOverlayLayouts |= Layout.HorizontalToolbar;
+                                break;
+
+                            case "vertical":
+                                m_SupportedOverlayLayouts |= Layout.VerticalToolbar;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        [UxmlAttribute("horizontal")]
         public bool isHorizontal
         {
             get => m_IsHorizontal;

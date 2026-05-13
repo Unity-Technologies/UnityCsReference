@@ -2,27 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageDetailsLinks : VisualElement
+    [UxmlElement]
+    internal partial class PackageDetailsLinks : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageDetailsLinks(
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IPackageLinkFactory>());
-            }
-        }
-
         private readonly IApplicationProxy m_Application;
         private readonly IPackageLinkFactory m_PackageLinkFactory;
+
+        public PackageDetailsLinks() : this(
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IPackageLinkFactory>())
+        {
+        }
+
         public PackageDetailsLinks(
             IApplicationProxy application,
             IPackageLinkFactory packageLinkFactory)

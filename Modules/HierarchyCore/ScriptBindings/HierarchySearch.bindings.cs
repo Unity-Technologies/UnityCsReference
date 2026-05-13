@@ -85,6 +85,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Filter numerical value.
         /// </summary>
+        [Obsolete("Use Value instead", false)]
         public float NumValue { get; set; }
 
         /// <summary>
@@ -158,8 +159,7 @@ namespace Unity.Hierarchy
         /// <returns></returns>
         public override string ToString()
         {
-            var rhs = float.IsNaN(NumValue) ? Value : NumValue.ToString();
-            return $"{Name}{ToString(Op)}{QuoteStringIfNeeded(rhs)}";
+            return $"{Name}{ToString(Op)}{QuoteStringIfNeeded(Value)}";
         }
 
         internal static HierarchySearchFilter CreateFilter(string name, string op, string value)
@@ -169,22 +169,11 @@ namespace Unity.Hierarchy
 
         internal static HierarchySearchFilter CreateFilter(string name, HierarchySearchFilterOperator op, string str)
         {
-            var value = str;
-            var numValue = float.NaN;
-            try
-            {
-                numValue = Convert.ToSingle(str);
-                value = null;
-            }
-            catch (System.Exception)
-            {
-            }
             return new HierarchySearchFilter()
             {
                 Name = name,
                 Op = op,
-                Value = value,
-                NumValue = numValue
+                Value = str
             };
         }
 

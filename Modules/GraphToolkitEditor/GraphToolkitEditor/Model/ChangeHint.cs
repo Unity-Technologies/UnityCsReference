@@ -26,6 +26,7 @@ namespace Unity.GraphToolkit.Editor
             GraphTopology = new ChangeHint(nameof(GraphTopology));
             Grouping = new ChangeHint(nameof(Grouping));
             UIHints = new ChangeHint(nameof(UIHints));
+            Animation =  new ChangeHint(nameof(Animation));
             NeedsRedraw = new ChangeHint(nameof(NeedsRedraw));
         }
 
@@ -71,6 +72,11 @@ namespace Unity.GraphToolkit.Editor
         /// UI hints changed.
         /// </summary>
         public static readonly ChangeHint UIHints;
+
+        /// <summary>
+        /// Animation state of the element changed.
+        /// </summary>
+        public static readonly ChangeHint Animation;
 
         /// <summary>
         /// No model change, but a redraw is needed.

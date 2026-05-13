@@ -69,7 +69,15 @@ namespace UnityEngine.AdaptivePerformance.Provider
         /// <summary>
         /// See <see cref="PerformanceDataRecord.PerformanceMode"/>
         /// </summary>
-        PerformanceMode = 0x1000
+        PerformanceMode = 0x1000,
+        /// <summary>
+        /// See <see cref="PerformanceDataRecord.CpuUtilization"/>
+        /// </summary>
+        CpuUtilization = 0x2000,
+        /// <summary>
+        /// See <see cref="PerformanceDataRecord.GpuUtilization"/>
+        /// </summary>
+        GpuUtilization = 0x4000
     }
 
     /// <summary>
@@ -176,6 +184,24 @@ namespace UnityEngine.AdaptivePerformance.Provider
         /// Current Performance mode information.
         /// </summary>
         public PerformanceMode PerformanceMode { get; set; }
+
+        /// <summary>
+        /// The current normalized CPU utilization in the range of [0.0, 1.0], or -1.0 when not supported.
+        /// A value of 0.0 indicates the CPU is lightly loaded and cool.
+        /// A value of 1.0 indicates the CPU is heavily loaded or hot.
+        /// Has changed when <see cref="Feature.CpuUtilization"/> bit is set in <see cref="ChangeFlags"/>.
+        /// </summary>
+        /// <value>CPU utilization in the range of [0.0, 1.0] or -1.0</value>
+        public float CpuUtilization { get; set; }
+
+        /// <summary>
+        /// The current normalized GPU utilization in the range of [0.0, 1.0], or -1.0 when not supported.
+        /// A value of 0.0 indicates the GPU is lightly loaded and cool.
+        /// A value of 1.0 indicates the GPU is heavily loaded or hot.
+        /// Has changed when <see cref="Feature.GpuUtilization"/> bit is set in <see cref="ChangeFlags"/>.
+        /// </summary>
+        /// <value>GPU utilization in the range of [0.0, 1.0] or -1.0</value>
+        public float GpuUtilization { get; set; }
     }
 
     /// <summary>

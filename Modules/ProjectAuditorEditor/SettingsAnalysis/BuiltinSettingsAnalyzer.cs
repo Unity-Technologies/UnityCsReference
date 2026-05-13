@@ -9,6 +9,7 @@ using System.Reflection;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor.Macros;
 using UnityEngine;
+using UnityEngine.Assemblies;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
@@ -21,10 +22,10 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = CurrentAssemblies.GetLoadedAssemblies();
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_Assemblies.Add(assemblies.First(a => a.Location.Contains("UnityEngine.dll")));
-            m_Assemblies.Add(assemblies.First(a => a.Location.Contains("UnityEditor.dll")));
+            m_Assemblies.Add(assemblies.First(a => a.GetLoadedAssemblyPath()?.Contains("UnityEngine.dll") ?? false));
+            m_Assemblies.Add(assemblies.First(a => a.GetLoadedAssemblyPath()?.Contains("UnityEditor.dll") ?? false));
 #pragma warning restore UA2001
 
             // UnityEditor
@@ -83,7 +84,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 
             try
             {
-                var value = MethodEvaluator.Eval(assembly.Location,
+                var value = MethodEvaluator.Eval(assembly.GetLoadedAssemblyPath(),
                     descriptor.Type, methodName, paramTypes, args);
 
                 if (value.ToString() == descriptor.Value)

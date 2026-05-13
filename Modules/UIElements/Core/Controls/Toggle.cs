@@ -28,37 +28,6 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/Toggle.png")]
     public partial class Toggle : BaseBoolField
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseBoolField.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(text), "text")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineTextField] string text;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Toggle();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                {
-                    var e = (Toggle)obj;
-                    e.text = text;
-                }
-            }
-        }
-
         /// <summary>
         /// USS class name for Toggle elements.
         /// </summary>

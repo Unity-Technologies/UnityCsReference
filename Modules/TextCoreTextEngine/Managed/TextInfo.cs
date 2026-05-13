@@ -11,12 +11,24 @@ namespace UnityEngine.TextCore.Text
 
     /// <summary>
     /// Structure containing information about the individual words contained in the text object.
+    /// When a word wraps across lines, there is one entry per line segment; all segments of the same logical word share the same wordId.
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     struct WordInfo
     {
         public int firstCharacterIndex;
         public int lastCharacterIndex;
         public int characterCount;
+        /// <summary>Same value for all segments of the same logical word (e.g. when a word wraps). -1 when not set.</summary>
+        public int wordId;
+
+        public WordInfo()
+        {
+            firstCharacterIndex = 0;
+            lastCharacterIndex = 0;
+            characterCount = 0;
+            wordId = -1;
+        }
     }
 
     /// <summary>

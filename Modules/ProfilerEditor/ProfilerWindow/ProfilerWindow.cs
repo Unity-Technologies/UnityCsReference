@@ -112,12 +112,12 @@ namespace UnityEditor
         const string k_MainSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.MainSplitView.FixedPaneSize";
         const string k_CapturesSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.CapturesSplitView.FixedPaneSize";
         const string k_CapturesSplitViewToggleIsVisibleStatePreferenceKey = "ProfilerWindow.CapturesSplitView.ToggleState";
-        const int k_NoModuleSelected = -1;
-        const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
+        internal const int k_NoModuleSelected = -1;
+        internal const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
         const string k_FrameSelectionRangeStartKey = "ProfilerWindow.FrameSelectionRangeStart";
         const string k_FrameSelectionRangeEndKey = "ProfilerWindow.FrameSelectionRangeEnd";
-        const string k_BottlenecksChartIsSelected = "ProfilerWindow.BottlenecksChartIsSelected";
+        const string k_CurrentLoadedCaptureFileKey = "ProfilerWindow.CurrentLoadedCaptureFile";
         const int k_NoFrameSelectionSession = -99;
 
         static readonly Vector2 k_MinimumWindowSize = new Vector2(900f, 216f);
@@ -221,6 +221,10 @@ namespace UnityEditor
                     return;
 
                 m_CurrentLoadedCaptureFile = value;
+
+                // Keep SessionState in sync so the loaded capture can be restored after window close/reopen.
+                SessionState.SetString(k_CurrentLoadedCaptureFileKey, value ?? string.Empty);
+
                 if (string.IsNullOrEmpty(m_CurrentLoadedCaptureFile))
                 {
                     // We already mark this when a capture is loaded, so
@@ -459,19 +463,29 @@ namespace UnityEditor
                 module.OnEnable();
             }
 
-            // Select the last selected module this session. If there wasn't one, try to select the first active module.
+            // Select the last selected module this session. If there wasn't one, default to the Highlights view.
             var moduleIndexToSelect = SessionState.GetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
             if (moduleIndexToSelect != k_NoModuleSelected)
                 SelectModuleAtIndex(moduleIndexToSelect);
             else
             {
-                // If we were looking at the highlights/bottlenecks view and had a domain reload, refocus it
-                if (SessionState.GetBool(k_BottlenecksChartIsSelected, false) && ProfilerHasAnyFrames())
-                {
+                // Default to the Highlights (Overview) view, unless the user has disabled it.
+                // Fall back to the first active module if the bottlenecks view is hidden.
+                if (m_PersistentSettingsService.IsBottleneckViewVisible)
                     ((BottlenecksChartViewController.IResponder)this).ChartViewSelectedFrameRange(SelectedFrameRange);
-                }
                 else
                     SelectFirstActiveModule();
+            }
+
+            // Restore the previously loaded capture file path to maintain Captures List highlight after window reload
+            if (ProfilerHasAnyFrames())
+            {
+                var savedCaptureFile = SessionState.GetString(k_CurrentLoadedCaptureFileKey, string.Empty);
+                if (!string.IsNullOrEmpty(savedCaptureFile) && File.Exists(savedCaptureFile))
+                {
+                    m_CurrentLoadedCaptureFile = savedCaptureFile;
+                    m_CaptureDataService.LoadedCapturesHaveChanged();
+                }
             }
         }
 
@@ -798,11 +812,14 @@ namespace UnityEditor
                 DisposeFrameDataView();
             m_FrameDataView = null;
 
+            // Always clear the loaded capture file - whether cleared or replaced by a new load,
+            // the previous capture is no longer the active one.
+            CurrentLoadedCaptureFile = string.Empty;
+
             if (cleared)
             {
                 SetCurrentFrameDontPause(FrameDataView.invalidOrCurrentFrameIndex);
                 m_CurrentFrameEnabled = true;
-                CurrentLoadedCaptureFile = string.Empty;
                 m_ScreenshotsManager.ResetTemporaryScreenshot();
             }
 
@@ -883,7 +900,6 @@ namespace UnityEditor
             SessionState.SetInt(k_FrameSelectionRangeStartKey, m_SelectedFrameRange == null ? k_NoFrameSelectionSession : m_SelectedFrameRange.Value.Start.Value);
             SessionState.SetInt(k_FrameSelectionRangeEndKey, m_SelectedFrameRange == null ? k_NoFrameSelectionSession : m_SelectedFrameRange.Value.End.Value);
 
-            SessionState.SetBool(k_BottlenecksChartIsSelected, IsBottleneckViewVisible());
         }
 
         void Awake()

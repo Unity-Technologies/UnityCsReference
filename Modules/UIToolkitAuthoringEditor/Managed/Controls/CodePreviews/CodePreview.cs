@@ -15,20 +15,13 @@ namespace Unity.UIToolkit.Editor;
 abstract partial class CodePreview<T> : VisualElement
     where T: ScriptableObject
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        [Conditional("UNITY_EDITOR")]
-        public new static void Register()
-            => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-    }
-
     const string k_VisualTreeAsset = "UIToolkitAuthoring/Controls/CodePreview.uxml";
     const string k_StyleSheetDark = "UIToolkitAuthoring/Controls/CodePreviewDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/Controls/CodePreviewLight.uss";
     const int k_OpenInIDELineNumber = 1;
 
     public const string UssClass = "unity-code-preview";
+    public const string HeaderUssClass = UssClass + "__header";
     public const string TitleUssClass = UssClass + "__title";
     public const string AssetPathUssClass = UssClass + "__asset-path";
     public const string OpenInIdeUssClass = UssClass + "__open-source-file-button";
@@ -37,6 +30,7 @@ abstract partial class CodePreview<T> : VisualElement
     public const string LineNumbersUssClass = UssClass + "__code-line-numbers";
     public const string CodeUssClass = UssClass + "__code-text";
 
+    readonly VisualElement m_HeaderContainer;
     readonly Label m_Title;
     readonly Label m_AssetPath;
     readonly Button m_OpenInIde;
@@ -46,6 +40,7 @@ abstract partial class CodePreview<T> : VisualElement
     readonly IAuthoringLiveReloadAssetTracker<T> m_Tracker;
 
     T m_Asset;
+    bool m_IsActive = true;
 
     public T Asset
     {
@@ -58,6 +53,21 @@ abstract partial class CodePreview<T> : VisualElement
             m_Asset = value;
             Acquire(m_Asset);
             Refresh();
+        }
+    }
+
+    public bool IsActive
+    {
+        get => m_IsActive;
+        protected set
+        {
+            if (m_IsActive == value)
+                return;
+            m_IsActive = value;
+            if (m_IsActive)
+                Refresh();
+            else
+                SetCode(string.Empty);
         }
     }
 
@@ -79,6 +89,8 @@ abstract partial class CodePreview<T> : VisualElement
         scrollView.verticalScroller.lowButton.focusable = true;
         scrollView.verticalScroller.highButton.focusable = true;
 
+        m_HeaderContainer = this.Q(className: HeaderUssClass);
+
         m_Title = this.Q<Label>(className: TitleUssClass);
         m_Title.text = GetTitle();
         m_AssetPath = this.Q<Label>(className: AssetPathUssClass);
@@ -91,6 +103,9 @@ abstract partial class CodePreview<T> : VisualElement
         m_Code = this.Q<TextField>(className: CodeUssClass);
         m_Code.textSelection.isSelectable = true;
         m_Code.RemoveFromClassList(TextField.ussClassName);
+        m_Code.textInputBase.textElement.enableRichText = true;
+        // While waiting on UUM-139569 to be fixed.
+        m_Code.style.unityTextGenerator = TextGeneratorType.Standard;
 
         m_Tracker = CreateTracker();
         Refresh();
@@ -104,11 +119,14 @@ abstract partial class CodePreview<T> : VisualElement
             ? Path.GetFileName(assetPath)
             : "<unsaved file>" + GetExtension();
         m_OpenInIde.EnableInClassList(HideOpenInIdeUssClass, !isAssetOnDisk);
-        SetCode(GenerateCodePreview());
+
+        if (IsActive)
+            SetCode(GenerateCodePreview());
     }
 
     protected abstract string GetTitle();
     protected abstract string GetExtension();
+    protected virtual string PrefColorsCategory { get; }
 
     protected abstract IAuthoringLiveReloadAssetTracker<T> CreateTracker();
     protected abstract void RegisterTracker(ILiveReloadSystem liveReloadSystem, IAuthoringLiveReloadAssetTracker<T> tracker, T asset);
@@ -167,11 +185,16 @@ abstract partial class CodePreview<T> : VisualElement
             case AttachToPanelEvent attachToPanelEvent:
                 if (attachToPanelEvent.destinationPanel != null)
                     Acquire(Asset);
+                PrefSettings.settingChanged += OnPrefsChanged;
                 break;
 
             case DetachFromPanelEvent detachFromPanel:
                 if (detachFromPanel.originPanel != null)
                     Release(Asset);
+                PrefSettings.settingChanged -= OnPrefsChanged;
+                break;
+            case GeometryChangedEvent geometryChangedEvent:
+                IsActive = geometryChangedEvent.newRect.height > m_HeaderContainer.layout.height;
                 break;
         }
         base.HandleEventBubbleUp(evt);
@@ -190,5 +213,13 @@ abstract partial class CodePreview<T> : VisualElement
     void OnOpenSourceFileButtonClick()
     {
         AssetDatabase.OpenAsset(Asset, k_OpenInIDELineNumber);
+    }
+
+    void OnPrefsChanged(string prefName, Type prefType)
+    {
+        if (string.IsNullOrEmpty(PrefColorsCategory))
+            return;
+        if (prefName.StartsWith(PrefColorsCategory, StringComparison.Ordinal))
+            Refresh();
     }
 }

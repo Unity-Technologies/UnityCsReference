@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId alignContentProperty = "style." + nameof(IStyle.alignContent);
             internal static readonly BindingId alignItemsProperty = "style." + nameof(IStyle.alignItems);
             internal static readonly BindingId alignSelfProperty = "style." + nameof(IStyle.alignSelf);
+            internal static readonly BindingId animationPlayStateProperty = "style." + nameof(IStyle.animationPlayState);
             internal static readonly BindingId aspectRatioProperty = "style." + nameof(IStyle.aspectRatio);
             internal static readonly BindingId backgroundColorProperty = "style." + nameof(IStyle.backgroundColor);
             internal static readonly BindingId backgroundImageProperty = "style." + nameof(IStyle.backgroundImage);
@@ -84,6 +85,7 @@ namespace UnityEngine.UIElements
             [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal static readonly BindingId transitionTimingFunctionProperty = "style." + nameof(IStyle.transitionTimingFunction);
             internal static readonly BindingId translateProperty = "style." + nameof(IStyle.translate);
+            internal static readonly BindingId unityAnimationClipProperty = "style." + nameof(IStyle.unityAnimationClip);
             internal static readonly BindingId unityBackgroundImageTintColorProperty = "style." + nameof(IStyle.unityBackgroundImageTintColor);
             internal static readonly BindingId unityEditorTextRenderingModeProperty = "style." + nameof(IStyle.unityEditorTextRenderingMode);
             internal static readonly BindingId unityFontProperty = "style." + nameof(IStyle.unityFont);

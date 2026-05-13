@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -18,40 +17,10 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering Length.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class LengthField : TextValueField<Length>
+    [UxmlElement]
+    internal partial class LengthField : TextValueField<Length>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<Length>.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeField] bool showUnitAsDropdown;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showUnitAsDropdown_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<Length>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(showUnitAsDropdown), "show-unit-as-dropdown"),
-                }, false);
-            }
-
-            public override object CreateInstance() => new LengthField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (LengthField)obj;
-                if (ShouldWriteAttributeValue(showUnitAsDropdown_UxmlAttributeFlags))
-                    e.showUnitAsDropdown = showUnitAsDropdown;
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -121,6 +90,7 @@ namespace UnityEngine.UIElements
         VisualElement m_Container;
 
         [CreateProperty]
+        [UxmlAttribute]
         public bool showUnitAsDropdown
         {
             get => m_ShowUnitAsDropdown;
@@ -510,17 +480,20 @@ namespace UnityEngine.UIElements
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Length startValue)
             {
+                if (startValue == Length.Auto())
+                    startValue.unit = LengthUnit.Pixel;
+
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);
                 float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
                 var v = StringToValue(text).value;
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
                 if (parentField.isDelayed)
                 {
-                    text = ValueToString(Mathf.ClampToInt((long)v));
+                    text = ValueToString(new Length(Mathf.ClampToInt((long)v), startValue.unit));
                 }
                 else
                 {
-                    parentField.value = Mathf.ClampToInt((long)v);
+                    parentField.value = new Length(Mathf.ClampToInt((long)v), startValue.unit);
                 }
             }
 

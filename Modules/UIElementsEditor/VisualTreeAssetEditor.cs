@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
         private VisualElement m_VisualTree;
         protected Texture2D m_FileTypeIcon;
         protected RenderTexture m_preview_texture;
-        private Event m_evt = new Event();//Dummy event to fake rendering, cached to reduce memory allocation.
+
         private int m_LastDirtyCount;
         private int m_LastContentHash;
         private CanvasTheme m_PreviewThemeOverride = CanvasTheme.ProjectSettings;
@@ -297,9 +297,7 @@ namespace UnityEditor.UIElements
 
                 panel.clearSettings = new PanelClearSettings();
 
-                //Use a dummy repaint event, otherwise imgui element wont be shown when using event.current and rendered in the editor update loop
-                m_evt.type = EventType.Repaint;
-                panel.Repaint(m_evt);
+                panel.Repaint();
                 panel.Render();
 
                 panel.Dispose();

@@ -474,7 +474,7 @@ namespace UnityEditor.Compilation
                 var scriptAssemblySettings = new ScriptAssemblySettings()
                 {
                     BuildTarget = EditorUserBuildSettings.activeBuildTarget,
-                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor
+                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation
                 };
 
                 return editorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);
@@ -514,7 +514,7 @@ namespace UnityEditor.Compilation
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return precompiledAssemblyProvider.GetPrecompiledAssemblies(
 #pragma warning restore UA2001
-                EditorScriptCompilationOptions.BuildingForEditor|EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                 EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
                 .Select(x => AssetPath.GetFileName(x.Path))
@@ -572,7 +572,7 @@ namespace UnityEditor.Compilation
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
 #pragma warning restore UA2001
-                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                 buildTarget)
                 .Concat(precompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget));
 
@@ -595,7 +595,7 @@ namespace UnityEditor.Compilation
         internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, PrecompiledAssemblyProviderBase precompiledAssemblyProvider, string[] extraScriptingDefines = null)
         {
             var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
-                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                 EditorUserBuildSettings.activeBuildTarget,
                 extraScriptingDefines);
 

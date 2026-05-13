@@ -72,7 +72,7 @@ namespace UnityEditor.Macros
                 var simpleName = args.Name.Split(',')[0];
                 var assemblyFile = Path.Combine(m_AssemblyDirectory, simpleName + ".dll");
                 if (File.Exists(assemblyFile))
-                    return Assembly.LoadFrom(assemblyFile);
+                    return CurrentAssemblies.LoadFromPath(assemblyFile);
 
                 return null;
             }

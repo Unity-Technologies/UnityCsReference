@@ -21,7 +21,7 @@ internal interface IVariableEditingContext
     VisualElement TooltipRoot { get; }
 
     void SetVariable(string variableName, BindableElement field, string styleName, int index);
-    void UnsetVariable(BindableElement field);
+    void UnsetVariable(BindableElement field, string styleName);
     void RefreshUI();
 
     /// <summary>

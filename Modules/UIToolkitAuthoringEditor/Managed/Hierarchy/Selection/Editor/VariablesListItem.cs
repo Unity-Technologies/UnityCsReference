@@ -64,10 +64,11 @@ namespace Unity.UIToolkit.Editor
                 { name = k_TimeValueFieldName }.WithClassList(k_HiddenFieldClassName));
             fieldsGroup.Add(itemKeywordField = new DropdownField()
                 { name = k_KeywordFieldName }.WithClassList(k_HiddenFieldClassName));
+            fieldsGroup.Add(itemAssetField = CreateAssetField());
+
             fieldsGroup.Add(itemTypeField = new DropdownField()
                 { name = k_TypeFieldName }.WithClassList(k_VisibleFieldClassName));
 
-            fieldsGroup.Add(itemAssetField = CreateAssetField());
             Add(fieldsGroup);
 
             foreach (var choice in VariablesInspector.s_KeywordArray)

@@ -2,26 +2,21 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageAuthorLabel : VisualElement
+    [UxmlElement]
+    internal partial class PackageAuthorLabel : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                return new PackageAuthorLabel(
-                    ServicesContainer.instance.Resolve<IApplicationProxy>(),
-                    ServicesContainer.instance.Resolve<IPackageLinkFactory>());
-            }
-        }
-
         private IApplicationProxy m_Application;
         private IPackageLinkFactory m_PackageLinkFactory;
+
+        public PackageAuthorLabel() : this(
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IPackageLinkFactory>())
+        {
+        }
 
         public PackageAuthorLabel(IApplicationProxy application, IPackageLinkFactory packageLinkFactory)
         {

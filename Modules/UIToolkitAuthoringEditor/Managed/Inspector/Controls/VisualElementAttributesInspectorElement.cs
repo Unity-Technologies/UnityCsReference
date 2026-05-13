@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -16,9 +13,9 @@ namespace Unity.UIToolkit.Editor;
 /// Represents an inspector element that displays and allows editing of the attributes of a selected VisualElement.
 /// </summary>
 [UxmlElement]
-sealed class VisualElementAttributesInspectorElement : UxmlAttributesView
+sealed partial class VisualElementAttributesInspectorElement : VisualElement
 {
-    new const string UssClassName = "unity-attributes-inspector";
+    const string UssClassName = "unity-attributes-inspector";
     internal const string k_RootPropertyFieldUssClassName = "unity-uxml-serialized-data-root-property-field";
     const string k_LinkToCustomControlMigrationDoc = "https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html";
     internal static readonly string k_UsingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning = L10n.Tr("Attributes for this control failed to load because it uses UxmlTraits, a deprecated API; or did not define its UxmlSerializedData class." +
@@ -26,44 +23,26 @@ sealed class VisualElementAttributesInspectorElement : UxmlAttributesView
     public static BindingId TargetProperty = nameof(Target);
     public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
 
-
-    [Serializable]
-    public new class UxmlSerializedData : UxmlAttributesView.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        [ExcludeFromDocs]
-        public override object CreateInstance()
-        {
-            return new VisualElementAttributesInspectorElement();
-        }
-    }
-
+    readonly UxmlAttributesView m_AttributesView;
     PropertyField m_RootPropertyField;
-    HelpBox m_DeprecatedApiWarningBox;
 
     private bool m_IsReadOnly;
+
+    public UxmlAttributesView AttributesView => m_AttributesView;
 
     [CreateProperty]
     public VisualElement Target
     {
-        get => Context.element;
+        get => m_AttributesView.Context.element;
         set
         {
-            if (Context.element == value)
+            if (m_AttributesView.Context.element == value)
                 return;
 
             if (value == null)
-                Context.Clear();
+                m_AttributesView.Context.Clear();
             else
-                Context.Set(value, IsReadOnly);
+                m_AttributesView.Context.Set(value, IsReadOnly);
             NotifyPropertyChanged(TargetProperty);
         }
     }
@@ -79,7 +58,7 @@ sealed class VisualElementAttributesInspectorElement : UxmlAttributesView
             m_IsReadOnly = value;
             if (Target != null)
             {
-                Context.Set(Target, m_IsReadOnly);
+                m_AttributesView.Context.Set(Target, m_IsReadOnly);
             }
             NotifyPropertyChanged(IsReadOnlyProperty);
         }
@@ -96,69 +75,52 @@ sealed class VisualElementAttributesInspectorElement : UxmlAttributesView
         AddToClassList(InspectorElement.uIECustomVariantUssClassName);
         AddToClassList(InspectorElement.customInspectorUssClassName);
 
-        Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
+        m_AttributesView = new UxmlAttributesView();
+        m_AttributesView.ContextChanged += OnContextChanged;
+        Add(m_AttributesView);
+
+        RegisterCallback<AttachToPanelEvent>(_=> BindingsStyleHelpers.HandleRightClickMenu += HandleRightClickMenu);
+        RegisterCallback<DetachFromPanelEvent>(_=> BindingsStyleHelpers.HandleRightClickMenu -= HandleRightClickMenu);
     }
 
-    void UpdateContext()
+    static void HandleRightClickMenu(VisualElement ve, ref bool handled)
     {
-        if (Target != null)
+        while (ve != null)
         {
-            Context.Set(Target, IsReadOnly);
-        }
-        else
-        {
-            Context.Clear();
+            if (ve is UxmlAttributeFieldDecorator)
+            {
+                handled =  true;
+                return;
+            }
+            ve = ve.parent;
         }
     }
 
-    protected override void CreateViewContent(UxmlAttributesEditingContext context)
+    void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)
     {
-        if (context.uxmlSerializedDataDescription == null)
-        {
-            ShowUxmlTraitsUsageWarningBox();
-        }
-        else
-        {
-            var serializedField = context.rootSerializedObject.FindProperty(context.serializedBasePath);
+        var view = sender as UxmlAttributesView;
 
-            m_RootPropertyField = new PropertyField(serializedField);
+        if (view?.Context == null)
+        {
+            return;
+        }
+
+        if (view.Context.uxmlSerializedDataDescription == null)
+        {
+            m_RootPropertyField?.RemoveFromHierarchy();
+            m_RootPropertyField = null;
+            return;
+        }
+
+        var bindingPath = view.Context.serializedBasePath;
+
+        if (m_RootPropertyField == null)
+        {
+            m_RootPropertyField = new PropertyField();
             m_RootPropertyField.AddToClassList(k_RootPropertyFieldUssClassName);
-            m_RootPropertyField.reset += OnPropertyFieldReset;
-            Add(m_RootPropertyField);
-            m_RootPropertyField.Bind(context.rootSerializedObject);
-            context.rootSerializedObject.ApplyModifiedProperties();
+            m_AttributesView.Add(m_RootPropertyField);
         }
-    }
 
-    protected override void ReleaseViewContent(UxmlAttributesEditingContext context)
-    {
-        if (m_RootPropertyField != null)
-            m_RootPropertyField.reset -= OnPropertyFieldReset;
-        m_RootPropertyField?.RemoveFromHierarchy();
-        m_RootPropertyField = null;
-        if (m_DeprecatedApiWarningBox != null)
-            m_DeprecatedApiWarningBox.style.display = DisplayStyle.None;
-        dataSource = null;
-    }
-
-    void OnPropertyFieldReset()
-    {
-        var propertyView = m_RootPropertyField.Q<UxmlSerializedDataPropertyView>();
-
-        // Set the context of the root property view.
-        if (propertyView != null)
-        {
-            propertyView.context = Context;
-        }
-    }
-
-    void ShowUxmlTraitsUsageWarningBox()
-    {
-        if (m_DeprecatedApiWarningBox == null)
-        {
-            m_DeprecatedApiWarningBox = new HelpBox(k_UsingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning, HelpBoxMessageType.Warning);
-            Add(m_DeprecatedApiWarningBox);
-        }
-        m_DeprecatedApiWarningBox.style.display = DisplayStyle.Flex;
+        m_RootPropertyField.bindingPath = bindingPath;
     }
 }

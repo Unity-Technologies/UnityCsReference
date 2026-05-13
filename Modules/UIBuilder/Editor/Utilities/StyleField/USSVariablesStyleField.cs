@@ -2,21 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
 using System.Globalization;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
     // We create a custom class for the variables dimension field so that the units don't have to be bound.
-    internal class USSVariablesStyleField : DimensionStyleField
+    [UxmlElement]
+    internal partial class USSVariablesStyleField : DimensionStyleField
     {
-        [Serializable]
-        public new class UxmlSerializedData : DimensionStyleField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new USSVariablesStyleField();
-        }
-
         public USSVariablesStyleField() : this(string.Empty) { }
 
         public USSVariablesStyleField(string label) : base(label)

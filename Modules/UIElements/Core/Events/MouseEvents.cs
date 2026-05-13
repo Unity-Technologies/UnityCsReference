@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
         /// current mouse event.
         /// </summary>
         /// <remarks>
-        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel world coordinates.
+        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel coordinates.
         /// </remarks>
         Vector2 mouseDelta { get; }
         /// <summary>
@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements
         /// current mouse event.
         /// </summary>
         /// <remarks>
-        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel world coordinates.
+        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel coordinates.
         /// </remarks>
         public Vector2 mouseDelta { get; protected set; }
         /// <summary>
@@ -488,7 +488,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderMouse = true;
         }
 
@@ -554,7 +554,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderMouse = true;
         }
 
@@ -772,7 +772,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                          EventPropagation.SkipDisabledElements;
+                          EventPropagation.IgnoreDisabledElements;
             delta = Vector3.zero;
             recomputeTopElementUnderMouse = true;
         }
@@ -966,6 +966,12 @@ namespace UnityEngine.UIElements
             EventDispatchUtilities.DispatchToElementUnderPointerOrPanelRoot(this, panel, PointerId.mousePointerId,
                 mousePosition);
         }
+
+        // Normally, we would want to have a PostDispatch here to have symmetry with MouseLeavesWindowEvent. However,
+        // here, we cannot guarantee that the event is truly a mouse event and not a pen event. In the case of the
+        // MouseLeavesWindowEvent, it is not an issue because we will remove the cached state when leaving the editor,
+        // which will be recomputed upon entering it again on the next mouse move. Here, if the event did not originate
+        // with a mouse event, it would add a cached state for the mouse, which would leave the hover state sticky.
     }
 
     /// <summary>
@@ -1027,11 +1033,7 @@ namespace UnityEngine.UIElements
             // we are not really exiting the window, we do not want to set the element
             // under mouse to null in this case.
             if (pressedButtons == 0 && panel is BaseVisualElementPanel elementPanel)
-            {
-                elementPanel.ClearCachedElementUnderPointer(PointerId.mousePointerId, this);
-                // Call CommitElementUnderPointers manually because recomputeTopElementUnderMouse is false.
-                elementPanel.CommitElementUnderPointers();
-            }
+                elementPanel.PointerLeavesPanel(PointerId.mousePointerId, this);
 
             base.PostDispatch(panel);
         }

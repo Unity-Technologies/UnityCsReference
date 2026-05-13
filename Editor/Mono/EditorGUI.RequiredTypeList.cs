@@ -114,6 +114,8 @@ namespace UnityEditor
 
         static Type GetUnityObjectType(string typeName)
         {
+            if (typeName == typeof(UnityEngine.Object).Name) { return typeof(UnityEngine.Object); }
+
             var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
             foreach (var objectType in objectTypes)
             {

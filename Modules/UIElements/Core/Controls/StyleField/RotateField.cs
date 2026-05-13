@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -12,20 +11,9 @@ namespace UnityEngine.UIElements
     /// Makes a field for entering Rotate.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal class RotateField : BaseField<Rotate>, IValueField<Rotate>
+    [UxmlElement]
+    internal partial class RotateField : BaseField<Rotate>, IValueField<Rotate>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Rotate>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Rotate>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new RotateField();
-        }
-
         public static readonly string styleFieldUssClassName = "unity-style-field";
         internal static readonly UniqueStyleString styleFieldUssClassNameUnique = new(styleFieldUssClassName);
 

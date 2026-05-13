@@ -501,43 +501,14 @@ namespace UnityEngine.UIElements
     [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/MaskField.png")]
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public class MaskField : BaseMaskField<int>
+    public partial class MaskField : BaseMaskField<int>
     {
         internal override int MaskToValue(int newMask) => newMask;
         internal override int ValueToMask(int value) => value;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseMaskField<int>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseMaskField<int>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(choices), "choices"),
-                });
-            }
-
-            #pragma warning disable 649
-            [SerializeField] List<string> choices;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choices_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new MaskField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                // Assigning null value throws.
-                if (ShouldWriteAttributeValue(choices_UxmlAttributeFlags) && choices != null)
-                {
-                    var e = (MaskField)obj;
-                    e.choices = choices;
-                }
-            }
-        }
+        // Required because we cant use UxmlAttribute on virtual properties.
+        [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices))]
+        internal List<string> maskChoices { get => choices; set => choices = value; }
 
         /// <summary>
         /// Callback that provides a string representation used to display the selected value.

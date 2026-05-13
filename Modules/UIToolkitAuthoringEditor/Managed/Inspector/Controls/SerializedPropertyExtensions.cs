@@ -28,14 +28,8 @@ static class SerializedPropertyExtensions
         if (property == null)
             return null;
 
-        string path = property.propertyPath;
-        int lastDotIndex = path.LastIndexOf('.');
-
-        if (lastDotIndex == -1)
-            return null;
-
-        string parentPath = path.Substring(0, lastDotIndex);
-        return property.serializedObject.FindProperty(parentPath);
+        var copy = property.Copy();
+        return copy.Parent() ? copy : null;
     }
 
     public static BindingId GetBindingPath(this SerializedProperty boundProperty)
@@ -47,6 +41,11 @@ static class SerializedPropertyExtensions
         }
 
         return bindingPath;
+    }
+
+    public static SerializedProperty GetUxmlAttributeFlags(this SerializedProperty property)
+    {
+        return property?.serializedObject?.FindProperty(property.propertyPath + UxmlSerializedData.AttributeFlagSuffix);
     }
 
     internal static string TrimSerializedDataSuffix(string path)

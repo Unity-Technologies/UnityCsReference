@@ -5,11 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Unity.Properties;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
@@ -41,6 +39,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
+    [UxmlElement]
     public abstract partial class BaseTreeView : BaseVerticalCollectionView
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
@@ -109,35 +108,6 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string itemContentContainerUssClassName = ussClassName + "__item-content";
         internal static readonly UniqueStyleString itemContentContainerUssClassNameUnique = new(itemContentContainerUssClassName);
-
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(autoExpand), "auto-expand"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool autoExpand;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoExpand_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(autoExpand_UxmlAttributeFlags))
-                {
-                    var e = (BaseTreeView)obj;
-                    e.autoExpand = autoExpand;
-                }
-            }
-        }
 
         /// <summary>
         /// Access to the itemsSource. For a TreeView, the source contains the items wrappers.
@@ -243,6 +213,7 @@ namespace UnityEngine.UIElements
         /// When true, items are automatically expanded when added to the TreeView.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool autoExpand
         {
             get => m_AutoExpand;

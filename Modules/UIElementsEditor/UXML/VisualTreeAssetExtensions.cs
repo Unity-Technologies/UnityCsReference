@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -182,6 +182,15 @@ namespace UnityEditor.UIElements
                 return null;
 
             return vta.inlineSheet.rules[vea.ruleIndex];
+        }
+
+        [CanBeNull]
+        public static StyleRule GetInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea)
+        {
+            if (vea.ruleIndex < 0)
+                return null;
+
+            return vta.inlineSheet.rules.Length <= vea.ruleIndex ? null : vta.inlineSheet.rules[vea.ruleIndex];
         }
     }
 }

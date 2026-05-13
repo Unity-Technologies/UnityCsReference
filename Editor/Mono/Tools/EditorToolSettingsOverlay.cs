@@ -18,6 +18,11 @@ namespace UnityEditor.EditorTools
     [Icon("Icons/Overlays/ToolSettings.png")]
     sealed class EditorToolSettingsOverlay : Overlay, ICreateToolbar, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
+        const string k_NoSettingsLabelName = "NoSettingsLabel";
+        static string k_NoSettingsHorizontal = L10n.Tr("No Tool Settings");
+        static string k_NoSettingsVertical =  L10n.Tr("None");
+        static string k_NoSettingsTooltip =  L10n.Tr("No tool settings available for the currently active tool and context.");
+
         Editor m_ToolEditor, m_ContextEditor;
         Editor m_DefaultToolEditor, m_DefaultContextEditor;
 
@@ -54,6 +59,13 @@ namespace UnityEditor.EditorTools
         {
             base.OnCreated();
             CreateEditor();
+
+            contentRoot.RegisterCallback<GeometryChangedEvent>(OnContentGeometryChanged);
+        }
+
+        void OnContentGeometryChanged(GeometryChangedEvent evt)
+        {
+            RefreshNoSettingsLabel();
         }
 
         public override void OnWillBeDestroyed()
@@ -82,7 +94,7 @@ namespace UnityEditor.EditorTools
 
             UnityObject.DestroyImmediate(m_DefaultContextEditor);
             UnityObject.DestroyImmediate(m_DefaultToolEditor);
-            
+
             m_DefaultContextEditor = Editor.CreateEditor(EditorToolManager.GetActiveToolContext(ownerType), typeof(GameObjectToolContextCustomEditor));
             // ManipulationToolCustomEditor, despite its name, is the default editor for ALL EditorTools
             m_DefaultToolEditor = Editor.CreateEditor(EditorToolManager.GetActiveTool(ownerType), typeof(ManipulationToolCustomEditor));
@@ -130,6 +142,8 @@ namespace UnityEditor.EditorTools
                 root.Add(EditorToolbar.CreateOverlay(elements, containerWindow));
             }
 
+            AddNoSettingsLabel(root, horizontal: true);
+
             return root;
         }
 
@@ -160,6 +174,8 @@ namespace UnityEditor.EditorTools
                 var elements = EditorToolbarUtility.GetToolbarOverrideElementIds(m_ToolEditor, m_DefaultToolEditor, OverridableToolbar.ToolSettings);
                 root.Add(EditorToolbar.CreateOverlay(elements, containerWindow));
             }
+
+            AddNoSettingsLabel(root, horizontal: false);
 
             return root;
         }
@@ -240,11 +256,14 @@ namespace UnityEditor.EditorTools
             var root = context is OverlayToolbar && tool is OverlayToolbar
                 ? new OverlayToolbar()
                 : new VisualElement();
-            
+
             root.userData = ownerType;
 
             root.Add(context);
             root.Add(tool);
+
+            AddNoSettingsLabel(root, horizontal: true);
+
             return root;
         }
 
@@ -254,6 +273,56 @@ namespace UnityEditor.EditorTools
             var window = args.context as EditorWindow;
             if (window is ISupportsOverlays)
                 window.overlayCanvas.ShowPopupAtMouse<EditorToolSettingsOverlay>();
+        }
+
+        void AddNoSettingsLabel(VisualElement parent, bool horizontal)
+        {
+            var noSettingsLabel = new Label();
+            noSettingsLabel.name = k_NoSettingsLabelName;
+            noSettingsLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            noSettingsLabel.style.display = DisplayStyle.None;
+
+            if (horizontal)
+            {
+                noSettingsLabel.text = k_NoSettingsHorizontal;
+                noSettingsLabel.style.marginTop = 2;
+            }
+            else
+                noSettingsLabel.text = k_NoSettingsVertical;
+            noSettingsLabel.tooltip = k_NoSettingsTooltip;
+
+            parent.Add(noSettingsLabel);
+            RefreshNoSettingsLabel();
+        }
+
+        void RefreshNoSettingsLabel()
+        {
+            var rootToolbar = contentRoot.Q<OverlayToolbar>();
+            if (rootToolbar != null)
+            {
+                var noSettingsLabel = rootToolbar.Q<Label>(name: k_NoSettingsLabelName);
+                if (noSettingsLabel != null)
+                    noSettingsLabel.style.display = CheckIfToolbarsEmpty() ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        bool CheckIfToolbarsEmpty()
+        {
+            var rootToolbar = contentRoot.Q<OverlayToolbar>();
+
+            foreach (var rootChild in rootToolbar.children)
+            {
+                if (rootChild is OverlayToolbar childToolbar)
+                {
+                    foreach (var child in childToolbar.children)
+                    {
+                        if (child.resolvedStyle.display == DisplayStyle.Flex)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }

@@ -176,11 +176,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                // Deleting on windows works better with bash OS cmd call
+                // Deleting on windows works better with OS cmd call due to symlink handling
                 var (removeDirectoryCommand, filename, arguments) = WindowsBuildRemoveDirectoryCommand(path);
                 if (!ProcessSystem.TryRunProcessWaitForExit(filename, arguments, out _, out var error))
                 {
-                    Debug.LogError($"Command Failed: {removeDirectoryCommand}{Environment.NewLine}Error:{Environment.NewLine}{error}");
+                    var errorMessage = $"Failed to delete directory: {path}{Environment.NewLine}Command: {removeDirectoryCommand}{Environment.NewLine}Error: {error}";
+                    Debug.LogError(errorMessage);
+
+                    // Fallback: Try using Directory.Delete as a last resort
+                    try
+                    {
+                        if (Directory.Exists(path))
+                        {
+                            Debug.Log($"Attempting fallback deletion using Directory.Delete for: {path}");
+                            Directory.Delete(path, true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"Fallback deletion also failed: {ex.Message}");
+                        throw new IOException($"Unable to delete directory: {path}. {errorMessage}", ex);
+                    }
                 }
             }
             else
@@ -226,10 +242,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Windows has many issues deleting folders containing symlinks,
             // and will most of the time throw an UnauthorizedAccessException
             // when attempting to delete with Directory.Delete.
-            var removeDirectoryCommand = $"rmdir /s /q \"{path}\"";
+            // Use escaped quotes to handle paths with spaces correctly
+            var normalizedPath = Path.GetFullPath(path);
+            var removeDirectoryCommand = $"rmdir /s /q \"{normalizedPath}\"";
             var filename = "cmd.exe";
             var argumentPrefix = "/C";
-            var arguments = $"{argumentPrefix} \"{removeDirectoryCommand}\"";
+            // Don't double-wrap in quotes - cmd.exe /C handles the command string directly
+            var arguments = $"{argumentPrefix} {removeDirectoryCommand}";
 
             return (removeDirectoryCommand, filename, arguments);
         }

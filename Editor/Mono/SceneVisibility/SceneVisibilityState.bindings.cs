@@ -67,6 +67,7 @@ namespace UnityEditor
         public static extern void OnSceneSaved(Scene scene);
 
         public static extern int GetHiddenObjectCount();
+        public static extern int GetHiddenObjectCountWithoutCacheUpdate();
         public static extern int GetPickingDisabledObjectCount();
         public static extern void ForceDataUpdate();
         public static extern void CleanTempScenes();

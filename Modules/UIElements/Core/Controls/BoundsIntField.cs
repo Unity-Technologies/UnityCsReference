@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -13,22 +12,14 @@ namespace UnityEngine.UIElements
     /// A <see cref="BoundsInt"/> field. For more information, refer to [[wiki:UIE-uxml-element-BoundsIntField|UXML element BoundsIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/BoundsIntField.png")]
     public partial class BoundsIntField : BaseField<BoundsInt>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<BoundsInt>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<BoundsInt>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new BoundsIntField();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -41,7 +32,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new BoundsInt(new Vector3Int(px, py, pz), new Vector3Int(sx, sy, sz));
+                    valueUXML = new BoundsInt(new Vector3Int(px, py, pz), new Vector3Int(sx, sy, sz));
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -52,7 +43,7 @@ namespace UnityEngine.UIElements
                         uxmlAsset.RemoveAttribute("sx");
                         uxmlAsset.RemoveAttribute("sy");
                         uxmlAsset.RemoveAttribute("sz");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }

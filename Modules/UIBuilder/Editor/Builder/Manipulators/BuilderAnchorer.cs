@@ -2,25 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BuilderAnchorer : BuilderManipulator
+    [UxmlElement]
+    partial class BuilderAnchorer : BuilderManipulator
     {
         static readonly string s_UssClassName = "unity-builder-anchorer";
         static readonly string s_ActiveAnchorClassName = "unity-builder-anchorer--active";
 
         Dictionary<string, VisualElement> m_HandleElements;
-
-        [Serializable]
-        public new class UxmlSerializedData : BuilderManipulator.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderAnchorer();
-        }
 
         public BuilderAnchorer()
         {

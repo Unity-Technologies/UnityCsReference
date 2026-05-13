@@ -402,9 +402,10 @@ namespace Unity.GraphToolkit.Editor
         /// Aligns the nodes, following the <paramref name="entryPoints"/>.
         /// </summary>
         /// <param name="follow">Set to true to recursively align dependent nodes.</param>
+        /// <param name="reverse">True if it is the input node (instead of the output node) that should be repositioned for alignment.</param>
         /// <param name="entryPoints">The elements from where to start the alignment procedure.</param>
         /// <returns>A list of models that where moved.</returns>
-        public List<GraphElementModel> AlignNodes(bool follow, IReadOnlyList<GraphElementModel> entryPoints)
+        public List<GraphElementModel> AlignNodes(bool follow, bool reverse, IReadOnlyList<GraphElementModel> entryPoints)
         {
             HashSet<AbstractNodeModel> topMostModels = new HashSet<AbstractNodeModel>();
             List<GraphElementModel> changedModels = new List<GraphElementModel>();
@@ -414,8 +415,15 @@ namespace Unity.GraphToolkit.Editor
             foreach (var wireModel in entryPoints.OfType<WireModel>())
 #pragma warning restore UA2001
             {
-                if (!wireModel.CreateDependency(out var dependency, out var parentGuid))
+                LinkedNodesDependency dependency;
+                AbstractNodeModel parentGuid;
+                var dependencyCreated = reverse
+                    ? wireModel.CreateReversedDependency(out dependency, out parentGuid)
+                    : wireModel.CreateDependency(out dependency, out parentGuid);
+
+                if(!dependencyCreated)
                     continue;
+
                 anyWire = true;
 
                 if (wireModel.GraphModel.TryGetModelFromGuid(parentGuid.Guid, out var parentElement) && parentElement is AbstractNodeModel parent)

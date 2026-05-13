@@ -2,9 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -46,52 +43,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(lowValue), "low-value", null, "lowValue"),
-                    new(nameof(highValue), "high-value", null, "highValue"),
-                    new(nameof(direction), "direction"),
-                    new(nameof(value), "value"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttribute("low-value", "lowValue")]
-            [SerializeField] float lowValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
-            [UxmlAttribute("high-value", "highValue")]
-            [SerializeField] float highValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
-            [SerializeField] SliderDirection direction;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
-            [SerializeField] float value;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Scroller();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (Scroller)obj;
-                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
-                    e.slider.lowValue = lowValue;
-                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
-                    e.slider.highValue = highValue;
-                if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
-                    e.direction = direction;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.value = value;
-            }
-        }
-
         // Usually set by the owner of the scroller
         /// <summary>
         /// Event sent when the slider value has changed.
@@ -114,25 +65,10 @@ namespace UnityEngine.UIElements
         public RepeatButton highButton { get; }
 
         /// <summary>
-        /// Value that defines the slider position. It lies between <see cref="lowValue"/> and <see cref="highValue"/>.
-        /// </summary>
-        [CreateProperty]
-        public float value
-        {
-            get { return slider.value; }
-            set
-            {
-                var previous = slider.value;
-                slider.value = value;
-                if (!Mathf.Approximately(previous, slider.value))
-                    NotifyPropertyChanged(valueProperty);
-            }
-        }
-
-        /// <summary>
         /// Minimum value.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public float lowValue
         {
             get { return slider.lowValue; }
@@ -150,6 +86,7 @@ namespace UnityEngine.UIElements
         /// Maximum value.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public float highValue
         {
             get { return slider.highValue; }
@@ -167,6 +104,7 @@ namespace UnityEngine.UIElements
         /// Direction of this scrollbar.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public SliderDirection direction
         {
             get { return resolvedStyle.flexDirection == FlexDirection.Row ? SliderDirection.Horizontal : SliderDirection.Vertical; }
@@ -191,6 +129,23 @@ namespace UnityEngine.UIElements
                 }
                 if (previous != slider.direction)
                     NotifyPropertyChanged(directionProperty);
+            }
+        }
+
+        /// <summary>
+        /// Value that defines the slider position. It lies between <see cref="lowValue"/> and <see cref="highValue"/>.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public float value
+        {
+            get { return slider.value; }
+            set
+            {
+                var previous = slider.value;
+                slider.value = value;
+                if (!Mathf.Approximately(previous, slider.value))
+                    NotifyPropertyChanged(valueProperty);
             }
         }
 
@@ -248,7 +203,7 @@ namespace UnityEngine.UIElements
             // Add children in correct order
             slider = new ScrollerSlider(lowValue, highValue, direction, kDefaultPageSize) {name = "unity-slider", viewDataKey = "Slider"};
             slider.AddToClassList(sliderUssClassNameUnique);
-            slider.RegisterValueChangedCallback(OnSliderValueChange);
+            Callbacks.OnSliderValueChanged.Register(slider);
 
             lowButton = new RepeatButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { name = "unity-low-button" };
             lowButton.AddToClassList(lowButtonUssClassNameUnique);
@@ -311,6 +266,13 @@ namespace UnityEngine.UIElements
         public void ScrollPageDown(float factor)
         {
             value += factor * (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
+        }
+
+        private static class Callbacks
+        {
+            public static readonly EventCallbackDefinition<Slider> OnSliderValueChanged =
+                EventCallback.Create<ChangeEvent<float>, Slider>(static (e, slider) =>
+                    slider.GetFirstAncestorOfType<Scroller>()?.OnSliderValueChange(e));
         }
     }
 }

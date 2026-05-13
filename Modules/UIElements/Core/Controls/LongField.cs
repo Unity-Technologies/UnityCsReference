@@ -20,18 +20,6 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         LongInput longInput => (LongInput)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<long>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<long>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new LongField();
-        }
-
         /// <summary>
         /// Converts the given long integer to a string.
         /// </summary>

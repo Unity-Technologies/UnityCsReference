@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
@@ -19,7 +17,8 @@ namespace UnityEditor.Search
     /// <summary>
     /// Makes a field to receive any object type.
     /// </summary>
-    public class ObjectField : BaseField<Object>
+    [UxmlElement]
+    public partial class ObjectField : BaseField<Object>
     {
         [Obsolete("Use singleLineHeight instead. (UnityUpgradable) -> singleLineHeight", error: true)] // 2022.2
         public static float kSingleLineHeight => singleLineHeight;
@@ -31,37 +30,11 @@ namespace UnityEditor.Search
             }
         }
 
-        [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
+        [UxmlAttribute]
+        private string type
         {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Object>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(type), "type", typeof(Object)),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, UxmlTypeReference(typeof(Object))] string type;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags type_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new ObjectField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(type_UxmlAttributeFlags))
-                {
-                    var e = (ObjectField)obj;
-                    e.objectType = UxmlUtility.ParseType(type, typeof(Object));
-                }
-            }
+            get => objectType?.FullName;
+            set => objectType = UxmlUtility.ParseType(value, typeof(Object));
         }
 
         public override void SetValueWithoutNotify(Object newValue)

@@ -50,8 +50,12 @@ internal static class FieldAffordanceController
 
             if (styleSheet != null && value.uxmlValue.inlineProperty.TryGetVariableReference(styleSheet, out var variableName))
             {
-                fieldAffordanceData.inlineValue = variableName;
-                fieldAffordanceData.variableSheet = value.selector.sheet ?? styleSheet;
+                var varInfo = StyleVariableUtility.FindVariable(element, variableName, false);
+                if (varInfo.IsValid())
+                {
+                    fieldAffordanceData.inlineValue = variableName;
+                    fieldAffordanceData.variableSheet = varInfo.Sheet;
+                }
             }
         }
         else if (value.uxmlValue.isInlined && contextType == StyleDiff.ContextType.VisualElement)

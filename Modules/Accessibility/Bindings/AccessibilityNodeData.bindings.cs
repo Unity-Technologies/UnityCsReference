@@ -13,33 +13,34 @@ namespace UnityEngine.Accessibility
     /// Options for defining the role of an <see cref="AccessibilityNode"/> to screen readers.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// You can use the values in this enumeration to set the <see cref="AccessibilityNode.role"/>. This property
     /// assigns a semantic meaning to the accessibility node, which informs screen readers how to interact with it and
     /// announce its purpose appropriately.
-    ///\\ 
-    ///\\ 
+    /// </para>
+    /// <para>
     /// Setting accurate roles improves the usability and user experience of your user interface by enabling the screen
     /// reader to set clear expectations for the user. A missing role can block the user from interacting with your
     /// application, and an incorrect role can cause confusion and frustration.
-    ///\\ 
-    ///\\ 
+    /// </para>
+    /// <para>
     /// If the visual element that the node represents has a role that is not covered by any of the enumeration options,
     /// use the default value, <see cref="AccessibilityRole.None"/>, and provide information about the node's purpose
     /// and behavior in properties such as the <see cref="AccessibilityNode.label"/> and
     /// <see cref="AccessibilityNode.hint"/>.
+    /// </para>
+    /// <para>
+    /// SA:
+    ///
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
+    /// </para>
     /// </remarks>
     /// <example>
     /// The following example demonstrates assigning an [[AccessibilityRole]] to a UI element based on its
     /// [[UIElements.VisualElement]] type.
     /// <code source="../Tests/AccessibilityExamples/Assets/Examples/AccessibilityManager.cs"/>
     /// </example>
-    /// <remarks> 
-    /// SA:
-    ///\\
-    ///\\
-    ///- [[wiki:accessibility|Accessibility for mobile applications]]
-    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
-    /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     public enum AccessibilityRole : byte
     {
@@ -199,6 +200,9 @@ namespace UnityEngine.Accessibility
         /// <see cref="AccessibilityNode.decremented"/> events to perform an appropriate action when the user increases
         /// or decreases the node's value, such as changing the value of the slider represented by the node. On Windows,
         /// these events are only triggered for nodes whose <see cref="AccessibilityNode.value"/> contains a number.
+        /// \\
+        /// On Windows, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the slider
+        /// represented by the node when the user navigates to it, so that it can receive keyboard input.
         /// </remarks>
         Slider,
 
@@ -230,15 +234,15 @@ namespace UnityEngine.Accessibility
         /// Apply this role to parent <see cref="AccessibilityNode"/> elements to enable smoother and more efficient
         /// screen reader navigation.
         ///\\
-        ///\\ 
+        ///\\
         /// **When to use**
         ///\\
-        ///\\ 
+        ///\\
         /// You can use this role to organize complex interfaces. For example, you can represent a tab bar as a
         /// container node with multiple tabs as child nodes. This allows users to navigate between tabs without having
         /// to navigate through all the other elements on the screen.
         ///\\
-        ///\\ 
+        ///\\
         /// This role is especially useful in:
         ///\\
         ///\\
@@ -250,27 +254,27 @@ namespace UnityEngine.Accessibility
         ///\\
         /// **Android behavior**
         ///\\
-        ///\\ 
+        ///\\
         /// Container nodes themselves are not directly focusable, but they do provide the screen reader with key
         /// information that enhances navigation:
         ///\\
-        ///\\ 
+        ///\\
         ///- They enable container navigation, which can be activated through the "Containers" &lt;a href="https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls" &gt;reading control&lt;/a&gt; in TalkBack. In this navigation mode, users can move from one container to the next without having to navigate through all the nodes in between.
         ///- Starting with Android 14 (API level 34), the screen reader may announce when the user enters or exits a container.
         ///\\
         /// To ensure proper announcements, container nodes must have a <see cref="AccessibilityNode.label"/> set.
         ///\\
-        ///\\ 
+        ///\\
         /// Setting <see cref="AccessibilityNode.isActive"/> on a container node has no effect.
         ///\\
-        ///\\ 
+        ///\\
         /// **iOS behavior**
         ///\\
-        ///\\ 
+        ///\\
         /// Container nodes are not directly focusable during standard screen reader navigation (called flat navigation
         /// on iOS), but they provide essential context for the screen reader:
         ///\\
-        ///\\ 
+        ///\\
         ///- They enable container navigation, which can be activated through the "Containers" control in the &lt;a href="https://support.apple.com/en-us/111796" &gt;VoiceOver rotor&lt;/a&gt;. As on Android, this navigation mode allows users to navigate efficiently between containers.
         ///- They enable &lt;a href="https://support.apple.com/en-us/guide/iphone/iphfa3d32c50/ios#:~:text=Use%20flat%20or%20grouped%20navigation" &gt;grouped navigation&lt;/a&gt;, which can be accessed through the "Navigation Style" control in the VoiceOver rotor. In grouped navigation, container nodes are focusable. When navigating sequentially, the screen reader focuses on the container node directly instead of focusing on its child nodes. To navigate through the container's child nodes, the user must move into the container by performing a dedicated gesture. Once in a container, the user must first move out of it to navigate to nodes outside of the container. This navigation style is particularly useful in complex interfaces, where it simplifies and speeds up navigation.
         ///- In flat navigation, the screen reader announces the container node's label when the user enters the container by focusing on any of its child nodes. In grouped navigation, the screen reader announces the container node both when entering and when exiting it.
@@ -281,25 +285,25 @@ namespace UnityEngine.Accessibility
         ///\\
         /// Setting <see cref="AccessibilityNode.isActive"/> on a container node has no effect.
         ///\\
-        ///\\ 
+        ///\\
         /// **macOS behavior**
         ///\\
         ///\\
         /// As opposed to Android and iOS, container nodes are focusable in standard screen reader navigation on macOS.
         ///\\
-        ///\\  
+        ///\\
         /// As in the grouped navigation style on iOS, the screen reader focuses on the container node directly instead
         /// of focusing on its child nodes. To access the container's child nodes, the user must move into the container
         /// by using a dedicated VoiceOver command. Once in a container, the user must first move out of it to navigate
         /// to sibling nodes or other parts of the hierarchy. This navigation style is useful for the user because it
         /// streamlines navigation in complex interfaces specific to desktop applications.
         ///\\
-        ///\\ 
+        ///\\
         /// This navigation style is available for any parent nodes, even if they do not have this role set. However,
         /// setting this role allows the screen reader to announce the node as a "group" and provide instructions on how
         /// to interact with its child nodes.
         ///\\
-        ///\\  
+        ///\\
         /// The screen reader announces when the user enters or exits any kind of parent node. When moving into it, the
         /// screen reader also announces the number of its child nodes.
         ///\\
@@ -307,20 +311,20 @@ namespace UnityEngine.Accessibility
         /// Container nodes may be listed in the "Window Spots" menu of the
         /// &lt;a href="https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac" &gt;VoiceOver rotor&lt;/a&gt;.
         ///\\
-        ///\\  
+        ///\\
         /// Setting other roles on a parent node may result in unintended screen reader behavior.
         ///\\
-        ///\\  
+        ///\\
         /// For proper functionality, container nodes must have a <see cref="AccessibilityNode.label"/> set.
         ///\\
-        ///\\  
+        ///\\
         /// Unlike on Android and iOS, setting <see cref="AccessibilityNode.isActive"/> to @@false@@ on a container node
         /// deactivates both the node itself and its child nodes.
         ///\\
-        ///\\  
+        ///\\
         /// **Windows behavior**
         ///\\
-        ///\\  
+        ///\\
         /// Container nodes are not directly focusable, but they do provide the screen reader with key information that
         /// enhances navigation.
         ///\\
@@ -329,7 +333,7 @@ namespace UnityEngine.Accessibility
         /// <see cref="AccessibilityNode.label"/> set, the screen reader announces its label and role (as a "group")
         /// when the user enters the container by focusing on any of its child nodes.
         ///\\
-        ///\\  
+        ///\\
         /// Setting <see cref="AccessibilityNode.isActive"/> on a container node has no effect on its child nodes.
         /// </remarks>
         Container,
@@ -356,21 +360,21 @@ namespace UnityEngine.Accessibility
         /// <remarks>
         /// **Platform-specific behavior**
         ///\\
-        ///\\ 
+        ///\\
         ///- **Android**: If this role is set on a node, the screen reader announces the node as a "dropdown list". After a short pause, it provides instructions on how to open it.
         ///- **iOS**: This role has no effect.
-        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "pop up button". Aftera short pause, it provides instructions on how to open it. If the node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing the node's label. Otherwise, it reads "collapsed".
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "pop up button". After a short pause, it provides instructions on how to open it. If the node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing the node's label. Otherwise, it reads "collapsed".
         ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "combo box". If the node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing the node's label. Otherwise, it reads "collapsed".
         ///\\
         /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
         /// be activated, and perform an appropriate action when the user activates it, such as opening the dropdown
         /// represented by the node.
         ///\\
-        ///\\ 
+        ///\\
         /// For proper functionality, a dropdown's child nodes must have <see cref="AccessibilityRole.Button"/> or
         /// <see cref="AccessibilityRole.Toggle"/> assigned.
         ///\\
-        ///\\ 
+        ///\\
         /// Set <see cref="AccessibilityState.Selected"/> on the child node representing the selected option to inform
         /// the screen reader of which option is currently selected.
         /// </remarks>
@@ -382,7 +386,7 @@ namespace UnityEngine.Accessibility
         /// <remarks>
         /// **Platform-specific behavior**
         ///\\
-        ///\\ 
+        ///\\
         ///- **Android**: If this role is set on a node, the screen reader announces the node as a "button". After a short pause, it provides instructions on how to activate the node.
         ///- **iOS**: If this role is set on a node and the node's parent has <see cref="AccessibilityRole.TabBar"/> set, the screen reader announces the node as a "tab". Otherwise, it announces the node as a "button".
         ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "tab". After a short pause, it provides instructions on how to select the node. If the node's parent has <see cref="AccessibilityRole.TabBar"/> set, the screen reader also announces the tab's position in the tab bar and the total number of tabs in it.
@@ -395,7 +399,7 @@ namespace UnityEngine.Accessibility
         /// If the tab represented by the tab button node is selected, assign <see cref="AccessibilityState.Selected"/>
         /// to the node to inform the screen reader of which tab is currently selected.
         ///\\
-        ///\\ 
+        ///\\
         /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
         /// be activated, and perform an appropriate action when the user activates it, such as selecting the tab
         /// represented by the node.
@@ -409,10 +413,10 @@ namespace UnityEngine.Accessibility
         /// Scroll view nodes are specialized container nodes. Refer to <see cref="AccessibilityRole.Container"/> for
         /// platform-specific screen reader behavior that is common to both container and scroll view nodes.
         ///\\
-        ///\\ 
+        ///\\
         /// **Platform behavior specific to this role**
         ///\\
-        ///\\ 
+        ///\\
         ///- **Android**: This role does not affect the node's announcement but provides the screen reader with semantic information about the node.
         ///- **iOS**: This role does not have any additional effect compared to <see cref="AccessibilityRole.Container"/>.
         ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "scroll area".
@@ -428,20 +432,22 @@ namespace UnityEngine.Accessibility
     /// Options for defining the state of an <see cref="AccessibilityNode"/> to screen readers.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// You can use the values in this enumeration to set the <see cref="AccessibilityNode.state"/>. This property
     /// enables screen readers to describe the state of interactive elements, such as whether a checkbox is checked or
     /// whether a button is disabled.
-    ///\\
-    ///\\ 
+    /// </para>
+    /// <para>
     /// If the visual element that the node represents has a state that is not represented by an enumeration option, use
     /// the default value, <see cref="AccessibilityState.None"/>, and provide information about the node's current state
     /// in properties such as the <see cref="AccessibilityNode.value"/> and <see cref="AccessibilityNode.hint"/>.
-    /// </remarks>
-    /// <remarks>
+    /// </para>
+    /// <para>
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
     ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
+    /// </para>
     /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     [Flags]
@@ -470,7 +476,7 @@ namespace UnityEngine.Accessibility
         /// restrict its actions in your accessibility event handlers (for example, return @@false@@ in your event
         /// handler for <see cref="AccessibilityNode.invoked"/>).
         ///\\
-        ///\\  
+        ///\\
         /// **Platform-specific behavior**
         ///\\
         ///- **Android**: If this role is set on a node, the screen reader announces the node as "disabled".
@@ -497,8 +503,8 @@ namespace UnityEngine.Accessibility
         ///\\
         /// For nodes with the role <see cref="AccessibilityRole.Toggle"/>, see that role's documentation.
         ///\\
-        ///\\ 
-        /// **Notes**:
+        ///\\
+        /// **Notes**
         ///
         ///- On macOS, this state is only supported for nodes with the role <see cref="AccessibilityRole.Button"/>, <see cref="AccessibilityRole.Toggle"/> or <see cref="AccessibilityRole.Dropdown"/>.
         ///- On Windows, this state is only supported for nodes with the role <see cref="AccessibilityRole.Button"/> or <see cref="AccessibilityRole.Toggle"/>
@@ -513,10 +519,10 @@ namespace UnityEngine.Accessibility
         /// If this role is set on a node with the role <see cref="AccessibilityRole.Dropdown"/>, the screen reader
         /// announces the node as "expanded". Otherwise, it announces the node as "collapsed".
         ///\\
-        ///\\  
+        ///\\
         /// **Notes**
         ///\\
-        ///\\ 
+        ///\\
         ///- This state is only supported for nodes with the role <see cref="AccessibilityRole.Dropdown"/>.
         ///- On macOS, if the role <see cref="AccessibilityRole.Dropdown"/> is unset from a node, the screen reader continues to announce the expanded/collapsed state of the node if its new role is compatible with this state. This is a platform limitation.
         ///\\
@@ -529,14 +535,16 @@ namespace UnityEngine.Accessibility
     /// Describes the direction of a scrolling action.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The values in this enumeration are used by the <see cref="AccessibilityNode.scrolled"/> event, which is sent
     /// when a screen reader user performs a scrolling action.
-    /// </remarks>
-    /// <remarks>
+    /// </para>
+    /// <para>
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
     ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
+    /// </para>
     /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     public enum AccessibilityScrollDirection : byte

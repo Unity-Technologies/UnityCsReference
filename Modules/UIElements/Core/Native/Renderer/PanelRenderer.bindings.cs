@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
     /// The following example uses the Panel Renderer component to display a runtime UI in a scene:
     /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/SimpleRuntimeUI.cs"/>
     /// </example>
+    [HelpURL("ui-systems/panel-renderer-component")]
     [AddComponentMenu("UI Toolkit/Panel Renderer (UI Toolkit)")]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
     public sealed class PanelRenderer : Renderer, IPanelComponent
@@ -119,14 +120,35 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="panelRenderer">The PanelRenderer in which the UI was reloaded.</param>
         /// <param name="rootElement">The root visual element that was reloaded in the PanelRenderer.</param>
+        [Obsolete("This callback type is deprecated. Use VersionedUIReloadCallback instead, which provides a version number so the callback can skip redundant work when the UI has not actually changed.")]
         public delegate void UIReloadCallback(PanelRenderer panelRenderer, VisualElement rootElement);
 
+        /// <summary>
+        /// Callback type for UI reload events.
+        /// </summary>
+        /// <param name="panelRenderer">The PanelRenderer in which the UI was reloaded.</param>
+        /// <param name="rootElement">The root visual element that was reloaded in the PanelRenderer.</param>
+        /// <param name="version">The version of the UI that was reloaded.</param>
+        public delegate void VersionedUIReloadCallback(PanelRenderer panelRenderer, VisualElement rootElement, int version);
+
+#pragma warning disable CS0618
         private UIReloadCallback m_OnUIReloadCallback;
+#pragma warning restore CS0618
+
+        private VersionedUIReloadCallback m_OnVersionedUIReloadCallback;
+
+        // Start UI version at 1 so that users can rely on version 0 being "not initialized".
+        private int m_UIVersion = 1;
 
         /// <summary>
         /// Registers a callback to be invoked when the UI is reloaded.
         /// </summary>
         /// <param name="callback">The callback to register.</param>
+        /// <remarks>
+        /// This overload is deprecated. Use <see cref="RegisterUIReloadCallback(VersionedUIReloadCallback)"/>
+        /// instead, which provides a version number so the callback can skip redundant work when the UI has not actually changed.
+        /// </remarks>
+        [Obsolete("Use RegisterUIReloadCallback(VersionedUIReloadCallback) instead, which provides a version number so the callback can skip redundant work when the UI has not actually changed.")]
         public void RegisterUIReloadCallback(UIReloadCallback callback)
         {
             if (callback == null)
@@ -135,19 +157,61 @@ namespace UnityEngine.UIElements
             m_OnUIReloadCallback += callback;
 
             if (rootVisualElement != null)
+            {
                 callback(this, rootVisualElement);
+            }
+        }
+
+        /// <summary>
+        /// Registers a versioned callback to be invoked when the UI is reloaded.
+        /// </summary>
+        /// <param name="callback">The callback to register.</param>
+        /// <remarks>
+        /// This callback will be invoked immediately if the root VisualElement is already initialized, and then
+        /// every time the UI is reloaded afterwards. Use the version parameter to check if the root VisualElement was
+        /// actually reloaded since the last time the callback was invoked.
+        /// </remarks>
+        /// <example>
+        /// The following example registers a versioned callback to initialize the UI. If the component is repeatedly disabled an
+        /// re-enabled, the callback version will stay the same. So, the callback can safely skip the initialization logic after the first time.
+        /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/VersionedPanelRendererCallback.cs"/>
+        /// </example>
+        public void RegisterUIReloadCallback(VersionedUIReloadCallback callback)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            m_OnVersionedUIReloadCallback += callback;
+
+            if (rootVisualElement != null)
+            {
+                callback(this, rootVisualElement, m_UIVersion);
+            }
         }
 
         /// <summary>
         /// Unregisters a previously registered UI reload callback.
         /// </summary>
         /// <param name="callback">The callback to unregister.</param>
+        [Obsolete("Use UnregisterUIReloadCallback(VersionedUIReloadCallback) instead.")]
         public void UnregisterUIReloadCallback(UIReloadCallback callback)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
             m_OnUIReloadCallback -= callback;
+        }
+
+        /// <summary>
+        /// Unregisters a previously registered versioned UI reload callback.
+        /// </summary>
+        /// <param name="callback">The callback to unregister.</param>
+        public void UnregisterUIReloadCallback(VersionedUIReloadCallback callback)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            m_OnVersionedUIReloadCallback -= callback;
         }
 
         extern private ScriptableObject nativePanelSettings { get; set; }
@@ -208,6 +272,7 @@ namespace UnityEngine.UIElements
         float IPanelComponent.sortingOrder => ((Renderer)this).sortingOrder;
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
+        bool IPanelComponent.GetComponentEnabled() => this.enabled;
 
         Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
         {
@@ -416,10 +481,6 @@ namespace UnityEngine.UIElements
                 return;
 
             bool visualTreeAssetChanged = visualTreeAsset != previousVisualTreeAsset;
-            previousVisualTreeAsset = visualTreeAsset;
-            previousPanelSettings = panelSettings;
-            isAssetDirty = false;
-
             InitRootVisualElement(visualTreeAssetChanged);
         }
 
@@ -460,7 +521,17 @@ namespace UnityEngine.UIElements
 
                 requiresReinsertion = true;
 
-                m_OnUIReloadCallback?.Invoke(this, rootVisualElement);
+                // Increase the version to let users know they should re-initialize their UIs.
+                ++m_UIVersion;
+
+                if (m_OnUIReloadCallback != null)
+                {
+                    m_OnUIReloadCallback.Invoke(this, rootVisualElement);
+                }
+                if (m_OnVersionedUIReloadCallback != null)
+                {
+                    m_OnVersionedUIReloadCallback.Invoke(this, rootVisualElement, m_UIVersion);
+                }
             }
             else
             {
@@ -470,6 +541,10 @@ namespace UnityEngine.UIElements
             firstChildInsertIndex = rootVisualElement.hierarchy.childCount;
 
             SetupRootClassList();
+
+            previousVisualTreeAsset = visualTreeAsset;
+            previousPanelSettings = panelSettings;
+            isAssetDirty = false;
         }
 
         internal void SetupFromHierarchy()
@@ -840,7 +915,12 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern UIAnimationBinder GetAnimationBinder();
 
-        // This will create it if it doen't already exists. Should only be used from tests
+        // Creates the binder if it does not exist yet. The native animation pipeline calls
+        // this when AnimationUtility queries animatable bindings on a PanelRenderer; the
+        // authoring module mirrors that behaviour when probing recordability so that
+        // newly-created panels answer the "can I record?" question deterministically
+        // instead of depending on lazy binder creation.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern UIAnimationBinder GetOrCreateAnimationBinder();
 
         [NativeMethod("RegisterPanelRendererAnimationBinding")]
@@ -854,7 +934,7 @@ namespace UnityEngine.UIElements
 
             if(binder != null)
             {
-                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false));
+                RegisterUIReloadCallback((pr, root, version) => binder.RegisterRootDocument(root, false));
             }
         }
 

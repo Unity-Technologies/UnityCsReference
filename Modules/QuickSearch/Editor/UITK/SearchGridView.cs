@@ -233,6 +233,7 @@ namespace UnityEditor.Search
                 m_GridView.fixedItemHeight = m_ViewModel.itemIconSize + m_LabelHeight;
                 m_GridView.fixedItemWidth = m_ViewModel.itemIconSize;
                 m_GridView.Rebuild();
+                SetSelectionWithoutNotify(m_ViewModel.selection);
             }
         }
 

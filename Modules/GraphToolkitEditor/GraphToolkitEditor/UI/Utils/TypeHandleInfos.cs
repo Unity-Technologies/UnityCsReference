@@ -69,12 +69,12 @@ namespace Unity.GraphToolkit.Editor
                     return "Unknown";
                 }
 
-                if (typeName == TypeHandle.Untyped.Identification)
+                if (resolvedType == typeof(Untyped))
                 {
                     return "Untyped";
                 }
 
-                if (typeName == TypeHandle.Subgraph.Identification)
+                if (resolvedType == typeof(GraphToolkit.Subgraph))
                 {
                     return "Subgraph";
                 }

@@ -260,8 +260,7 @@ namespace UnityEditorInternal
             for (var i = 0; i < item.children.Count; ++i)
             {
                 var childItem = item.children[i];
-                // Inlining !IsChildListForACollapsedParent without childList.Count == 1 check, as we only create list if we have children
-                if (childItem != null && childItem.children != null && childItem.children[0] != null)
+                if (childItem != null && childItem.children != null && childItem.children.Count > 0 && !IsChildListForACollapsedParent(childItem.children))
                 {
                     var subHierarchy = new ExpandedMarkerIdHierarchy();
                     if (expandedHierarchy.expandedMarkers == null)
@@ -425,7 +424,7 @@ namespace UnityEditorInternal
                 proxySelectionInfo = default;
                 var deepestPath = m_CachedDeepestRawSampleIndexPath.Count;
 
-                if (finalRawSampleIndex >= 0 || allowProxySelection && deepestPath > 0)
+                if (finalRawSampleIndex >= 0 || allowProxySelection)
                 {
                     // if a valid raw index was found, find the corresponding HierarchyView Sample id next:
                     newSelectedId = GetItemIdFromRawFrameDataIndexPath(m_FrameDataView, m_CachedDeepestRawSampleIndexPath, out deepestPath, out selectedItemsPathIsExpanded);
@@ -483,6 +482,8 @@ namespace UnityEditorInternal
             var newSelectedId = rootItemId;
             var deepestPath = deepestRawSampleIndexPathFound.Count;
             var invertedHierarchy = frameDataView.viewMode.HasFlag(HierarchyFrameDataView.ViewModes.InvertHierarchy);
+            var shouldHide0ms = EditorPrefs.GetBool(CPUOrGPUProfilerModule.k_Hide0msSamplesPrefKey);
+            var foundHiddenSample = false;
 
             for (int markerDepth = 0; markerDepth < deepestPath; markerDepth++)
             {
@@ -501,6 +502,13 @@ namespace UnityEditorInternal
                         var rawSampleIndex = invertedHierarchy ? deepestRawSampleIndexPathFound[deepestPath - markerDepth - 1] : deepestRawSampleIndexPathFound[markerDepth];
                         if (frameDataView.ItemContainsRawFrameDataViewIndex(childId, rawSampleIndex))
                         {
+                            if (shouldHide0ms && ShouldHideItem(childId))
+                            {
+                                deepestPath = markerDepth;
+                                foundHiddenSample = true;
+                                break;
+                            }
+
                             // check if the parent is expanded
                             if (selectedItemsPathIsExpanded && !IsExpanded(newSelectedId))
                                 selectedItemsPathIsExpanded = false;
@@ -510,6 +518,9 @@ namespace UnityEditorInternal
                         }
                     }
                 }
+
+                if (foundHiddenSample)
+                    break;
 
                 // Pick up the first match in the Inverted hierarchy mode as it is the deepest one already.
                 if (invertedHierarchy)
@@ -665,6 +676,7 @@ namespace UnityEditorInternal
                 throw new ArgumentException("Invalid search: cannot be null or empty", "search");
 
             const int kItemDepth = 0; // tree is flattened when searching
+            var shouldHide0ms = EditorPrefs.GetBool(CPUOrGPUProfilerModule.k_Hide0msSamplesPrefKey);
 
             var stack = new Stack<int>();
             m_FrameDataView.GetItemChildren(searchFromThis.id, m_ReusableChildrenIds);
@@ -674,6 +686,9 @@ namespace UnityEditorInternal
             while (stack.Count > 0)
             {
                 var current = stack.Pop();
+
+                if (shouldHide0ms && ShouldHideItem(current))
+                    continue;
 
                 // Matches search?
                 var functionName = m_ProfilerSampleNameProvider.GetItemName(m_FrameDataView, current);
@@ -756,12 +771,63 @@ namespace UnityEditorInternal
             return new FrameDataTreeViewItem(m_FrameDataView, id, depth, parent);
         }
 
+        bool ShouldHideItem(int itemId)
+        {
+            // EditorPrefs.GetBool("Hide0msSamples") is checked outside this call to prevent fetching every sample
+            if (m_ProfilerSampleNameProvider is CPUOrGPUProfilerModule module)
+            {
+                var threshold = module.GetZeroSampleThresholdMs();
+                var column = module.GetZeroSampleTimeColumn();
+                var timeMs = m_FrameDataView.GetItemColumnDataAsFloat(itemId, column);
+                return timeMs < threshold;
+            }
+            return false;
+        }
+
+        internal bool IsProxySampleHiddenByFilter(ProxySelection proxy)
+        {
+            if (!proxy.hasProxySelection || m_FrameDataView == null || !m_FrameDataView.valid || !EditorPrefs.GetBool(CPUOrGPUProfilerModule.k_Hide0msSamplesPrefKey) || !(m_ProfilerSampleNameProvider is CPUOrGPUProfilerModule module))
+                return false;
+
+            var threshold = module.GetZeroSampleThresholdMs();
+            var column = module.GetZeroSampleTimeColumn();
+
+            using (var rawFrameDataView = new RawFrameDataView(m_FrameDataView.frameIndex, m_FrameDataView.threadIndex))
+            {
+                if (!rawFrameDataView.valid)
+                    return false;
+
+                var markerIdPath = new List<int>(proxy.nonProxySampleStack.Count);
+                for (int i = 0; i < proxy.nonProxySampleStack.Count; i++)
+                {
+                    var markerId = rawFrameDataView.GetMarkerId(proxy.nonProxySampleStack[i]);
+                    markerIdPath.Add(markerId);
+                }
+
+                var name = proxy.nonProxyName;
+                var longestMatchingPath = new List<int>();
+                var rawSampleIndex = ProfilerTimelineGUI.FindFirstSampleThroughMarkerPath(
+                    rawFrameDataView, m_ProfilerSampleNameProvider,
+                    markerIdPath, proxy.nonProxySampleStack.Count, ref name,
+                    longestMatchingPath: longestMatchingPath);
+
+                if (rawSampleIndex >= 0)
+                {
+                    var timeMs = rawFrameDataView.GetSampleTimeMs(rawSampleIndex);
+                    return timeMs < threshold;
+                }
+            }
+
+            return false;
+        }
+
         void AddAllChildren(FrameDataTreeViewItem parent, ExpandedMarkerIdHierarchy parentExpandedHierararchy, IList<TreeViewItem> newRows, List<int> newExpandedIds)
         {
             m_ReusableVisitList.AddFirst(AcquireTreeTraversalStateNode(parent, parentExpandedHierararchy));
 
             // Depth-first traversal.
             // Think of it as an unrolled recursion where stack state is defined by TreeTraversalState.
+            var shouldHide0ms = EditorPrefs.GetBool(CPUOrGPUProfilerModule.k_Hide0msSamplesPrefKey);
             while (m_ReusableVisitList.First != null)
             {
                 var currentItem = m_ReusableVisitList.First.Value.item;
@@ -786,6 +852,22 @@ namespace UnityEditorInternal
                 m_FrameDataView.GetItemChildren(currentItem.id, m_ReusableChildrenIds);
                 var childrenCount = m_ReusableChildrenIds.Count;
                 if (childrenCount == 0)
+                    continue;
+
+                bool allChildrenHidden = false;
+                if(shouldHide0ms)
+                {
+                    allChildrenHidden = true;
+                    for(int i = 0; i < childrenCount; i++)
+                    {
+                        if(!ShouldHideItem(m_ReusableChildrenIds[i]))
+                        {
+                            allChildrenHidden = false;
+                            break;
+                        }
+                    }
+                }
+                if(allChildrenHidden)
                     continue;
 
                 if (currentItemDepth != ProfilerFrameDataHierarchyView.invalidTreeViewDepth)
@@ -845,7 +927,12 @@ namespace UnityEditorInternal
 
                 for (var i = 0; i < childrenCount; ++i)
                 {
-                    var child = AcquireFrameDataTreeViewItem(m_FrameDataView, m_ReusableChildrenIds[i], currentItemDepth + 1, currentItem);
+                    var childId = m_ReusableChildrenIds[i];
+
+                    if (shouldHide0ms && ShouldHideItem(childId))
+                        continue;
+
+                    var child = AcquireFrameDataTreeViewItem(m_FrameDataView, childId, currentItemDepth + 1, currentItem);
                     currentItemChildren.Add(child);
                 }
 

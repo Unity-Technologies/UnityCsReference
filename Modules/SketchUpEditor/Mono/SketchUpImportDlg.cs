@@ -271,8 +271,16 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        internal static int[] LaunchAsModal(SketchUpNodeInfo[] nodes)
+        internal static int[] LaunchAsModal(IntPtr nativeNodesPtr)
         {
+            if (nativeNodesPtr == IntPtr.Zero)
+                return null;
+
+            // Bindings layer marshals core::vector<SketchUpNodeInfo> -> SketchUpNodeInfo[]
+            // (the non-blittable element type contains a managed string field, so we
+            // cannot pin and write it from native; do the marshalling in managed code).
+            SketchUpNodeInfo[] nodes = SketchUpNodeInfo.GetNodesFromNativePtr(nativeNodesPtr);
+
             SketchUpImportDlg win = EditorWindow.GetWindowDontShow<SketchUpImportDlg>();
             win.Init(nodes, null);
             win.isModal = true;

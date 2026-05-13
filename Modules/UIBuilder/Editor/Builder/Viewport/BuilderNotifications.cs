@@ -8,7 +8,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderNotifications : VisualElement
+    [UxmlElement]
+    partial class BuilderNotifications : VisualElement
     {
         public struct NotificationItem
         {
@@ -46,12 +47,6 @@ namespace Unity.UI.Builder
         private const string k_BuilderWarningNotificationEntryClassName = k_BuilderNotificationEntryClassName + "__warning";
         private const string k_NotificationEntryVTAPath =
             BuilderConstants.UIBuilderPackagePath + "/BuilderNotificationEntry.uxml";
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderNotifications();
-        }
 
         public List<NotificationItem> items { get; } = new();
 

@@ -14,51 +14,6 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/SliderInt.png")]
     public partial class SliderInt : BaseSlider<int>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseSlider<int>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseSlider<int>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(pageSize), "page-size"),
-                    new(nameof(showInputField), "show-input-field"),
-                    new(nameof(direction), "direction"),
-                    new(nameof(inverted), "inverted"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] float pageSize;
-            [SerializeField] SliderDirection direction;
-            [SerializeField] bool showInputField;
-            [SerializeField] bool inverted;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pageSize_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showInputField_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags inverted_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new SliderInt();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (SliderInt)obj;
-                if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
-                    e.direction = direction;
-                if (ShouldWriteAttributeValue(pageSize_UxmlAttributeFlags))
-                    e.pageSize = pageSize;
-                if (ShouldWriteAttributeValue(showInputField_UxmlAttributeFlags))
-                    e.showInputField = showInputField;
-                if (ShouldWriteAttributeValue(inverted_UxmlAttributeFlags))
-                    e.inverted = inverted;
-            }
-        }
-
         internal const int kDefaultHighValue = 10;
 
         /// <summary>

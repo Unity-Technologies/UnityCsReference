@@ -2,33 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal sealed class BorderColorFoldout : StyleFoldoutField<ColorField>
+    [UxmlElement]
+    internal sealed partial class BorderColorFoldout : StyleFoldoutField<ColorField>
     {
         static readonly string k_FieldClassName = FoldoutFieldPropertyName + "__color-field";
         static readonly string k_MixedValueLineClassName = FoldoutFieldPropertyName + "__mixed-value-line";
         internal static readonly string internalColorFieldName = "unity-internal-color-field";
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleFoldoutField<ColorField>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleFoldoutField<ColorField>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new BorderColorFoldout();
-        }
 
         const string k_TopPropertyName = "borderTopColor";
         const string k_RightPropertyName = "borderRightColor";

@@ -94,6 +94,8 @@ namespace UnityEngine.UIElements
         private bool m_Dirty;
         private BindingUpdateTrigger m_UpdateTrigger;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [UxmlAttribute, HideInInspector, UxmlInternalField]
         internal string property
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -107,11 +109,17 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool isDirty => m_Dirty;
 
+        internal const string k_UpdateTriggerTooltip = "This informs the binding system of whether the binding object " +
+    "should be updated on every frame, when a change occurs in the source or on every frame if change detection " +
+    "is impossible, and when explicitly marked as dirty.";
+
         /// <summary>
         /// When set to <see cref="BindingUpdateTrigger.EveryUpdate"/>, the binding instance updates in every update, regardless of the
         /// data source version.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute, HideInInspector]
+        [Tooltip(k_UpdateTriggerTooltip)]
         public BindingUpdateTrigger updateTrigger
         {
             get => m_UpdateTrigger;

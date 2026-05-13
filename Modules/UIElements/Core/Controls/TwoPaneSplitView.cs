@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -14,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A SplitView that contains two resizable panes. One pane is fixed-size while the other pane has flex-grow style set to 1 to take all remaining space. The border between the panes is draggable to resize both panes. Both horizontal and vertical modes are supported. Requires exactly two child elements to operate.
     /// </summary>
     [Icon("UIToolkit/Icons/TwoPaneSplitView.png")]
+    [UxmlElement]
     public partial class TwoPaneSplitView : VisualElement
     {
         internal static readonly BindingId fixedPaneIndexProperty = nameof(fixedPaneIndex);
@@ -34,45 +34,6 @@ namespace UnityEngine.UIElements
         static readonly UniqueStyleString s_HandleDragLineAnchorHorizontalClassName = new(handleDragLineAnchorClassName + "--horizontal");
         static readonly UniqueStyleString s_VerticalClassName = new("unity-two-pane-split-view--vertical");
         static readonly UniqueStyleString s_HorizontalClassName = new("unity-two-pane-split-view--horizontal");
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(fixedPaneIndex), "fixed-pane-index"),
-                    new(nameof(fixedPaneInitialDimension), "fixed-pane-initial-dimension"),
-                    new(nameof(orientation), "orientation"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] int fixedPaneIndex;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedPaneIndex_UxmlAttributeFlags;
-            [SerializeField] float fixedPaneInitialDimension;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedPaneInitialDimension_UxmlAttributeFlags;
-            [SerializeField] TwoPaneSplitViewOrientation orientation;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags orientation_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TwoPaneSplitView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(fixedPaneIndex_UxmlAttributeFlags) ||
-                    ShouldWriteAttributeValue(fixedPaneInitialDimension_UxmlAttributeFlags) ||
-                    ShouldWriteAttributeValue(orientation_UxmlAttributeFlags))
-                {
-                    var e = (TwoPaneSplitView)obj;
-                    e.Init(fixedPaneIndex, fixedPaneInitialDimension, orientation);
-                }
-            }
-        }
 
         VisualElement m_LeftPane;
         VisualElement m_RightPane;
@@ -113,6 +74,7 @@ namespace UnityEngine.UIElements
         /// 0 for setting first child as the fixed pane, 1 for the second child element.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public int fixedPaneIndex
         {
             get => m_FixedPaneIndex;
@@ -130,6 +92,7 @@ namespace UnityEngine.UIElements
         /// The initial width or height for the fixed pane.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public float fixedPaneInitialDimension
         {
             get => m_FixedPaneInitialDimension;
@@ -147,6 +110,7 @@ namespace UnityEngine.UIElements
         /// Orientation of the split view.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public TwoPaneSplitViewOrientation orientation
         {
             get => m_Orientation;

@@ -5,7 +5,6 @@
 using System;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;

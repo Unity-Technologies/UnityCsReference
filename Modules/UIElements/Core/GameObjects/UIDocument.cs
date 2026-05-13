@@ -471,6 +471,7 @@ namespace UnityEngine.UIElements
         }
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
+        bool IPanelComponent.GetComponentEnabled() => this.enabled;
 
         //This need to be in the implementation for code stripping reason,is duplicated in PanelRenderer
         Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)

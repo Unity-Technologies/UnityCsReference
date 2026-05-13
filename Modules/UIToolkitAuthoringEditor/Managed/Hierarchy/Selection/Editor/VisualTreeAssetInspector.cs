@@ -2,46 +2,32 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal sealed class VisualTreeAssetInspector : VisualElement
+[UxmlElement]
+internal sealed partial class VisualTreeAssetInspector : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        public override object CreateInstance()
-        {
-            return new VisualTreeAssetInspector();
-        }
-    }
+    public readonly static string AssetNotEditableMessageWhenUIStagesEnabled = L10n.Tr("UI elements are not yet editable in this view. To edit, open in context with UI Staging Mode or open the asset in the UI Builder.");
+    public readonly static string AssetNotEditableMessageWhenUIStagesDisabled = L10n.Tr("UI elements are not yet editable in this view. To edit, open the asset in the UI Builder.");
+    public static string AssetNotEditableMessage => UIToolkitAuthoringSettings.EnableUIStages ? AssetNotEditableMessageWhenUIStagesEnabled : AssetNotEditableMessageWhenUIStagesDisabled;
 
     public static readonly BindingId VisualTreeAssetProperty = nameof(VisualTreeAsset);
 
     public const string UssClass = "unity-visual-tree-asset-inspector";
     public const string HeaderUssClass = UssClass + "__header";
-    public const string OpenInBuilderUssClass = UssClass + "__open-in-builder-button";
+    public const string AssetNotEditableHelpBoxUssClass = UssClass + "__not-editable-help-box";
+    public const string AssetActionsViewUssClass = UssClass + "__asset-actions-view";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualTreeAssetInspector.uxml";
 
     private VisualTreeAsset m_VisualTreeAsset;
 
     private readonly VisualTreeAssetHeader m_Header;
-    private readonly OpenInBuilderElement m_OpenInBuilder;
+    private readonly VisualTreeAssetInspectorActionsView m_AssetActionsView;
 
     [CreateProperty]
     public VisualTreeAsset VisualTreeAsset
@@ -54,7 +40,7 @@ internal sealed class VisualTreeAssetInspector : VisualElement
             m_VisualTreeAsset = value;
 
             m_Header.VisualTreeAsset = m_VisualTreeAsset;
-            m_OpenInBuilder.VisualTreeAsset = m_VisualTreeAsset;
+            m_AssetActionsView.VisualTreeAsset = m_VisualTreeAsset;
             NotifyPropertyChanged(VisualTreeAssetProperty);
         }
     }
@@ -66,8 +52,8 @@ internal sealed class VisualTreeAssetInspector : VisualElement
         var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
         vta.CloneTree(this);
 
-        m_Header = this.Q<VisualTreeAssetHeader>(className:HeaderUssClass);
+        m_Header = this.Q<VisualTreeAssetHeader>(className: HeaderUssClass);
         m_Header.SetEnabled(false);
-        m_OpenInBuilder = this.Q<OpenInBuilderElement>(className:OpenInBuilderUssClass);
+        m_AssetActionsView = this.Q<VisualTreeAssetInspectorActionsView>(className: AssetActionsViewUssClass);
     }
 }

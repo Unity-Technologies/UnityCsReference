@@ -27,41 +27,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId isMultipleSelectionProperty = nameof(isMultipleSelection);
         internal static readonly BindingId allowEmptySelectionProperty = nameof(allowEmptySelection);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<ToggleButtonGroupState>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<ToggleButtonGroupState>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(isMultipleSelection), "is-multiple-selection"),
-                    new(nameof(allowEmptySelection), "allow-empty-selection"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool isMultipleSelection;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isMultipleSelection_UxmlAttributeFlags;
-            [SerializeField] bool allowEmptySelection;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowEmptySelection_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new ToggleButtonGroup();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (ToggleButtonGroup)obj;
-                if (ShouldWriteAttributeValue(isMultipleSelection_UxmlAttributeFlags))
-                    e.isMultipleSelection = isMultipleSelection;
-                if (ShouldWriteAttributeValue(allowEmptySelection_UxmlAttributeFlags))
-                    e.allowEmptySelection = allowEmptySelection;
-            }
-        }
-
         /// <summary>
         /// USS class name of elements for this type.
         /// </summary>
@@ -157,6 +122,7 @@ namespace UnityEngine.UIElements
         /// Whether all buttons can be selected.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool isMultipleSelection
         {
             get => m_IsMultipleSelection;
@@ -188,6 +154,7 @@ namespace UnityEngine.UIElements
         /// When the property value is false, the control will automatically set the first available button to checked.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public bool allowEmptySelection
         {
             get => m_AllowEmptySelection;

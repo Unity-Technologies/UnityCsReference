@@ -10,22 +10,11 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a field for editing an <see cref="GUID"/>.
     /// </summary>
-    public class GUIDField : TextInputBaseField<GUID>
+    [UxmlElement]
+    public partial class GUIDField : TextInputBaseField<GUID>
     {
         // This property to alleviate the fact we have to cast all the time
         GUIDInput integerInput => (GUIDInput)textInputBase;
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextInputBaseField<GUID>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextInputBaseField<GUID>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new GUIDField();
-        }
 
         /// <summary>
         /// USS class name of elements of this type.

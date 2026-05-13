@@ -16,7 +16,8 @@ namespace Unity.UI.Builder
         Camera
     };
 
-    internal class BuilderCanvas : VisualElement
+    [UxmlElement]
+    partial class BuilderCanvas : VisualElement
     {
         const string k_ActiveHandleClassName = "unity-builder-canvas--active";
         const string k_HighlightedClassName = "unity-builder-canvas--highlighted";
@@ -30,12 +31,6 @@ namespace Unity.UI.Builder
         VisualElement m_DefaultBackgroundElement;
         VisualElement m_CustomBackgroundElement;
         VisualElement m_CheckerboardBackgroundElement;
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderCanvas();
-        }
 
         public VisualElement header => m_Header;
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;

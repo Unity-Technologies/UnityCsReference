@@ -359,7 +359,7 @@ namespace Unity.UI.Builder
                 testedTypes.Add(fullTypeName);
                 var uxmlSerializedDataDesc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
 
-                // If null then it
+                // If null then it is using the old UxmlTraits system, which means it is using deprecated API.
                 if (uxmlSerializedDataDesc == null)
                     return true;
             }

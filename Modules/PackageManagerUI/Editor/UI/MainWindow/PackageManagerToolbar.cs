@@ -5,33 +5,13 @@
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine;
-using System;
 using System.Text;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageManagerToolbar : VisualElement
+    [UxmlElement]
+    internal partial class PackageManagerToolbar : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageManagerToolbar(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPackageOperationDispatcher>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IUpmClient>(),
-                    container.Resolve<IAssetStoreDownloadManager>(),
-                    container.Resolve<IProjectSettingsProxy>(),
-                    container.Resolve<IDropdownHandler>());
-            }
-        }
-
         private readonly IResourceLoader m_ResourceLoader;
         private readonly IApplicationProxy m_Application;
         private readonly IUnityConnectProxy m_UnityConnect;
@@ -42,6 +22,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IDropdownHandler m_DropdownHandler;
+
+        public PackageManagerToolbar() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>(),
+            ServicesContainer.instance.Resolve<IPackageOperationDispatcher>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IUpmClient>(),
+            ServicesContainer.instance.Resolve<IAssetStoreDownloadManager>(),
+            ServicesContainer.instance.Resolve<IProjectSettingsProxy>(),
+            ServicesContainer.instance.Resolve<IDropdownHandler>())
+        {
+        }
+
         public PackageManagerToolbar(
             IResourceLoader resourceLoader,
             IApplicationProxy application,
@@ -141,7 +136,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var filter in filters.packageUniqueIds.SelectNonEmpty(i => m_PackageDatabase.GetPackage(i)?.displayName ?? i))
                 filtersSelected.Append(filter).Append(separator);
             // Since we always append the separator at the end, we want to make sure to move the ending separator
-            filtersSelected.Length = Math.Max(0, filtersSelected.Length - separator.Length);
+            filtersSelected.Length = Mathf.Max(0, filtersSelected.Length - separator.Length);
             filtersMenu.text = filtersSelected.Length == 0 ? L10n.Tr("Filters") : string.Format(L10n.Tr("Filters ({0})"), filtersSelected);
         }
 

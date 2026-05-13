@@ -4,6 +4,7 @@
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
+using UnityEditor.Build;
 using UnityEditor.Compilation;
 using System.Collections.Generic;
 using System.Linq;
@@ -253,6 +254,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return Instance.GetTargetAssemblyInfos(scriptAssemblySettings);
         }
 
+        [RequiredByNativeCode]
+        internal static void DeconstructTargetAssemblyInfoArrayElementRaw(EditorCompilation.TargetAssemblyInfo[] array, int index, out object name, out int flags)
+        {
+            ref EditorCompilation.TargetAssemblyInfo tmp = ref array[index];
+            name = tmp.Name;
+            flags = (int)tmp.Flags;
+        }
+
+        [RequiredByNativeCode]
+        internal static void ReconstructPrecompiledAssemblyArrayElementRaw(PrecompiledAssembly[] array, int index, string path, int flags)
+        {
+            ref PrecompiledAssembly tmp = ref array[index];
+            tmp.Path = path;
+            tmp.Flags = (AssemblyFlags)flags;
+        }
+
         public static EditorCompilation.TargetAssemblyInfo GetTargetAssembly(string scriptPath)
         {
             return Instance.GetTargetAssembly(scriptPath);
@@ -273,25 +290,45 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (EditorUserBuildSettings.development && (assembliesType == AssembliesType.Player || assembliesType == AssembliesType.PlayerWithoutTestAssemblies))
                 options |= EditorScriptCompilationOptions.BuildingDevelopmentBuild;
 
-
             switch (assembliesType)
             {
                 case AssembliesType.Editor:
                     options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
                     options |= EditorScriptCompilationOptions.BuildingForEditor;
+                    options |= EditorScriptCompilationOptions.BuildingWithAsserts;
+                    options |= EditorScriptCompilationOptions.BuildingWithInstrumentation;
                     break;
                 case AssembliesType.Player:
                     options |= EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
                     options &= ~EditorScriptCompilationOptions.BuildingForEditor;
+                    options |= GetManagedCodeVariantOptions(NamedBuildTarget.FromActiveSettings(EditorUserBuildSettings.activeBuildTarget));
                     break;
                 case AssembliesType.PlayerWithoutTestAssemblies:
                     options &= ~EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
                     options &= ~EditorScriptCompilationOptions.BuildingForEditor;
+                    options |= GetManagedCodeVariantOptions(NamedBuildTarget.FromActiveSettings(EditorUserBuildSettings.activeBuildTarget));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(assembliesType));
             }
 
+            return options;
+        }
+
+        static EditorScriptCompilationOptions GetManagedCodeVariantOptions(NamedBuildTarget buildTarget)
+        {
+            var options = EditorScriptCompilationOptions.BuildingEmpty;
+            var variant = PlayerSettings.GetManagedCodeVariant(buildTarget);
+            if (variant <= ManagedCodeVariant.Instrumented)
+            {
+                options |= EditorScriptCompilationOptions.BuildingWithInstrumentation;
+                if (variant <= ManagedCodeVariant.Checked)
+                {
+                    options |= EditorScriptCompilationOptions.BuildingWithAsserts;
+                    if (variant == ManagedCodeVariant.Debug)
+                        options |= EditorScriptCompilationOptions.BuildingWithoutOptimization;
+                }
+            }
             return options;
         }
 

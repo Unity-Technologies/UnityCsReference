@@ -17,14 +17,43 @@ namespace UnityEngine.UIElements
         internal List<KeyValuePair<string, VisualElement>> m_Elements;
         internal Dictionary<PropertyName, VisualElement> m_ElementsMap;
 
-        internal int GetChannelCount(StylePropertyId id)
+        internal static int GetChannelCount(StylePropertyId id)
         {
             return m_ChannelCount[(int)id];
         }
 
-        internal PropertyType GetPropertyTypeMapping(StylePropertyId id)
+        internal static PropertyType GetPropertyTypeMapping(StylePropertyId id)
         {
             return m_PropertyTypeMapping[(int)id];
+        }
+
+        // Per-channel metadata generated from AnimationBindingHelper in the UIElementsGenerator.
+        // These are the single source of truth for channel suffixes (".value", ".offset.unit",
+        // ".x.value", ...) and their curve kinds (Float for continuous, Int for discrete enum
+        // selectors, PPtr for object references). Authoring UI and recording dispatch read
+        // these instead of hardcoding composite-specific tables.
+        //
+        // The backing tables (m_ChannelSuffixes / m_ChannelKinds) are indexed by PropertyType
+        // rather than StylePropertyId, since every style property with the same kind shares
+        // the same sub-channel layout. We route through m_PropertyTypeMapping here so every
+        // Length / Color / Float id reuses a single row.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static IReadOnlyList<string> GetChannelSuffixes(StylePropertyId id)
+        {
+            return m_ChannelSuffixes[(int)m_PropertyTypeMapping[(int)id]];
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static AnimationChannelKind GetChannelKind(StylePropertyId id, int channel)
+        {
+            return m_ChannelKinds[(int)m_PropertyTypeMapping[(int)id]][channel];
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static int StylePropertyIdCount
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_ChannelCount.Length;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,13 +125,66 @@ namespace UnityEngine.UIElements
                     break;
 
                 case PropertyType.Int or PropertyType.Enum:
-                    var intValue = BitConverter.SingleToInt32Bits(value);
-                    e.computedStyle.ApplyPropertyAnimation(e, id, intValue);
+                    e.computedStyle.ApplyPropertyAnimation(e, id, BitConverter.SingleToInt32Bits(value));
                     break;
 
                 case PropertyType.Length:
-                    e.computedStyle.ApplyPropertyAnimation(e, id, Length.Pixels(value));
+                {
+                    // Channels match AnimationLengthChannel layout (0 = value, 1 = unit).
+                    var l = e.computedStyle.ReadPropertyAnimationLength(id);
+                    l = AnimationLengthChannel.Write(l, channel, value);
+                    e.computedStyle.ApplyPropertyAnimation(e, id, l);
                     break;
+                }
+
+                case PropertyType.BackgroundPosition:
+                {
+                    // Channel 0 encodes the BackgroundPositionKeyword as a discrete int.
+                    // Channels 1/2 form a LengthBlock for the offset; forwarded to
+                    // AnimationLengthChannel with a 1-channel shift so sub-channel 0 =
+                    // offset.value, sub-channel 1 = offset.unit.
+                    var bp = e.computedStyle.ReadPropertyAnimationBackgroundPosition(id);
+                    if (channel == 0)
+                        bp.keyword = (BackgroundPositionKeyword)BitConverter.SingleToInt32Bits(value);
+                    else
+                        bp.offset = AnimationLengthChannel.Write(bp.offset, channel - 1, value);
+                    e.computedStyle.ApplyPropertyAnimation(e, id, bp);
+                    break;
+                }
+
+                case PropertyType.BackgroundRepeat:
+                {
+                    // Channels 0 (x) and 1 (y) each carry a Repeat enum encoded as an int
+                    // bit-pattern in a float.
+                    var br = e.computedStyle.ReadPropertyAnimationBackgroundRepeat(id);
+                    if (channel == 0)
+                        br.x = (Repeat)BitConverter.SingleToInt32Bits(value);
+                    else if (channel == 1)
+                        br.y = (Repeat)BitConverter.SingleToInt32Bits(value);
+                    e.computedStyle.ApplyPropertyAnimation(e, id, br);
+                    break;
+                }
+
+                case PropertyType.BackgroundSize:
+                {
+                    // Channel 0 is the discrete sizeType. Channels 1/2 form a LengthBlock
+                    // for .x, channels 3/4 another for .y; both forwarded through
+                    // AnimationLengthChannel. The public setters on BackgroundSize mutate
+                    // sibling fields (e.g. setting .x forces sizeType=Length) so we
+                    // reassemble the struct via its internal 3-arg ctor.
+                    var bs = e.computedStyle.ReadPropertyAnimationBackgroundSize(id);
+                    var sizeType = bs.sizeType;
+                    var x = bs.x;
+                    var y = bs.y;
+                    if (channel == 0)
+                        sizeType = (BackgroundSizeType)BitConverter.SingleToInt32Bits(value);
+                    else if (channel <= 2)
+                        x = AnimationLengthChannel.Write(x, channel - 1, value);
+                    else
+                        y = AnimationLengthChannel.Write(y, channel - 3, value);
+                    e.computedStyle.ApplyPropertyAnimation(e, id, new BackgroundSize(sizeType, x, y));
+                    break;
+                }
 
             }
 
@@ -119,7 +201,8 @@ namespace UnityEngine.UIElements
 
             return GetPropertyTypeMapping(id) switch
             {
-                PropertyType.Length => element.computedStyle.ReadPropertyAnimationLength(id).pixelValue,
+                PropertyType.Length => AnimationLengthChannel.ReadFloat(
+                    element.computedStyle.ReadPropertyAnimationLength(id), channel),
                 PropertyType.Float => element.computedStyle.ReadPropertyAnimationFloat(id),
                 PropertyType.Int => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
                 PropertyType.Enum => BitConverter.Int32BitsToSingle(element.computedStyle.ReadPropertyAnimationInt(id)),
@@ -134,14 +217,25 @@ namespace UnityEngine.UIElements
                 PropertyType.Rotate => element.computedStyle.ReadPropertyAnimationRotate(id).angle.ToDegrees(),
                 PropertyType.Scale => element.computedStyle.ReadPropertyAnimationScale(id).value[channel],
                 PropertyType.Ratio => element.computedStyle.ReadPropertyAnimationRatio(id),
+                PropertyType.BackgroundPosition => channel == 0
+                    ? BitConverter.Int32BitsToSingle((int)element.computedStyle.ReadPropertyAnimationBackgroundPosition(id).keyword)
+                    : AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationBackgroundPosition(id).offset, channel - 1),
+                PropertyType.BackgroundRepeat => channel switch
+                {
+                    0 => BitConverter.Int32BitsToSingle((int)element.computedStyle.ReadPropertyAnimationBackgroundRepeat(id).x),
+                    1 => BitConverter.Int32BitsToSingle((int)element.computedStyle.ReadPropertyAnimationBackgroundRepeat(id).y),
+                    _ => throw new NotImplementedException(),
+                },
+                PropertyType.BackgroundSize => channel == 0
+                    ? BitConverter.Int32BitsToSingle((int)element.computedStyle.ReadPropertyAnimationBackgroundSize(id).sizeType)
+                    : channel <= 2
+                        ? AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationBackgroundSize(id).x, channel - 1)
+                        : AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationBackgroundSize(id).y, channel - 3),
 
 
                 //Not implemented
                 PropertyType.TransformOrigin => throw new NotImplementedException(),
                 PropertyType.Shorthand => throw new NotImplementedException(),
-                PropertyType.BackgroundPosition => throw new NotImplementedException(),
-                PropertyType.BackgroundRepeat => throw new NotImplementedException(),
-                PropertyType.BackgroundSize => throw new NotImplementedException(),
                 PropertyType.Background => throw new NotImplementedException(),
                 PropertyType.Filter => throw new NotImplementedException(),
                 PropertyType.Font => throw new NotImplementedException(),

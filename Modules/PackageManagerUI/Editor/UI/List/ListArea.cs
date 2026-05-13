@@ -7,35 +7,31 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal sealed class ListArea : VisualElement
+    [UxmlElement]
+    internal sealed partial class ListArea : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new ListArea(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IPackageManagerPrefs>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IUpmCache>(),
-                    container.Resolve<IAssetStoreCache>(),
-                    container.Resolve<IBackgroundFetchHandler>(),
-                    container.Resolve<IProjectSettingsProxy>(),
-                    container.Resolve<IPageRefreshHandler>());
-            }
-        }
-
         private Action m_ButtonAction;
 
         private PackageListView m_PackageListView;
         private ItemListScrollView m_ItemScrollView;
 
         private IItemListView m_CurrentView;
+
+        public ListArea() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IPackageManagerPrefs>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IUpmCache>(),
+            ServicesContainer.instance.Resolve<IAssetStoreCache>(),
+            ServicesContainer.instance.Resolve<IBackgroundFetchHandler>(),
+            ServicesContainer.instance.Resolve<IProjectSettingsProxy>(),
+            ServicesContainer.instance.Resolve<IPageRefreshHandler>())
+        {
+        }
+
         internal IItemListView currentView
         {
             get

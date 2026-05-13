@@ -9,10 +9,16 @@ using UnityEngine;
 namespace Unity.Loading
 {
     /// <summary>
-    /// Status for a Loadable
+    /// Describes the current asynchronous loading phase of a `Loadable{T}` after <see cref="Loadable{T}.Load"/> or <see cref="Loadable{T}.LoadAsync"/> is used.
     /// </summary>
-    [VisibleToOtherModules]
-    /*UCBP-PUBLIC*/ internal enum LoadableStatus
+    /// <remarks>
+    /// Query <see cref="Loadable{T}.Status"/> to drive UI or to assert that a load finished before reading
+    /// <see cref="Loadable{T}.Target"/>. <see cref="LoadableStatus.Failed"/> indicates the asynchronous load completed without a usable object. This often occurs due to missing built content.
+    /// </remarks>
+    /// <example>
+    /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/Loadable_LoadAndRelease.cs"/>
+    /// </example>
+    public enum LoadableStatus
     {
         /// <summary>
         /// The Loadable has not begun loading.
@@ -33,12 +39,16 @@ namespace Unity.Loading
     };
 
     /// <summary>
-    /// Helper class to manage the content loading process.
+    /// Serialized reference that loads a specific <typeparamref name="T"/> asset from registered built content on demand instead of pulling it in with direct references.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">
+    /// Concrete Unity <see cref="UnityEngine.Object"/> type referenced by this field (for example <see cref="GameObject"/> for a prefab or a custom <see cref="ScriptableObject"/> type).
+    /// </typeparam>
+    /// <example>
+    /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/Loadable_LoadAndRelease.cs"/>
+    /// </example>
     [Serializable]
-    [VisibleToOtherModules]
-    /*UCBP-PUBLIC*/ internal sealed class Loadable<T> where T : UnityEngine.Object
+    public sealed class Loadable<T> where T : UnityEngine.Object
     {
         [SerializeField]
         private LoadableObjectId m_LoadableObjectId;
@@ -56,7 +66,7 @@ namespace Unity.Loading
         /// <summary>
         /// The underlying loadable object id.
         /// </summary>
-        public LoadableObjectId loadableObjectId => m_LoadableObjectId;
+        public LoadableObjectId LoadableObjectId => m_LoadableObjectId;
 
         /// <summary>
         /// The current status of the loading operation.
@@ -72,16 +82,10 @@ namespace Unity.Loading
         }
 
         /// <summary>
-        /// Returns true if the load operation has completed successfully.
-        /// </summary>
-        public bool isLoaded => Status == LoadableStatus.Loaded;
-
-
-        /// <summary>
-        /// Returns the result of the load operation.  If the operation is not complete or has failed, this will return null.
+        /// The result of the load operation. If the operation is not complete or has failed, this returns null.
         /// Use <see cref="Load"/> to force the operation to complete synchronously.
         /// </summary>
-        public T target => m_loadOperation?.result;
+        public T Target => m_loadOperation?.result;
 
 
         /// <summary>
@@ -98,7 +102,7 @@ namespace Unity.Loading
         public T Load()
         {
             LoadAsyncInternal().WaitForCompletion();
-            return target;
+            return Target;
         }
 
         /// <summary>

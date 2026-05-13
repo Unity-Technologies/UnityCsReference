@@ -167,7 +167,7 @@ namespace UnityEditor
         private void ShowKeywords(Shader s)
         {
             EditorGUILayout.BeginVertical();
-            s_KeywordsUnfolded = EditorGUILayout.Foldout(s_KeywordsUnfolded, "Keywords");
+            s_KeywordsUnfolded = EditorGUILayout.Foldout(s_KeywordsUnfolded, "Keywords", true);
             if (s_KeywordsUnfolded)
             {
                 var keywords = s.keywordSpace.keywords;
@@ -208,7 +208,7 @@ namespace UnityEditor
         private static void ShowShaderProperties(Shader s)
         {
             GUILayout.Space(kSpace);
-            s_PropertiesUnfolded = EditorGUILayout.Foldout(s_PropertiesUnfolded, "Properties");
+            s_PropertiesUnfolded = EditorGUILayout.Foldout(s_PropertiesUnfolded, "Properties", true);
             if (s_PropertiesUnfolded)
             {
                 int n = s.GetPropertyCount();

@@ -30,7 +30,7 @@ internal abstract class BaseBuildTarget : IBuildTarget
     public virtual IAudioPlatformProperties AudioPlatformProperties => Properties as IAudioPlatformProperties;
     public virtual IVRPlatformProperties VRPlatformProperties => Properties as IVRPlatformProperties;
     public virtual ISubtargetPlatformProperties TextureSubtargetPlatformProperties => Properties as ISubtargetPlatformProperties;
-
+    public virtual IScriptingPlatformProperties ScriptingPlatformProperties => Properties as IScriptingPlatformProperties;
     protected virtual IPlatformProperties Properties => null;
 
     public bool TryGetProperties<T>(out T properties) where T: IPlatformProperties

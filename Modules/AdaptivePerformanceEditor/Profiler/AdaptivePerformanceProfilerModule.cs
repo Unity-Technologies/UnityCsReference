@@ -21,6 +21,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
             new ProfilerCounterDescriptor("Frametime", ProfilerCategory.Scripts),
             new ProfilerCounterDescriptor("Temperature Level", ProfilerCategory.Scripts),
             new ProfilerCounterDescriptor("Temperature Trend", ProfilerCategory.Scripts),
+            new ProfilerCounterDescriptor("CPU Utilization", ProfilerCategory.Scripts),
+            new ProfilerCounterDescriptor("GPU Utilization", ProfilerCategory.Scripts),
         };
 
         // Specify a list of Profiler category names, which should be auto-enabled when the module is active.

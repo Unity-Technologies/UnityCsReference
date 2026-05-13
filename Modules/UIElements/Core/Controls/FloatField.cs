@@ -20,18 +20,6 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         FloatInput floatInput => (FloatInput)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<float>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new FloatField();
-        }
-
         /// <summary>
         /// Converts the given float to a string.
         /// </summary>

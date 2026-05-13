@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
-using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -15,7 +13,8 @@ namespace UnityEngine.UIElements
     /// This is the base class for the composite fields.
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public abstract class BaseCompositeField<TValueType, TField, TFieldValue> : BaseField<TValueType>, IDelayedField
+    [UxmlElement]
+    public abstract partial class BaseCompositeField<TValueType, TField, TFieldValue> : BaseField<TValueType>, IDelayedField
         where TField : TextValueField<TFieldValue>, new()
     {
         internal static readonly BindingId isDelayedProperty = nameof(isDelayed);
@@ -35,34 +34,6 @@ namespace UnityEngine.UIElements
                 this.ussName = ussName;
                 this.read = read;
                 this.write = write;
-            }
-        }
-
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeField] bool isDelayed;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isDelayed_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TValueType>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(isDelayed), "is-delayed"),
-                }, false);
-            }
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BaseCompositeField<TValueType, TField, TFieldValue>)obj;
-                if (ShouldWriteAttributeValue(isDelayed_UxmlAttributeFlags))
-                    e.isDelayed = isDelayed;
             }
         }
 
@@ -142,6 +113,7 @@ namespace UnityEngine.UIElements
         /// If set to true, the value property only updates after either the user presses Enter or moves focus away from one of the value fields.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool isDelayed
         {
             get => m_IsDelayed;

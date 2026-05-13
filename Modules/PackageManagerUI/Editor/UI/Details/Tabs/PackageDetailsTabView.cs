@@ -2,28 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageDetailsTabView : BaseTabView<PackageDetailsTabElement>
+    [UxmlElement]
+    internal partial class PackageDetailsTabView : BaseTabView<PackageDetailsTabElement>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseTabView<PackageDetailsTabElement>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseTabView<PackageDetailsTabElement>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new PackageDetailsTabView();
-        }
-
         private readonly Label m_EntitlementsErrorLabel;
 
         public IEnumerable<PackageDetailsTabElement> orderedTabs => m_BodyContainer.Children().FilterByType<PackageDetailsTabElement>();

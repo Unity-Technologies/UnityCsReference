@@ -30,15 +30,42 @@ namespace UnityEditor
     {
         public int pickingIndex { get; }
         public RenderPickingType renderPickingType { get; }
+
+        // Public API - kept for backward compatibility, returns only GameObjects
         public IReadOnlyCollection<GameObject> renderObjectSet { get; }
 
-        internal RenderPickingArgs(int pickingIndex, RenderPickingType renderPickingType, HashSet<GameObject> renderObjectSet)
+        // Internal - full Object collection including VisualElements
+        internal IReadOnlyCollection<UnityObject> renderObjectSetInternal {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get;
+        }
+
+        internal RenderPickingArgs(int pickingIndex, RenderPickingType renderPickingType, HashSet<UnityObject> renderObjectSet)
         {
             this.pickingIndex = pickingIndex;
             this.renderPickingType = renderPickingType;
-            this.renderObjectSet = renderObjectSet;
+            this.renderObjectSetInternal = renderObjectSet;
+
+            // Create GameObject-only view for backward compatibility
+            if (renderObjectSet != null)
+            {
+                var gameObjects = new HashSet<GameObject>();
+                foreach (var obj in renderObjectSet)
+                {
+                    if (obj is GameObject go)
+                        gameObjects.Add(go);
+                    else if (obj is Component comp)
+                        gameObjects.Add(comp.gameObject);
+                }
+                this.renderObjectSet = gameObjects;
+            }
+            else
+            {
+                this.renderObjectSet = null;
+            }
         }
 
+        // Existing public API for backward compatibility
         public bool RenderObjectSetContains(GameObject go)
             => renderObjectSet != null && ((HashSet<GameObject>)renderObjectSet).Contains(go);
 
@@ -46,7 +73,17 @@ namespace UnityEditor
         {
             var contained = RenderObjectSetContains(go);
             return renderPickingType == RenderPickingType.RenderFromFilterSet ? contained : !contained;
-       }
+        }
+
+        // New internal API for Object support
+        internal bool RenderObjectSetContainsObject(UnityObject obj)
+            => renderObjectSetInternal != null && ((HashSet<UnityObject>)renderObjectSetInternal).Contains(obj);
+
+        internal bool NeedToRenderForPickingObject(UnityObject obj)
+        {
+            var contained = RenderObjectSetContainsObject(obj);
+            return renderPickingType == RenderPickingType.RenderFromFilterSet ? contained : !contained;
+        }
     }
 
     public readonly struct RenderPickingResult
@@ -2173,10 +2210,10 @@ namespace UnityEditor
             return false;
         }
 
-        // todo this will need to be an int or tuple<int,int> when we support non-object selection
+        // Changed to Object to support VisualElements and other non-GameObject pickable objects
         // todo refactor picking code to remove all the static collections that ferry around include/exclude lists
-        static readonly HashSet<GameObject> s_PickingIncludeSet = new HashSet<GameObject>();
-        static readonly HashSet<GameObject> s_PickingExcludeSet = new HashSet<GameObject>();
+        static readonly HashSet<UnityObject> s_PickingIncludeSet = new HashSet<UnityObject>();
+        static readonly HashSet<UnityObject> s_PickingExcludeSet = new HashSet<UnityObject>();
 
         private static bool s_InPickingRendering = false;
 
@@ -2190,20 +2227,20 @@ namespace UnityEditor
             if (s_PickingInclude != null)
             {
                 foreach (var o in s_PickingInclude)
-                    if (o.TryGetGameObject(out var go))
-                        s_PickingIncludeSet.Add(go);
+                    if (o.TryGetObject(out var obj))
+                        s_PickingIncludeSet.Add(obj);
             }
 
             if (s_PickingExclude != null)
             {
                 foreach (var o in s_PickingExclude)
                 {
-                    if (o.TryGetGameObject(out var go))
+                    if (o.TryGetObject(out var obj))
                     {
                         if (s_PickingInclude != null)
-                            s_PickingIncludeSet.Remove(go);
+                            s_PickingIncludeSet.Remove(obj);
                         else
-                            s_PickingExcludeSet.Add(go);
+                            s_PickingExcludeSet.Add(obj);
                     }
                 }
             }

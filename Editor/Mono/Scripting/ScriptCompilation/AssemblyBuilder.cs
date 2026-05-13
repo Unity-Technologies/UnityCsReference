@@ -117,6 +117,8 @@ namespace UnityEditor.Compilation
             var debug = compilerOptions.CodeOptimization == CodeOptimization.Debug;
 
             var buildRequest = UnityBeeDriver.BuildRequestFor(
+                assembly.BuildTarget,
+                BuildOptions.None,
                 EditorCompilation.ScriptCompilationBuildProgram,
                 editorCompilation,
                 $"{(int)assembly.BuildTarget}{"AB"}",

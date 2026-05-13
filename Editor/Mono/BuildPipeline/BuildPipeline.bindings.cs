@@ -14,6 +14,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using System.Runtime.InteropServices;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
+using UnityEditorInternal;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
@@ -408,6 +409,10 @@ namespace UnityEditor
 
         private static extern BuildPlayerDataResult BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions);
 
+        // For testing: Populate RuntimeClassRegistry from ScriptsOnlyCache.yaml in metadataDirectory
+        [NativeMethod(ThrowsException = false)]
+        internal static extern bool PopulateRuntimeClassRegistry(string metadataDirectory, RuntimeClassRegistry runtimeClassRegistry);
+
         /// <summary>
         /// Builds a content directory (serialized assets and scenes plus a manifest) at a defined output path.
         /// </summary>
@@ -467,9 +472,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(buildParameters.name))
                 buildParameters.name = Path.GetFileName(buildParameters.outputPath.TrimEnd('/'));
 
-            // Create the build session GUID and set up the metadata folder
             var buildSessionGuid = GUID.Generate();
-            buildParameters.metadataPath = BuildHistory.ReserveBuildMetadataPath(buildSessionGuid.ToString());
+            buildParameters.buildStartTimeTicks = DateTime.UtcNow.Ticks;
+            buildParameters.metadataPath = BuildHistory.ReserveBuildMetadataPath(
+                buildSessionGuid.ToString(), buildParameters.buildStartTimeTicks);
 
             var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);
 
@@ -836,8 +842,9 @@ namespace UnityEditor
         {
             var namedTarget = NamedBuildTarget.FromActiveSettings(target);
             var scriptingBackend = PlayerSettings.GetScriptingBackend(namedTarget);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedTarget);
 
-            var directories = GetBclReferenceDirectoriesForBackend(target, namedTarget, buildOptions, scriptingBackend);
+            var directories = GetBclReferenceDirectoriesForBackend(target, namedTarget, buildOptions, scriptingBackend, apiCompatibilityLevel);
             var assemblies = new List<string>();
             foreach (var directory in directories)
                 assemblies.AddRange(Directory.GetFiles(directory, "*.dll"));
@@ -851,12 +858,17 @@ namespace UnityEditor
             return result;
         }
 
-        static List<string> GetBclReferenceDirectoriesForBackend(BuildTarget target, NamedBuildTarget namedTarget, BuildOptions buildOptions, ScriptingImplementation scriptingBackend)
+        static List<string> GetBclReferenceDirectoriesForBackend(BuildTarget target, NamedBuildTarget namedTarget, BuildOptions buildOptions, ScriptingImplementation scriptingBackend,
+            ApiCompatibilityLevel apiCompatibilityLevel)
         {
 #pragma warning disable CS0618
             if (scriptingBackend == ScriptingImplementation.CoreCLR)
 #pragma warning restore CS0618
                 return GetCoreCLRReferenceDirectories(target, namedTarget, buildOptions);
+
+            if (scriptingBackend == ScriptingImplementation.IL2CPP)
+                return IL2CPPUtils.GetIL2CPPReferenceDirectories(target, namedTarget, buildOptions, apiCompatibilityLevel);
+
             return GetMonoReferenceDirectories(target);
         }
 
@@ -865,35 +877,21 @@ namespace UnityEditor
             var result = new List<string>();
             result.Add(BCLExtensions.CoreCLRRuntimeDirectory());
 
-            string arch = HackGetArchitectureForBclPath(namedTarget);
-
             string engineDirectory = GetPlaybackEngineDirectory(target, buildOptions, true);
-            string coreCLRSharedDirectory = Path.Combine(engineDirectory,
-                $"Variations/CoreCLRShared/{arch}");
 
-            if (Directory.Exists(coreCLRSharedDirectory))
+            var gotBuildTarget = BuildTargetDiscovery.TryGetBuildTarget(target, out var ibuildTarget);
+            if (!gotBuildTarget || ibuildTarget.ScriptingPlatformProperties == null)
             {
-                result.Add(Path.Combine(coreCLRSharedDirectory, "CoreCLR/lib"));
+                throw new BuildFailedException("ScriptingPlatformProperties does not contain a target directory for CoreCLR.");
             }
-            else
-            {
-                Debug.LogError($"Unable to find CoreCLRShared directory: {coreCLRSharedDirectory}");
-            }
+            result.Add(Path.Combine(engineDirectory, ibuildTarget.ScriptingPlatformProperties.CoreCLRBCLDirectory, "CoreCLR/lib"));
 
             return result;
         }
 
-        /// <summary>
-        /// This logic is flawed and needs to be reworked
-        /// </summary>
-        /// <param name="namedTarget"></param>
-        /// <returns></returns>
-        internal static string HackGetArchitectureForBclPath(NamedBuildTarget namedTarget)
+        internal static string GetVariationDirectory(BuildTarget target, BuildOptions buildOptions)
         {
-            var arch = EditorUserBuildSettings.GetPlatformSettings(namedTarget.TargetName, "Architecture");
-            if (string.IsNullOrEmpty(arch))
-                arch = "x64";
-            return arch;
+            return Path.Combine(GetPlaybackEngineDirectory(target, buildOptions, true), "Variations");
         }
 
         private static List<string> GetMonoReferenceDirectories(BuildTarget target)

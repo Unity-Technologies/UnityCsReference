@@ -17,106 +17,108 @@ namespace UnityEngine.UIElements
     {
         private static readonly int[] m_ChannelCount = new int[]
         {
-            0,
-            1,
-            1,
-            1,
-            0,
-            1,
-            4,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            4,
-            1,
-            1,
-            1,
-            0,
-            4,
-            1,
-            0,
-            4,
-            1,
-            4,
-            1,
-            1,
-            1,
-            0,
-            1,
-            4,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            3,
-            1,
-            0,
-            1,
-            2,
-            0,
-            0,
-            0,
-            0,
-            0,
-            3,
-            4,
-            0,
-            1,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            1,
-            0,
-            4,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
+            0, // Unknown
+            1, // AlignContent
+            1, // AlignItems
+            1, // AlignSelf
+            0, // All
+            1, // AnimationPlayState
+            1, // AspectRatio
+            4, // BackgroundColor
+            1, // BackgroundImage
+            0, // BackgroundPosition
+            3, // BackgroundPositionX
+            3, // BackgroundPositionY
+            2, // BackgroundRepeat
+            5, // BackgroundSize
+            4, // BorderBottomColor
+            2, // BorderBottomLeftRadius
+            2, // BorderBottomRightRadius
+            1, // BorderBottomWidth
+            0, // BorderColor
+            4, // BorderLeftColor
+            1, // BorderLeftWidth
+            0, // BorderRadius
+            4, // BorderRightColor
+            1, // BorderRightWidth
+            4, // BorderTopColor
+            2, // BorderTopLeftRadius
+            2, // BorderTopRightRadius
+            1, // BorderTopWidth
+            0, // BorderWidth
+            2, // Bottom
+            4, // Color
+            0, // Cursor
+            1, // Display
+            0, // Filter
+            0, // Flex
+            2, // FlexBasis
+            1, // FlexDirection
+            1, // FlexGrow
+            1, // FlexShrink
+            1, // FlexWrap
+            2, // FontSize
+            2, // Height
+            1, // JustifyContent
+            2, // Left
+            2, // LetterSpacing
+            0, // Margin
+            2, // MarginBottom
+            2, // MarginLeft
+            2, // MarginRight
+            2, // MarginTop
+            2, // MaxHeight
+            2, // MaxWidth
+            2, // MinHeight
+            2, // MinWidth
+            1, // Opacity
+            1, // Overflow
+            0, // Padding
+            2, // PaddingBottom
+            2, // PaddingLeft
+            2, // PaddingRight
+            2, // PaddingTop
+            1, // Position
+            2, // Right
+            1, // Rotate
+            3, // Scale
+            1, // TextOverflow
+            0, // TextShadow
+            2, // Top
+            2, // TransformOrigin
+            0, // Transition
+            0, // TransitionDelay
+            0, // TransitionDuration
+            0, // TransitionProperty
+            0, // TransitionTimingFunction
+            3, // Translate
+            0, // UnityAnimationClip
+            4, // UnityBackgroundImageTintColor
+            0, // UnityBackgroundScaleMode
+            1, // UnityEditorTextRenderingMode
+            1, // UnityFont
+            1, // UnityFontDefinition
+            1, // UnityFontStyleAndWeight
+            1, // UnityMaterial
+            1, // UnityOverflowClipBox
+            2, // UnityParagraphSpacing
+            1, // UnitySliceBottom
+            1, // UnitySliceLeft
+            1, // UnitySliceRight
+            1, // UnitySliceScale
+            1, // UnitySliceTop
+            1, // UnitySliceType
+            1, // UnityTextAlign
+            0, // UnityTextAutoSize
+            1, // UnityTextGenerator
+            0, // UnityTextOutline
+            4, // UnityTextOutlineColor
+            1, // UnityTextOutlineWidth
+            1, // UnityTextOverflowPosition
+            1, // Visibility
+            1, // WhiteSpace
+            2, // Width
+            2 // WordSpacing
         };
         private static readonly PropertyType[] m_PropertyTypeMapping = new PropertyType[]
         {
@@ -125,6 +127,7 @@ namespace UnityEngine.UIElements
             PropertyType.Enum,
             PropertyType.Enum,
             PropertyType.Shorthand,
+            PropertyType.Enum,
             PropertyType.Ratio,
             PropertyType.Color,
             PropertyType.Background,
@@ -194,6 +197,7 @@ namespace UnityEngine.UIElements
             PropertyType.List,
             PropertyType.List,
             PropertyType.Translate,
+            PropertyType.UIAnimationClip,
             PropertyType.Color,
             PropertyType.Shorthand,
             PropertyType.Enum,
@@ -244,9 +248,209 @@ namespace UnityEngine.UIElements
             Shorthand,
             Rotate,
             Scale,
+            UIAnimationClip,
             MaterialDefinition,
             Ratio,
             EntityId
         }
+
+        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal enum AnimationChannelKind
+        {
+            Float,
+            Int,
+            PPtr
+        }
+
+        private static readonly string[][] m_ChannelSuffixes = new string[][]
+        {
+            new string[]
+            {
+                ".value",
+                ".unit"
+            }, // Length
+            new string[]
+            {
+                ""
+            }, // Float
+            new string[]
+            {
+                ""
+            }, // Int
+            new string[]
+            {
+                ""
+            }, // Enum
+            new string[]
+            {
+                ".align",
+                ".offset.value",
+                ".offset.unit"
+            }, // BackgroundPosition
+            new string[]
+            {
+                ".x",
+                ".y"
+            }, // BackgroundRepeat
+            new string[]
+            {
+                ".type",
+                ".x.value",
+                ".x.unit",
+                ".y.value",
+                ".y.unit"
+            }, // BackgroundSize
+            new string[]
+            {
+                ".r",
+                ".g",
+                ".b",
+                ".a"
+            }, // Color
+            new string[]
+            {
+                ""
+            }, // Background
+            System.Array.Empty<string>(), // Filter
+            new string[]
+            {
+                ""
+            }, // Font
+            new string[]
+            {
+                ""
+            }, // FontDefinition
+            System.Array.Empty<string>(), // Cursor
+            System.Array.Empty<string>(), // TextShadow
+            System.Array.Empty<string>(), // TextAutoSize
+            System.Array.Empty<string>(), // List
+            new string[]
+            {
+                ".x",
+                ".y",
+                ".z"
+            }, // Translate
+            new string[]
+            {
+                ".x",
+                ".y"
+            }, // TransformOrigin
+            System.Array.Empty<string>(), // Shorthand
+            new string[]
+            {
+                ""
+            }, // Rotate
+            new string[]
+            {
+                ".x",
+                ".y",
+                ".z"
+            }, // Scale
+            System.Array.Empty<string>(), // UIAnimationClip
+            new string[]
+            {
+                ""
+            }, // MaterialDefinition
+            new string[]
+            {
+                ""
+            }, // Ratio
+            System.Array.Empty<string>() // EntityId
+        };
+        private static readonly AnimationChannelKind[][] m_ChannelKinds = new AnimationChannelKind[][]
+        {
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int
+            }, // Length
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float
+            }, // Float
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float
+            }, // Int
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Int
+            }, // Enum
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Int,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int
+            }, // BackgroundPosition
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Int,
+                AnimationChannelKind.Int
+            }, // BackgroundRepeat
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Int,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int
+            }, // BackgroundSize
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // Color
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.PPtr
+            }, // Background
+            System.Array.Empty<AnimationChannelKind>(), // Filter
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.PPtr
+            }, // Font
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.PPtr
+            }, // FontDefinition
+            System.Array.Empty<AnimationChannelKind>(), // Cursor
+            System.Array.Empty<AnimationChannelKind>(), // TextShadow
+            System.Array.Empty<AnimationChannelKind>(), // TextAutoSize
+            System.Array.Empty<AnimationChannelKind>(), // List
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // Translate
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // TransformOrigin
+            System.Array.Empty<AnimationChannelKind>(), // Shorthand
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float
+            }, // Rotate
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // Scale
+            System.Array.Empty<AnimationChannelKind>(), // UIAnimationClip
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.PPtr
+            }, // MaterialDefinition
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float
+            }, // Ratio
+            System.Array.Empty<AnimationChannelKind>() // EntityId
+        };
     }
 }

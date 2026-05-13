@@ -175,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     // ToS error are not related to any specific package, and we don't really have a good place to
                     // show the error in the UI. It is to be addressed in https://jira.unity3d.com/browse/PAX-1994.
-                    Debug.Log(error.message);
+                    Debug.Log(string.Format(L10n.Tr("[Package Manager Window] {0}"), error.message));
                 });
             return true;
         }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -19,65 +18,6 @@ namespace UnityEngine.UIElements
         static readonly BindingId columnsProperty = nameof(columns);
         static readonly BindingId sortColumnDescriptionsProperty = nameof(sortColumnDescriptions);
         static readonly BindingId sortingModeProperty = nameof(sortingMode);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseListView.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(sortingEnabled), "sorting-enabled"),
-                    new (nameof(sortingMode), "sorting-mode"),
-                    new (nameof(columns), "columns"),
-                    new (nameof(sortColumnDescriptions), "sort-column-descriptions"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeReference, UxmlObjectReference] Columns.UxmlSerializedData columns;
-            [SerializeReference, UxmlObjectReference] SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
-            [SerializeField] ColumnSortingMode sortingMode;
-            [SerializeField, HideInInspector] bool sortingEnabled;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortingEnabled_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortingMode_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columns_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortColumnDescriptions_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new MultiColumnListView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (MultiColumnListView)obj;
-
-                if (ShouldWriteAttributeValue(sortingMode_UxmlAttributeFlags))
-                    e.sortingMode = sortingMode;
-                else if (ShouldWriteAttributeValue(sortingEnabled_UxmlAttributeFlags))
-                {
-                    #pragma warning disable CS0618 // Type or member is obsolete
-                    e.sortingEnabled = sortingEnabled;
-                    #pragma warning restore CS0618
-                }
-
-                if (ShouldWriteAttributeValue(sortColumnDescriptions_UxmlAttributeFlags) && sortColumnDescriptions != null)
-                {
-                    var c = new SortColumnDescriptions();
-                    sortColumnDescriptions.Deserialize(c);
-                    e.sortColumnDescriptions = c;
-                }
-
-                if (ShouldWriteAttributeValue(columns_UxmlAttributeFlags) && columns != null)
-                {
-                    var c = new Columns();
-                    columns.Deserialize(c);
-                    e.columns = c;
-                }
-            }
-        }
 
         Columns m_Columns;
         ColumnSortingMode m_SortingMode;
@@ -107,8 +47,37 @@ namespace UnityEngine.UIElements
         public IEnumerable<SortColumnDescription> sortedColumns => m_SortedColumns;
 
         /// <summary>
+        /// Indicates how to sort columns. To enable sorting, set it to <see cref="ColumnSortingMode.Default"/> or <see cref="ColumnSortingMode.Custom"/>.
+        /// The <c>Default</c> mode uses the sorting algorithm provided by <see cref="MultiColumnController"/>, acting on indices. You can also implement your
+        /// own sorting with the <c>Custom</c> mode, by responding to the <see cref="columnSortingChanged"/> event.
+        /// </summary>
+        /// <remarks>
+        /// __Note__: If there is at least one sorted column, reordering is temporarily disabled.
+        /// </remarks>
+        [UxmlAttribute]
+        [CreateProperty]
+        public ColumnSortingMode sortingMode
+        {
+            get => m_SortingMode;
+            set
+            {
+                if (sortingMode == value)
+                    return;
+
+                m_SortingMode = value;
+                if (viewController != null)
+                {
+                    viewController.columnController.sortingMode = value;
+                }
+
+                NotifyPropertyChanged(sortingModeProperty);
+            }
+        }
+
+        /// <summary>
         /// The collection of columns for the multi-column header.
         /// </summary>
+        [UxmlObjectReference]
         [CreateProperty]
         public Columns columns
         {
@@ -139,6 +108,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The collection of sorted columns by default.
         /// </summary>
+        [UxmlObjectReference]
         [CreateProperty]
         public SortColumnDescriptions sortColumnDescriptions
         {
@@ -177,31 +147,12 @@ namespace UnityEngine.UIElements
             set => sortingMode = value ? ColumnSortingMode.Custom : ColumnSortingMode.None;
         }
 
-        /// <summary>
-        /// Indicates how to sort columns. To enable sorting, set it to <see cref="ColumnSortingMode.Default"/> or <see cref="ColumnSortingMode.Custom"/>.
-        /// The <c>Default</c> mode uses the sorting algorithm provided by <see cref="MultiColumnController"/>, acting on indices. You can also implement your
-        /// own sorting with the <c>Custom</c> mode, by responding to the <see cref="columnSortingChanged"/> event.
-        /// </summary>
-        /// <remarks>
-        /// __Note__: If there is at least one sorted column, reordering is temporarily disabled.
-        /// </remarks>
-        [CreateProperty]
-        public ColumnSortingMode sortingMode
+        // Used for UXML, we cant use the attribute or we get obsolete errors in the code gen.
+        [UxmlAttribute("sorting-enabled"), UxmlAttributeBindingPath("sortingEnabled"), HideInInspector]
+        internal bool sortingEnabledAttribute
         {
-            get => m_SortingMode;
-            set
-            {
-                if (sortingMode == value)
-                    return;
-
-                m_SortingMode = value;
-                if (viewController != null)
-                {
-                    viewController.columnController.sortingMode = value;
-                }
-
-                NotifyPropertyChanged(sortingModeProperty);
-            }
+            get => sortingMode == ColumnSortingMode.Custom;
+            set => sortingMode = value ? ColumnSortingMode.Custom : ColumnSortingMode.None;
         }
 
         /// <summary>

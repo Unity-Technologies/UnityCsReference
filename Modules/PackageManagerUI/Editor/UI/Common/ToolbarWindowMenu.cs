@@ -2,23 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ToolbarWindowMenu : Button
+    [UxmlElement]
+    internal partial class ToolbarWindowMenu : Button
     {
         private static readonly string oldUssClassName = "unity-button";
         private static readonly string newUssClassName = "unity-toolbar-menu";
         private static readonly string textUssClassName = newUssClassName + "__text";
         private static readonly string arrowUssClassName = newUssClassName + "__arrow";
-
-        [Serializable]
-        public new class UxmlSerializedData : Button.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarWindowMenu();
-        }
 
         public override string text
         {

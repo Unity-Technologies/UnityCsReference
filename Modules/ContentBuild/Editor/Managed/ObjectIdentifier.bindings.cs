@@ -177,11 +177,6 @@ namespace UnityEditor.Build.Content
         }
 
         ///<summary>Tries to convert a persistent Object into an ObjectIdentifier.</summary>
-        ///<remarks>Returns false if it was not possible. This can happen if the Object is is a Scene Object, or was not loaded from and Object on disk.</remarks>
-        [Obsolete("TryGetObjectIdentifier(int, out ObjectIdentifier) is deprecated. Use TryGetObjectIdentifier(EntityId, out ObjectIdentifier) instead.")]
-        public static bool TryGetObjectIdentifier(int instanceID, out ObjectIdentifier objectId) => GetObjectIdentifierFromEntityId((EntityId)instanceID, out objectId);
-
-        ///<summary>Tries to convert a persistent Object into an ObjectIdentifier.</summary>
         ///<param name="entityId">The object identifier's entity id to look up.</param>
         ///<param name="objectId">Out parameter with the found object identifier.</param>
         ///<remarks>Returns false if it was not possible. This can happen if the Object is a Scene Object, or was not loaded from and Object on disk.</remarks>

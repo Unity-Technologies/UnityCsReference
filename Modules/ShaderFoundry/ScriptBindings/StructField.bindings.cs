@@ -44,7 +44,7 @@ namespace UnityEditor.ShaderFoundry
         // data members
         readonly ShaderContainer container;
         internal readonly FoundryHandle handle;
-        readonly StructFieldInternal field;
+        readonly StructFieldInternal @field;
 
         // IPublicType
         ShaderContainer IPublicType.Container => Container;
@@ -54,21 +54,21 @@ namespace UnityEditor.ShaderFoundry
 
         // public API
         public ShaderContainer Container => container;
-        public bool IsValid => (container != null) && handle.IsValid && (field.IsValid);
-        public string Name => field.GetName(container);
-        public ShaderType Type => new ShaderType(container, field.m_TypeHandle);
-        public IEnumerable<ShaderAttribute> Attributes => field.Attributes(container);
-        public Location Location => new Location(container, field.m_LocationHandle);
-        public Location InitializerLocation => new Location(container, field.m_InitializerLocationHandle);
-        public bool IsInput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kInput);
-        public bool IsOutput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kOutput);
-        internal bool HasFlag(StructFieldInternal.Flags flags) => field.m_Flags.HasFlag(flags);
+        public bool IsValid => (container != null) && handle.IsValid && (@field.IsValid);
+        public string Name => @field.GetName(container);
+        public ShaderType Type => new ShaderType(container, @field.m_TypeHandle);
+        public IEnumerable<ShaderAttribute> Attributes => @field.Attributes(container);
+        public Location Location => new Location(container, @field.m_LocationHandle);
+        public Location InitializerLocation => new Location(container, @field.m_InitializerLocationHandle);
+        public bool IsInput => @field.m_Flags.HasFlag(StructFieldInternal.Flags.kInput);
+        public bool IsOutput => @field.m_Flags.HasFlag(StructFieldInternal.Flags.kOutput);
+        internal bool HasFlag(StructFieldInternal.Flags flags) => @field.m_Flags.HasFlag(flags);
         // private
         internal StructField(ShaderContainer container, FoundryHandle handle)
         {
             this.container = container;
             this.handle = handle;
-            ShaderContainer.Get(container, handle, out field);
+            ShaderContainer.Get(container, handle, out @field);
         }
 
         public static StructField Invalid => new StructField(null, FoundryHandle.Invalid());

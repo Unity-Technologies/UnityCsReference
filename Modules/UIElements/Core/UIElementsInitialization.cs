@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(InlineStyleAccess), () => new InlineStyleAccessPropertyBag());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(ResolvedStyleAccess), () => new ResolvedStyleAccessPropertyBag());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleEnum<Align>), () => new StyleValuePropertyBag<StyleEnum<Align>, Align>());
+            PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleEnum<AnimationPlayState>), () => new StyleValuePropertyBag<StyleEnum<AnimationPlayState>, AnimationPlayState>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleEnum<DisplayStyle>), () => new StyleValuePropertyBag<StyleEnum<DisplayStyle>, DisplayStyle>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleEnum<EasingMode>), () => new StyleValuePropertyBag<StyleEnum<EasingMode>, EasingMode>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleEnum<FlexDirection>), () => new StyleValuePropertyBag<StyleEnum<FlexDirection>, FlexDirection>());
@@ -97,6 +98,7 @@ namespace UnityEngine.UIElements
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(List<FilterFunction>), () => new ListPropertyBag<FilterFunction>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(MaterialDefinition), () => new MaterialDefinition.PropertyBag());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleMaterialDefinition), () => new StyleValuePropertyBag<StyleMaterialDefinition, MaterialDefinition>());
+            PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleUIAnimationClip), () => new StyleValuePropertyBag<StyleUIAnimationClip, UIAnimationClip>());
         }
 
         static void RegisterConverters()

@@ -4,39 +4,61 @@
 
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetAttributeOverrideCommand
+internal sealed class SetAttributeOverrideCommand : Command<SetAttributeOverrideCommand>
 {
-    const string CommandUndoName = "Set attribute override";
-
-    readonly VisualTreeAsset m_VisualTreeAsset;
-    readonly UxmlSerializedAttributeDescription m_AttributeDescription;
-    readonly VisualElement m_VisualElement;
-    readonly object m_Value;
-
-    public SetAttributeOverrideCommand(
+    public static SetAttributeOverrideCommand GetPooled(
+        object source,
         VisualTreeAsset vta,
         UxmlSerializedAttributeDescription desc,
         VisualElement visualElement,
         object attributeValue)
     {
-        m_VisualTreeAsset = vta;
-        m_AttributeDescription = desc;
-        m_VisualElement = visualElement;
-        m_Value = attributeValue;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.m_VisualTreeAsset = vta;
+        cmd.m_AttributeDescription = desc;
+        cmd.m_VisualElement = visualElement;
+        cmd.m_Value = attributeValue;
+        return cmd;
     }
 
-    public void Execute()
+    VisualTreeAsset m_VisualTreeAsset;
+    UxmlSerializedAttributeDescription m_AttributeDescription;
+    VisualElement m_VisualElement;
+    object m_Value;
+
+    public override string UndoName { get; } = "Set attribute override";
+
+    public VisualTreeAsset VisualTreeAsset => m_VisualTreeAsset;
+    public UxmlSerializedAttributeDescription AttributeDescription => m_AttributeDescription;
+    public VisualElement VisualElement => m_VisualElement;
+    public object Value => m_Value;
+
+    protected override void Init()
     {
-        Assert.IsNotNull(m_VisualTreeAsset);
-        Assert.IsNotNull(m_AttributeDescription);
+        base.Init();
+        m_VisualTreeAsset = null;
+        m_AttributeDescription = null;
+        m_VisualElement = null;
+        m_Value = null;
+    }
 
-        Undo.RegisterCompleteObjectUndo(m_VisualTreeAsset, CommandUndoName);
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(m_VisualTreeAsset);
+    }
 
+    public override bool Validate()
+    {
+        return m_VisualTreeAsset != null && m_AttributeDescription != null;
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         if (UxmlAttributeConverter.TryConvertToString(m_Value, m_VisualTreeAsset, out var valueAsString))
         {
             UxmlAssetUtilities.PostAttributeValueChange(
@@ -46,8 +68,10 @@ internal readonly record struct SetAttributeOverrideCommand
                 null,
                 true,
                 m_VisualElement);
+
+            return CommandExecutionStatus.Success;
         }
-        EditorUtility.SetDirty(m_VisualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAsset);
+
+        return CommandExecutionStatus.ExecutionFailed;
     }
 }

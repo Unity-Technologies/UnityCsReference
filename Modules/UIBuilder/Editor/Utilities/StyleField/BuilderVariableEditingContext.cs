@@ -32,7 +32,7 @@ namespace Unity.UI.Builder
             m_Inspector.styleFields.OnFieldVariableChange(variableName, field, styleName, index);
         }
 
-        public void UnsetVariable(BindableElement field)
+        public void UnsetVariable(BindableElement field, string styleName)
         {
             m_Inspector.styleFields.UnsetStylePropertyForElement(field, true);
         }

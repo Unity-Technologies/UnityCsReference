@@ -55,7 +55,7 @@ namespace Unity.GraphToolkit.Editor
     /// </summary>
     [Serializable]
     [UnityRestricted]
-    internal class WireModel : GraphElementModel, IPortWireIndexModel
+    internal class WireModel : GraphElementModel, IPortWireIndexModel, IAnimatable
     {
         [SerializeField, FormerlySerializedAs("m_OutputPortReference")]
         PortReference m_FromPortReference;
@@ -71,6 +71,38 @@ namespace Unity.GraphToolkit.Editor
         PortModel m_FromPortModelCache;
 
         PortModel m_ToPortModelCache;
+
+        protected bool m_IsAnimating;
+        protected float m_AnimationSpeed = 1f;
+
+        /// <inheritdoc />
+        public bool IsAnimating
+        {
+            get => m_IsAnimating;
+            set
+            {
+                if (m_IsAnimating == value)
+                    return;
+
+                m_IsAnimating = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Animation);
+            }
+        }
+
+        /// <inheritdoc />
+        public float AnimationSpeed
+        {
+            get => m_AnimationSpeed;
+            set
+            {
+                if (Mathf.Approximately(m_AnimationSpeed, value))
+                    return;
+
+                m_AnimationSpeed = value;
+                if (m_IsAnimating)
+                    GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Animation);
+            }
+        }
 
         /// <inheritdoc />
         public override GraphModel GraphModel
@@ -181,7 +213,8 @@ namespace Unity.GraphToolkit.Editor
                 Editor.Capabilities.Deletable,
                 Editor.Capabilities.Copiable,
                 Editor.Capabilities.Selectable,
-                Editor.Capabilities.Ascendable
+                Editor.Capabilities.Ascendable,
+                Editor.Capabilities.Animatable
             });
         }
 
@@ -363,6 +396,19 @@ namespace Unity.GraphToolkit.Editor
                 ParentPort = ToPort,
             };
             parentNodeModel = ToPort.NodeModel;
+
+            return true;
+        }
+
+        public virtual bool CreateReversedDependency(out LinkedNodesDependency linkedNodesDependency,
+            out AbstractNodeModel parentNodeModel)
+        {
+            linkedNodesDependency = new LinkedNodesDependency
+            {
+                DependentPort = ToPort,
+                ParentPort = FromPort,
+            };
+            parentNodeModel = FromPort.NodeModel;
 
             return true;
         }

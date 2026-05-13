@@ -2,15 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    sealed class SpacingBoxModel : VisualElement
+    [UxmlElement]
+    sealed partial class SpacingBoxModel : VisualElement
     {
         static readonly string UssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/StyleSectionsBoxModel";
         static readonly string StyleFieldUssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/StyleField";
@@ -184,20 +183,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal sealed class SpacingBoxModelField : OverrideRow, INotifyCompositeStylePropertyChanged<StyleLength>
+    [UxmlElement]
+    internal sealed partial class SpacingBoxModelField : OverrideRow, INotifyCompositeStylePropertyChanged<StyleLength>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : OverrideRow.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new SpacingBoxModelField();
-        }
-
         static readonly BindingId marginTopProperty = nameof(marginTop);
         static readonly BindingId marginRightProperty = nameof(marginRight);
         static readonly BindingId marginBottomProperty = nameof(marginBottom);

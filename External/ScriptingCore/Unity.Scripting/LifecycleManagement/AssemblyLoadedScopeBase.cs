@@ -14,6 +14,8 @@ internal abstract class AssemblyLoadedScopeBase : LifecycleScopeWithContext<Read
         OrderedAssemblies = (ReadOnlyAssemblyList)Context;
     }
 
+    public override string ToString() => $"AssemblyLoaded({Context})";
+
     protected override void Enter(ScopeTransitionHelper scopeTransitionHelper)
     {
         // Inform the lifecycle controller that assemblies have been loaded. This could have

@@ -115,6 +115,7 @@ namespace UnityEditor
             public static readonly GUIStyle kDefaultDropdown = "QualitySettingsDefault";
 
             public static readonly GUIStyle kTextureMipmapLimitGroupsOptionsButton = new GUIStyle(EditorStyles.miniButton) { padding = new RectOffset() };
+            public static readonly GUIStyle kTextureMipmapLimitGroupNameLabel = new GUIStyle(EditorStyles.label) { clipping = TextClipping.Ellipsis };
 
             public const int kMinToggleWidth = 15;
             public const int kMaxToggleWidth = 20;
@@ -160,29 +161,33 @@ namespace UnityEditor
         string m_NewQualityLevelName = string.Empty;
 
         private SerializedProperty m_CurrentQualityProperty;
+        private bool m_IsEditingQualitySettings; // true if editing actual QualitySettings, false if preset
 
         private int GetCurrentTargetQualityLevel()
         {
-            if (m_CurrentQualityProperty == null)
-                m_CurrentQualityProperty = m_QualitySettings.FindProperty("m_CurrentQuality");
-
-            return (m_CurrentQualityProperty != null) ?
-                Mathf.Clamp(m_CurrentQualityProperty.intValue, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1)) : 0;
+            int value = m_IsEditingQualitySettings ? QualitySettings.GetQualityLevel() : m_CurrentQualityProperty.intValue;
+            return Mathf.Clamp(value, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
         }
 
         private void SetCurrentTargetQualityLevel(int value)
         {
-            if (m_CurrentQualityProperty == null)
-                m_CurrentQualityProperty = m_QualitySettings.FindProperty("m_CurrentQuality");
+            value = Mathf.Clamp(value, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
 
-            if (m_CurrentQualityProperty != null)
+            if (GetCurrentTargetQualityLevel() == value)
+                return;
+
+            if (m_IsEditingQualitySettings)
             {
-                value = Mathf.Clamp(value, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
-                if (m_CurrentQualityProperty.intValue != value)
-                {
-                    m_CurrentQualityProperty.intValue = value;
-                    m_QualitySettings.ApplyModifiedProperties();
-                }
+                // If editing the actual QualitySettings asset, use the API to trigger events
+                // (e.g., activeQualityLevelIndexChanged for toolbar dropdown updates).
+                QualitySettings.SetQualityLevel(value);
+                m_QualitySettings.Update();
+            }
+            else
+            {
+                // Editing a preset - modify via SerializedProperty
+                m_CurrentQualityProperty.intValue = value;
+                m_QualitySettings.ApplyModifiedProperties();
             }
         }
 
@@ -191,7 +196,11 @@ namespace UnityEditor
             m_QualitySettings = new SerializedObject(target);
             m_QualitySettingsProperty = m_QualitySettings.FindProperty("m_QualitySettings");
             m_PerPlatformDefaultQualityProperty = m_QualitySettings.FindProperty("m_PerPlatformDefaultQuality");
+            m_CurrentQualityProperty = m_QualitySettings.FindProperty("m_CurrentQuality");
             m_ValidPlatforms = BuildPlatforms.instance.GetValidPlatforms();
+
+            // Cache whether we're editing the actual QualitySettings or a preset
+            m_IsEditingQualitySettings = (m_QualitySettings.targetObject == QualitySettings.GetQualitySettings());
 
             m_TextureMipmapLimitGroupNamesProperty = m_QualitySettings.FindProperty("m_TextureMipmapLimitGroupNames");
             m_TextureMipmapLimitGroupsList = new ReorderableList(m_QualitySettings, m_TextureMipmapLimitGroupNamesProperty, false, true, true, true);
@@ -220,6 +229,7 @@ namespace UnityEditor
             ResolvePendingQualityLevelRename();
 
             // Clear cached property references for current quality level
+            m_CurrentQualityProperty = null;
             m_CurrentSettings = null;
             m_NameProperty = null;
             m_PixelLightCountProperty = null;
@@ -805,15 +815,8 @@ namespace UnityEditor
 
         private void ShowAffectedBuildProfileInformation()
         {
-            var buildProfiles = BuildProfile.GetAllBuildProfiles();
-            var profilesWithQualityLevelOverrides = 0;
-            foreach (var profile in buildProfiles)
-            {
-                if (profile.qualitySettings != null)
-                {
-                    profilesWithQualityLevelOverrides++;
-                }
-            }
+            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
+
             if (profilesWithQualityLevelOverrides > 0)
             {
                 if (profilesWithQualityLevelOverrides == 1)
@@ -880,10 +883,8 @@ namespace UnityEditor
         private void UpdateCachedProperties(int selectedLevel)
         {
             // Ensure selectedLevel is within bounds
-            if (selectedLevel < 0 || selectedLevel >= m_QualitySettingsProperty.arraySize)
-            {
-                selectedLevel = Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1);
-            }
+            selectedLevel = Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1);
+
             m_CurrentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
 
             m_NameProperty = m_CurrentSettings.FindPropertyRelative("name");
@@ -1388,7 +1389,8 @@ namespace UnityEditor
             bool isOffset = groupSettingsProp.FindPropertyRelative("limitBiasMode").intValue == 0;
             int mipmapLimit = groupSettingsProp.FindPropertyRelative("limitBias").intValue;
 
-            DoTextureMipmapLimitGroupNameLabel(labelPosition, EditorGUIUtility.TempContent(groupName, L10n.Tr("Mipmap Limit Group") + $" {index}"), index, groupName);
+            // We provide a label with tooltip because the text can be clipped for long group names
+            DoTextureMipmapLimitGroupNameLabel(labelPosition, EditorGUIUtility.TempContent(groupName, groupName), index, groupName);
             DoTextureMipmapLimitGroupsSettingsDropdown(dropdownPosition, isOffset, mipmapLimit, index, groupName);
             DoTextureMipmapLimitGroupsOptions(optionsPosition, index, groupName);
         }
@@ -1414,7 +1416,7 @@ namespace UnityEditor
             }
             else
             {
-                GUI.Label(rect, label, EditorStyles.label);
+                GUI.Label(rect, label, Styles.kTextureMipmapLimitGroupNameLabel);
                 Event e = Event.current;
                 if (rect.Contains(e.mousePosition) && e.type == EventType.ContextClick)
                 {

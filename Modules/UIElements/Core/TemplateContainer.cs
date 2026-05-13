@@ -28,39 +28,22 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId templateSourceProperty = nameof(templateSource);
         internal const string k_ElementName = "Instance";
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [Serializable]
+        internal class TemplateUXML
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
+            public VisualTreeAsset templateAsset;
+            public string templateId;
+        }
+
+        [UxmlAttribute("template"), HideInInspector]
+        internal TemplateUXML templateUXML
+        {
+            get => new TemplateUXML { templateAsset = templateSource, templateId = templateId };
+            set
             {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(template), "template"),
-                    new (nameof(templateId), "template", null, "template"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] VisualTreeAsset template;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags template_UxmlAttributeFlags;
-
-            // This allows reading template attribute as a string as well as VisualTreeAsset
-            [SerializeField, FormerlySerializedAs("template"), UxmlAttribute("template"), UxmlAttributeBindingPath(nameof(templateId)), HideInInspector] string templateId;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags templateId_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TemplateContainer();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TemplateContainer)obj;
-                if (ShouldWriteAttributeValue(template_UxmlAttributeFlags))
-                    e.templateSource = template;
-                if (ShouldWriteAttributeValue(templateId_UxmlAttributeFlags))
-                    e.templateId = templateId;
+                templateSource = value.templateAsset;
+                templateId = value.templateId;
             }
         }
 

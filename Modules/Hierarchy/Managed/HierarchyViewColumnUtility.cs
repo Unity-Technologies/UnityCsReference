@@ -127,6 +127,10 @@ namespace Unity.Hierarchy
 
             if (col is HierarchyViewColumnName)
                 return HierarchyViewColumnName.k_HierarchyNameColumnName;
+
+            if (col is HierarchyViewColumnNavigate)
+                return HierarchyViewColumnNavigate.k_HierarchyNavigateColumnName;
+
             return null;
         }
 
@@ -137,6 +141,10 @@ namespace Unity.Hierarchy
 
             if (col is HierarchyViewColumnName)
                 return 0;
+
+            if (col is HierarchyViewColumnNavigate)
+                return 1000;
+
             return 1000;
         }
 

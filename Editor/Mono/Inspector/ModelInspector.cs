@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
@@ -18,12 +19,29 @@ namespace UnityEditor
         Dictionary<Object, MeshPreview> m_MeshPreviews = new Dictionary<Object, MeshPreview>();
         MeshPreview m_DirtyMeshPreview = null;
 
+// Prevents compiler to fail because serialized properties are not initialized (they're actually initialized through the [CacheProperty] attribute)
+#pragma warning disable 0649
+        [CacheProperty]
+        SerializedProperty m_PreBakeConvexCollisionMesh;
+
+        [CacheProperty]
+        SerializedProperty m_PreBakeTriangleCollisionMesh;
+#pragma warning restore 0649
+
         static Vector2 m_ScrollPos;
 
         static readonly GUIContent s_LevelOfDetailLabel = new GUIContent("Level of Detail", "The number of Mesh LODs within each sub-mesh.");
 
+        // ShowCollisionInfo strings
+        static readonly string s_CollisionLabel = "Collision";
+        static readonly GUIContent s_PreBakeConvexCollisionMeshContent = EditorGUIUtility.TrTextContent("Bake Convex Collision Mesh", "Pre-bake convex collision mesh data during player build for use with convex MeshColliders. This improves runtime performance.");
+        static readonly GUIContent s_PreBakeTriangleCollisionMeshContent = EditorGUIUtility.TrTextContent("Bake Triangle Collision Mesh", "Pre-bake triangle collision mesh data during player build for use with non convex MeshColliders. This improves runtime performance.");
+        static readonly string s_ImportedMeshCollisionHelpBox = "Collision baking for imported meshes is configured in the Model Import Settings.";
+
         void OnEnable()
         {
+            Editor.AssignCachedProperties(this, serializedObject.GetIterator());
+
             foreach (var previewTarget in targets)
             {
                 var meshPreview = new MeshPreview(previewTarget as Mesh);
@@ -116,6 +134,7 @@ namespace UnityEditor
             ShowSkinInfo(mesh, attributes);
             ShowBlendShapeInfo(mesh);
             ShowOtherInfo(mesh);
+            ShowCollisionInfo(mesh);
 
             GUI.enabled = false;
         }
@@ -129,6 +148,41 @@ namespace UnityEditor
             EditorGUILayout.LabelField("Bounds Size", mesh.bounds.size.ToString("g4"));
             EditorGUILayout.LabelField("Read/Write Enabled", mesh.isReadable.ToString());
             EditorGUILayout.LabelField(s_LevelOfDetailLabel, GUIContent.Temp(mesh.isLodSelectionActive? $"{mesh.lodCount} levels" : $"{mesh.lodCount} level"));
+            EditorGUI.indentLevel--;
+        }
+
+        void ShowCollisionInfo(Mesh mesh)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField(s_CollisionLabel, EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            // Check if this mesh is imported from a model file (FBX, etc.)
+            var assetPath = AssetDatabase.GetAssetPath(mesh);
+            var importer = AssetImporter.GetAtPath(assetPath) as ModelImporter;
+            bool isImportedMesh = importer != null;
+
+            // Get current collision baking state
+            bool hasConvex = mesh.HasPreBakeCollisionMeshInternal(true);
+            bool hasTriangle = mesh.HasPreBakeCollisionMeshInternal(false);
+
+            if (InternalEditorUtility.IsReadOnlyAsset(assetPath, out var _) || isImportedMesh)
+            {
+                EditorGUILayout.LabelField(s_PreBakeConvexCollisionMeshContent, new GUIContent(hasConvex.ToString()));
+                EditorGUILayout.LabelField(s_PreBakeTriangleCollisionMeshContent, new GUIContent(hasTriangle.ToString()));
+
+                if (isImportedMesh)
+                {
+                    EditorGUILayout.HelpBox(s_ImportedMeshCollisionHelpBox, MessageType.Info);
+                }
+            }
+            else
+            {
+                // For standalone mesh assets, allow editing
+                EditorGUILayout.PropertyField(m_PreBakeConvexCollisionMesh, s_PreBakeConvexCollisionMeshContent);
+                EditorGUILayout.PropertyField(m_PreBakeTriangleCollisionMesh, s_PreBakeTriangleCollisionMeshContent);
+            }
+
             EditorGUI.indentLevel--;
         }
 

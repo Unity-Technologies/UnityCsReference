@@ -10,7 +10,8 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
-    sealed class TransitionsListView : BindableElement
+    [UxmlElement]
+    sealed partial class TransitionsListView : BindableElement
     {
         readonly UnityEngine.Pool.ObjectPool<FoldoutTransitionField> ss_Pool =
             new UnityEngine.Pool.ObjectPool<FoldoutTransitionField>(MakeItem);
@@ -53,12 +54,6 @@ namespace Unity.UI.Builder
         const string k_EditPropertyToAddWarningClass = k_BaseClass + "__edit-to-add-warning";
 
         const string k_AddButtonText = "Add Transition";
-
-        [Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new TransitionsListView();
-        }
 
         public override VisualElement contentContainer { get; }
 

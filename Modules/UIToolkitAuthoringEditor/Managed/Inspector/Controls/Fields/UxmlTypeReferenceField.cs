@@ -58,9 +58,9 @@ namespace Unity.UIToolkit.Editor
                 selectHandler = Select,
                 flags = SearchViewFlags.TableView |
                         SearchViewFlags.DisableBuilderModeToggle |
-                        SearchViewFlags.DisableInspectorPreview
+                        SearchViewFlags.DisableInspectorPreview |
+                        SearchViewFlags.ObjectPicker
             };
-
             SearchService.ShowPicker(state);
         }
 

@@ -53,12 +53,13 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc/>
-        protected internal override int NodeTitleOptions => EditableTitlePart.Options.SetWidth | NodeTitlePart.Options.ShouldDisplayColor | NodeTitlePart.Options.HasIcon | EditableTitlePart.Options.UseEllipsis;
+        protected internal override int NodeTitleOptions => EditableTitlePart.Options.SetWidth | NodeTitlePart.Options.HasIcon | EditableTitlePart.Options.UseEllipsis;
 
         /// <inheritdoc/>
         protected override void BuildPartList()
         {
             base.BuildPartList();
+            PartList.RemovePart(topColorLineContainerPartName);
             PartList.ReplacePart(titleIconContainerPartName, SubgraphNodeTitlePart.Create(titleIconContainerPartName, Model, this, ussClassName, NodeTitleOptions));
         }
 

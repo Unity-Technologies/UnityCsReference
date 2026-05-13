@@ -178,6 +178,11 @@ namespace UnityEditor.IMGUI.Controls
         bool m_UseExpansionAnimation = EditorPrefs.GetBool(kExpansionAnimationPrefKey, true);
         public bool useExpansionAnimation { get { return m_UseExpansionAnimation; } set { m_UseExpansionAnimation = value; } }
 
+        /// <summary>
+        /// Shows the parents of the search results in the search results. This is useful when the search results are shown in a flat list and the context of the search result is lost.
+        /// </summary>
+        public bool showParentsInSearchResults { get; set; }
+
         // Cached values during one event (for convenience)
         bool m_GrabKeyboardFocus;
         Rect m_TotalRect;

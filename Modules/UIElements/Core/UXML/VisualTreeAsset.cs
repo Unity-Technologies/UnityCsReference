@@ -28,8 +28,10 @@ namespace UnityEngine.UIElements
         internal delegate void AuthoringIdConflictResolvedHandler(UxmlAsset asset, int oldId, int newId);
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static string NoRegisteredFactoryErrorMessage = "Element '{0}' is missing a UxmlElementAttribute and has no registered factory method. Please ensure that you have the correct namespace imported.";
+        internal const string NoRegisteredUxmlElementErrorMessage = "Element '{0}' is missing a UxmlElementAttribute. Please ensure that you have the correct namespace imported.";
+        internal const string NoRegisteredUxmlElementErrorMessageLabel = "Unknown type: '{0}'";
         internal const string TemplateAliasExistsError = $"{nameof(VisualTreeAsset)}: could not register a template alias for asset `{{0}}`, alias is already defined for asset '{{1}}'";
+        internal const string RootElementName = "UXML";
 
         [SerializeField]
         bool m_ImportedWithErrors;
@@ -416,36 +418,6 @@ namespace UnityEngine.UIElements
 
             return null;
         }
-
-        #pragma warning disable CS0618 // Type or member is obsolete
-        internal IBaseUxmlObjectFactory GetUxmlObjectFactory(UxmlObjectAsset uxmlObjectAsset)
-        {
-            if (!UxmlObjectFactoryRegistry.factories.TryGetValue(uxmlObjectAsset.fullTypeName, out var factories))
-            {
-                Debug.LogErrorFormat("Element '{0}' has no registered factory method.", uxmlObjectAsset.fullTypeName);
-                return null;
-            }
-
-            IBaseUxmlObjectFactory factory = null;
-            var ctx = new CreationContext(this);
-            foreach (var f in factories)
-            {
-                if (f.AcceptsAttributeBag(uxmlObjectAsset, ctx))
-                {
-                    factory = f;
-                    break;
-                }
-            }
-
-            if (factory == null)
-            {
-                Debug.LogErrorFormat("Element '{0}' has a no factory that accept the set of XML attributes specified.", uxmlObjectAsset.fullTypeName);
-                return null;
-            }
-
-            return factory;
-        }
-        #pragma warning restore CS0618 // Type or member is obsolete
 
         [SerializeField] private List<SlotDefinition> m_Slots = new List<SlotDefinition>();
 
@@ -995,67 +967,17 @@ namespace UnityEngine.UIElements
             m_Usings.Insert(i, entry);
         }
 
-        #pragma warning disable CS0618 // Type or member is obsolete
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static VisualElement Create(VisualElementAsset asset, CreationContext ctx, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode = null)
         {
-            VisualElement CreateError()
+            if (asset.serializedData == null)
             {
-                Debug.LogErrorFormat(NoRegisteredFactoryErrorMessage, asset.fullTypeName);
-                return new Label(string.Format("Unknown type: '{0}'", asset.fullTypeName));
+                Debug.LogErrorFormat(NoRegisteredUxmlElementErrorMessage, asset.fullTypeName);
+                return new Label(string.Format(NoRegisteredUxmlElementErrorMessageLabel, asset.fullTypeName));
             }
 
-            // The type is known by UxmlSerializedData system use that instead to create the element.
-            if (asset.serializedData != null)
-                return asset.Instantiate(ctx, parentAuthoringNode);
-
-            if (!VisualElementFactoryRegistry.TryGetValue(asset.fullTypeName, out var factoryList))
-            {
-                if (asset.fullTypeName.StartsWith("UnityEngine.Experimental.UIElements.") || asset.fullTypeName.StartsWith("UnityEditor.Experimental.UIElements."))
-                {
-                    string experimentalTypeName = asset.fullTypeName.Replace(".Experimental.UIElements", ".UIElements");
-                    if (!VisualElementFactoryRegistry.TryGetValue(experimentalTypeName, out factoryList))
-                    {
-                        return CreateError();
-                    }
-                }
-                else if (asset.fullTypeName == UxmlRootElementFactory.k_ElementName)
-                {
-                    // Support UXML without namespace for backward compatibility.
-                    VisualElementFactoryRegistry.TryGetValue(typeof(UxmlRootElementFactory).Namespace + "." + asset.fullTypeName, out factoryList);
-                }
-                else
-                {
-                    return CreateError();
-                }
-            }
-
-            IUxmlFactory factory = null;
-            foreach (var f in factoryList)
-            {
-                if (f.AcceptsAttributeBag(asset, ctx))
-                {
-                    factory = f;
-                    break;
-                }
-            }
-
-            if (factory == null)
-            {
-                Debug.LogErrorFormat("Element '{0}' has a no factory that accept the set of XML attributes specified.", asset.fullTypeName);
-                return new Label(string.Format("Type with no factory: '{0}'", asset.fullTypeName));
-            }
-
-            var ve = factory.Create(asset, ctx);
-            if (ve != null)
-            {
-                AssignClassListFromAssetToElement(asset, ve);
-                AssignStyleSheetFromAssetToElement(asset, ve);
-            }
-
-            return ve;
+            return asset.Instantiate(ctx, parentAuthoringNode);
         }
-        #pragma warning restore CS0618 // Type or member is obsolete
 
         static void AssignClassListFromAssetToElement(VisualElementAsset asset, VisualElement element)
         {

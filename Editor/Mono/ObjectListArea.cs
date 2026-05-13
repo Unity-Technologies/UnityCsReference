@@ -1347,9 +1347,10 @@ namespace UnityEditor
                 GUIContent cont = new GUIContent(name);
                 string label = cont.text;
 
+                const float iconWidth = 16;
+
                 if (m_LocalAssets.ListMode)
                 {
-                    const float iconWidth = 16;
                     m_Ping.m_PingStyle = Styles.ping;
                     Vector2 pingLabelSize = m_Ping.m_PingStyle.CalcSize(cont);
                     m_Ping.m_ContentRect.width = pingLabelSize.x + vcPadding + iconWidth;
@@ -1372,19 +1373,22 @@ namespace UnityEditor
                     m_Ping.m_PingStyle.clipping = textClipping;
                     Vector2 pingLabelSize = Styles.resultsGridLabel.CalcSizeWithConstraints(cont, sizeUsedForCroppingName);
                     m_Ping.m_ContentRect.width = pingLabelSize.x + Styles.resultsGridLabel.padding.horizontal;
+
+                    FilteredHierarchy.FilterResult pingRes = m_LocalAssets.LookupByInstanceID(entityId);
+                    m_LocalAssets.GetGridModeIcon(pingRes, null, entityId, pingRes?.guid, out var previewImage);
+                    var typeIcon = m_LocalAssets.GetGridModeLabelTypeIcon(pingRes, null, previewImage, false);
+                    if (typeIcon != null)
+                    {
+                        m_Ping.m_ContentRect.width += iconWidth;
+                        cont.image = typeIcon;
+                    }
+
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
                     m_Ping.m_ContentDraw = (Rect r) =>
                     {
-                        // We need to temporary adjust style to render into content rect (org anchor is middle-centered)
-                        var orgAnchor = Styles.resultsGridLabel.alignment;
-                        var orgClipping = Styles.resultsGridLabel.clipping;
                         // Shift the rect to match the original text position
-                        r.position -= new Vector2(5, 1);
-                        Styles.resultsGridLabel.alignment = TextAnchor.MiddleCenter;
-                        Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
-                        Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
-                        Styles.resultsGridLabel.alignment = orgAnchor;
-                        Styles.resultsGridLabel.clipping = orgClipping;
+                        r.position -= new Vector2(5, 0);
+                        LocalGroup.DrawGridModeLabel(r, cont, false, false);
                     };
                     m_Ping.m_PingStyle.clipping = oldClipping;
                 }

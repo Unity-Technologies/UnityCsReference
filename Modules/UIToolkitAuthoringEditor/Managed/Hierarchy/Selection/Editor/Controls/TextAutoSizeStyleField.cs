@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
@@ -16,20 +14,9 @@ namespace Unity.UIToolkit.Editor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UsedImplicitly]
     [MovedFrom("Unity.UI.Builder")]
-    internal class TextAutoSizeStyleField : BaseField<TextAutoSize>
+    [UxmlElement]
+    internal partial class TextAutoSizeStyleField : BaseField<TextAutoSize>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<TextAutoSize>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TextAutoSize>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextAutoSizeStyleField();
-        }
-
         static readonly string s_FieldClassName = "unity-text-auto-size-style-field";
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/TextAutoSizeStyleField.uxml";
         static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/Controls/TextAutoSizeStyleField.uss";

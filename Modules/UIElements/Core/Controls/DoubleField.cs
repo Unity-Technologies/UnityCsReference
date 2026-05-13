@@ -20,18 +20,6 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         DoubleInput doubleInput => (DoubleInput)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<double>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<double>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new DoubleField();
-        }
-
         /// <summary>
         /// Converts the given double to a string.
         /// </summary>

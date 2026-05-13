@@ -3,17 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
-    class AnchoredOverlayContainer : OverlayContainer
+    [UxmlElement]
+    partial class AnchoredOverlayContainer : OverlayContainer
     {
-        [Serializable]
-        public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData
-        {
-            public override object CreateInstance() => new AnchoredOverlayContainer();
-        }
-
         public AnchoredOverlayContainer()
         {
             CreateDefaultSections(out var _, out var _);

@@ -37,8 +37,10 @@ namespace UnityEngine.SceneManagement
             get { return GetGUIDInternal(handle); }
         }
 
-        /*UCBP-PUBLIC*/
-        internal LoadableSceneId loadableSceneId
+        /// <summary>
+        /// The <see cref="Unity.Loading.LoadableSceneId"/> that identifies this scene's source asset, or an invalid id if not from built content.
+        /// </summary>
+        public LoadableSceneId loadableSceneId
         {
             get { return GetLoadableSceneIdInternal(handle); }
         }

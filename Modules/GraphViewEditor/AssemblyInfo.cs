@@ -4,6 +4,8 @@
 
 using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GraphViewEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.VisualEffectGraph.Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.VisualEffectGraph.EditorTests")]

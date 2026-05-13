@@ -53,7 +53,8 @@ namespace UnityEditor
 
         class SettingsContent
         {
-            public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
+            public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Changes to this list will switch editor to the first available platform.");
+            public static readonly GUIContent playerOnlyGraphicsAPIInfo = EditorGUIUtility.TrTextContent("Changes to this list will take effect in builds. The editor API remains unchanged.");
             public static readonly GUIContent appleSiliconOpenGLWarning = EditorGUIUtility.TrTextContent("OpenGL is not supported on Apple Silicon chips. Metal will be used on devices with Apple Silicon chips instead.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
 
@@ -211,6 +212,7 @@ namespace UnityEditor
             public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169, CS0649, and CS0282.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
+            public static readonly GUIContent managedCodeVariant = EditorGUIUtility.TrTextContent("Managed Code Variant", "Defines how C# code in the project is compiled when exporting a build. Each variant level is inclusive of the next level: for instance, the Debug variant has Unity checks enabled, whereas the Checked variant has Instrumented code paths enabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration", "The C++ compiler configuration used when compiling IL2CPP generated code.");
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
             public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Optimize for runtime speed"), EditorGUIUtility.TrTextContent("Optimize for code size and build time") };
@@ -229,8 +231,6 @@ namespace UnityEditor
             public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
             public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
-            public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
-            public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_FW_Unity = EditorGUIUtility.TrTextContent(".NET Framework");
@@ -494,6 +494,7 @@ namespace UnityEditor
         SerializedProperty m_AdditionalCompilerArguments;
         SerializedProperty m_StackTraceTypes;
         SerializedProperty m_ManagedStrippingLevel;
+        SerializedProperty m_ManagedCodeVariant;
         SerializedProperty m_ActiveInputHandler;
 
         SerializedProperty m_SpriteBatchVertexThreshold;
@@ -674,6 +675,7 @@ namespace UnityEditor
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
+            m_ManagedCodeVariant            = FindPropertyAssert("managedCodeVariant");
             m_ActiveInputHandler            = FindPropertyAssert("activeInputHandler");
             m_AdditionalCompilerArguments   = FindPropertyAssert("additionalCompilerArguments");
 
@@ -1147,51 +1149,56 @@ namespace UnityEditor
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
-            // Add ellipsis truncation for labels
+            // Add ellipsis truncation for labels. We have to restore the original clipping in a
+            // finally block because sub-methods may throw an exception, which would otherwise leak
+            // the mutated shared style to the rest of the editor.
             var previousTextClipping = EditorStyles.label.clipping;
             EditorStyles.label.clipping = TextClipping.Ellipsis;
-
-            int sectionIndex = 0;
-
-            if (serializedObjectUpdated)
+            try
             {
-                m_IconsEditor.SerializedObjectUpdated();
-                foreach (var settingsExtension in m_SettingsExtensions)
+                int sectionIndex = 0;
+
+                if (serializedObjectUpdated)
                 {
-                    settingsExtension?.SerializedObjectUpdated();
+                    m_IconsEditor.SerializedObjectUpdated();
+                    foreach (var settingsExtension in m_SettingsExtensions)
+                    {
+                        settingsExtension?.SerializedObjectUpdated();
+                    }
+                }
+
+                m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
+
+                ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+
+                PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
+
+                EditorGUILayout.EndPlatformGrouping();
+
+                serializedObject.ApplyModifiedProperties();
+
+                if (hasPresetWindowClosed)
+                {
+                    // We recompile after the window is closed just to make sure all the values are set/shown correctly.
+                    // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
+                    // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
+                    SetReason(RecompileReason.presetChanged);
+
+                    OnPresetSelectorClosed();
+                }
+                else if (HasReasonToCompile())
+                {
+                    RecompileScripts();
                 }
             }
-
-            m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
-
-            ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-
-            PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
-
-            EditorGUILayout.EndPlatformGrouping();
-
-            serializedObject.ApplyModifiedProperties();
-
-            if (hasPresetWindowClosed)
+            finally
             {
-                // We recompile after the window is closed just to make sure all the values are set/shown correctly.
-                // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
-                // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
-                SetReason(RecompileReason.presetChanged);
-
-                OnPresetSelectorClosed();
+                EditorStyles.label.clipping = previousTextClipping;
             }
-            else if (HasReasonToCompile())
-            {
-                RecompileScripts();
-            }
-
-            // Resetting truncation of labels back
-            EditorStyles.label.clipping = previousTextClipping;
         }
 
         void DisplayBuildProfileHelpBoxIfNeeded()
@@ -1297,8 +1304,6 @@ namespace UnityEditor
                     GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
                     if (SupportsRunInBackground(namedBuildTarget))
                         EditorGUILayout.PropertyField(m_RunInBackground, SettingsContent.runInBackground);
-
-                    EditorGUILayout.PropertyField(m_CallOnDisableOnAssetBundleUnload, SettingsContent.callOnDisableOnAssetBundleUnload);
 
                     // Resolution itself
                     if (settingsExtension != null)
@@ -1647,13 +1652,13 @@ namespace UnityEditor
                             }
                         }
                         return new ChangeGraphicsApiAction(restart, restart);
-                    
+
                     case 2: // Discard scene changes and restart
                         for (int i = 0; i < dirtyScenes.Count; ++i)
                             EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
-                        
+
                         return new ChangeGraphicsApiAction(true, true);
-                    
+
                     case 1: // Cancel Changing API or Restart Later
                     default:
                         if (cancelAPIChange)
@@ -1911,6 +1916,10 @@ namespace UnityEditor
             if (WillEditorUseFirstGraphicsAPI(targetPlatform))
             {
                 EditorGUILayout.HelpBox(SettingsContent.recordingInfo.text, MessageType.Info, true);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(SettingsContent.playerOnlyGraphicsAPIInfo.text, MessageType.Info, true);
             }
 
             if (targetPlatform == BuildTarget.StandaloneOSX && m_GraphicsDeviceLists[BuildTarget.StandaloneOSX].list.Contains(GraphicsDeviceType.OpenGLCore))
@@ -3284,6 +3293,22 @@ namespace UnityEditor
             }
         }
 
+        static readonly ManagedCodeVariant[] k_ManagedCodeVariants = { ManagedCodeVariant.Debug, ManagedCodeVariant.Checked, ManagedCodeVariant.Instrumented, ManagedCodeVariant.Release };
+        static readonly GUIContent[] k_ManagedCodeVariantNames =
+        {
+            EditorGUIUtility.TrTextContent("Debug", "Compiles C# code without optimizations. Defines DEBUG and all the same defines as the Checked variant. Used for debugging the code with a debugger."),
+            EditorGUIUtility.TrTextContent("Checked", "Compiles C# code with optimizations. Defines UNITY_ENABLE_CHECKS, UNITY_ASSERTIONS and all the same defines as the Instrumented variant. Used for running the game with extra checks enabled."),
+            EditorGUIUtility.TrTextContent("Instrumented", "Compiles C# code with optimizations. Defines UNITY_INCLUDE_INSTRUMENTATION and ENABLE_PROFILER. Used for profiling."),
+            EditorGUIUtility.TrTextContent("Release", "Compiles C# code with optimizations. Used for running with all unnecessary code paths disabled and for shipping releases to users."),
+        };
+
+        private ManagedCodeVariant GetCurrentManagedCodeVariantForTarget(NamedBuildTarget namedBuildTarget)
+        {
+            if (m_ManagedCodeVariant.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+                return (ManagedCodeVariant)entry.FindPropertyRelative("second").intValue;
+            return ManagedCodeVariant.Release;
+        }
+
         private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(NamedBuildTarget namedBuildTarget)
         {
             if (m_APICompatibilityLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
@@ -3681,6 +3706,8 @@ namespace UnityEditor
                 }
             }
 
+            EditorGUILayout.PropertyField(m_CallOnDisableOnAssetBundleUnload, SettingsContent.callOnDisableOnAssetBundleUnload);
+
             if (settingsExtension != null)
                 settingsExtension.ConfigurationSectionGUI();
 
@@ -4071,6 +4098,17 @@ namespace UnityEditor
                 }
             }
 
+            using (var vertical = new EditorGUILayout.VerticalScope())
+            {
+                using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_ManagedCodeVariant))
+                {
+                    ManagedCodeVariant currentVariant = GetCurrentManagedCodeVariantForTarget(platform.namedBuildTarget);
+                    ManagedCodeVariant newVariant = BuildEnumPopup(SettingsContent.managedCodeVariant, currentVariant, k_ManagedCodeVariants, k_ManagedCodeVariantNames);
+                    if (newVariant != currentVariant)
+                        m_ManagedCodeVariant.SetMapValue(platform.namedBuildTarget.TargetName, (int)newVariant);
+                }
+            }
+
             if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
             {
                 EditorGUILayout.PropertyField(m_IPhoneScriptCallOptimization, SettingsContent.iPhoneScriptCallOptimization);
@@ -4281,8 +4319,6 @@ namespace UnityEditor
             {
                 m_NiceApiCompatibilityLevelNames = new Dictionary<ApiCompatibilityLevel, GUIContent>
                 {
-                    { ApiCompatibilityLevel.NET_2_0, SettingsContent.apiCompatibilityLevel_NET_2_0 },
-                    { ApiCompatibilityLevel.NET_2_0_Subset, SettingsContent.apiCompatibilityLevel_NET_2_0_Subset },
                     { ApiCompatibilityLevel.NET_Unity_4_8, SettingsContent.apiCompatibilityLevel_NET_FW_Unity },
                     { ApiCompatibilityLevel.NET_Standard, SettingsContent.apiCompatibilityLevel_NET_Standard },
                     { ApiCompatibilityLevel.NET, SettingsContent.apiCompatibilityLevel_NET_10 },

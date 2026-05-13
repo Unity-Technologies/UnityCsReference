@@ -57,8 +57,9 @@ namespace UnityEditor
     // Must be in sync with Il2CppLTOMode enum in SerializationMetaFlags.h
     public enum Il2CppLTOMode
     {
-        Full = 0,
+        None = 0,
         Thin = 1,
+        Full = 2,
     }
 
     // Mac fullscreen mode
@@ -166,18 +167,22 @@ namespace UnityEditor
     public enum ApiCompatibilityLevel
     {
         // .NET 2.0
+        [Obsolete("No longer in use")]
         NET_2_0 = 1,
 
         // .NET 2.0 Subset
+        [Obsolete("No longer in use")]
         NET_2_0_Subset = 2,
 
         // .NET 4.6
         NET_4_6 = 3,
 
         // unity_web profile, currently unused. Formerly used by Samsung TV
+        [Obsolete("No longer in use")]
         NET_Web = 4,
 
         // micro profile, used by Mono scripting backend if stripping level is set to "Use micro mscorlib"
+        [Obsolete("No longer in use")]
         NET_Micro = 5,
 
         // .NET Standard 2.0
@@ -211,6 +216,20 @@ namespace UnityEditor
         Medium = 2,
         High = 3,
         Minimal = 4,
+    }
+
+    // Matches ManagedCodeVariant in native (BuildTargetPlatformSpecific.h).
+    // Controls which diagnostic preprocessor defines are emitted and optimization level when compiling managed code for player builds.
+    public enum ManagedCodeVariant
+    {
+        // Emit DEBUG, UNITY_ENABLE_CHECKS, and UNITY_INCLUDE_INSTRUMENTATION. Compile code in Debug CodeGen.
+        Debug = 0,
+        // Emit UNITY_ENABLE_CHECKS and UNITY_INCLUDE_INSTRUMENTATION (no DEBUG).
+        Checked = 1,
+        // Emit UNITY_INCLUDE_INSTRUMENTATION only.
+        Instrumented = 2,
+        // Emit no diagnostic defines.
+        Release = 3,
     }
 
     // What to do on uncaught .NET exception (on iOS)
@@ -1293,6 +1312,17 @@ namespace UnityEditor
         private static extern void SetIl2CppCodeGenerationInternal(string buildTargetName, Il2CppCodeGeneration value);
         public static void SetIl2CppCodeGeneration(NamedBuildTarget buildTarget, Il2CppCodeGeneration value) =>
             SetIl2CppCodeGenerationInternal(buildTarget.TargetName, value);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetManagedCodeVariant", ThrowsException = true)]
+        private static extern ManagedCodeVariant GetManagedCodeVariantInternal(string buildTargetName);
+        public static ManagedCodeVariant GetManagedCodeVariant(NamedBuildTarget buildTarget) => GetManagedCodeVariantInternal(buildTarget.TargetName);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetManagedCodeVariant", ThrowsException = true)]
+        private static extern void SetManagedCodeVariantInternal(string buildTargetName, ManagedCodeVariant variant);
+        public static void SetManagedCodeVariant(NamedBuildTarget buildTarget, ManagedCodeVariant variant) =>
+            SetManagedCodeVariantInternal(buildTarget.TargetName, variant);
 
         [NativeMethod("SetMobileMTRendering", ThrowsException = true)]
         private static extern void SetMobileMTRenderingInternal(string buildTargetName, bool enable);

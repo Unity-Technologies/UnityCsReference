@@ -116,6 +116,17 @@ namespace UnityEditor.Lighting.LightingSearch
 
             var viewState = new SearchViewState(context);
             viewState.trackingHandler = OnTrackSelection;
+            viewState.displaySearchErrors = (searchView, group, error) =>
+            {
+                // Suppress "Unknown filter" errors that occur when using saved queries
+                // with filters that have not been indexed in the current project yet.
+                // Only suppress errors from the Project tab (asset provider) where indexing occurs.
+                if (group == "asset" &&
+                    error.reason != null &&
+                    error.reason.Contains("Unknown filter", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                return true;
+            };
             return viewState;
         }
 

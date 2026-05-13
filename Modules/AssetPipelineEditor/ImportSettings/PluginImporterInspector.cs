@@ -34,6 +34,7 @@ namespace UnityEditor
         internal class Styles
         {
             public static readonly GUIContent kDefineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
+            public static readonly GUIContent kDefineConstraintsNativePlugin = EditorGUIUtility.TrTextContent("Define Constraints*", "Editor excluded");
             public static readonly GUIContent kLoadSettings = EditorGUIUtility.TrTextContent("Plugin load settings");
             public static readonly GUIContent kPreload = EditorGUIUtility.TrTextContent("Load on startup", "Always load plugin during startup instead of on-demand");
             public static readonly GUIContent kPluginPlatforms = EditorGUIUtility.TrTextContent("Select platforms for plugin");
@@ -742,12 +743,56 @@ namespace UnityEditor
             EditorGUILayout.EndVertical();
         }
 
+        private void ShowDefineConstraintsGUI(bool isNativePlugin)
+        {
+            GUILayout.Label(isNativePlugin ? Styles.kDefineConstraintsNativePlugin : Styles.kDefineConstraints, EditorStyles.boldLabel);
+
+            if (m_DefineConstraints.list.Count > 0)
+            {
+                var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
+
+                var defineConstraintsCompatible = true;
+
+                if (defines != null)
+                {
+                    EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext = new EditorBuildRules.SymbolDefinitionContext(defines);
+                    for (var i = 0; i < m_DefineConstraints.list.Count && defineConstraintsCompatible; ++i)
+                    {
+                        var defineConstraint = ((DefineConstraint)m_DefineConstraints.list[i]).name;
+
+                        if (DefineConstraintsHelper.GetDefineConstraintCompatibility(symbolDefinitionContext, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
+                        {
+                            defineConstraintsCompatible = false;
+                        }
+                    }
+
+                    var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
+                    constraintValidityRect.x = constraintValidityRect.width - Styles.kValidityIconWidth / 4;
+                    var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
+                    var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
+                    var content = new GUIContent(image, tooltip);
+
+                    constraintValidityRect.width = Styles.kValidityIconWidth;
+                    constraintValidityRect.height = Styles.kValidityIconHeight;
+                    EditorGUI.LabelField(constraintValidityRect, content);
+                }
+            }
+
+            m_DefineConstraints.DoLayoutList();
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             using (new EditorGUI.DisabledScope(false))
             {
                 var isManagedPlugin = Array.TrueForAll(importers, x => x.dllType == DllType.ManagedNET35 || x.dllType == DllType.ManagedNET40);
+                var isNativePlugin = Array.TrueForAll(importers, imp => imp.isNativePlugin);
+                bool isEditorOnlyPlugin = 
+                    m_CompatibleWithEditor == Compatibility.Compatible
+                    && m_CompatibleWithAnyPlatform < Compatibility.Compatible
+                    && m_CompatibleWithPlatform.TrueForAll(c => c == Compatibility.NotCompatible);
+
                 if (isManagedPlugin)
                 {
                     ShowReferenceOptions();
@@ -763,45 +808,10 @@ namespace UnityEditor
                 if (IsEditingPlatformSettingsSupported())
                     ShowPlatformSettings();
 
-                if (isManagedPlugin)
-                {
-                    GUILayout.Label(Styles.kDefineConstraints, EditorStyles.boldLabel);
+                if (isManagedPlugin || (isNativePlugin && !isEditorOnlyPlugin)) 
+                    ShowDefineConstraintsGUI(isNativePlugin);
 
-                    if (m_DefineConstraints.list.Count > 0)
-                    {
-                        var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
-
-                        var defineConstraintsCompatible = true;
-
-                        if (defines != null)
-                        {
-                            EditorBuildRules.SymbolDefinitionContext symbolDefinitionContext = new EditorBuildRules.SymbolDefinitionContext(defines);
-                            for (var i = 0; i < m_DefineConstraints.list.Count && defineConstraintsCompatible; ++i)
-                            {
-                                var defineConstraint = ((DefineConstraint)m_DefineConstraints.list[i]).name;
-
-                                if (DefineConstraintsHelper.GetDefineConstraintCompatibility(symbolDefinitionContext, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
-                                {
-                                    defineConstraintsCompatible = false;
-                                }
-                            }
-
-                            var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
-                            constraintValidityRect.x = constraintValidityRect.width - Styles.kValidityIconWidth / 4;
-                            var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
-                            var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
-                            var content = new GUIContent(image, tooltip);
-
-                            constraintValidityRect.width = Styles.kValidityIconWidth;
-                            constraintValidityRect.height = Styles.kValidityIconHeight;
-                            EditorGUI.LabelField(constraintValidityRect, content);
-                        }
-                    }
-
-                    m_DefineConstraints.DoLayoutList();
-                }
-
-                if (Array.TrueForAll(importers, imp => imp.isNativePlugin))
+                if (isNativePlugin)
                 {
                     GUILayout.Space(10f);
                     GUILayout.Label(Styles.kLoadSettings, EditorStyles.boldLabel);

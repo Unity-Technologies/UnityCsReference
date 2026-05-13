@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,21 +12,9 @@ namespace Unity.UIToolkit.Editor;
     /// <summary>
     /// Makes a field for entering TextShadow.
     /// </summary>
-    internal class TextShadowField : BaseField<TextShadow>
+    [UxmlElement]
+    internal partial class TextShadowField : BaseField<TextShadow>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<TextShadow>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TextShadow>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new TextShadowField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

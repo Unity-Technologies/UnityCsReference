@@ -34,6 +34,7 @@ namespace Unity.GraphToolkit.Editor
             ModelView ui = new ContextNodeView();
 
             ui.SetupBuildAndUpdate(nodeModel, elementBuilder.View, elementBuilder.Context);
+            ui.ApplyCustomStylesheet(nodeModel);
             return ui;
         }
 
@@ -48,6 +49,7 @@ namespace Unity.GraphToolkit.Editor
             ModelView ui = new BlockNodeView();
 
             ui.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
+            ui.ApplyCustomStylesheet(model);
             return ui;
         }
 
@@ -79,6 +81,7 @@ namespace Unity.GraphToolkit.Editor
             }
 
             ui.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
+            ui.ApplyCustomStylesheet(model);
             return ui;
         }
 

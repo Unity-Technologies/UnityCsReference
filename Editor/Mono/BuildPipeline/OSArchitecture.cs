@@ -8,11 +8,11 @@ namespace UnityEditor.Build
     ///<remarks>Currently only used when building for standalone desktop players.</remarks>
     public enum OSArchitecture
     {
-        ///<summary>Supported for MacOS, Windows and Linux.</summary>
+        ///<summary>Supported for Windows and Linux. Deprecated for MacOS; use ARM64 instead.</summary>
         x64,
         ///<summary>Supported for MacOS and Windows.</summary>
         ARM64,
-        ///<summary>Supported for MacOS.</summary>
+        ///<summary>Supported for MacOS. Deprecated for MacOS; use ARM64 instead.</summary>
         x64ARM64,
         ///<summary>Supported for Windows.</summary>
         x86,

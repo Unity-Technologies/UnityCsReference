@@ -19,6 +19,14 @@ namespace UnityEditor
     [CustomEditor(typeof(BlendTree))]
     internal class BlendTreeInspector : Editor
     {
+        enum BlendTreeVisualizationMode
+        {
+            /// <summary>Show weight contribution of selected motion</summary>
+            IndividualWeight,
+            /// <summary>Show combined blend result of all motions</summary>
+            OverallBlend,
+        }
+
         class Styles
         {
             public readonly GUIStyle background = "MeBlendBackground";
@@ -97,7 +105,7 @@ namespace UnityEditor
         private AnimBool m_ShowCompute = new AnimBool();
         private AnimBool m_ShowAdjust = new AnimBool();
         private bool m_ShowGraphValue = false;
-        private bool m_BlendValueManipulated = false;
+        private BlendTreeVisualizationMode m_VisualizationMode = BlendTreeVisualizationMode.IndividualWeight;
 
         private float[] m_Weights;
         private const int kVisResolution = 64;
@@ -177,6 +185,7 @@ namespace UnityEditor
                 m_ReorderableList.onReorderCallback = EndDragChild;
                 m_ReorderableList.onAddDropdownCallback = AddButton;
                 m_ReorderableList.onRemoveCallback = RemoveButton;
+                m_ReorderableList.onSelectCallback = OnChildSelected;
                 if (m_BlendType.intValue == (int)BlendTreeType.Simple1D)
                     SortByThreshold();
                 m_ShowGraphValue = m_BlendType.intValue == (int)BlendTreeType.Direct ? m_Childs.arraySize >= 1 : m_Childs.arraySize >= 2;
@@ -664,7 +673,7 @@ namespace UnityEditor
                     {
                         evt.Use();
                         GUIUtility.hotControl = sliderId;
-                        m_BlendValueManipulated = true;
+                        m_VisualizationMode = BlendTreeVisualizationMode.OverallBlend;
 
                         // Get current blend value.
                         curBlendValue = GetParameterValue(currentAnimator, m_BlendTree, currentParameter);
@@ -679,7 +688,7 @@ namespace UnityEditor
                         float clickPosition = evt.mousePosition.x;
                         float distance = Mathf.Infinity;
 
-                        m_BlendValueManipulated = true;
+                        m_VisualizationMode = BlendTreeVisualizationMode.OverallBlend;
                         for (int i = 0; i < points.Length; i++)
                         {
                             float last = (i == 0) ? points[i] : points[i - 1];
@@ -690,7 +699,7 @@ namespace UnityEditor
                                 {
                                     distance = Mathf.Abs(clickPosition - points[i]);
                                     m_ReorderableList.index = i;
-                                    m_BlendValueManipulated = false;
+                                    m_VisualizationMode = BlendTreeVisualizationMode.IndividualWeight;
                                 }
                             }
                         }
@@ -699,7 +708,7 @@ namespace UnityEditor
                         m_UseAutomaticThresholds.boolValue = false;
 
                         // Get current blend value.
-                        if (!m_BlendValueManipulated)
+                        if (m_VisualizationMode == BlendTreeVisualizationMode.IndividualWeight)
                         {
                             SerializedProperty child = m_Childs.GetArrayElementAtIndex(m_ReorderableList.index);
                             SerializedProperty threshold = child.FindPropertyRelative("m_Threshold");
@@ -725,7 +734,7 @@ namespace UnityEditor
                     newMouseBlendValue = Mathf.LerpUnclamped(m_OriginMin, m_OriginMax, newMouseBlendValue);
                     float newBlendValue = newMouseBlendValue - m_DragAndDropDelta;
 
-                    if (m_BlendValueManipulated)
+                    if (m_VisualizationMode == BlendTreeVisualizationMode.OverallBlend)
                     {
                         // the user is dragging the blend position
                         newBlendValue = Mathf.Clamp(newBlendValue, min, max);
@@ -777,7 +786,7 @@ namespace UnityEditor
                     {
                         evt.Use();
                         GUIUtility.hotControl = 0;
-                        m_BlendValueManipulated = true;
+                        m_VisualizationMode = BlendTreeVisualizationMode.OverallBlend;
                     }
                     break;
             }
@@ -816,7 +825,7 @@ namespace UnityEditor
             watch.Start();
             Texture2D[] textures = m_WeightTexs.ToArray();
             // While dragging, only update the weight texture that's being dragged.
-            if (GUIUtility.hotControl != 0 && !m_BlendValueManipulated)
+            if (GUIUtility.hotControl != 0 && m_VisualizationMode == BlendTreeVisualizationMode.IndividualWeight)
             {
                 int[] indices = GetMotionToActiveMotionIndices();
                 for (int i = 0; i < textures.Length; i++)
@@ -983,7 +992,7 @@ namespace UnityEditor
                     GUI.DrawTexture(area, EditorGUIUtility.whiteTexture);
 
                     // Draw weight texture
-                    if (m_BlendValueManipulated || m_ReorderableList.index >= presences.Length)
+                    if (m_VisualizationMode == BlendTreeVisualizationMode.OverallBlend || m_ReorderableList.index >= presences.Length)
                     {
                         Color col = styles.visWeightColor;
                         col.a *= 0.75f;
@@ -1045,7 +1054,7 @@ namespace UnityEditor
                     }
                     else if (area.Contains(evt.mousePosition))
                     {
-                        m_BlendValueManipulated = true;
+                        m_VisualizationMode = BlendTreeVisualizationMode.OverallBlend;
 
                         for (int i = 0; i < points.Length; i++)
                         {
@@ -1056,7 +1065,7 @@ namespace UnityEditor
                                 GUIUtility.hotControl = drag2dId;
                                 m_SelectedPoint = i;
                                 m_ReorderableList.index = i;
-                                m_BlendValueManipulated = false;
+                                m_VisualizationMode = BlendTreeVisualizationMode.IndividualWeight;
                             }
                         }
 
@@ -1250,6 +1259,11 @@ namespace UnityEditor
             points = new Vector3[2] {new Vector3(val, top, 0f), new Vector3(max, top + area.height, 0f)};
             Handles.DrawAAPolyLine(points);
             Handles.color = oldColor;
+        }
+
+        private void OnChildSelected(UnityEditorInternal.ReorderableList list)
+        {
+            m_VisualizationMode = BlendTreeVisualizationMode.IndividualWeight;
         }
 
         public void EndDragChild(UnityEditorInternal.ReorderableList list)

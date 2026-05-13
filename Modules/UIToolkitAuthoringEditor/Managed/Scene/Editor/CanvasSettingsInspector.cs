@@ -13,15 +13,6 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
 sealed partial class CanvasSettingsInspector : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public new static void Register()
-            => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-
-        public override object CreateInstance() => new CanvasSettingsInspector();
-    }
-
     const string k_VisualTreeAsset = "UIToolkitAuthoring/UIViewportWindow/CanvasSettingsInspector.uxml";
     const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";

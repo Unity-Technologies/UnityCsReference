@@ -13,22 +13,11 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toolbar spacer of static size. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSpacer|UXML element ToolbarSpacer]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarSpacer.png")]
     public partial class ToolbarSpacer : VisualElement
     {
         internal static readonly BindingId flexProperty = nameof(flex);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarSpacer();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.

@@ -192,5 +192,12 @@ namespace Unity.Collections.LowLevel.Unsafe
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");
         }
+
+        [VisibleToOtherModules]
+        internal static ref byte RefToFirstField(object o)
+        {
+            // @patched at compile time
+            throw new NotImplementedException("Patching this method failed");
+        }
     }
 }

@@ -9,7 +9,8 @@ using Color = UnityEngine.Color;
 
 namespace UnityEditor.Audio.UIElements
 {
-    internal class Tickmarks : VisualElement
+    [UxmlElement]
+    internal partial class Tickmarks : VisualElement
     {
         private interface Scale
         {
@@ -41,12 +42,6 @@ namespace UnityEditor.Audio.UIElements
             public string[] Labels() { return new string[] { "80", "45", "21", "12", "0" }; }
             public int[] SubDivisionCount() { return new int[] { 6, 3, 2, 3 };  }
             public float[] LabelOffsets() { return new float[] { -6, -6, -6, -6, -3.5f }; }
-        }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new Tickmarks();
         }
 
         public Tickmarks() : base()

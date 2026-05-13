@@ -380,7 +380,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (assemblies.RoslynAnalyzerDllPaths != null)
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                RoslynAnalyzers.SetAnalyzers(scriptAssemblies, assemblies.CustomTargetAssemblies.Values.ToArray(), assemblies.RoslynAnalyzerDllPaths, false);
+                RoslynAnalyzers.SetAnalyzers(scriptAssemblies, assemblies.CustomTargetAssemblies.Values.ToArray(), assemblies.RoslynAnalyzerDllPaths, true);
 #pragma warning restore UA2001
 
             return scriptAssemblies;
@@ -440,8 +440,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ScriptAssembly scriptAssemblyReference;
 
                 // If the assembly already showed up in the unity references, don't reference it here.
-                // This can happen when an assembly is configured as a unity assembly override, but
-                // overrides are disabled. The Unity assembly should take precedence in that case.
+                // The Unity assembly should take precedence in that case.
                 if (unityReferences.Contains(reference.Filename))
                     continue;
 

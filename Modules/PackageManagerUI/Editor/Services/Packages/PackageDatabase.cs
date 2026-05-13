@@ -296,7 +296,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_PackageUniqueIdToSampleCollectionsMap.Remove(packageUniqueId);
                 }
             }
-            LinkSamplesToPackage();
             onSamplesChanged?.Invoke(new SamplesChangeArgs { added = added, updated = updated, removed = sampleRemoved, preUpdate = preUpdate});
         }
 
@@ -307,11 +306,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var sampleCollection in m_SerializedSamples)
             {
-                m_PackageUniqueIdToSampleCollectionsMap[sampleCollection.packageUniqueId] = sampleCollection;
-                foreach (var sample in sampleCollection)
+                var package = GetPackage(sampleCollection.packageUniqueId);
+                var samples = new Sample[sampleCollection.Count];
+                for (var i = 0; i < sampleCollection.Count; i++)
+                {
+                    var sample = m_SampleModifier.SetPackage(sampleCollection[i], package);
                     m_SampleUniqueIdToSamplesMap[sample.uniqueId] = sample;
+                    samples[i] = sample;
+                }
+                m_PackageUniqueIdToSampleCollectionsMap[sampleCollection.packageUniqueId] = new SampleCollection(sampleCollection.packageUniqueId, samples);
             }
-            LinkSamplesToPackage();
         }
 
         public void OnBeforeSerialize()
@@ -389,34 +393,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            LinkSamplesToPackage();
             TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated, changedSource: changedSource);
-        }
-
-        private void LinkSamplesToPackage()
-        {
-            var newSampleCollections = new List<SampleCollection>();
-            foreach (var sampleCollection in m_PackageUniqueIdToSampleCollectionsMap.Values)
-            {
-                var package = GetPackage(sampleCollection.packageUniqueId);
-                if (package == null)
-                    continue;
-                var newSamples = new Sample[sampleCollection.Count];
-                for (var i = 0; i < sampleCollection.Count; i++)
-                {
-                    var sample = m_SampleModifier.SetPackage(sampleCollection[i], package);
-                    newSamples[i] = sample;
-                    m_SampleUniqueIdToSamplesMap[sample.uniqueId] = sample;
-                }
-
-                newSampleCollections.Add(new SampleCollection(package.uniqueId, newSamples));
-            }
-
-            if (newSampleCollections.Count == 0)
-                return;
-
-            foreach (var sampleCollection in newSampleCollections)
-                m_PackageUniqueIdToSampleCollectionsMap[sampleCollection.packageUniqueId] = sampleCollection;
         }
 
         public void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId)

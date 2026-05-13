@@ -12,7 +12,7 @@ namespace Unity.UIToolkit.Editor
     {
         protected static readonly string k_BindingMode = nameof(DataBinding.bindingMode);
         protected static readonly string k_DataSource = nameof(DataBinding.dataSource);
-        protected static readonly string k_DataSourceType = nameof(DataBinding.dataSourceTypeString);
+        protected static readonly string k_DataSourceType = nameof(DataBinding.dataSourceType);
         protected static readonly string k_DataSourcePathString = nameof(DataBinding.dataSourcePathString);
         protected static readonly string k_Property = nameof(DataBinding.property);
 

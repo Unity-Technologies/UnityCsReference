@@ -882,7 +882,34 @@ internal class SerializedObjectBindingContext
 
         var bindingContext = contextUpdater.bindingContext;
         if (bindingContext == null || bindingContext.serializedObject != serializedObject)
+        {
+            // After undo/redo operations, the SerializedObject instance may change or become null/invalid.
+            // Check if they target the same underlying Unity object, or if the old context is null/invalid.
+            if (bindingContext == null)
+            {
+                // Old context is null, replace it with the new one
+                contextUpdater.OnRelease();
+                element.ClearBinding(BindingExtensions.s_SerializedBindingContextUpdaterId);
+                return SerializedObjectBindingContextUpdater.Create(element, this);
+            }
+
+            var oldTarget = bindingContext.GetTargetObject();
+            var newTarget = GetTargetObject();
+
+            if (oldTarget == null || newTarget == null || oldTarget == newTarget)
+            {
+                // Old context is invalid (returns null), new context is invalid, or same target object
+                // but different SerializedObject instance (e.g., after undo).
+                // Unity's Object.operator== compares the underlying native object, so this works
+                // correctly even if the SerializedObject C# instances are different.
+                // Clear the old updater and create a new one with the current context.
+                contextUpdater.OnRelease();
+                element.ClearBinding(BindingExtensions.s_SerializedBindingContextUpdaterId);
+                return SerializedObjectBindingContextUpdater.Create(element, this);
+            }
+
             throw new NotSupportedException("An element can track properties on only one serializedObject at a time");
+        }
 
         return contextUpdater;
     }

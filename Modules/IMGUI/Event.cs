@@ -136,6 +136,7 @@ namespace UnityEngine
         static Event s_Current;
         static Event s_MasterEvent;
 
+
         // Is this event a keyboard event? (RO)
         public bool isKey
         {

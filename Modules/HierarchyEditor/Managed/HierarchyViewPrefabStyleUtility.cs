@@ -27,126 +27,100 @@ namespace Unity.Hierarchy.Editor
         static readonly ManipulatorActivationFilter k_PrefabAltActivationFilter = new() { button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt };
 
         /// <summary>
-        /// Set different prefab styles for the node.
+        /// Set styles for root prefabs
         /// </summary>
-        public static void SetNodePrefabStyle(GameObject gameObject, HierarchyViewItem item)
+        public static void SetNodePrefabRootStyle(GameObject gameObject, HierarchyViewItem item)
         {
-            if (PrefabUtility.ShowPrefabModeButton(gameObject))
-                SetNavigationButton(gameObject, item);
-            else
-                ClearNavigationButton(item);
-
-            if (PrefabUtility.IsAnyPrefabInstanceRoot(gameObject))
+            var sourceGO = PrefabUtility.GetOriginalSourceOrVariantRoot(gameObject);
+            var prefabAssetType = PrefabUtility.GetPrefabAssetType(gameObject);
+            if (sourceGO != null && sourceGO != gameObject)
             {
-                var sourceGO = PrefabUtility.GetOriginalSourceOrVariantRoot(gameObject);
-                var prefabAssetType = PrefabUtility.GetPrefabAssetType(gameObject);
-                if (sourceGO != null && sourceGO != gameObject)
-                {
-                    prefabAssetType = PrefabUtility.GetPrefabAssetType(sourceGO);
-                }
-
-                SetPrefabIcon(prefabAssetType, item);
+                prefabAssetType = PrefabUtility.GetPrefabAssetType(sourceGO);
             }
-            else
-                ClearPrefabIcon(item);
 
-            var isPartOfPrefab = PrefabUtility.IsPartOfAnyPrefab(gameObject);
-            var isMissing = PrefabUtility.IsPrefabAssetMissing(gameObject);
-            item.EnableInClassList(s_HierarchyItemPrefabBlueTextStyle, isPartOfPrefab && !isMissing);
-            item.EnableInClassList(s_HierarchyItemMissingPrefabStyle, isMissing);
-            item.EnableInClassList(s_HierarchyItemPrefabOverlayStyle, PrefabUtility.IsAddedGameObjectOverride(gameObject));
+            SetPrefabIcon(prefabAssetType, item);
+        }
 
-            item.OverrideBarContainer.EnableInClassList(s_HierarchyItemPrefabOverrideStyle, PrefabUtility.IsOutermostPrefabInstanceRoot(gameObject)
-                && PrefabUtility.HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(gameObject));
+        public static void ClearPrefabRootStyle(HierarchyViewItem item)
+        {
+            SetPrefabIcon(PrefabAssetType.NotAPrefab, item);
         }
 
         /// <summary>
-        /// Clean up all the styles set in SetNodePrefabStyle when releasing the visual element.
+        /// Set the minimum required styles for a broken or disconnected prefab instance
+        /// so that we can bypass expensive PrefabUtility calls that would normally run.
         /// </summary>
-        public static void CleanUpNodePrefabStyle(HierarchyViewItem item)
+        public static void SetBrokenPrefabStyle(HierarchyViewItem item)
         {
-            item.RemoveFromClassList(s_HierarchyItemPrefabBlueTextStyle);
-            item.RemoveFromClassList(s_HierarchyItemMissingPrefabStyle);
-            item.RemoveFromClassList(s_HierarchyItemPrefabOverlayStyle);
-            item.OverrideBarContainer.RemoveFromClassList(s_HierarchyItemPrefabOverrideStyle);
-
-            ClearPrefabIcon(item);
+            item.EnableInClassList(s_HierarchyItemPrefabBlueTextStyle, false);
+            item.EnableInClassList(s_HierarchyItemMissingPrefabStyle, true);
+            item.EnableInClassList(s_HierarchyItemPrefabOverlayStyle, false);
+            item.OverrideBarContainer.EnableInClassList(s_HierarchyItemPrefabOverrideStyle, false);
+            SetPrefabIcon(PrefabAssetType.MissingAsset, item);
             ClearNavigationButton(item);
+        }
+
+        /// <summary>
+        /// Set different prefab styles for the node.
+        /// </summary>
+        public static void SetNodePrefabGenericStyle(GameObject gameObject, HierarchyViewItem item)
+        {
+            var isPartOfPrefab = PrefabUtility.IsPartOfAnyPrefab(gameObject);
+            var isMissing = isPartOfPrefab && PrefabUtility.IsPrefabAssetMissing(gameObject);
+
+            item.EnableInClassList(s_HierarchyItemPrefabBlueTextStyle, isPartOfPrefab && !isMissing);
+            item.EnableInClassList(s_HierarchyItemMissingPrefabStyle, isMissing);
+            item.OverrideBarContainer.EnableInClassList(s_HierarchyItemPrefabOverrideStyle,
+                isPartOfPrefab
+                && PrefabUtility.IsOutermostPrefabInstanceRoot(gameObject)
+                && PrefabUtility.HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(gameObject));
+            item.EnableInClassList(s_HierarchyItemPrefabOverlayStyle, PrefabUtility.IsAddedGameObjectOverride(gameObject));
         }
 
         static void SetPrefabIcon(PrefabAssetType prefabType, HierarchyViewItem element)
         {
-            switch (prefabType)
-            {
-                case PrefabAssetType.NotAPrefab:
-                    ClearPrefabIcon(element);
-                    break;
+            var isRegularOrMissing = prefabType == PrefabAssetType.Regular || prefabType == PrefabAssetType.MissingAsset;
+            var isVariant = prefabType == PrefabAssetType.Variant;
+            var isModel = prefabType == PrefabAssetType.Model;
 
-                case PrefabAssetType.Regular:
-                    element.AddToClassList(s_HierarchyItemNormalPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemVariantPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemModelPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemGameObjectStyle);
-                    break;
+            element.EnableInClassList(s_HierarchyItemNormalPrefabStyle, isRegularOrMissing);
+            element.EnableInClassList(s_HierarchyItemVariantPrefabStyle, isVariant);
+            element.EnableInClassList(s_HierarchyItemModelPrefabStyle, isModel);
 
-                case PrefabAssetType.Model:
-                    element.AddToClassList(s_HierarchyItemModelPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemNormalPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemVariantPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemGameObjectStyle);
-                    break;
-
-                case PrefabAssetType.Variant:
-                    element.AddToClassList(s_HierarchyItemVariantPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemNormalPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemModelPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemGameObjectStyle);
-                    break;
-
-                case PrefabAssetType.MissingAsset:
-                    element.AddToClassList(s_HierarchyItemNormalPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemVariantPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemModelPrefabStyle);
-                    element.RemoveFromClassList(s_HierarchyItemGameObjectStyle);
-                    break;
-
-                default:
-                    break;
-            }
+            element.EnableInClassList(s_HierarchyItemGameObjectStyle, !(isRegularOrMissing || isVariant || isModel));
         }
 
-        static void ClearPrefabIcon(HierarchyViewItem item)
+        internal static void SetNavigationButton(GameObject gameObject, HierarchyViewItem item)
         {
-            item.RemoveFromClassList(s_HierarchyItemNormalPrefabStyle);
-            item.RemoveFromClassList(s_HierarchyItemVariantPrefabStyle);
-            item.RemoveFromClassList(s_HierarchyItemModelPrefabStyle);
-        }
-
-        static void SetNavigationButton(GameObject gameObject, HierarchyViewItem item)
-        {
-            item.NavigateIntoButton.style.display = DisplayStyle.Flex;
-
             var btnContent = PrefabStageUtility.GetPrefabButtonContent(gameObject.GetEntityId());
+            var navigateButton = item.NavigateIntoButton;
+            if (navigateButton == null)
+                return;
 
-            item.NavigateIntoButton.tooltip = btnContent.tooltip;
+            navigateButton.style.display = DisplayStyle.Flex;
+            navigateButton.tooltip = btnContent.tooltip;
 
             // TODO: when we support multiple actions for the navigation button this will have to change.
             // For now, it assumes that there is never more than a single distinct action
-            if (item.NavigateIntoButton.userData == null)
+            if (navigateButton.userData == null)
             {
-                item.NavigateIntoButton.clickable.activators.Add(k_PrefabAltActivationFilter);
-                item.NavigateIntoButton.clickable.clickedWithEventInfo += OpenPrefab;
+                navigateButton.clickable.activators.Add(k_PrefabAltActivationFilter);
+                navigateButton.clickable.clickedWithEventInfo += OpenPrefab;
             }
-            item.NavigateIntoButton.userData = gameObject;
+            navigateButton.userData = gameObject;
         }
 
-        static void ClearNavigationButton(HierarchyViewItem item)
+        internal static void ClearNavigationButton(HierarchyViewItem item)
         {
-            item.NavigateIntoButton.style.display = DisplayStyle.None;
-            item.NavigateIntoButton.tooltip = null;
-            item.NavigateIntoButton.userData = null;
-            item.NavigateIntoButton.clickable.clickedWithEventInfo -= OpenPrefab;
-            item.NavigateIntoButton.clickable.activators.Remove(k_PrefabAltActivationFilter);
+            var navigateButton = item.NavigateIntoButton;
+            if (navigateButton == null)
+                return;
+
+            navigateButton.style.display = DisplayStyle.None;
+            navigateButton.tooltip = null;
+            navigateButton.userData = null;
+            navigateButton.clickable.clickedWithEventInfo -= OpenPrefab;
+            navigateButton.clickable.activators.Remove(k_PrefabAltActivationFilter);
         }
 
         internal static void OpenPrefab(GameObject gameObject)

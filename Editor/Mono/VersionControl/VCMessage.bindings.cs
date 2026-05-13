@@ -30,6 +30,11 @@ namespace UnityEditor.VersionControl
 
         internal Message() {}
 
+        private Message(IntPtr self)
+        {
+            m_Self = self;
+        }
+
         ~Message()
         {
             Dispose();
@@ -53,6 +58,7 @@ namespace UnityEditor.VersionControl
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(Message message) => message.m_Self;
+            public static Message ConvertToManaged(IntPtr ptr) => new Message(ptr);
         }
     }
 }

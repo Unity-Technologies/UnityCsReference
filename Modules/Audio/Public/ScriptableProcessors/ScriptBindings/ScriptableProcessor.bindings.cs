@@ -722,7 +722,7 @@ namespace UnityEngine.Audio
         [NativeMethod(Name = "audio::QueueProcessorDispose", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe void QueueProcessorDisposeInternal(/*ProcessorHeader* */ void* header, /*ControlHeader* */ void* control);
 
-        [NativeMethod(Name = "audio::GetRealtimeDataElementListForProcessor", IsFreeFunction = true, ThrowsException = true)]
+        [NativeMethod(Name = "audio::GetRealtimeDataElementListForProcessor", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern unsafe /*DataElement*/ void* GetRealtimeDataElementListForProcessorInternal(/*RealtimeAccess**/ void* access, in Unity.Audio.Handle handle);
 
         [NativeMethod(Name = "audio::GetControlDataElementListForProcessor", IsFreeFunction = true)]

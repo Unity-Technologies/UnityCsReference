@@ -4,8 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -16,12 +17,32 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements;
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-internal class VisualTreeAssetExporter
+internal partial class VisualTreeAssetExporter
 {
+    [OnCodeInitializing]
+    static void Init()
+    {
+        // Intentionally left empty to trigger the `UIPrefColor` registration.
+    }
+
+    public const string ColorsPreferenceCategory = "UXML Syntax Highlighting";
+
+    static readonly UIPrefColor k_AttributeName = new(ColorsPreferenceCategory, "Attribute Name", HtmlColor("#098658"), HtmlColor("#5DA861"));
+    static readonly UIPrefColor k_AttributeValue = new(ColorsPreferenceCategory, "Attribute Value", HtmlColor("#A15000"), HtmlColor("#E0BD73"));
+    static readonly UIPrefColor k_Tag = new(ColorsPreferenceCategory, "Tag", HtmlColor("#0033B3"), HtmlColor("#B464EB"));
+    static readonly UIPrefColor k_TagName = new(ColorsPreferenceCategory, "Tag Name", HtmlColor("#0033B3"), HtmlColor("#C26CFD"));
+
+    public static Color AttributeNameColor { get => k_AttributeName.Color; set { k_AttributeName.Color = value; PrefSettings.Set(k_AttributeName.StorageKey, k_AttributeName); } }
+    public static Color AttributeValueColor { get => k_AttributeValue.Color; set { k_AttributeValue.Color = value; PrefSettings.Set(k_AttributeValue.StorageKey, k_AttributeValue); } }
+    public static Color TagColor { get => k_Tag.Color; set { k_Tag.Color = value; PrefSettings.Set(k_Tag.StorageKey, k_Tag); } }
+    public static Color TagNameColor { get => k_TagName.Color; set { k_TagName.Color = value; PrefSettings.Set(k_TagName.StorageKey, k_TagName); } }
+
     const string SelectedVisualElementAssetAttributeName = "__unity-builder-selected-element";
     internal static readonly string[] IgnoredAttributesWhenExporting = { SelectedVisualElementAssetAttributeName };
 
-    public static readonly string SelectedVisualTreeAssetSpecialElementTypeName = "Unity.UI.Builder.UnityUIBuilderSelectionMarker";
+    public static readonly string SelectedVisualTreeAssetSpecialElementTypeName =
+        "Unity.UI.Builder.UnityUIBuilderSelectionMarker";
+
     internal static readonly string[] IgnoredTypesWhenExporting = { SelectedVisualTreeAssetSpecialElementTypeName };
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -29,13 +50,14 @@ internal class VisualTreeAssetExporter
     {
         const string k_DefaultIndent = "    ";
 
-        public static ExportOptions Default => new ()
+        public static ExportOptions Default => new()
         {
             indent = k_DefaultIndent,
             ignoreAttributeList = IgnoredAttributesWhenExporting,
             ignoreTypeList = IgnoredTypesWhenExporting,
             consistentAttributeOrder = UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting,
-            styleExporterOptions = StyleSheetExporter.UssExportOptions.Default
+            styleExporterOptions = StyleSheetExporter.UssExportOptions.Default,
+            m_UseColorHighlighting = false
         };
 
         private StyleSheetExporter m_Exporter;
@@ -44,6 +66,7 @@ internal class VisualTreeAssetExporter
         bool? m_ConsistentAttributeOrder;
         string[] m_IgnoreAttributeList;
         string[] m_IgnoreTypeList;
+        bool? m_UseColorHighlighting;
 
         public string indent
         {
@@ -69,6 +92,12 @@ internal class VisualTreeAssetExporter
             set => m_IgnoreTypeList = value;
         }
 
+        public bool useColorHighlighting
+        {
+            get => m_UseColorHighlighting.HasValue ? m_UseColorHighlighting.Value : false;
+            set => m_UseColorHighlighting = value;
+        }
+
         public StyleSheetExporter styleExporter
         {
             get => m_Exporter ??= new StyleSheetExporter();
@@ -89,6 +118,37 @@ internal class VisualTreeAssetExporter
             if (ignoreTypeList == null)
                 return false;
             return Array.IndexOf(ignoreTypeList, typeName) >= 0;
+        }
+    }
+
+    private struct HighlightingScope : IDisposable
+    {
+        private readonly Color m_Color;
+
+        // Hopefully, one day
+        //private ref ExportContext m_Context;
+        private ExportContext m_Context;
+
+        public HighlightingScope(ref ExportContext context, Color color)
+        {
+            m_Color = color;
+            // Hopefully, one day
+            //m_Context = ref context;
+            m_Context = context;
+            if (m_Context.options.useColorHighlighting)
+            {
+                m_Context.Append("<color=#");
+                m_Context.Append(ColorUtility.ToHtmlStringRGB(m_Color));
+                m_Context.Append(">");
+            }
+        }
+
+        public void Dispose()
+        {
+            if (m_Context.options.useColorHighlighting)
+            {
+                m_Context.Append("</color>");
+            }
         }
     }
 
@@ -165,7 +225,8 @@ internal class VisualTreeAssetExporter
             if (asset.xmlNamespace == UxmlNamespaceDefinition.Empty)
                 return asset.xmlNamespace;
 
-            var namespaceDefinition = visualTreeAsset.FindUxmlNamespaceDefinitionFromPrefix(asset, asset.xmlNamespace.prefix);
+            var namespaceDefinition =
+                visualTreeAsset.FindUxmlNamespaceDefinitionFromPrefix(asset, asset.xmlNamespace.prefix);
             return namespaceDefinition != asset.xmlNamespace
                 ? visualTreeAsset.FindUxmlNamespaceDefinitionForTypeName(asset, asset.fullTypeName)
                 : namespaceDefinition;
@@ -230,7 +291,8 @@ internal class VisualTreeAssetExporter
         WriteRootElement(ref ctx, visualTreeAsset.visualTree);
     }
 
-    private (string prefix, string typename) GetAssetNameAndPrefix(UxmlAsset asset, in UxmlNamespaceDefinition namespaceDefinition)
+    private (string prefix, string typename) GetAssetNameAndPrefix(UxmlAsset asset,
+        in UxmlNamespaceDefinition namespaceDefinition)
     {
         if (asset is UxmlObjectAsset { isField: true })
         {
@@ -238,7 +300,9 @@ internal class VisualTreeAssetExporter
         }
 
         var fullTypename = asset.fullTypeName;
-        var typename = !string.IsNullOrEmpty(namespaceDefinition.resolvedNamespace) ? fullTypename[(namespaceDefinition.resolvedNamespace.Length + 1)..] : fullTypename;
+        var typename = !string.IsNullOrEmpty(namespaceDefinition.resolvedNamespace)
+            ? fullTypename[(namespaceDefinition.resolvedNamespace.Length + 1)..]
+            : fullTypename;
         return (namespaceDefinition.prefix, typename);
     }
 
@@ -258,13 +322,23 @@ internal class VisualTreeAssetExporter
         }
     }
 
+    protected virtual void BeforeWriteUxmlAssetTag(ref ExportContext ctx, UxmlAsset asset)
+    {
+    }
+
+    protected virtual void AfterWriteUxmlAssetTag(ref ExportContext ctx, UxmlAsset asset)
+    {
+    }
+
     protected void WriteUxmlAsset(ref ExportContext ctx, UxmlAsset asset, List<UxmlAsset> children)
     {
         var vta = ctx.visualTreeAsset;
         var namespacePrefix = ctx.GetNamespaceDefinition(asset);
 
+        BeforeWriteUxmlAssetTag(ref ctx, asset);
+
         ctx.AppendIndent();
-        ctx.Append('<');
+        WriteTag(ref ctx, "<");
 
         var resolvedTypename = GetAssetNameAndPrefix(asset, in namespacePrefix);
 
@@ -293,11 +367,15 @@ internal class VisualTreeAssetExporter
         var hasChildren = ExportsChildrenNodes(asset, ctx.options);
         if (!hasChildren)
         {
-            ctx.AppendLine("/>");
+            WriteTag(ref ctx, "/>");
+            WriteLine(ref ctx);
+            AfterWriteUxmlAssetTag(ref ctx, asset);
             return;
         }
-        ctx.AppendLine('>');
 
+        WriteTag(ref ctx, ">");
+        WriteLine(ref ctx);
+        AfterWriteUxmlAssetTag(ref ctx, asset);
         ctx.IncreaseIndent();
 
         if (vta.visualTree == asset)
@@ -318,10 +396,14 @@ internal class VisualTreeAssetExporter
         WriteChildren(ref ctx, children);
 
         ctx.DecreaseIndent();
+
+        BeforeWriteUxmlAssetTag(ref ctx, asset);
         ctx.AppendIndent();
-        ctx.Append("</");
+        WriteTag(ref ctx, "</");
         WriteElementTypeName(ref ctx, resolvedTypename.prefix, resolvedTypename.typename);
-        ctx.AppendLine('>');
+        WriteTag(ref ctx, ">");
+        WriteLine(ref ctx);
+        AfterWriteUxmlAssetTag(ref ctx, asset);
     }
 
     protected void WriteTemplates(ref ExportContext ctx, List<VisualTreeAsset.UsingEntry> usingEntries)
@@ -337,15 +419,17 @@ internal class VisualTreeAssetExporter
     {
         ctx.AppendIndent();
         var vta = ctx.visualTreeAsset;
-        var namespaceDefinition = vta.FindUxmlNamespaceDefinitionForTypeName(vta.visualTree, typeof(VisualElement).FullName);
+        var namespaceDefinition =
+            vta.FindUxmlNamespaceDefinitionForTypeName(vta.visualTree, typeof(VisualElement).FullName);
 
-        ctx.Append('<');
+        WriteTag(ref ctx, "<");
         WriteElementTypeName(ref ctx, "UnityEngine.UIElements.Template", namespaceDefinition);
-        ctx.Append(" ");
-        WriteProperty(ref ctx, "name", usingEntry.alias);
-        ctx.Append(" ");
-        WriteProperty(ref ctx, "src", ctx.GetProcessedPathForSrcAttribute(usingEntry.asset));
-        ctx.AppendLine("/>");
+        WriteSpace(ref ctx);
+        WriteAttribute(ref ctx, "name", usingEntry.alias);
+        WriteSpace(ref ctx);
+        WriteAttribute(ref ctx, "src", ctx.GetProcessedPathForSrcAttribute(usingEntry.asset));
+        WriteTag(ref ctx, "/>");
+        WriteLine(ref ctx);
     }
 
     protected void WriteStyleSheets(ref ExportContext ctx, List<StyleSheet> styleSheets)
@@ -355,20 +439,22 @@ internal class VisualTreeAssetExporter
             var styleSheet = styleSheets[i];
             ctx.AppendIndent();
             WriteStyleSheet(ref ctx, styleSheet);
-            ctx.AppendLine();
+            WriteLine(ref ctx);
         }
     }
 
     protected void WriteStyleSheet(ref ExportContext ctx, StyleSheet styleSheet)
     {
         var path = ctx.GetProcessedPathForSrcAttribute(styleSheet);
-        ctx.Append("<Style");
-        ctx.Append(' ');
-        WriteProperty(ref ctx, "src", path);
-        ctx.Append("/>");
+        WriteTag(ref ctx, "<");
+        WriteElementTypeName(ref ctx, "Style", UxmlNamespaceDefinition.Empty);
+        WriteSpace(ref ctx);
+        WriteAttribute(ref ctx, "src", path);
+        WriteTag(ref ctx, "/>");
     }
 
-    protected void WriteAttributeOverrides(ref ExportContext ctx, List<TemplateAsset.AttributeOverride> attributeOverrides)
+    protected void WriteAttributeOverrides(ref ExportContext ctx,
+        List<TemplateAsset.AttributeOverride> attributeOverrides)
     {
         var overridesMap = new Dictionary<string, List<TemplateAsset.AttributeOverride>>();
         foreach (var attributeOverride in attributeOverrides)
@@ -378,42 +464,52 @@ internal class VisualTreeAssetExporter
 
             overridesMap[attributeOverride.m_ElementName].Add(attributeOverride);
         }
+
         foreach (var attributeOverridePair in overridesMap)
         {
             var elementName = attributeOverridePair.Key;
             var overrides = attributeOverridePair.Value;
 
             ctx.AppendIndent();
-            ctx.Append("<AttributeOverrides");
-            ctx.Append(" ");
-            WriteProperty(ref ctx, TemplateAsset.k_AttributeOverrideElementNameAttributeName, elementName);
+            WriteTag(ref ctx, "<");
+            WriteElementTypeName(ref ctx, "AttributeOverrides", UxmlNamespaceDefinition.Empty);
+            WriteSpace(ref ctx);
+            WriteAttribute(ref ctx, TemplateAsset.k_AttributeOverrideElementNameAttributeName, elementName);
 
             for (var index = 0; index < overrides.Count; index++)
             {
-                ctx.Append(" ");
+                WriteSpace(ref ctx);
                 var attributeOverride = overrides[index];
-                WriteProperty(ref ctx, attributeOverride.m_AttributeName, attributeOverride.m_Value);
+                WriteAttribute(ref ctx, attributeOverride.m_AttributeName, attributeOverride.m_Value);
             }
 
-            ctx.AppendLine("/>");
+            WriteTag(ref ctx, "/>");
+            WriteLine(ref ctx);
         }
     }
 
-    protected void WriteElementTypeName(ref ExportContext ctx, string fullTypename, UxmlNamespaceDefinition namespaceDefinition)
+    protected void WriteElementTypeName(ref ExportContext ctx, string fullTypename,
+        UxmlNamespaceDefinition namespaceDefinition)
     {
-        var typename = !string.IsNullOrEmpty(namespaceDefinition.resolvedNamespace) ? fullTypename[(namespaceDefinition.resolvedNamespace.Length + 1)..] : fullTypename;
+        var typename = !string.IsNullOrEmpty(namespaceDefinition.resolvedNamespace)
+            ? fullTypename[(namespaceDefinition.resolvedNamespace.Length + 1)..]
+            : fullTypename;
 
         WriteElementTypeName(ref ctx, namespaceDefinition.prefix, typename);
     }
 
     protected void WriteElementTypeName(ref ExportContext ctx, string prefix, string typename)
     {
-        if (!string.IsNullOrEmpty(prefix))
+        using (new HighlightingScope(ref ctx, k_TagName))
         {
-            ctx.Append(prefix);
-            ctx.Append(':');
+            if (!string.IsNullOrEmpty(prefix))
+            {
+                ctx.Append(prefix);
+                ctx.Append(":");
+            }
+
+            ctx.Append(typename);
         }
-        ctx.Append(typename);
     }
 
     protected void WriteProperties(ref ExportContext ctx, List<UxmlProperty> properties)
@@ -421,31 +517,30 @@ internal class VisualTreeAssetExporter
         if (!(properties?.Count > 0))
             return;
 
-        for(var i = 0; i < properties.Count; ++i)
+        for (var i = 0; i < properties.Count; ++i)
         {
             var property = properties[i];
             if (ctx.options.IsAttributeIgnored(property.name))
                 continue;
-            ctx.Append(" ");
-            WriteProperty(ref ctx, property.name, property.value);
+            WriteSpace(ref ctx);
+            WriteAttribute(ref ctx, property.name, property.value);
         }
     }
 
-    protected void WriteProperty(ref ExportContext ctx, string name, string value)
+    protected void WriteAttribute(ref ExportContext ctx, string name, string value)
     {
-        ctx.Append(name);
-        ctx.Append('=');
-        ctx.Append('"');
-        ctx.Append(URIHelpers.EncodeUri(value));
-        ctx.Append('"');
+        WriteAttributeName(ref ctx, name);
+        using (new HighlightingScope(ref ctx, k_AttributeValue))
+            ctx.Append("=");
+        WriteAttributeValue(ref ctx, value);
     }
 
     protected void WriteClasses(ref ExportContext ctx, string[] ussClasses)
     {
         if (ussClasses is { Length: > 0 })
         {
-            ctx.Append(" ");
-            WriteProperty(ref ctx, "class", string.Join(" ", ussClasses));
+            WriteSpace(ref ctx);
+            WriteAttribute(ref ctx, "class", string.Join(" ", ussClasses));
         }
     }
 
@@ -459,11 +554,15 @@ internal class VisualTreeAssetExporter
             else
             {
                 var r = inlineStyleSheet.rules[ruleIndex];
-                var exportedInlineStyles = ctx.styleExporter.ExportInlineRule(inlineStyleSheet, r, ctx.styleExporterOptions);
+                // Disable highlighting of the inline styles, since the color syntax would get encoded when written as an
+                // attribute.
+                var options = ctx.styleExporterOptions;
+                options.useColorHighlighting = false;
+                var exportedInlineStyles = ctx.styleExporter.ExportInlineRule(inlineStyleSheet, r, options);
                 if (!string.IsNullOrEmpty(exportedInlineStyles))
                 {
-                    ctx.Append(" ");
-                    WriteProperty(ref ctx, "style",  exportedInlineStyles);
+                    WriteSpace(ref ctx);
+                    WriteAttribute(ref ctx, "style", exportedInlineStyles);
                 }
             }
         }
@@ -474,7 +573,8 @@ internal class VisualTreeAssetExporter
         var veaId = vea.id;
         if (ctx.visualTreeAsset.TryGetSlotInsertionPoint(veaId, out var slotName))
         {
-            ctx.Append($" slot-name=\"{ slotName }\"");
+            WriteSpace(ref ctx);
+            WriteAttribute(ref ctx, "slot-name", slotName);
         }
 
         if (vea.parentAsset is TemplateAsset { slotUsages: not null } parentTemplateAsset)
@@ -482,7 +582,8 @@ internal class VisualTreeAssetExporter
             var slotIndex = parentTemplateAsset.slotUsages.FindIndex(su => su.assetId == veaId);
             if (slotIndex >= 0)
             {
-                ctx.Append($" slot=\"{ parentTemplateAsset.slotUsages[slotIndex].slotName }\"");
+                WriteSpace(ref ctx);
+                WriteAttribute(ref ctx, "slot", parentTemplateAsset.slotUsages[slotIndex].slotName);
             }
         }
     }
@@ -494,7 +595,7 @@ internal class VisualTreeAssetExporter
             var xmlNamespace = xmlNamespaces[i];
             if (xmlNamespace != UxmlNamespaceDefinition.Empty)
             {
-                ctx.Append(" ");
+                WriteSpace(ref ctx);
                 WriteXmlNamespace(ref ctx, xmlNamespace);
             }
         }
@@ -503,21 +604,9 @@ internal class VisualTreeAssetExporter
     protected void WriteXmlNamespace(ref ExportContext ctx, UxmlNamespaceDefinition xmlNamespace)
     {
         if (string.IsNullOrEmpty(xmlNamespace.prefix))
-        {
-            ctx.Append("xmlns=");
-            ctx.Append('"');
-            ctx.Append(xmlNamespace.resolvedNamespace);
-            ctx.Append('"');
-        }
+            WriteAttribute(ref ctx, "xmlns", xmlNamespace.resolvedNamespace);
         else
-        {
-            ctx.Append("xmlns:");
-            ctx.Append(xmlNamespace.prefix);
-            ctx.Append("=");
-            ctx.Append('"');
-            ctx.Append(xmlNamespace.resolvedNamespace);
-            ctx.Append('"');
-        }
+            WriteAttribute(ref ctx, $"xmlns:{xmlNamespace.prefix}", xmlNamespace.resolvedNamespace);
     }
 
     protected void WriteChildren(ref ExportContext ctx, List<UxmlAsset> children)
@@ -528,6 +617,43 @@ internal class VisualTreeAssetExporter
             if (ctx.options.IsTypeIgnored(child.fullTypeName))
                 continue;
             WriteUxmlAsset(ref ctx, child);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void WriteSpace(ref ExportContext ctx)
+    {
+        ctx.Append(' ');
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void WriteLine(ref ExportContext ctx)
+    {
+        ctx.AppendLine();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void WriteTag(ref ExportContext ctx, string tag)
+    {
+        using (new HighlightingScope(ref ctx, k_Tag))
+            ctx.Append(tag);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void WriteAttributeName(ref ExportContext ctx, string value)
+    {
+        using (new HighlightingScope(ref ctx, k_AttributeName))
+            ctx.Append(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void WriteAttributeValue(ref ExportContext ctx, string value)
+    {
+        using (new HighlightingScope(ref ctx, k_AttributeValue))
+        {
+            ctx.Append('"');
+            ctx.Append(URIHelpers.EncodeUri(value));
+            ctx.Append('"');
         }
     }
 
@@ -562,4 +688,6 @@ internal class VisualTreeAssetExporter
 
         return false;
     }
+
+    static Color HtmlColor(string htmlColor) => ColorUtility.TryParseHtmlString(htmlColor, out var color) ? color : Color.clear;
 }

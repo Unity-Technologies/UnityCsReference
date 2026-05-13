@@ -97,7 +97,6 @@ namespace Unity.UI.Builder
 
         public BuilderUxmlAttributesView(BuilderInspector inspector = null)
         {
-            BindingsStyleHelpers.HandleRightClickMenu = HandleRightClickMenu;
             this.inspector = inspector;
 
             if (inspector?.batchedChangesController == null)
@@ -119,24 +118,12 @@ namespace Unity.UI.Builder
             if (!disposing)
                 return;
 
-            BindingsStyleHelpers.HandleRightClickMenu = null;
             if (inspector?.batchedChangesController == null)
                 return;
 
             inspector.batchedChangesController.deserializeElement -= DeserializeElement;
             inspector.batchedChangesController.notifyAllChangesProcessed -= NotifyAllChangesProcessed;
             inspector.batchedChangesController.onUndoRedoPerformedByController -= CallDeserializeOnElementActionWrapper;
-        }
-
-        bool HandleRightClickMenu(VisualElement ve)
-        {
-            while (ve != null)
-            {
-                if (ve is UxmlAssetSerializedDataRoot)
-                    return true;
-                ve = ve.parent;
-            }
-            return false;
         }
 
         /// <summary>
@@ -249,21 +236,10 @@ namespace Unity.UI.Builder
 
             attributesContainer.Clear();
 
-            if (context.element == null)
+            if (context.element == null || context.uxmlSerializedDataDescription == null)
                 return;
 
-            if (context.uxmlSerializedDataDescription == null)
-            {
-                ShowUxmlTraitsUsageWarningBox();
-            }
-            else
-            {
-                GenerateSerializedAttributeFields();
-            }
-        }
-
-        protected virtual void ShowUxmlTraitsUsageWarningBox()
-        {
+            GenerateSerializedAttributeFields();
         }
 
         /// <summary>
@@ -643,7 +619,7 @@ namespace Unity.UI.Builder
             // We want to sync the length of the value with the number of buttons in the hierarchy, and we want to match the
             // allowMultipleSelection and allowEmptySelection attributes so that the value matches the state of the group.
             var obj = context.rootSerializedObject;
-            var valueProperty = obj.FindProperty($"{serializedRootPath}.{nameof(ToggleButtonGroup.value)}");
+            var valueProperty = obj.FindProperty($"{serializedRootPath}.valueUXML");
             var multipleProperty = obj.FindProperty($"{serializedRootPath}.{nameof(ToggleButtonGroup.isMultipleSelection)}");
             var allowEmptyProperty = obj.FindProperty($"{serializedRootPath}.{nameof(ToggleButtonGroup.allowEmptySelection)}");
 
@@ -695,7 +671,7 @@ namespace Unity.UI.Builder
             fieldElement.SetLinkedAttributeDescription(attribute);
 
             // Save the property name.
-            fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, attribute.serializedField.Name);
+            fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, attribute.bindingPath);
 
             // Set initial value.
             UpdateAttributeField(fieldElement);
@@ -1306,15 +1282,21 @@ namespace Unity.UI.Builder
             {
                 // If the current value is not defined in the new enum type, we need to clear the property because
                 // it will otherwise throw an exception.
-                var valueField = attributesContainer.Query<EnumField>().Where(f => f.label == "Value").First();
-                UnsetAttributeProperty(valueField, removeBinding);
+                var valueField = attributesContainer.Query<PropertyField>()
+                    .Where(f => f.serializedProperty?.name == nameof(EnumField.valueAsString))
+                    .First()?.Q<EnumStringValueField>();
+                if (valueField != null)
+                    UnsetAttributeProperty(valueField, removeBinding);
             }
-            if (context.element is EnumFlagsField)
+            else if (context.element is EnumFlagsField)
             {
                 // If the current value is not defined in the new enum type, we need to clear the property because
                 // it will otherwise throw an exception.
-                var valueField = attributesContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
-                UnsetAttributeProperty(valueField, removeBinding);
+                var valueField = attributesContainer.Query<PropertyField>()
+                    .Where(f => f.serializedProperty?.name == nameof(EnumFlagsField.valueAsString))
+                    .First()?.Q<EnumFlagsStringValueField>();
+                if (valueField != null)
+                    UnsetAttributeProperty(valueField, removeBinding);
             }
         }
 

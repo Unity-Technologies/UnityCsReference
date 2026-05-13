@@ -120,7 +120,7 @@ namespace UnityEditor
     [NativeHeader("NativeKernel/Core/PreventExecutionInState.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabasePreventExecution.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/V2/AssetDatabaseProfiler.h")]
-    [NativeHeader("Editor/Src/PackageUtility.h")]
+    [NativeHeader("Modules/AssetPackageEditor/AssetPackage.h")]
     [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
     [NativeHeader("Editor/Src/Application/ApplicationFunctions.h")]
     [StaticAccessor("AssetDatabaseBindings", StaticAccessorType.DoubleColon)]
@@ -788,11 +788,23 @@ namespace UnityEditor
             ExportPackage(input, fileName, flags);
         }
 
+        public static void ExportPackage(string[] assetPathNames, string fileName, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags)
+        {
+            ExportPackage(assetPathNames, fileName, "", flags);
+        }
+
+        public static void ExportPackage(string assetPathName, string fileName, string ownerOrgId, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags)
+        {
+            string[] input = new string[1];
+            input[0] = assetPathName;
+            ExportPackage(input, fileName, ownerOrgId, flags);
+        }
+
         [uei.ExcludeFromDocs] public static void ExportPackage(string[] assetPathNames, string fileName) { ExportPackage(assetPathNames, fileName, ExportPackageOptions.Default); }
         [NativeMethod(ThrowsException = true)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        extern public static void ExportPackage(string[] assetPathNames, string fileName, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags);
-
+        extern public static void ExportPackage(string[] assetPathNames, string fileName, string ownerOrgId, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags);
+        
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string GetUniquePathNameAtSelectedPath(string fileName);
 
@@ -1266,11 +1278,13 @@ namespace UnityEditor
         public extern static bool IsDirectoryMonitoringEnabled();
 
         [FreeFunction("AssetDatabase::RegisterCustomDependency")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be added when the AssetDatabase is not importing.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be added when the AssetDatabase is not importing.")]
         public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
 
         [FreeFunction("AssetDatabase::UnregisterCustomDependencyPrefixFilter")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the AssetDatabase is not importing.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the AssetDatabase is not importing.")]
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]

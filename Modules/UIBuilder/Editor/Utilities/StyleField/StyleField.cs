@@ -14,7 +14,8 @@ namespace Unity.UI.Builder
         public StyleFieldBase(string label) : base(label) {}
     }
 
-    internal abstract class StyleField<T> : StyleFieldBase
+    [UxmlElement]
+    internal abstract partial class StyleField<T> : StyleFieldBase
     {
         public static readonly string VisualInputName = "unity-visual-input";
 
@@ -30,35 +31,6 @@ namespace Unity.UI.Builder
 
         static readonly string s_DefaultKeyword = StyleFieldConstants.KeywordInitial;
 
-        [Serializable]
-        public new abstract class UxmlSerializedData : BaseField<string>.UxmlSerializedData
-        {
-            public new static void Register()
-            {
-                BaseField<string>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(showOptions), "show-options")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool showOptions;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showOptions_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(showOptions_UxmlAttributeFlags))
-                {
-                    var e = (StyleField<T>)obj;
-                    e.showOptions = showOptions;
-                }
-            }
-        }
-
         TextField m_TextField;
         PopupField<string> m_OptionsPopup;
         List<string> m_StyleKeywords;
@@ -71,6 +43,7 @@ namespace Unity.UI.Builder
         protected TextField textField => m_TextField;
         protected PopupField<string> optionsPopup => m_OptionsPopup;
 
+        [UxmlAttribute]
         public bool showOptions
         {
             get => m_OptionsPopup.style.display == DisplayStyle.Flex;

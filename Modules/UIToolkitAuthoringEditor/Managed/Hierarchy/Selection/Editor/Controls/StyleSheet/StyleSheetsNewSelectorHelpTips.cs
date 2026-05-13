@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEngine.Bindings;
@@ -10,14 +9,9 @@ using UnityEngine.Bindings;
 namespace Unity.UIToolkit.Editor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class StyleSheetsNewSelectorHelpTips : VisualElement
+    [UxmlElement]
+    internal partial class StyleSheetsNewSelectorHelpTips : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new StyleSheetsNewSelectorHelpTips();
-        }
-
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/StyleSheet/StyleSheetsNewSelectorHelpTips.uxml";
         internal const string k_HelpTooltipLabel = "uss-selector-precedence-link";
 

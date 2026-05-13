@@ -28,7 +28,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Indicates whether or not this VisualElement is a root for visual styling. For example, if it has the :root selector.
         /// </summary>
-        internal bool isRootVisualContainer  => styleSheets.count > 0;
+        internal bool isRootVisualContainer
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => styleSheets.count > 0;
+        }
 
         [Obsolete("VisualElement.cacheAsBitmap is deprecated and has no effect")]
         public bool cacheAsBitmap { get; set; }
@@ -472,7 +476,7 @@ namespace UnityEngine.UIElements
 
         internal IReadOnlyList<VisualElement> children
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (contentContainer == this)
@@ -658,8 +662,13 @@ namespace UnityEngine.UIElements
                     m_Owner.ChangeIMGUIContainerCount(imguiContainerCount);
                 }
 
-                child.hierarchy.SetParent(m_Owner);
+                bool childWasEnabledInHierarchy = child.enabledInHierarchy;
                 child.PropagateParentEnabled(m_Owner.enabledInHierarchy);
+
+                child.hierarchy.SetParent(m_Owner);
+
+                if (childWasEnabledInHierarchy && !m_Owner.enabledInHierarchy)
+                    child.BlurHierarchyImmediately();
 
                 if (child.languageDirection == LanguageDirection.Inherit)
                     child.localLanguageDirection = m_Owner.localLanguageDirection;

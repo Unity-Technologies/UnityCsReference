@@ -21,6 +21,20 @@ namespace UnityEngine.UIElements
     {
         public const int kSize = 4;
         public fixed int hashes[kSize];
+
+        // Bit-mixing function to distribute sequential UniqueStyleString.id values across all 32 bits
+        // Required because IDs are sequential (0, 1, 2, 3...), and without mixing, Hash2 (upper 14 bits)
+        // would be 0 for the first ~1000 IDs, causing massive collisions on Bloom filter slot 0
+        public static int MixBits(int id)
+        {
+            // Use golden ratio prime for good bit avalanche
+            unchecked
+            {
+                uint x = (uint)id * 2654435761u;
+                x ^= x >> 16;
+                return (int)x;
+            }
+        }
     }
 
     [Serializable]
@@ -45,7 +59,7 @@ namespace UnityEngine.UIElements
         public StyleRule rule
         {
             get;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal set;
         }
 
@@ -176,6 +190,28 @@ namespace UnityEngine.UIElements
 
         internal unsafe void CalculateHashes()
         {
+            // First, cache UniqueStyleString IDs on all ID/Class/Type parts
+            // This ensures all selector names are registered in the UniqueStyleString system
+            for (int i = 0; i < selectors.Length; i++)
+            {
+                var parts = selectors[i].parts;
+                for (int j = 0; j < parts.Length; j++)
+                {
+                    if (parts[j].type == StyleSelectorType.ID ||
+                        parts[j].type == StyleSelectorType.Class ||
+                        parts[j].type == StyleSelectorType.Type)
+                    {
+                        var uss = new UniqueStyleString(parts[j].value);
+                        parts[j].cachedUniqueStyleStringId = uss.id;
+                    }
+                    else
+                    {
+                        // Initialize to -1 for non-cacheable selector types
+                        parts[j].cachedUniqueStyleStringId = -1;
+                    }
+                }
+            }
+
             if (isSimple)
                 return;
 
@@ -231,6 +267,10 @@ namespace UnityEngine.UIElements
                 lastType = s_HashList[partIndex].type;
                 lastValue = s_HashList[partIndex].value;
 
+                // Get the cached UniqueStyleString id (set in the upfront loop)
+                // Use bit mixing to distribute sequential IDs across all 32 bits
+                int uniqueId = s_HashList[partIndex].cachedUniqueStyleStringId;
+
                 Salt salt;
                 if (lastType == StyleSelectorType.ID)
                 {
@@ -244,7 +284,7 @@ namespace UnityEngine.UIElements
                 {
                     salt = Salt.TagNameSalt;
                 }
-                ancestorHashes.hashes[i] = lastValue.GetHashCode() * (int)salt;
+                ancestorHashes.hashes[i] = Hashes.MixBits(uniqueId) * (int)salt;
             }
 
             s_HashList.Clear();

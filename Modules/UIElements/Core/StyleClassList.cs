@@ -35,6 +35,12 @@ internal struct StyleClassList : IEnumerable<UniqueStyleString>
     internal readonly StringEnumerable ToStringEnumerable() => m_Record.ToStringEnumerable();
 
     /// <summary>
+    /// Returns a ReadOnlySpan view of the underlying UniqueStyleString IDs for efficient iteration.
+    /// This avoids the overhead of constructing UniqueStyleString objects for each access.
+    /// </summary>
+    internal readonly ReadOnlySpan<int> GetClassIds() => m_Record.GetClassIds();
+
+    /// <summary>
     /// The number of enabled classes in this class list.
     /// </summary>
     public readonly int Count => m_Record.Count;
@@ -437,6 +443,8 @@ internal struct StyleClassList : IEnumerable<UniqueStyleString>
 
         public StringEnumerable ToStringEnumerable() => new(m_SortedClassIds);
 
+        public ReadOnlySpan<int> GetClassIds() => m_SortedClassIds;
+
         public int combinedHash { get; }
 
         private Record(int combinedHash, int[] sortedClassIds)
@@ -707,6 +715,12 @@ internal readonly ref struct StyleClassListRef
     /// Returns an array containing all the enabled classes in this class list.
     /// </summary>
     public UniqueStyleString[] ToArray() => m_ClassList.ToArray();
+
+    /// <summary>
+    /// Returns a ReadOnlySpan view of the underlying UniqueStyleString IDs for efficient iteration.
+    /// This avoids the overhead of constructing UniqueStyleString objects for each access.
+    /// </summary>
+    internal ReadOnlySpan<int> GetClassIds() => m_ClassList.GetClassIds();
 
     /// <summary>
     /// Returns true if the provided class is enabled classes in this class list.

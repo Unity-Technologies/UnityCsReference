@@ -115,6 +115,22 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        internal static void DeconstructAssemblyValidationErrorArrayElement(
+            Error[] array,
+            int index,
+            out string message,
+            out string assemblyPath,
+            out string assemblyName,
+            out int flags)
+        {
+            var element = array[index];
+            message = element.message;
+            assemblyPath = element.assemblyPath;
+            assemblyName = element.assemblyName;
+            flags = (int)element.flags;
+        }
+
+        [RequiredByNativeCode]
         public static Error[] ValidateAssemblies(string[] assemblyPaths, bool enableLogging)
         {
             var searchPaths = AssemblyHelper.GetDefaultAssemblySearchPaths();

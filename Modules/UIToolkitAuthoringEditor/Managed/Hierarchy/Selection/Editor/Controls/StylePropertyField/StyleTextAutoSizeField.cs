@@ -12,20 +12,9 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Makes a style field for editing a StyleTextAutoSize.
     /// </summary>
-    internal class StyleTextAutoSizeField : StylePropertyField<StyleTextAutoSize, TextAutoSizeStyleField, TextAutoSize>
+    [UxmlElement]
+    internal partial class StyleTextAutoSizeField : StylePropertyField<StyleTextAutoSize, TextAutoSizeStyleField, TextAutoSize>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleTextAutoSize, TextAutoSizeStyleField, TextAutoSize>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleTextAutoSize, TextAutoSizeStyleField, TextAutoSize>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new StyleTextAutoSizeField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

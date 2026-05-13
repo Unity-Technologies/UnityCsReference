@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 [assembly:InternalsVisibleTo("Unity.AI.Navigation.Editor")]
+[assembly:InternalsVisibleTo("Unity.Modules.AI.NavMesh.Tests.Editor")]
 
 namespace UnityEditor.AI
 {

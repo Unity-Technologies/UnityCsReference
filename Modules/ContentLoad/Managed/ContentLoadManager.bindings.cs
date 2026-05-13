@@ -20,30 +20,36 @@ using Object = UnityEngine.Object;
 namespace Unity.Loading
 {
     /// <summary>
-    /// Represents a handle to a content directory registered via the ContentLoadManager. This struct is used to encapsulate
-    /// information about the content directory, such as its path, and is returned from the RegisterContentDirectory operation
-    /// in ContentLoadManager.
+    /// A handle that references a registered content directory and is returned from the RegisterContentDirectory operation
+    /// in <see cref="ContentLoadManager"/>.
     /// </summary>
+    /// <remarks>
+    /// Keep the handle to call <see cref="ContentLoadManager.UnregisterContentDirectory"/> after all loadables and scenes from that
+    /// directory are released. Valid handles expose metadata such as <see cref="BuildName"/> from the content manifest, and can be
+    /// used to query root assets from a specific content directory via <see cref="ContentLoadManager.GetRootAssets(ContentDirectoryHandle)"/>.
+    /// </remarks>
+    /// <example>
+    /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/ContentDirectoryHandle_RegisterUnregister.cs"/>
+    /// </example>
     /// <seealso cref="ContentLoadManager.RegisterContentDirectory(string)"/>
     /// <seealso cref="ContentLoadManager.RegisterContentDirectory(ContentManifest)"/>
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
-    /*UCBP-PUBLIC*/ internal struct ContentDirectoryHandle
+    public struct ContentDirectoryHandle
     {
         internal UInt64 m_Handle;
 
-        /// <summary> Returns true if the handle is valid.</summary>
+        /// <summary>True if the handle is valid.</summary>
         /// <value>
         /// A bool representing that the content directory handle is valid.
         /// </value>
-        public readonly bool isValid => m_Handle != 0;
+        public readonly bool IsValid => m_Handle != 0;
 
         /// <summary> The build name of the content directory (e.g. from the Manifest build name).</summary>
-        public string buildName
+        public string BuildName
         {
             get
             {
-                return isValid ? GetBuildNameFromContentDirectoryHandleInternal(this) : string.Empty;
+                return IsValid ? GetBuildNameFromContentDirectoryHandleInternal(this) : string.Empty;
             }
         }
 
@@ -57,19 +63,61 @@ namespace Unity.Loading
     /// content directories and access root content.
     /// </summary>
     /// <remarks>
-    /// In the Editor this is normally not used, because the content is available directly in the project using
+    /// In the Editor this is not typically used, because the content is available directly in the project using
     /// <see cref="UnityEditor.AssetDatabase"/> and <see cref="UnityEditor.SceneManagement.EditorSceneManager"/> calls.
     /// However, it can be useful in Editor play mode to run the same loading case as the runtime and to try out the
     /// output of your Content Directory build, directly inside the Editor.
     /// </remarks>
+    /// <example>
+    /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/ContentLoadManager_GetRootAssets.cs"/>
+    /// </example>
     /// <seealso cref="Loadable{T}"/>
     /// <seealso cref="LoadableSceneId"/>
     /// <seealso cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>
     [NativeHeader("Modules/ContentLoad/Public/ContentLoadManager.bindings.h")]
     [StaticAccessor("ContentLoad", StaticAccessorType.DoubleColon)]
-    /*UCBP-REMOVE*/ [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
-    /*UCBP-PUBLIC*/ internal static partial class ContentLoadManager
+    public static partial class ContentLoadManager
     {
+        [AutoStaticsCleanupOnCodeReload]
+        static int s_AllowEditModeRegistrationDepth;
+
+        // Test-only override that suppresses the edit-mode registration check. Search for
+        // AllowEditModeRegistrationForTesting to find tests still relying on edit-mode registration.
+        // This override (and its remaining callers) will be removed once those tests are migrated to
+        // Play Mode — see CBD-2011 (https://jira.unity3d.com/browse/CBD-2011).
+        internal struct AllowEditModeRegistrationScope : IDisposable
+        {
+            bool m_Active;
+
+            internal static AllowEditModeRegistrationScope Enter()
+            {
+                s_AllowEditModeRegistrationDepth++;
+                return new AllowEditModeRegistrationScope { m_Active = true };
+            }
+
+            public void Dispose()
+            {
+                if (!m_Active)
+                    return;
+                m_Active = false;
+                // Guard against decrementing below zero if the counter was reset under us
+                // (e.g. by AutoStaticsCleanupOnCodeReload during a domain reload mid-scope).
+                if (s_AllowEditModeRegistrationDepth > 0)
+                    s_AllowEditModeRegistrationDepth--;
+            }
+        }
+
+        internal static AllowEditModeRegistrationScope AllowEditModeRegistrationForTesting()
+            => AllowEditModeRegistrationScope.Enter();
+
+        static void ThrowIfEditModeRegistrationDisallowed()
+        {
+            // Use <= 0 so a stale Dispose() after a domain reload (which resets the counter via
+            // AutoStaticsCleanupOnCodeReload) cannot leave the guard permanently suppressed.
+            if (Application.isEditor && !Application.isPlaying && s_AllowEditModeRegistrationDepth <= 0)
+                throw new InvalidOperationException("ContentLoadManager.RegisterContentDirectory is not supported in edit mode. Enter Play Mode before registering a content directory.");
+        }
+
         /// <summary>
         /// Add the built-content in a directory to the ContentLoadManager. This makes it possible to load the contained Scenes
         /// and Assets.
@@ -78,15 +126,19 @@ namespace Unity.Loading
         /// In the runtime this is required when <see cref="BuildPipeline.BuildContentDirectory"/> has been used to build and
         /// distribute additional content.
         ///
-        /// This can be called multiple times, with different paths, to expose the contents of additional content directories to
+        /// This can be called multiple times with different paths to expose the contents of additional content directories to
         /// the editor/runtime. However, this method is bound to a specific directory structure and limited to one build per directory.
-        /// Use <see cref="RegisterContentDirectory(ContentManifest)"/> lower-level API when you need more flexibility in how content is
-        /// organized or when registering multiple builds from custom locations.
+        /// Use <see cref="RegisterContentDirectory(ContentManifest)"/> lower-level API when you need more flexibility in content
+        /// organization or when registering multiple builds from custom locations.
         ///
         /// For a clean shutdown, each call to RegisterContentDirectory should be matched with a call to
         /// UnregisterContentDirectory.
         ///
-        /// Throws <see cref="InvalidOperationException"/> if the path is already registered or if the content manifest cannot be loaded.
+        /// Registering a content directory is not supported in the Editor outside of Play Mode and will throw
+        /// <see cref="InvalidOperationException"/>. Enter Play Mode before calling this method from Editor code.
+        ///
+        /// Throws <see cref="InvalidOperationException"/> if called from the Editor outside of Play Mode, if the path is
+        /// already registered, or if the content manifest cannot be loaded.
         /// Throws <see cref="FileNotFoundException"/> if the required manifest hash file is not found.
         /// Throws <see cref="DirectoryNotFoundException"/> if the directory does not exist.
         /// </remarks>
@@ -105,8 +157,8 @@ namespace Unity.Loading
         /// </summary>
         /// <remarks>
         /// This is a lower-level API that registers only the content manifest. Unlike <see cref="RegisterContentDirectory(string)"/>,
-        /// this method does NOT automatically register CAH artifact directories or mount archives. The caller is responsible for
-        /// registering any required CAH artifact directories and mounting any archives before calling this method.
+        /// this method does NOT automatically register CAH artifact directories or mount archives. The caller must
+        /// register any required CAH artifact directories and mount any archives before calling this method.
         ///
         /// For most use cases, prefer <see cref="RegisterContentDirectory(string)"/> which handles these setup steps automatically.
         ///
@@ -116,8 +168,15 @@ namespace Unity.Loading
         /// <returns>Handle to the registered content directory</returns>
         internal static ContentDirectoryHandle RegisterContentDirectory(ContentManifest manifest)
         {
+            ThrowIfEditModeRegistrationDisallowed();
+            if (Application.isEditor && !manifest.BuiltWithTypeTrees)
+            {
+                throw new InvalidOperationException(
+                    "Cannot register a content directory in the Editor whose content was built without type trees.");
+            }
+
             var handle = RegisterInternalFromContentManifest(manifest);
-            if (!handle.isValid)
+            if (!handle.IsValid)
                 throw new InvalidOperationException("Failed to register content directory from manifest");
 
             return handle;
@@ -130,7 +189,7 @@ namespace Unity.Loading
         /// Remove access to content that had been loaded from a content directory.
         /// </summary>
         /// <remarks>
-        /// All Loadable&lt;T&gt; referencing the content of a directory must be explicitly released prior to calling this.
+        /// All `Loadable{T}` references into the content directory must be explicitly released prior to calling this.
         /// Similarly all LoadableSceneId must be Unloaded.
         /// </remarks>
         /// <param name="contentDirectory">
@@ -138,7 +197,7 @@ namespace Unity.Loading
         /// </param>
         public static void UnregisterContentDirectory(ContentDirectoryHandle contentDirectory)
         {
-            if (!contentDirectory.isValid)
+            if (!contentDirectory.IsValid)
             {
                 Debug.LogError("Cannot unregister invalid content directory handle");
                 return;

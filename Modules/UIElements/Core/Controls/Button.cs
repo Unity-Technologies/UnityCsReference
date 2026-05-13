@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -39,38 +39,6 @@ namespace UnityEngine.UIElements
     public partial class Button : TextElement
     {
         internal static readonly BindingId iconImageProperty = nameof(iconImage);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(iconImageReference), "icon-image")
-                }, false);
-            }
-
-#pragma warning disable 649
-            [ImageFieldValueDecorator("Icon Image")]
-            [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new Button();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(iconImageReference_UxmlAttributeFlags))
-                {
-                    var e = (Button)obj;
-                    e.iconImageReference = iconImageReference;
-                }
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -210,6 +178,9 @@ namespace UnityEngine.UIElements
         }
 
         // Used privately to help the serializer convert the Unity Object to the appropriate asset type.
+        [ImageFieldValueDecorator(displayName = "Icon Image")]
+        [UxmlAttribute("icon-image")]
+        [UxmlAttributeBindingPath(nameof(iconImage))]
         Object iconImageReference
         {
             get => iconImage.GetSelectedImage();
@@ -327,8 +298,8 @@ namespace UnityEngine.UIElements
             focusable = true;
             tabIndex = 0;
 
-            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            Callbacks.OnNavigationSubmit.Register(this);
+            Callbacks.OnCustomStyleResolved.Register(this);
         }
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
@@ -465,6 +436,14 @@ namespace UnityEngine.UIElements
                 m_TextElement = null;
                 text = restoredText;
             }
+        }
+
+        private static class Callbacks
+        {
+            public static readonly EventCallbackDefinition<Button> OnNavigationSubmit =
+                EventCallback.Create<NavigationSubmitEvent, Button>(static (e, self) => self.OnNavigationSubmit(e));
+            public static readonly EventCallbackDefinition<Button> OnCustomStyleResolved =
+                EventCallback.Create<CustomStyleResolvedEvent, Button>(static (e, self) => self.OnCustomStyleResolved(e));
         }
     }
 }

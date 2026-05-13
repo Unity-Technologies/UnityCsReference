@@ -2,29 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class DisplayStyleEnumField : StyleEnumField<DisplayStyle>
+    [UxmlElement]
+    internal partial class DisplayStyleEnumField : StyleEnumField<DisplayStyle>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<DisplayStyle>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<DisplayStyle>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new DisplayStyleEnumField();
-        }
-
         public DisplayStyleEnumField()
             : base(true)
         {
@@ -33,21 +19,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class VisibilityStyleEnumField : StyleEnumField<Visibility>
+    [UxmlElement]
+    internal partial class VisibilityStyleEnumField : StyleEnumField<Visibility>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<Visibility>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<Visibility>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new VisibilityStyleEnumField();
-        }
-
         public VisibilityStyleEnumField()
             : base(true)
         {
@@ -56,21 +30,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class OverflowStyleEnumField : StyleEnumField<Overflow>
+    [UxmlElement]
+    internal partial class OverflowStyleEnumField : StyleEnumField<Overflow>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<Overflow>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<Overflow>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new OverflowStyleEnumField();
-        }
-
         public OverflowStyleEnumField()
             : base(true)
         {
@@ -79,21 +41,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class PositionStyleEnumField : StyleEnumField<Position>
+    [UxmlElement]
+    internal partial class PositionStyleEnumField : StyleEnumField<Position>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<Position>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<Position>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new PositionStyleEnumField();
-        }
-
         public PositionStyleEnumField()
         {
             valueField.SetTooltipForEnumValue(Position.Absolute, "The item is removed from the normal document flow, and no space is created for it in the layout.");
@@ -101,21 +51,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class FlexDirectionStyleEnumField : StyleEnumField<FlexDirection>
+    [UxmlElement]
+    internal partial class FlexDirectionStyleEnumField : StyleEnumField<FlexDirection>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<FlexDirection>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<FlexDirection>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new FlexDirectionStyleEnumField();
-        }
-
         public FlexDirectionStyleEnumField()
             : base(true)
         {
@@ -126,21 +64,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class WrapStyleEnumField : StyleEnumField<Wrap>
+    [UxmlElement]
+    internal partial class WrapStyleEnumField : StyleEnumField<Wrap>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<Wrap>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<Wrap>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new WrapStyleEnumField();
-        }
-
         public WrapStyleEnumField()
             : base(true)
         {
@@ -150,62 +76,12 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class AlignStyleEnumField : StyleEnumField<Align>
+    [UxmlElement]
+    internal partial class AlignStyleEnumField : StyleEnumField<Align>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<Align>.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeField] string autoTooltip;
-            [SerializeField] string flexStartTooltip;
-            [SerializeField] string centerTooltip;
-            [SerializeField] string flexEndTooltip;
-            [SerializeField] string stretchTooltip;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoTooltip_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags flexStartTooltip_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags centerTooltip_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags flexEndTooltip_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchTooltip_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (AlignStyleEnumField)obj;
-                if (ShouldWriteAttributeValue(autoTooltip_UxmlAttributeFlags))
-                    e.autoTooltip = autoTooltip;
-                if (ShouldWriteAttributeValue(flexStartTooltip_UxmlAttributeFlags))
-                    e.flexStartTooltip = flexStartTooltip;
-                if (ShouldWriteAttributeValue(centerTooltip_UxmlAttributeFlags))
-                    e.centerTooltip = centerTooltip;
-                if (ShouldWriteAttributeValue(flexEndTooltip_UxmlAttributeFlags))
-                    e.flexEndTooltip = flexEndTooltip;
-                if (ShouldWriteAttributeValue(stretchTooltip_UxmlAttributeFlags))
-                    e.stretchTooltip = stretchTooltip;
-            }
-
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<Align>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(autoTooltip), "auto-tooltip"),
-                    new (nameof(flexStartTooltip), "flex-start-tooltip"),
-                    new (nameof(centerTooltip), "center-tooltip"),
-                    new (nameof(flexEndTooltip), "flex-end-tooltip"),
-                    new (nameof(stretchTooltip), "stretch-tooltip")
-                }, true);
-            }
-
-            public override object CreateInstance() => new AlignStyleEnumField();
-        }
-
         string m_AutoTooltip, m_FlexStartTooltip, m_CenterTooltip, m_FlexEndTooltip, m_StretchTooltip;
 
-        [CreateProperty]
+        [UxmlAttribute, CreateProperty]
         public string autoTooltip
         {
             get => m_AutoTooltip;
@@ -216,7 +92,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        [CreateProperty]
+        [UxmlAttribute, CreateProperty]
         public string flexStartTooltip
         {
             get => m_FlexStartTooltip;
@@ -227,7 +103,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        [CreateProperty]
+        [UxmlAttribute, CreateProperty]
         public string centerTooltip
         {
             get => m_CenterTooltip;
@@ -238,7 +114,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        [CreateProperty]
+        [UxmlAttribute, CreateProperty]
         public string flexEndTooltip
         {
             get => m_FlexEndTooltip;
@@ -249,7 +125,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        [CreateProperty]
+        [UxmlAttribute, CreateProperty]
         public string stretchTooltip
         {
             get => m_StretchTooltip;
@@ -266,21 +142,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class JustifyStyleEnumField : StyleEnumField<Justify>
+    [UxmlElement]
+    internal partial class JustifyStyleEnumField : StyleEnumField<Justify>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<Justify>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<Justify>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new JustifyStyleEnumField();
-        }
-
         public JustifyStyleEnumField()
             : base(true)
         {
@@ -293,42 +157,18 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class UnityTextAlignStyleEnumField : StyleEnumField<TextAnchor>
+    [UxmlElement]
+    internal partial class UnityTextAlignStyleEnumField : StyleEnumField<TextAnchor>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<TextAnchor>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<TextAnchor>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new UnityTextAlignStyleEnumField();
-        }
-
         public UnityTextAlignStyleEnumField()
             : base(true)
         {
         }
     }
 
-    internal class WhiteSpaceStyleEnumField : StyleEnumField<WhiteSpace>
+    [UxmlElement]
+    internal partial class WhiteSpaceStyleEnumField : StyleEnumField<WhiteSpace>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<WhiteSpace>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<WhiteSpace>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new WhiteSpaceStyleEnumField();
-        }
-
         public WhiteSpaceStyleEnumField()
             : base(true)
         {
@@ -339,21 +179,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class TextOverflowStyleEnumField : StyleEnumField<TextOverflow>
+    [UxmlElement]
+    internal partial class TextOverflowStyleEnumField : StyleEnumField<TextOverflow>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<TextOverflow>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<TextOverflow>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextOverflowStyleEnumField();
-        }
-
         public TextOverflowStyleEnumField()
             : base(true)
         {
@@ -362,69 +190,35 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class TextOverflowPositionStyleEnumField : StyleEnumField<TextOverflowPosition>
+    [UxmlElement]
+    internal partial class TextOverflowPositionStyleEnumField : StyleEnumField<TextOverflowPosition>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<TextOverflowPosition>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<TextOverflowPosition>.UxmlSerializedData.Register();
-            }
+    }
 
-            public override object CreateInstance() => new TextOverflowPositionStyleEnumField();
+    [UxmlElement]
+    internal partial class AnimationPlayStateStyleEnumField : StyleEnumField<AnimationPlayState>
+    {
+        public AnimationPlayStateStyleEnumField()
+            : base(true)
+        {
+            valueField.SetTooltipForEnumValue(AnimationPlayState.Running, "The animation is currently playing.");
+            valueField.SetTooltipForEnumValue(AnimationPlayState.Paused, "The animation is currently paused.");
         }
     }
 
-    internal class EditorTextRenderingModeStyleEnumField : StyleEnumField<EditorTextRenderingMode>
+    [UxmlElement]
+    internal partial class EditorTextRenderingModeStyleEnumField : StyleEnumField<EditorTextRenderingMode>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<EditorTextRenderingMode>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<EditorTextRenderingMode>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new EditorTextRenderingModeStyleEnumField();
-        }
     }
 
-    internal class TextGeneratorTypeStyleEnumField : StyleEnumField<TextGeneratorType>
+    [UxmlElement]
+    internal partial class TextGeneratorTypeStyleEnumField : StyleEnumField<TextGeneratorType>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<TextGeneratorType>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<TextGeneratorType>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextGeneratorTypeStyleEnumField();
-        }
     }
 
-    internal class FontStyleStyleEnumField : StylePropertyField<StyleEnum<FontStyle>, FontStyleToggleField, FontStyle>
+    [UxmlElement]
+    internal partial class FontStyleStyleEnumField : StylePropertyField<StyleEnum<FontStyle>, FontStyleToggleField, FontStyle>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleEnum<FontStyle>, FontStyleToggleField, FontStyle>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleEnum<FontStyle>, FontStyleToggleField, FontStyle>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new FontStyleStyleEnumField();
-        }
-
         public FontStyleStyleEnumField()
             : this(null) { }
 
@@ -442,21 +236,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class TextAlignStyleEnumField : StylePropertyField<StyleEnum<TextAnchor>, TextAlignToggleField, TextAnchor>
+    [UxmlElement]
+    internal partial class TextAlignStyleEnumField : StylePropertyField<StyleEnum<TextAnchor>, TextAlignToggleField, TextAnchor>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleEnum<TextAnchor>, TextAlignToggleField, TextAnchor>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleEnum<TextAnchor>, TextAlignToggleField, TextAnchor>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextAlignStyleEnumField();
-        }
-
         public TextAlignStyleEnumField()
             : this(null) { }
 
@@ -474,21 +256,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class SliceTypeStyleEnumField : StyleEnumField<SliceType>
+    [UxmlElement]
+    internal partial class SliceTypeStyleEnumField : StyleEnumField<SliceType>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleEnumField<SliceType>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleEnumField<SliceType>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new SliceTypeStyleEnumField();
-        }
-
         public SliceTypeStyleEnumField()
         {
             valueField.SetTooltipForEnumValue(SliceType.Sliced, "Fill the slices by stretching the center and sides.");

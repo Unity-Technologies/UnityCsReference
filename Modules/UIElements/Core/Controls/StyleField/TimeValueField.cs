@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -17,40 +15,10 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering TimeValue.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal class TimeValueField : TextValueField<TimeValue>
+    [UxmlElement]
+    internal partial class TimeValueField : TextValueField<TimeValue>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<TimeValue>.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeField] bool showUnitAsDropdown;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showUnitAsDropdown_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<TimeValue>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(showUnitAsDropdown), "show-unit-as-dropdown"),
-                }, false);
-            }
-
-            public override object CreateInstance() => new TimeValueField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TimeValueField)obj;
-                if (ShouldWriteAttributeValue(showUnitAsDropdown_UxmlAttributeFlags))
-                    e.showUnitAsDropdown = showUnitAsDropdown;
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -287,11 +255,11 @@ namespace UnityEngine.UIElements
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
                 if (parentField.isDelayed)
                 {
-                    text = ValueToString(Mathf.ClampToInt((long)v));
+                    text = ValueToString(new TimeValue(Mathf.ClampToInt((long)v), startValue.unit));
                 }
                 else
                 {
-                    parentField.value = Mathf.ClampToInt((long)v);
+                    parentField.value = new TimeValue(Mathf.ClampToInt((long)v), startValue.unit);
                 }
             }
 

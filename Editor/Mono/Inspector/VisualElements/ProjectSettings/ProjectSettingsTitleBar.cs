@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
@@ -12,41 +10,9 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
-    internal class ProjectSettingsTitleBar : ProjectSettingsElementWithSO
+    [UxmlElement]
+    internal partial class ProjectSettingsTitleBar : ProjectSettingsElementWithSO
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(label), "label")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new ProjectSettingsTitleBar();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                {
-                    var e = (ProjectSettingsTitleBar)obj;
-                    e.label = label;
-                }
-            }
-        }
-
-
         internal class Styles
         {
             public static StyleBlock settingsBtn { get; } = EditorResources.GetStyle("sb-settings-icon-btn");
@@ -57,6 +23,7 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         string m_Label;
 
+        [UxmlAttribute]
         public string label
         {
             get => m_Label;

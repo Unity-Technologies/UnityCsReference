@@ -96,19 +96,41 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        // Overload for flattened data path (takes ancestor hashes directly)
+        unsafe public bool IsCandidate(int* ancestorHashes)
+        {
+            for (int i = 0; i < Hashes.kSize; i++)
+            {
+                if (ancestorHashes[i] == 0)
+                    return true;
+
+                if (!m_CountingBloomFilter.ContainsHash((uint)ancestorHashes[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
         public void PushElement(VisualElement element)
         {
             int rememberCount = m_HashStack.Count;
 
-            AddHash(element.typeName.GetHashCode() * (int)Salt.TagNameSalt);
+            // Use cached type ID with bit mixing to distribute bits across all 32 bits
+            // This ensures Hash2 (upper 14 bits) is non-zero, preventing slot 0 collisions
+            AddHash(Hashes.MixBits(element.typeNameId) * (int)Salt.TagNameSalt);
 
-            if (!string.IsNullOrEmpty(element.name))
-                AddHash(element.name.GetHashCode() * (int)Salt.IdSalt);
+            // Use cached name ID if available
+            // nameId >= 0 means valid ID (negative values are sentinels: not initialized or not found)
+            int nameId = element.nameId;
+            if (nameId >= 0)
+                AddHash(Hashes.MixBits(nameId) * (int)Salt.IdSalt);
 
             var classList = element.GetClassesForIteration();
-            for (int i = 0; i < classList.Count; i++)
+            var classIds = classList.GetClassIds();
+            for (int i = 0; i < classIds.Length; i++)
             {
-                AddHash(classList[i].value.GetHashCode() * (int)Salt.ClassSalt);
+                // Classes use UniqueStyleString IDs with bit mixing
+                AddHash(Hashes.MixBits(classIds[i]) * (int)Salt.ClassSalt);
             }
 
             m_HashStack.Push(m_HashStack.Count - rememberCount);

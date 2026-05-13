@@ -48,6 +48,7 @@ namespace UnityEditor.Profiling
         {
             m_Ptr = Internal_Create(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
+        
 
         [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr Internal_Create(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending);

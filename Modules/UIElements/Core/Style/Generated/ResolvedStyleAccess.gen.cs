@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
         public Align alignContent => ve.computedStyle.alignContent;
         public Align alignItems => ve.computedStyle.alignItems;
         public Align alignSelf => ve.computedStyle.alignSelf;
+        public AnimationPlayState animationPlayState => ve.computedStyle.animationPlayState;
         public Ratio aspectRatio => ve.computedStyle.aspectRatio;
         public Color backgroundColor => ve.computedStyle.backgroundColor;
         public Background backgroundImage => Background.From(ve.computedStyle.backgroundImage);
@@ -78,6 +79,7 @@ namespace UnityEngine.UIElements
         public IEnumerable<StylePropertyName> transitionProperty => ve.computedStyle.transitionData.Read().transitionProperty.ToManaged();
         public IEnumerable<EasingFunction> transitionTimingFunction => ve.computedStyle.transitionTimingFunction.ToArray();
         public Vector3 translate => ve.ResolveTranslate();
+        public UIAnimationClip unityAnimationClip => (UIAnimationClip)Resources.EntityIdToObject(ve.computedStyle.unityAnimationClip);
         public Color unityBackgroundImageTintColor => ve.computedStyle.unityBackgroundImageTintColor;
         public EditorTextRenderingMode unityEditorTextRenderingMode => ve.computedStyle.unityEditorTextRenderingMode;
         public Font unityFont => (Font)Resources.EntityIdToObject(ve.computedStyle.unityFont);
@@ -109,6 +111,8 @@ namespace UnityEngine.UIElements
         Align IResolvedStyle.alignItems => resolvedStyle.alignItems;
 
         Align IResolvedStyle.alignSelf => resolvedStyle.alignSelf;
+
+        AnimationPlayState IResolvedStyle.animationPlayState => resolvedStyle.animationPlayState;
 
         Ratio IResolvedStyle.aspectRatio => resolvedStyle.aspectRatio;
 
@@ -225,6 +229,8 @@ namespace UnityEngine.UIElements
         IEnumerable<EasingFunction> IResolvedStyle.transitionTimingFunction => resolvedStyle.transitionTimingFunction;
 
         Vector3 IResolvedStyle.translate => resolvedStyle.translate;
+
+        UIAnimationClip IResolvedStyle.unityAnimationClip => resolvedStyle.unityAnimationClip;
 
         Color IResolvedStyle.unityBackgroundImageTintColor => resolvedStyle.unityBackgroundImageTintColor;
 

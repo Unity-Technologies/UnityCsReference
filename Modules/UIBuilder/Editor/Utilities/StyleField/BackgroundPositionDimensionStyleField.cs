@@ -2,20 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class BackgroundPositionDimensionStyleField : StyleField<float>
+    [UxmlElement]
+    internal partial class BackgroundPositionDimensionStyleField : StyleField<float>
     {
-        [Serializable]
-        public new class UxmlSerializedData : DimensionStyleField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BackgroundPositionDimensionStyleField();
-        }
-
         public BackgroundPositionDimensionStyleField() : base()
         {
         }

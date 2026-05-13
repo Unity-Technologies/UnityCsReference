@@ -36,6 +36,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "initial"
             },
                         {
+                "animation-play-state",
+                "running | paused"
+            },
+                        {
                 "aspect-ratio",
                 "auto | <ratio>"
             },
@@ -310,6 +314,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "translate",
                 "none | [<length> | <percentage>] [ [<length> | <percentage>] <length>? ]?"
+            },
+                        {
+                "-unity-animation-clip",
+                "<resource> | <url> | none"
             },
                         {
                 "-unity-background-image-tint-color",

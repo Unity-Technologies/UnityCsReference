@@ -29,37 +29,6 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId reorderableProperty = nameof(reorderable);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(reorderable), "reorderable")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool reorderable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TabView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(reorderable_UxmlAttributeFlags))
-                {
-                    var e = (TabView)obj;
-                    e.reorderable = reorderable;
-                }
-            }
-        }
-
         [Serializable]
         class ViewState : ISerializationCallbackReceiver
         {
@@ -305,6 +274,7 @@ namespace UnityEngine.UIElements
         /// Set this value to <c>true</c> to allow the user to reorder tabs in the tab view.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public bool reorderable
         {
             get => m_Reorderable;

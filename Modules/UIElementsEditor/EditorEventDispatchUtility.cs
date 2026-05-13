@@ -62,13 +62,13 @@ namespace UnityEditor.UIElements
 
                 using (s_RepaintProfilerMarker.Auto())
                 {
-                    panel.Repaint(eventInstance);
+                    panel.Repaint();
                     panel.Render();
                 }
 
                 if (panel.panelDebug?.debuggerOverlayPanel is Panel panelDebug)
                 {
-                    panelDebug.Repaint(eventInstance);
+                    panelDebug.Repaint();
                     panelDebug.Render();
                 }
 

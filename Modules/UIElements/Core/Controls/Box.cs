@@ -9,14 +9,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Styled visual element to match the IMGUI Box Style. For more information, refer to [[wiki:UIE-uxml-element-box|UXML element Box]].
     /// </summary>
+    [UxmlElement]
     public partial class Box : VisualElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new Box();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

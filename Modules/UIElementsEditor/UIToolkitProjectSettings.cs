@@ -106,6 +106,10 @@ namespace UnityEditor.UIElements
         [SerializeField]
         private bool m_EnablePanelRendererAnimation = false;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+        internal static bool s_EnablePanelRendererAnimationAtBoot;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
         internal static bool enablePanelRendererAnimation
         {
             get => instance.m_EnablePanelRendererAnimation;
@@ -116,6 +120,13 @@ namespace UnityEditor.UIElements
                 instance.m_EnablePanelRendererAnimation = value;
                 instance.Save();
             }
+        }
+
+        internal static bool isAnimationSettingDirty => enablePanelRendererAnimation != s_EnablePanelRendererAnimationAtBoot;
+
+        internal static void CaptureBootValues()
+        {
+            s_EnablePanelRendererAnimationAtBoot = enablePanelRendererAnimation;
         }
 
         internal static bool EnableLowLevelDebugger

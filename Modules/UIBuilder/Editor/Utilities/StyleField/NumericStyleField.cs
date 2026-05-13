@@ -2,29 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class NumericStyleField : StyleField<float>
+    [UxmlElement]
+    internal partial class NumericStyleField : StyleField<float>
     {
-        [Serializable]
-        public new class UxmlSerializedData : StyleField<float>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleField<float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new NumericStyleField();
-        }
-
         public float number
         {
             get => innerValue;
@@ -54,7 +41,7 @@ namespace Unity.UI.Builder
                 return false;
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
+            var num = new string(val.Where((c) => char.IsDigit(c) || c == '.' || c == '-').ToArray());
 #pragma warning restore UA2001
             float number;
             var result = float.TryParse(num, NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out number);

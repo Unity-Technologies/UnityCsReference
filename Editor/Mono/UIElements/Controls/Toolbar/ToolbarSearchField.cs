@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A search field for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSearchField|UXML element ToolbarSearchField]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarSearchField.png")]
     public partial class ToolbarSearchField : SearchFieldBase<TextField, string>
     {
@@ -51,19 +52,6 @@ namespace UnityEditor.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-toolbar-search-field";
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : SearchFieldBase<TextField, string>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                SearchFieldBase<TextField, string>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new ToolbarSearchField();
-        }
 
         /// <summary>
         /// Constructor.

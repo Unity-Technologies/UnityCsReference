@@ -151,6 +151,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void HandleHttpRequest(string urlWithoutHost, Action<Dictionary<string, object>> doneCallback, Action<UIError> errorCallback, string postData = null, string tag = null, bool abortPreviousRequest = false)
         {
+            var fullUrl = host + urlWithoutHost;
+
             if (m_UnityConnect.isUserInfoReady && !m_UnityConnect.isUserLoggedIn)
             {
                 var errorMessage = L10n.Tr("You need to be signed in.");
@@ -168,8 +170,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     void DoHttpRequest(Action<int> retryCallbackAction)
                     {
-                        var url = $"{host}{urlWithoutHost}";
-                        var httpRequest = string.IsNullOrEmpty(postData) ? m_HttpClientFactory.GetASyncHTTPClient(url) : m_HttpClientFactory.PostASyncHTTPClient(url, postData);
+                        var httpRequest = string.IsNullOrEmpty(postData) ? m_HttpClientFactory.GetASyncHTTPClient(fullUrl) : m_HttpClientFactory.PostASyncHTTPClient(fullUrl, postData);
                         httpRequest.tag = tag ?? httpRequest.tag;
 
                         httpRequest.header["Content-Type"] = "application/json";
@@ -183,7 +184,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                             var responseCode = request.responseCode;
                             if (responseCode == 0)
                             {
-                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: responseCode));
+                                var errorMessage = string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})"), responseCode, k_ErrorMessage, fullUrl);
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, errorMessage, operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -195,9 +197,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                             if (responseCode is >= k_ClientErrorResponseCode and < k_ServerErrorResponseCode)
                             {
-                                if (!k_KnownErrors.TryGetValue(request.responseCode, out var errorMessage))
-                                    errorMessage = k_KnownErrors[k_GeneralClientError];
-                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: responseCode));
+                                if (!k_KnownErrors.TryGetValue(request.responseCode, out var errorCodeMessage))
+                                    errorCodeMessage = k_KnownErrors[k_GeneralClientError];
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, string.Format(L10n.Tr("[Error {0}] {1}. {2} (URL: {3})"), responseCode, errorCodeMessage, k_ErrorMessage, fullUrl), operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -209,7 +211,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 if (parsedResult.ContainsKey("errorMessage"))
                                 {
                                     var operationErrorCode = parsedResult.ContainsKey("errorCode") ? int.Parse(parsedResult.GetString("errorCode")) : -1;
-                                    errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage"), operationErrorCode: operationErrorCode));
+                                    var parsedErrorMessage = parsedResult.GetString("errorMessage");
+                                    var finalErrorMessage = operationErrorCode != -1
+                                        ? string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})"), operationErrorCode, parsedErrorMessage, fullUrl)
+                                        : string.Format(L10n.Tr("{0} (URL: {1})"), parsedErrorMessage, fullUrl);
+                                    errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, finalErrorMessage, operationErrorCode: operationErrorCode));
                                 }
                                 else
                                     doneCallback?.Invoke(parsedResult);
@@ -228,12 +234,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                         {
                             if (lastResponseCode >= k_ServerErrorResponseCode)
                             {
-                                if (!k_KnownErrors.TryGetValue(lastResponseCode, out var errorMessage))
-                                    errorMessage = k_KnownErrors[k_GeneralServerError];
-                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: lastResponseCode));
+                                if (!k_KnownErrors.TryGetValue(lastResponseCode, out var errorCodeMessage))
+                                    errorCodeMessage = k_KnownErrors[k_GeneralServerError];
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, string.Format(L10n.Tr("[Error {0}] {1}. {2} (URL: {3})"), lastResponseCode, errorCodeMessage, k_ErrorMessage, fullUrl), operationErrorCode: lastResponseCode));
                             }
                             else
-                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: lastResponseCode));
+                            {
+                                var finalErrorMessage = lastResponseCode != -1
+                                    ? string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})"), lastResponseCode, k_ErrorMessage, fullUrl)
+                                    : string.Format(L10n.Tr("{0} (URL: {1})"), k_ErrorMessage, fullUrl);
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, finalErrorMessage, operationErrorCode: lastResponseCode));
+                            }
                         }
                     }
 

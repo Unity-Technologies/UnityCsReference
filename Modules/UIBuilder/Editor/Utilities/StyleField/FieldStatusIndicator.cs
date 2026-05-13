@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -13,39 +11,9 @@ namespace Unity.UI.Builder
     /// Control that displays, using the appropriate icons, the status of a field based on the type, the value binding,
     /// the value source of the underlying property. It also provides access to the field's contextual upon left click.
     /// </summary>
-    class FieldStatusIndicator : VisualElement
+    [UxmlElement]
+    partial class FieldStatusIndicator : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(targetFieldName), "field-name")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, UxmlAttribute("field-name")] string targetFieldName;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags targetFieldName_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new FieldStatusIndicator();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(targetFieldName_UxmlAttributeFlags))
-                {
-                    var e = (FieldStatusIndicator)obj;
-                    e.targetFieldName = targetFieldName;
-                }
-            }
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -102,6 +70,7 @@ namespace Unity.UI.Builder
         /// <summary>
         /// The name of the field to be associated to when the indicator is added to a StyleRow in UXML.
         /// </summary>
+        [UxmlAttribute("field-name")]
         public string targetFieldName { get; private set; }
 
         /// <summary>

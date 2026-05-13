@@ -17,6 +17,8 @@ using UnityEditor.TreeViewExamples;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
+using UnityEngine.Pool;
+using Unity.Collections;
 
 namespace UnityEditor
 {
@@ -214,7 +216,7 @@ namespace UnityEditor
         bool m_GrabKeyboardFocusForListArea = false;
 
         // List area header: breadcrumbs or search area menu
-        List<KeyValuePair<GUIContent, string>> m_BreadCrumbs = new List<KeyValuePair<GUIContent, string>>();
+        List<(GUIContent folderContent, string folderPath)> m_BreadCrumbs = new List<(GUIContent, string)>();
         bool m_BreadCrumbLastFolderHasSubFolders = false;
         ExposablePopupMenu m_SearchAreaMenu;
 
@@ -228,10 +230,17 @@ namespace UnityEditor
         const float k_MinWidthTwoColumns = 230f;
         static float k_ToolbarHeight => EditorGUI.kWindowToolbarHeight;
         static float k_BottomBarHeight => EditorGUI.kWindowToolbarHeight;
+
         [SerializeField]
         float m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
         const float k_ResizerWidth = 5f;
         const float k_SliderWidth = 55f;
+
+        const string k_ProjectWindowFilterSelectionKey = "Unity.ProjectWindowFilterSelection";
+        const string k_ProjectWindowListAreaFolderOpenKey = "Unity.ProjectWindowListAreaFolderOpen";
+        const string k_ProjectWindowListAreaSelectionKey = "Unity.ProjectWindowListAreaSelection";
+        const string k_ProjectWindowBreadCrumbSelectionKey = "Unity.ProjectWindowBreadCrumbSelection";
+
         [NonSerialized]
         float m_SearchAreaMenuOffset = -1f;
         [NonSerialized]
@@ -578,6 +587,11 @@ namespace UnityEditor
 
             RefreshSearchText();
             SyncFilterGUI();
+
+            Selection.RegisterCustomHandler(k_ProjectWindowFilterSelectionKey, ApplyProjectWindowFilterSelection);
+            Selection.RegisterCustomHandler(k_ProjectWindowListAreaFolderOpenKey, ApplyProjectWindowListAreaFolderOpen);
+            Selection.RegisterCustomHandler(k_ProjectWindowListAreaSelectionKey, ApplyProjectWindowListAreaSelection);
+            Selection.RegisterCustomHandler(k_ProjectWindowBreadCrumbSelectionKey, ApplyProjectWindowBreadCrumbSelection);
         }
 
         public void SetSearch(string searchString)
@@ -1047,14 +1061,20 @@ namespace UnityEditor
         void SyncFilterGUI()
         {
             // Sync Labels
-            List<string> assetLabels = new List<string>(m_SearchFilter.assetLabels);
-            foreach (PopupList.ListElement item in m_AssetLabels.m_ListElements)
-                item.selected = assetLabels.Contains(item.text);
+            var assetLabels = m_SearchFilter.assetLabels;
+            if(assetLabels.Length > 0)
+            {
+                foreach (PopupList.ListElement item in m_AssetLabels.m_ListElements)
+                    item.selected = assetLabels.Contains(item.text);
+            }
 
             // Sync Type
-            List<string> classNames = new List<string>(m_SearchFilter.classNames);
-            foreach (PopupList.ListElement item in m_ObjectTypes.m_ListElements)
-                item.selected = classNames.Contains(item.text);
+            var classNames = m_SearchFilter.classNames;
+            if(classNames.Length > 0)
+            {
+                foreach (PopupList.ListElement item in m_ObjectTypes.m_ListElements)
+                    item.selected = classNames.Contains(item.text);
+            }
 
             // Sync Text field
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
@@ -1206,13 +1226,20 @@ namespace UnityEditor
 
         void RefreshSelectedPath()
         {
-            if (Selection.activeObject != null)
+            if (!TryRefreshSelectedPath(Selection.activeObject))
             {
-                m_SelectedPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+                Selection.activeObject = null;
+            }
+        }
+        bool TryRefreshSelectedPath(Object selectedObject)
+        {
+            if (selectedObject != null)
+            {
+                m_SelectedPath = AssetDatabase.GetAssetPath(selectedObject);
                 if (!string.IsNullOrEmpty(m_SelectedPath) && IsInsideHiddenPackage(m_SelectedPath))
                 {
                     m_SelectedPath = string.Empty;
-                    Selection.activeObject = null;
+                    return false;
                 }
             }
             else
@@ -1231,6 +1258,8 @@ namespace UnityEditor
             {
                 m_SelectedPathContent = new GUIContent();
             }
+
+            return true;
         }
 
         static void OpenSelectedFolders()
@@ -1245,6 +1274,9 @@ namespace UnityEditor
                     return;
 
                 projectBrowser.EndPing();
+                projectBrowser.Focus();
+
+                Selection.SetCustomSelection(k_ProjectWindowListAreaFolderOpenKey, "", selectedInstanceIDs);
 
                 if (projectBrowser.m_ViewMode == ViewMode.TwoColumns)
                 {
@@ -1271,26 +1303,56 @@ namespace UnityEditor
             }
         }
 
+        static bool SelectionMatchesGlobalSelection(EntityId[] eids)
+        {
+            var selection = Selection.GetEntityIdsUnsafe();
+            if (selection.Length != eids.Length)
+                return false;
+
+            if (selection.Length == 0)
+                return true;
+
+            using (UnityEngine.Pool.HashSetPool<EntityId>.Get(out var set))
+            {
+                for (int i = 0; i < selection.Length; i++)
+                    set.Add(selection[i]);
+
+                return set.SetEquals(eids);
+            }
+        }
+
         // Also called from list when navigating by keys
         void ListAreaItemSelectedCallback(bool doubleClicked)
         {
             SetAsLastInteractedProjectBrowser();
-
             var entityIds = m_ListArea.GetSelection();
-            if (entityIds.Length > 0)
-            {
-                Selection.entityIds = entityIds;
-                m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea; // local asset was selected
-                m_InternalSelectionChange = true;
-            }
-            else
-            {
-                Selection.activeObject = null;
-            }
+            var selectionWillChange = !SelectionMatchesGlobalSelection(entityIds);
 
-            if (Selection.entityIds != m_ListArea.GetSelection())
+            if (selectionWillChange)
             {
-                m_ListArea.InitSelection(Selection.entityIds);
+                m_InternalSelectionChange = true;
+
+                if (doubleClicked && entityIds.Length == 1 && ProjectWindowUtil.IsFolder(entityIds[0]))
+                {
+                    Selection.SetCustomSelection(k_ProjectWindowListAreaFolderOpenKey, string.Empty, entityIds);
+                    m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea; // local asset was selected
+                }
+                else
+                {
+                    var data = m_SearchFilter.folders.Length > 1 ? JsonUtility.ToJson(new StringArrayJsonWrapper() { folders = m_SearchFilter.folders }) : string.Empty;
+                    Selection.SetCustomSelection(k_ProjectWindowListAreaSelectionKey, data, entityIds);
+
+                    // Only reset search area if NOT searching.
+                    // Resetting the scope while typing can cause results to suddenly disappear.
+                    if (entityIds.Length > 0 && !m_SearchFilter.IsSearching())
+                        m_SearchFilter.searchArea = m_LastLocalAssetsSearchArea;
+                }
+
+                // Only track search results if we actually have a selection.
+                // Clearing selection during a search update should not count as "selecting a result".
+                m_DidSelectSearchResult = entityIds.Length > 0 && m_SearchFilter.IsSearching();
+
+                RefreshSelectedPath();
             }
 
             m_FocusSearchField = false;
@@ -1298,12 +1360,66 @@ namespace UnityEditor
             if (Event.current.button == 1 && Event.current.type == EventType.MouseDown)
                 m_ItemSelectedByRightClickThisEvent = true;
 
-            RefreshSelectedPath();
-
-            m_DidSelectSearchResult = m_SearchFilter.IsSearching();
-
             if (doubleClicked)
                 OpenListAreaSelection();
+        }
+
+        struct StringArrayJsonWrapper
+        {
+            public string[] folders;
+        }
+        static void ApplyProjectWindowListAreaSelection(string customData, EntityId[] eids)
+        {
+            // Selection History will set the correct window as focused
+            if (focusedWindow is ProjectBrowser browser)
+            {
+                // Don't change selection on a locked window
+                // Don't apply changes to m_ListArea when in Single Panel mode
+                if (!browser.isLocked && browser.m_ListArea != null)
+                {
+                    browser.SetAsLastInteractedProjectBrowser();
+
+                    if (!string.IsNullOrEmpty(customData))
+                    {
+                        var folders = JsonUtility.FromJson<StringArrayJsonWrapper>(customData).folders;
+                        browser.m_SearchFilter.folders = folders;
+                        browser.m_ListArea?.InitForSearch(browser.m_ListAreaRect, HierarchyType.Assets,
+                            browser.m_SearchFilter, false,
+                            s => AssetDatabase.GetMainAssetEntityId(s));
+
+                        // This will stop the folders being changes in OnSelectionChange
+                        browser.m_InternalSelectionChange = true;
+                    }
+
+                    if (SelectionMatchesGlobalSelection(eids)) browser.OnSelectionChange();
+                    browser.m_GrabKeyboardFocusForListArea = true;
+                }
+            }
+        }
+        static void ApplyProjectWindowListAreaFolderOpen(string _, EntityId[] eids)
+        {
+            // Selection History will set the correct window as focused
+            if (focusedWindow is ProjectBrowser browser)
+            {
+                // Don't change selection on a locked window
+                // Don't apply changes to m_ListArea when in Single Panel mode
+                if (!browser.isLocked)
+                {
+                    browser.SetAsLastInteractedProjectBrowser();
+
+                    if (browser.m_ViewMode == ViewMode.TwoColumns)
+                    {
+                        browser.SetFolderSelection(eids, false);
+                    }
+                    else if (browser.m_ViewMode == ViewMode.OneColumn)
+                    {
+                        browser.ClearSearch(); // shows tree instead of search
+                        browser.m_AssetTree.Frame(eids[0], true, false);
+                        browser.m_AssetTree.data.SetExpanded(eids[0], true);
+                    }
+                    browser.TryRefreshSelectedPath(EditorUtility.EntityIdToObject(eids[0]));
+                }
+            }
         }
 
         void OnGotFocus()
@@ -1396,16 +1512,20 @@ namespace UnityEditor
             }
         }
 
-        internal void SetFolderSelection(EntityId[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected)
+        internal void SetFolderSelection(EntityId[] selectedEntityIDs, bool revealSelectionAndFrameLastSelected, bool notifyFolderTreeListeners = false)
         {
-            SetFolderSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected, true);
+            SetFolderSelection(selectedEntityIDs, revealSelectionAndFrameLastSelected, true, notifyFolderTreeListeners);
         }
-
-        private void SetFolderSelection(EntityId[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected, bool folderWasSelected)
+        void SetFolderSelection(EntityId[] selectedEntityIDs, bool revealSelectionAndFrameLastSelected, bool folderWasSelected, bool notifyFolderTreeListeners = false)
         {
-            m_FolderTree.SetSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected);
-            SetFoldersInSearchFilter(selectedInstanceIDs);
-            FolderTreeSelectionChanged(folderWasSelected);
+            SetFolderSelectionWithoutNotify(selectedEntityIDs, revealSelectionAndFrameLastSelected);
+            if (notifyFolderTreeListeners) FolderTreeSelectionCallback(selectedEntityIDs);
+            else FolderTreeSelectionChanged(folderWasSelected);
+        }
+        void SetFolderSelectionWithoutNotify(EntityId[] selectedEntityIDs, bool revealSelectionAndFrameLastSelected)
+        {
+            m_FolderTree.SetSelection(selectedEntityIDs, revealSelectionAndFrameLastSelected);
+            SetFoldersInSearchFilter(selectedEntityIDs);
         }
 
         void AssetTreeItemDoubleClickedCallback(EntityId entityId)
@@ -1536,14 +1656,17 @@ namespace UnityEditor
             }
         }
 
-        void FolderTreeSelectionCallback(EntityId[] selectedTreeViewInstanceIDs)
+        void FolderTreeSelectionCallback(EntityId[] selectedTreeViewEntityIds)
         {
             SetAsLastInteractedProjectBrowser();
 
+            Selection.SetCustomSelection(k_ProjectWindowFilterSelectionKey, EditorJsonUtility.ToJson(
+                new EntityIdArrayJsonWrapper() { Iids = selectedTreeViewEntityIds }));
+
             // Assumes only asset folders can be multi selected
             EntityId selectedEntityId = EntityId.None;
-            if (selectedTreeViewInstanceIDs.Length > 0)
-                selectedEntityId = selectedTreeViewInstanceIDs[0];
+            if (selectedTreeViewEntityIds.Length > 0)
+                selectedEntityId = selectedTreeViewEntityIds[0];
 
             bool folderWasSelected = false;
             if (selectedEntityId != EntityId.None)
@@ -1552,7 +1675,7 @@ namespace UnityEditor
 
                 if (type == ItemType.Asset)
                 {
-                    SetFoldersInSearchFilter(selectedTreeViewInstanceIDs);
+                    SetFoldersInSearchFilter(selectedTreeViewEntityIds);
 
                     folderWasSelected = true;
                 }
@@ -1578,6 +1701,28 @@ namespace UnityEditor
             }
 
             FolderTreeSelectionChanged(folderWasSelected);
+        }
+        struct EntityIdArrayJsonWrapper
+        {
+            public EntityId[] Iids;
+        }
+        static void ApplyProjectWindowFilterSelection(string customData, EntityId[] _)
+        {
+            // Selection History will set the correct window as focused
+            if (focusedWindow is ProjectBrowser browser)
+            {
+                // Don't change selection on a locked window
+                // Apply changes to m_FolderTree if we have one ignoring mode, as we want correct data on mode swap
+                if (!browser.isLocked && browser.m_FolderTree != null)
+                {
+                    var iids = JsonUtility.FromJson<EntityIdArrayJsonWrapper>(customData).Iids;
+
+                    browser.SetAsLastInteractedProjectBrowser();
+
+                    browser.m_FolderTree.SetSelection(iids, true);
+                    browser.m_FolderTree.NotifyListenersThatSelectionChanged();
+                }
+            }
         }
 
         bool ValidateFilter(int savedFilterID, SearchFilter filter)
@@ -2633,7 +2778,7 @@ namespace UnityEditor
 
         static string[] GetFolderPathsFromInstanceIDs(EntityId[] entityIds)
         {
-            List<string> paths = new List<string>();
+            using var _ = ListPool<string>.Get(out var paths);
             foreach (var entityId in entityIds)
             {
                 if (entityId == kPackagesFolderInstanceId)
@@ -2746,8 +2891,8 @@ namespace UnityEditor
                 }
                 else
                 {
-                    var folderNames = new List<string>();
-                    var folderDisplayNames = new List<string>();
+                    using var _ = ListPool<string>.Get(out var folderNames);
+                    using var __ = ListPool<string>.Get(out var folderDisplayNames);
                     var packagesMountPoint = PackageManager.Folders.GetPackagesPath();
                     var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
                     if (packageInfo != null)
@@ -2784,7 +2929,7 @@ namespace UnityEditor
                             folderPath += "/";
                         folderPath += folderName;
 
-                        m_BreadCrumbs.Add(new KeyValuePair<GUIContent, string>(new GUIContent(folderDisplayNames[i++]), folderPath));
+                        m_BreadCrumbs.Add((new GUIContent(folderDisplayNames[i++]), folderPath));
                     }
 
                     if (path == packagesMountPoint)
@@ -2807,13 +2952,14 @@ namespace UnityEditor
                 {
                     bool lastElement = i == m_BreadCrumbs.Count - 1;
                     GUIStyle style = lastElement ? EditorStyles.boldLabel : EditorStyles.label; //EditorStyles.miniBoldLabel : EditorStyles.miniLabel;//
-                    GUIContent folderContent = m_BreadCrumbs[i].Key;
-                    string folderPath = m_BreadCrumbs[i].Value;
+                    var (folderContent, folderPath) = m_BreadCrumbs[i];
                     Vector2 size = style.CalcSize(folderContent);
                     rect.width = size.x;
                     if (GUI.Button(rect, folderContent, style))
                     {
-                        ShowFolderContents(GetFolderInstanceID(folderPath), false);
+                        var iid = GetFolderInstanceID(folderPath);
+                        ShowFolderContents(iid, false);
+                        Selection.SetCustomSelection(k_ProjectWindowBreadCrumbSelectionKey, iid.ToString());
                     }
 
                     rect.x += size.x;
@@ -2824,7 +2970,7 @@ namespace UnityEditor
                         {
                             string currentSubFolder = "";
                             if (!lastElement)
-                                currentSubFolder = m_BreadCrumbs[i + 1].Value;
+                                currentSubFolder = m_BreadCrumbs[i + 1].folderPath;
                             BreadCrumbListMenu.Show(folderPath, currentSubFolder, buttonRect, this);
                         }
                     }
@@ -2834,6 +2980,20 @@ namespace UnityEditor
             else if (m_SearchFilter.folders.Length > 1)
             {
                 GUI.Label(rect, GUIContent.Temp("Showing multiple folders..."), EditorStyles.miniLabel);
+            }
+        }
+        static void ApplyProjectWindowBreadCrumbSelection(string customData, EntityId[] _)
+        {
+            // Selection History will set the correct window as focused
+            if (focusedWindow is ProjectBrowser browser)
+            {
+                // Don't change selection on a locked window
+                // Apply changes to m_FolderTree if we have one ignoring mode, as we want correct data on mode swap
+                if (!browser.isLocked && browser.m_FolderTree != null)
+                {
+                    var eid = EntityId.Parse(customData);
+                    browser.ShowFolderContents(eid, false);
+                }
             }
         }
 
@@ -3072,9 +3232,9 @@ namespace UnityEditor
         internal static bool CanDeleteSelectedAssets()
         {
             var treeViewSelection = GetTreeViewFolderSelection();
-            var entityIds = treeViewSelection.Length > 0 ? new List<EntityId>(treeViewSelection) : new List<EntityId>(Selection.entityIds);
+            var entityIds = treeViewSelection.Length > 0 ? treeViewSelection : Selection.GetEntityIdsUnsafe();
 
-            var objectsToDelete = new HashSet<EntityId>();
+            using var _ = HashSetPool<EntityId>.Get(out var objectsToDelete);
             foreach (var entityId in entityIds)
             {
                 if (entityId == AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets") || entityId == kPackagesFolderInstanceId)
@@ -3103,13 +3263,8 @@ namespace UnityEditor
         {
             var treeViewSelection = GetTreeViewFolderSelection();
 
-            List<EntityId> entityIds;
-            if (treeViewSelection.Length > 0)
-                entityIds = new List<EntityId>(treeViewSelection);
-            else
-                entityIds = new List<EntityId>(Selection.entityIds);
-
-            if (entityIds.Count == 0)
+            var entityIds = treeViewSelection.Length > 0 ? treeViewSelection : Selection.entityIds;
+            if (entityIds.Length == 0)
                 return;
 
             if (ProjectWindowUtil.DeleteAssets(entityIds, askIfSure))
@@ -3215,7 +3370,7 @@ namespace UnityEditor
             {
                 m_SearchFilter.folders = m_LastFolders;
                 if (m_FolderTree != null)
-                    SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true, folderWasSelected);
+                    SetFolderSelectionWithoutNotify(GetFolderInstanceIDs(m_LastFolders), true);
             }
         }
 
@@ -3255,8 +3410,8 @@ namespace UnityEditor
                 m_Caller = caller;
 
                 // List of sub folders
-                var subFolders = new List<string>();
-                var subFolderDisplayNames = new List<string>();
+                using var _ = ListPool<string>.Get(out var subFolders);
+                using var __ = ListPool<string>.Get(out var subFolderDisplayNames);
                 if (folder == Folders.GetPackagesPath())
                 {
                     foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages(caller.m_SkipHiddenPackages))
@@ -3300,7 +3455,10 @@ namespace UnityEditor
             {
                 EntityId folderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(m_SubFolder);
                 if (folderEntityId != EntityId.None)
+                {
                     m_Caller.ShowFolderContents(folderEntityId, false);
+                    Selection.SetCustomSelection(k_ProjectWindowBreadCrumbSelectionKey, folderEntityId.ToString());
+                }
             }
         }
     }

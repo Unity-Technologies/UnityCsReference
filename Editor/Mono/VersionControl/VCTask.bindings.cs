@@ -49,11 +49,10 @@ namespace UnityEditor.VersionControl
 
         public extern void SetCompletionAction(CompletionAction action);
 
-        [NativeMethod("GetMonoAssetList")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        [NativeMethod("ScriptingGetAssetList")]
         extern Asset[] Internal_GetAssetList();
-        [NativeMethod("GetMonoChangeSets")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+
+        [NativeMethod("ScriptingGetChangeSets")]
         extern ChangeSet[] Internal_GetChangeSets();
 
         [FreeFunction("VersionControlBindings::Task::Destroy", IsThreadSafe = true)]
@@ -85,9 +84,14 @@ namespace UnityEditor.VersionControl
         public extern int resultCode { get; }
         public extern Message[] messages
         {
-            [NativeName("GetMonoMessages")]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+            [NativeMethod("ScriptingGetMessages")]
             get;
+        }
+
+        [RequiredByNativeCode]
+        internal static Task CreateTaskFromNative(IntPtr nativePtr)
+        {
+            return new Task(nativePtr);
         }
 
         internal static class BindingsMarshaller

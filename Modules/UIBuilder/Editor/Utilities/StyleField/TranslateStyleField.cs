@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using JetBrains.Annotations;
-using System;
-using System.Diagnostics;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -12,20 +10,9 @@ using UnityEngine.UIElements.StyleSheets;
 namespace Unity.UI.Builder
 {
     [UsedImplicitly]
-    class TranslateStyleField : BaseField<Translate>
+    [UxmlElement]
+    partial class TranslateStyleField : BaseField<Translate>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<Translate>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Translate>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TranslateStyleField();
-        }
-
         static readonly string s_FieldClassName = "unity-translate-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/TranslateStyleField.uxml";
         static readonly string s_VisualInputName = "unity-visual-input";

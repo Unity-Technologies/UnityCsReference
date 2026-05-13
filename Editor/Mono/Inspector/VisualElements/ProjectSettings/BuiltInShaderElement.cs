@@ -3,13 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
-    internal class BuiltInShaderElement : VisualElement
+    [UxmlElement]
+    internal partial class BuiltInShaderElement : VisualElement
     {
         internal enum BuiltinShaderMode
         {
@@ -18,56 +18,12 @@ namespace UnityEditor.UIElements.ProjectSettings
             Custom
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(shaderMode), "shader-mode"),
-                    new (nameof(customShader), "custom-shader"),
-                    new (nameof(shaderModeLabel), "shader-mode-label"),
-                    new (nameof(customShaderLabel), "custom-shader-label"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, UxmlAttribute("shader-mode")] string shaderMode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags shaderMode_UxmlAttributeFlags;
-            [SerializeField, UxmlAttribute("custom-shader")] string customShader;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags customShader_UxmlAttributeFlags;
-            [SerializeField, UxmlAttribute("shader-mode-label")] string shaderModeLabel;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags shaderModeLabel_UxmlAttributeFlags;
-            [SerializeField, UxmlAttribute("custom-shader-label")] string customShaderLabel;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags customShaderLabel_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new BuiltInShaderElement();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BuiltInShaderElement)obj;
-                if (ShouldWriteAttributeValue(shaderMode_UxmlAttributeFlags))
-                    e.shaderMode = shaderMode;
-                if (ShouldWriteAttributeValue(customShader_UxmlAttributeFlags))
-                    e.customShader = customShader;
-                if (ShouldWriteAttributeValue(shaderModeLabel_UxmlAttributeFlags))
-                    e.shaderModeLabel = shaderModeLabel;
-                if (ShouldWriteAttributeValue(customShaderLabel_UxmlAttributeFlags))
-                    e.customShaderLabel = customShaderLabel;
-            }
-        }
-
         PropertyField m_ShaderModeField;
         ObjectField m_CustomShaderObjectField;
 
         string m_ShaderMode;
 
+        [UxmlAttribute]
         public string shaderMode
         {
             get => m_ShaderMode;
@@ -82,6 +38,7 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         string m_CustomShader;
 
+        [UxmlAttribute]
         public string customShader
         {
             get => m_CustomShader;
@@ -96,6 +53,7 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         string m_ShaderModeLabel;
 
+        [UxmlAttribute]
         public string shaderModeLabel
         {
             get => m_ShaderModeLabel;
@@ -110,6 +68,7 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         string m_CustomShaderLabel;
 
+        [UxmlAttribute]
         public string customShaderLabel
         {
             get => m_CustomShaderLabel;

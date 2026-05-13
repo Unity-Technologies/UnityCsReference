@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling.Editor;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -169,6 +170,16 @@ namespace UnityEditorInternal.Profiling
         private protected override void DeleteActiveState()
         {
             SessionState.EraseBool(activeStatePreferenceKey);
+        }
+
+        public override float GetZeroSampleThresholdMs()
+        {
+            return 0.001f; // < 0.001ms displays as 0.000ms
+        }
+
+        public override int GetZeroSampleTimeColumn()
+        {
+            return HierarchyFrameDataView.columnTotalGpuTime;
         }
     }
 }

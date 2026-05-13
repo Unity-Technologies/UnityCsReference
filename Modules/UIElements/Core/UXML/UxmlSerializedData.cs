@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
 {
     internal interface IUxmlSerializedDataCustomAttributeHandler
     {
-        void SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes);
+        void SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes);
     }
 
     /// <summary>

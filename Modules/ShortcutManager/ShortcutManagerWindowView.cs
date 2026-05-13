@@ -1663,21 +1663,9 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
-    internal class ShortcutSearchField : SearchFieldBase<ShortcutTextField, List<KeyCombination>>
+    [UxmlElement]
+    internal partial class ShortcutSearchField : SearchFieldBase<ShortcutTextField, List<KeyCombination>>
     {
-        [Serializable]
-        public new class UxmlSerializedData : SearchFieldBase<ShortcutTextField, List<KeyCombination>>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                SearchFieldBase<ShortcutTextField, List<KeyCombination>>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new ShortcutSearchField();
-        }
-
         public new static readonly string ussClassName = "unity-shortcut-search-field";
 
         public event Action<List<KeyCombination>> OnWorkingValueChanged;
@@ -1705,14 +1693,9 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
-    internal class ShortcutPopupSearchField : ShortcutSearchField, IToolbarMenuElement
+    [UxmlElement]
+    internal partial class ShortcutPopupSearchField : ShortcutSearchField, IToolbarMenuElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : ShortcutSearchField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ShortcutPopupSearchField();
-        }
-
         public DropdownMenu menu { get; }
 
         public ShortcutPopupSearchField()

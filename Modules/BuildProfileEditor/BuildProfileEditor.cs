@@ -102,6 +102,7 @@ namespace UnityEditor.Build.Profile
             }
 
             m_Profile = profile;
+            BuildProfileContext.instance.UpdateBuildProfileInitialization(profile);
 
             if (BuildProfileContext.instance.TryGetInitializationInfo(profile, out var initializationInfo)
                 && !initializationInfo.IsDone())
@@ -162,7 +163,7 @@ namespace UnityEditor.Build.Profile
                 {
                     ShowRequiredSettingsFoldouts();
                     m_AddSettingsButton.Hide();
-                } 
+                }
                 else
                     ShowSettingsFoldouts();
 

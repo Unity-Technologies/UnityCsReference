@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.Layout;
@@ -96,9 +98,47 @@ namespace UnityEngine.UIElements
 
     }
 
+    enum UnloadingSubscriber
+    {
+        StyleCache,
+        InitialStyle,
+        LayoutManager,
+        Count
+    }
+
+    static partial class UnloadingUtility
+    {
+        static Action[] s_Subscribers = new Action[(int)UnloadingSubscriber.Count];
+
+        static ProfilerMarker s_CodeUnloadingMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.OnCodeUnloading");
+
+        [OnCodeUnloading]
+        static void OnCodeUnloading()
+        {
+            using (s_CodeUnloadingMarker.Auto())
+            {
+                for (int i = 0; i < s_Subscribers.Length; i++)
+                {
+                    s_Subscribers[i]?.Invoke();
+                    s_Subscribers[i] = null;
+                }
+            }
+        }
+
+        // Allows classes to lazily register themselves for code unloading
+        // Otherwise, directly adding [OnCodeUnloading] would implicitly trigger their static constructor
+        internal static void SubscribeToUnloading(UnloadingSubscriber subscriber, Action callback)
+        {
+            Debug.Assert(s_Subscribers[(int)subscriber] == null);
+            s_Subscribers[(int)subscriber] = callback;
+        }
+    }
+
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
     internal static class UIElementsUtility
     {
+
+
         [Obsolete("Please use public APIs from the ui test framework (com.unity.ui.test-framework)  to simulate events for tests")]
         internal static EventBase CreateEvent(Event systemEvent)
         {

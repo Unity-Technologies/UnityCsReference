@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor.QuickInstall
 {
@@ -148,7 +149,7 @@ namespace UnityEditor.QuickInstall
 
         static void DetectPackagesFromLoadedAssemblies()
         {
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var loadedAssemblies = CurrentAssemblies.GetLoadedAssemblies();
             foreach (var assembly in loadedAssemblies)
             {
                 if (s_InstallersByAssemblyName.TryGetValue(assembly.GetName().Name, out var target))

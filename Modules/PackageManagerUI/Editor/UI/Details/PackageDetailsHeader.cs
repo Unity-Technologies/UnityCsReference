@@ -5,27 +5,12 @@
 using System.Globalization;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
-using System;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageDetailsHeader : VisualElement
+    [UxmlElement]
+    internal partial class PackageDetailsHeader : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageDetailsHeader(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPackageLinkFactory>());
-            }
-        }
-
         private IPackage m_Package;
         private IPackageVersion m_Version;
 
@@ -33,6 +18,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageManager m_PageManager;
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IPackageLinkFactory m_PackageLinkFactory;
+
+        public PackageDetailsHeader() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>(),
+            ServicesContainer.instance.Resolve<IPackageLinkFactory>())
+        {
+        }
+
         public PackageDetailsHeader(
             IResourceLoader resourceLoader,
             IApplicationProxy application,

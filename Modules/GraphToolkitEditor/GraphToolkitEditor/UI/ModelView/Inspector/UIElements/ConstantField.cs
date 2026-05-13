@@ -120,7 +120,8 @@ namespace Unity.GraphToolkit.Editor
             var registerCallbackMethod = typeof(CallbackEventHandler)
 #pragma warning restore UA2001
                 .GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance)
-                .SingleOrDefault(m => m.Name == nameof(RegisterCallback) && m.GetGenericArguments().Length == 2);
+                .SingleOrDefault(m => m.Name == nameof(RegisterCallback) && m.GetGenericArguments().Length == 2 &&
+                                      m.GetParameters().Length == 3 && m.GetParameters()[2].ParameterType == typeof(TrickleDown));
 
             if (registerCallbackMethod == null)
                 return null;
@@ -606,7 +607,28 @@ namespace Unity.GraphToolkit.Editor
 
             // Special Types
             if (element is EnumField enumF) { enumF.SetValueWithoutNotify((Enum)value); return; }
-            if (element is EnumFlagsField enumFlagsF) { enumFlagsF.SetValueWithoutNotify((Enum)value); return; }
+            if (element is EnumFlagsField enumFlagsF)
+            {
+                if (enumFlagsF.panel != null)
+                {
+                    enumFlagsF.SetValueWithoutNotify((Enum)value);
+                }
+                else
+                {
+                    // SetValueWithoutNotify on a mixed-value flags enum accesses scaledPixelsPerPoint
+                    // (via GetMixedString -> MeasureTextSize), which requires panel attachment.
+                    // Defer until the field is in the hierarchy to avoid the "not on a panel" warning.
+                    var deferredValue = (Enum)value;
+                    EventCallback<AttachToPanelEvent> setDeferredValue = null;
+                    setDeferredValue = _ =>
+                    {
+                        enumFlagsF.UnregisterCallback(setDeferredValue);
+                        enumFlagsF.SetValueWithoutNotify(deferredValue);
+                    };
+                    enumFlagsF.RegisterCallback(setDeferredValue);
+                }
+                return;
+            }
             
             // LayerMaskField takes 'int', but the value might be 'LayerMask' struct
             if (element is LayerMaskField layF) 

@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BuilderPlacementIndicator : VisualElement
+    [UxmlElement]
+    partial class BuilderPlacementIndicator : VisualElement
     {
         static readonly string s_UssClassName = "unity-builder-placement-indicator";
 
@@ -19,12 +19,6 @@ namespace Unity.UI.Builder
         public VisualElement parentElement { get; private set; }
         public int indexWithinParent { get; private set; }
         public VisualElement documentRootElement { get; set; }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderPlacementIndicator();
-        }
 
         public BuilderPlacementIndicator()
         {

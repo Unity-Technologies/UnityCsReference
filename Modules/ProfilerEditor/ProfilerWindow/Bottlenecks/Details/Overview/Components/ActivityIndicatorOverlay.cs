@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -10,7 +9,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
-    class ActivityIndicatorOverlay : VisualElement
+    [UxmlElement]
+    internal partial class ActivityIndicatorOverlay : VisualElement
     {
         const string k_UssClass_Hidden = "activity-indicator-overlay__hidden";
 
@@ -114,13 +114,6 @@ namespace Unity.Profiling.Editor.UI
         {
             // If a show-after-delay is in progress when we are detached, cancel it.
             m_IsShowAfterDelayInProgress = false;
-        }
-
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ActivityIndicatorOverlay();
         }
     }
 }

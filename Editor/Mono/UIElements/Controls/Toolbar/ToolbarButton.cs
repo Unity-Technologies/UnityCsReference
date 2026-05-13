@@ -22,21 +22,10 @@ namespace UnityEditor.UIElements
     /// <remarks>
     /// SA: [[Button]], [[Toolbar]]
     /// </remarks>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarButton.png")]
     public partial class ToolbarButton : Button
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : Button.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarButton();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

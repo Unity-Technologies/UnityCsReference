@@ -3,12 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using Unity.Properties;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -52,7 +55,7 @@ internal readonly record struct StyleInspectorTarget
 }
 
 [UxmlElement]
-internal sealed class StyleInspectorElement : VisualElement, IVisualElementChangeProcessor
+internal sealed partial class StyleInspectorElement : VisualElement, IVisualElementChangeProcessor
 {
     public static BindingId TargetProperty = nameof(Target);
     public static BindingId ContentAssetProperty = nameof(ContentAsset);
@@ -64,55 +67,42 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
     public const string InspectorFlexRowModeClassName = UssClassName + "--flex-row";
     public const string InspectorFlexRowReverseModeClassName = UssClassName + "--flex-row-reverse";
 
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-            {
-                new(nameof(ContentAsset), "content-asset"),
-            }, true);
-        }
-
-#pragma warning disable 649
-
-        [SerializeField] VisualTreeAsset ContentAsset;
-
-        [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags ContentAsset_UxmlAttributeFlags;
-#pragma warning restore 649
-
-        [ExcludeFromDocs]
-        public override object CreateInstance()
-        {
-            return new StyleInspectorElement();
-        }
-
-        [ExcludeFromDocs]
-        public override void Deserialize(object obj)
-        {
-            var e = (StyleInspectorElement)obj;
-            if (ShouldWriteAttributeValue(ContentAsset_UxmlAttributeFlags))
-                e.ContentAsset = ContentAsset;
-        }
-    }
-
     public class AuthoringContext : IDisposable, INotifyBindablePropertyChanged, IDataSourceViewHashProvider
     {
         StyleDiff m_StyleDiff;
         StyleDiffAdditionalDataFlags m_StyleDiffFlags = StyleDiffAdditionalDataFlags.All;
         bool m_IsReadonly = true;
+        StyleInspectorAnimationRecordingContext m_AnimationController;
 
         public StyleDiff StyleDiff => m_StyleDiff;
+
+        /// <summary>
+        /// When non-null, style field changes in VisualElement mode are routed to the animation recording pipeline,
+        /// and field enabled state reflects which longhands are recordable for the active clip.
+        /// Must be set before any ProcessChange runs — <see cref="AnimationMode.InAnimationRecording"/> must agree.
+        /// </summary>
+        internal StyleInspectorAnimationRecordingContext AnimationController
+        {
+            get => m_AnimationController;
+            set
+            {
+                if (ReferenceEquals(m_AnimationController, value))
+                    return;
+                m_AnimationController = value;
+                RefreshAllProperties();
+            }
+        }
 
         public bool IsReadOnly
         {
             get => m_IsReadonly;
-            set => m_IsReadonly = value;
+            set
+            {
+                if (m_IsReadonly == value)
+                    return;
+                m_IsReadonly = value;
+                RefreshAllProperties();
+            }
         }
 
         public AuthoringContext()
@@ -142,18 +132,22 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
         public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
 
-        public long GetViewHashCode()
-        {
-            return m_StyleDiff.GetViewHashCode();
-        }
+        public long GetViewHashCode() => m_StyleDiff.GetViewHashCode();
 
         void PropagateProperty(object sender, BindablePropertyChangedEventArgs e)
         {
             propertyChanged?.Invoke(this, e);
         }
+
+        public void RefreshAllProperties()
+        {
+            m_StyleDiff.MarkAllPropertiesDirty();
+        }
     }
 
     AuthoringContext m_Context;
+    AuthoringVariableEditingContext m_VariableEditingContext;
+    StyleInspectorAnimationRecordingContext m_AnimationController;
 
     StyleInspectorTarget m_Target;
 
@@ -210,6 +204,11 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
 
     public override VisualElement contentContainer { get; }
 
+    /// <summary>
+    /// The variable editing context for this inspector. Available after the element is attached to a panel.
+    /// </summary>
+    internal IVariableEditingContext VariableEditingContext => m_VariableEditingContext;
+
     public StyleInspectorElement()
         :this(null)
     {
@@ -236,8 +235,10 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                     return;
                 m_Context = new AuthoringContext
                 {
-                    IsReadOnly = IsReadOnly
+                    IsReadOnly = IsReadOnly,
+                    AnimationController = m_AnimationController
                 };
+                m_VariableEditingContext = new AuthoringVariableEditingContext(this);
                 dataSource = m_Context;
                 if (Target.Element != null)
                     AcquireSelection(Target.Element);
@@ -255,6 +256,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                 dataSource = null;
                 m_Context.Dispose();
                 m_Context = null;
+                m_VariableEditingContext = null;
                 break;
             }
         }
@@ -296,7 +298,24 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         // Intentionally left empty.
     }
 
-    private void Refresh()
+    /// <summary>
+    /// Sets the animation recording controller on the <see cref="AuthoringContext"/>.
+    /// Called by <see cref="VisualElementInspector.RefreshRecordingState"/> when the controller
+    /// is updated by <see cref="VisualElementSelectionEditor"/>.
+    /// The value is kept so it survives detach/reattach cycles and is applied
+    /// when the context is created in <see cref="HandleEventBubbleUp"/>.
+    /// </summary>
+    internal void SetAnimationController(StyleInspectorAnimationRecordingContext controller)
+    {
+        m_AnimationController = controller;
+        if (m_Context != null)
+            m_Context.AnimationController = controller;
+    }
+
+    /// <summary>
+    /// Triggers a refresh of the style diff and inspector UI.
+    /// </summary>
+    internal void Refresh()
     {
         if (m_Context != null && m_Target.IsValid())
         {
@@ -306,6 +325,7 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
                     m_Context.Refresh(m_Target.Element);
                     break;
                 case StyleDiff.ContextType.StyleSheet:
+                    m_Context.AnimationController = null;
                     m_Context.RefreshRule(m_Target.Element, m_Target.Sheet, m_Target.Rule);
                     break;
                 default:
@@ -317,6 +337,8 @@ internal sealed class StyleInspectorElement : VisualElement, IVisualElementChang
         }
         else
         {
+            if (m_Context != null)
+                m_Context.AnimationController = null;
             UpdateFlexColumnGlobalState(FlexDirection.Column);
         }
     }

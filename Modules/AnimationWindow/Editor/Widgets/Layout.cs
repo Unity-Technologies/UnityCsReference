@@ -84,14 +84,21 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
         class DopesheetButton : IToggleButtonItem
         {
-            public string Name => L10n.Tr("Dopesheet");
-            public string Tooltip => L10n.Tr($"Show Dopesheet ({ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves")})");
+            static readonly string s_Name = L10n.Tr("Dopesheet");
+            static readonly string s_Tooltip = L10n.Tr("Show Dopesheet ({0})");
+
+            public string Name => s_Name;
+            public string Tooltip => string.Format(s_Tooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves"));
         }
 
         class CurveEditorButton : IToggleButtonItem
         {
-            public string Name => L10n.Tr("Curves");
-            public string Tooltip => L10n.Tr($"Show Curves ({ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves")})");
+            static readonly string s_Name = L10n.Tr("Curves");
+            static readonly string s_Tooltip = L10n.Tr("Show Curves ({0})");
+
+            public string Name => s_Name;
+            public string Tooltip => string.Format(s_Tooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves"));
+
         }
 
         AnimEditor m_AnimEditor;
@@ -245,6 +252,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_AnimationControls = this.Q(className: k_AnimationControls);
 
             m_OnboardingPanel = this.Q<VisualElement>(className: k_AnimationOnboarding);
+            m_OnboardingPanel.EnableInClassList(k_AnimationOnboarding + "__hidden", true);
+
             m_OnboardingPanelLabel = m_OnboardingPanel.Q<Label>();
             m_OnboardingPanelButton = m_OnboardingPanel.Q<Button>();
             m_OnboardingPanelButton.clicked += () =>
@@ -254,7 +263,10 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             };
 
             m_DopeSheetElement = this.Q<DopeSheetElement>(className: DopeSheetElement.ussClassName);
+            m_DopeSheetElement.EnableInClassList(DopeSheetElement.ussClassName + "__hidden", true);
+
             m_CurveEditorElement = this.Q<CurveEditorElement>(className: CurveEditorElement.ussClassName);
+            m_CurveEditorElement.EnableInClassList(CurveEditorElement.ussClassName + "__hidden", true);
 
             m_HierarchyElement = this.Q<HierarchyElement>(className: HierarchyElement.ussClassName);
             m_AnimationEventTimeline = this.Q<AnimationEventTimelineElement>(className: AnimationEventTimelineElement.ussClassName);
@@ -555,9 +567,6 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             // Link with Timeline
             m_LinkWithSequencerButton.EnableInClassList(k_AnimationLinkWithSequencerButton + "__hidden", !state.linkedWithSequencer);
             m_LinkWithSequencerButton.SetValueWithoutNotify(state.linkedWithSequencer);
-
-            // Clip Selection
-            m_ClipDropdownField.SetEnabled(!state.disabled);
 
             // Overlays
             m_CanvasOverlayManager.EnableInClassList(k_AnimationContentOverlay + "__hidden", state.disabled);

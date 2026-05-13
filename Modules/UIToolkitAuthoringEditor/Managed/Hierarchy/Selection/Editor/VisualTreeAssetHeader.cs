@@ -2,54 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
+using System.IO;
 using Unity.Properties;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
 [UxmlElement]
-class VisualTreeAssetHeader : UISelectionObjectHeader
+partial class VisualTreeAssetHeader : UISelectionObjectHeader
 {
-    [Serializable]
-    public new class UxmlSerializedData : UISelectionObjectHeader.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(VisualTreeAsset), "visual-tree-asset"),
-
-                }
-                , true);
-        }
-
-#pragma warning disable 649
-        [SerializeField] private VisualTreeAsset VisualTreeAsset;
-        [SerializeField, UxmlIgnore, HideInInspector] private UxmlAttributeFlags VisualTreeAsset_UxmlAttributeFlags;
-#pragma warning restore 649
-
-        public override object CreateInstance()
-        {
-            return new VisualTreeAssetHeader();
-        }
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-            var ve = (VisualTreeAssetHeader)obj;
-            if (ShouldWriteAttributeValue(VisualTreeAsset_UxmlAttributeFlags))
-                ve.VisualTreeAsset = VisualTreeAsset;
-        }
-    }
-
     public static readonly BindingId VisualTreeAssetProperty = nameof(VisualTreeAsset);
 
     public new const string UssClass = "unity-visual-tree-asset-header";
@@ -70,9 +32,19 @@ class VisualTreeAssetHeader : UISelectionObjectHeader
             if (m_VisualTreeAsset == value)
                 return;
             m_VisualTreeAsset = value;
-            m_AssetPath.value = m_VisualTreeAsset
-                ? AssetDatabase.GetAssetPath(m_VisualTreeAsset.GetEntityId())
-                : k_NoAssetPath;
+
+            var path = k_NoAssetPath;
+            var toolTip = k_NoAssetPath;
+
+            if (m_VisualTreeAsset)
+            {
+                var fullPath = AssetDatabase.GetAssetPath(m_VisualTreeAsset.GetEntityId());
+                path = Path.GetFileName(fullPath);
+                toolTip = fullPath;
+            }
+
+            m_AssetPath.value = path;
+            m_AssetPath.tooltip = toolTip;
             NotifyPropertyChanged(VisualTreeAssetProperty);
         }
     }

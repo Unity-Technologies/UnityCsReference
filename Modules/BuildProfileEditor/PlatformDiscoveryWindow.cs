@@ -47,6 +47,8 @@ namespace UnityEditor.Build.Profile
         VisualElement m_RhsDetailsPanel;
 
         VisualElement m_PackageContainer;
+        HelpBox m_SignInRequiredHelpBox;
+        VisualElement m_PackageListsAndActionsContainer;
         ListView m_InternalPackageListView;
         ListView m_PartnerPackageListView;
         Button m_PackageSelectAll;
@@ -229,6 +231,7 @@ namespace UnityEditor.Build.Profile
         {
             m_OnCloseContinuation?.Invoke();
             BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated -= OnPackageInfoUpdated;
+            BuildProfileContext.packageServiceInfoProvider.OnUserLoginStateChanged -= OnUserLoginStateChanged;
             EditorAnalytics.SendAnalytic(m_CloseEvent);
         }
 
@@ -302,6 +305,12 @@ namespace UnityEditor.Build.Profile
             var packageContainerTitle = m_PackageContainer.Q<Label>("package-container-title");
             packageContainerTitle.text = TrText.packageContainerTitle;
 
+            m_SignInRequiredHelpBox = m_PackageContainer.Q<HelpBox>("package-sign-in-helpbox");
+            m_SignInRequiredHelpBox.buttonText = TrText.signInButton;
+            m_SignInRequiredHelpBox.onButtonClicked += () => BuildProfileContext.packageServiceInfoProvider.ShowLogin();
+
+            m_PackageListsAndActionsContainer = m_PackageContainer.Q<VisualElement>("package-lists-and-actions-container");
+
             SetUpPackageListView(m_InternalPackageListView, null);
             SetUpPackageListView(m_PartnerPackageListView, () =>
             {
@@ -328,8 +337,11 @@ namespace UnityEditor.Build.Profile
             m_Cards = FindAllVisiblePlatforms(BuildProfileModuleUtil.FindAllViewablePlatforms().ToArray());
             CreatePlatformView();
 
-            if (BuildProfileContext.packageServiceInfoProvider.FetchInfo())
+            var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
+            if (isLoggedIn && BuildProfileContext.packageServiceInfoProvider.FetchInfo())
                 BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated += OnPackageInfoUpdated;
+
+            BuildProfileContext.packageServiceInfoProvider.OnUserLoginStateChanged += OnUserLoginStateChanged;
 
             // Register event handlers.
             m_AddBuildProfileButton.SetEnabled(true);
@@ -355,7 +367,20 @@ namespace UnityEditor.Build.Profile
 
         void OnPackageInfoUpdated()
         {
-            OnCardSelected(m_SelectedCard);
+            UpdatePackageSection(m_SelectedCard);
+        }
+
+        void OnUserLoginStateChanged()
+        {
+            var provider = BuildProfileContext.packageServiceInfoProvider;
+            if (provider.isUserLoggedIn && provider.FetchInfo())
+            {
+                provider.OnPackageInfoUpdated -= OnPackageInfoUpdated;
+                provider.OnPackageInfoUpdated += OnPackageInfoUpdated;
+            }
+
+            UpdatePackageSection(m_SelectedCard);
+            UpdateAddBuildProfileButton();
         }
 
         void SetUpPackageListView(ListView listView, Func<VisualElement> customHeader)
@@ -478,7 +503,8 @@ namespace UnityEditor.Build.Profile
             m_SelectedCard = card;
             SetCardSelected(card);
             m_SelectedDisplayNameLabel.text = card.displayName;
-            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIconHero(card.platformId);
+
+            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformHeroImage(card.platformId);
             m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
 
             // Only color if not a default color and color can be parsed.
@@ -500,40 +526,7 @@ namespace UnityEditor.Build.Profile
                     m_SupportedPlatformStatusContainer.Show();
             }
 
-            if (card.internalPackages.packageCount > 0 || card.partnerPackages.packageCount > 0)
-            {
-                m_PackageContainer.Show();
-                RebuildPackageListView(card.internalPackages, m_InternalPackageListView);
-                RebuildPackageListView(card.partnerPackages, m_PartnerPackageListView);
-                SetEnabledPackageSelectionButtons();
-
-                void RebuildPackageListView(BuildTargetDiscovery.PlatformPackageList packageList, ListView listView)
-                {
-                    if (packageList.packageCount > 0)
-                    {
-                        listView.itemsSource = PlatformPackageItem.CreateItemSource(packageList);
-                        listView.Show();
-                        listView.Rebuild();
-                    }
-                    else
-                        listView.Hide();
-                }
-            }
-            else
-            {
-                m_PackageContainer.Hide();
-            }
-
-            if (!BuildProfileModuleUtil.HasSamplesInPackageManager(card.platformId))
-            {
-                m_PackageBrowseSampleCheckbox.value = false;
-                m_PackageBrowseSampleCheckbox.Hide();
-            }
-            else
-            {
-                m_PackageBrowseSampleCheckbox.value = true;
-                m_PackageBrowseSampleCheckbox.Show();
-            }
+            UpdatePackageSection(card);
 
             if (card.description.Length > 0)
             {
@@ -614,6 +607,64 @@ namespace UnityEditor.Build.Profile
             UpdateAddBuildProfileButton();
         }
 
+        void UpdatePackageSection(BuildProfileCard card)
+        {
+            var hasPackages = card.internalPackages.packageCount > 0 || card.partnerPackages.packageCount > 0;
+            var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
+
+            if (hasPackages && isLoggedIn)
+            {
+                m_PackageContainer.Show();
+                m_SignInRequiredHelpBox.Hide();
+                m_PackageListsAndActionsContainer.Show();
+
+                RebuildPackageListView(card.internalPackages, m_InternalPackageListView);
+                RebuildPackageListView(card.partnerPackages, m_PartnerPackageListView);
+                SetEnabledPackageSelectionButtons();
+            }
+            else if (hasPackages && !isLoggedIn)
+            {
+                var hasRequiredPackages = card.internalPackages.requiredPackages.Length > 0 || card.partnerPackages.requiredPackages.Length > 0;
+                var allRequiredPackagesInstalled = AllRequiredPackagesInstalled(card.internalPackages)
+                    && AllRequiredPackagesInstalled(card.partnerPackages);
+                var prefix = hasRequiredPackages
+                    ? allRequiredPackagesInstalled ? TrText.requiredPackagesInstalled : TrText.requiredPackagesNotInstalled
+                    : string.Empty;
+                m_SignInRequiredHelpBox.text = string.Format(TrText.signInRequiredForPackages, prefix);
+
+                m_PackageContainer.Show();
+                m_SignInRequiredHelpBox.Show();
+                m_PackageListsAndActionsContainer.Hide();
+            }
+            else
+            {
+                m_PackageContainer.Hide();
+            }
+
+            if (!BuildProfileModuleUtil.HasSamplesInPackageManager(card.platformId))
+            {
+                m_PackageBrowseSampleCheckbox.value = false;
+                m_PackageBrowseSampleCheckbox.Hide();
+            }
+            else
+            {
+                m_PackageBrowseSampleCheckbox.value = true;
+                m_PackageBrowseSampleCheckbox.Show();
+            }
+        }
+
+        void RebuildPackageListView(BuildTargetDiscovery.PlatformPackageList packageList, ListView listView)
+        {
+            if (packageList.packageCount > 0)
+            {
+                listView.itemsSource = PlatformPackageItem.CreateItemSource(packageList);
+                listView.Show();
+                listView.Rebuild();
+            }
+            else
+                listView.Hide();
+        }
+
         void CreatePlatformView()
         {
             var allGroups = BuildProfileModuleUtil.GetAllPlatformGroups();
@@ -655,6 +706,21 @@ namespace UnityEditor.Build.Profile
                 }
             }
             m_AddBuildProfileButton.text = (count < 2) ? TrText.addBuildProfile : string.Format(TrText.addBuildProfiles, count);
+
+            var allRequiredPackagesInstalled = AllRequiredPackagesInstalled(card.internalPackages)
+                && AllRequiredPackagesInstalled(card.partnerPackages);
+            var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
+            m_AddBuildProfileButton.SetEnabled(allRequiredPackagesInstalled || isLoggedIn);
+        }
+
+        static bool AllRequiredPackagesInstalled(BuildTargetDiscovery.PlatformPackageList packageList)
+        {
+            foreach (var package in packageList.requiredPackages)
+            {
+                if (!PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName))
+                    return false;
+            }
+            return true;
         }
 
         /// <summary>

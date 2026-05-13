@@ -1876,7 +1876,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var allowMultipleDataOutputInstances = AllowMultipleDataOutputInstances != AllowMultipleDataOutputInstances.Disallow;
             return allowMultipleDataOutputInstances
-                || variable.DataType == TypeHandle.Untyped
+                || variable.DataType.Resolve() == typeof(Untyped)
                 || variable.Modifiers != ModifierFlags.Write
                 || graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count == 0;
         }
@@ -3759,6 +3759,8 @@ namespace Unity.GraphToolkit.Editor
                 UIDependencies.RemoveModel(portal);
             foreach (var section in m_SectionModels)
                 UIDependencies.RemoveModel(section);
+
+            GraphVisualization.Registry.UnregisterAllForGraph(Guid);
         }
 
         void RecurseDefineNode(AbstractNodeModel nodeModel)

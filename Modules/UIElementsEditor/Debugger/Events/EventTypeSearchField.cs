@@ -39,14 +39,9 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
-    internal class EventTypeSearchField : ToolbarSearchField
+    [UxmlElement]
+    internal partial class EventTypeSearchField : ToolbarSearchField
     {
-        [Serializable]
-        public new class UxmlSerializedData : ToolbarSearchField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new EventTypeSearchField();
-        }
-
         const int k_MaxTooltipLines = 40;
         const string EllipsisText = "...";
 

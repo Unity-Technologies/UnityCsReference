@@ -1989,6 +1989,8 @@ namespace UnityEditor
         }
     }
 
+    [NativeHeader("Editor/Src/Utility/EditorGUIUtility.h")]
+    [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     internal class BuiltinResource
     {

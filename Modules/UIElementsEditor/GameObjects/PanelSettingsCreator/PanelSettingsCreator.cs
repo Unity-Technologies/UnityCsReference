@@ -81,5 +81,18 @@ namespace UnityEditor.UIElements
             var registry = ScriptableObject.CreateInstance<FilterFunctionDefinition>();
             ProjectWindowUtil.CreateAsset(registry, "New Filter Function Definition.asset");
         }
+
+        [MenuItem("Assets/Create/UI Toolkit/UI Animation Clip", priority = 704)]
+        static void CreateUIAnimationClip()
+        {
+            var clip = new UIAnimationClip();
+            ProjectWindowUtil.CreateAsset(clip, "New UI Animation Clip.asset");
+        }
+
+        [MenuItem("Assets/Create/UI Toolkit/UI Animation Clip", validate = true)]
+        static bool ValidateCreateUIAnimationClip()
+        {
+            return UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot;
+        }
     }
 }

@@ -233,7 +233,7 @@ namespace UnityEngine.UIElements
             m_MenuContainer.RegisterCallback<PointerUpEvent>(OnPointerUp);
 
             evt.destinationPanel.visualTree.RegisterCallback<GeometryChangedEvent>(OnParentResized);
-            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnInitialDisplay, InvokePolicy.Once);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnInitialDisplay, CallbackOptions.Once);
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
             m_ScrollView.RegisterCallback<FocusOutEvent>(OnFocusOut);
         }
@@ -686,7 +686,7 @@ namespace UnityEngine.UIElements
                     }
                     else if (panelComponent is PanelRenderer panelRenderer)
                     {
-                        panelRenderer.RegisterUIReloadCallback((pr, root) =>
+                        panelRenderer.RegisterUIReloadCallback((pr, root, version) =>
                         {
                             m_PanelRootVisualContainer = root;
                             OnAttachToPanelInternal(position, anchored);

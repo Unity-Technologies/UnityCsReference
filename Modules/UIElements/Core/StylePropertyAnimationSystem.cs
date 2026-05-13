@@ -37,6 +37,14 @@ namespace UnityEngine.UIElements
         bool HasRunningAnimation(VisualElement owner, StylePropertyId id);
         void UpdateAnimation(VisualElement owner, StylePropertyId id);
         void GetAllAnimations(VisualElement owner, List<StylePropertyId> propertyIds);
+
+        // Clip-driven per-element animations (animation-name / animation-play-state / unity-animation-clip).
+        // Lives in the style animation system (and is therefore disabled when the panel runs the empty
+        // implementation, e.g. UI Builder authoring mode) so that clip playback follows the same
+        // play/pause semantics as CSS transitions.
+        void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState);
+        void CancelElementClipAnimation(VisualElement owner);
+
         void Update(double updateTimeInSeconds);
     }
 
@@ -1693,9 +1701,45 @@ namespace UnityEngine.UIElements
         // All the value lists with ongoing animations. Add and remove Values objects when animations come in/out.
         private readonly List<Values> m_AllValues = new List<Values>();
 
+        // Clip playback state. Lives here (rather than on VisualElementAnimationSystem) so that
+        // panels using EmptyStylePropertyAnimationSystem (e.g. UI Builder authoring mode) skip
+        // clip ticking automatically, mirroring how CSS transitions are gated.
+        private struct ClipPlayer
+        {
+            public UIAnimationClip clip;
+            public UIAnimationBinder binder;
+            public double startTime;
+            public float clipLength;
+            public bool isLooping;
+            public bool isPaused;
+            public float pausedElapsed;
+
+            public void Sample(double now)
+            {
+                if (clip == null || binder == null || isPaused)
+                    return;
+
+                float elapsed = (float)(now - startTime);
+
+                float time;
+                if (clipLength <= 0f)
+                    time = 0f;
+                else if (isLooping)
+                    time = elapsed % clipLength;
+                else
+                    time = Mathf.Min(elapsed, clipLength);
+
+                binder.SampleClip(clip, time);
+            }
+        }
+
+        private readonly Panel m_Panel;
+        private Dictionary<VisualElement, ClipPlayer> m_ElementClipAnimations;
+
         public StylePropertyAnimationSystem(BaseVisualElementPanel p)
         {
             m_CurrentTime = p.TimeSinceStartupSeconds();
+            m_Panel = p as Panel;
         }
 
         private T GetOrCreate<T>(ref T values) where T : new()
@@ -1858,6 +1902,77 @@ namespace UnityEngine.UIElements
             return m_CurrentTime;
         }
 
+        public void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState)
+        {
+            // The panel must exist to host the per-element binder. Only Panel (not BaseVisualElementPanel)
+            // exposes GetOrCreateElementBinder/DestroyElementBinder; if we got passed something else,
+            // skip silently — the caller will see no animation, same as if the empty system was active.
+            if (m_Panel == null)
+                return;
+
+            bool hasValidClip = clip != null && clip.animationClip != null;
+
+            if (hasValidClip && playState == AnimationPlayState.Running)
+            {
+                m_ElementClipAnimations ??= new Dictionary<VisualElement, ClipPlayer>();
+                var innerClip = clip.animationClip;
+
+                if (m_ElementClipAnimations.TryGetValue(owner, out var existing))
+                {
+                    if (existing.isPaused)
+                    {
+                        existing.isPaused = false;
+                        existing.startTime = m_CurrentTime - existing.pausedElapsed;
+                        m_ElementClipAnimations[owner] = existing;
+                    }
+                    else if (existing.clip != clip)
+                    {
+                        existing.clip = clip;
+                        existing.startTime = m_CurrentTime;
+                        existing.clipLength = innerClip.length;
+                        existing.isLooping = innerClip.isLooping;
+                        m_ElementClipAnimations[owner] = existing;
+                    }
+                }
+                else
+                {
+                    var binder = m_Panel.GetOrCreateElementBinder(owner);
+                    m_ElementClipAnimations[owner] = new ClipPlayer
+                    {
+                        clip = clip,
+                        binder = binder,
+                        startTime = m_CurrentTime,
+                        clipLength = innerClip.length,
+                        isLooping = innerClip.isLooping
+                    };
+                }
+            }
+            else if (hasValidClip && playState == AnimationPlayState.Paused)
+            {
+                if (m_ElementClipAnimations != null
+                    && m_ElementClipAnimations.TryGetValue(owner, out var existing)
+                    && !existing.isPaused)
+                {
+                    existing.isPaused = true;
+                    existing.pausedElapsed = (float)(m_CurrentTime - existing.startTime);
+                    m_ElementClipAnimations[owner] = existing;
+                }
+            }
+            else
+            {
+                if (m_ElementClipAnimations != null && m_ElementClipAnimations.Remove(owner))
+                    m_Panel.DestroyElementBinder(owner);
+            }
+        }
+
+        public void CancelElementClipAnimation(VisualElement owner)
+        {
+            if (m_ElementClipAnimations == null || !m_ElementClipAnimations.Remove(owner))
+                return;
+
+            m_Panel?.DestroyElementBinder(owner);
+        }
+
         public void Update(double updateTime)
         {
             m_CurrentTime = updateTime;
@@ -1865,6 +1980,12 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < count; i++)
             {
                 m_AllValues[i].Update(m_CurrentTime);
+            }
+
+            if (m_ElementClipAnimations != null && m_ElementClipAnimations.Count > 0)
+            {
+                foreach (var kvp in m_ElementClipAnimations)
+                    kvp.Value.Sample(m_CurrentTime);
             }
         }
     }
@@ -1994,6 +2115,14 @@ namespace UnityEngine.UIElements
         }
 
         public void GetAllAnimations(VisualElement owner, List<StylePropertyId> propertyIds)
+        {
+        }
+
+        public void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState)
+        {
+        }
+
+        public void CancelElementClipAnimation(VisualElement owner)
         {
         }
 

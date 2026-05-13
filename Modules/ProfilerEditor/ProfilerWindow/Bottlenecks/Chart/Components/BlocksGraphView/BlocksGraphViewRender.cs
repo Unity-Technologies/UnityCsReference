@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,14 +11,9 @@ namespace Unity.Profiling.Editor.UI
     // A graph view that draws horizontal blocks for any data value over a threshold. Each data series is
     // plotted on a new line, with all data series being fitted equally into the available vertical space.
     // Contiguous values that exceed the threshold are grouped into a single block.
-    class BlocksGraphViewRender : GraphView
+    [UxmlElement]
+    internal partial class BlocksGraphViewRender : GraphView
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BlocksGraphViewRender();
-        }
-
         public BlocksGraphViewRender()
         {
             generateVisualContent += Render;

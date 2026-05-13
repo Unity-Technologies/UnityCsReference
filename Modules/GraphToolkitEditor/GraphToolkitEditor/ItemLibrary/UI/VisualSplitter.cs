@@ -15,12 +15,6 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
     [UsedImplicitly]
     partial class VisualSplitter : ImmediateModeElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new VisualSplitter();
-        }
-
         const int k_DefaultSplitSize = 10;
         public int SplitSize = k_DefaultSplitSize;
 

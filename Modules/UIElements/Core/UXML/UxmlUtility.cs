@@ -122,7 +122,7 @@ namespace UnityEngine.UIElements
             return Angle.TryParseString(value, out var angle) ? angle : defaultValue;
         }
 
-        public static float TryParseFloatAttribute(string attributeName, IUxmlAttributes bag, ref int foundAttributeCounter)
+        public static float TryParseFloatAttribute(string attributeName, UxmlAsset bag, ref int foundAttributeCounter)
         {
             if (bag.TryGetAttributeValue(attributeName, out var value))
             {
@@ -133,7 +133,7 @@ namespace UnityEngine.UIElements
             return default;
         }
 
-        public static int TryParseIntAttribute(string attributeName, IUxmlAttributes bag, ref int foundAttributeCounter)
+        public static int TryParseIntAttribute(string attributeName, UxmlAsset bag, ref int foundAttributeCounter)
         {
             if (bag.TryGetAttributeValue(attributeName, out var value))
             {

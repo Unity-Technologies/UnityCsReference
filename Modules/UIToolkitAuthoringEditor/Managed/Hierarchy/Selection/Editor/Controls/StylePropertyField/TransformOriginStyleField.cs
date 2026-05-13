@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -16,20 +15,9 @@ namespace Unity.UIToolkit.Editor
     /// including a visual selector for picking preset origin positions.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class TransformOriginStyleField : BaseField<TransformOrigin>
+    [UxmlElement]
+    internal partial class TransformOriginStyleField : BaseField<TransformOrigin>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<TransformOrigin>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TransformOrigin>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TransformOriginStyleField();
-        }
-
         static readonly string s_FieldClassName = "unity-transform-origin-style-field";
         static readonly string s_UssPathNoExt = "UIToolkitAuthoring/Inspector/Controls/TransformOriginStyleField";
 

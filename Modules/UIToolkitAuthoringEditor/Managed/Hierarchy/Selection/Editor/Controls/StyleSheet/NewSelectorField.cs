@@ -38,7 +38,8 @@ namespace Unity.UIToolkit.Editor
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class NewSelectorField : VisualElement, INotifyValueChanged<string>
+    [UxmlElement]
+    internal partial class NewSelectorField : VisualElement, INotifyValueChanged<string>
     {
         static internal BindingId valueProperty = nameof(value);
 
@@ -71,12 +72,6 @@ namespace Unity.UIToolkit.Editor
         static readonly string s_TextFieldName = "unity-text-field";
         static readonly string s_OptionsPopupContainerName = "unity-options-popup-container";
         internal static readonly string s_TextFieldUssClassName = "unity-new-selector-field__text-field";
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new NewSelectorField();
-        }
 
         TextField m_TextField;
         ToolbarMenu m_OptionsPopup;

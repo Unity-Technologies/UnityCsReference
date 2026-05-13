@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Modules
@@ -14,11 +15,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
     {
         internal const string PAA6000 = nameof(PAA6000);
         internal const string PAA6001 = nameof(PAA6001);
+        internal const string PAA6002 = nameof(PAA6002);
 
         internal static readonly Descriptor k_TextureNotReadWriteDescriptor = new Descriptor
             (
             PAA6000,
-            "Texture not Read/Write",
+            "Texture requires Read/Write",
             Areas.Quality,
             "A GameObject requires access to the pixel data of this Texture on the CPU. Read/Write must be enabled on the Texture for this to work properly.",
             "Enable Read/Write in the Texture's import settings."
@@ -27,6 +29,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             MessageFormat = "Texture '{0}' used by '{1}' is not marked as Read/Write",
             Fixer = (issue, analysisParams) =>
             {
+                if (InternalEditorUtility.IsReadOnlyAsset(issue.RelativePath, out _))
+                {
+                    Debug.LogWarning($"Cannot fix asset at '{issue.RelativePath}' because it's readonly.");
+                    return false;
+                }
+
                 var textureImporter = AssetImporter.GetAtPath(issue.RelativePath) as TextureImporter;
                 if (textureImporter != null)
                 {
@@ -42,31 +50,42 @@ namespace Unity.ProjectAuditor.Editor.Modules
         internal static readonly Descriptor k_MeshNotReadWriteDescriptor = new Descriptor
             (
             PAA6001,
-            "Mesh not Read/Write",
-            Areas.Quality,
-            "A GameObject requires access to the vertex data of this Mesh on the CPU. Read/Write must be enabled on the Mesh for this to work properly.",
+            "Mesh requires Read/Write",
+            Areas.Quality | Areas.Upgrade,
+            "A GameObject requires access to the vertex data of this Mesh on the CPU. In future versions of Unity, the build process will no longer automatically enable Read/Write for Meshes referenced by components requiring it (Particle System, Terrain...).",
             "Enable Read/Write in the Mesh's import settings."
             )
         {
             MessageFormat = "Mesh '{0}' used by '{1}' is not marked as Read/Write",
             Fixer = (issue, analysisParams) =>
             {
-                var modelImporter = AssetImporter.GetAtPath(issue.RelativePath) as ModelImporter;
-                if (modelImporter != null)
+                if (!InternalEditorUtility.CanMeshBeModifiedFromCode(issue.RelativePath))
                 {
-                    modelImporter.isReadable = true;
-                    modelImporter.SaveAndReimport();
-                    return true;
+                    Debug.LogWarning($"Cannot modify Mesh located at '{issue.RelativePath}'. Please fix the Mesh manually or assign a different Mesh to the Game Object.");
+                    return false;
                 }
 
-                return false;
+                return InternalEditorUtility.ImportMeshAsReadable(issue.RelativePath);
             }
+        };
+
+        internal static readonly Descriptor k_SceneMeshReadWriteEnabledDescriptor = new Descriptor(
+            PAA6002,
+            "Mesh: Read/Write enabled",
+            Areas.Memory,
+            "The <b>Read/Write Enabled</b> flag is enabled. This causes the mesh data to be duplicated in memory.",
+            "If not required, disable the <b>Read/Write Enabled</b> option via script."
+        )
+        {
+            MessageFormat = "Mesh '{0}' used by '{1}' is marked as Read/Write",
+            DocumentationUrl = "https://docs.unity3d.com/ScriptReference/Mesh-isReadable.html"
         };
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_TextureNotReadWriteDescriptor);
             registerDescriptor(k_MeshNotReadWriteDescriptor);
+            registerDescriptor(k_SceneMeshReadWriteEnabledDescriptor);
         }
 
         public override IEnumerable<ReportItemBuilder> Analyze(GameObjectAnalysisContext context)
@@ -87,16 +106,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                 if (shape.meshRenderer != null)
                 {
-                    var meshFilter = shape.meshRenderer.GetComponent<MeshFilter>();
-                    if ((meshFilter != null) && (meshFilter.sharedMesh != null) && (meshFilter.sharedMesh.isReadable == false))
-                        yield return CreateMeshIssue(meshFilter.sharedMesh, context);
+                    var psMeshFilter = shape.meshRenderer.GetComponent<MeshFilter>();
+                    if ((psMeshFilter != null) && (psMeshFilter.sharedMesh != null) && (psMeshFilter.sharedMesh.isReadable == false))
+                        yield return CreateMeshIssue(psMeshFilter.sharedMesh, context);
                 }
 
                 if (shape.skinnedMeshRenderer != null)
                 {
-                    var meshFilter = shape.skinnedMeshRenderer.GetComponent<MeshFilter>();
-                    if ((meshFilter != null) && (meshFilter.sharedMesh != null) && (meshFilter.sharedMesh.isReadable == false))
-                        yield return CreateMeshIssue(meshFilter.sharedMesh, context);
+                    var skinnedMesh = shape.skinnedMeshRenderer.sharedMesh;
+                    if ((skinnedMesh != null) && (skinnedMesh.isReadable == false))
+                        yield return CreateMeshIssue(skinnedMesh, context);
                 }
             }
 
@@ -127,9 +146,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     {
                         if (prototype.usePrototypeMesh)
                         {
-                            var meshFilter = prototype.prototype.GetComponent<MeshFilter>();
-                            if ((meshFilter != null) && (meshFilter.sharedMesh != null) && (meshFilter.sharedMesh.isReadable == false))
-                                yield return CreateMeshIssue(meshFilter.sharedMesh, context);
+                            var terrainMeshFilter = prototype.prototype.GetComponent<MeshFilter>();
+                            if ((terrainMeshFilter != null) && (terrainMeshFilter.sharedMesh != null) && (terrainMeshFilter.sharedMesh.isReadable == false))
+                                yield return CreateMeshIssue(terrainMeshFilter.sharedMesh, context);
 
                             if (prototype.prototype.TryGetComponent<MeshRenderer>(out var renderer) && renderer.sharedMaterial != null)
                             {
@@ -148,6 +167,38 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             if ((prototype.prototypeTexture != null) && (prototype.prototypeTexture.isReadable == false))
                                 yield return CreateTextureIssue(prototype.prototypeTexture, context);
                         }
+                    }
+                }
+            }
+
+            // MeshFilter
+            var meshFilter = context.GameObject.GetComponent<MeshFilter>();
+            if (meshFilter != null)
+            {
+                var mesh = meshFilter.sharedMesh;
+                if (mesh != null)
+                {
+                    // Scene meshes, like those created by Polybrush, do not exist in the Assets folder
+                    if (!AssetDatabase.Contains(mesh) || InSceneAssetUtility.IsInSceneAsset(mesh))
+                    {
+                        if (mesh.isReadable)
+                            yield return CreateSceneMeshIssue(mesh, context);
+                    }
+                }
+            }
+
+            // SkinnedMeshRenderer
+            var smr = context.GameObject.GetComponent<SkinnedMeshRenderer>();
+            if (smr != null)
+            {
+                var mesh = smr.sharedMesh;
+                if (mesh != null)
+                {
+                    // Scene meshes, like those created by Polybrush, do not exist in the Assets folder
+                    if (!AssetDatabase.Contains(mesh) || InSceneAssetUtility.IsInSceneAsset(mesh))
+                    {
+                        if (mesh.isReadable)
+                            yield return CreateSceneMeshIssue(mesh, context);
                     }
                 }
             }
@@ -177,6 +228,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
             )
             .WithSeverity(Severity.Major)
             .WithLocation(AssetDatabase.GetAssetPath(mesh));
+        }
+
+        ReportItemBuilder CreateSceneMeshIssue(Mesh mesh, GameObjectAnalysisContext context)
+        {
+            return context.CreateIssue
+            (
+                IssueCategory.GameObject,
+                k_SceneMeshReadWriteEnabledDescriptor.Id,
+                mesh.name,
+                context.GameObject.name
+            );
         }
     }
 }

@@ -28,6 +28,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.alignItems;
                 case StylePropertyId.AlignSelf:
                     return computedStyle.alignSelf;
+                case StylePropertyId.AnimationPlayState:
+                    return computedStyle.animationPlayState;
                 case StylePropertyId.AspectRatio:
                     return computedStyle.aspectRatio;
                 case StylePropertyId.BackgroundColor:
@@ -175,6 +177,8 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.Translate:
                     return computedStyle.translate;
+                case StylePropertyId.UnityAnimationClip:
+                    return (UIAnimationClip)Resources.EntityIdToObject(computedStyle.unityAnimationClip);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return computedStyle.unityBackgroundImageTintColor;
                 case StylePropertyId.UnityEditorTextRenderingMode:
@@ -241,6 +245,8 @@ namespace UnityEngine.UIElements
                     return typeof(Align);
                 case StylePropertyId.AlignSelf:
                     return typeof(Align);
+                case StylePropertyId.AnimationPlayState:
+                    return typeof(AnimationPlayState);
                 case StylePropertyId.AspectRatio:
                     return typeof(Ratio);
                 case StylePropertyId.BackgroundColor:
@@ -363,6 +369,8 @@ namespace UnityEngine.UIElements
                     return typeof(List<EasingFunction>);
                 case StylePropertyId.Translate:
                     return typeof(Translate);
+                case StylePropertyId.UnityAnimationClip:
+                    return typeof(UIAnimationClip);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(Color);
                 case StylePropertyId.UnityEditorTextRenderingMode:
@@ -453,6 +461,8 @@ namespace UnityEngine.UIElements
                     return style.alignItems;
                 case StylePropertyId.AlignSelf:
                     return style.alignSelf;
+                case StylePropertyId.AnimationPlayState:
+                    return style.animationPlayState;
                 case StylePropertyId.AspectRatio:
                     return style.aspectRatio;
                 case StylePropertyId.BackgroundColor:
@@ -575,6 +585,8 @@ namespace UnityEngine.UIElements
                     return style.transitionTimingFunction;
                 case StylePropertyId.Translate:
                     return style.translate;
+                case StylePropertyId.UnityAnimationClip:
+                    return style.unityAnimationClip;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return style.unityBackgroundImageTintColor;
                 case StylePropertyId.UnityEditorTextRenderingMode:
@@ -643,6 +655,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AlignSelf:
                     style.alignSelf = (StyleEnum<Align>)value;
+                    break;
+                case StylePropertyId.AnimationPlayState:
+                    style.animationPlayState = (StyleEnum<AnimationPlayState>)value;
                     break;
                 case StylePropertyId.AspectRatio:
                     style.aspectRatio = (StyleRatio)value;
@@ -827,6 +842,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Translate:
                     style.translate = (StyleTranslate)value;
                     break;
+                case StylePropertyId.UnityAnimationClip:
+                    style.unityAnimationClip = (StyleUIAnimationClip)value;
+                    break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = (StyleColor)value;
                     break;
@@ -917,6 +935,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AlignSelf:
                     style.alignSelf = keyword;
+                    break;
+                case StylePropertyId.AnimationPlayState:
+                    style.animationPlayState = keyword;
                     break;
                 case StylePropertyId.AspectRatio:
                     style.aspectRatio = keyword;
@@ -1101,6 +1122,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Translate:
                     style.translate = keyword;
                     break;
+                case StylePropertyId.UnityAnimationClip:
+                    style.unityAnimationClip = keyword;
+                    break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = keyword;
                     break;
@@ -1197,6 +1221,10 @@ namespace UnityEngine.UIElements
                     return new()
                     {
                         StyleKeyword.Auto
+                    };
+                case StylePropertyId.AnimationPlayState:
+                    return new()
+                    {
                     };
                 case StylePropertyId.AspectRatio:
                     return new()
@@ -1464,6 +1492,11 @@ namespace UnityEngine.UIElements
                     {
                         StyleKeyword.None
                     };
+                case StylePropertyId.UnityAnimationClip:
+                    return new()
+                    {
+                        StyleKeyword.None
+                    };
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return new()
                     {
@@ -1578,6 +1611,8 @@ namespace UnityEngine.UIElements
                     return (StyleEnum<Align>)(Align)value;
                 case StylePropertyId.AlignSelf:
                     return (StyleEnum<Align>)(Align)value;
+                case StylePropertyId.AnimationPlayState:
+                    return (StyleEnum<AnimationPlayState>)(AnimationPlayState)value;
                 case StylePropertyId.AspectRatio:
                     return (StyleRatio)(Ratio)value;
                 case StylePropertyId.BackgroundColor:
@@ -1700,6 +1735,8 @@ namespace UnityEngine.UIElements
                     return (StyleList<EasingFunction>)(List<EasingFunction>)value;
                 case StylePropertyId.Translate:
                     return (StyleTranslate)(Translate)value;
+                case StylePropertyId.UnityAnimationClip:
+                    return (StyleUIAnimationClip)(UIAnimationClip)value;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.UnityEditorTextRenderingMode:
@@ -1766,6 +1803,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleEnum<Align>);
                 case StylePropertyId.AlignSelf:
                     return typeof(StyleEnum<Align>);
+                case StylePropertyId.AnimationPlayState:
+                    return typeof(StyleEnum<AnimationPlayState>);
                 case StylePropertyId.AspectRatio:
                     return typeof(StyleRatio);
                 case StylePropertyId.BackgroundColor:
@@ -1888,6 +1927,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleList<EasingFunction>);
                 case StylePropertyId.Translate:
                     return typeof(StyleTranslate);
+                case StylePropertyId.UnityAnimationClip:
+                    return typeof(StyleUIAnimationClip);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(StyleColor);
                 case StylePropertyId.UnityEditorTextRenderingMode:

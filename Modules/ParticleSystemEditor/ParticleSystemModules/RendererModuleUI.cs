@@ -348,6 +348,7 @@ namespace UnityEditor
                 {
                     GUIPopup(s_Texts.meshDistribution, m_MeshDistribution, s_Texts.meshDistributionOptions);
                     DoListOfMeshesGUI();
+                    ValidateMeshes();
 
                     if (renderModeChanged && m_Meshes[0].objectReferenceEntityIdValue == EntityId.None && !m_Meshes[0].hasMultipleDifferentValues)
                         m_Meshes[0].objectReferenceValue = Resources.GetBuiltinResource(typeof(Mesh), "Cube.fbx");
@@ -588,6 +589,32 @@ namespace UnityEditor
 
                     m_ShownMeshes = shownMeshes.ToArray();
                     m_ShownMeshWeightings = shownMeshWeightings.ToArray();
+                }
+            }
+        }
+
+        private void ValidateMeshes()
+        {
+            // Only validate when GPU instancing is not enabled (instancing doesn't require Read/Write)
+            if (m_EnableGPUInstancing != null && !m_EnableGPUInstancing.hasMultipleDifferentValues && m_EnableGPUInstancing.boolValue)
+                return;
+
+            // Check all shown meshes
+            foreach (SerializedProperty meshProp in m_ShownMeshes)
+            {
+                if (meshProp.hasMultipleDifferentValues)
+                    continue;
+
+                Mesh mesh = meshProp.objectReferenceValue as Mesh;
+                if (mesh == null)
+                    continue;
+
+                if (!mesh.isReadable)
+                {
+                    InternalEditorUtility.DrawMeshNotReadableHelpBox(mesh, "Particle System Renderer");
+
+                    // Only show one warning at a time to avoid cluttering the UI
+                    break;
                 }
             }
         }

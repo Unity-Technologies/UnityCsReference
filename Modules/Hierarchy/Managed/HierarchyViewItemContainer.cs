@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents a container for a hierarchy view item, used for pooling.
     /// </summary>
-    sealed class HierarchyViewItemContainer : VisualElement
+    sealed partial class HierarchyViewItemContainer : VisualElement
     {
         // The pool for the typeless nodes. This is used when there isn't a node type handler.
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]

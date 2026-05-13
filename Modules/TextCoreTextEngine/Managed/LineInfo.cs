@@ -6,6 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     struct Extents
     {
         public Vector2 min;

@@ -970,12 +970,12 @@ namespace UnityEngine.Rendering
         extern private void EndSample_CustomSampler([NotNull] CustomSampler sampler);
 
         [Pure]
-        [MethodImpl(256)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | (MethodImplOptions)512)]
         [Conditional("ENABLE_PROFILER")]
         public void BeginSample(ProfilerMarker marker) { BeginSample_ProfilerMarker(marker.Handle); }
 
         [Pure]
-        [MethodImpl(256)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | (MethodImplOptions)512)]
         [Conditional("ENABLE_PROFILER")]
         public void EndSample(ProfilerMarker marker) { EndSample_ProfilerMarker(marker.Handle); }
 
@@ -988,7 +988,7 @@ namespace UnityEngine.Rendering
         extern private void EndSample_ProfilerMarker(IntPtr markerHandle);
 
         [Pure]
-        [MethodImpl(256)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | (MethodImplOptions)512)]
         [Conditional("ENABLE_PROFILER")]
         public void BeginSample(ProfilerMarker marker, Object contextObject)
         {

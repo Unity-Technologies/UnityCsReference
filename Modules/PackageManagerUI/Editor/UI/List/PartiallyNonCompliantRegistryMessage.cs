@@ -2,28 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class PartiallyNonCompliantRegistryMessage : VisualElement
+[UxmlElement]
+internal partial class PartiallyNonCompliantRegistryMessage : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public override object CreateInstance()
-        {
-            var container = ServicesContainer.instance;
-            return new PartiallyNonCompliantRegistryMessage(
-                container.Resolve<IApplicationProxy>(),
-                container.Resolve<IPageManager>());
-        }
-    }
-
     private readonly ExtendedHelpBox m_HelpBox;
 
     private readonly IPageManager m_PageManager;
+
+    public PartiallyNonCompliantRegistryMessage() : this(
+        ServicesContainer.instance.Resolve<IApplicationProxy>(),
+        ServicesContainer.instance.Resolve<IPageManager>())
+    {
+    }
+
     public PartiallyNonCompliantRegistryMessage(IApplicationProxy applicationProxy, IPageManager pageManager)
     {
         m_PageManager = pageManager;

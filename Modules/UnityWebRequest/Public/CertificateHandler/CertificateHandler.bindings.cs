@@ -42,6 +42,12 @@ namespace UnityEngine.Networking
             return ValidateCertificate(certificateData);
         }
 
+        [VisibleToOtherModules]
+        internal bool ValidateCertificateExternal(byte[] certificateData)
+        {
+            return ValidateCertificate(certificateData);
+        }
+
         public void Dispose()
         {
             if (m_Ptr != IntPtr.Zero)

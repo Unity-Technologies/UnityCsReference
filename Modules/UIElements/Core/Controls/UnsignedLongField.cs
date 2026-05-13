@@ -18,18 +18,6 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         UnsignedLongInput unsignedLongInput => (UnsignedLongInput)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<ulong>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<ulong>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new UnsignedLongField();
-        }
-
         /// <summary>
         /// Converts the given unsigned long integer to a string.
         /// </summary>

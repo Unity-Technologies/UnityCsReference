@@ -11,7 +11,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor
 {
-    internal class MemoryUsageBreakdown : VisualElement
+    [UxmlElement]
+    internal partial class MemoryUsageBreakdown : VisualElement
     {
         // adaptation helper. MemoryUsageBreakdown is copied over from the memory profiler package which contains this helper
         static class UIElementsHelper
@@ -41,9 +42,12 @@ namespace Unity.Profiling.Editor
             public static readonly string TotalAndMaxLabelTooltipForMaxValue = L10n.Tr("This is one of the frames with the highest total memory usage (Max).");
         }
 
+        [UxmlAttribute]
         public string HeaderText { get; private set; }
 
         ulong m_TotalBytes;
+
+        [UxmlAttribute]
         public long TotalBytes
         {
             get { return (long)m_TotalBytes; }
@@ -53,8 +57,10 @@ namespace Unity.Profiling.Editor
         bool m_Normalized;
         ulong m_MaxTotalBytesToNormalizeTo;
 
+        [UxmlAttribute]
         public bool ShowUnknown { get; private set; }
 
+        [UxmlAttribute]
         public string UnknownName { get; private set; } = Content.DefaultUnkownRowName;
 
         VisualTreeAsset m_MemoryUsageBreakdownLegednRowViewTree;
@@ -326,58 +332,6 @@ namespace Unity.Profiling.Editor
             latestRow.SetupAsLastRow();
 
             SetTotalUsed(m_TotalBytes, m_Normalized, m_MaxTotalBytesToNormalizeTo, force: true);
-        }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(headerText), "header-text"),
-                    new (nameof(totalBytes), "total-bytes"),
-                    new (nameof(showUnknown), "show-unknown"),
-                    new (nameof(unknownName), "unknown-name"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string headerText;
-            [SerializeField] string unknownName;
-            [SerializeField] int totalBytes;
-            [SerializeField] bool showUnknown;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerText_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags totalBytes_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showUnknown_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags unknownName_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new MemoryUsageBreakdown();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (MemoryUsageBreakdown)obj;
-
-                string resolvedHeaderText = "Memory Usage";
-                int resolvedTotalMemory = (int)(1024 * 1024 * 1024 * 1.2f);
-                bool resolvedShowUnknown = false;
-                string resolvedUnknownName = "Unknown";
-
-                if (ShouldWriteAttributeValue(headerText_UxmlAttributeFlags))
-                    resolvedHeaderText = headerText;
-                if (ShouldWriteAttributeValue(totalBytes_UxmlAttributeFlags))
-                    resolvedTotalMemory = totalBytes;
-                if (ShouldWriteAttributeValue(showUnknown_UxmlAttributeFlags))
-                    resolvedShowUnknown = showUnknown;
-                if (ShouldWriteAttributeValue(unknownName_UxmlAttributeFlags))
-                    resolvedUnknownName = unknownName;
-                e.Init(resolvedHeaderText, (ulong)resolvedTotalMemory, resolvedShowUnknown, resolvedUnknownName);
-            }
         }
     }
 }

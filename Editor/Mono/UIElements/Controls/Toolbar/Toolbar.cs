@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toolbar for tool windows. For more information, refer to [[wiki:UIE-uxml-element-Toolbar|UXML element Toolbar]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/Toolbar.png")]
     public partial class Toolbar : VisualElement
     {
@@ -20,18 +21,6 @@ namespace UnityEditor.UIElements
 
         private static readonly StyleSheet s_ToolbarDarkStyleSheet;
         private static readonly StyleSheet s_ToolbarLightStyleSheet;
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new Toolbar();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
 
         static Toolbar()
         {

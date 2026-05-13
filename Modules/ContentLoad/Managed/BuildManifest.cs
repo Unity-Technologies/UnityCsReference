@@ -39,6 +39,16 @@ namespace Unity.Loading
         public string ContentHash;  // xxh3 hash of the content of the resource file
     }
 
+    // Mirror of native ContentLoad::BuildInfo (Modules/ContentLoad/Public/BuildManifest.h).
+    // Properties of the build that produced this manifest. Add new build-time facts here.
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct BuildInfo
+    {
+        public string BuildName;
+        public bool BuiltWithTypeTrees;
+    }
+
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct SerializedFile
@@ -59,7 +69,6 @@ namespace Unity.Loading
     // The build manifest stores information about the result of a build, specifically structured to support the functionality of the ContentLoadManager.
     // The content should be kept compact, this file needs to be shipped along with the content.
     // More detailed information e.g. helping with build reporting and profiling would be found in other non-shipping build output files
-    [VisibleToOtherModules]
     [Serializable]
     [UsedByNativeCode]
     [NativeAsStruct]
@@ -68,7 +77,7 @@ namespace Unity.Loading
     internal class BuildManifest
     {
         public int Version;
-        public string BuildName;
+        public BuildInfo BuildInfo;
         public string[] RootAssets;
         public LoadableMapEntry[] Loadables;
         public LoadableSceneEntry[] LoadableScenes;

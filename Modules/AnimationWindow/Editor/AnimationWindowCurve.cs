@@ -3,10 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.AnimationWindowBuiltin;
+using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditorInternal
 {
@@ -17,7 +18,7 @@ namespace UnityEditorInternal
         Overridden              // This curve was inherited from a parent asset and modified.
     }
 
-    class AnimationWindowCurve :
+    internal class AnimationWindowCurve :
         IComparable<AnimationWindowCurve>,
         IEquatable<AnimationWindowCurve>
     {
@@ -125,12 +126,12 @@ namespace UnityEditorInternal
                     return 1;
             }
 
-            // Sort (.r, .g, .b, .a) and (.x, .y, .z, .w)
+            // Sort (.r, .g, .b, .a) and (.x, .y, .z, .w); custom suffixes handled via IAnimationWindowPropertyHandler
             if (obj.type == type)
             {
                 int lhsIndex = AnimationWindowUtility.GetComponentIndex(obj.propertyName);
                 int rhsIndex = AnimationWindowUtility.GetComponentIndex(propertyName);
-                if (lhsIndex != -1 && rhsIndex != -1 && propertyName.Substring(0, propertyName.Length - 2) == obj.propertyName.Substring(0, obj.propertyName.Length - 2))
+                if (lhsIndex != -1 && rhsIndex != -1 && AnimationWindowUtility.GetPropertyGroupName(propertyName) == AnimationWindowUtility.GetPropertyGroupName(obj.propertyName))
                     return rhsIndex - lhsIndex;
             }
 

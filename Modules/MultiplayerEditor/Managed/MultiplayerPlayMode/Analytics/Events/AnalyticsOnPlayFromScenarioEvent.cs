@@ -25,6 +25,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public long InstanceRunStageDurationMs; // Duration in MS the instance has spent duration in run stage
         public string MultiplayerRole; // Multiplayer role the instance selected, expected value : "Client", "Server", "ClientAndServer";
         public string UseMultiplay; // [Obsolete] Use Multiplay to determine whether the user is using Multiplay, expected values: MultiplaySimulated, Multiplay, or null.
+        public string InstanceTypeData; // JSON blob with instance-type-specific data
     }
 
     /// <summary>
@@ -49,6 +50,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public string ScenarioState;// ScenarioState indicates whether the scenario completed successfully or failed - "Running" or "Failed"
         public long ScenarioLaunchingDurationMs; // Duration in MS the scenario has spent during launching, retrieve all nodes from the scenario and calculate the time difference between the earliest start time and the latest end time
         public ErrorData[] Errors;
+        public string InstanceTypeData; // Keep this field for now since already updated the schema; it will stay null. We can remove it once we decide to bump the event version
     }
 
     [AnalyticInfo(eventName: OnPlayFromScenarioData.k_OnPlayFromScenarioEventName, vendorKey: Constants.k_VendorKey, version: 2)]

@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
-using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -93,100 +91,6 @@ namespace UnityEngine.UIElements
 
         internal const string k_HeaderTemplateAttributeName = "header-template";
         internal const string k_CellTemplateAttributeName = "cell-template";
-
-        [ExcludeFromDocs, Serializable]
-        public class UxmlSerializedData : UIElements.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(name), "name"),
-                    new (nameof(title), "title"),
-                    new (nameof(visible), "visible"),
-                    new (nameof(width), "width"),
-                    new (nameof(minWidth), "min-width"),
-                    new (nameof(maxWidth), "max-width"),
-                    new (nameof(stretchable), "stretchable"),
-                    new (nameof(sortable), "sortable"),
-                    new (nameof(optional), "optional"),
-                    new (nameof(resizable), "resizable"),
-                    new (nameof(headerTemplate), "header-template"),
-                    new (nameof(cellTemplate), "cell-template"),
-                    new (nameof(bindingPath), "binding-path"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] VisualTreeAsset headerTemplate;
-            [SerializeField] VisualTreeAsset cellTemplate;
-            [SerializeField] string name;
-            [SerializeField] string title;
-            [SerializeField] string bindingPath;
-            [SerializeField] Length width;
-            [SerializeField] Length minWidth;
-            [SerializeField] Length maxWidth;
-            [SerializeField] bool visible;
-            [SerializeField] bool stretchable;
-            [SerializeField] bool sortable;
-            [SerializeField] bool optional;
-            [SerializeField] bool resizable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags visible_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags width_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags minWidth_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxWidth_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchable_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortable_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags optional_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizable_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTemplate_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags cellTemplate_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Column();
-
-            public override void Deserialize(object obj)
-            {
-                var e = (Column)obj;
-                if (ShouldWriteAttributeValue(name_UxmlAttributeFlags))
-                    e.name = name;
-                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
-                    e.title = title;
-                if (ShouldWriteAttributeValue(visible_UxmlAttributeFlags))
-                    e.visible = visible;
-                if (ShouldWriteAttributeValue(width_UxmlAttributeFlags))
-                    e.width = width;
-                if (ShouldWriteAttributeValue(minWidth_UxmlAttributeFlags))
-                    e.minWidth = minWidth;
-                if (ShouldWriteAttributeValue(maxWidth_UxmlAttributeFlags))
-                    e.maxWidth = maxWidth;
-                if (ShouldWriteAttributeValue(sortable_UxmlAttributeFlags))
-                    e.sortable = sortable;
-                if (ShouldWriteAttributeValue(stretchable_UxmlAttributeFlags))
-                    e.stretchable = stretchable;
-                if (ShouldWriteAttributeValue(optional_UxmlAttributeFlags))
-                    e.optional = optional;
-                if (ShouldWriteAttributeValue(resizable_UxmlAttributeFlags))
-                    e.resizable = resizable;
-                if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
-                    e.bindingPath = bindingPath;
-                if (ShouldWriteAttributeValue(headerTemplate_UxmlAttributeFlags) && headerTemplate != null)
-                {
-                    e.headerTemplate = headerTemplate;
-                    e.makeHeader = () => headerTemplate.Instantiate();
-                }
-                if (ShouldWriteAttributeValue(cellTemplate_UxmlAttributeFlags) && cellTemplate != null)
-                {
-                    e.cellTemplate = cellTemplate;
-                    e.makeCell = () => cellTemplate.Instantiate();
-                }
-            }
-        }
-
         internal const float kDefaultMinWidth = 35f;
 
         string m_Name;
@@ -232,6 +136,7 @@ namespace UnityEngine.UIElements
         /// The name of the column.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public string name
         {
             get => m_Name;
@@ -249,6 +154,7 @@ namespace UnityEngine.UIElements
         /// The title of the column.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public string title
         {
             get => m_Title;
@@ -261,6 +167,194 @@ namespace UnityEngine.UIElements
                 NotifyPropertyChanged(titleProperty);
             }
         }
+
+        /// <summary>
+        /// Indicates whether the column is visible.
+        /// </summary>
+        /// <remarks>
+        /// The default value is true.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool visible
+        {
+            get => m_Visible;
+            set
+            {
+                if (m_Visible == value)
+                    return;
+                m_Visible = value;
+                NotifyChange(ColumnDataType.Visibility);
+                NotifyPropertyChanged(visibleProperty);
+            }
+        }
+
+        /// <summary>
+        /// The desired width of the column.
+        /// </summary>
+        /// <remarks>
+        /// The default value is 0.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public Length width
+        {
+            get => m_Width;
+            set
+            {
+                if (m_Width == value)
+                    return;
+                m_Width = value;
+                desiredWidth = float.NaN;
+                NotifyChange(ColumnDataType.Width);
+                NotifyPropertyChanged(widthProperty);
+            }
+        }
+
+        /// <summary>
+        /// The minimum width of the column.
+        /// </summary>
+        /// <remarks>
+        /// The default value is 35px.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public Length minWidth
+        {
+            get => m_MinWidth;
+            set
+            {
+                if (m_MinWidth == value)
+                    return;
+                m_MinWidth = value;
+                NotifyChange(ColumnDataType.MinWidth);
+                NotifyPropertyChanged(minWidthProperty);
+            }
+        }
+
+        /// <summary>
+        /// The maximum width of the column.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public Length maxWidth
+        {
+            get => m_MaxWidth;
+            set
+            {
+                if (m_MaxWidth == value)
+                    return;
+                m_MaxWidth = value;
+                NotifyChange(ColumnDataType.MaxWidth);
+                NotifyPropertyChanged(maxWidthProperty);
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether the column will be automatically resized to fill the available space within its container.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool stretchable
+        {
+            get => m_Stretchable;
+            set
+            {
+                if (m_Stretchable == value)
+                    return;
+                m_Stretchable = value;
+                NotifyChange(ColumnDataType.Stretchable);
+                NotifyPropertyChanged(stretchableProperty);
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether the column can be sorted.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool sortable
+        {
+            get => m_Sortable;
+            set
+            {
+                if (m_Sortable == value)
+                    return;
+                m_Sortable = value;
+                NotifyChange(ColumnDataType.Sortable);
+                NotifyPropertyChanged(sortableProperty);
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether the column is optional. Optional columns be shown or hidden interactively by the user.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool optional
+        {
+            get => m_Optional;
+            set
+            {
+                if (m_Optional == value)
+                    return;
+                m_Optional = value;
+                NotifyChange(ColumnDataType.Optional);
+                NotifyPropertyChanged(optionalProperty);
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether the column can be resized interactively by the user.
+        /// </summary>
+        /// <remarks>
+        /// The resize behaviour of all columns in a column collection can be specified by setting <see cref="Columns.resizable"/>.
+        /// A column is effectively resizable if both <see cref="Column.resizable"/> and <see cref="Columns.resizable"/> are both true.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool resizable
+        {
+            get => m_Resizable;
+            set
+            {
+                if (m_Resizable == value)
+                    return;
+                m_Resizable = value;
+                NotifyChange(ColumnDataType.Resizable);
+                NotifyPropertyChanged(resizableProperty);
+            }
+        }
+
+        [UxmlAttribute(k_HeaderTemplateAttributeName), UxmlAttributeBindingPath(nameof(headerTemplate))]
+        internal VisualTreeAsset headerTemplateUXML
+        {
+            get => headerTemplate;
+            set
+            {
+                headerTemplate = value;
+                if (headerTemplate != null)
+                    makeHeader = () => headerTemplate.Instantiate();
+            }
+        }
+
+        [UxmlAttribute(k_CellTemplateAttributeName), UxmlAttributeBindingPath(nameof(cellTemplate))]
+        internal VisualTreeAsset cellTemplateUXML
+        {
+            get => cellTemplate;
+            set
+            {
+                cellTemplate = value;
+                if (cellTemplate != null)
+                    makeCell = () => cellTemplate.Instantiate();
+            }
+        }
+
+        /// <summary>
+        /// Path of the target property to be bound.
+        /// </summary>
+        [UxmlAttribute]
+        public string bindingPath { get; set; }
 
         /// <summary>
         /// The icon of the column.
@@ -316,84 +410,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Indicates whether the column is visible.
-        /// </summary>
-        /// <remarks>
-        /// The default value is true.
-        /// </remarks>
-        [CreateProperty]
-        public bool visible
-        {
-            get => m_Visible;
-            set
-            {
-                if (m_Visible == value)
-                    return;
-                m_Visible = value;
-                NotifyChange(ColumnDataType.Visibility);
-                NotifyPropertyChanged(visibleProperty);
-            }
-        }
-
-        /// <summary>
-        /// The desired width of the column.
-        /// </summary>
-        /// <remarks>
-        /// The default value is 0.
-        /// </remarks>
-        [CreateProperty]
-        public Length width
-        {
-            get => m_Width;
-            set
-            {
-                if (m_Width == value)
-                    return;
-                m_Width = value;
-                desiredWidth = float.NaN;
-                NotifyChange(ColumnDataType.Width);
-                NotifyPropertyChanged(widthProperty);
-            }
-        }
-
-        /// <summary>
-        /// The minimum width of the column.
-        /// </summary>
-        /// <remarks>
-        /// The default value is 35px.
-        /// </remarks>
-        [CreateProperty]
-        public Length minWidth
-        {
-            get => m_MinWidth;
-            set
-            {
-                if (m_MinWidth == value)
-                    return;
-                m_MinWidth = value;
-                NotifyChange(ColumnDataType.MinWidth);
-                NotifyPropertyChanged(minWidthProperty);
-            }
-        }
-
-        /// <summary>
-        /// The maximum width of the column.
-        /// </summary>
-        [CreateProperty]
-        public Length maxWidth
-        {
-            get => m_MaxWidth;
-            set
-            {
-                if (m_MaxWidth == value)
-                    return;
-                m_MaxWidth = value;
-                NotifyChange(ColumnDataType.MaxWidth);
-                NotifyPropertyChanged(maxWidthProperty);
-            }
-        }
-
-        /// <summary>
         /// The desired width of the column computed by the layout.
         /// </summary>
         internal float desiredWidth
@@ -407,83 +423,6 @@ namespace UnityEngine.UIElements
                 resized?.Invoke(this);
             }
         }
-
-        /// <summary>
-        /// Indicates whether the column can be sorted.
-        /// </summary>
-        [CreateProperty]
-        public bool sortable
-        {
-            get => m_Sortable;
-            set
-            {
-                if (m_Sortable == value)
-                    return;
-                m_Sortable = value;
-                NotifyChange(ColumnDataType.Sortable);
-                NotifyPropertyChanged(sortableProperty);
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether the column will be automatically resized to fill the available space within its container.
-        /// </summary>
-        [CreateProperty]
-        public bool stretchable
-        {
-            get => m_Stretchable;
-            set
-            {
-                if (m_Stretchable == value)
-                    return;
-                m_Stretchable = value;
-                NotifyChange(ColumnDataType.Stretchable);
-                NotifyPropertyChanged(stretchableProperty);
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether the column is optional. Optional columns be shown or hidden interactively by the user.
-        /// </summary>
-        [CreateProperty]
-        public bool optional
-        {
-            get => m_Optional;
-            set
-            {
-                if (m_Optional == value)
-                    return;
-                m_Optional = value;
-                NotifyChange(ColumnDataType.Optional);
-                NotifyPropertyChanged(optionalProperty);
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether the column can be resized interactively by the user.
-        /// </summary>
-        /// <remarks>
-        /// The resize behaviour of all columns in a column collection can be specified by setting <see cref="Columns.resizable"/>.
-        /// A column is effectively resizable if both <see cref="Column.resizable"/> and <see cref="Columns.resizable"/> are both true.
-        /// </remarks>
-        [CreateProperty]
-        public bool resizable
-        {
-            get => m_Resizable;
-            set
-            {
-                if (m_Resizable == value)
-                    return;
-                m_Resizable = value;
-                NotifyChange(ColumnDataType.Resizable);
-                NotifyPropertyChanged(resizableProperty);
-            }
-        }
-
-        /// <summary>
-        /// Path of the target property to be bound.
-        /// </summary>
-        public string bindingPath { get; set; }
 
         /// <summary>
         /// The VisualElement that is the template for the header of the column.

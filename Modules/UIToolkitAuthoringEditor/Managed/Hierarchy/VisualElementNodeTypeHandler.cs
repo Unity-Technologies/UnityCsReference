@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
 using Unity.Properties;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -199,6 +200,8 @@ internal abstract class VisualElementNodeTypeHandler :
     private readonly List<Panel> m_RegisteredPanels = new();
     private readonly QueryEngine<VisualElement> m_QueryEngine;
     private readonly IVisualElementSelectionHandler m_SelectionHandler;
+    readonly HashSet<HierarchyNode> m_HighlightedNodes = new();
+    VisualElement m_HoveredElement;
 
     private StyleSheet m_StyleSheet;
     private StyleSheet m_ThemeStyleSheet;
@@ -245,6 +248,21 @@ internal abstract class VisualElementNodeTypeHandler :
         }
     }
 
+    public VisualElement HoveredElement
+    {
+        get => m_HoveredElement;
+        set
+        {
+            if (m_HoveredElement == value)
+                return;
+            m_HoveredElement = value;
+            if (m_HoveredElement != null)
+                HighlightUtility.RequestHighlights(m_HoveredElement, CommandSources.Hierarchy);
+            else
+                HighlightUtility.ClearHighlights();
+        }
+    }
+
     protected VisualElementNodeTypeHandler(IVisualElementSelectionHandler selectionHandler)
     {
         m_QueryEngine = CreateQueryEngine();
@@ -255,12 +273,19 @@ internal abstract class VisualElementNodeTypeHandler :
         m_EnableUIStages = UIToolkitAuthoringSettings.EnableUIStages;
     }
 
+    protected override void Initialize()
+    {
+        UICommandQueue.RegisterHandler<HighlightCommand>(ProcessHighlightElementsCommand);
+    }
+
     /// <inheritdoc cref="HierarchyNodeTypeHandler.Dispose"/>>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
+        HoveredElement = null;
         UnregisterAllPanels();
         UIToolkitAuthoringSettings.DisplayOptionsChanged -= OnDisplayOptionsChanged;
+        UICommandQueue.UnregisterHandler<HighlightCommand>(ProcessHighlightElementsCommand);
     }
 
     #region HierarchyNodeTypeHandler
@@ -294,9 +319,17 @@ internal abstract class VisualElementNodeTypeHandler :
     {
         if (m_Mappings.TryGetValue(item.Node, out var element))
         {
+            if (m_HighlightedNodes.Contains(item.Node))
+            {
+                var highlightColor = EditorGUIUtility.isProSkin ? 0.1888f : 0.6980f;
+                item.RowContainer.style.backgroundColor = new Color(highlightColor, highlightColor, highlightColor, 1.0f);
+            }
+
             item.Icon.style.backgroundImage = GetIcon(element);
             Bind(item, element);
             BindNavigation(item, element);
+            item.RowContainer.RegisterCallback<PointerEnterEvent, VisualElement>(OnStartHover, element);
+            item.RowContainer.RegisterCallback<PointerLeaveEvent>(OnEndHover);
         }
         else
         {
@@ -308,10 +341,14 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <inheritdoc cref="HierarchyView.UnbindViewItem"/>>
     protected override void OnUnbindItem(HierarchyViewItem item)
     {
+        item.RowContainer.style.backgroundColor = StyleKeyword.Null;
+
         if (m_Mappings.TryGetValue(item.Node, out var element))
         {
             Unbind(item, element);
             UnbindNavigation(item, element);
+            item.RowContainer.UnregisterCallback<PointerEnterEvent, VisualElement>(OnStartHover);
+            item.RowContainer.UnregisterCallback<PointerLeaveEvent>(OnEndHover);
         }
         else
         {
@@ -890,7 +927,7 @@ internal abstract class VisualElementNodeTypeHandler :
             case { visualElementAsset: TemplateAsset subDocument }:
             {
                 using var _ = ListPool<TemplateAsset>.Get(out var subDocumentPath);
-                GenerateSubDocumentPath(container, subDocumentPath);
+                container.GenerateSubDocumentPath(subDocumentPath);
 
                 var rootVisualTreeAsset = GetRootVisualTreeAsset(container);
                 if (!VisualTreeAssetEditingContext.ValidateSubDocumentIsPartOrMainAssetHierarchy(rootVisualTreeAsset, NoAllocHelpers.CreateSpan(subDocumentPath)))
@@ -915,23 +952,6 @@ internal abstract class VisualElementNodeTypeHandler :
         }
     }
 
-    private void GenerateSubDocumentPath(VisualElement element, List<TemplateAsset> path)
-    {
-        VisualTreeAsset currentVisualTreeAsset = null;
-        while (element != null)
-        {
-
-            if (element is { visualElementAsset: TemplateAsset subDocument } && currentVisualTreeAsset != element.visualTreeAssetSource)
-            {
-                path.Add(subDocument);
-                currentVisualTreeAsset = element.visualTreeAssetSource;
-            }
-
-            element = element.hierarchy.parent;
-        }
-        path.Reverse();
-    }
-
     private VisualTreeAsset GetRootVisualTreeAsset(VisualElement element)
     {
         var vta = default(VisualTreeAsset);
@@ -945,40 +965,42 @@ internal abstract class VisualElementNodeTypeHandler :
         return vta;
     }
 
-    protected virtual PanelSettings GetPanelSettings(VisualElement element)
+    protected PanelSettings GetPanelSettings(VisualElement element)
     {
-        var root = element.GetFirstOfType<IPanelComponentRootElement>();
-        if (root != null)
-            return root.panelComponent.panelSettings;
-
-        return null;
+        return element.GetPanelSettings();
     }
 
     protected void SetStageNodeNavigation(HierarchyViewItem item, VisualTreeAssetEditingContext context)
     {
         var modifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
         var navigationTooltip = $"Open Visual Tree Asset in context.\nPress the {modifierKey} modifier key to open in isolation.";
+        var navigateButton = item.NavigateIntoButton;
 
-        if (!m_EnableUIStages)
+        if (!m_EnableUIStages || navigateButton == null)
             return;
-        item.NavigateIntoButton.style.display = DisplayStyle.Flex;
-        item.NavigateIntoButton.tooltip = navigationTooltip;
-        if (item.NavigateIntoButton.userData == null)
+
+        navigateButton.style.display = DisplayStyle.Flex;
+        navigateButton.tooltip = navigationTooltip;
+        if (navigateButton.userData == null)
         {
-            item.NavigateIntoButton.clickable.activators.Add(k_StageAltActivationFilter);
-            item.NavigateIntoButton.clickable.clickedWithEventInfo += OpenStageMode;
+            navigateButton.clickable.activators.Add(k_StageAltActivationFilter);
+            navigateButton.clickable.clickedWithEventInfo += OpenStageMode;
         }
 
-        item.NavigateIntoButton.userData = context;
+        navigateButton.userData = context;
     }
 
     protected void UnsetStageNodeNavigation(HierarchyViewItem item)
     {
-        item.NavigateIntoButton.style.display = DisplayStyle.None;
-        item.NavigateIntoButton.tooltip = null;
-        item.NavigateIntoButton.clickable.activators.Remove(k_StageAltActivationFilter);
-        item.NavigateIntoButton.clickable.clickedWithEventInfo -= OpenStageMode;
-        item.NavigateIntoButton.userData = null;
+        var navigateButton = item.NavigateIntoButton;
+        if (navigateButton == null)
+            return;
+
+        navigateButton.style.display = DisplayStyle.None;
+        navigateButton.tooltip = null;
+        navigateButton.clickable.activators.Remove(k_StageAltActivationFilter);
+        navigateButton.clickable.clickedWithEventInfo -= OpenStageMode;
+        navigateButton.userData = null;
     }
 
     void OpenStageMode(EventBase obj)
@@ -1005,7 +1027,7 @@ internal abstract class VisualElementNodeTypeHandler :
         }
     }
 
-    void GoToStage(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle)
+    internal void GoToStage(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle)
     {
         var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
         stage.SeparatorStyle = separatorStyle;
@@ -1057,8 +1079,8 @@ internal abstract class VisualElementNodeTypeHandler :
     /// </summary>
     /// <param name="element">The requested <see cref="VisualElement"/>.</param>
     /// <param name="parentNode">The parent <see cref="HierarchyNode"/> of the <see cref="VisualElement"/>.</param>
-    /// <returns>The <see cref="HierarchyNode"/> of the parent of the <see cref="element"/> or the root node.</returns>
-    /// <exception cref="ArgumentNullException">If the <see cref="element"/> is null.</exception>
+    /// <returns>The <see cref="HierarchyNode"/> of the parent of the <paramref name="element"/> or the root node.</returns>
+    /// <exception cref="ArgumentNullException">If the <paramref name="element"/> is null.</exception>
     protected virtual bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
     {
         if (null == element)
@@ -1592,5 +1614,41 @@ internal abstract class VisualElementNodeTypeHandler :
         m_EnableUIStages = value;
         if (Hierarchy.IsCreated)
             CommandList.SetDirty();
+    }
+
+    void OnStartHover(PointerEnterEvent evt, VisualElement element)
+    {
+        HoveredElement = element;
+    }
+
+    void OnEndHover(PointerLeaveEvent evt)
+    {
+        HoveredElement = null;
+    }
+
+    void ProcessHighlightElementsCommand(in CommandContext context)
+    {
+        m_HighlightedNodes.Clear();
+        if (Hierarchy.IsCreated)
+            CommandList.SetDirty();
+        if (context.Status != CommandExecutionStatus.Success)
+            return;
+
+        if (context.Source == CommandSources.Hierarchy)
+            return;
+
+        if (context.Command is not HighlightCommand command)
+            return;
+
+        if (command.Elements == null)
+            return;
+
+        foreach (var element in command.Elements)
+        {
+            if (m_Mappings.TryGetValue(element, out var node))
+            {
+                m_HighlightedNodes.Add(node);
+            }
+        }
     }
 }

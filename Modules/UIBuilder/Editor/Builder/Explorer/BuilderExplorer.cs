@@ -17,7 +17,7 @@ namespace Unity.UI.Builder
     {
         static readonly string s_UssClassName = "unity-builder-explorer";
         protected static readonly string kSearchFieldName = "search-field";
-        protected static readonly string kNoResultsName = "no-results-label";
+        internal static readonly string NoSearchResultsName = "no-results-label";
 
         [Flags]
         internal enum BuilderElementInfoVisibilityState
@@ -107,6 +107,10 @@ namespace Unity.UI.Builder
             explorerDragger.RegisterPaneContent(m_ElementHierarchyView);
             UpdateHierarchyAndSelection(false);
             m_ShouldRebuildHierarchyOnStyleChange = true;
+
+            m_NoResultsLabel = new Label("No matches found.") { name = NoSearchResultsName };
+            m_ElementHierarchyView.container.Add(m_NoResultsLabel);
+            m_NoResultsLabel.style.display = DisplayStyle.None;
         }
 
         internal void ChangeVisibilityState(BuilderElementInfoVisibilityState state)
@@ -189,6 +193,9 @@ namespace Unity.UI.Builder
             m_SelectionMadeExternally = false;
 
             m_ElementHierarchyView.ApplyRegisteredSelectionInternallyIfNeeded();
+
+            if (m_SearchField != null && !string.IsNullOrEmpty(m_SearchField.value))
+                UpdateSearchFilter(m_SearchField.value);
         }
 
         public virtual void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
@@ -209,6 +216,8 @@ namespace Unity.UI.Builder
 
         public virtual void SelectionChanged()
         {
+            m_ElementHierarchyView.ClearHighlightOverlay();
+
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_Selection.selection.Any())
 #pragma warning restore UA2002
@@ -256,7 +265,7 @@ namespace Unity.UI.Builder
             FilterView(value);
             var noResults = !string.IsNullOrEmpty(value) && (m_ElementHierarchyView.treeRootItems == null || m_ElementHierarchyView.treeRootItems.Count == 0);
             m_NoResultsLabel.style.display = noResults ? DisplayStyle.Flex : DisplayStyle.None;
-            m_ElementHierarchyView.style.display = noResults ? DisplayStyle.None : DisplayStyle.Flex;
+            m_ElementHierarchyView.treeView.style.display = noResults ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (previousSelection != null)
             {
@@ -302,6 +311,12 @@ namespace Unity.UI.Builder
                 {
                     var selectorStr = StyleSheetToUss.ToUssSelector(selector);
                     nameMatch = selectorStr.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                }
+
+                // If item is the document, stylesheets or selectors, no type/class match is needed
+                if (m_ElementHierarchyView.unfilteredTreeRootItems.Contains(item) || selector != null)
+                {
+                    classMatch = typeMatch = false;
                 }
 
                 if (nameMatch || classMatch || typeMatch)

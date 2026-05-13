@@ -321,31 +321,41 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public EntityId ReadFont(int index)
         {
-            Font font = null;
+            var font = ReadAssetObject<Font>(index);
+            return font != null ? font.GetEntityId() : EntityId.None;
+        }
+
+        public EntityId ReadUIAnimationClip(int index)
+        {
+            var clip = ReadAssetObject<UIAnimationClip>(index);
+            return clip != null ? clip.GetEntityId() : EntityId.None;
+        }
+
+        T ReadAssetObject<T>(int index) where T : Object
+        {
+            T asset = null;
             var value = m_Values[m_CurrentValueIndex + index];
             switch (value.handle.valueType)
             {
                 case StyleValueType.ResourcePath:
                 {
                     var resourcePath = value.sheet.ReadResourcePath(value.handle);
-                    font = resourcePath.LoadResource<Font>(dpiScaling);
-                    if (font == null)
-                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", resourcePath.ToString()));
+                    asset = resourcePath.LoadResource<T>(dpiScaling);
+                    if (asset == null)
+                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "{0} not found for path: {1}", typeof(T).Name, resourcePath.ToString()));
                     break;
                 }
 
                 case StyleValueType.AssetReference:
                 {
-                    font = value.sheet.ReadAssetReference(value.handle) as Font;
-
+                    asset = value.sheet.ReadAssetReference(value.handle) as T;
                     break;
                 }
 
                 case StyleValueType.Keyword:
                 {
                     if (value.handle.valueIndex != (int)StyleValueKeyword.None)
-                        Debug.LogWarning("Invalid keyword for font " + (StyleValueKeyword)value.handle.valueIndex);
-
+                        Debug.LogWarning("Invalid keyword for " + typeof(T).Name + " " + (StyleValueKeyword)value.handle.valueIndex);
                     break;
                 }
 
@@ -353,17 +363,17 @@ namespace UnityEngine.UIElements.StyleSheets
                 {
                     var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
                     Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
-                        "Missing font asset reference '{0}' in stylesheet '{1}'. The font asset may have been deleted or moved.",
+                        "Missing asset reference '{0}' in stylesheet '{1}'. The asset may have been deleted or moved.",
                         missingAssetUrl, value.sheet.name), value.sheet);
                     break;
                 }
 
                 default:
-                    Debug.LogWarning("Invalid value for font " + value.handle.valueType);
+                    Debug.LogWarning("Invalid value for " + typeof(T).Name + " " + value.handle.valueType);
                     break;
             }
 
-            return font != null ? font.GetEntityId() : EntityId.None;
+            return asset;
         }
 
         public void ReadMaterialDefinition(ref UnmanagedMaterialDefinition data, int index)

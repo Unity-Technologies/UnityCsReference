@@ -18,11 +18,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [UxmlObject]
-    internal abstract class StylePropertyValidation : INotifyBindablePropertyChanged
+    internal abstract partial class StylePropertyValidation : INotifyBindablePropertyChanged
     {
-        [ExcludeFromDocs, Serializable]
-        public abstract class UxmlSerializedData : UIElements.UxmlSerializedData { };
-
         /// <summary>
         /// Called when a property has changed.
         /// </summary>
@@ -36,37 +33,9 @@ namespace UnityEngine.UIElements
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [UxmlObject]
-    internal class Syntax : StylePropertyValidation
+    internal partial class Syntax : StylePropertyValidation
     {
         static readonly BindingId propertyBindingProperty = nameof(property);
-
-        [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyValidation.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(property), "property"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string property;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags property_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Syntax();
-
-            public override void Deserialize(object obj)
-            {
-                var e = (Syntax)obj;
-                if (ShouldWriteAttributeValue(property_UxmlAttributeFlags))
-                    e.property = property;
-            }
-        }
 
         static readonly List<string> k_SyntaxTerms = new()
         {"length", "length-percentage", "color", "url", "resource", "angle", "number", "time",
@@ -77,6 +46,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The style property name or syntax that will be used to validate the style field value.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public string property
         {

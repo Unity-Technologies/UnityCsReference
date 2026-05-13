@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -63,38 +63,11 @@ namespace UnityEngine.UIElements
     /// Base class for text fields.
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public abstract class TextValueField<TValueType> : TextInputBaseField<TValueType>, IValueField<TValueType>
+    [UxmlElement]
+    public abstract partial class TextValueField<TValueType> : TextInputBaseField<TValueType>, IValueField<TValueType>
     {
         internal static readonly BindingId formatStringProperty = nameof(formatString);
         internal static readonly BindingId supportExpressionsProperty = nameof(supportExpressions);
-
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : TextInputBaseField<TValueType>.UxmlSerializedData
-        {
-            public new static void Register()
-            {
-                TextInputBaseField<TValueType>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(supportExpressions), "support-expressions", null),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [Tooltip("Indicates whether the field supports expressions that can be evaluated into a value.")]
-            [SerializeField] bool supportExpressions;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags supportExpressions_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TextValueField<TValueType>)obj;
-                if (ShouldWriteAttributeValue(supportExpressions_UxmlAttributeFlags))
-                    e.supportExpressions = supportExpressions;
-            }
-        }
 
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;
@@ -118,7 +91,9 @@ namespace UnityEngine.UIElements
         /// required for expressions (e.g., '+', '-', '*', '/', etc.), expanding its functionality beyond the typical restrictions
         /// of a text field that might otherwise only allow digits.
         /// </remarks>
+        [Tooltip("Indicates whether the field supports expressions that can be evaluated into a value.")]
         [CreateProperty]
+        [UxmlAttribute]
         public bool supportExpressions
         {
             get => m_SupportExpressions;
@@ -330,15 +305,32 @@ namespace UnityEngine.UIElements
         internal override void RegisterEditingCallbacks()
         {
             base.RegisterEditingCallbacks();
-            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-            labelElement.RegisterCallback<PointerUpEvent>(EndEditing);
+            Callbacks.OnLabelPointerDownStartEditing.Register(labelElement);
+            Callbacks.OnLabelPointerUpEndEditing.Register(labelElement);
         }
 
         internal override void UnregisterEditingCallbacks()
         {
             base.UnregisterEditingCallbacks();
-            labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-            labelElement.UnregisterCallback<PointerUpEvent>(EndEditing);
+            Callbacks.OnLabelPointerUpEndEditing.Unregister(labelElement);
+            Callbacks.OnLabelPointerDownStartEditing.Unregister(labelElement);
+        }
+
+        private static class Callbacks
+        {
+            // Use with ?. syntax to avoid possible exceptions on events during DetachFromPanel
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static TextValueField<TValueType> GetTextValueField(VisualElement child) =>
+                child.GetFirstAncestorOfType<TextValueField<TValueType>>();
+
+            public static readonly EventCallbackDefinition<Label> OnLabelPointerDownStartEditing =
+                EventCallback.Create<PointerDownEvent, Label>(
+                    static (e, label) => GetTextValueField(label)?.StartEditing(e),
+                    CallbackOptions.TrickleDown);
+
+            public static readonly EventCallbackDefinition<Label> OnLabelPointerUpEndEditing =
+                EventCallback.Create<PointerUpEvent, Label>(
+                    static (e, label) => GetTextValueField(label)?.EndEditing(e));
         }
 
         // Implements a control with a value of type T backed by a text.

@@ -81,12 +81,16 @@ namespace UnityEngine.UIElements
 
         internal int creationIndex { get; }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetRootVisualElement();
 
         //Just like the one above, but does not capture the reference to VisualElement for code stripping reasons
         internal IEventHandler GetRoot();
 
         internal void SetComponentEnabled(bool enabled);
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal bool GetComponentEnabled();
 
         internal int softPointerCaptures { get; set; }
 

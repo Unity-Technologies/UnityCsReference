@@ -265,6 +265,14 @@ namespace Unity.Hierarchy
         public extern int GetChildrenCount(in HierarchyNode node);
 
         /// <summary>
+        /// Determines whether a hierarchy node has any visible direct children (children without the Hidden flag).
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the node has at least one visible direct child, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern bool HasVisibleChildren(in HierarchyNode node);
+
+        /// <summary>
         /// Gets the number of child nodes that a hierarchy node has, including children of children.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>

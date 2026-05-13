@@ -170,6 +170,7 @@ namespace UnityEditor
             }
 
             T library = helper.Create();
+            library.name = libraryName;
             library.hideFlags = libraryHideFlag;
             LibraryCache set = GetPresetLibraryCache(helper.fileExtensionWithoutDot);
             set.loadedLibraries.Add(library);

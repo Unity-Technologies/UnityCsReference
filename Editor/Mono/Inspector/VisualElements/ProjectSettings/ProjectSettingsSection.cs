@@ -3,45 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
-    internal class ProjectSettingsSection : VisualElement
+    [UxmlElement]
+    internal partial class ProjectSettingsSection : VisualElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(label), "label")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            #pragma warning restore 649
-            public override object CreateInstance() => new ProjectSettingsSection();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                {
-                    var e = (ProjectSettingsSection)obj;
-                    e.label = label;
-                }
-            }
-        }
-
         internal static class Styles
         {
             public static readonly string section = "project-settings-section";
@@ -52,6 +21,7 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         public Label labelElement { get; private set; }
 
+        [UxmlAttribute]
         public string label
         {
             get => labelElement?.text;

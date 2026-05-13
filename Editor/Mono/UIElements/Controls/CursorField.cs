@@ -16,22 +16,10 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for entering Cursor.
     /// </summary>
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class CursorField : BaseField<Cursor>
+    internal partial class CursorField : BaseField<Cursor>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Cursor>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Cursor>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new CursorField();
-        }
-
         /// <summary>
         /// USS class name of the object field in elements of this type.
         /// </summary>

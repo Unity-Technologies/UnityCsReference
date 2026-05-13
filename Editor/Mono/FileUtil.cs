@@ -15,6 +15,71 @@ namespace UnityEditor
 {
     public partial class FileUtil
     {
+        const string k_UdsPathPrefix = "uds:/";
+
+        /// Opens a file for reading. For UDS paths (uds:/...), returns a zero-copy
+        /// stream backed by native shared memory. For physical paths, returns a
+        /// standard FileStream. For other VFS paths, materialises via native read
+        public static Stream OpenRead(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+
+            var physicalPath = FileUtil.GetPhysicalPath(path);
+
+            if (string.IsNullOrEmpty(physicalPath))
+            {
+                // Path exists in VFS but not on the physical filesystem —
+                // materialise the data through the native VFS read
+                byte[] data = ReadAllBytesInternal(path);
+                return new MemoryStream(data, writable: false);
+            }
+
+            // The 'physical' path for a VirtualArtifact will be a UDS virtual path
+            if (physicalPath.StartsWith(k_UdsPathPrefix, StringComparison.Ordinal))
+                return OpenReadUDS(physicalPath);
+
+            // Fall back to opening the physical file in the normal way
+            return File.Open(physicalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        }
+
+        static Stream OpenReadUDS(string path)
+        {
+            string hashStr = path[(path.LastIndexOf('/') + 1)..];
+            var hash = Hash128.Parse(hashStr);
+            if (!hash.isValid)
+                throw new IOException($"FileUtil.OpenRead: Invalid UDS hash in path '{path}'");
+
+            IntPtr handle = UDS.Acquire(hash);
+            if (handle == IntPtr.Zero)
+                throw new IOException($"FileUtil.OpenRead: Failed to acquire UDS content for '{path}'");
+
+            return new UDSReadStream(handle);
+        }
+
+        public static byte[] ReadAllBytes(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+
+            return ReadAllBytesInternal(path);
+        }
+
+        public static string ReadAllText(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+
+            return ReadAllTextInternal(path);
+        }
+
+        private static readonly string[] LineSeparators = new[] { "\r\n", "\n" };
+
+        public static string[] ReadAllLines(string path)
+        {
+            return ReadAllText(path).Split(LineSeparators, StringSplitOptions.None);
+        }
+
         internal static void ReplaceText(string path, params string[] input)
         {
             path = NiceWinPath(path);

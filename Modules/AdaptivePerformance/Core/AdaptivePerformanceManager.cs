@@ -41,7 +41,9 @@ namespace UnityEngine.AdaptivePerformance
         {
             CurrentCpuLevel = Constants.UnknownPerformanceLevel,
             CurrentGpuLevel = Constants.UnknownPerformanceLevel,
-            PerformanceBottleneck = PerformanceBottleneck.Unknown
+            PerformanceBottleneck = PerformanceBottleneck.Unknown,
+            CpuUtilization = -1.0f,
+            GpuUtilization = -1.0f,
         };
 
         public PerformanceMetrics PerformanceMetrics { get { return m_PerformanceMetrics; } }
@@ -372,6 +374,8 @@ namespace UnityEngine.AdaptivePerformance
             AdaptivePerformanceProfilerStats.TemperatureTrendMarker.Sample(m_ThermalMetrics.TemperatureTrend);
             AdaptivePerformanceProfilerStats.BottleneckMarker.Sample((int)m_PerformanceMetrics.PerformanceBottleneck);
             AdaptivePerformanceProfilerStats.PerformanceModeMarker.Sample((int)m_PerformanceMode);
+            AdaptivePerformanceProfilerStats.CpuUtilizationMarker.Sample(m_PerformanceMetrics.CpuUtilization);
+            AdaptivePerformanceProfilerStats.GpuUtilizationMarker.Sample(m_PerformanceMetrics.GpuUtilization);
         }
 
         private void AppendFrameTiming(string label, float averageSeconds, float currentSeconds)
@@ -577,6 +581,12 @@ namespace UnityEngine.AdaptivePerformance
             {
                 m_PerformanceMode = updateResult.PerformanceMode;
             }
+
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.CpuUtilization))
+                m_PerformanceMetrics.CpuUtilization = updateResult.CpuUtilization;
+
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.GpuUtilization))
+                m_PerformanceMetrics.GpuUtilization = updateResult.GpuUtilization;
 
             // PerformanceLevelChangeEvent and BoostModeChangeEvent triggers before those since it's useful for the user to know when the auto cpu/gpu level controller already made adjustments
             if (triggerThermalEventEvent)

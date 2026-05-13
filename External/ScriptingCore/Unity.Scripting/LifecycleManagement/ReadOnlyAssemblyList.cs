@@ -35,5 +35,7 @@ namespace Unity.Scripting.LifecycleManagement
         {
             return _assemblyLookup.TryGetValue(assemblyName, out assembly);
         }
+
+        public override string ToString() => $"[{string.Join(", ", _assemblyLookup.Keys)}]";
     }
 }

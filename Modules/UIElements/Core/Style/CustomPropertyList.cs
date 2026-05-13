@@ -70,9 +70,6 @@ internal unsafe struct CustomPropertyList : IDisposable
     public extern void Dispose();
     public readonly extern bool IsCreated();
 
-    public static extern int CreateCount { get; }
-    public static extern int DisposeCount { get; }
-
     [NativeName("Acquire")]
     private readonly extern void _Acquire();
     public readonly CustomPropertyList Acquire()

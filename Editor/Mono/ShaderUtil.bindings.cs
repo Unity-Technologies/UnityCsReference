@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using UnityEditor.Build.Content;
 using UnityEditor.Rendering;
@@ -301,10 +302,26 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static MaterialProperty[] GetMaterialProperties(UnityEngine.Object[] mats)
         {
-            return (MaterialProperty[])GetMaterialPropertiesImpl(mats);
-        }
+            if ((mats == null) || (mats.Length == 0))
+                return null;
 
-        extern private static System.Object GetMaterialPropertiesImpl(System.Object mats);
+            int nullIndex = Array.IndexOf(mats, null);
+            if (nullIndex >= 0)
+                throw new ArgumentException($"List of materials contains null at index {nullIndex}");
+
+            Material firstMaterial = (Material)mats[0];
+            Shader shader = firstMaterial.shader;
+            if (shader == null)
+                throw new ArgumentException("Shader on first material is null");
+            int propertyCount = shader.GetPropertyCount();
+
+            MaterialProperty[] materialProperties = new MaterialProperty[propertyCount];
+            for (int propertyNum = 0; propertyNum < propertyCount; propertyNum++)
+            {
+                materialProperties[propertyNum] = ShaderUtil.ExtractMaterialProperty(shader, propertyNum, mats, firstMaterial);
+            }
+            return materialProperties;
+        }
 
         internal static string[] GetMaterialPropertyNames(UnityEngine.Object[] mats)
         {
@@ -315,46 +332,77 @@ namespace UnityEditor
 
         internal static MaterialProperty GetMaterialProperty(UnityEngine.Object[] mats, string name)
         {
-            return (MaterialProperty)GetMaterialPropertyImpl(mats, name);
-        }
+            if ((mats == null) || (mats.Length == 0))
+                return null;
 
-        extern private static System.Object GetMaterialPropertyImpl(System.Object mats, string name);
+            Material firstMaterial = (Material)mats[0];
+            Shader shader = firstMaterial.shader;
+
+            MaterialProperty materialProperty = null;
+
+            if (shader != null)
+            {
+                int propertyIndex = shader.FindPropertyIndex(name);
+                if (propertyIndex != -1)
+                {
+                    materialProperty = ExtractMaterialProperty(shader, propertyIndex, mats, firstMaterial);
+                }
+            }
+
+            return (materialProperty != null) ? materialProperty : new MaterialProperty();
+        }
 
         internal static MaterialProperty GetMaterialProperty(UnityEngine.Object[] mats, int propertyIndex)
         {
-            return (MaterialProperty)GetMaterialPropertyByIndex(mats, propertyIndex);
-        }
+            if ((mats == null) || (mats.Length == 0))
+                return null;
 
-        extern private static System.Object GetMaterialPropertyByIndex(System.Object mats, int propertyIndex);
+            Material firstMaterial = (Material)mats[0];
+            Shader shader = firstMaterial.shader;
+
+            return (shader != null && propertyIndex >= 0 && propertyIndex < shader.GetPropertyCount())
+                ? ExtractMaterialProperty(shader, propertyIndex, mats, firstMaterial)
+                : new MaterialProperty();
+        }
 
         internal static void ApplyProperty(MaterialProperty prop, int propertyMask, string undoName)
         {
-            ApplyPropertyImpl(prop, propertyMask, undoName);
+            if (prop.targets == null || prop.targets.Length == 0)
+                return;
+
+            ApplyPropertyImpl(prop.targets, prop.name, prop.propertyType, prop.m_Value, prop.textureScaleAndOffset, propertyMask, undoName);
         }
 
-        [NativeMethod(ThrowsException = true)]
-        extern private static void ApplyPropertyImpl(System.Object prop, int propertyMask, string undoName);
+        extern private static void ApplyPropertyImpl(UnityEngine.Object[] propTargets, string propName, UnityEngine.Rendering.ShaderPropertyType propType, object propValue, Vector4 propTextureScaleAndOffset, int propertyMask, string undoName);
 
         internal static void ApplyMaterialPropertyBlockToMaterialProperty(MaterialPropertyBlock propertyBlock, MaterialProperty materialProperty)
         {
-            ApplyMaterialPropertyBlockToMaterialPropertyImpl(propertyBlock, materialProperty);
+            materialProperty.m_Value = ApplyMaterialPropertyBlockToMaterialPropertyImpl(propertyBlock, materialProperty.name, materialProperty.propertyType,
+                materialProperty.m_Value, ref materialProperty.m_TextureScaleAndOffset);
         }
 
-        extern private static void ApplyMaterialPropertyBlockToMaterialPropertyImpl(System.Object propertyBlock, System.Object materialProperty);
+        extern private static object ApplyMaterialPropertyBlockToMaterialPropertyImpl(MaterialPropertyBlock propertyBlock,
+            string propName, UnityEngine.Rendering.ShaderPropertyType propType, object propValue, ref Vector4 propTextureScaleAndOffset);
 
         internal static void ApplyMaterialPropertyToMaterialPropertyBlock(MaterialProperty materialProperty, int propertyMask, MaterialPropertyBlock propertyBlock)
         {
-            ApplyMaterialPropertyToMaterialPropertyBlockImpl(materialProperty, propertyMask, propertyBlock);
+            ApplyMaterialPropertyToMaterialPropertyBlockImpl(propertyBlock, materialProperty.name, materialProperty.propertyType,
+                materialProperty.propertyFlags, materialProperty.m_Value, materialProperty.m_TextureScaleAndOffset, propertyMask);
         }
 
-        extern private static void ApplyMaterialPropertyToMaterialPropertyBlockImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
+        extern private static void ApplyMaterialPropertyToMaterialPropertyBlockImpl(MaterialPropertyBlock propertyBlock,
+            string propName, UnityEngine.Rendering.ShaderPropertyType propType, UnityEngine.Rendering.ShaderPropertyFlags propFlags,
+            object propValue, Vector4 propTextureScaleAndOffset, int propertyMask);
 
         internal static void ApplyMaterialPropertyToMaterialPropertyBlockInEditor(MaterialProperty materialProperty, int propertyMask, MaterialPropertyBlock propertyBlock)
         {
-            ApplyMaterialPropertyToMaterialPropertyBlockInEditorImpl(materialProperty, propertyMask, propertyBlock);
+            ApplyMaterialPropertyToMaterialPropertyBlockInEditorImpl(propertyBlock, materialProperty.name, materialProperty.propertyType,
+                materialProperty.propertyFlags, materialProperty.m_Value, materialProperty.m_TextureScaleAndOffset, propertyMask);
         }
 
-        extern private static void ApplyMaterialPropertyToMaterialPropertyBlockInEditorImpl(System.Object materialProperty, int propertyMask, System.Object propertyBlock);
+        extern private static void ApplyMaterialPropertyToMaterialPropertyBlockInEditorImpl(MaterialPropertyBlock propertyBlock,
+            string propName, UnityEngine.Rendering.ShaderPropertyType propType, UnityEngine.Rendering.ShaderPropertyFlags propFlags,
+            object propValue, Vector4 propTextureScaleAndOffset, int propertyMask);
 
         public static string GetCustomEditorForRenderPipeline(Shader shader, string renderPipelineType)
         {
@@ -440,5 +488,143 @@ namespace UnityEditor
         [FreeFunction("ShaderUtil::GetCompiledData")] extern internal static byte[] GetCompiledData(
             Shader s, BuildUsageTagSet buildUsageTags, BuildUsageTagGlobal globalUsageTag,
             BuildTargetSelection buildTarget, bool shouldIncludeAllVariants);
+
+        internal static MaterialProperty ExtractMaterialProperty(Shader shader, int propertyIndex, UnityEngine.Object[] materials, Material firstMaterial)
+        {
+            if (materials == null)
+                throw new ArgumentNullException(nameof(materials));
+
+            MaterialProperty res = new MaterialProperty();
+
+            ShaderPropertyFlags propertyFlags;
+            UnityEngine.Rendering.ShaderPropertyType propertyType;
+            Vector4 defaultValue;
+            Shader.GetValuesForExtractMaterialProperty(shader, propertyIndex, out res.m_Name, out res.m_DisplayName, out propertyFlags, out propertyType, out defaultValue, out res.m_TextureDimension);
+
+            res.m_Targets = materials;
+            res.m_Value = null;
+            res.m_MixedValueMask = 0;
+
+            int materialsCount = materials.Length;
+
+            int propId = Shader.PropertyToID(res.m_Name);
+
+            switch (propertyType)
+            {
+                case UnityEngine.Rendering.ShaderPropertyType.Color:
+                    {
+                        Color firstMaterialValue = firstMaterial.GetColor(propId);
+                        res.m_Value = firstMaterialValue;
+
+                        for (int materialNum = 1; materialNum < materialsCount; materialNum++)
+                        {
+                            if (((Material)materials[materialNum]).GetColor(propId) != firstMaterialValue)
+                            {
+                                res.m_MixedValueMask = 1;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case UnityEngine.Rendering.ShaderPropertyType.Vector:
+                    {
+                        Vector4 firstMaterialValue = firstMaterial.GetVector(propId);
+                        res.m_Value = firstMaterialValue;
+
+                        for (int materialNum = 1; materialNum < materialsCount; materialNum++)
+                        {
+                            if (((Material)materials[materialNum]).GetVector(propId) != firstMaterialValue)
+                            {
+                                res.m_MixedValueMask = 1;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case UnityEngine.Rendering.ShaderPropertyType.Float:
+                case UnityEngine.Rendering.ShaderPropertyType.Range:
+                    {
+                        float firstMaterialValue = firstMaterial.GetFloat(propId);
+                        res.m_Value = firstMaterialValue;
+
+                        for (int materialNum = 1; materialNum < materialsCount; materialNum++)
+                        {
+                            if (((Material)materials[materialNum]).GetFloat(propId) != firstMaterialValue)
+                            {
+                                res.m_MixedValueMask = 1;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case UnityEngine.Rendering.ShaderPropertyType.Int:
+                    {
+                        int firstMaterialValue = firstMaterial.GetInteger(propId);
+                        res.m_Value = firstMaterialValue;
+
+                        for (int materialNum = 1; materialNum < materialsCount; materialNum++)
+                        {
+                            if (((Material)materials[materialNum]).GetInteger(propId) != firstMaterialValue)
+                            {
+                                res.m_MixedValueMask = 1;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case UnityEngine.Rendering.ShaderPropertyType.Texture:
+                    {
+                        Texture v = null;
+                        Vector4 scaleAndOffset = new Vector4(1, 1, 0, 0);
+
+                        if ((propertyFlags & ShaderPropertyFlags.PerRendererData) != 0)
+                        {
+                            v = EditorGUIUtility.GetEditorAssetBundle().LoadAsset<Texture>("Previews/Textures/textureExternal.png");
+                        }
+
+                        if (v == null)
+                        {
+                            scaleAndOffset = firstMaterial.GetTextureScaleAndOffsetImpl(propId);
+                            v = firstMaterial.GetTexture(propId);
+                            for (int i = 1; i < materialsCount; i++)
+                            {
+                                Material curMat = (Material)materials[i];
+
+                                // For textures mixed mask 0 bit represents the texture
+                                if (curMat.GetTexture(propId) != v)
+                                    res.m_MixedValueMask |= 1;
+
+                                // 1-4 bit represents the scale and offset
+                                Vector4 curScaleAndOffset = curMat.GetTextureScaleAndOffsetImpl(propId);
+                                for (int c = 0; c < 4; c++)
+                                {
+                                    bool isComponentMixed = curScaleAndOffset[c] != scaleAndOffset[c];
+                                    if (isComponentMixed)
+                                        res.m_MixedValueMask |= 1 << (c + 1);
+                                }
+                            }
+                        }
+
+                        res.m_Value = v;
+                        res.m_TextureScaleAndOffset = scaleAndOffset;
+                    }
+                    break;
+
+                default:
+                    throw new InvalidDataException($"unknown shader property type {propertyType} on property '{res.m_Name}' of shader '{shader.name}'");
+            }
+
+            // defaultValue layout: [0] = default, [1] = range min, [2] = range max
+            res.m_RangeLimits.x = defaultValue[1];
+            res.m_RangeLimits.y = defaultValue[2];
+            res.m_Type = propertyType;
+            res.m_Flags = propertyFlags;
+
+            return res;
+        }
     }
 }

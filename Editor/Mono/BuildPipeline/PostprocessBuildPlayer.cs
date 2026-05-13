@@ -322,7 +322,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static public void Postprocess(BuildTarget target, int subtarget, string installPath, string companyName, string productName,
             BuildOptions options,
-            RuntimeClassRegistry usedClassRegistry, BuildReport report)
+            RuntimeClassRegistry usedClassRegistry, BuildReport report, string[] defineConstraints)
         {
             string stagingArea = "Temp/StagingArea";
             string stagingAreaData = "Temp/StagingArea/Data";
@@ -360,6 +360,7 @@ namespace UnityEditor
                 args.options = options;
                 args.usedClassRegistry = usedClassRegistry;
                 args.report = report;
+                args.defineConstraints = defineConstraints;
 
                 BuildProperties props;
                 postprocessor.PostProcess(args, out props);

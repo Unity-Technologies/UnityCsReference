@@ -295,7 +295,9 @@ namespace UnityEngine.Audio
             internal enum Status : Int32
             {
                 Success = 0,
-                Finished
+                Finished,
+                Loading,    // Clip still loading async, outputting silence
+                LoadFailed  // Clip failed to load (permanent)
             }
 
             internal int m_ProcessedFrames;
@@ -314,6 +316,20 @@ namespace UnityEngine.Audio
             /// for example if the <see cref="GeneratorInstance"/> finishes in the middle of a buffer.
             /// </remarks>
             public bool isFinished() => m_Status == Status.Finished;
+
+            /// <summary>
+            /// If this is true, the <see cref="GeneratorInstance"/> is still loading its backing audio clip asynchronously.
+            /// </summary>
+            /// <remarks>
+            /// When loading, the generator outputs silence. Once loading completes, it will start producing audio
+            /// or report <see cref="didLoadFail"/> if the load failed.
+            /// </remarks>
+            public bool isLoading() => m_Status == Status.Loading;
+
+            /// <summary>
+            /// If this is true, the backing audio clip failed to load and the generator cannot produce audio.
+            /// </summary>
+            public bool didLoadFail() => m_Status == Status.LoadFailed;
 
             /// <summary>
             /// Creates a new <see cref="GeneratorInstance.Result"/> from a number of frames processed.

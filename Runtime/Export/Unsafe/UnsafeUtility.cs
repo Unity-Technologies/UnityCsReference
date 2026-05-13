@@ -133,6 +133,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return new Span<byte>(System.Runtime.CompilerServices.Unsafe.AsPointer(ref bArray[0]), arraySize * elementSize);
         }
 
+        [VisibleToOtherModules("UnityEngine.AdaptivePerformanceModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Span<byte> GetByteSpanFromList<T>(List<T> list) where T : struct
         {

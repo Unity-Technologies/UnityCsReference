@@ -140,10 +140,9 @@ internal class LayoutManager : IDisposable
     {
         Uninitialized, // The SharedManager was not accessed yet
         Initialized, // The SharedManager was accessed and created
-        Shutdown // The SharedManager was disposed and must not be-created
+        Shutdown // The SharedManager was disposed and must not re-created
     }
     static SharedManagerState s_Initialized;
-    static bool s_AppDomainUnloadRegistered;
 
     static LayoutManager s_SharedInstance;
 
@@ -177,21 +176,8 @@ internal class LayoutManager : IDisposable
             return;
 
         s_Initialized = SharedManagerState.Initialized;
-
-        if (!s_AppDomainUnloadRegistered)
-        {
-            // important: this will always be called from a special unload thread (main thread will be blocking on this)
-#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using OnCodeUnloading on Shutdown
-            AppDomain.CurrentDomain.DomainUnload += (_, __) =>
-            {
-               Shutdown();
-            };
-#pragma warning restore UAC0006
-
-            s_AppDomainUnloadRegistered = true;
-        }
-
         s_SharedInstance = new LayoutManager(Allocator.Persistent);
+        UnloadingUtility.SubscribeToUnloading(UnloadingSubscriber.LayoutManager, Shutdown);
     }
 
     static void Shutdown()
@@ -201,7 +187,7 @@ internal class LayoutManager : IDisposable
 
         s_Initialized = SharedManagerState.Shutdown;
 
-        s_SharedInstance.Dispose(domainUnload: true);
+        s_SharedInstance.Dispose();
     }
 
     // The capacity of the LayoutManager impacts how many chunks are created per component
@@ -299,10 +285,7 @@ internal class LayoutManager : IDisposable
         LayoutNodeData.Default.Config = m_DefaultConfig;
     }
 
-    // Called by unit tests
-    public void Dispose() => Dispose(false);
-
-    private void Dispose(bool domainUnload)
+    public void Dispose()
     {
         s_Managers[m_Index] = null;
 
@@ -323,12 +306,8 @@ internal class LayoutManager : IDisposable
                 }
 
                 var computedStyle = (ComputedStyle*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.ComputedStyle);
-                // During domain reload in CreateEditorWindowTests, there is one element that has an uninitialized
-                // style which causes a NullReferenceException if we don't use SafeRelease here.
-                if (domainUnload)
-                    computedStyle->SafeRelease();
-                else
-                    computedStyle->Release();
+                // Safe-release is called because the ComputedStyle has already been released if this node was recycled through Collect()
+                computedStyle->SafeRelease();
 
                 var owner = m_ManagedOwners.GetValue(data->ManagedOwnerIndex);
                 if (owner.IsAllocated)

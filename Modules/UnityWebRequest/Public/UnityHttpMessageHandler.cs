@@ -9,19 +9,76 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Networking
 {
+    [VisibleToOtherModules("UnityEngine.UnityWinHttpMessageHandlerModule")]
+    internal interface IUnityHttpMessageHandlerFactory
+    {
+        public HttpMessageHandler CreateUnderlyingHttpMessageHandler();
+    }
+
+    [VisibleToOtherModules("UnityEngine.UnityWinHttpMessageHandlerModule")]
+    internal interface IUnityHttpMessageHandler
+    {
+        public CertificateHandler CertificateHandler { get; set; }
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken);
+    }
+
     public sealed class UnityHttpMessageHandler : HttpMessageHandler
     {
         private static readonly string ContentTypeHeaderKey = "Content-Type";
+        private static IUnityHttpMessageHandlerFactory s_underlyingHttpHandlerFactory = null;
+        private HttpMessageHandler _underlyingHttpMessageHandler = null;
+        private bool _underlyingMessageHandlerOwnsCertificateHandler = false;
 
         public HttpForcedVersion HttpForcedVersion { get; set; } = HttpForcedVersion.NotForced;
         public CertificateHandler CertificateHandler { get; set; } = null;
 
+        public UnityHttpMessageHandler() : base()
+        {
+            if (s_underlyingHttpHandlerFactory != null)
+            {
+                _underlyingHttpMessageHandler = s_underlyingHttpHandlerFactory.CreateUnderlyingHttpMessageHandler();
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UnityWinHttpMessageHandlerModule")]
+        internal static void SetIUnityHttpMessageHandlerFactory(IUnityHttpMessageHandlerFactory factory)
+        {
+            s_underlyingHttpHandlerFactory = factory;
+        }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
         {
-            return SendAsyncInternal(httpRequest, cancellationToken);
+            if (_underlyingHttpMessageHandler != null && _underlyingHttpMessageHandler is IUnityHttpMessageHandler unityHandler)
+            {
+                unityHandler.CertificateHandler = CertificateHandler;
+                _underlyingMessageHandlerOwnsCertificateHandler = true;
+                return unityHandler.SendAsync(httpRequest, cancellationToken);
+            }
+            else
+            {
+                return SendAsyncInternal(httpRequest, cancellationToken);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                if (!_underlyingMessageHandlerOwnsCertificateHandler)
+                {
+                    CertificateHandler?.Dispose();
+                    CertificateHandler = null;
+                }
+
+                _underlyingHttpMessageHandler?.Dispose();
+                _underlyingHttpMessageHandler = null;
+            }
         }
 
         private async Task<HttpResponseMessage> SendAsyncInternal(HttpRequestMessage httpRequest, CancellationToken cancellationToken)

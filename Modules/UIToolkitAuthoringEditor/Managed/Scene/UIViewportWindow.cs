@@ -3,11 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using Unity.Collections;
+using Unity.Hierarchy.Editor;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,6 +19,18 @@ namespace Unity.UIToolkit.Editor;
 
 partial class UIViewportWindow : EditorWindow
 {
+    class ShortcutContext : IShortcutContext
+    {
+        public bool active =>
+            (focusedWindow is UIViewportWindow or HierarchyWindow) &&
+            s_OpenWindows.Count > 0 &&
+            StageUtility.GetCurrentStage() is VisualElementEditingStage;
+    }
+
+    static readonly List<UIViewportWindow> s_OpenWindows = new();
+    static UIViewportWindow s_LastFocusedWindow;
+    static ShortcutContext s_ShortcutContext;
+
     const string k_MenuPath = "Window/UI Toolkit/UI Viewport";
     const int k_MenuPriority = 3019;
 
@@ -33,6 +48,7 @@ partial class UIViewportWindow : EditorWindow
     const string HiddenViewportWrapperContainerUssClass = ViewporWrapperContainerUssClass + HiddenPostFix;
 
     const string CanvasUssClass = UssClass + "__canvas";
+    const string ViewportUssClass = UssClass + "__viewport";
 
     VisualElement m_EnterStageModeOverlay;
     VisualElement m_ViewportOverlay;
@@ -42,6 +58,8 @@ partial class UIViewportWindow : EditorWindow
     {
         UIToolkitAuthoringSettings.UIStagesChanged += OnUIStagesChanged;
         EditorApplication.delayCall += () => OnUIStagesChanged(UIToolkitAuthoringSettings.EnableUIStages);
+        s_ShortcutContext = new ShortcutContext();
+        EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
     }
 
     static void OnUIStagesChanged(bool enabled)
@@ -60,9 +78,17 @@ partial class UIViewportWindow : EditorWindow
         GetWindow<UIViewportWindow>();
     }
 
+    [Shortcut("UI Viewport/Fit Viewport", typeof(ShortcutContext), KeyCode.F)]
+    static void OnFitViewportShortcut(ShortcutArguments args)
+    {
+        var window = s_LastFocusedWindow ?? (s_OpenWindows.Count > 0 ? s_OpenWindows[0] : null);
+        window?.m_Viewport?.FitViewport();
+    }
+
     [NonSerialized]
     EntityId m_StageId;
     UICanvas m_Canvas;
+    UIViewport m_Viewport;
     UxmlCodePreview m_UxmlPreview;
     UssCodePreview m_UssPreview;
 
@@ -84,11 +110,20 @@ partial class UIViewportWindow : EditorWindow
     {
         titleContent.text = "UI Viewport";
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+        s_OpenWindows.Add(this);
     }
 
     void OnDisable()
     {
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+        s_OpenWindows.Remove(this);
+        if (s_LastFocusedWindow == this)
+            s_LastFocusedWindow = null;
+    }
+
+    void OnFocus()
+    {
+        s_LastFocusedWindow = this;
     }
 
     [UsedImplicitly]
@@ -106,6 +141,7 @@ partial class UIViewportWindow : EditorWindow
         m_EnterStageModeOverlay = rootVisualElement.Q(className: EnterStageModeWarningContainerUssClass);
         m_ViewportOverlay = rootVisualElement.Q(className: ViewporWrapperContainerUssClass);
         m_Canvas = rootVisualElement.Q<UICanvas>(CanvasUssClass);
+        m_Viewport = rootVisualElement.Q<UIViewport>(ViewportUssClass);
         m_UxmlPreview = rootVisualElement.Q<UxmlCodePreview>();
         m_UssPreview = rootVisualElement.Q<UssCodePreview>();
 
@@ -129,6 +165,38 @@ partial class UIViewportWindow : EditorWindow
         m_ViewportOverlay.EnableInClassList(HiddenViewportWrapperContainerUssClass, !isUIStage);
 
         StageId = stage.GetEntityId();
+
+        if (isUIStage)
+            SetToolbarBreadcrumbs();
+        else
+            m_Viewport.ClearBreadcrumbs();
+    }
+
+    void SetToolbarBreadcrumbs()
+    {
+        if (m_Viewport == null)
+            return;
+
+        m_Viewport.ClearBreadcrumbs();
+
+        var history = StageNavigationManager.instance.stageHistory;
+        for (var i = 0; i < history.Count; i++)
+        {
+            var stage = history[i];
+            var content = stage.CreateHeaderContent();
+            var icon = content.image as Texture2D;
+            var label = content.text;
+
+            var isCurrentStage = i == history.Count - 1;
+            if (isCurrentStage)
+            {
+                m_Viewport.PushBreadcrumb(label, icon);
+            }
+            else
+            {
+                m_Viewport.PushBreadcrumb(label, icon, () => StageUtility.GoToStage(stage, false));
+            }
+        }
     }
 
     void AcquireStage(EntityId stageId)

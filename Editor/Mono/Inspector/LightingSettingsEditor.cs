@@ -864,9 +864,7 @@ namespace UnityEditor
 
                 EditorGUILayout.PropertyField(m_EnableWorkerProcessBaking, Styles.enableWorkerProcessBaking);
 
-                EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
-
-                if (m_ExportTrainingData.boolValue && !m_ExportTrainingData.hasMultipleDifferentValues)
+                if (!usingComputeLightBaker)
                 {
                     EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 
@@ -1082,7 +1080,16 @@ namespace UnityEditor
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
             if (!usingComputeLightBaker)
+            {
                 rect = EditorGUI.PrefixLabel(rect, Styles.bakeBackend);
+
+                // When switching away from Unity Compute, reset to Progressive GPU if still set to Unity Compute
+                if (m_BakeBackend.intValue == 3)
+                {
+                    m_BakeBackend.intValue = (int)LightingSettings.Lightmapper.ProgressiveGPU;
+                    m_BakeBackend.serializedObject.ApplyModifiedProperties();
+                }
+            }
             else
                 rect = EditorGUI.PrefixLabel(rect, Styles.generalBakingSettings);
 

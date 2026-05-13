@@ -128,6 +128,14 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Marks the generated <see cref="UxmlSerializedData"/> class as a partial class, allowing you to extend it such as when using <see cref="IUxmlSerializedDataCustomAttributeHandler"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    internal sealed class UxmlPartialSerializedDataAttribute : Attribute
+    {
+    }
+
+    /// <summary>
     /// Declares a method to create instances in place of the default constructor.
     /// </summary>
     /// <remarks>
@@ -148,6 +156,14 @@ namespace UnityEngine.UIElements
     /// </example>
     [AttributeUsage(AttributeTargets.Method)]
     public class UxmlCreateInstanceMethodAttribute : Attribute
+    {
+    }
+
+    ///<summary>
+    /// Indicates that the generated field should have internal access.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    internal sealed class UxmlInternalFieldAttribute : Attribute
     {
     }
 

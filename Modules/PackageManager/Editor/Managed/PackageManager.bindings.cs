@@ -112,4 +112,12 @@ namespace UnityEditor.PackageManager
     {
         public static extern void SetAssetsToBeModified(string[] assetsAllowedToBeModified);
     }
+
+    [NativeHeader("Modules/PackageManager/Editor/PackageManagerPackageTrustLevel.h")]
+    [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
+    internal class PackageTrustLevel
+    {
+        public static extern bool HasBypassPackageTrustEntitlement();
+    }
+    
 }

@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignContent = new(StylePropertyId.AlignContent);
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignItems = new(StylePropertyId.AlignItems);
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignSelf = new(StylePropertyId.AlignSelf);
+        private StylePropertyData<StyleEnum<AnimationPlayState>, AnimationPlayState> m_AnimationPlayState = new(StylePropertyId.AnimationPlayState);
         private StylePropertyData<StyleRatio, Ratio> m_AspectRatio = new(StylePropertyId.AspectRatio);
         private StylePropertyData<StyleColor, Color> m_BackgroundColor = new(StylePropertyId.BackgroundColor);
         private StylePropertyData<StyleBackground, Background> m_BackgroundImage = new(StylePropertyId.BackgroundImage);
@@ -84,6 +85,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleList<StylePropertyName>, List<StylePropertyName>> m_TransitionProperty = new(StylePropertyId.TransitionProperty);
         private StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> m_TransitionTimingFunction = new(StylePropertyId.TransitionTimingFunction);
         private StylePropertyData<StyleTranslate, Translate> m_Translate = new(StylePropertyId.Translate);
+        private StylePropertyData<StyleUIAnimationClip, UIAnimationClip> m_UnityAnimationClip = new(StylePropertyId.UnityAnimationClip);
         private StylePropertyData<StyleColor, Color> m_UnityBackgroundImageTintColor = new(StylePropertyId.UnityBackgroundImageTintColor);
         private StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> m_UnityEditorTextRenderingMode = new(StylePropertyId.UnityEditorTextRenderingMode);
         private StylePropertyData<StyleFont, Font> m_UnityFont = new(StylePropertyId.UnityFont);
@@ -127,6 +129,9 @@ namespace UnityEngine.UIElements
 
         [CreateProperty]
         public StylePropertyData<StyleEnum<Align>, Align> alignSelf => m_AlignSelf;
+
+        [CreateProperty]
+        public StylePropertyData<StyleEnum<AnimationPlayState>, AnimationPlayState> animationPlayState => m_AnimationPlayState;
 
         [CreateProperty]
         public StylePropertyData<StyleRatio, Ratio> aspectRatio => m_AspectRatio;
@@ -310,6 +315,9 @@ namespace UnityEngine.UIElements
 
         [CreateProperty]
         public StylePropertyData<StyleTranslate, Translate> translate => m_Translate;
+
+        [CreateProperty]
+        public StylePropertyData<StyleUIAnimationClip, UIAnimationClip> unityAnimationClip => m_UnityAnimationClip;
 
         [CreateProperty]
         public StylePropertyData<StyleColor, Color> unityBackgroundImageTintColor => m_UnityBackgroundImageTintColor;
@@ -549,6 +557,13 @@ namespace UnityEngine.UIElements
             notify |= ApplyContext(ref m_AlignSelf, in context);
             if (notify)
                 Notify(nameof(alignSelf));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_AnimationPlayState, element.style.animationPlayState);
+            notify |= SetComputedValue(ref m_AnimationPlayState, element.computedStyle.animationPlayState);
+            notify |= ApplyContext(ref m_AnimationPlayState, in context);
+            if (notify)
+                Notify(nameof(animationPlayState));
 
             notify = false;
             notify |= SetInlineValue(ref m_AspectRatio, element.style.aspectRatio);
@@ -976,6 +991,13 @@ namespace UnityEngine.UIElements
             notify |= ApplyContext(ref m_Translate, in context);
             if (notify)
                 Notify(nameof(translate));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityAnimationClip, element.style.unityAnimationClip);
+            notify |= SetComputedValue(ref m_UnityAnimationClip, element.computedStyle.unityAnimationClip);
+            notify |= ApplyContext(ref m_UnityAnimationClip, in context);
+            if (notify)
+                Notify(nameof(unityAnimationClip));
 
             notify = false;
             notify |= SetInlineValue(ref m_UnityBackgroundImageTintColor, element.style.unityBackgroundImageTintColor);

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor;
 
@@ -48,6 +49,10 @@ public sealed class NodeAttribute : Attribute
     /// <seealso cref="INode.Title"/>
     /// <seealso cref="CategoryPath"/>
     public string Title { get; }
+    /// <summary>
+    /// Path to a stylesheet (.uss) for customizing the appearance of the <see cref="VisualElement"/> of this node.
+    /// </summary>
+    public string Stylesheet { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NodeAttribute"/> class.
@@ -80,5 +85,20 @@ public sealed class NodeAttribute : Attribute
         CategoryPath = categoryPath;
         IconPath = iconPath;
         Title = title;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodeAttribute"/> class.
+    /// </summary>
+    /// <param name="categoryPath">The category path of the node in the graph item library.</param>
+    /// <param name="iconPath">The file path to the node's icon.</param>
+    /// <param name="title">The title of the node in the graph item library. It is also used as the title of this node when it is instantiated in a graph.</param>
+    /// <param name="stylesheet">Path to a stylesheet (.uss) used to customize the node's VisualElement appearance.</param>
+    public NodeAttribute(string categoryPath, string iconPath, string title, string stylesheet)
+    {
+        CategoryPath = categoryPath;
+        IconPath = iconPath;
+        Title = title;
+        Stylesheet = stylesheet;
     }
 }

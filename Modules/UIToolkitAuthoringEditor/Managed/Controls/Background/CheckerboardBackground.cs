@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -15,20 +14,9 @@ namespace Unity.UIToolkit.Editor
 {
     [MovedFrom(true, "Unity.UI.Builder", "UnityEditor.UIBuilderModule")]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class CheckerboardBackground : VisualElement
+    [UxmlElement]
+    partial class CheckerboardBackground : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new CheckerboardBackground();
-        }
-
         static readonly CustomStyleProperty<int> k_CellSizeProperty = new CustomStyleProperty<int>("--cell-size");
         static readonly CustomStyleProperty<Color> k_OddCellColorProperty = new CustomStyleProperty<Color>("--odd-cell-color");
         static readonly CustomStyleProperty<Color> k_EvenCellColorProperty = new CustomStyleProperty<Color>("--even-cell-color");

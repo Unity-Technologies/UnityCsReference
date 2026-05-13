@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -47,46 +46,13 @@ namespace UnityEngine.UIElements
     /// to align with other fields in the Inspector window. If there are IMGUI fields present,
     /// UI Toolkit fields are aligned with them for consistency and compatibility.</para>
     /// </summary>
+    [UxmlElement]
     public abstract partial class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel, IEditableElement
     {
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly BindingId valueProperty = nameof(value);
         internal static readonly BindingId labelProperty = nameof(label);
         internal static readonly BindingId showMixedValueProperty = nameof(showMixedValue);
-
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(label), "label"),
-                    new (nameof(value), "value"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineTextField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            [SerializeField] TValueType value;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            /// Used by <see cref="IUxmlSerializedDataCustomAttributeHandler"/> to set the value from legacy field values
-            internal TValueType Value { set => this.value = value; get => this.value; }
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BaseField<TValueType>)obj;
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                    e.label = label;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.SetValueWithoutNotify(value);
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -245,12 +211,15 @@ namespace UnityEngine.UIElements
         /// This is the <see cref="Label"/> object that appears beside the input for the field.
         /// </summary>
         public Label labelElement { get; private set; }
+
         /// <summary>
         /// The string representing the label that will appear beside the field.
         /// If the string is empty, the label element is removed from the hierarchy.
         /// If the string is not empty, the label element is added to the hierarchy.
         /// </summary>
         [CreateProperty]
+        [MultilineTextField]
+        [UxmlAttribute]
         public string label
         {
             get
@@ -279,6 +248,14 @@ namespace UnityEngine.UIElements
                     NotifyPropertyChanged(labelProperty);
                 }
             }
+        }
+
+        // Used for UXML as UxmlAttribute can not be used on virtual properties.
+        [UxmlAttribute("value"), UxmlAttributeBindingPath(nameof(value)), UxmlInternalField]
+        internal TValueType valueUXML
+        {
+            get => value;
+            set => SetValueWithoutNotify(value);
         }
 
         bool m_ShowMixedValue;
@@ -358,8 +335,8 @@ namespace UnityEngine.UIElements
                 AddToClassList(noLabelVariantUssClassNameUnique);
             }
 
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            Callbacks.OnAttachToPanel.Register(this);
+            Callbacks.OnDetachFromPanel.Register(this);
 
             m_VisualInput = null;
         }
@@ -427,13 +404,16 @@ namespace UnityEngine.UIElements
             m_LabelExtraPadding = 37.0f;
             m_LabelBaseMinWidth = 123.0f;
 
-            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            Callbacks.OnCustomStyleResolved.Register(this);
+            Callbacks.OnInspectorFieldGeometryChanged.Register(this);
             AddToClassList(inspectorFieldUssClassNameUnique);
-            RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent e)
         {
+            Callbacks.OnInspectorFieldGeometryChanged.Unregister(this);
+            Callbacks.OnCustomStyleResolved.Unregister(this);
+
             UnregisterEditingCallbacks();
 
             onValidateValue = null;
@@ -441,14 +421,14 @@ namespace UnityEngine.UIElements
 
         internal virtual void RegisterEditingCallbacks()
         {
-            RegisterCallback<FocusInEvent>(StartEditing);
-            RegisterCallback<FocusOutEvent>(EndEditing);
+            Callbacks.OnFocusInStartEditing.Register(this);
+            Callbacks.OnFocusOutEndEditing.Register(this);
         }
 
         internal virtual void UnregisterEditingCallbacks()
         {
-            UnregisterCallback<FocusInEvent>(StartEditing);
-            UnregisterCallback<FocusOutEvent>(EndEditing);
+            Callbacks.OnFocusOutEndEditing.Unregister(this);
+            Callbacks.OnFocusInStartEditing.Unregister(this);
         }
 
         internal void StartEditing(EventBase e)
@@ -613,6 +593,22 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+        }
+
+        private static class Callbacks
+        {
+            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnAttachToPanel =
+                EventCallback.Create<AttachToPanelEvent, BaseField<TValueType>>(static (e, self) => self.OnAttachToPanel(e));
+            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnDetachFromPanel =
+                EventCallback.Create<DetachFromPanelEvent, BaseField<TValueType>>(static (e, self) => self.OnDetachFromPanel(e));
+            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnCustomStyleResolved =
+                EventCallback.Create<CustomStyleResolvedEvent, BaseField<TValueType>>(static (e, self) => self.OnCustomStyleResolved(e));
+            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnInspectorFieldGeometryChanged =
+                EventCallback.Create<GeometryChangedEvent, BaseField<TValueType>>(static (e, self) => self.OnInspectorFieldGeometryChanged(e));
+            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnFocusInStartEditing =
+                EventCallback.Create<FocusInEvent, BaseField<TValueType>>(static (e, self) => self.StartEditing(e));
+            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnFocusOutEndEditing =
+                EventCallback.Create<FocusOutEvent, BaseField<TValueType>>(static (e, self) => self.EndEditing(e));
         }
     }
 }

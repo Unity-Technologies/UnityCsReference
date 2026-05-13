@@ -12,7 +12,8 @@ namespace UnityEditor.Accessibility
     /// <summary>
     /// Search field used to search items by id, label or role in a accessibility hierarchy tree view.
     /// </summary>
-    internal class TreeViewSearchBar : VisualElement
+    [UxmlElement]
+    internal partial class TreeViewSearchBar : VisualElement
     {
         private static readonly string s_UssClassName = "hierarchy-tree-view__search-bar";
         private static readonly string s_HiddenElementUssClassName = "hierarchy-tree-view__search-bar__element-hidden";
@@ -26,12 +27,6 @@ namespace UnityEditor.Accessibility
         class SearchResultItem
         {
             public int itemId;
-        }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new TreeViewSearchBar();
         }
 
         private List<SearchResultItem> m_FoundItems;

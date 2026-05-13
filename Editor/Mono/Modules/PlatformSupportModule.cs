@@ -528,6 +528,7 @@ namespace UnityEditor.Modules
         public Guid productGUID;
         public BuildOptions options;
         public Build.Reporting.BuildReport report;
+        public string[] defineConstraints;
         internal RuntimeClassRegistry usedClassRegistry;
     }
 

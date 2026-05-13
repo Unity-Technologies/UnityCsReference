@@ -21,8 +21,15 @@ namespace UnityEditor.UIElements
         private static string[] k_AssetsFolderFilter = new[] { k_AssetsFolder };
 
         /// <summary>
-        /// Returns a PanelSettings from the project if one exists, otherwise creates one with the project default theme and saves it.
+        /// Returns a PanelSettings from the project if one exists, otherwise creates one with the
+        /// appropriate theme and saves it.
         /// </summary>
+        /// <remarks>
+        /// Theme resolution priority:
+        /// 1. The project-level runtime theme from UIToolkitProjectSettings, if configured.
+        /// 2. An existing ThemeStyleSheet asset in the project.
+        /// 3. A newly created default theme file (project-local .tss that is included in builds).
+        /// </remarks>
         internal static PanelSettings GetPanelSettingsFromProjectOrCreate()
         {
             var guids = AssetDatabase.FindAssets(k_AssetSearchByTypePanelSettings, k_AssetsFolderFilter);
@@ -32,8 +39,10 @@ namespace UnityEditor.UIElements
                     AssetDatabase.GUIDToAssetPath(guids[0]));
             }
 
-            var (_, projectTheme) = ThemeUtility.GetProjectDefaultTheme(false);
-            var themeToUse = projectTheme ?? PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme();
+            var projectRuntimeTheme = UIToolkitProjectSettings.defaultRuntimeTheme;
+            var themeToUse = projectRuntimeTheme != null
+                ? projectRuntimeTheme
+                : PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme();
             var panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
             panelSettings.themeStyleSheet = themeToUse;
             panelSettings.AssignICUData();

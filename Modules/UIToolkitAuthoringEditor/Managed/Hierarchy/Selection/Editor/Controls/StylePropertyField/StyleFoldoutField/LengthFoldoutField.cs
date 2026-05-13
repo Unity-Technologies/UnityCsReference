@@ -2,29 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal abstract class LengthFoldoutField : StyleFoldoutField<TextField>
+    [UxmlElement]
+    internal abstract partial class LengthFoldoutField : StyleFoldoutField<TextField>
     {
         static readonly string TextUssClassName = FoldoutFieldPropertyName + "__textfield";
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleFoldoutField<TextField>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleFoldoutField<TextField>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
 
         public StyleLengthField topField { get; protected set; }
         public StyleLengthField rightField { get; protected set; }
@@ -206,14 +194,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class PaddingFoldoutField : LengthFoldoutField
+    [UxmlElement]
+    internal partial class PaddingFoldoutField : LengthFoldoutField
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : LengthFoldoutField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new PaddingFoldoutField();
-        }
-
         private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/Controls/PaddingFoldoutField.uxml";
 
         protected override string topPropertyName => "paddingTop";
@@ -235,14 +218,9 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    internal class MarginFoldoutField : LengthFoldoutField
+    [UxmlElement]
+    internal partial class MarginFoldoutField : LengthFoldoutField
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : LengthFoldoutField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new MarginFoldoutField();
-        }
-
         private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/Controls/MarginFoldoutField.uxml";
 
         protected override string topPropertyName => "marginTop";

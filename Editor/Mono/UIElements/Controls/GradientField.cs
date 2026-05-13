@@ -15,6 +15,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for editing an <see cref="Gradient"/>. For more information, refer to [[wiki:UIE-uxml-element-GradientField|UXML element GradientField]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/GradientField.png")]
     public partial class GradientField : BaseField<Gradient>
     {
@@ -25,19 +26,6 @@ namespace UnityEditor.UIElements
         static readonly GradientColorKey k_WhiteKeyEnd = new GradientColorKey(Color.white, 1);
         static readonly GradientAlphaKey k_AlphaKeyBegin = new GradientAlphaKey(1, 0);
         static readonly GradientAlphaKey k_AlphaKeyEnd = new GradientAlphaKey(1, 1);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Gradient>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Gradient>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new GradientField();
-        }
 
         private bool m_ValueNull;
         // The GradientPicker will change the values in the arrays directly and will send commands to keep everything

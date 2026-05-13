@@ -206,11 +206,6 @@ namespace UnityEditor.Search
             m_ToolbarSearchField = m_SearchToolbar.searchField.searchField;
             m_ToolbarSearchField.RegisterValueChangedCallback(HandleTextFieldChanged);
             m_TextField = m_ToolbarSearchField?.Q<TextField>();
-
-            // Ensure the TextElement uses Standard text generator to avoid cursor index issues
-            var textElement = m_TextField?.Q<TextElement>();
-            if (textElement != null)
-                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
         }
 
         void ClearSearchField()
@@ -238,11 +233,6 @@ namespace UnityEditor.Search
         void Show()
         {
             m_AboutToFocusWindow = false;
-
-            // Ensure the TextElement uses Standard text generator before accessing cursorIndex
-            var textElement = m_TextField?.Q<TextElement>();
-            if (textElement != null)
-                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
 
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
             propositions = new List<SearchProposition>(SearchProposition.Fetch(context, options));
@@ -363,10 +353,7 @@ namespace UnityEditor.Search
 
             var textElement = m_TextField.Q<TextElement>();
             if (textElement != null)
-            {
-                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
                 textElement.generateVisualContent += HandleTextElementGenerateVisualContent;
-            }
         }
 
         void HandleTextElementGenerateVisualContent(MeshGenerationContext obj)
@@ -460,11 +447,6 @@ namespace UnityEditor.Search
 
         void HandleTextFieldChanged(ChangeEvent<string> evt)
         {
-            // Ensure the TextElement uses Standard text generator before accessing cursorIndex
-            var textElement = m_TextField?.Q<TextElement>();
-            if (textElement != null)
-                textElement.style.unityTextGenerator = TextGeneratorType.Standard;
-
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
             propositions = new List<SearchProposition>(SearchProposition.Fetch(context, options));
             propositions.Sort();

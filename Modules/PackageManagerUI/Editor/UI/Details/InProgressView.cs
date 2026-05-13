@@ -7,14 +7,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class InProgressView : VisualElement
+    [UxmlElement]
+    internal partial class InProgressView : VisualElement
     {
-        [Serializable]
-        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new InProgressView();
-        }
-
         private readonly Label m_Title;
         private readonly LoadingSpinner m_Spinner;
         private readonly Label m_Description;

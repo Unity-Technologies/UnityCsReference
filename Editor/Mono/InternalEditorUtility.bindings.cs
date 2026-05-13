@@ -158,6 +158,61 @@ namespace UnityEditorInternal
             get;
         }
 
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static bool IsReadOnlyAsset(string assetPath, out bool isEngineAsset)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                isEngineAsset = false;
+                return true;
+            }
+
+            if (!AssetModificationProcessorInternal.IsOpenForEdit(assetPath, out string message, StatusQueryOptions.UseCachedIfPossible))
+            {
+                // Asset is from a readonly package
+                isEngineAsset = false;
+                return true;
+            }
+
+            var normalizedPath = assetPath.Replace('\\', '/').ToLowerInvariant();
+
+            if (normalizedPath.StartsWith("library") ||
+                normalizedPath.EndsWith("/unity_builtin_extra"))
+            {
+                // Built-in asset
+                isEngineAsset = true;
+                return true;
+            }
+
+            isEngineAsset = false;
+            return false;
+        }
+
+        // This function is used by Editor code to display warning messages specifically for modifiable meshes from code.
+        // For sake of simplicity, we consider Mesh cannot be modified if any of these statement is true :
+        // - It's stored inside a readonly package
+        // - It's an engine asset (primitives defined in the engine like cube, quad...)
+        // - It's stored inside a scene
+        // - It's stored inside a .asset (because multiple meshes can be stored inside an asset, and we cannot assume they should be modified the same way, like for a ModelImporter)
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static bool CanMeshBeModifiedFromCode(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+                return false; // Note: this include also assets stored inside scene (AssetDatabase.GetAssetPath() returns empty string for such assets)
+
+            if (IsReadOnlyAsset(assetPath, out _))
+                return false;
+
+            if (Path.GetExtension(assetPath) == ".mesh")
+                return true; // Non readonly .mesh files can be modified
+
+            if (AssetImporter.GetAtPath(assetPath) is ModelImporter)
+                return true; // Non readonly mesh from ModelImporter can be modified
+
+            // This include meshes stored inside .asset files.
+            return false;
+        }
+
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
         public extern static bool BumpMapTextureNeedsFixingInternal([NotNull] Material material, string propName, bool flaggedAsNormal);
 
@@ -187,11 +242,124 @@ namespace UnityEditorInternal
         [FreeFunction("ImportTextureAsReadable")]
         internal extern static void ImportTextureAsReadable([NotNull] Texture texture);
 
-        internal static bool DrawWarningHelpBoxWithButton(GUIContent messageContent, GUIContent buttonContent)
+        internal static bool ImportMeshAsReadable(Mesh mesh)
+        {
+            var assetPath = AssetDatabase.GetAssetPath(mesh);
+            return ImportMeshAsReadable(assetPath);
+        }
+
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static bool ImportMeshAsReadable(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+                return false;
+
+            if (Path.GetExtension(assetPath) == ".mesh")
+            {
+                var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+                if (mesh == null)
+                {
+                    Debug.LogError("Could not load Mesh");
+                    return false;
+                }
+
+                mesh.isReadable = true;
+                EditorUtility.SetDirty(mesh);
+                AssetDatabase.SaveAssetIfDirty(mesh);
+            }
+            else
+            {
+                var modelImporter = AssetImporter.GetAtPath(assetPath) as ModelImporter;
+                if (modelImporter == null)
+                {
+                    Debug.LogError("Mesh importer not found.");
+                    return false;
+                }
+
+                modelImporter.isReadable = true;
+                modelImporter.SaveAndReimport();
+            }
+
+            return true;
+        }
+
+        internal static bool ImportMeshWithPreBakeCollision(Mesh mesh, bool isConvex)
+        {
+            var assetPath = AssetDatabase.GetAssetPath(mesh);
+            return ImportMeshWithPreBakeCollision(assetPath, isConvex);
+        }
+
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static bool ImportMeshWithPreBakeCollision(string assetPath, bool isConvex)
+        {
+            if (Path.GetExtension(assetPath) == ".mesh")
+            {
+                var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+                if (mesh == null)
+                {
+                    Debug.LogError("Could not load Mesh");
+                    return false;
+                }
+
+                mesh.SetPreBakeCollisionMeshInternal(isConvex, true);
+                EditorUtility.SetDirty(mesh);
+                AssetDatabase.SaveAssetIfDirty(mesh);
+            }
+            else
+            {
+                var modelImporter = AssetImporter.GetAtPath(assetPath) as ModelImporter;
+                if (modelImporter == null)
+                {
+                    Debug.LogError("Mesh importer not found.");
+                    return false;
+                }
+
+                if (isConvex)
+                {
+                    modelImporter.preBakeConvexCollisionMesh = true;
+                }
+                else
+                {
+                    modelImporter.preBakeTriangleCollisionMesh = true;
+                }
+                modelImporter.SaveAndReimport();
+            }
+
+            return true;
+        }
+
+        internal static void DrawMeshNotReadableHelpBox(Mesh mesh, string componentName)
+        {
+            if (mesh == null)
+                return;
+
+            string meshPath = AssetDatabase.GetAssetPath(mesh);
+
+            var message = $"Read/Write is disabled on mesh '{mesh.name}'. It is required by '{componentName}' to access vertex data at runtime. In future versions of Unity, the build process will no longer automatically enable Read/Write on the mesh referenced by '{componentName}'.";
+            if (CanMeshBeModifiedFromCode(meshPath))
+            {
+                if (DrawWarningHelpBoxWithButton(
+                    EditorGUIUtility.TrTextContent(message),
+                    EditorGUIUtility.TrTextContent("Enable")))
+                {
+                    ImportMeshAsReadable(mesh);
+                }
+            }
+            else
+            {
+                if (DrawWarningHelpBoxWithButton(
+                    EditorGUIUtility.TrTextContent(message),
+                    EditorGUIUtility.TrTextContent("View")))
+                {
+                    Selection.objects = new UnityEngine.Object[] { mesh };
+                }
+            }
+        }
+
+        internal static bool DrawWarningHelpBoxWithButton(GUIContent messageContent, GUIContent buttonContent, float buttonWidth = 70.0f)
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                const float kButtonWidth = 70f;
                 const float kButtonHeight = 20f;
 
                 // Helpbox with text
@@ -203,7 +371,7 @@ namespace UnityEditorInternal
 
                 // Button (align lower right)
                 Rect buttonRectPlaceholder = GUILayoutUtility.GetRect(1, kButtonHeight);
-                Rect buttonRect = new Rect(contentRect.xMax - kButtonWidth - 8f, buttonRectPlaceholder.yMin, kButtonWidth, kButtonHeight);
+                Rect buttonRect = new Rect(contentRect.xMax - buttonWidth - 8f, buttonRectPlaceholder.yMin, buttonWidth, kButtonHeight);
                 var buttonPressed = GUI.Button(buttonRect, buttonContent);
                 GUILayout.Space(6f);
                 return buttonPressed;
@@ -1105,11 +1273,6 @@ namespace UnityEditorInternal
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
         internal static extern void RegisterSetDefaultParentObjectUndo(Scene scene, EntityId entityId, string undoName);
-
-        // Aux window functionality is quite brittle. It is strongly advised to avoid
-        // using this method but if you really need it, consult Desktop team first.
-        [StaticAccessor("GetAuxWindowManager()", StaticAccessorType.Dot)]
-        internal static extern void RetainAuxWindows();
 
         [FreeFunction]
         internal static extern bool IsPlaybackEngineDisabled(string engineName);

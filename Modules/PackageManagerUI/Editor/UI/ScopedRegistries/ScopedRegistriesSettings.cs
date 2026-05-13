@@ -9,7 +9,8 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ScopedRegistriesSettings : VisualElement
+    [UxmlElement]
+    internal partial class ScopedRegistriesSettings : VisualElement
     {
         private const string k_NewRegistryClass = "newRegistry";
         private const string k_SelectedScopeClass = "selectedScope";
@@ -22,21 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string k_RegistrySelectionChange = L10n.Tr("Registry Selection Change");
         private string k_RestrictedRegistry = L10n.Tr("Restricted Registry");
 
-        [Serializable]
-        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new ScopedRegistriesSettings(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IProjectSettingsProxy>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IUpmCache>(),
-                    container.Resolve<IUpmRegistryClient>(),
-                    container.Resolve<ICustomDisplayDialog>());
-            }
-        }
         private Dictionary<string, RegistryItem> m_ExistingRegistryItems = new ();
 
         private readonly RegistryItem m_NewScopedRegistryItem;
@@ -48,6 +34,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUpmCache m_UpmCache;
         private readonly IUpmRegistryClient m_UpmRegistryClient;
         private readonly ICustomDisplayDialog m_CustomDisplayDialog;
+
+        public ScopedRegistriesSettings() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IProjectSettingsProxy>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IUpmCache>(),
+            ServicesContainer.instance.Resolve<IUpmRegistryClient>(),
+            ServicesContainer.instance.Resolve<ICustomDisplayDialog>())
+        {
+        }
+
         public ScopedRegistriesSettings(
             IResourceLoader resourceLoader,
             IProjectSettingsProxy settingsProxy,

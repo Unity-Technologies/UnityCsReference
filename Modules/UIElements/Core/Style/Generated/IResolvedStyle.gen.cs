@@ -31,6 +31,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         Align alignSelf { get; }
         /// <summary>
+        /// Controls whether the animation is running or paused.
+        /// </summary>
+        AnimationPlayState animationPlayState { get; }
+        /// <summary>
         /// Sets a preferred aspect ratio for the box, which will be used in the calculation of auto sizes and some other layout functions.
         /// </summary>
         Ratio aspectRatio { get; }
@@ -282,6 +286,10 @@ namespace UnityEngine.UIElements
         /// A translate transformation.
         /// </summary>
         Vector3 translate { get; }
+        /// <summary>
+        /// Animation to apply with the current element as root.
+        /// </summary>
+        UIAnimationClip unityAnimationClip { get; }
         /// <summary>
         /// Tinting color for the element's backgroundImage.
         /// </summary>

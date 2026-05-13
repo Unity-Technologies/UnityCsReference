@@ -119,6 +119,14 @@ namespace UnityEngine.UIElements
         /// Some property changed that potentially invalidates cached Picking results
         /// </summary>
         Picking = 1 << 20,
+        /// <summary>
+        /// Some property changed that potentially changes animation playback state results
+        /// </summary>
+        AnimationProperty = 1 << 21,
+        /// <summary>
+        /// The element's <see cref="VisualElement.name"/> changed.
+        /// </summary>
+        Name = 1 << 22,
     }
 
     /// <summary>
@@ -273,14 +281,6 @@ namespace UnityEngine.UIElements
         public Color color;
     }
 
-    internal class RepaintData
-    {
-        public Matrix4x4 currentOffset { get; set; } = Matrix4x4.identity;
-        public Vector2 mousePosition { get; set; }
-        public Rect currentWorldClip { get; set; }
-        public Event repaintEvent { get; set; }
-    }
-
     internal delegate void HierarchyEvent(VisualElement ve, HierarchyChangeType changeType, IReadOnlyList<VisualElement> additionalContext = null);
 
     internal interface IGlobalPanelDebugger
@@ -367,7 +367,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="VisualElement.visible"/>
         /// <seealso cref="IStyle.display"/>
         /// <seealso cref="VisualElement.pickingMode"/>
-        /// <param name="point">World coordinates.</param>
+        /// <param name="point">Coordinates in panel space.</param>
         /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement Pick(Vector2 point);
 
@@ -384,7 +384,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="VisualElement.visible"/>
         /// <seealso cref="IStyle.display"/>
         /// <seealso cref="VisualElement.pickingMode"/>
-        /// <param name="point">World coordinates.</param>
+        /// <param name="point">Coordinates in panel space.</param>
         /// <param name="picked">If not null, the list is cleared and filled with all VisualElements that overlap the specified point.</param>
         /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
@@ -568,7 +568,7 @@ namespace UnityEngine.UIElements
             return GetPanelFromHandle(panelHandle).GetMemberElementFromHandle(elementHandle);
         }
 
-        public abstract void Repaint(Event e);
+        public abstract void Repaint();
         public abstract void ValidateLayout();
         public abstract void TickSchedulingUpdaters();
         public abstract void UpdateForRepaint();
@@ -682,14 +682,12 @@ namespace UnityEngine.UIElements
         internal abstract uint version { get; }
         internal abstract uint repaintVersion { get; }
         internal abstract uint hierarchyVersion { get; }
+        internal abstract uint nameVersion { get; }
 
         // Updaters can request an panel invalidation when some callbacks aren't coming from UIElements internally
         internal abstract void RequestUpdateAfterExternalEvent(IVisualTreeUpdater updater);
         internal abstract void OnVersionChanged(VisualElement ele, VersionChangeType changeTypeFlag);
         internal abstract void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase);
-
-        // Need virtual for tests
-        internal virtual RepaintData repaintData { get; set; }
 
         // Need virtual for tests
         internal virtual ICursorManager cursorManager { get; set; }
@@ -952,6 +950,22 @@ namespace UnityEngine.UIElements
         internal Func<AbstractGenericMenu> CreateMenuFunctor;
 
         internal AbstractGenericMenu CreateMenu() => CreateMenuFunctor.Invoke();
+
+        internal void PointerLeavesPanel(int pointerId, EventBase triggerEvent = null)
+        {
+            ClearCachedElementUnderPointer(pointerId, null);
+            // Call CommitElementUnderPointers manually because recomputeTopElementUnderMouse is false.
+            CommitElementUnderPointers();
+            // Mark the pointer as outside the panel in PointerDeviceState so that
+            // UpdateElementUnderPointers (called every frame) does not re-pick the element
+            // at the last known pointer position and spuriously restore hover state.
+            PointerDeviceState.SavePointerPosition(pointerId, s_OutsidePanelCoordinates, null, contextType);
+        }
+
+        internal void PointerEntersPanel(int pointerId, Vector3 position)
+        {
+            PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
+        }
     }
 
     // Strategy to initialize the editor updater
@@ -985,6 +999,7 @@ namespace UnityEngine.UIElements
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
         private uint m_HierarchyVersion = 0;
+        private uint m_NameVersion = 0;
         private uint m_LastTickedHierarchyVersion = 0;
 
         ProfilerMarker m_MarkerPrepareRepaint;
@@ -1276,6 +1291,7 @@ namespace UnityEngine.UIElements
         internal override uint version => m_Version;
         internal override uint repaintVersion => m_RepaintVersion;
         internal override uint hierarchyVersion => m_HierarchyVersion;
+        internal override uint nameVersion => m_NameVersion;
 
         private AtlasBase m_Atlas;
 
@@ -1306,7 +1322,6 @@ namespace UnityEngine.UIElements
             this.ownerObject = ownerObject;
             this.contextType = contextType;
             this.dispatcher = dispatcher;
-            repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;
             dataBindingManager = new DataBindingManager(this);
@@ -1329,6 +1344,68 @@ namespace UnityEngine.UIElements
             atlas = new DynamicAtlas();
         }
 
+        #region Per-element animation binders
+
+        Dictionary<VisualElement, UIAnimationBinder> m_ElementBinders;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal UIAnimationBinder GetOrCreateElementBinder(VisualElement element)
+        {
+            m_ElementBinders ??= new Dictionary<VisualElement, UIAnimationBinder>();
+
+            if (m_ElementBinders.TryGetValue(element, out var existingBinder) && existingBinder != null)
+                return existingBinder;
+
+            var binder = UIAnimationBinder.Create();
+            binder.RegisterRootDocument(element, true);
+            m_ElementBinders[element] = binder;
+            return binder;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal UIAnimationBinder GetElementBinder(VisualElement element)
+        {
+            if (m_ElementBinders == null)
+                return null;
+
+            m_ElementBinders.TryGetValue(element, out var binder);
+            return binder;
+        }
+
+        internal void DestroyElementBinder(VisualElement element)
+        {
+            if (m_ElementBinders == null)
+                return;
+
+            if (m_ElementBinders.TryGetValue(element, out var binder))
+            {
+                if (binder != null)
+                {
+                    binder.DeactivateAnimation();
+                    Object.DestroyImmediate(binder);
+                }
+                m_ElementBinders.Remove(element);
+            }
+        }
+
+        internal void DestroyAllElementBinders()
+        {
+            if (m_ElementBinders == null)
+                return;
+
+            foreach (var kvp in m_ElementBinders)
+            {
+                if (kvp.Value != null)
+                {
+                    kvp.Value.DeactivateAnimation();
+                    Object.DestroyImmediate(kvp.Value);
+                }
+            }
+            m_ElementBinders.Clear();
+        }
+
+        #endregion
+
         protected override void Dispose(bool disposing)
         {
             if (disposed)
@@ -1336,6 +1413,7 @@ namespace UnityEngine.UIElements
 
             if (disposing)
             {
+                DestroyAllElementBinders();
                 atlas = null;
                 visualTree.Clear();
                 m_VisualTreeUpdater.Dispose();
@@ -1558,12 +1636,10 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static event Action<Panel> afterRepaint;
 
-        public override void Repaint(Event e)
+        public override void Repaint()
         {
             using var scope = new IMGUIContainer.UITKScope();
             m_RepaintVersion = version;
-
-            repaintData.repaintEvent = e;
 
             InvokeBeforeUpdate();
 
@@ -1575,7 +1651,7 @@ namespace UnityEngine.UIElements
             }
 
             panelDebug?.Refresh();
-            (panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(e);
+            (panelDebug?.debuggerOverlayPanel as Panel)?.Repaint();
             afterRepaint?.Invoke(this);
         }
 
@@ -1610,6 +1686,9 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 ++m_HierarchyVersion;
+
+            if ((versionChangeType & VersionChangeType.Name) == VersionChangeType.Name)
+                ++m_NameVersion;
 
             panelDebug?.OnVersionChanged(ve, versionChangeType);
         }
@@ -1834,18 +1913,6 @@ namespace UnityEngine.UIElements
                 foreach (var component in components)
                     component.panel = panel;
             }
-        }
-
-        internal void PointerLeavesPanel(int pointerId)
-        {
-            ClearCachedElementUnderPointer(pointerId, null);
-            CommitElementUnderPointers();
-            PointerDeviceState.SavePointerPosition(pointerId, s_OutsidePanelCoordinates, null, contextType);
-        }
-
-        internal void PointerEntersPanel(int pointerId, Vector3 position)
-        {
-            PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
         }
     }
 

@@ -41,7 +41,7 @@ namespace Unity.UI.Builder
             foreach (var x in dataFields)
             {
                 var serializedAttribute = x.GetLinkedAttributeDescription();
-                if (serializedAttribute.serializedField.Name == propertyPath)
+                if (serializedAttribute.serializedField.Name == propertyPath || serializedAttribute.bindingPath == propertyPath)
                 {
                     yield return x;
                     yield break;
@@ -77,7 +77,21 @@ namespace Unity.UI.Builder
             var bindingProperty = GetBindingProperty(fieldElement);
 
             return inspector.attributeSection.context.uxmlSerializedData is VisualElement.UxmlSerializedData serializedData &&
-                serializedData.HasBindingInternal(bindingProperty);
+                HasBindingInternal(serializedData, bindingProperty);
+        }
+
+        static bool HasBindingInternal(VisualElement.UxmlSerializedData serializedDatastring, string property)
+        {
+            if (serializedDatastring.bindings == null)
+                return false;
+
+            foreach (var binding in serializedDatastring.bindings)
+            {
+                if (binding.property == property)
+                    return true;
+            }
+
+            return false;
         }
 
         // Useful for loading the Builder inspector's icons
@@ -86,6 +100,14 @@ namespace Unity.UI.Builder
             return EditorGUIUtility.Load(EditorGUIUtility.isProSkin
                 ? $"{BuilderConstants.IconsResourcesPath}/Dark/Inspector/{subfolder}{iconName}.png"
                 : $"{BuilderConstants.IconsResourcesPath}/Light/Inspector/{subfolder}{iconName}.png") as Texture2D;
+        }
+
+        // Useful for loading icons from the authoring module
+        public static Texture2D LoadIcon(string iconName, string subfolder, string iconsRootPath)
+        {
+            return EditorGUIUtility.Load(EditorGUIUtility.isProSkin
+                ? $"{iconsRootPath}/Dark/Inspector/{subfolder}{iconName}.png"
+                : $"{iconsRootPath}/Light/Inspector/{subfolder}{iconName}.png") as Texture2D;
         }
     }
 }

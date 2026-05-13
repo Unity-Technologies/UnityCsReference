@@ -113,7 +113,7 @@ namespace Unity.Scripting.LifecycleManagement
 
         internal static void InitializeForIl2Cpp(IScriptingCoreDebug depDebug)
         {
-            Debug.scriptingCoreDebug = depDebug;
+            Debug.ScriptingCoreDebug = depDebug;
             _instance = new LifecycleController();
         }
 
@@ -257,11 +257,12 @@ namespace Unity.Scripting.LifecycleManagement
         internal void ExitScope<TScope>()
             where TScope : LifecycleScope, new()
         {
-            ExecuteOnMainThread("Exit", nameof(TScope), () =>
+            var scopeName = typeof(TScope).Name;
+            ExecuteOnMainThread("Exit", scopeName, () =>
             {
                 if (!_lifecycleTracker.TryGetActiveScope<TScope>(out var scope))
                 {
-                    DebugLifecycle.ReportError($"Lifecycle ERROR : Cannot exit scope of type '{nameof(TScope)}', no active scope of that type found");
+                    DebugLifecycle.ReportError($"Lifecycle ERROR : Cannot exit scope of type '{scopeName}', no active scope of that type found");
                     return;
                 }
 
@@ -274,11 +275,12 @@ namespace Unity.Scripting.LifecycleManagement
             where TContext : class
             where TScope : LifecycleScopeWithContext<TContext>
         {
-            ExecuteOnMainThread("Exit", nameof(TScope), () =>
+            var scopeName = typeof(TScope).Name;
+            ExecuteOnMainThread("Exit", scopeName, () =>
             {
                 if (!_lifecycleTracker.TryGetActiveScope<TScope, TContext>(context, out var scope))
                 {
-                    DebugLifecycle.ReportError($"Lifecycle ERROR : Cannot exit scope of type '{nameof(TScope)}', no active scope of that type and context found");
+                    DebugLifecycle.ReportError($"Lifecycle ERROR : Cannot exit scope of type '{scopeName}' for context '{context}', no active scope of that type and context found");
                     return;
                 }
 

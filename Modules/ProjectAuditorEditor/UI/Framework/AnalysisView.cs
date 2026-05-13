@@ -69,6 +69,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public virtual string Description => $"A list of {m_Desc.DisplayName} found in the project.";
         public virtual bool OnlyCriticalIssues() { return false; }
+        public virtual bool OnlyPerfCriticalIssues() { return false; }
         public virtual bool OnlyFixableIssues() { return false; }
 
         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

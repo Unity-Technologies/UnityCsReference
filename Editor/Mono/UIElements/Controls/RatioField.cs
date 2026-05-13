@@ -15,22 +15,10 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for entering aspect ratio.
     /// </summary>
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class RatioField : TextValueField<Ratio>
+    internal partial class RatioField : TextValueField<Ratio>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Ratio>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TextAutoSize>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new RatioField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

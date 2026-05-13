@@ -98,7 +98,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Whether depth-based sorting should be enabled.
         /// When enabled, there is a higher load on the CPU but less rendering overdraw.
-        /// When disabled, there is less CPU pressure but more overdraw.
+        /// When disabled, there is less CPU utilization but more overdraw.
         /// </summary>
         public static bool SkipFrontToBackSorting
         {

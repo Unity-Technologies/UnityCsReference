@@ -11,9 +11,12 @@ using UnityEngine.Internal;
 
 using Object = UnityEngine.Object;
 using UnityEngine.Animations;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
+    [NativeHeader("Modules/Animation/PPtrKeyframes.h")]
+    [StructLayout(LayoutKind.Sequential)]
     public struct ObjectReferenceKeyframe
     {
         public float time;
@@ -226,10 +229,9 @@ namespace UnityEditor
         extern public static EditorCurveBinding[] GetCurveBindings([NotNull] AnimationClip clip);
         extern public static EditorCurveBinding[] GetObjectReferenceCurveBindings([NotNull] AnimationClip clip);
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static ObjectReferenceKeyframe[] GetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 
-        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]ObjectReferenceKeyframe[] keyframes)
+        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes)
         {
             Internal_SetObjectReferenceCurve(clip, binding, keyframes, true);
             Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
@@ -260,7 +262,7 @@ namespace UnityEditor
         }
 
         [NativeMethod(ThrowsException = true)]
-        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
+        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
 
         extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 
@@ -416,24 +418,10 @@ namespace UnityEditor
             return GetEditorCurve(clip, EditorCurveBinding.FloatCurve(relativePath, type, propertyName));
         }
 
-        public static AnimationEvent[] GetAnimationEvents(AnimationClip clip)
-        {
-            var blittableEvents = GetAnimationEventsInternal(clip);
-            var animationEvents = Array.ConvertAll(blittableEvents, AnimationEventBlittable.ToAnimationEvent);
-            foreach (var blittableEvent in blittableEvents)
-                blittableEvent.Dispose();
-            return animationEvents;
-        }
-        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        extern internal static AnimationEventBlittable[] GetAnimationEventsInternal([NotNull] AnimationClip clip);
-        public static void SetAnimationEvents(AnimationClip clip, AnimationEvent[] events)
-        {
-            var blittableEvents = Array.ConvertAll(events, AnimationEventBlittable.FromAnimationEvent);
-            SetAnimationEventsInternal(clip, blittableEvents);
-            foreach (var blittableEvent in blittableEvents)
-                blittableEvent.Dispose();
-        }
-        extern internal static void SetAnimationEventsInternal([NotNull] AnimationClip clip, [NotNull] AnimationEventBlittable[] events);
+        [NativeMethod("GetAnimationEventsInternal")]
+        extern public static AnimationEvent[] GetAnimationEvents([NotNull] AnimationClip clip);
+        [NativeMethod("SetAnimationEventsInternal")]
+        extern public static void SetAnimationEvents([NotNull] AnimationClip clip, [NotNull] AnimationEvent[] events);
 
         extern public static string CalculateTransformPath([NotNull] Transform targetTransform, Transform root);
 

@@ -800,5 +800,17 @@ namespace UnityEditor
         {
             PropertyEditor.OpenPropertyEditor(obj);
         }
+
+        internal static bool IsEidValid(EntityId eid)
+        {
+            if (eid == EntityId.None) return false;
+
+            if (EntityIdToObject(eid) != null) return true;
+
+            var scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(eid));
+            if (scene != null && scene.IsValid()) return true;
+
+            return false;
+        }
     }
 }

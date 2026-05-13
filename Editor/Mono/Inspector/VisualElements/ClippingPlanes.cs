@@ -10,21 +10,9 @@ using System.Diagnostics;
 
 namespace UnityEditor.Inspector
 {
-    internal class ClippingPlanes : BaseCompositeField<Vector2, FloatField, float>
+    [UxmlElement]
+    internal partial class ClippingPlanes : BaseCompositeField<Vector2, FloatField, float>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new ClippingPlanes();
-        }
-
         const string k_CompositeInputStyle = "unity-composite-field__input";
         const string k_CompositeFieldStyle = "unity-composite-field__field";
         const string k_NearClipStyle = "unity-near-clip-input";

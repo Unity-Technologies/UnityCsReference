@@ -54,6 +54,11 @@ namespace UnityEditor.VersionControl
             m_Self = CreateFromStringString(description, changeSetID);
         }
 
+        private ChangeSet(IntPtr self)
+        {
+            m_Self = self;
+        }
+
         //*undocumented
         public void Dispose()
         {
@@ -74,6 +79,7 @@ namespace UnityEditor.VersionControl
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(ChangeSet changeSet) => changeSet.m_Self;
+            public static ChangeSet ConvertToManaged(IntPtr ptr) => new ChangeSet(ptr);
         }
     }
 }

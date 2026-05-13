@@ -156,9 +156,9 @@ namespace Unity.Loading
         [NativeName("AutoIntegrate")]
         internal bool m_AutoIntegrate;
 
-        ///<summary>See <see cref="LoadSceneMode" />.</summary>
+        ///<summary>The loading mode used to determine how Unity loads the scene.</summary>
         public LoadSceneMode loadSceneMode { get { return m_LoadSceneMode; } set { m_LoadSceneMode = value; } }
-        ///<summary>See <see cref="LocalPhysicsMode" />.</summary>
+        ///<summary>The local physics mode used to determine how physics simulations are managed for the scene.</summary>
         public LocalPhysicsMode localPhysicsMode { get { return m_LocalPhysicsMode; } set { m_LocalPhysicsMode = value; } }
         ///<summary>True if the scene should be automatically integrated after the load completes. If this is set to false, the user must call <see cref="Unity.Loading.ContentSceneFile.IntegrateAtEndOfFrame" /> when they are ready to integrate.</summary>
         public bool autoIntegrate { get { return m_AutoIntegrate; } set { m_AutoIntegrate = value; } }

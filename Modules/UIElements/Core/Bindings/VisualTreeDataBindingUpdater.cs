@@ -432,6 +432,12 @@ namespace UnityEngine.UIElements
                     var wasDirty = bindingData.binding.isDirty;
                     bindingData.binding.ClearDirty();
 
+                    // Check if we should update the UI back. We are forcing the dirty flag here to make sure that the
+                    // UI will be updated if the binding mode is compatible. This is done because the source might have
+                    // changed the value that was set internally.
+                    if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateUI, true, true))
+                        continue;
+
                     var context = new BindingContext
                     (
                         element,

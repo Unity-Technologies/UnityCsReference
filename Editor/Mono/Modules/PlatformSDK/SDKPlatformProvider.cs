@@ -56,18 +56,7 @@ class SDKPlatformProvider
     SDKPlatformProvider(IPlatformProvider provider, SDKPlatformType platformType)
     {
         this.platformType = platformType;
-        providerType = provider.GetType();
-
-        guid = (GUID)providerType.GetProperty(k_Guid).GetValue(provider);
-        targetName = providerType.GetProperty(k_TargetName).GetValue(provider) as string ?? string.Empty;
-        platformDefine = providerType.GetProperty(k_PlatformDefine).GetValue(provider) as string ?? string.Empty;
-
-        shouldShowPlatformSettings = providerType.GetProperty(k_ShouldShowPlatformSettings)?.GetValue(provider) as bool? ?? true;
-        shouldShowAdditionalSettings = providerType.GetProperty(k_ShouldShowAdditionalSettings)?.GetValue(provider) as bool? ?? true;
-        shouldShowAddSettingsButton = providerType.GetProperty(k_ShouldShowAddSettingsButton)?.GetValue(provider) as bool? ?? true;
-        shouldShowBuildActions = providerType.GetProperty(k_ShouldShowBuildActions)?.GetValue(provider) as bool? ?? true;
-        requiredComponents = providerType.GetProperty(k_RequiredComponents)?.GetValue(provider) as Type[] ?? [];
-        customFooterActions = providerType.GetProperty(k_FooterActions)?.GetValue(provider) as Type[] ?? [];
+        FetchProviderProperties(provider);
 
         if (platformType == SDKPlatformType.MultiTarget)
         {
@@ -80,6 +69,32 @@ class SDKPlatformProvider
             onDerivedPlatformBuildProfileCreated = (Action<BuildProfile, int, Action<BuildProfile, int>>)providerType
                 .GetMethod(k_OnDerivedPlatformBuildProfileCreated, new[] { typeof(BuildProfile), typeof(int), typeof(Action<BuildProfile, int>) })
                 .CreateDelegate(typeof(Action<BuildProfile, int, Action<BuildProfile, int>>), provider);
+        }
+    }
+
+    void FetchProviderProperties(IPlatformProvider provider)
+    {
+        providerType = provider.GetType();
+
+        guid = GetProp(k_Guid, new GUID());
+        targetName = GetProp(k_TargetName, string.Empty);
+        platformDefine = GetProp(k_PlatformDefine, string.Empty);
+
+        shouldShowPlatformSettings = GetProp(k_ShouldShowPlatformSettings, true);
+        shouldShowAdditionalSettings = GetProp(k_ShouldShowAdditionalSettings, true);
+        shouldShowAddSettingsButton = GetProp(k_ShouldShowAddSettingsButton, true);
+        shouldShowBuildActions = GetProp(k_ShouldShowBuildActions, true);
+
+        requiredComponents = GetProp(k_RequiredComponents, Array.Empty<Type>());
+        customFooterActions = GetProp(k_FooterActions, Array.Empty<Type>());
+
+        T GetProp<T>(string propName, T defaultValue)
+        {
+            var prop = providerType.GetProperty(propName);
+            if (prop == null)
+                return defaultValue;
+            var val = prop.GetValue(provider);
+            return val is T t ? t : defaultValue;
         }
     }
 

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -52,8 +51,8 @@ namespace UnityEngine.UIElements
         EnableViewDataPersistence = 1 << 9,
         // Element needs to receive an AttachToPanel event
         NeedsAttachToPanelEvent = 1 << 11,
-        // Element style are computed
-        StyleInitialized = 1 << 13,
+        // Element has released the LayoutNode create in its constructor and can't be used anymore
+        Released = 1 << 12,
         // Element is not rendered, but we keep the generated geometry in case it is shown later
         DisableRendering = 1 << 14,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
@@ -64,10 +63,14 @@ namespace UnityEngine.UIElements
         IsWorldSpaceRootPanelComponent = 1 << 20,
         // Element wants a GeometryChangedEvent if any of its descendent receives one
         ReceivesHierarchyGeometryChangedEvents = 1 << 21,
-        // Element has released the LayoutNode create in its constructor and can't be used anymore
-        Released = 1 << 22,
         // Element itself is disabled, independently of the disabled state of its parents
-        DisabledSelf = 1 << 23,
+        DisabledSelf = 1 << 22,
+        // Element style have been initialized, so transitions can be applied to it when it changes next time
+        StyleInitialized = 1 << 23,
+        // Element styles need to be updated, implicitly applies to all its descendants
+        StyleDirty = 1 << 24,
+        // Element is an ancestor of an element with StylesDirty flag, but doesn't need to be updated itself
+        StyleAncestorOfDirty = 1 << 25,
         // Element initial flags
         Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource
     }
@@ -202,148 +205,6 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>.
-        /// </summary>
-        [Serializable]
-        public class UxmlSerializedData : UIElements.UxmlSerializedData
-        {
-            /// <summary>
-            /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-            /// </summary>
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                    {
-                        new(nameof(name), "name"),
-                        new(nameof(enabledSelf), "enabled"),
-                        new(nameof(viewDataKey), "view-data-key"),
-                        new(nameof(pickingMode), "picking-mode", null, "pickingMode"),
-                        new(nameof(tooltip), "tooltip"),
-                        new(nameof(usageHints), "usage-hints"),
-                        new(nameof(tabIndex), "tabindex"),
-                        new(nameof(focusable), "focusable"),
-                        new(nameof(languageDirection), "language-direction"),
-                        new(nameof(dataSourceUnityObject), "data-source"),
-                        new(nameof(dataSourcePathString), "data-source-path"),
-                        new(nameof(dataSourceTypeString), "data-source-type", typeof(object)),
-                        new(nameof(bindings), "Bindings"),
-                    }
-                , false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, HideInInspector] string name;
-            [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
-            [SerializeField] string tooltip;
-
-            // We use a string here because the PropertyPath struct is not serializable
-            [UxmlAttribute("data-source-path")]
-            [Tooltip(DataBinding.k_DataSourcePathTooltip)]
-            [SerializeField, HideInInspector] string dataSourcePathString;
-            [UxmlAttribute("data-source-type")]
-            [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, UxmlTypeReference(typeof(object))] string dataSourceTypeString;
-            [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [UxmlAttributeBindingPath("dataSource")]
-            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
-            [SerializeField] string viewDataKey;
-            [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
-            [SerializeField] PickingMode pickingMode;
-            [SerializeField] UsageHints usageHints;
-            [SerializeField] LanguageDirection languageDirection;
-            [UxmlAttribute("tabindex")]
-            [SerializeField] int tabIndex;
-            [SerializeField] bool focusable;
-            [UxmlAttribute("enabled"), Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")]
-            [SerializeField] bool enabledSelf;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enabledSelf_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pickingMode_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tooltip_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usageHints_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            internal string nameValue
-            {
-                [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-                get => name;
-            }
-
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal bool HasBindingInternal(string property)
-            {
-                if (bindings == null)
-                    return false;
-
-                foreach (var binding in bindings)
-                {
-                    if (binding.property == property)
-                        return true;
-                }
-
-                return false;
-            }
-
-            [ExcludeFromDocs]
-            public override object CreateInstance() => new VisualElement();
-
-            [ExcludeFromDocs]
-            public override void Deserialize(object obj)
-            {
-                var e = (VisualElement)obj;
-
-                if (ShouldWriteAttributeValue(name_UxmlAttributeFlags))
-                    e.name = name;
-                if (ShouldWriteAttributeValue(enabledSelf_UxmlAttributeFlags))
-                    e.enabledSelf = enabledSelf;
-                if (ShouldWriteAttributeValue(viewDataKey_UxmlAttributeFlags))
-                    e.viewDataKey = viewDataKey;
-                if (ShouldWriteAttributeValue(pickingMode_UxmlAttributeFlags))
-                    e.pickingMode = pickingMode;
-                if (ShouldWriteAttributeValue(tooltip_UxmlAttributeFlags))
-                    e.tooltip = tooltip;
-                if (ShouldWriteAttributeValue(usageHints_UxmlAttributeFlags))
-                    e.usageHints = usageHints;
-                if (ShouldWriteAttributeValue(tabIndex_UxmlAttributeFlags))
-                    e.tabIndex = tabIndex;
-                if (ShouldWriteAttributeValue(focusable_UxmlAttributeFlags))
-                    e.focusable = focusable;
-                if (ShouldWriteAttributeValue(dataSourceUnityObject_UxmlAttributeFlags))
-                    e.dataSourceUnityObject = dataSourceUnityObject ? dataSourceUnityObject : null;
-                if (ShouldWriteAttributeValue(dataSourcePathString_UxmlAttributeFlags))
-                    e.dataSourcePathString = dataSourcePathString;
-                if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))
-                    e.dataSourceTypeString = dataSourceTypeString;
-                if (ShouldWriteAttributeValue(languageDirection_UxmlAttributeFlags))
-                    e.languageDirection = languageDirection;
-
-                if (ShouldWriteAttributeValue(bindings_UxmlAttributeFlags))
-                {
-                    e.bindings.Clear();
-                    if (bindings != null)
-                    {
-                        foreach (var bindingData in bindings)
-                        {
-                            var binding = (Binding)bindingData.CreateInstance();
-                            bindingData.Deserialize(binding);
-                            e.SetBinding(binding.property, binding);
-                            e.bindings.Add(binding);
-                        }
-                    }
-                }
-            }
-        }
-
         // Elements with isCompositeRoot will treat their children's events during the AtTarget phase instead of
         // the BubbleUp or TrickleDown phases. However, if the event doesn't bubble up or trickle down, then only
         // the event's actual target will receive it.
@@ -387,6 +248,7 @@ namespace UnityEngine.UIElements
         internal static readonly UniqueStyleString disabledUssClassNameUnique = new(disabledUssClassName);
 
         string m_Name;
+        int m_NameId = -1; // Cached UniqueStyleString.id for m_Name (-1 when m_Name is null/empty)
         StyleClassList m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
 
@@ -432,34 +294,6 @@ namespace UnityEngine.UIElements
         }
 
         internal ref VisualElementTransformFlags transformFlags => ref transformData.Flags;
-
-        // Used for view data persistence (ie. scroll position or tree view expanded states)
-        private string m_ViewDataKey;
-
-        /// <summary>
-        /// Used for view data persistence, such as tree expanded states, scroll position, or zoom level.
-        /// </summary>
-        /// <remarks>
-        /// This key is used to save and load the view data from the view data store. If you don't set this key, the persistence is disabled for the associated <see cref="VisualElement"/>.
-        /// For more information, refer to [[wiki:UIE-ViewData|View data persistence in the Unity Manual]].
-        /// </remarks>
-        [CreateProperty]
-        public string viewDataKey
-        {
-            get => m_ViewDataKey;
-            set
-            {
-                if (m_ViewDataKey != value)
-                {
-                    m_ViewDataKey = value;
-
-                    if (!string.IsNullOrEmpty(value))
-                        IncrementVersion(VersionChangeType.ViewData);
-
-                    NotifyPropertyChanged(viewDataKeyProperty);
-                }
-            }
-        }
 
         // Persistence of view data is almost always enabled as long as an element has
         // a valid viewDataKey. The only exception is when an element is in its parent's
@@ -561,57 +395,6 @@ namespace UnityEngine.UIElements
             get
             {
                 return disablePlayModeTint ? Color.white : UIElementsUtility.editorPlayModeTintColor;
-            }
-        }
-
-        /// <summary>
-        /// A combination of hint values that specify high-level intended usage patterns for the <see cref="VisualElement"/>.
-        /// This property can only be set when the <see cref="VisualElement"/> is not yet part of a <see cref="Panel"/>. Once part of a <see cref="Panel"/>, this property becomes effectively read-only, and attempts to change it will throw an exception.
-        /// The specification of proper <see cref="UsageHints"/> drives the system to make better decisions on how to process or accelerate certain operations based on the anticipated usage pattern.
-        /// Note that those hints do not affect behavioral or visual results, but only affect the overall performance of the panel and the elements within.
-        /// It's advised to always consider specifying the proper <see cref="UsageHints"/>, but keep in mind that some <see cref="UsageHints"/> might be internally ignored under certain conditions (e.g. due to hardware limitations on the target platform).
-        /// </summary>
-        [CreateProperty]
-        public UsageHints usageHints
-        {
-            get
-            {
-                return
-                    ((renderHints & RenderHints.GroupTransform) != 0 ? UsageHints.GroupTransform : 0) |
-                    ((renderHints & RenderHints.BoneTransform) != 0 ? UsageHints.DynamicTransform : 0) |
-                    ((renderHints & RenderHints.MaskContainer) != 0 ? UsageHints.MaskContainer : 0) |
-                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0) |
-                    ((renderHints & RenderHints.DynamicPostProcessing) != 0 ? UsageHints.DynamicPostProcessing : 0) |
-                    ((renderHints & RenderHints.LargePixelCoverage) != 0 ? UsageHints.LargePixelCoverage : 0);
-            }
-            set
-            {
-                // Preserve hints not exposed through UsageHints
-                if ((value & UsageHints.GroupTransform) != 0)
-                    renderHints |= RenderHints.GroupTransform;
-                else renderHints &= ~RenderHints.GroupTransform;
-
-                if ((value & UsageHints.DynamicTransform) != 0)
-                    renderHints |= RenderHints.BoneTransform;
-                else renderHints &= ~RenderHints.BoneTransform;
-
-                if ((value & UsageHints.MaskContainer) != 0)
-                    renderHints |= RenderHints.MaskContainer;
-                else renderHints &= ~RenderHints.MaskContainer;
-
-                if ((value & UsageHints.DynamicColor) != 0)
-                    renderHints |= RenderHints.DynamicColor;
-                else renderHints &= ~RenderHints.DynamicColor;
-
-                if ((value & UsageHints.DynamicPostProcessing) != 0)
-                    renderHints |= RenderHints.DynamicPostProcessing;
-                else renderHints &= ~RenderHints.DynamicPostProcessing;
-
-                if ((value & UsageHints.LargePixelCoverage) != 0)
-                    renderHints |= RenderHints.LargePixelCoverage;
-                else renderHints &= ~RenderHints.LargePixelCoverage;
-
-                NotifyPropertyChanged(usageHintsProperty);
             }
         }
 
@@ -993,6 +776,7 @@ namespace UnityEngine.UIElements
 
         internal Rect boundingBoxWithoutNested
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (isBoundingBoxWithoutNestedDirty)
@@ -1209,7 +993,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns a <see cref="Rect"/> representing the Axis-aligned Bounding Box (AABB) after applying the world transform.
+        /// Returns the axis-aligned bounding box of the element in panel coordinates after the cumulative transform from the <see cref="IPanel"/> root.
         /// </summary>
         [CreateProperty(ReadOnly = true)]
         public Rect worldBound
@@ -1238,7 +1022,7 @@ namespace UnityEngine.UIElements
 
         internal Rect rect
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get
             {
@@ -1300,12 +1084,13 @@ namespace UnityEngine.UIElements
             (transformFlags & worldTransformInverseDirtyDependencies) != 0;
 
         /// <summary>
-        /// Returns a matrix that cumulates the following operations (in order):
-        /// -Local Scaling
-        /// -Local Rotation
-        /// -Local Translation
-        /// -Layout Translation
-        /// -Parent <c>worldTransform</c> (recursive definition - consider identity when there is no parent)
+        /// Returns a matrix that cumulates the following transformations (in order):
+        ///
+        ///- Local scaling
+        ///- Local rotation
+        ///- Local translation
+        ///- Layout translation
+        ///- Parent <c>worldTransform</c> (recursive definition - consider the identity matrix when there's no parent)
         /// </summary>
         /// <remarks>
         /// Multiplying the <c>layout</c> rect by this matrix is incorrect because it already contains the translation.
@@ -1333,7 +1118,7 @@ namespace UnityEngine.UIElements
 
         internal ref Matrix4x4 worldTransformInverse
         {
-            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (isWorldTransformInverseOrDependenciesDirty)
@@ -1656,6 +1441,92 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// The name of this VisualElement.
+        /// </summary>
+        /// <remarks>
+        /// Use this property to write USS selectors that target a specific element.
+        /// The standard practice is to give an element a unique name.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute, HideInInspector]
+        [UxmlInternalField, VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        public string name
+        {
+            get { return m_Name; }
+            set
+            {
+                if (m_Name == value)
+                    return;
+                m_Name = value;
+                // Pre-emptively convert name to UniqueStyleString ID
+                m_NameId = string.IsNullOrEmpty(value) ? -1 : new UniqueStyleString(value).id;
+                IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Name);
+                NotifyPropertyChanged(nameProperty);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the <see cref="VisualElement"/> is enabled locally.
+        /// </summary>
+        /// <remarks>
+        /// This flag isn't changed if the VisualElement is disabled implicitly by one of its parents. To verify this, use <see cref="enabledInHierarchy"/>.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute("enabled")]
+        [Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")]
+        public bool enabledSelf
+        {
+            get => (m_Flags & VisualElementFlags.DisabledSelf) == 0;
+            set
+            {
+                if (enabledSelf == value)
+                    return;
+
+                m_Flags = value ? m_Flags & ~VisualElementFlags.DisabledSelf : m_Flags | VisualElementFlags.DisabledSelf;
+
+                // If parent is disabled, we assume that the element and its hierarchy are already properly disabled
+                if (hierarchy.parent == null || hierarchy.parent.enabledInHierarchy)
+                {
+                    PropagateSelfEnabled(value);
+
+                    if (!value)
+                        BlurHierarchyImmediately();
+                }
+
+                NotifyPropertyChanged(enabledSelfProperty);
+            }
+        }
+
+        // Used for view data persistence (ie. scroll position or tree view expanded states)
+        private string m_ViewDataKey;
+
+        /// <summary>
+        /// Used for view data persistence, such as tree expanded states, scroll position, or zoom level.
+        /// </summary>
+        /// <remarks>
+        /// This key is used to save and load the view data from the view data store. If you don't set this key, the persistence is disabled for the associated <see cref="VisualElement"/>.
+        /// For more information, refer to [[wiki:UIE-ViewData|View data persistence in the Unity Manual]].
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public string viewDataKey
+        {
+            get => m_ViewDataKey;
+            set
+            {
+                if (m_ViewDataKey != value)
+                {
+                    m_ViewDataKey = value;
+
+                    if (!string.IsNullOrEmpty(value))
+                        IncrementVersion(VersionChangeType.ViewData);
+
+                    NotifyPropertyChanged(viewDataKeyProperty);
+                }
+            }
+        }
+
+        /// <summary>
         /// Determines if this element can be the target of pointer events or
         /// picked by <see cref="IPanel.Pick"/> queries.
         /// </summary>
@@ -1670,6 +1541,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="VisualElement.visible"/>
         /// <seealso cref="IStyle.display"/>
         [CreateProperty]
+        [UxmlAttribute("picking-mode", "pickingMode")]
         public PickingMode pickingMode
         {
             get => (transformFlags & VisualElementTransformFlags.PickingIgnore) != 0 ? PickingMode.Ignore : PickingMode.Position;
@@ -1685,24 +1557,171 @@ namespace UnityEngine.UIElements
             }
         }
 
+        //PropertyName to store in property bag.
+        internal static readonly PropertyName tooltipPropertyKey = new PropertyName("--unity-tooltip");
+
         /// <summary>
-        /// The name of this VisualElement.
+        /// Text to display inside an information box after the user hovers the element for a small amount of time. This is only supported in the Editor UI.
         /// </summary>
-        /// <remarks>
-        /// Use this property to write USS selectors that target a specific element.
-        /// The standard practice is to give an element a unique name.
-        /// </remarks>
         [CreateProperty]
-        public string name
+        [UxmlAttribute]
+        public string tooltip
         {
-            get { return m_Name; }
+            get
+            {
+                string tooltipText = GetProperty(tooltipPropertyKey) as string;
+
+                return tooltipText ?? String.Empty;
+            }
             set
             {
-                if (m_Name == value)
+                if (!HasProperty(tooltipPropertyKey))
+                {
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        return;
+                    }
+
+                    RegisterCallback<TooltipEvent>(SetTooltip);
+                }
+
+                var tooltipText = GetProperty(tooltipPropertyKey) as string;
+                if (string.CompareOrdinal(tooltipText, value) == 0)
                     return;
-                m_Name = value;
-                IncrementVersion(VersionChangeType.StyleSheet);
-                NotifyPropertyChanged(nameProperty);
+                SetProperty(tooltipPropertyKey, value);
+                NotifyPropertyChanged(tooltipProperty);
+            }
+        }
+
+        /// <summary>
+        /// A combination of hint values that specify high-level intended usage patterns for the <see cref="VisualElement"/>.
+        /// This property can only be set when the <see cref="VisualElement"/> is not yet part of a <see cref="Panel"/>. Once part of a <see cref="Panel"/>, this property becomes effectively read-only, and attempts to change it will throw an exception.
+        /// The specification of proper <see cref="UsageHints"/> drives the system to make better decisions on how to process or accelerate certain operations based on the anticipated usage pattern.
+        /// Note that those hints do not affect behavioral or visual results, but only affect the overall performance of the panel and the elements within.
+        /// It's advised to always consider specifying the proper <see cref="UsageHints"/>, but keep in mind that some <see cref="UsageHints"/> might be internally ignored under certain conditions (e.g. due to hardware limitations on the target platform).
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public UsageHints usageHints
+        {
+            get
+            {
+                return
+                    ((renderHints & RenderHints.GroupTransform) != 0 ? UsageHints.GroupTransform : 0) |
+                    ((renderHints & RenderHints.BoneTransform) != 0 ? UsageHints.DynamicTransform : 0) |
+                    ((renderHints & RenderHints.MaskContainer) != 0 ? UsageHints.MaskContainer : 0) |
+                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0) |
+                    ((renderHints & RenderHints.DynamicPostProcessing) != 0 ? UsageHints.DynamicPostProcessing : 0) |
+                    ((renderHints & RenderHints.LargePixelCoverage) != 0 ? UsageHints.LargePixelCoverage : 0);
+            }
+            set
+            {
+                // Preserve hints not exposed through UsageHints
+                if ((value & UsageHints.GroupTransform) != 0)
+                    renderHints |= RenderHints.GroupTransform;
+                else renderHints &= ~RenderHints.GroupTransform;
+
+                if ((value & UsageHints.DynamicTransform) != 0)
+                    renderHints |= RenderHints.BoneTransform;
+                else renderHints &= ~RenderHints.BoneTransform;
+
+                if ((value & UsageHints.MaskContainer) != 0)
+                    renderHints |= RenderHints.MaskContainer;
+                else renderHints &= ~RenderHints.MaskContainer;
+
+                if ((value & UsageHints.DynamicColor) != 0)
+                    renderHints |= RenderHints.DynamicColor;
+                else renderHints &= ~RenderHints.DynamicColor;
+
+                if ((value & UsageHints.DynamicPostProcessing) != 0)
+                    renderHints |= RenderHints.DynamicPostProcessing;
+                else renderHints &= ~RenderHints.DynamicPostProcessing;
+
+                if ((value & UsageHints.LargePixelCoverage) != 0)
+                    renderHints |= RenderHints.LargePixelCoverage;
+                else renderHints &= ~RenderHints.LargePixelCoverage;
+
+                NotifyPropertyChanged(usageHintsProperty);
+            }
+        }
+
+        // Added so we can generate the attribute for a parent field and also control the order it appears.
+        [UxmlAttribute("tabindex"), UxmlAttributeBindingPath(nameof(tabIndex))]
+        internal int tabIndexUXML
+        {
+            get => tabIndex;
+            set => tabIndex = value;
+        }
+
+        // Added so we can generate the attribute for a parent field and also control the order it appears.
+        [UxmlAttribute("focusable"), UxmlAttributeBindingPath(nameof(focusable))]
+        internal bool focusableUXML
+        {
+            get => focusable;
+            set => focusable = value;
+        }
+
+        LanguageDirection m_LanguageDirection;
+        /// <summary>
+        /// Indicates the directionality of the element's text. The value will propagate to the element's children.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public LanguageDirection languageDirection
+        {
+            get => m_LanguageDirection;
+            set
+            {
+                if (m_LanguageDirection == value)
+                    return;
+
+                m_LanguageDirection = value;
+                localLanguageDirection = m_LanguageDirection;
+                NotifyPropertyChanged(languageDirectionProperty);
+            }
+        }
+
+        [UxmlAttribute("data-source"), UxmlAttributeBindingPath("dataSource"), HideInInspector, DataSourceDrawer]
+        internal Object dataSourceUnityObject
+        {
+            get => dataSource as Object;
+            set => dataSource = value ? value : null;
+        }
+
+        [Tooltip(DataBinding.k_DataSourcePathTooltip), HideInInspector]
+        [UxmlAttribute("data-source-path")]
+        internal string dataSourcePathString
+        {
+            get => dataSourcePath.ToString();
+            set => dataSourcePath = new PropertyPath(value);
+        }
+
+        /// <summary>
+        /// The possible type of data source assignable to this VisualElement.
+        /// <remarks>
+        /// This information is only used by the UI Builder as a hint to provide some completion to the data source path field when the effective data source cannot be specified at design time.
+        /// </remarks>
+        /// </summary>
+        [UxmlAttribute, HideInInspector, UxmlTypeReference(typeof(object))]
+        [Tooltip(DataBinding.k_DataSourceTooltip)]
+        public Type dataSourceType { get; set; }
+
+        [UxmlObjectReference("Bindings"), UxmlInternalField, HideInInspector]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal List<Binding> bindings
+        {
+            get => m_Bindings ??= new List<Binding>();
+            set
+            {
+                if (value != null)
+                {
+                    foreach(var binding in value)
+                    {
+                        SetBinding(binding.property, binding);
+                    }
+                }
+
+                m_Bindings = value;
             }
         }
 
@@ -1718,6 +1737,13 @@ namespace UnityEngine.UIElements
             get => typeData.typeName;
         }
 
+        // Cached UniqueStyleString.id for typeName (shared across all instances of this type)
+        internal int typeNameId => typeData.typeNameId;
+
+        // Cached UniqueStyleString.id for name (instance-specific)
+        // Returns -1 if name is null/empty, otherwise a valid id >= 0
+        internal int nameId => m_NameId;
+
         LayoutNode m_LayoutNode;
 
         // Set and pass in values to be used for layout
@@ -1725,7 +1751,6 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                Debug.Assert(!m_LayoutNode.IsUndefined, "VisualElement has been disposed!");
                 return ref m_LayoutNode;
             }
         }
@@ -1735,7 +1760,7 @@ namespace UnityEngine.UIElements
 
         internal ref ComputedStyle computedStyle
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => ref layoutNode.ComputedStyle;
         }
 
@@ -1752,6 +1777,20 @@ namespace UnityEngine.UIElements
         {
             get => (m_Flags & VisualElementFlags.StyleInitialized) == VisualElementFlags.StyleInitialized;
             set => m_Flags = value ? m_Flags | VisualElementFlags.StyleInitialized : m_Flags & ~VisualElementFlags.StyleInitialized;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool stylesDirty
+        {
+            get => (m_Flags & VisualElementFlags.StyleDirty) == VisualElementFlags.StyleDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.StyleDirty : m_Flags & ~VisualElementFlags.StyleDirty;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool stylesAncestorOfDirty
+        {
+            get => (m_Flags & VisualElementFlags.StyleAncestorOfDirty) == VisualElementFlags.StyleAncestorOfDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.StyleAncestorOfDirty : m_Flags & ~VisualElementFlags.StyleAncestorOfDirty;
         }
 
         // Opacity is not fully supported so it's hidden from public API for now
@@ -1908,8 +1947,7 @@ namespace UnityEngine.UIElements
 
             if (m_CallbackRegistry != null)
             {
-                m_CallbackRegistry?.Clear();
-                m_CallbackRegistry?.Dispose();
+                m_CallbackRegistry.Dispose();
                 m_CallbackRegistry = null;
             }
         }
@@ -2129,6 +2167,8 @@ namespace UnityEngine.UIElements
 
             // styles are dependent on topology
             styleInitialized = false;
+            stylesDirty = false;
+            stylesAncestorOfDirty = false;
             IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
 
             // persistent data key may have changed or needs initialization
@@ -2251,27 +2291,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if the <see cref="VisualElement"/> is enabled locally.
-        /// </summary>
-        /// <remarks>
-        /// This flag isn't changed if the VisualElement is disabled implicitly by one of its parents. To verify this, use <see cref="enabledInHierarchy"/>.
-        /// </remarks>
-        [CreateProperty]
-        public bool enabledSelf
-        {
-            get => (m_Flags & VisualElementFlags.DisabledSelf) == 0;
-            set
-            {
-                if (enabledSelf == value)
-                    return;
-
-                m_Flags = value ? m_Flags & ~VisualElementFlags.DisabledSelf : m_Flags | VisualElementFlags.DisabledSelf;
-                NotifyPropertyChanged(enabledSelfProperty);
-                PropagateSelfEnabled(value);
-            }
-        }
-
-        /// <summary>
         /// Changes the <see cref="VisualElement"/> enabled state. A disabled visual element does not receive most events.
         /// </summary>
         /// <param name="value">New enabled state</param>
@@ -2307,7 +2326,6 @@ namespace UnityEngine.UIElements
 
             if (!parentEnabled)
             {
-                BlurHierarchyImmediately();
                 ApplyDisableHierarchy();
             }
             else
@@ -2318,16 +2336,11 @@ namespace UnityEngine.UIElements
 
         void PropagateSelfEnabled(bool value)
         {
-            // If parent is disabled, we assume that the element and its hierarchy are already properly disabled
-            if (hierarchy.parent != null && !hierarchy.parent.enabledInHierarchy)
-                return;
-
             // We could call PropagateParentEnabled on each child, but the following saves a few redundant checks
-            // and has the same effect. Also BlurHierarchyImmediately doesn't need to be called multiple times.
+            // and has the same effect.
             if (!value)
             {
                 AddToClassList(disabledUssClassNameUnique);
-                BlurHierarchyImmediately();
                 pseudoStates |= PseudoStates.Disabled;
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
@@ -2344,25 +2357,6 @@ namespace UnityEngine.UIElements
                 {
                     m_Children[i].RemoveDisableHierarchy();
                 }
-            }
-        }
-
-        LanguageDirection m_LanguageDirection;
-        /// <summary>
-        /// Indicates the directionality of the element's text. The value will propagate to the element's children.
-        /// </summary>
-        [CreateProperty]
-        public LanguageDirection languageDirection
-        {
-            get => m_LanguageDirection;
-            set
-            {
-                if (m_LanguageDirection == value)
-                    return;
-
-                m_LanguageDirection = value;
-                localLanguageDirection = m_LanguageDirection;
-                NotifyPropertyChanged(languageDirectionProperty);
             }
         }
 

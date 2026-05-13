@@ -451,6 +451,21 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Determines whether a USS animation is running or paused.
+    /// </summary>
+    public enum AnimationPlayState
+    {
+        /// <summary>
+        /// The animation is running.
+        /// </summary>
+        Running = 0,
+        /// <summary>
+        /// The animation is paused.
+        /// </summary>
+        Paused = 1
+    }
+
+    /// <summary>
     /// The slice type determines whether the center of the image is scaled or tiled.
     /// </summary>
     public enum SliceType

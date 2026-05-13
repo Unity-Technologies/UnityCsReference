@@ -119,7 +119,22 @@ class UxmlAttributesEditingContext : IDisposable
     /// <summary>
     /// The serialized data being edited element.
     /// </summary>
-    public UxmlSerializedData uxmlSerializedData { get; private set; }
+    public UxmlSerializedData uxmlSerializedData
+    {
+        get
+        {
+            if (tempSerializedData != null)
+            {
+                return tempSerializedData.serializedData;
+            }
+            else if (elementAsset != null)
+            {
+                return elementAsset.serializedData;
+            }
+
+            return null;
+        }
+    }
 
     /// <summary>
     /// Indicates whether the current element is part of a template instance.
@@ -265,33 +280,30 @@ class UxmlAttributesEditingContext : IDisposable
                 }
                 visualTreeAsset = tempSerializedData;
                 this.elementAsset = tempSerializedData.elementAsset;
-                uxmlSerializedData = tempSerializedData.serializedData;
                 rootSerializedObject = new SerializedObject(tempSerializedData);
                 serializedBasePath = GetSerializedPath(tempSerializedData.elementAsset);
             }
             else
             {
-                var visualTreeAsset = editedVisualTreeAsset;
-
-                visualTreeAsset.hideFlags = isReadOnly ? HideFlags.NotEditable : HideFlags.None;
-
-                // TODO : Restore the hideFlags after done
+                // Use the element's actual VTA, which may differ from editedVisualTreeAsset
+                // when selecting elements outside the edited sub-document
+                var visualTreeAsset = elementAsset.visualTreeAsset;
 
                 // If the UXML file has been modified, the element may no longer be in the asset so we will ignore it. (UUM-59305)
-                if (elementAsset.visualTreeAsset != visualTreeAsset)
+                if (visualTreeAsset == null)
                 {
                     Clear();
                     return;
                 }
 
+                visualTreeAsset.hideFlags = isReadOnly ? HideFlags.NotEditable : HideFlags.None;
+
+                // TODO : Restore the hideFlags after done
+
                 if (elementAsset.serializedData == null)
                 {
-                    elementAsset.serializedData = uxmlSerializedData = uxmlSerializedDataDescription.CreateDefaultSerializedData();
+                    elementAsset.serializedData = uxmlSerializedDataDescription.CreateDefaultSerializedData();
                     elementAsset.serializedData.uxmlAssetId = elementAsset.id;
-                }
-                else
-                {
-                    uxmlSerializedData = elementAsset.serializedData;
                 }
 
                 this.visualTreeAsset = visualTreeAsset;
@@ -315,8 +327,8 @@ class UxmlAttributesEditingContext : IDisposable
     {
         editingController.liveAttributePropertyController.RemoveLiveProperties();
         element = null;
+        elementAsset = null;
         uxmlSerializedDataDescription = null;
-        uxmlSerializedData = null;
         tempSerializedData = null;
         rootSerializedObject = null;
         serializedBasePath = string.Empty;

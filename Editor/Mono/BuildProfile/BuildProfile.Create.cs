@@ -61,7 +61,7 @@ namespace UnityEditor.Build.Profile
 
         /// <summary>
         /// Creates a new build profile asset for the specified platform with the provided name. Created asset will be
-        /// placed under "Assets/Settings/BuildProfiles".
+        /// placed under "Assets/Settings/Build Profiles".
         /// </summary>
         /// <param name="platformId">The GUID of the target platform. Must be a valid installed editor platform.</param>
         /// <param name="profileName">The name for the build profile. Used as the asset filename.</param>

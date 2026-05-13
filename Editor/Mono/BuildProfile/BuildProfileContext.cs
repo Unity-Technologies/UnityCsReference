@@ -329,9 +329,11 @@ namespace UnityEditor.Build.Profile
                 m_BuildProfileInitializations.Add(initInfo);
         }
 
+
         /// <summary>
         /// Checks if there's initialization work for the specified build profile.
         /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal void UpdateBuildProfileInitialization(BuildProfile profile)
         {
             if (m_BuildProfileInitializations.Count == 0)
@@ -384,40 +386,6 @@ namespace UnityEditor.Build.Profile
             }
 
             return false;
-        }
-
-        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static bool IsModuleInstalled(BuildProfile profile)
-        {
-            if (profile is null)
-            {
-                return false;
-            }
-
-            var buildTarget = profile.GetIBuildTarget();
-            return buildTarget != null;
-        }
-
-        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static bool IsBuildAutomationSupported(BuildProfile profile)
-        {
-            if (profile is null)
-            {
-                return false;
-            }
-
-            if (!IsModuleInstalled(profile))
-            {
-                return false;
-            }
-
-            var buildTarget = profile.GetIBuildTarget();
-            if (!buildTarget.TryGetProperties<IBuildPlatformProperties>(out var buildPlatformProperties))
-            {
-                return false;
-            }
-
-            return buildPlatformProperties.SupportBuildAutomation;
         }
 
         /// <summary>
@@ -535,7 +503,7 @@ namespace UnityEditor.Build.Profile
         void OnEnable()
         {
             BuildTargetDiscovery.ValidateSDKPlatformProviders();
-            
+
             EditorUserBuildSettings.isBuildProfileAvailable = true;
             EditorApplication.quitting -= SyncActiveProfileToFallback;
             EditorApplication.quitting += SyncActiveProfileToFallback;
@@ -942,7 +910,7 @@ namespace UnityEditor.Build.Profile
         static void GetActiveShaderBuildSettings(out ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, out string[] defines)
         {
             if (!ActiveProfileHasGraphicsSettings())
-            {                
+            {
                 keywordDeclarationOverrides = null;
                 defines = null;
                 return;

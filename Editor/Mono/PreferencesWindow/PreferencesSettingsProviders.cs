@@ -66,6 +66,13 @@ namespace UnityEditor
             public static readonly GUIContent queryBuilder = EditorGUIUtility.TrTextContent("Enable Query Builder", "When enabled, the search field will use auto-completion and group queries as pills. When disabled, the search field will be in plain text mode.");
             public static readonly GUIContent alternatingRowBackground = EditorGUIUtility.TrTextContent("Enable Alternating Row Background", "When enabled, even and odd rows will have different background colors.");
             public static readonly GUIContent nameColumnStretchable = EditorGUIUtility.TrTextContent("Auto stretch Name Column", "When enabled, the name column will automatically stretch to take as much space as possible.");
+            public static readonly GUIContent gameObjectIconMode = EditorGUIUtility.TrTextContent("GameObject Icons", "Controls how the new Hierarchy window replaces GameObject icons.");
+            public static readonly GUIContent[] gameObjectIconModeOptions =
+            {
+                EditorGUIUtility.TrTextContent("Use Components and Gizmos"),
+                EditorGUIUtility.TrTextContent("Use Components only"),
+                EditorGUIUtility.TrTextContent("Do not change GameObject icons"),
+            };
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -688,6 +695,7 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUI.BeginDisabled(!HierarchyPreferences.UseNewHierarchy);
             HierarchyPreferences.AlternatingRowBackground.value = EditorGUILayout.Toggle(GeneralProperties.alternatingRowBackground, HierarchyPreferences.AlternatingRowBackground);
             HierarchyPreferences.UseQueryBuilder.value = EditorGUILayout.Toggle(GeneralProperties.queryBuilder, HierarchyPreferences.UseQueryBuilder);
+            HierarchyPreferences.GameObjectIconMode = (HierarchyPreferences.IconMode)EditorGUILayout.Popup(GeneralProperties.gameObjectIconMode, (int)HierarchyPreferences.GameObjectIconMode, GeneralProperties.gameObjectIconModeOptions);
             EditorGUI.EndDisabled();
             EditorGUI.indentLevel--;
 

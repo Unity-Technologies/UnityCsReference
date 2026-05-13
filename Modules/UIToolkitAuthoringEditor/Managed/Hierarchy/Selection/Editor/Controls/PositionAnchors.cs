@@ -2,14 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class PositionAnchors : VisualElement
+    internal partial class PositionAnchors : VisualElement
     {
         static readonly string k_UssClassName = "unity-position-anchors";
         static readonly string k_UssDefaultClassName = "default";
@@ -38,12 +38,6 @@ namespace Unity.UIToolkit.Editor
         public PositionAnchorPoint leftPoint => m_LeftPoint;
         public PositionAnchorPoint rightPoint => m_RightPoint;
         public VisualElement square => m_Square;
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new PositionAnchors();
-        }
 
         public PositionAnchors()
         {

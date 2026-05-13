@@ -9,14 +9,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
-    class MainToolbarOverlayContainer : ToolbarOverlayContainer
+    [UxmlElement]
+    partial class MainToolbarOverlayContainer : ToolbarOverlayContainer
     {
-        [Serializable]
-        public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData
-        {
-            public override object CreateInstance() => new MainToolbarOverlayContainer();
-        }
-
         public override Layout preferredLayout => Layout.HorizontalToolbar;
 
 

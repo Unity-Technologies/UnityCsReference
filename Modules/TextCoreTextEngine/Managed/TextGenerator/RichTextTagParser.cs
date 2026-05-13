@@ -26,7 +26,9 @@ namespace UnityEngine.TextCore
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static readonly Dictionary<string, System.IntPtr> s_FontAssetCache = new();
-        internal static readonly Dictionary<string, WeakReference<SpriteAsset>> s_SpriteAssetCache = new();
+        // Strong reference is intentional: if the cache were the only reference (WeakReference), the
+        // asset would be collected and we'd have to reload it from Resources every text generation pass.
+        internal static readonly Dictionary<string, SpriteAsset> s_SpriteAssetCache = new();
         internal static readonly Dictionary<string, System.IntPtr> s_GradientAssetCache = new();
 
         // Thread-safe tracking for one-time warnings (prevents console spam)
@@ -643,10 +645,9 @@ namespace UnityEngine.TextCore
                 spriteAssetNameOut = spriteAssetName.ToString();
 
                 // Check cache for preloaded sprite asset
-                if (!s_SpriteAssetCache.TryGetValue(spriteAssetNameOut, out var weakRef) ||
-                    !weakRef.TryGetTarget(out spriteAsset))
+                if (!s_SpriteAssetCache.TryGetValue(spriteAssetNameOut, out spriteAsset))
                 {
-                    // Asset not preloaded or was GC'd, return false but keep the asset name for HasSpriteTags extraction
+                    // Asset not preloaded, return false but keep the asset name for HasSpriteTags extraction
                     return false;
                 }
             }
@@ -738,7 +739,10 @@ namespace UnityEngine.TextCore
                     continue;
 
                 spriteAsset.UpdateLookupTables();
-                s_SpriteAssetCache[spriteAssetName] = new WeakReference<SpriteAsset>(spriteAsset);
+                // Warm up entityId on the main thread so worker threads can access it
+                // without triggering EnsureRunningOnMainThread in Object.GetEntityId().
+                _ = spriteAsset.entityId;
+                s_SpriteAssetCache[spriteAssetName] = spriteAsset;
             }
         }
 
@@ -1158,6 +1162,12 @@ namespace UnityEngine.TextCore
                             value = new TagValue(gradientAssetName, ValueID.Gradient);
                         }
 
+                        if (tagType == TagType.Style && !preprocessingOnly)
+                        {
+                            pos = start + 1;
+                            continue;
+                        }
+
                         sbyte nestingLevel = 0;
                         if (tagType == TagType.Subscript || tagType == TagType.Superscript)
                         {
@@ -1194,6 +1204,12 @@ namespace UnityEngine.TextCore
                 {
                     if (SpanToEnum(input.AsSpan(start + 2, end - start - 2), out TagType tagType, out string? error, out var _))
                     {
+                        if (tagType == TagType.Style && !preprocessingOnly)
+                        {
+                            pos = start + 1;
+                            continue;
+                        }
+
                         result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing });
 
                         if (tagType == TagType.Subscript || tagType == TagType.Superscript)
@@ -1297,7 +1313,9 @@ namespace UnityEngine.TextCore
                 Debug.Assert(allTags.Contains(tag));
             }
             Span<int?> parents = stackalloc int?[allTags.Count];
+            parents.Clear();
             Span<int?> lastTagOfType = stackalloc int?[TagsInfo.Length];
+            lastTagOfType.Clear();
 
             int i = -1;
             foreach (var tag in allTags)
@@ -1321,14 +1339,10 @@ namespace UnityEngine.TextCore
 
                 if (tag.isClosing)
                 {
-                    if (lastTagOfType[(int)tag.tagType].HasValue)
+                    int? openingTagIndex = lastTagOfType[(int)tag.tagType];
+                    if (openingTagIndex.HasValue)
                     {
-                        if (parents[i].HasValue)
-                        {
-                            lastTagOfType[(int)tag.tagType] = parents[i];
-                        }
-                        else
-                            lastTagOfType[(int)tag.tagType] = null;
+                        lastTagOfType[(int)tag.tagType] = parents[openingTagIndex.Value];
                     }
                 }
                 else
@@ -1349,6 +1363,7 @@ namespace UnityEngine.TextCore
 
             // Build a set of all active tag indices - only the innermost tag of each type matters
             Span<bool> activeTagIndices = stackalloc bool[allTags.Count];
+            activeTagIndices.Clear();
             for (int tagTypeIndex = 0; tagTypeIndex < lastTagOfType.Length; tagTypeIndex++)
             {
                 int? currentIndex = lastTagOfType[tagTypeIndex];
@@ -1487,7 +1502,6 @@ namespace UnityEngine.TextCore
 
                         break;
                     case TagType.Style:
-                        Debug.Assert(false, "Style tags should be handled by the preprocessor.");
                         break;
                     case TagType.Font:
                         string fontAssetName = segment.tags[i].value?.StringValue ?? "";

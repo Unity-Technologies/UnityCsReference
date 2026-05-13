@@ -259,7 +259,7 @@ namespace Unity.GraphToolkit.Editor
                     return PortCapacity.Multi;
 
                 // If not set, fallback to default behavior.
-                return DataTypeHandle != TypeHandle.Untyped && Direction == PortDirection.Input ? PortCapacity.Single : PortCapacity.Multi;
+                return PortDataType != typeof(Untyped) && Direction == PortDirection.Input ? PortCapacity.Single : PortCapacity.Multi;
             }
             set
             {
@@ -618,7 +618,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Gets whether this port model has reorderable wires or not.
         /// </summary>
-        public virtual bool HasReorderableWires => DataTypeHandle == TypeHandle.Untyped && Direction == PortDirection.Output && IsConnected();
+        public virtual bool HasReorderableWires => PortDataType == typeof(Untyped) && Direction == PortDirection.Output && IsConnected();
 
         /// <summary>
         /// A constant representing the port default value.
@@ -934,7 +934,7 @@ namespace Unity.GraphToolkit.Editor
             return EmbeddedValue.TrySetValue(value);
         }
 
-        Type IPort.DataType => DataTypeHandle == TypeHandle.Untyped ? null : PortDataType;
+        Type IPort.DataType => PortDataType == typeof(Untyped) ? null : PortDataType;
 
         /// <inheritdoc />
         public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;

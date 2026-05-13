@@ -157,15 +157,22 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                         if (error && context.AssemblyInfo.IsUnityOwned) // Unity sometimes needs to use Obsolete code eg to set up obsolete fields in constructors. Downgrade this to a warning.
                             error = false;
 
-                        string msg;
+                        string msg, recommendation;
                         if (arguments.Count > 0)
-                            msg = $"'{obsoleteName}' is obsolete: '{(string)arguments[0].Value}'";
+                        {
+                            recommendation = (string)arguments[0].Value;
+                            msg = $"'{obsoleteName}' is obsolete: '{recommendation}'";
+                        }
                         else
+                        {
+                            recommendation = string.Empty;
                             msg = $"'{obsoleteName}' is obsolete.";
+                        }
 
                         yield return context.CreateIssue(IssueCategory.Code, k_ObsoleteAttributeIssueDescriptor.Id)
                             .WithSeverity(error ? Severity.Error : Severity.Warning)
-                            .WithDescription(msg);
+                            .WithDescription(msg)
+                            .WithUpgradeProperties([Application.unityVersion, null, recommendation]);
                     }
                 }
 

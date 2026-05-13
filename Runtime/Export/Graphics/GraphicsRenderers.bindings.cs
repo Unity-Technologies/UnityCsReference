@@ -435,7 +435,7 @@ namespace UnityEngine
         public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
 
         [NativeMethod("RetrieveSkeletonPose", ThrowsException = true)]
-        extern internal bool Internal_RetrieveSkeletonPose([Out] Matrix4x4[] outPoses);
+        internal extern unsafe bool Internal_RetrieveSkeletonPose(Span<Matrix4x4> outPoses);
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]

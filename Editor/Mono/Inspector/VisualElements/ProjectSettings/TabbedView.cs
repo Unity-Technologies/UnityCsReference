@@ -9,14 +9,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
-    internal class TabbedView : VisualElement
+    [UxmlElement]
+    internal partial class TabbedView : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new TabbedView();
-        }
-
         const string s_UssClassName = "unity-tabbed-view";
         const string s_ContentContainerClassName = "unity-tabbed-view__content-container";
         const string s_TabsContainerClassName = "unity-tabbed-view__tabs-container";

@@ -15,22 +15,10 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for entering Font.
     /// </summary>
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class FontField : BaseField<Font>
+    internal partial class FontField : BaseField<Font>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Font>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Font>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new FontField();
-        }
-
         /// <summary>
         /// USS class name of the object field in elements of this type.
         /// </summary>

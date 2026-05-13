@@ -497,43 +497,15 @@ namespace UnityEngine.UIElements
     [UxmlElement(libraryPath = "Controls")]
     [Icon("UIToolkit/Icons/Mask64Field.png")]
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public class Mask64Field : BaseMask64Field
+    public partial class Mask64Field : BaseMask64Field
     {
         internal override UInt64 MaskToValue(UInt64 newMask) => newMask;
         internal override UInt64 ValueToMask(UInt64 value) => value;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseMask64Field.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseMask64Field.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(choices), "choices"),
-                });
-            }
-
-            #pragma warning disable 649
-            [SerializeField] List<string> choices;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choices_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Mask64Field();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                // Assigning null value throws.
-                if (ShouldWriteAttributeValue(choices_UxmlAttributeFlags) && choices != null)
-                {
-                    var e = (Mask64Field)obj;
-                    e.choices = choices;
-                }
-            }
-        }
+        // Required because we cant use UxmlAttribute on virtual properties.
+        [UxmlAttributeBindingPath(nameof(choices))]
+        [UxmlAttribute(nameof(choices))]
+        internal List<string> maskChoices { get => choices; set => choices = value; }
 
         /// <summary>
         /// Callback that provides a string representation used to display the selected value.

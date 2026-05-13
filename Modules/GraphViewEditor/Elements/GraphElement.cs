@@ -5,18 +5,13 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public abstract class GraphElement : VisualElement, ISelectable
+    [UxmlElement]
+    public abstract partial class GraphElement : VisualElement, ISelectable
     {
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-        }
-
         public Color elementTypeColor { get; set; }
 
         int m_Layer;

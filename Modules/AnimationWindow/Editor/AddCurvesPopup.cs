@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace UnityEditorInternal
@@ -23,6 +24,8 @@ namespace UnityEditorInternal
         private static long s_LastClosedTime;
         private static AddCurvesPopupHierarchy s_Hierarchy;
 
+        private SearchField m_SearchField;
+
         public delegate void OnNewCurveAdded(AddCurvesPopupPropertyNode node);
 
         Vector2 GetWindowSize()
@@ -39,6 +42,8 @@ namespace UnityEditorInternal
 
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
 
+            m_SearchField = new SearchField();
+            m_SearchField.SetFocus();
             ShowAsDropDown(buttonRect, GetWindowSize(), new[] { PopupLocation.Right });
         }
 
@@ -105,9 +110,17 @@ namespace UnityEditorInternal
 
             Vector2 windowSize = GetWindowSize();
 
-            Rect rect = new Rect(1, 1, windowSize.x - k_WindowPadding, windowSize.y - k_WindowPadding);
+            var width = windowSize.x - 2 * k_WindowPadding;
+            var searchRect = new Rect(k_WindowPadding, k_WindowPadding, width, EditorGUIUtility.singleLineHeight);
+            var contentRect = new Rect(
+                k_WindowPadding,
+                searchRect.yMax + EditorGUIUtility.standardVerticalSpacing,
+                width,
+                windowSize.y - searchRect.height - EditorGUIUtility.standardVerticalSpacing - 2 * k_WindowPadding);
+
             GUI.Box(new Rect(0, 0, windowSize.x, windowSize.y), GUIContent.none, "grey_border");
-            s_Hierarchy.OnGUI(rect, this);
+            s_Hierarchy.searchString = m_SearchField.OnToolbarGUI(searchRect, s_Hierarchy.searchString);
+            s_Hierarchy.OnGUI(contentRect, this);
         }
     }
 }

@@ -14,12 +14,6 @@ namespace UnityEditor.Build.Player
 {
     public static class TypeDbHelper
     {
-        [Obsolete("TryGet(path, out typeDb) is deprecated. Use TryGet(path, assemblyPath, out typeDb) instead.", true)]
-        public static bool TryGet(string path, out TypeDB typeDb)
-        {
-            return TryGet(path, path, out typeDb);
-        }
-
         public static bool TryGet(string path, string assemblyPath, out TypeDB typeDb)
         {
             if (string.IsNullOrEmpty(path))

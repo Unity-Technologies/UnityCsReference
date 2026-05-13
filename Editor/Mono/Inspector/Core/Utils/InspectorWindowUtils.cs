@@ -193,6 +193,24 @@ namespace UnityEditor
                         Undo.AddComponent(component.gameObject, messageContainer.replacementType);
                 }
             };
+
+            // The HelpBox button defaults to nowrap and won't shrink, and its bottom container
+            // is sized to its content (align-self: flex-end), so a long button label
+            // (e.g. "Add Decal Projector SRP") overflows in narrow Inspectors. Stretch the
+            // container to the helpbox width and let the button wrap and shrink within it.
+            var bottomContainer = helpBox.Q(className: HelpBox.bottomContainerUssClassName);
+            if (bottomContainer != null)
+            {
+                bottomContainer.style.alignSelf = Align.Stretch;
+                bottomContainer.style.justifyContent = Justify.FlexEnd;
+            }
+            var actionButton = helpBox.Q<Button>(className: HelpBox.buttonUssClassName);
+            if (actionButton != null)
+            {
+                actionButton.style.whiteSpace = WhiteSpace.Normal;
+                actionButton.style.flexShrink = 1;
+                actionButton.style.maxWidth = Length.Percent(100);
+            }
             return true;
         }
 

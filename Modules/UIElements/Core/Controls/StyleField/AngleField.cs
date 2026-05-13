@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Unity.Properties;
@@ -17,40 +16,10 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering Angle.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal class AngleField : TextValueField<Angle>
+    [UxmlElement]
+    internal partial class AngleField : TextValueField<Angle>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<Angle>.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeField] bool showUnitAsDropdown;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showUnitAsDropdown_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<Angle>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(showUnitAsDropdown), "show-unit-as-dropdown"),
-                }, false);
-            }
-
-            public override object CreateInstance() => new AngleField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (AngleField)obj;
-                if (ShouldWriteAttributeValue(showUnitAsDropdown_UxmlAttributeFlags))
-                    e.showUnitAsDropdown = showUnitAsDropdown;
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -111,6 +80,7 @@ namespace UnityEngine.UIElements
         readonly List<string> m_AllOptionsList = new();
 
         [CreateProperty]
+        [UxmlAttribute]
         public bool showUnitAsDropdown
         {
             get => m_ShowUnitAsDropdown;
@@ -312,11 +282,11 @@ namespace UnityEngine.UIElements
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
                 if (parentField.isDelayed)
                 {
-                    text = ValueToString(Mathf.ClampToInt((long)v));
+                    text = ValueToString(new Angle(Mathf.ClampToInt((long)v), startValue.unit));
                 }
                 else
                 {
-                    parentField.value = Mathf.ClampToInt((long)v);
+                    parentField.value = new Angle(Mathf.ClampToInt((long)v), startValue.unit);
                 }
             }
 

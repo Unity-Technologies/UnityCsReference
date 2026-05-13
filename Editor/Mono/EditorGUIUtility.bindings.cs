@@ -129,7 +129,6 @@ namespace UnityEditor
         public static extern void SetIconForObject([NotNull] Object obj, Texture2D icon);
         [NativeMethod(ThrowsException = true)]
         internal static extern Object GetBuiltinExtraResource(Type type, string path);
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         internal static extern BuiltinResource[] GetBuiltinResourceList(int classID);
         internal static extern AssetBundle GetEditorAssetBundle();
         internal static extern AssetBundle ReloadEditorAssetBundle();

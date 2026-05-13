@@ -15,14 +15,9 @@ using UnityEngine.UIElements;
 namespace Unity.UI.Builder
 {
     [UsedImplicitly]
-    class ImageStyleField : MultiTypeField
+    [UxmlElement]
+    partial class ImageStyleField : MultiTypeField
     {
-        [Serializable]
-        public new class UxmlSerializedData : MultiTypeField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ImageStyleField();
-        }
-
         const double k_TimeoutMilliseconds = 10000;
         const int k_TimeDeltaMilliseconds = 10;
 

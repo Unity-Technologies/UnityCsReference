@@ -46,9 +46,37 @@ namespace UnityEngine.UIElements
         // Used at runtime as a cache
         internal object tempData;
 
+        // Cached UniqueStyleString ID for ID/Class/Type selectors
+        // Set during CalculateHashes(), used during style matching
+        // Value of -1 means not yet cached
+        [NonSerialized]
+        internal int cachedUniqueStyleStringId;
+
         public override string ToString()
         {
             return string.Format("[StyleSelectorPart: value={0}, type={1}]", value, type);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is StyleSelectorPart))
+                return false;
+
+            var other = (StyleSelectorPart)obj;
+            // Only compare logical identity (type and value), ignore runtime cache fields
+            return m_Type == other.m_Type && m_Value == other.m_Value;
+        }
+
+        public override int GetHashCode()
+        {
+            // Only hash logical identity, ignore runtime cache fields
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + m_Type.GetHashCode();
+                hash = hash * 23 + (m_Value != null ? m_Value.GetHashCode() : 0);
+                return hash;
+            }
         }
 
         // Note that we still store class name as string for now instead of UniqueStyleString.

@@ -132,7 +132,9 @@ namespace UnityEditor.Search
                         actualCount++;
                     }
                 }
+
                 SetSelection(true, tempSelection.AsSpan(0, actualCount), true);
+                NotifyResultViewOfSelectionChanged();
                 ArrayPool<int>.Shared.Return(tempSelection);
             }
         }
@@ -626,9 +628,13 @@ namespace UnityEditor.Search
             if (viewState.selectedIds.Length == 0 || selection.Count != 0)
             {
                 if (selectionSynced)
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                {
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                    // TODO Selection: serlection coming from Model, need to force update the view.
                     SetSelection(trackSelection: false, selection.indexes.ToArray());
+                    NotifyResultViewOfSelectionChanged();
 #pragma warning restore UA2001
+                }
                 return;
             }
 
@@ -645,7 +651,10 @@ namespace UnityEditor.Search
             }
 
             if (indexesToSelect.Count > 0)
+            {
                 SetSelection(trackSelection: false, indexesToSelect.ToArray());
+                NotifyResultViewOfSelectionChanged();
+            }
         }
 
         public void SetSelection(params int[] selection)

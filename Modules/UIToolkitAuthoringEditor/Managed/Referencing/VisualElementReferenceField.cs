@@ -130,8 +130,9 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
         var provider = new VisualElementReferenceSearchProvider(elementType, scene);
         var context = Search.SearchService.CreateContext(provider);
         var title = string.Format(k_PickerHeading, elementType.Name);
-        var state = SearchViewState.CreatePickerState(title, context, SelectFromPicker, null, null, SearchViewFlags.ListView | SearchViewFlags.CompactView);
+        var state = SearchViewState.CreatePickerState(title, context, SelectFromPicker);
         state.hideTabs = true;
+        state.resultViewDescriptorList = new SearchResultViewDescriptorList([SearchTreeView.GetDescriptor()]);
         var view = Search.SearchService.ShowPicker(state);
     }
 
@@ -148,7 +149,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
 
         if (item.data is VisualElementReferenceSearchProvider.Data searchData)
         {
-            var authoringIdPath = searchData.GeneratePath();
+            var authoringIdPath = searchData.GenerateAuthoringPath();
             VisualElementReferenceTools.TryCreateReference(searchData.panelRenderer, authoringIdPath);
             value = new VisualElementReference(searchData.panelRenderer, authoringIdPath);
         }

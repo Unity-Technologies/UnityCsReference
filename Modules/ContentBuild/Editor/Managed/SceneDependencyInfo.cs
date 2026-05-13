@@ -23,11 +23,6 @@ namespace UnityEditor.Build.Content
         ///<remarks>Internal use only. See <see cref="Build.Content.SceneDependencyInfo" />.</remarks>
         public string scene { get { return m_Scene; } }
 
-        ///<summary>Path to the post processed version of the Scene.</summary>
-        ///<remarks>Internal use only. See <see cref="Build.Content.SceneDependencyInfo" />.</remarks>
-        [Obsolete("processedScene has been deprecated, use scene instead.", true)]
-        public string processedScene { get { return m_Scene; } }
-
         [NativeName("referencedObjects")]
         internal ObjectIdentifier[] m_ReferencedObjects;
         ///<summary>List of objects referenced by the Scene.</summary>

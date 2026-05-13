@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using Unity.Collections;
+using UnityEngine.Assemblies;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -35,8 +36,8 @@ namespace Unity.GraphToolkit.Editor
         {
             get
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                return s_Assemblies ??= AppDomain.CurrentDomain.GetAssemblies()
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                return s_Assemblies ??= CurrentAssemblies.GetLoadedAssemblies()
 #pragma warning restore UA2001
                     .Where(a => !a.IsDynamic
                         && !Array.Exists(k_BlackListedAssemblies, b => a.GetName().Name.ToLower().Contains(b)))

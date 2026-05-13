@@ -227,13 +227,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [CreateProperty]
-        internal bool isSelectable
-        {
-            get => selection.isSelectable;
-            set => selection.isSelectable = value;
-        }
-
         int ITextSelection.cursorIndex
         {
             get => selection.isSelectable ? selectingManipulator.cursorIndex : -1;
@@ -318,13 +311,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [CreateProperty]
-        internal bool doubleClickSelectsWord
-        {
-            get => selection.doubleClickSelectsWord;
-            set => selection.doubleClickSelectsWord = value;
-        }
-
         private bool m_TripleClickSelectsLine = true;
 
         bool ITextSelection.tripleClickSelectsLine
@@ -337,13 +323,6 @@ namespace UnityEngine.UIElements
                 m_TripleClickSelectsLine = value;
                 NotifyPropertyChanged(tripleClickSelectsLineProperty);
             }
-        }
-
-        [CreateProperty]
-        internal bool tripleClickSelectsLine
-        {
-            get => selection.tripleClickSelectsLine;
-            set => selection.tripleClickSelectsLine = value;
         }
 
         private bool m_SelectAllOnFocus = false;

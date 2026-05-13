@@ -138,7 +138,7 @@ namespace UnityEditor.Search
 
             body.focusable = true;
             body.style.flexGrow = 1.0f;
-            body.RegisterCallback<KeyDownEvent>(OnGlobalKeyDownEvent, invokePolicy: InvokePolicy.IncludeDisabled, useTrickleDown: TrickleDown.TrickleDown);
+            body.RegisterCallback<KeyDownEvent>(OnGlobalKeyDownEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
 
             // Create main layout
             if (m_ViewState.flags.HasNone(SearchViewFlags.HideSearchBar))
@@ -232,8 +232,10 @@ namespace UnityEditor.Search
                 evt.StopImmediatePropagation();
 
                 // Restore focus in case we lost it because we sent another event.
-                if (globalNavigationResult.KeepFocusOnOriginalElement)
-                    focusedElement.Focus();
+                // focusedElement may be null when the window is not in focus (e.g. in tests
+                // that dispatch events without first focusing any element).
+                if (globalNavigationResult.KeepFocusOnOriginalElement && focusedElement is Focusable focusable)
+                    focusable.Focus();
             }
         }
 

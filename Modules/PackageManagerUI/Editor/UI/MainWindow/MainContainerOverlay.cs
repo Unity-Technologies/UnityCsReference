@@ -2,25 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class MainContainerOverlay : VisualElement
+[UxmlElement]
+internal partial class MainContainerOverlay : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public override object CreateInstance()
-        {
-            return new MainContainerOverlay(ServicesContainer.instance.Resolve<IApplicationProxy>());
-        }
-    }
-
     public ExtendedHelpBox extendedHelpBox { get; }
     public Label titleLabel { get; }
     private VisualElement m_Container;
+
+    public MainContainerOverlay() : this(ServicesContainer.instance.Resolve<IApplicationProxy>())
+    {
+    }
 
     public MainContainerOverlay(IApplicationProxy applicationProxy)
     {

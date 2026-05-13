@@ -42,6 +42,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     {
         Assembly = 0,
         CodeLocation,
+        PerformanceCritical,
         Num
     }
 
@@ -564,9 +565,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     var s = sequencePoints[0];
 
-                    reportItemBuilder.WithDependencies(callerNode); // set root
+                    reportItemBuilder.WithDependencies(callerNode);
                     reportItemBuilder.WithLocation(new Location(() => AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, s.Document.Url), s.IsHidden ? 0 : s.StartLine));
-                    reportItemBuilder.WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]);
+                    reportItemBuilder.WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString(), perfCriticalContext]);
 
                     onIssueFound(reportItemBuilder);
                 }
@@ -642,10 +643,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     foreach (var reportItemBuilder in m_CompatibleAnalyzers[analyzer].Analyze(context))
                     {
                         onIssueFound(reportItemBuilder
-                            .WithDependencies(callerNode) // set root
+                            .WithDependencies(callerNode)
                             .WithLocation(location)
-                            .WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString()]));
-
+                            .WithCustomProperties([assemblyInfo.Name, assemblyInfo.GetTypeString(), perfCriticalContext]));
                     }
                 }
             }

@@ -2,27 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class StyleMaterialDefinitionField : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>
+    [UxmlElement]
+    internal partial class StyleMaterialDefinitionField : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleMaterialDefinition, MaterialDefinitionStyleField, MaterialDefinition>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new StyleMaterialDefinitionField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

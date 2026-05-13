@@ -2,19 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class FoldoutWithCheckbox : PersistedFoldout
+    [UxmlElement]
+    partial class FoldoutWithCheckbox : PersistedFoldout
     {
-        [Serializable]
-        public new class UxmlSerializedData : PersistedFoldout.UxmlSerializedData
-        {
-            public override object CreateInstance() => new FoldoutWithCheckbox();
-        }
-
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/FoldoutWithCheckbox/FoldoutWithCheckbox.uss";
         const string k_CheckboxClassName = "unity-foldout__checkbox";
         const string k_LabelClassName = "unity-foldout-with-checkbox__label";

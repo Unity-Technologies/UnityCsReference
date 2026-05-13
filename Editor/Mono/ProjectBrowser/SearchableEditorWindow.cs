@@ -228,9 +228,9 @@ namespace UnityEditor
                 path = '"' + path + '"';
 
             if (AssetDatabase.IsMainAsset(instanceID))
-                searchFilter = "ref:" + path;
+                searchFilter = $"ref:{path}";
             else
-                searchFilter = "ref:" + instanceID + ":" + path;
+                searchFilter = $"ref:{instanceID}:{path}";
 
             SetSearchText(searchFilter, HierarchyType.GameObjects);
         }

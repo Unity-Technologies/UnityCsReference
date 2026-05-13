@@ -251,6 +251,12 @@ namespace Unity.UI.Builder
             var toStyleSheet = toStyleSheetElement.GetStyleSheet();
             var fromSelector = selectorElement.GetStyleComplexSelector();
 
+            if (fromStyleSheet == null || toStyleSheet == null)
+                return;
+
+            if (fromSelector == null)
+                throw new ArgumentNullException("Selector VisualElement does not exist.", nameof(selectorElement));
+
             if (undo)
             {
                 Undo.RegisterCompleteObjectUndo(

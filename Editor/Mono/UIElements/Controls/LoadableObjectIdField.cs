@@ -76,8 +76,8 @@ namespace UnityEditor.UIElements
         {
             try
             {
-                LoadableObjectId newLoadableObjectId = LoadableObjectIdEditorUtility.ObjectToLoadableObjectId(evt.newValue);
-                if (evt.newValue != null && !newLoadableObjectId.isValid)
+                LoadableObjectId newLoadableObjectId = LoadableObjectIdEditorUtility.CreateLoadableObjectId(evt.newValue);
+                if (evt.newValue != null && !newLoadableObjectId.IsValid)
                 {
                     Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId."));
                     m_ObjectField.SetValueWithoutNotify(LoadableObjectIdEditorUtility.LoadableObjectIdToObject(value));

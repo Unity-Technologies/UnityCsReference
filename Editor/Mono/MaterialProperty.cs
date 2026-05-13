@@ -12,23 +12,22 @@ using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 
 namespace UnityEditor
 {
-    // match MonoMaterialProperty layout!
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class MaterialProperty
     {
         public delegate bool ApplyPropertyCallback(MaterialProperty prop, int changeMask, object previousValue);
 
-        private Object[] m_Targets;
+        internal Object[] m_Targets;
         private ApplyPropertyCallback m_ApplyPropertyCallback;
-        private string m_Name;
-        private string m_DisplayName;
-        private System.Object m_Value;
-        private Vector4 m_TextureScaleAndOffset;
-        private Vector2 m_RangeLimits;
-        private ShaderPropertyType m_Type;
-        private ShaderPropertyFlags m_Flags;
-        private UnityEngine.Rendering.TextureDimension m_TextureDimension;
-        private int m_MixedValueMask;
+        internal string m_Name;
+        internal string m_DisplayName;
+        internal System.Object m_Value;
+        internal Vector4 m_TextureScaleAndOffset;
+        internal Vector2 m_RangeLimits;
+        internal ShaderPropertyType m_Type;
+        internal ShaderPropertyFlags m_Flags;
+        internal UnityEngine.Rendering.TextureDimension m_TextureDimension;
+        internal int m_MixedValueMask;
 
         public Object[] targets { get { return m_Targets; } }
         [Obsolete("The 'type' property is deprecated. Please use 'propertyType' instead. (UnityUpgradable) -> propertyType", false)]

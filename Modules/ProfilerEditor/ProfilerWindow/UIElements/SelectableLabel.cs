@@ -6,16 +6,12 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor
 {
-    internal class SelectableLabel : TextField
+    [UxmlElement]
+    internal partial class SelectableLabel : TextField
     {
         public SelectableLabel()
         {
             isReadOnly = true;
-        }
-
-        public new class UxmlSerializedData : TextField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new SelectableLabel();
         }
     }
 }

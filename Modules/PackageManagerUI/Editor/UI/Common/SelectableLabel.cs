@@ -7,14 +7,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class SelectableLabel : Label
+    [UxmlElement]
+    internal partial class SelectableLabel : Label
     {
-        [Serializable]
-        internal new class UxmlSerializedData : Label.UxmlSerializedData
-        {
-            public override object CreateInstance() => new SelectableLabel();
-        }
-
         public SelectableLabel()
         {
             selection.isSelectable = true;

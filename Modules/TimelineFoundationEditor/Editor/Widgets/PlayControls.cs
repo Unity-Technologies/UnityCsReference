@@ -11,15 +11,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets
 {
-    partial class PlayControls : VisualElement
+    [UxmlElement]
+    internal partial class PlayControls : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new PlayControls();
-        }
-
         const string k_ClassName = "playControl";
         protected const string k_FirstFrameElement = "firstFrame";
         protected const string k_PreviousFrameElement = "previousFrame";

@@ -10,7 +10,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct ComputedStyle
     {

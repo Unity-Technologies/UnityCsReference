@@ -32,8 +32,8 @@ namespace UnityEditor
             ExecuteShortcut(args, animEditor => exp(animEditor.state));
         }
 
-        [Shortcut("Animation/Show Curves", typeof(AnimationWindow), KeyCode.C)]
-        static void ShowCurves(ShortcutArguments args)
+        [Shortcut("Animation/Show Curves", typeof(AnimationWindow), KeyCode.C, displayName = "Animation/Switch Between Curves and Dopesheet")]
+        static void SwitchBetweenCurvesAndDopesheet(ShortcutArguments args)
         {
             ExecuteShortcut(args, animEditor => { animEditor.SwitchBetweenCurvesAndDopesheet(); });
         }

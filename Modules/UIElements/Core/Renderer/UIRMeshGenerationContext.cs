@@ -81,10 +81,12 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// An enum used to describe the texture used in a <see cref="MeshGenerationContext"/> allocation.
+    /// Flags describing how a texture must be used in the context of a draw command.
     /// </summary>
+    /// <seealso cref="MeshGenerationContext.DrawMesh"/>
+    /// <seealso cref="MeshGenerationNode.DrawMesh"/>
     [Flags]
-    internal enum TextureOptions
+    public enum TextureOptions
     {
         /// <summary>
         /// The texture has no special properties.
@@ -92,13 +94,19 @@ namespace UnityEngine.UIElements
         None = 0,
 
         /// <summary>
-        /// The texture should not be included in the dynamic atlas.
+        /// The texture must not be included in the dynamic atlas.
         /// </summary>
         SkipDynamicAtlas = 1 << 0,
 
         /// <summary>
         /// The texture content is alpha-premultiplied.
         /// </summary>
+        /// <remarks>
+        /// In premultiplied alpha, the RGB channels have been multiplied by the alpha channel. A typical source is a
+        /// RenderTexture that has had transparent geometry rendered to it using standard alpha blending
+        /// (e.g. Blend SrcAlpha OneMinusSrcAlpha), which stores premultiplied results. Some operations may require
+        /// converting to straight alpha by dividing RGB by alpha.
+        /// </remarks>
         PremultipliedAlpha = 1 << 1,
     }
 
@@ -429,10 +437,31 @@ namespace UnityEngine.UIElements
         /// <param name="texture">An optional texture to be applied on the triangles. Pass null to rely on vertex colors only.</param>
         public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null)
         {
+            DrawMesh(vertices, indices, texture, TextureOptions.None);
+        }
+
+        /// <summary>
+        /// Records a draw command with the provided triangle-list indexed mesh.
+        /// </summary>
+        /// <remarks>
+        /// You can generate the mesh content later because the renderer doesn't immediately process the mesh. The mesh
+        /// content must be fully generated before you return from GenerateVisualContent, unless you call <see cref="AddMeshGenerationJob"/>.
+        ///
+        /// The renderer will process the mesh when the following conditions are met:
+        /// - GenerateVisualContent has been called on all dirty VisualElements
+        /// - All registered generation dependencies have completed
+        /// - All deferred generation callbacks have been issued
+        /// </remarks>
+        /// <param name="vertices">The vertices to be drawn. All referenced vertices must be initialized.</param>
+        /// <param name="indices">The triangle list indices. Must be a multiple of 3. All indices must be initialized.</param>
+        /// <param name="texture">An optional texture to be applied on the triangles. Pass null to rely on vertex colors only.</param>
+        /// <param name="textureOptions">Flags that apply to the provided texture for this draw call.</param>
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions)
+        {
             if (vertices.Length == 0 || indices.Length == 0)
                 return;
 
-            entryRecorder.DrawMesh(parentEntry, vertices, indices, texture, TextureOptions.None);
+            entryRecorder.DrawMesh(parentEntry, vertices, indices, texture, textureOptions);
         }
 
         /// <summary>

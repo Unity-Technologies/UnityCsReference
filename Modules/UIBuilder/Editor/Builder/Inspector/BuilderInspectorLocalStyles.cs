@@ -42,6 +42,10 @@ namespace Unity.UI.Builder
 
             m_LocalStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-local-styles-foldout");
 
+            var animationFoldout = m_LocalStylesSection.Q<PersistedFoldout>("inspector-style-section-foldout-animation");
+            if (animationFoldout != null)
+                animationFoldout.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? DisplayStyle.Flex : DisplayStyle.None;
+
             var styleCategories = m_LocalStylesSection.Query<PersistedFoldout>(
                 className: "unity-builder-inspector__style-category-foldout").Build();
 

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Collections;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -24,6 +23,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Use this as the super class if you are declaring a custom VisualElement that displays text. For example, <see cref="Button"/> or <see cref="Label"/> use this as their base class. For more information, refer to [[wiki:UIE-uxml-element-TextElement|UXML element TextElement]].
     /// </summary>
+    [UxmlElement]
     public partial class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
         internal static readonly BindingId displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
@@ -33,77 +33,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId parseEscapeSequencesProperty = nameof(parseEscapeSequences);
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId valueProperty = nameof(value);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(text), "text"),
-                    new(nameof(enableRichText), "enable-rich-text"),
-                    new(nameof(emojiFallbackSupport), "emoji-fallback-support"),
-                    new(nameof(parseEscapeSequences), "parse-escape-sequences"),
-                    new(nameof(isSelectable), "selectable", null, "selectable"),
-                    new(nameof(doubleClickSelectsWord), "double-click-selects-word", null,"selectWordByDoubleClick", "select-word-by-double-click"),
-                    new(nameof(tripleClickSelectsLine), "triple-click-selects-line", null, "selectLineByTripleClick", "select-line-by-triple-click"),
-                    new(nameof(displayTooltipWhenElided), "display-tooltip-when-elided"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineTextField] string text;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField] bool enableRichText;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enableRichText_UxmlAttributeFlags;
-            [SerializeField] bool emojiFallbackSupport;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
-            [SerializeField] bool parseEscapeSequences;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags parseEscapeSequences_UxmlAttributeFlags;
-            [SelectableTextElement]
-            [FormerlySerializedAs("selectable")]
-            [SerializeField, UxmlAttribute("selectable")] bool isSelectable;
-            [FormerlySerializedAs("selectable_UxmlAttributeFlags")]
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isSelectable_UxmlAttributeFlags;
-            [FormerlySerializedAs("selectWordByDoubleClick")]
-            [SerializeField, UxmlAttribute("double-click-selects-word", "select-word-by-double-click")] bool doubleClickSelectsWord;
-            [FormerlySerializedAs("selectWordByDoubleClick_UxmlAttributeFlags")]
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
-            [FormerlySerializedAs("selectLineByTripleClick")]
-            [SerializeField, UxmlAttribute("triple-click-selects-line", "select-line-by-triple-click")] bool tripleClickSelectsLine;
-            [FormerlySerializedAs("selectLineByTripleClick_UxmlAttributeFlags")]
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
-            [SerializeField] bool displayTooltipWhenElided;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags displayTooltipWhenElided_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TextElement();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TextElement)obj;
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.text = text;
-                if (ShouldWriteAttributeValue(enableRichText_UxmlAttributeFlags))
-                    e.enableRichText = enableRichText;
-                if (ShouldWriteAttributeValue(emojiFallbackSupport_UxmlAttributeFlags))
-                    e.emojiFallbackSupport = emojiFallbackSupport;
-                if (ShouldWriteAttributeValue(parseEscapeSequences_UxmlAttributeFlags))
-                    e.parseEscapeSequences = parseEscapeSequences;
-                if (ShouldWriteAttributeValue(isSelectable_UxmlAttributeFlags))
-                    e.isSelectable = isSelectable;
-                if (ShouldWriteAttributeValue(doubleClickSelectsWord_UxmlAttributeFlags))
-                    e.doubleClickSelectsWord = doubleClickSelectsWord;
-                if (ShouldWriteAttributeValue(tripleClickSelectsLine_UxmlAttributeFlags))
-                    e.tripleClickSelectsLine = tripleClickSelectsLine;
-                if (ShouldWriteAttributeValue(displayTooltipWhenElided_UxmlAttributeFlags))
-                    e.displayTooltipWhenElided = displayTooltipWhenElided;
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -216,12 +145,21 @@ namespace UnityEngine.UIElements
             set => ((INotifyValueChanged<string>) this).value = value;
         }
 
+        [MultilineTextField(displayName = "Text")]
+        [UxmlAttribute("text"), UxmlAttributeBindingPath(nameof(text))]
+        internal string textUXML
+        {
+            get => text;
+            set => text = value;
+        }
+
         bool m_EnableRichText = true;
 
         /// <summary>
         /// When false, rich text tags will not be parsed.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool enableRichText
         {
             get => m_EnableRichText;
@@ -242,6 +180,7 @@ namespace UnityEngine.UIElements
         /// Emoji in the Unicode 14.0 standard.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool emojiFallbackSupport
         {
             get => m_EmojiFallbackSupport;
@@ -265,6 +204,7 @@ namespace UnityEngine.UIElements
         /// (for example, `\n` is shown as the characters '\' followed by 'n').
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool parseEscapeSequences
         {
             get => m_ParseEscapeSequences;
@@ -278,6 +218,31 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [CreateProperty]
+        [SelectableTextElement]
+        [UxmlAttribute("selectable")]
+        internal bool isSelectable
+        {
+            get => selection.isSelectable;
+            set => selection.isSelectable = value;
+        }
+
+        [CreateProperty]
+        [UxmlAttribute(obsoleteNames = new string[]{"selectWordByDoubleClick", "select-word-by-double-click"})]
+        internal bool doubleClickSelectsWord
+        {
+            get => selection.doubleClickSelectsWord;
+            set => selection.doubleClickSelectsWord = value;
+        }
+
+        [CreateProperty]
+        [UxmlAttribute(obsoleteNames = new string[] { "selectLineByTripleClick", "select-line-by-triple-click" })]
+        internal bool tripleClickSelectsLine
+        {
+            get => selection.tripleClickSelectsLine;
+            set => selection.tripleClickSelectsLine = value;
+        }
+
         private bool m_DisplayTooltipWhenElided = true;
 
         /// <summary>
@@ -285,6 +250,7 @@ namespace UnityEngine.UIElements
         /// provided, it will be overwritten.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool displayTooltipWhenElided
         {
             get => m_DisplayTooltipWhenElided;

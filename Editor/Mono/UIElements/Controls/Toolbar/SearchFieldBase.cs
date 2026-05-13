@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -14,6 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// The base class for a search field.
     /// </summary>
+    [UxmlElement]
     public abstract partial class SearchFieldBase<TextInputType, T> : VisualElement, INotifyValueChanged<T>
         where TextInputType : TextInputBaseField<T>, new()
     {
@@ -84,38 +83,10 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string popupVariantUssClassName = ussClassName + "--popup";
 
-        [Serializable, ExcludeFromDocs]
-        public abstract new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(placeholderText), "placeholder-text")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] private string placeholderText;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [ExcludeFromDocs]
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(placeholderText_UxmlAttributeFlags))
-                {
-                    var e = (SearchFieldBase<TextInputType, T>)obj;
-                    e.placeholderText = placeholderText;
-                }
-            }
-        }
-
         /// <summary>
         /// A short hint to help users understand what to enter in the field.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public string placeholderText
         {

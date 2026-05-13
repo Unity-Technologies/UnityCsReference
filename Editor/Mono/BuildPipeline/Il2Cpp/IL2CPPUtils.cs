@@ -14,6 +14,7 @@ using PlayerBuildProgramLibrary.Data;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Scripting;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -372,6 +373,11 @@ namespace UnityEditorInternal
                     case ApiCompatibilityLevel.NET_Unity_4_8:
                     case ApiCompatibilityLevel.NET_Standard:
                         return "unityaot-" + BuildTargetDiscovery.GetPlatformProfileSuffix(target);
+#pragma warning disable CS0618
+                    case ApiCompatibilityLevel.NET:
+#pragma warning restore CS0618
+                        // We won't need the profile argument going forward.  Dropping this option also acts as an indicator to il2cpp to use the new bcl.
+                        return null;
 
                     default:
                         throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported!", compatibilityLevel));
@@ -387,17 +393,55 @@ namespace UnityEditorInternal
             throw new ArgumentException($"Unhandled scripting backend {scriptingBackend}");
         }
 
+        internal static List<string> GetIL2CPPReferenceDirectories(BuildTarget target, NamedBuildTarget namedTarget,
+            BuildOptions buildOptions, ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+            var result = new List<string>();
+#pragma warning disable CS0618
+            if (apiCompatibilityLevel != ApiCompatibilityLevel.NET)
+#pragma warning restore CS0618
+            {
+                result.Add(BCLExtensions.NetstandardRuntimeDirectory());
+                var profileDirectory = MonoInstallationFinder.GetProfileDirectory(
+                    BuildPipeline.CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel.NET_Standard),
+                    MonoInstallationFinder.MonoBleedingEdgeInstallation);
+                result.Add(profileDirectory);
+                result.Add(Path.Combine(profileDirectory, "Facades"));
+                return result;
+            }
+
+            result.Add(BCLExtensions.CoreCLRRuntimeDirectory());
+            var libDirectory =
+                Path.Combine(GetIl2CppBclDistributionDirectory(target, namedTarget, buildOptions), "lib");
+            if (Directory.Exists(libDirectory))
+                result.Add(libDirectory);
+            else
+                Debug.LogError($"Unable to find il2cpp bcl directory: {libDirectory}");
+            return result;
+        }
+
+        internal static string GetIl2CppBclDistributionDirectory(BuildTarget target, BuildOptions buildOptions)
+        {
+            var namedTarget = NamedBuildTarget.FromActiveSettings(target);
+            return GetIl2CppBclDistributionDirectory(target, namedTarget, buildOptions);
+        }
+
+        static string GetIl2CppBclDistributionDirectory(BuildTarget target, NamedBuildTarget namedTarget, BuildOptions buildOptions)
+        {
+            var gotBuildTarget = BuildTargetDiscovery.TryGetBuildTarget(target, out var ibuildTarget);
+            if (!gotBuildTarget || ibuildTarget.ScriptingPlatformProperties == null)
+            {
+                return null;
+            }
+            return Path.Combine(BuildPipeline.GetPlaybackEngineDirectory(target, buildOptions, false), ibuildTarget.ScriptingPlatformProperties.IL2CPPBCLDirectory);
+        }
+
         internal static string[] GetBuilderDefinedDefines(BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel, bool enableIl2CppDebugger)
         {
             List<string> defines = new List<string>();
 
             switch (apiCompatibilityLevel)
             {
-                case ApiCompatibilityLevel.NET_2_0:
-                case ApiCompatibilityLevel.NET_2_0_Subset:
-                    defines.AddRange(BaseDefines20);
-                    break;
-
                 case ApiCompatibilityLevel.NET_Unity_4_8:
                 case ApiCompatibilityLevel.NET_Standard:
                     // CORECLR_FIXME - .NET Should have a different set of defines

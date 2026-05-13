@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
         public static Vector2 CameraTransformWorldToPanel(IPanel panel, Vector3 worldPosition, Camera camera)
         {
             Vector2 screenPoint = camera.WorldToScreenPoint(worldPosition);
-            float displayHeight = UIElementsRuntimeUtility.GetEditorDisplayHeight(camera.targetDisplay);
+            float displayHeight = UIElementsRuntimeUtility.GetScreenHeightForDisplay(camera.targetDisplay);
             screenPoint = UIElementsRuntimeUtility.FlipY(screenPoint, displayHeight);
             return ((BaseRuntimePanel)panel).ScreenToPanel(screenPoint);
         }

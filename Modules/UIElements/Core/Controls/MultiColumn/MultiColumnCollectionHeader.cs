@@ -325,7 +325,7 @@ namespace UnityEngine.UIElements.Internal
         /// <summary>
         /// Resizes all columns to fit the width of the header.
         /// </summary>
-        void ResizeToFit()
+        internal void ResizeToFit()
         {
             columnLayout.ResizeToFit(layoutSize.x);
         }

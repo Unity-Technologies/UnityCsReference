@@ -259,7 +259,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public PrecompiledAssembly[] GetAllPrecompiledAssemblies()
         {
             return PrecompiledAssemblyProvider.GetPrecompiledAssemblies(
-                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                 EditorUserBuildSettings.activeBuildTarget);
         }
 
@@ -875,6 +875,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 WarnIfThereAreAssembliesWithoutAnyScripts(scriptAssemblySettings, scriptAssemblies);
 
             var debug = scriptAssemblySettings.CodeOptimization == CodeOptimization.Debug;
+            var hasChecks = scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingWithAsserts);
+            var hasInstrumentation = scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingWithInstrumentation);
 
             //we're going to hash the output directory path into the dag name. We do this because when users build players into different directories,
             //we'd like to treat those as different dags. If we wouldn't do this, you could run into situations where building into directory2 will make
@@ -886,13 +888,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 $"{(scriptAssemblySettings.BuildingForEditor ? "E" : "P")}" +
                 $"{(scriptAssemblySettings.BuildingDevelopmentBuild ? "Dev" : "")}" +
                 $"{(debug ? "Dbg" : "")}" +
+                $"{(hasChecks && !scriptAssemblySettings.BuildingForEditor ? "Chk" : "")}" +
+                $"{(hasInstrumentation && !scriptAssemblySettings.BuildingForEditor ? "Ins" : "")}" +
                 $"{(scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile) ? "SkipCompile" : "")}";
 
             BuildTarget buildTarget = scriptAssemblySettings.BuildTarget;
             var cacheMode = scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingCleanCompilation)
                 ? UnityBeeDriver.CacheMode.WriteOnly
                 : UnityBeeDriver.CacheMode.ReadWrite;
-            var buildRequest = UnityBeeDriver.BuildRequestFor(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", cacheMode, useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater);
+            var buildRequest = UnityBeeDriver.BuildRequestFor(buildTarget, BuildOptions.None, ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", cacheMode, useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater);
 
             buildRequest.DeferDagVerification = true;
             buildRequest.ContinueBuildingAfterFirstFailure = true;
@@ -1038,7 +1042,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
                 CompilationExtension = compilationExtension,
-                EditorCodeOptimization = CompilationPipeline.codeOptimization,
                 ExtraGeneralDefines = extraScriptingDefines,
                 ProjectRootNamespace = EditorSettings.projectGenerationRootNamespace,
                 ProjectDirectory = projectDirectory,
@@ -1442,7 +1445,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(EditorScriptCompilationOptions options)
         {
-            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            options |= EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
             return GetTargetAssembliesWithScripts(settings);
         }
 
@@ -1464,7 +1468,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public HashSet<TargetAssembly> GetTargetAssembliesWithScriptsHashSet(EditorScriptCompilationOptions options)
         {
-            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            options |= EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
             var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScriptsHashSet(allScripts, projectDirectory, customTargetAssemblies, settings);
 
             return targetAssemblies;
@@ -1529,12 +1534,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions)
         {
-            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions, null);
+            additionalOptions |= EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
+            return GetAllScriptAssemblies(additionalOptions, null);
         }
 
         public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions, string[] defines)
         {
-            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions, defines);
+            additionalOptions |= EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
+            return GetAllScriptAssemblies(additionalOptions, defines);
         }
 
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
@@ -1810,7 +1817,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if ((flags & AssemblyBuilderFlags.EditorAssembly) == AssemblyBuilderFlags.EditorAssembly)
             {
-                options |= EditorScriptCompilationOptions.BuildingForEditor;
+                options |= EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
             }
 
             return options;

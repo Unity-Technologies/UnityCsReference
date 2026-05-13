@@ -195,6 +195,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
     readonly IStyleRuleSelectionHandler m_StyleRuleSelectionHandler;
     readonly Dictionary<HierarchyViewItem, (Action, Action<string, bool>)> m_RenameCallbacks = new();
     readonly HashSet<StyleSheet> m_NewlyAddedStyleSheets = new();
+    readonly HashSet<HierarchyNode> m_HighlightedNodes = new();
 
     protected HashSet<StyleSheet> NewlyAddedStyleSheets => m_NewlyAddedStyleSheets;
 
@@ -487,9 +488,17 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
         return Mappings.TryGetValue(node, out var styleNode) && styleNode.Rule == null;
     }
 
+    protected override void Initialize()
+    {
+        base.Initialize();
+        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
+
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
 
         // Clear selection handlers directly since hierarchy is already emptied at this point
         m_StyleSheetSelectionHandler.Clear();
@@ -513,6 +522,14 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
             return;
         }
 
+        if (m_HighlightedNodes.Contains(item.Node))
+        {
+            var highlightColor = EditorGUIUtility.isProSkin ? 0.1888f : 0.6980f;
+            item.RowContainer.style.backgroundColor = new Color(highlightColor, highlightColor, highlightColor, 1.0f);
+        }
+
+        item.RegisterCallback<PointerEnterEvent, StyleRule>(OnStartHover, node.Rule);
+        item.RegisterCallback<PointerLeaveEvent>(OnEndHover);
         item.Name.style.display = DisplayStyle.None;
         var itemName = item.Q<HierarchyViewItemName>();
         if (itemName != null)
@@ -575,6 +592,8 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
     {
         base.OnUnbindItem(item);
 
+        item.RowContainer.style.backgroundColor = StyleKeyword.Null;
+
         if (m_RenameCallbacks.TryGetValue(item, out var callbacks))
         {
             var itemName = item.Q<HierarchyViewItemName>();
@@ -590,6 +609,18 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
         item.RowContainer.RemoveFromClassList(StyleRuleHeaderActiveUssClassName);
         item.Name.style.display = DisplayStyle.Flex;
         item.LeftCustomContainer.Clear();
+        item.UnregisterCallback<PointerEnterEvent, StyleRule>(OnStartHover);
+        item.UnregisterCallback<PointerLeaveEvent>(OnEndHover);
+    }
+
+    void OnStartHover(PointerEnterEvent evt, StyleRule rule)
+    {
+        HighlightUtility.RequestHighlights(rule, CommandSources.StyleSheets);
+    }
+
+    void OnEndHover(PointerLeaveEvent evt)
+    {
+        HighlightUtility.ClearHighlights();
     }
 
     void AddSelectorToken(VisualElement container, string token, bool isChained = false)
@@ -703,5 +734,35 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
         EditorApplication.globalEventHandler -= OnDragEnd;
         DragPreviewWindow?.Close();
         DragPreviewWindow = null;
+    }
+
+    void ProcessHighlightElementsCommand(in CommandContext context)
+    {
+        m_HighlightedNodes.Clear();
+        if (Hierarchy.IsCreated)
+            CommandList.SetDirty();
+        if (context.Status != CommandExecutionStatus.Success)
+            return;
+
+        if (context.Source == CommandSources.StyleSheets)
+            return;
+
+        if (context.Command is not HighlightCommand command)
+            return;
+
+        if (command.Rules == null)
+            return;
+
+        foreach (var rule in command.Rules)
+        {
+            if (m_Mappings.TryGetValue(rule.styleSheet, out var node))
+            {
+                var index = Array.FindIndex(rule.styleSheet.rules, r => r == rule);
+                if (index < 0)
+                    continue;
+                var ruleNode = Hierarchy.GetChild(node, index);
+                m_HighlightedNodes.Add(ruleNode);
+            }
+        }
     }
 }

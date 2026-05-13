@@ -34,19 +34,11 @@ namespace UnityEditor
             public static GUIContent SharedSettingInformation = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
         }
 
-#pragma warning disable UAC1001
-        // These fields are public and as such candidates for Serialization
-        // but SerializaProperty can't be serialized, consider making them private
-        // and add a property getter/setter or use NonSerialized attribute
-        // https://jira.unity3d.com/browse/UUM-132885
-        public SerializedProperty m_ForceToMono;
-        public SerializedProperty m_Normalize;
-        public SerializedProperty m_Ambisonic;
-        public SerializedProperty m_LoadInBackground;
-        public SerializedProperty m_OrigSize;
-        public SerializedProperty m_CompSize;
-        public SerializedProperty m_DefaultSampleSettings;
-#pragma warning restore UAC1001
+        SerializedProperty m_ForceToMono;
+        SerializedProperty m_Normalize;
+        SerializedProperty m_Ambisonic;
+        SerializedProperty m_LoadInBackground;
+        SerializedProperty m_DefaultSettings;
 
         bool m_SelectionContainsTrackerFile;
 
@@ -199,10 +191,7 @@ namespace UnityEditor
             m_Normalize = serializedObject.FindProperty("m_Normalize");
             m_Ambisonic = serializedObject.FindProperty("m_Ambisonic");
             m_LoadInBackground = serializedObject.FindProperty("m_LoadInBackground");
-            m_OrigSize = serializedObject.FindProperty("m_PreviewData.m_OrigSize");
-            m_CompSize = serializedObject.FindProperty("m_PreviewData.m_CompSize");
-
-            m_DefaultSampleSettings = serializedObject.FindProperty("m_DefaultSettings");
+            m_DefaultSettings = serializedObject.FindProperty("m_DefaultSettings");
 
             m_SelectionContainsTrackerFile = false;
             foreach (AudioImporter importer in GetAllAudioImporterTargets())
@@ -468,7 +457,7 @@ namespace UnityEditor
 
             if (shownSettingsPage == -1)
             {
-                OnSampleSettingGUI(new BuildPlatform("", "", NamedBuildTarget.Unknown, BuildTarget.NoTarget, true, false), m_DefaultSampleSettings, selectionContainsTrackerFile);
+                OnSampleSettingGUI(new BuildPlatform("", "", NamedBuildTarget.Unknown, BuildTarget.NoTarget, true, false), m_DefaultSettings, selectionContainsTrackerFile);
             }
             else
             {

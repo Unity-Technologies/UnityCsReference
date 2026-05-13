@@ -207,7 +207,6 @@ namespace UnityEditor
         internal extern SourceAssetIdentifier[] sourceMaterials
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::GetSourceMaterials", HasExplicitThis = true)]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 

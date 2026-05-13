@@ -180,7 +180,7 @@ namespace UnityEngine.UIElements
             var oldCam = Camera.current;
             var oldRT = RenderTexture.active;
 
-            panel.Repaint(Event.current);
+            panel.Repaint();
 
             Camera.SetupCurrent(oldCam);
             RenderTexture.active = oldRT;
@@ -571,7 +571,7 @@ namespace UnityEngine.UIElements
         internal static Vector2 ScreenBottomLeftToPanelPosition(Vector2 position, int targetDisplay)
         {
             // Flip positions Y axis between input and UITK
-            return FlipY(position, GetRuntimeDisplayHeight(targetDisplay));
+            return FlipY(position, GetScreenHeightForDisplay(targetDisplay));
         }
 
         internal static Vector2 ScreenBottomLeftToPanelDelta(Vector2 delta)
@@ -583,7 +583,7 @@ namespace UnityEngine.UIElements
         internal static Vector2 PanelToScreenBottomLeftPosition(Vector2 panelPosition, int targetDisplay)
         {
             // Flip positions Y axis between input and UITK
-            return FlipY(panelPosition, GetRuntimeDisplayHeight(targetDisplay));
+            return FlipY(panelPosition, GetScreenHeightForDisplay(targetDisplay));
         }
 
         internal static Vector2 FlipY(Vector2 p, float displayHeight)
@@ -598,21 +598,23 @@ namespace UnityEngine.UIElements
             return delta;
         }
 
-        private static float GetRuntimeDisplayHeight(int targetDisplay)
+        /// <summary>
+        /// Screen-space height for <paramref name="targetDisplay"/> used when mapping between screen and panel coordinates.
+        /// In the editor, prefers the game view surface from <see cref="PanelSettings.GetGameViewRenderInfo"/> when available.
+        /// </summary>
+        /// <remarks>
+        /// Using game-view height for display 0 can be sensitive in some editor unit tests; see EventSystemTests.ClickEventIsSent history.
+        /// </remarks>
+        internal static float GetScreenHeightForDisplay(int targetDisplay)
         {
+            var gameView = PanelSettings.GetGameViewRenderInfo?.Invoke(targetDisplay);
+            if (gameView != null)
+                return gameView.targetSize.y;
             if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
                 return Display.displays[targetDisplay].systemHeight;
 
+            // Legacy behavior as fallback if no game view info is available
             return Screen.height;
-        }
-
-        // Seems to not work well if used in unit tests, e.g. MacEditor Arm64 EventSystemTests.ClickEventIsSent
-        internal static float GetEditorDisplayHeight(int targetDisplay)
-        {
-            var gameViewResolution = PanelSettings.GetGameViewResolution(targetDisplay);
-            if (gameViewResolution.HasValue)
-                return gameViewResolution.Value.y;
-            return GetRuntimeDisplayHeight(targetDisplay);
         }
 
         // Don't rely on Application.isPlaying because its value is true for a few extra frames

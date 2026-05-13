@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using Unity.Properties;
-using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -34,43 +33,6 @@ namespace UnityEngine.UIElements
         static readonly BindingId columnIndexProperty = nameof(columnIndex);
         static readonly BindingId directionProperty = nameof(direction);
 
-        [ExcludeFromDocs, Serializable]
-        public class UxmlSerializedData : UIElements.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(columnName), "column-name"),
-                    new (nameof(columnIndex), "column-index"),
-                    new (nameof(direction), "direction"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string columnName;
-            [SerializeField] int columnIndex;
-            [SerializeField] SortDirection direction;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnName_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnIndex_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new SortColumnDescription();
-
-            public override void Deserialize(object obj)
-            {
-                var e = (SortColumnDescription)obj;
-                if (ShouldWriteAttributeValue(columnName_UxmlAttributeFlags))
-                    e.columnName = columnName;
-                if (ShouldWriteAttributeValue(columnIndex_UxmlAttributeFlags))
-                    e.columnIndex = columnIndex;
-                if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
-                    e.direction = direction;
-            }
-        }
-
         [SerializeField]
         int m_ColumnIndex = -1;
 
@@ -89,6 +51,7 @@ namespace UnityEngine.UIElements
         /// The name of the column.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public string columnName
         {
             get => m_ColumnName;
@@ -106,6 +69,7 @@ namespace UnityEngine.UIElements
         /// The index of the column to be used to find the column only if the <see cref="SortColumnDescription.columnName">columnName</see> isn't set.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public int columnIndex
         {
             get => m_ColumnIndex;
@@ -128,6 +92,7 @@ namespace UnityEngine.UIElements
         /// The sort direction.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public SortDirection direction
         {
             get => m_SortDirection;

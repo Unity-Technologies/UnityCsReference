@@ -13,6 +13,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements.StyleSheets
 {
     // Result of a single match between a selector and visual element.
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct MatchResultInfo
     {
         public readonly bool success;
@@ -90,7 +91,10 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 
-    // Pure functions for the central logic of selector application
+    // Accelerated flattened selector matching for the style system.
+    // Uses the pre-built acceleration cache to efficiently match selectors against elements.
+    // For legacy selector matching (UQuery with Predicate support), see LegacySelectorHelper.
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class StyleSelectorHelper<TProfilerType> where TProfilerType : struct, IStyleProfiler
     {
         // This internal flag can be enabled to validate that the Bloom filter never rejects cases where
@@ -98,43 +102,80 @@ namespace UnityEngine.UIElements.StyleSheets
         // styling unit tests.
         internal static bool s_VerifyBloomIntegrity = false;
 
-        public static MatchResultInfo MatchesSelector(VisualElement element, StyleSelector selector)
+        // Reverse lookup: Get StyleComplexSelector from descriptor
+        static StyleComplexSelector GetComplexSelector(SelectorRangeDescriptor descriptor, SelectorAccelerationCacheEntry cacheEntry)
+        {
+            var styleSheet = descriptor.importedStyleSheetIndex == -1
+                ? cacheEntry.ownerStyleSheet
+                : cacheEntry.ownerStyleSheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex];
+
+            return styleSheet.rules[descriptor.ruleIndex].complexSelectors[descriptor.selectorIndexInRule];
+        }
+
+        // Bloom filter check using descriptor hashes
+        static unsafe bool IsDescriptorCandidate(in SelectorRangeDescriptor descriptor, AncestorFilter ancestorFilter)
+        {
+            fixed (SelectorRangeDescriptor* pDesc = &descriptor)
+            {
+                return ancestorFilter.IsCandidate(pDesc->ancestorHashes);
+            }
+        }
+
+        // Match element against flattened selector (StyleSheet selectors only, no predicates)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        static MatchResultInfo MatchesSelectorFlat(
+            VisualElement element,
+            FlattenedSelector flatSelector,
+            ReadOnlySpan<FlattenedSelectorPart> selectorParts)
         {
             bool match = true;
 
-            StyleSelectorPart[] parts = selector.parts;
-            int count = parts.Length;
-
-            for (int i = 0; i < count && match; i++)
+            for (int i = 0; i < selectorParts.Length && match; i++)
             {
-                switch (parts[i].type)
+                var part = selectorParts[i];
+                switch (part.type)
                 {
                     case StyleSelectorType.Wildcard:
                         break;
                     case StyleSelectorType.Class:
-#pragma warning disable RS0030
-                        match = element.ClassListContains(parts[i].value);
-#pragma warning restore RS0030
+                    {
+                        var classList = element.GetClassesForIteration();
+                        var classIds = classList.GetClassIds();
+                        match = false;
+                        for (int j = 0; j < classIds.Length; j++)
+                        {
+                            if (classIds[j] == part.uniqueStringId)
+                            {
+                                match = true;
+                                break;
+                            }
+                        }
                         break;
+                    }
                     case StyleSelectorType.ID:
-                        match = string.Equals(element.name, parts[i].value, StringComparison.Ordinal);
+                    {
+                        match = element.nameId == part.uniqueStringId;
                         break;
+                    }
                     case StyleSelectorType.Type:
-                        //TODO: This tests fails to capture instances of sub-classes
-                        match = string.Equals(element.typeName, parts[i].value, StringComparison.Ordinal);
+                    {
+                        match = element.typeNameId == part.uniqueStringId;
                         break;
-                    case StyleSelectorType.Predicate:
-                        match = parts[i].tempData is UQuery.IVisualPredicateWrapper w && w.Predicate(element);
-                        break;
+                    }
                     case StyleSelectorType.PseudoClass:
                         // Selectors with invalid pseudo states should be rejected
-                        if (selector.pseudoStateMask == StyleSelector.InvalidPseudoStateMask
-                            || selector.negatedPseudoStateMask == StyleSelector.InvalidPseudoStateMask)
+                        if (flatSelector.pseudoStateMask == StyleSelector.InvalidPseudoStateMask
+                            || flatSelector.negatedPseudoStateMask == StyleSelector.InvalidPseudoStateMask)
                         {
                             match = false;
                         }
                         break;
-                    default: // ignore, all errors should have been warned before hand
+                    case StyleSelectorType.Predicate:
+                        // Predicates should NEVER appear in stylesheet selectors
+                        Debug.LogError("Predicate found in stylesheet selector - this should never happen!");
+                        match = false;
+                        break;
+                    default:
                         match = false;
                         break;
                 }
@@ -142,61 +183,61 @@ namespace UnityEngine.UIElements.StyleSheets
 
             int triggerPseudoStateMask = 0;
             int dependencyPseudoMask = 0;
-
             bool saveMatch = match;
 
-            if (saveMatch  && selector.pseudoStateMask != 0)
+            if (saveMatch && flatSelector.pseudoStateMask != 0)
             {
-                match = (selector.pseudoStateMask & (int)element.pseudoStates) == selector.pseudoStateMask;
+                match = (flatSelector.pseudoStateMask & (int)element.pseudoStates) == flatSelector.pseudoStateMask;
 
                 if (match)
                 {
-                    // the element matches this selector because it has those flags
-                    dependencyPseudoMask = selector.pseudoStateMask;
+                    dependencyPseudoMask = flatSelector.pseudoStateMask;
                 }
                 else
                 {
-                    // if the element had those flags defined, it would match this selector
-                    triggerPseudoStateMask = selector.pseudoStateMask;
+                    triggerPseudoStateMask = flatSelector.pseudoStateMask;
                 }
             }
 
-            if (saveMatch && selector.negatedPseudoStateMask != 0)
+            if (saveMatch && flatSelector.negatedPseudoStateMask != 0)
             {
-                match &= (selector.negatedPseudoStateMask & ~(int)element.pseudoStates) == selector.negatedPseudoStateMask;
+                match &= (flatSelector.negatedPseudoStateMask & ~(int)element.pseudoStates) == flatSelector.negatedPseudoStateMask;
 
                 if (match)
                 {
-                    // the element matches this selector because it does not have those flags
-                    triggerPseudoStateMask |= selector.negatedPseudoStateMask;
+                    triggerPseudoStateMask |= flatSelector.negatedPseudoStateMask;
                 }
                 else
                 {
-                    // if the element didn't have those flags, it would match this selector
-                    dependencyPseudoMask |= selector.negatedPseudoStateMask;
+                    dependencyPseudoMask |= flatSelector.negatedPseudoStateMask;
                 }
             }
 
             return new MatchResultInfo(match, (PseudoStates)triggerPseudoStateMask, (PseudoStates)dependencyPseudoMask);
         }
 
-        public static bool MatchRightToLeft(VisualElement element, StyleComplexSelector complexSelector, Action<VisualElement, MatchResultInfo> processResult)
+        // Match right-to-left using flattened data (StyleSheet selectors only)
+        static bool MatchRightToLeftFlat(
+            VisualElement element,
+            ReadOnlySpan<FlattenedSelector> descriptorSelectors,
+            ReadOnlySpan<FlattenedSelectorPart> allParts,
+            Action<VisualElement, MatchResultInfo> processResult)
         {
-            // see https://speakerdeck.com/constellation/css-jit-just-in-time-compiled-css-selectors-in-webkit for
-            // a detailed explaination of the algorithm
-
             var current = element;
-            int nextIndex = complexSelector.selectors.Length - 1;
+            int nextIndex = descriptorSelectors.Length - 1;
             VisualElement saved = null;
             int savedIdx = -1;
 
-            // go backward
             while (nextIndex >= 0)
             {
                 if (current == null)
                     break;
 
-                MatchResultInfo matchInfo = MatchesSelector(current, complexSelector.selectors[nextIndex]);
+                var flatSelector = descriptorSelectors[nextIndex];
+
+                // Slice the parts array for this specific selector
+                var selectorParts = allParts.Slice(flatSelector.startPartIndex, flatSelector.partCount);
+                MatchResultInfo matchInfo = MatchesSelectorFlat(current, flatSelector, selectorParts);
                 processResult(current, matchInfo);
 
                 if (!matchInfo.success)
@@ -204,8 +245,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     // if we have a descendant relationship, keep trying on the parent
                     // i.e., "div span", div failed on this element, try on the parent
                     // happens earlier than the backtracking saving below
-                    if (nextIndex < complexSelector.selectors.Length - 1 &&
-                        complexSelector.selectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
+                    if (nextIndex < descriptorSelectors.Length - 1 &&
+                        descriptorSelectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
                     {
                         current = current.parent;
                         continue;
@@ -226,8 +267,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 // backtracking save
                 // for "a > b c": we're considering the b matcher. c's previous relationship is Descendent
                 // save the current element parent to try to match b again
-                if (nextIndex < complexSelector.selectors.Length - 1
-                    && complexSelector.selectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
+                if (nextIndex < descriptorSelectors.Length - 1
+                    && descriptorSelectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
                 {
                     saved = current.parent;
                     savedIdx = nextIndex;
@@ -243,61 +284,109 @@ namespace UnityEngine.UIElements.StyleSheets
             return false;
         }
 
-        static void TestSelectorList(List<StyleSelectorLookupEntry> selectorList,
-            List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, int currentStyleSheetIndexInStack)
+        // Test range of descriptors in sorted allDescriptors array
+        static void TestSelectorListFlat(
+            ReadOnlySpan<SelectorRangeDescriptor> descriptors,
+            ReadOnlySpan<FlattenedSelector> allSelectors,
+            ReadOnlySpan<FlattenedSelectorPart> allParts,
+            SelectorAccelerationCacheEntry cacheEntry,
+            List<SelectorMatchRecord> matchedSelectors,
+            StyleMatchingContext context,
+            int currentStyleSheetIndexInStack)
         {
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
+
+            for (int i = 0; i < descriptors.Length; i++)
             {
-                for (int i = 0; i < selectorList.Count; i++)
+                var descriptor = descriptors[i];
+                StyleComplexSelector currentComplexSelector = default;
+
+                // For profiling, we need the actual StyleComplexSelector
+                currentComplexSelector = GetComplexSelector(descriptor, cacheEntry);
+                profiler.BeginMatchingSelector(currentComplexSelector);
+
+                bool isCandidate = true;
+                bool isMatchRightToLeft = false;
+
+                if (!descriptor.isSimple)
                 {
-                    var currentEntry = selectorList[i];
-                    var currentComplexSelector = currentEntry.selector;
-                    profiler.BeginMatchingSelector(currentComplexSelector);
-                    bool isCandidate = true;
-                    bool isMatchRightToLeft = false;
-
-                    if (!currentComplexSelector.isSimple)
-                    {
-                        isCandidate = context.ancestorFilter.IsCandidate(currentComplexSelector);
-                    }
-
-                    if (isCandidate || s_VerifyBloomIntegrity)
-                    {
-                        isMatchRightToLeft = MatchRightToLeft(context.currentElement, currentComplexSelector, context.processResult);
-                    }
-
-                    // This verifies that the Bloom filter never rejects a valid complex selector.
-                    if (s_VerifyBloomIntegrity)
-                    {
-                        Assert.IsTrue(isCandidate || !isMatchRightToLeft, "The Bloom filter returned a false negative match.");
-                    }
-
-                    if (isMatchRightToLeft)
-                    {
-                        if (currentEntry.importedStyleSheetIndex > -1)
-                        {
-                            var sheet = context.GetStyleSheetAt(currentStyleSheetIndexInStack);
-                            Debug.Assert(sheet.flattenedRecursiveImports[currentEntry.importedStyleSheetIndex] == currentComplexSelector.rule.styleSheet, "StyleSelectorLookupEntry is not consistent");
-                        }
-                        matchedSelectors.Add(new SelectorMatchRecord(
-                            currentComplexSelector.rule.styleSheet,
-                            currentStyleSheetIndexInStack,
-                            currentEntry.importedStyleSheetIndex,
-                            currentComplexSelector
-                        ));
-                    }
-
-                    profiler.EndMatchingSelector(currentComplexSelector, isMatchRightToLeft, isCandidate);
+                    isCandidate = IsDescriptorCandidate(descriptor, context.ancestorFilter);
                 }
+
+                if (isCandidate || s_VerifyBloomIntegrity)
+                {
+                    // Slice the selectors array for this specific descriptor
+                    var descriptorSelectors = allSelectors.Slice(descriptor.startSelectorIndex, descriptor.selectorCount);
+                    isMatchRightToLeft = MatchRightToLeftFlat(
+                        context.currentElement,
+                        descriptorSelectors,
+                        allParts,
+                        context.processResult);
+                }
+
+                if (s_VerifyBloomIntegrity)
+                {
+                    Assert.IsTrue(isCandidate || !isMatchRightToLeft, "The Bloom filter returned a false negative match.");
+                }
+
+                if (isMatchRightToLeft)
+                {
+                    // Only do reverse lookup when we have a match (if not already done for profiling)
+                    if (currentComplexSelector == default)
+                        currentComplexSelector = GetComplexSelector(descriptor, cacheEntry);
+
+                    if (descriptor.importedStyleSheetIndex > -1)
+                    {
+                        var sheet = context.GetStyleSheetAt(currentStyleSheetIndexInStack);
+                        Debug.Assert(sheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex] == currentComplexSelector.rule.styleSheet,
+                            "StyleRangeDescriptor is not consistent");
+                    }
+                    matchedSelectors.Add(new SelectorMatchRecord(
+                        currentComplexSelector.rule.styleSheet,
+                        currentStyleSheetIndexInStack,
+                        descriptor.importedStyleSheetIndex,
+                        currentComplexSelector
+                    ));
+                }
+
+                profiler.EndMatchingSelector(currentComplexSelector, isMatchRightToLeft, isCandidate);
             }
         }
 
-        static void FastLookup(IDictionary<string, List<StyleSelectorLookupEntry>> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, int currentStyleSheetIndexInStack)
+        // Fast lookup using int key in range-based table
+        static void FastLookupFlat(
+            Dictionary<int, (int startIndex, int count)> table,
+            SelectorAccelerationCacheEntry cacheEntry,
+            List<SelectorMatchRecord> matchedSelectors,
+            StyleMatchingContext context,
+            int uniqueStringId,
+            int currentStyleSheetIndexInStack)
         {
-            if (table.TryGetValue(input, out List<StyleSelectorLookupEntry> selectorList))
+            if (table != null && table.TryGetValue(uniqueStringId, out var range))
             {
-                TestSelectorList(selectorList, matchedSelectors, context, currentStyleSheetIndexInStack);
+                // Slice the descriptors array for this range
+                var descriptors = ((ReadOnlySpan<SelectorRangeDescriptor>)cacheEntry.allDescriptors).Slice(range.startIndex, range.count);
+                TestSelectorListFlat(
+                    descriptors,
+                    cacheEntry.allSelectors,
+                    cacheEntry.allParts,
+                    cacheEntry,
+                    matchedSelectors,
+                    context,
+                    currentStyleSheetIndexInStack);
             }
+        }
+
+        // Helper to get the appropriate table by type
+        static Dictionary<int, (int startIndex, int count)> GetFlatTableByType(SelectorAccelerationCacheEntry cacheEntry, SelectorAccelerationTableType type)
+        {
+            return type switch
+            {
+                SelectorAccelerationTableType.Name => cacheEntry.nameTable,
+                SelectorAccelerationTableType.Type => cacheEntry.typeTable,
+                SelectorAccelerationTableType.Class => cacheEntry.classTable,
+                _ => null
+            };
         }
 
         public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors)
@@ -326,42 +415,56 @@ namespace UnityEngine.UIElements.StyleSheets
         struct SelectorWorkItem
         {
             public SelectorAccelerationTableType type;
-            public string input;
+            public int uniqueStringId;
 
-            public SelectorWorkItem(SelectorAccelerationTableType type, string input)
+            public SelectorWorkItem(SelectorAccelerationTableType type, int uniqueStringId)
             {
                 this.type = type;
-                this.input = input;
+                this.uniqueStringId = uniqueStringId;
             }
         }
 
         public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors, int parentSheetIndex)
         {
             Debug.Assert(matchedSelectors.Count == 0);
-
             Debug.Assert(context.currentElement != null, "context.currentElement != null");
 
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
             profiler.BeginMatchingElement(context.currentElement);
             var toggleRoot = false;
             var processedStyleSheets = HashSetPool<StyleSheet>.Get();
-            var workItems = ListPool<SelectorWorkItem>.Get();
+            SelectorWorkItem[] rentedArray = null;
 
             try
             {
                 var element = context.currentElement;
-                workItems.Add(new (SelectorAccelerationTableType.Type, element.typeName));
-
-                if (!string.IsNullOrEmpty(element.name))
-                    workItems.Add(new (SelectorAccelerationTableType.Name, element.name));
                 var classList = element.GetClassesForIteration();
-                int classCount = classList.Count;
-                for (int i = 0; i < classCount; i++)
+                var classIds = classList.GetClassIds();
+
+                // Build work items with UniqueStyleString IDs
+                // Size = classIds.Length + 1 (type) + 1 (name, if valid nameId >= 0)
+                int workItemsCount = classIds.Length + 1 + (element.nameId >= 0 ? 1 : 0);
+
+                // Use stackalloc for small counts, ArrayPool for large counts to prevent stack overflow
+                const int StackAllocThreshold = 64;
+                Span<SelectorWorkItem> workItems = workItemsCount <= StackAllocThreshold
+                    ? stackalloc SelectorWorkItem[workItemsCount]
+                    : (rentedArray = ArrayPool<SelectorWorkItem>.Shared.Rent(workItemsCount)).AsSpan(0, workItemsCount);
+
+                int idx = 0;
+                // Use cached typeNameId from VisualElement
+                workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Type, element.typeNameId);
+
+                // Only add to work items if name exists in UniqueStyleString system (nameId >= 0)
+                if (element.nameId >= 0)
                 {
-                    workItems.Add(new (SelectorAccelerationTableType.Class, (string)classList[i]));
+                    workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Name, element.nameId);
                 }
 
-                int workItemsCount = workItems.Count;
+                for (int i = 0; i < classIds.Length; i++)
+                {
+                    workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Class, classIds[i]);
+                }
 
                 for (var i = context.styleSheetCount - 1; i >= 0; --i)
                 {
@@ -392,18 +495,40 @@ namespace UnityEngine.UIElements.StyleSheets
                         if ((accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)item.type)) == 0)
                             continue;
 
-                        var table = accelerationCacheEntry.tables[(int)item.type];
-
-                        FastLookup(table, matchedSelectors, context, item.input, i);
+                        var table = GetFlatTableByType(accelerationCacheEntry, item.type);
+                        FastLookupFlat(table, accelerationCacheEntry, matchedSelectors, context, item.uniqueStringId, i);
                     }
 
-                    if (toggleRoot && accelerationCacheEntry.rootSelectors != null)
+                    // Handle :root selectors
+                    if (toggleRoot && accelerationCacheEntry.rootSelectorRange.count > 0)
                     {
-                        TestSelectorList(accelerationCacheEntry.rootSelectors, matchedSelectors, context, i);
+                        var rootDescriptors = ((ReadOnlySpan<SelectorRangeDescriptor>)accelerationCacheEntry.allDescriptors)
+                            .Slice(accelerationCacheEntry.rootSelectorRange.startIndex, accelerationCacheEntry.rootSelectorRange.count);
+                        TestSelectorListFlat(
+                            rootDescriptors,
+                            accelerationCacheEntry.allSelectors,
+                            accelerationCacheEntry.allParts,
+                            accelerationCacheEntry,
+                            matchedSelectors,
+                            context,
+                            i);
                     }
 
-                    if (accelerationCacheEntry.wildCardSelectors != null)
-                        TestSelectorList(accelerationCacheEntry.wildCardSelectors, matchedSelectors, context, i);
+                    // Handle wildcard selectors
+                    if (accelerationCacheEntry.wildCardSelectorRange.count > 0)
+                    {
+                        var wildcardDescriptors = ((ReadOnlySpan<SelectorRangeDescriptor>)accelerationCacheEntry.allDescriptors)
+                            .Slice(accelerationCacheEntry.wildCardSelectorRange.startIndex, accelerationCacheEntry.wildCardSelectorRange.count);
+                        TestSelectorListFlat(
+                            wildcardDescriptors,
+                            accelerationCacheEntry.allSelectors,
+                            accelerationCacheEntry.allParts,
+                            accelerationCacheEntry,
+                            matchedSelectors,
+                            context,
+                            i);
+                    }
+
                     profiler.EndMatchingStyleSheet(styleSheet);
                 }
 
@@ -412,11 +537,12 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             finally
             {
-                ListPool<SelectorWorkItem>.Release(workItems);
                 HashSetPool<StyleSheet>.Release(processedStyleSheets);
+                if (rentedArray != null)
+                    ArrayPool<SelectorWorkItem>.Shared.Return(rentedArray);
             }
         }
     }
-
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class StyleSelectorHelper : StyleSelectorHelper<NoOpStyleProfiler> { }
 }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Unity.Hierarchy.Editor;
 using UnityEditor;
@@ -11,6 +12,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEditor.UIElements;
 using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -31,6 +33,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private VisualTreeAssetEditingContext m_Context;
 
     private PanelElement m_PanelElement;
+    readonly MatchedRulesExtractor m_RulesExtractor = new (AssetDatabase.GetAssetPath);
 
     public event Action<VisualElementEditingStage> MainDocumentWasCloned;
     public event Action<PanelElement> PanelWasRepainted;
@@ -145,9 +148,12 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         StageNavigationManager.instance.beforeSwitchingAwayFromStage += BeforeLeavingStage;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
         m_Clipboard = new Clipboard();
+        m_MenuScope = new ScopedMenuItemGenerator();
+
         // This is temporary fix for domain issues that are very specific to timings.
         // TODO: [MP] Remove once we have the proper reload attributes for managed objects.
         HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
+        UICommandQueue.RegisterHandler<RequestHighlightsCommand>(OnHighlightsRequested);
     }
 
     protected override void OnDisable()
@@ -160,13 +166,16 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         m_PanelElement.OnAfterRepaint -= OnPanelRepainted;
         m_Clipboard.Dispose();
         m_Clipboard = null;
+        m_MenuScope?.Dispose();
+        m_MenuScope = null;
+        UICommandQueue.UnregisterHandler<RequestHighlightsCommand>(OnHighlightsRequested);
     }
 
     protected internal override bool OnOpenStage()
     {
         m_PanelElement.PanelSettings = Context.PanelSettings;
         RequestRefresh();
-        m_MenuScope = new ScopedMenuItemGenerator();
+        m_MenuScope ??= new ScopedMenuItemGenerator();
         return true;
     }
 
@@ -471,5 +480,65 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         if (m_PanelElement != null)
             m_PanelElement.ContentOverflowMode = overflow;
+    }
+
+    void OnHighlightsRequested(in CommandContext context)
+    {
+        if (context.Status != CommandExecutionStatus.Success)
+            return;
+
+        if (context.Command is not RequestHighlightsCommand command)
+            return;
+
+        using var elementSetHandle = HashSetPool<VisualElement>.Get(out var elementSet);
+        using var ruleSetHandle = HashSetPool<StyleRule>.Get(out var ruleSet);
+
+        if (command.Element != null)
+        {
+            elementSet.Add(command.Element);
+            m_RulesExtractor.FindMatchingRules(command.Element);
+            foreach (var matchRecord in m_RulesExtractor.matchRecords)
+            {
+                var rule = matchRecord.complexSelector.rule;
+                if (rule != null)
+                    ruleSet.Add(rule);
+            }
+            m_RulesExtractor.Clear();
+        }
+
+        if (command.ElementId.HasValue)
+        {
+            var element = FindElementById(m_PanelElement.subRootVisualElement, command.ElementId.Value);
+            if (element != null && elementSet.Add(element))
+            {
+                m_RulesExtractor.FindMatchingRules(element);
+                foreach (var matchRecord in m_RulesExtractor.matchRecords)
+                {
+                    var rule = matchRecord.complexSelector.rule;
+                    if (rule != null)
+                        ruleSet.Add(rule);
+                }
+
+                m_RulesExtractor.Clear();
+            }
+        }
+
+        if (command.Rule != null)
+        {
+            ruleSet.Add(command.Rule);
+            foreach(var selector in command.Rule.complexSelectors)
+                HighlightUtility.GetMatchingElementsForSelector(m_PanelElement.SubPanel.visualTree, selector, elementSet);
+        }
+
+        using (var highlightCommand = HighlightCommand.GetPooled(elementSet, ruleSet))
+        {
+            highlightCommand.Source = command.Source;
+            UICommandQueue.EnqueueCommand(highlightCommand);
+        }
+    }
+
+    static VisualElement FindElementById(VisualElement root, int veaId)
+    {
+        return root.Query().Where(e => e.visualElementAsset?.id == veaId).First();
     }
 }

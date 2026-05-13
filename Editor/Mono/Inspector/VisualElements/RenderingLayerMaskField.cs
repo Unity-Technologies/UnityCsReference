@@ -2,12 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEditor.Rendering;
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -15,44 +12,9 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A RenderingLayerMaskField editor.
     /// </summary>
-    public class RenderingLayerMaskField : BaseMaskField<uint>
+    [UxmlElement]
+    public partial class RenderingLayerMaskField : BaseMaskField<uint>
     {
-        [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<uint>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<uint>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(layerMask), "value")
-                }, true);
-            }
-
-#pragma warning disable 649
-            [UxmlAttribute("value")] [SerializeField]
-            RenderingLayerMask layerMask;
-
-            [SerializeField, UxmlIgnore, HideInInspector]
-            UxmlAttributeFlags layerMask_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new RenderingLayerMaskField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(layerMask_UxmlAttributeFlags))
-                {
-                    var e = (RenderingLayerMaskField)obj;
-                    e.layerMask = layerMask;
-                }
-            }
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -68,6 +30,7 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        [UxmlAttribute("value")]
         internal RenderingLayerMask layerMask
         {
             get => value;

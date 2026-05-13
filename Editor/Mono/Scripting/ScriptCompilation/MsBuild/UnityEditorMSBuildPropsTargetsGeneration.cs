@@ -16,6 +16,68 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild;
 
 class UnityEditorMSBuildPropsTargetsGeneration
 {
+    // Session-scoped cache for PrecompiledAssemblyProvider results to avoid repeated queries
+    private static PrecompiledAssemblyProviderCache s_assemblyProviderCache;
+    private static BuildTarget s_cachedBuildTarget;
+    private static readonly object s_cacheLock = new object();
+
+    private class PrecompiledAssemblyProviderCache
+    {
+        public List<string> EditorPluginPaths { get; set; }
+        public List<string> PlayerPluginPaths { get; set; }
+        public HashSet<string> AllPlugins { get; set; }
+        public string[] EditorModulePaths { get; set; }
+        public string[] PlayerModulePaths { get; set; }
+    }
+
+    private static PrecompiledAssemblyProviderCache GetOrCreateCache(BuildTarget buildTarget)
+    {
+        lock (s_cacheLock)
+        {
+            if (s_assemblyProviderCache != null && s_cachedBuildTarget == buildTarget)
+            {
+                return s_assemblyProviderCache;
+            }
+
+            var cache = new PrecompiledAssemblyProviderCache();
+
+            // Cache plugin paths
+            cache.EditorPluginPaths = GetPluginsAssemblyPaths(true, buildTarget);
+            for (int i = 0; i < cache.EditorPluginPaths.Count; i++)
+            {
+                cache.EditorPluginPaths[i] = Path.GetFullPath(FileUtil.GetPhysicalPath(cache.EditorPluginPaths[i]));
+            }
+
+            cache.PlayerPluginPaths = GetPluginsAssemblyPaths(false, buildTarget);
+            for (int i = 0; i < cache.PlayerPluginPaths.Count; i++)
+            {
+                cache.PlayerPluginPaths[i] = Path.GetFullPath(FileUtil.GetPhysicalPath(cache.PlayerPluginPaths[i]));
+            }
+
+            cache.AllPlugins = new HashSet<string>();
+            foreach (var plugin in GetAllPlugins())
+            {
+                cache.AllPlugins.Add(Path.GetFullPath(FileUtil.GetPhysicalPath(plugin)));
+            }
+
+            // Cache module paths
+            cache.EditorModulePaths = GetModulesAssemblyPaths(true, buildTarget);
+            cache.PlayerModulePaths = GetModulesAssemblyPaths(false, buildTarget);
+
+            s_assemblyProviderCache = cache;
+            s_cachedBuildTarget = buildTarget;
+            return cache;
+        }
+    }
+
+    public static void InvalidateCache()
+    {
+        lock (s_cacheLock)
+        {
+            s_assemblyProviderCache = null;
+        }
+    }
+
     public static void UpdateGeneratedMSBuildFileIfNeeded(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions)
     {
         ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
@@ -31,6 +93,65 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
         var optimization = CompilationPipeline.codeOptimization;
         PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, buildTarget.ToString(), GetCurrentDotNETRuntimeId(), optimization == CodeOptimization.Release);
+    }
+
+    /// <summary>
+    /// Updates only essential props required for initial graph evaluation.
+    /// Defers expensive plugin/reference props generation to restore phase.
+    /// </summary>
+    public static void UpdateEssentialPropsOnly(BuildTarget buildTarget)
+    {
+        ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
+        var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationScriptingPath, "MSBuild/sdk-nugets");
+        ProjectGenerator.Instance.MaintainGlobalJson("1.0.0", "global.json");
+        ProjectGenerator.Instance.MaintainNugetConfig(unityNugetLocalFeed, "NuGet.config");
+
+        var optimization = CompilationPipeline.codeOptimization;
+        var editorVersion = Application.unityVersion;
+
+        PropsGenerator.Instance.UpdateEssentialPropsOnly(
+            EditorApplication.applicationScriptingPath,
+            buildTarget.ToString(),
+            GetCurrentDotNETRuntimeId(),
+            optimization == CodeOptimization.Release,
+            editorVersion);
+    }
+
+    /// <summary>
+    /// Updates deferrable props (defines, references, plugins, search paths) in parallel.
+    /// Uses cached PrecompiledAssemblyProvider results to avoid repeated queries.
+    /// </summary>
+    public static void UpdateDeferrablePropsInParallel(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions)
+    {
+        var cache = GetOrCreateCache(buildTarget);
+
+        // Get defines
+        var subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget);
+        var scriptCompilationOptions = MapMSBuildCompilationOptions(compilationOptions);
+
+        var editorScriptCompilationOptions =
+            scriptCompilationOptions | EditorScriptCompilationOptions.BuildingForEditor;
+        var editorApiCompatibility =
+            PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings
+                .GetEditorAssembliesCompatibilityLevel());
+        var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(
+            editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility);
+
+        var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(
+            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility);
+
+        // Get search paths
+        var searchPaths = BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget);
+
+        PropsGenerator.Instance.UpdateDeferrablePropsInParallel(
+            editorOnlyCompatibleDefines,
+            playerAssembliesDefines,
+            cache.EditorModulePaths,
+            cache.PlayerModulePaths,
+            cache.EditorPluginPaths,
+            cache.PlayerPluginPaths,
+            cache.AllPlugins,
+            searchPaths);
     }
 
     private static string GetCurrentDotNETRuntimeId()
@@ -121,7 +242,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
     {
         var precompiledAssemblyProvider = new PrecompiledAssemblyProvider();
 
-        var assemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies((isEditor ? EditorScriptCompilationOptions.BuildingForEditor : EditorScriptCompilationOptions.BuildingEmpty) | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies, buildTarget, Array.Empty<string>());
+        var editorOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
+        var assemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies((isEditor ? editorOptions : EditorScriptCompilationOptions.BuildingEmpty) | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies, buildTarget, Array.Empty<string>());
 
         var pluginPaths = new List<string>();
         foreach (var assembly in assemblies)
@@ -161,7 +283,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         var scriptCompilationOptions = MapMSBuildCompilationOptions(compilationOptions);
 
         var editorScriptCompilationOptions =
-            scriptCompilationOptions | EditorScriptCompilationOptions.BuildingForEditor;
+            scriptCompilationOptions | EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
         var editorApiCompatibility =
             PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings
                 .GetEditorAssembliesCompatibilityLevel());
@@ -185,6 +307,14 @@ class UnityEditorMSBuildPropsTargetsGeneration
         if ((compilationOptions & MSBuildCompilationOptions.BuildingWithAsserts) == MSBuildCompilationOptions.BuildingWithAsserts)
         {
             editorScriptCompilationOptions |= EditorScriptCompilationOptions.BuildingWithAsserts;
+        }
+        if ((compilationOptions & MSBuildCompilationOptions.BuildingWithInstrumentation) == MSBuildCompilationOptions.BuildingWithInstrumentation)
+        {
+            editorScriptCompilationOptions |= EditorScriptCompilationOptions.BuildingWithInstrumentation;
+        }
+        if ((compilationOptions & MSBuildCompilationOptions.BuildingWithDebug) == MSBuildCompilationOptions.BuildingWithDebug)
+        {
+            editorScriptCompilationOptions |= EditorScriptCompilationOptions.BuildingWithoutOptimization;
         }
 
         return editorScriptCompilationOptions;

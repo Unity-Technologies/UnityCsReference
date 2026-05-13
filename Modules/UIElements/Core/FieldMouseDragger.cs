@@ -64,14 +64,30 @@ namespace UnityEngine.UIElements
         /// </summary>
         public T startValue { get; set; }
 
+        private class Callbacks
+        {
+            public readonly EventCallbackGroup OnDragElementPointerAndKeyDown;
+
+            public Callbacks(EventArg<FieldMouseDragger<T>> arg)
+            {
+                OnDragElementPointerAndKeyDown = new(
+                    EventCallback.Create<PointerDownEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnPointerDown(e), arg, CallbackOptions.TrickleDown),
+                    EventCallback.Create<PointerUpEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnPointerUp(e), arg),
+                    EventCallback.Create<KeyDownEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnKeyDown(e), arg)
+                );
+            }
+        }
+
+        private static readonly EventCallbackGroupFactory<FieldMouseDragger<T>> k_CallbackFactory = new(arg => new Callbacks(arg).OnDragElementPointerAndKeyDown);
+        private EventCallbackGroupFactory<FieldMouseDragger<T>>.Group m_RegisteredCallbacks;
+
         /// <inheritdoc />
         public sealed override void SetDragZone(VisualElement dragElement, Rect hotZone)
         {
             if (m_DragElement != null)
             {
-                m_DragElement.UnregisterCallback<PointerDownEvent>(UpdateValueOnPointerDown, TrickleDown.TrickleDown);
-                m_DragElement.UnregisterCallback<PointerUpEvent>(UpdateValueOnPointerUp);
-                m_DragElement.UnregisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
+                m_RegisteredCallbacks?.Unregister(m_DragElement);
+                m_RegisteredCallbacks = default;
             }
 
             m_DragElement = dragElement;
@@ -80,9 +96,7 @@ namespace UnityEngine.UIElements
             if (m_DragElement != null)
             {
                 dragging = false;
-                m_DragElement.RegisterCallback<PointerDownEvent>(UpdateValueOnPointerDown, TrickleDown.TrickleDown);
-                m_DragElement.RegisterCallback<PointerUpEvent>(UpdateValueOnPointerUp);
-                m_DragElement.RegisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
+                m_RegisteredCallbacks = k_CallbackFactory.Register(m_DragElement, this);
             }
         }
 

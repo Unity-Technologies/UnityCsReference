@@ -8,14 +8,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class DropdownButton : BaseDropdownButton<DropdownMenu>, IToolbarMenuElement
+    [UxmlElement]
+    internal partial class DropdownButton : BaseDropdownButton<DropdownMenu>, IToolbarMenuElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new DropdownButton();
-        }
-
         public event Action onBeforeShowDropdown = delegate {};
 
         public DropdownButton() : base()

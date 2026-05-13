@@ -43,14 +43,9 @@ namespace UnityEditor.Overlays
         }
     }
 
-    class ToolbarOverlayContainer : OverlayContainer
+    [UxmlElement]
+    partial class ToolbarOverlayContainer : OverlayContainer
     {
-        [Serializable]
-        public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarOverlayContainer();
-        }
-
         const string k_ToolbarClassName = "overlay-toolbar-area";
         public const string k_RightToolbarName = "overlay-toolbar__right";
         public const string k_LeftToolbarName = "overlay-toolbar__left";

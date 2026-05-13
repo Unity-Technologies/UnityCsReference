@@ -249,10 +249,19 @@ namespace Unity.UI.Builder
             if (!isCmdOrCtrlKey || evt.keyCode != KeyCode.S)
                 return;
 
-            if (document.hasUnsavedChanges)
-                SaveChanges();
-
             evt.StopPropagation();
+
+            // Commit any pending field values before saving. We're inside an event dispatch here
+            // (m_GateCount > 0), so value-change events triggered by the implicit blur get queued.
+            // Defer the save so those queued events fire first and the document picks up the
+            // latest values. Mirrors the fileMenuSaved handler. Case UUM-139822.
+            inspector.BeforeSelectionChanged();
+
+            EditorApplication.delayCall += () =>
+            {
+                if (document.hasUnsavedChanges)
+                    SaveChanges();
+            };
         }
 
         // Message received when we dock/undock the window.
@@ -478,17 +487,17 @@ namespace Unity.UI.Builder
 
             if (documentCommand.subDocumentOptions == SubDocumentOptions.InContext)
             {
-                for (int i = documentCommand.subDocuments.Count - 1; i >= 1; i--)
+                for (int i = 0; i < documentCommand.subDocuments.Count - 1; i++)
                     BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[i], documentCommand.contextInstances[i]);
 
-                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[0], documentCommand.contextInstances[0]);
+                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[^1], documentCommand.contextInstances[^1]);
             }
             else if (documentCommand.subDocumentOptions == SubDocumentOptions.Isolation)
             {
-                for (int i = documentCommand.subDocuments.Count - 1; i >= 1; i--)
+                for (int i = 0; i < documentCommand.subDocuments.Count - 1; i++)
                     BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[i]);
 
-                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[0]);
+                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[^1]);
             }
 
             // If the builder is already open there is no call to OnEnableAfterSerialization

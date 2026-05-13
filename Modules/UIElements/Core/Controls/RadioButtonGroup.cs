@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Pool;
 
@@ -18,39 +17,6 @@ namespace UnityEngine.UIElements
     public partial class RadioButtonGroup : BaseField<int>, IGroupBox
     {
         internal static readonly BindingId choicesProperty = nameof(choices);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<int>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(choicesList), "choices")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices))]
-            [SerializeField] List<string> choicesList;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choicesList_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new RadioButtonGroup();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(choicesList_UxmlAttributeFlags))
-                {
-                    var e = (RadioButtonGroup)obj;
-                    e.choicesList = choicesList;
-                }
-            }
-        }
 
         /// <summary>
         /// USS class name for RadioButtonGroup elements.
@@ -200,6 +166,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [UxmlAttribute(nameof(choices)), UxmlAttributeBindingPath(nameof(choices))]
         internal List<string> choicesList
         {
             get => m_Choices;

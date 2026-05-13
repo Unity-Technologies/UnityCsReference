@@ -36,6 +36,12 @@ namespace UnityEditor.Search
             return value;
         }
 
+        [SearchSelector("eid", priority: 1)]
+        static object GetSearchItemEntityId(SearchItem item)
+        {
+            return item.GetEntityId();
+        }
+
         internal static SerializedProperty GetSerializedProperty(SearchItem item, SearchColumn column, out SerializedObject so)
         {
             foreach (var m in SelectorManager.Match(column.selector, item.provider?.type))
@@ -320,6 +326,25 @@ namespace UnityEditor.Search
 
                 column.cellCreator = args => MakePropertyField(args);
                 column.binder = (args, ve) => BindPropertyField(args, ve);
+            }
+
+            [SearchColumnProvider($"{k_ProviderId}_IMGUI")]
+            public static void IMGUIPRoperty(SearchColumn column)
+            {
+                column.getter = args => PropertySelectors.SerializedPropertyColumnProvider.Getter(args.item, args.column);
+                column.setter = args => PropertySelectors.SerializedPropertyColumnProvider.Setter(args.item, args.column, args.value, args.multiple);
+                column.comparer = args => PropertySelectors.SerializedPropertyColumnProvider.Comparer(args.lhs.value, args.rhs.value, args.sortAscending);
+                column.drawer = args =>
+                {
+                    var prop = args.value as SerializedProperty;
+                    if (prop == null)
+                        return null;
+                    var comparisonMode = EditorGUIUtility.comparisonViewMode;
+                    EditorGUIUtility.comparisonViewMode = EditorGUIUtility.ComparisonViewMode.Original;
+                    var value = EditorGUILayout.PropertyField(prop, GUIContent.none, false);
+                    EditorGUIUtility.comparisonViewMode = comparisonMode;
+                    return value;
+                };
             }
 
             private static VisualElement MakePropertyField(SearchColumn args)

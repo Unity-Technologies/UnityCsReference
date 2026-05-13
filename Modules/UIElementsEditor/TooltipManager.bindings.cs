@@ -8,7 +8,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 namespace UnityEditor.UIElements
 {
-    [NativeHeader("Editor/Src/TooltipManager.h")]
+    [NativeHeader("Editor/Src/TooltipManager.bindings.h")]
     static class TooltipManager
     {
         [RequiredByNativeCode]
@@ -27,7 +27,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [StaticAccessor("GetTooltipManager()", StaticAccessorType.Dot)]
+        [FreeFunction("TooltipManagerBindings::SetTooltip")]
         private static extern void SetTooltip(string tooltip, Rect rect);
     }
 }

@@ -34,12 +34,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SampleCache.onSamplesChanged += OnSamplesChanged;
             m_SampleCache.onImportedSamplesChanged += OnImportedSamplesChanged;
+
+            m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
         }
 
         public override void OnDisable()
         {
             m_SampleCache.onSamplesChanged -= OnSamplesChanged;
             m_SampleCache.onImportedSamplesChanged -= OnImportedSamplesChanged;
+
+            m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         }
 
         private void OnSamplesChanged(IReadOnlyCollection<string> packageUniqueIds)
@@ -59,6 +63,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             GenerateSamplesAndTriggerChangeEvent(packageUniqueIds);
         }
 
+        private void OnPackagesChanged(PackagesChangeArgs args)
+        {
+            var packageUniqueIds = new List<string>(args.added.Count + args.updated.Count + args.removed.Count);
+            packageUniqueIds.AddRange(args.added.SelectAsEnumerable(i => i.uniqueId));
+            packageUniqueIds.AddRange(args.updated.SelectAsEnumerable(i => i.uniqueId));
+            packageUniqueIds.AddRange(args.removed.SelectAsEnumerable(i => i.uniqueId));
+            GenerateSamplesAndTriggerChangeEvent(packageUniqueIds);
+        }
+
         public void GenerateSamplesAndTriggerChangeEvent(IReadOnlyCollection<string> packageUniqueIds)
         {
             if (packageUniqueIds.Count == 0)
@@ -68,12 +81,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             var removed = new List<string>();
             foreach (var packageUniqueId in packageUniqueIds)
             {
+                var package = m_PackageDatabase.GetPackage(packageUniqueId);
                 var sampleInfoCollection = m_SampleCache.GetSampleInfoCollection(packageUniqueId);
                 var packageInfo = m_UpmCache.GetInstalledPackageInfoByUniqueId(packageUniqueId);
-                if (sampleInfoCollection == null || packageInfo == null)
+                if (sampleInfoCollection == null || packageInfo == null || package == null)
                     removed.Add(packageUniqueId);
                 else
-                    addedOrUpdated.Add(Convert(packageInfo, sampleInfoCollection));
+                    addedOrUpdated.Add(Convert(packageInfo, sampleInfoCollection, package));
             }
             if (addedOrUpdated.Count > 0 || removed.Count > 0)
                 m_PackageDatabase.UpdateSamples(addedOrUpdated, removed);
@@ -84,10 +98,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             var sampleCollection = m_SampleCache.ParseSamples(packageInfo);
             if (sampleCollection == null)
                 return Array.Empty<Sample>();
-            return Convert(packageInfo, sampleCollection);
+            var package = m_PackageDatabase.GetPackage(sampleCollection.packageUniqueId);
+            return Convert(packageInfo, sampleCollection, package);
         }
 
-        private SampleCollection Convert(PackageInfo packageInfo, SampleInfoCollection sampleInfoCollection)
+        private SampleCollection Convert(PackageInfo packageInfo, SampleInfoCollection sampleInfoCollection, IPackage package)
         {
             var samples = sampleInfoCollection.SelectToNewArray(sample =>
             {
@@ -104,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var isImported = m_IOProxy.DirectoryExists(importPath);
                 var sizeInBytes = m_IOProxy.DirectorySizeInBytes(resolvedSamplePath);
                 var previousImportPaths = GetPreviousImportPaths(sanitizedPackageDisplayName, sanitizedSampleDisplayName);
-                return new Sample(sample, sampleInfoCollection.packageUniqueId, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths);
+                return new Sample(sample, sampleInfoCollection.packageUniqueId, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths, package);
             });
             return new SampleCollection(sampleInfoCollection.packageUniqueId, samples);
         }

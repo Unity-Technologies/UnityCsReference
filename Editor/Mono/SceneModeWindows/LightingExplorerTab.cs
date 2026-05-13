@@ -131,7 +131,9 @@ namespace UnityEditor
             m_Column.sortedAscending        = true;
             m_Column.sortingArrowAlignment  = TextAlignment.Center;
             m_Column.autoResize             = true;
-            m_Column.allowToggleVisibility  = true;
+            // The canonical Name column (DataType.Name with no backing property) is the mandatory column for each
+            // Light Explorer tab. IMGUI's MultiColumnHeader requires at least one visible column — see UUM-141223.
+            m_Column.allowToggleVisibility  = !(type == DataType.Name && propertyName == null);
             m_Column.headerTextAlignment    = type == DataType.Checkbox ? TextAlignment.Center : TextAlignment.Left;
 
             switch (type)

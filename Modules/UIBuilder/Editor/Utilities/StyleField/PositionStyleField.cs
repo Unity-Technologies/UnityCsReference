@@ -2,19 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.UIToolkit.Editor;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class PositionStyleField : DimensionStyleField
+    [UxmlElement]
+    partial class PositionStyleField : DimensionStyleField
     {
-        [Serializable]
-        public new class UxmlSerializedData : DimensionStyleField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new PositionStyleField();
-        }
-
         static readonly string k_FieldClassName = "unity-position-style-field";
 
         public PositionAnchorPoint point { get; set; }

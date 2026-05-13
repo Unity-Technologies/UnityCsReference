@@ -50,6 +50,11 @@ namespace Unity.GraphToolkit.Editor
         public static readonly ChangeHintList UIHints = new(ChangeHint.UIHints);
 
         /// <summary>
+        /// Change hint list for animation changes.
+        /// </summary>
+        public static readonly ChangeHintList Animation = new(ChangeHint.Animation);
+
+        /// <summary>
         /// Change hint list for redraw changes.
         /// </summary>
         public static readonly ChangeHintList NeedsRedraw = new(ChangeHint.NeedsRedraw);
@@ -176,6 +181,7 @@ namespace Unity.GraphToolkit.Editor
             if (changeHint == ChangeHint.GraphTopology) return GraphTopology;
             if (changeHint == ChangeHint.Grouping) return Grouping;
             if (changeHint == ChangeHint.UIHints) return UIHints;
+            if (changeHint == ChangeHint.Animation) return Animation;
             if (changeHint == ChangeHint.NeedsRedraw) return NeedsRedraw;
 
             return new ChangeHintList(changeHint);

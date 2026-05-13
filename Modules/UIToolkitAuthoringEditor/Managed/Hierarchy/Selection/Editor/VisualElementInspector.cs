@@ -3,40 +3,31 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
+using System.IO;
 using Unity.Properties;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal sealed class VisualElementInspector : VisualElement, IDisposable
+[UxmlElement]
+internal sealed partial class VisualElementInspector : UIInspector
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        public override object CreateInstance()
-        {
-            return new VisualElementInspector();
-        }
-    }
-
     public static readonly BindingId ElementProperty = nameof(Element);
     public static readonly BindingId EditFlagsProperty = nameof(EditFlags);
 
     public const string UssClass = "unity-visual-element-inspector";
     public const string HeaderUssClass = UssClass + "__header";
-    public const string OpenInBuilderUssClass = UssClass + "__open-in-builder-button";
+    public const string AssetNotEditableHelpBoxUssClass = UssClass + "__not-editable-help-box";
+    public const string AssetPathContainerUssClass = UssClass + "__asset-path-container";
+    public const string AssetPathTypeIconUssClass = UssClass + "__asset-path-type-icon";
+    public const string AssetPathFieldUssClass = UssClass + "__asset-path-field";
+    public const string AssetActionsViewUssClass = UssClass + "__asset-actions-view";
     public const string BindingsSectionViewClass = UssClass + "__bindings-section";
     public const string StyleInspectorClass = UssClass + "__style-inspector";
     public const string AttributesInspectorClass = UssClass + "__attributes-inspector";
@@ -46,16 +37,38 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
+    private const string k_NoAssetPath = "<none>.uxml";
+
     private VisualElement m_Element;
     private VisualElementEditFlags m_EditFlags;
 
     private readonly VisualElementHeader m_Header;
-    private readonly OpenInBuilderElement m_OpenInBuilder;
+    readonly VisualElement m_AssetPathContainer;
+    private readonly Image m_AssetPathTypeIcon;
+    private readonly TextField m_AssetPathField;
+
+    private readonly VisualTreeAssetInspectorActionsView m_AssetActionsView;
+    private readonly VisualElement m_AssetNotEditableHelpBox;
     private readonly VisualElementBindingsInspectorElement m_BindingsInspector;
     private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
     private readonly StyleInspectorElement m_StyleInspector;
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
     private VariablesInspector m_VariablesSection;
+    private HelpBox m_RecordingBanner;
+
+    bool m_IsRecording;
+
+    bool IsRecording
+    {
+        get => m_IsRecording;
+        set
+        {
+            if (m_IsRecording == value)
+                return;
+            m_IsRecording = value;
+            UpdateControlsState();
+        }
+    }
 
     [CreateProperty]
     public VisualElement Element
@@ -71,7 +84,11 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
 
             if (m_Element == null)
             {
-                m_OpenInBuilder.VisualTreeAsset = null;
+                m_AssetPathField.value = k_NoAssetPath;
+                m_AssetPathField.tooltip = String.Empty;
+                m_AssetActionsView.VisualTreeAsset = null;
+                m_AssetActionsView.PanelSettings = null;
+                m_AssetActionsView.SubDocumentPath = null;
                 m_StyleInspector.Target = new StyleInspectorTarget(null);
                 m_AttributesInspector.Target = null;
                 m_VariablesSection?.Refresh(null);
@@ -81,11 +98,31 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
                 var visualTreeAsset = m_Element.visualTreeAssetSource
                     ? m_Element.visualTreeAssetSource
                     : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
-                m_OpenInBuilder.VisualTreeAsset = visualTreeAsset;
+
+                var assetPath = k_NoAssetPath;
+                var assetPathToolTip = string.Empty;
+
+                if (visualTreeAsset)
+                {
+                    var fullPath = AssetDatabase.GetAssetPath(visualTreeAsset.GetEntityId());
+                    assetPath = Path.GetFileName(fullPath);
+                    assetPathToolTip = fullPath;
+                }
+                m_AssetPathField.value = assetPath;
+                m_AssetPathField.tooltip = assetPathToolTip;
+                m_AssetActionsView.VisualTreeAsset = visualTreeAsset;
+                using var _ = ListPool<TemplateAsset>.Get(out var templateAssetPath);
+
+                m_Element.GenerateSubDocumentPath(templateAssetPath);
+
+                m_AssetActionsView.SubDocumentPath = templateAssetPath.ToArray();
+                m_AssetActionsView.PanelSettings = m_Element.GetPanelSettings();
+
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.Target = m_Element;
                 m_VariablesSection?.Refresh(GetInlineStyleRule());
             }
+            MarkSearchDirty();
             NotifyPropertyChanged(ElementProperty);
         }
     }
@@ -114,20 +151,42 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
         var styleSheet = EditorGUIUtility.Load(styleSheetPath) as StyleSheet;
         styleSheets.Add(styleSheet);
 
+        m_AssetNotEditableHelpBox = this.Q(className:AssetNotEditableHelpBoxUssClass);
+
         m_Header = this.Q<VisualElementHeader>(className:HeaderUssClass);
-        m_OpenInBuilder = this.Q<OpenInBuilderElement>(className:OpenInBuilderUssClass);
+        m_AssetPathContainer = this.Q(className:AssetPathContainerUssClass);
+        m_AssetPathTypeIcon = this.Q<Image>(className:AssetPathTypeIconUssClass);
+        m_AssetPathTypeIcon.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
+        m_AssetPathField = this.Q<TextField>(className:AssetPathFieldUssClass);
+        m_AssetActionsView = this.Q<VisualTreeAssetInspectorActionsView>(className:AssetActionsViewUssClass);
+        InitializeSearchField();
 
         // Attributes
         m_AttributesInspector = this.Q<VisualElementAttributesInspectorElement>();
 
         // Bindings
         m_BindingsInspector = this.Q<VisualElementBindingsInspectorElement>();
-        m_BindingsInspector.ShareContext(m_AttributesInspector);
+
+        // Context Sharing
+        m_Header.AttributesView.ShareContext(m_AttributesInspector.AttributesView);
+        m_BindingsInspector.AttributesView.ShareContext(m_AttributesInspector.AttributesView);
 
         // Styles
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
+        EnsureRecordingBanner();
 
         SetEditFlags(VisualElementEditFlags.None);
+    }
+
+    void EnsureRecordingBanner()
+    {
+        if (m_RecordingBanner != null)
+            return;
+        m_RecordingBanner = new HelpBox("", HelpBoxMessageType.Warning) { name = "RecordingBanner" };
+        m_RecordingBanner.style.display = DisplayStyle.None;
+        var assetActionsViewIndex = this.IndexOf(m_AssetActionsView);
+        if (assetActionsViewIndex >= 0)
+            this.Insert(assetActionsViewIndex , m_RecordingBanner);
     }
 
     void SetEditFlags(VisualElementEditFlags editFlags)
@@ -141,7 +200,6 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
                 m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
-                m_OpenInBuilder.style.display = DisplayStyle.Flex;
                 m_StyleInspector.IsReadOnly = true;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = false;
@@ -151,7 +209,6 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
                 m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
-                m_OpenInBuilder.style.display = DisplayStyle.None;
                 m_StyleInspector.IsReadOnly = true;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = false;
@@ -161,17 +218,15 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
                 m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
-                m_OpenInBuilder.style.display = DisplayStyle.None;
                 m_StyleInspector.IsReadOnly = false;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = true;
                 break;
             // Full editing
-            case VisualElementEditFlags.Attributes | VisualElementEditFlags.Styles:
+            case VisualElementEditFlags.FullyEditable:
                 m_Header.SetEnabled(true);
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
-                m_OpenInBuilder.style.display = DisplayStyle.None;
                 m_StyleInspector.IsReadOnly = false;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = true;
@@ -179,6 +234,58 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
+        UpdateControlsState();
+        m_StyleInspector.Refresh();
+    }
+
+
+    void UpdateControlsState()
+    {
+        // Banner: show a blocking-reason message when recording but element is not fully animatable
+        if (m_RecordingBanner != null && m_Element != null)
+        {
+            var message = m_IsRecording ? VisualElementRecordability.ProbeElement(m_Element).GetBlockedMessage() : null;
+            if (message != null && m_EditFlags != VisualElementEditFlags.Styles && m_EditFlags != VisualElementEditFlags.FullyEditable)
+            {
+                m_RecordingBanner.text = message;
+                m_RecordingBanner.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                m_RecordingBanner.style.display = DisplayStyle.None;
+            }
+        }
+
+        var inStaging = StageUtility.GetCurrentStage() is VisualElementEditingStage;
+        var assetActionsVisible = DisplayStyle.None;
+        var editableHelpBoxAndAssetPathFieldVisible = DisplayStyle.None;
+
+        if (m_IsRecording && !inStaging)
+        {
+            assetActionsVisible = DisplayStyle.Flex;
+        }
+        else
+        {
+            if (m_EditFlags == VisualElementEditFlags.None && !inStaging)
+                assetActionsVisible = editableHelpBoxAndAssetPathFieldVisible = DisplayStyle.Flex;
+        }
+
+        m_AssetActionsView.style.display = assetActionsVisible;
+        m_AssetNotEditableHelpBox.style.display = editableHelpBoxAndAssetPathFieldVisible;
+        m_AssetPathContainer.style.display = editableHelpBoxAndAssetPathFieldVisible;
+    }
+
+    /// <summary>
+    /// Called by <see cref="VisualElementSelectionEditor"/> when recording starts, stops,
+    /// or the selection changes while recording. Updates the recording banner, OpenInBuilder
+    /// visibility, and passes the controller to the style inspector.
+    /// </summary>
+    internal void RefreshRecordingState(StyleInspectorAnimationRecordingContext controller)
+    {
+        IsRecording = controller != null;
+        m_StyleInspector.SetAnimationController(controller);
+        m_StyleInspector.Refresh();
     }
 
     protected override void HandleEventBubbleUp(EventBase evt)
@@ -191,6 +298,7 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
                     return;
                 m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
                 InitializeVariablesSection();
+                InitializeAnimationSectionVisibility();
                 break;
             }
             case DetachFromPanelEvent detachFromPanelEvent:
@@ -198,7 +306,10 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
                 if (detachFromPanelEvent.originPanel == null)
                     return;
                 if (m_StyleInspectorDefaultContent != null)
-                    m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGenerated;
+                {
+                    m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForVariables;
+                    m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
+                }
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
                 m_StyleInspectorDefaultContent = null;
@@ -219,12 +330,12 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
             return;
         }
 
-        m_StyleInspectorDefaultContent.contentWasGenerated += OnDefaultContentGenerated;
+        m_StyleInspectorDefaultContent.contentWasGenerated += OnDefaultContentGeneratedForVariables;
     }
 
-    void OnDefaultContentGenerated(StyleInspectorDefaultContent content)
+    void OnDefaultContentGeneratedForVariables(StyleInspectorDefaultContent content)
     {
-        content.contentWasGenerated -= OnDefaultContentGenerated;
+        content.contentWasGenerated -= OnDefaultContentGeneratedForVariables;
 
         m_VariablesSection = content.Q<VariablesInspector>();
         if (m_VariablesSection != null)
@@ -232,6 +343,30 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
             m_VariablesSection.enabledSelf = (EditFlags & VisualElementEditFlags.Styles) == VisualElementEditFlags.Styles;
             m_VariablesSection.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule);
         }
+    }
+
+    void InitializeAnimationSectionVisibility()
+    {
+        if (m_StyleInspectorDefaultContent.Q(StyleRuleInspector.AnimationFoldoutName) != null)
+        {
+            UpdateAnimationSectionVisibility(m_StyleInspectorDefaultContent);
+            return;
+        }
+
+        m_StyleInspectorDefaultContent.contentWasGenerated += OnDefaultContentGeneratedForAnimation;
+    }
+
+    void OnDefaultContentGeneratedForAnimation(StyleInspectorDefaultContent content)
+    {
+        content.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
+        UpdateAnimationSectionVisibility(content);
+    }
+
+    static void UpdateAnimationSectionVisibility(VisualElement content)
+    {
+        var animationSection = content.Q(StyleRuleInspector.AnimationFoldoutName);
+        if (animationSection != null)
+            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     StyleRule GetInlineStyleRule()
@@ -260,8 +395,9 @@ internal sealed class VisualElementInspector : VisualElement, IDisposable
         return vta.GetOrCreateInlineStyleRule(vea);
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
-        m_AttributesInspector.Context.Dispose();
+        base.Dispose();
+        m_AttributesInspector.AttributesView.Context.Dispose();
     }
 }

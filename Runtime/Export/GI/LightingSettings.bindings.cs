@@ -353,11 +353,12 @@ namespace UnityEngine
         #endregion
     }
 
+    // Must be kept in-sync with the equivalent type in the PathTracing.Runtime assembly.
     internal enum LightSamplingMode
     {
         RIS = 0,
-        Uniform,
-        RoundRobin,
+        Uniform = 1,
+        RoundRobin = 2,
     };
 
     internal enum LightAccelerationStructure
@@ -366,10 +367,11 @@ namespace UnityEngine
         None,
     };
 
+    // Must be kept in-sync with the equivalent type in the PathTracing.Runtime assembly.
     internal enum EmissiveSamplingMode
     {
         LightSampling = 0,
-        BRDFSampling,
-        MIS,
+        BRDFSampling = 1,
+        MIS = 2,
     };
 }

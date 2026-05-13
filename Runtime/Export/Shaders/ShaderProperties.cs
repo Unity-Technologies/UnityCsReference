@@ -61,11 +61,16 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::GetPropertyDefaultIntValue")]
         extern private static int GetPropertyDefaultIntValue([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyDefaultValue")]
-        extern private static Vector4 GetPropertyDefaultValue([NotNull] Shader shader, int propertyIndex);
+        extern internal static Vector4 GetPropertyDefaultValue([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyTextureDimension")]
-        extern private static TextureDimension GetPropertyTextureDimension([NotNull] Shader shader, int propertyIndex);
+        extern internal static TextureDimension GetPropertyTextureDimension([NotNull] Shader shader, int propertyIndex);
         [FreeFunction("ShaderScripting::GetPropertyTextureDefaultName")]
         extern private static string GetPropertyTextureDefaultName([NotNull] Shader shader, int propertyIndex);
+        [FreeFunction("ShaderScripting::GetValuesForExtractMaterialProperty")]
+        extern internal static void GetValuesForExtractMaterialProperty([NotNull] Shader shader, int propertyIndex,
+            out string name, out string description,
+            out ShaderPropertyFlags flags, out ShaderPropertyType type,
+            out Vector4 defaultValue, out TextureDimension textureDimension);
         [FreeFunction("ShaderScripting::FindTextureStack")]
         extern private static bool FindTextureStackImpl([NotNull] Shader s, int propertyIdx, out string stackName, out int layerIndex);
 

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -11,8 +10,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class PercentSlider : BaseField<float>, IValueField<float>
+    internal partial class PercentSlider : BaseField<float>, IValueField<float>
     {
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/PercentSlider.uxml";
         static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/Controls/PercentSlider.uss";
@@ -22,18 +22,6 @@ namespace Unity.UIToolkit.Editor
         static readonly string s_UssClassName = "unity-percent-slider";
         static readonly string s_VisualInputName = "unity-visual-input";
         static readonly string s_SliderName = "unity-slider";
-
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<float>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new PercentSlider();
-        }
 
         SliderInt m_Slider;
 

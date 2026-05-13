@@ -13,6 +13,7 @@ using UnityEditor;
 using Debug = UnityEngine.Debug;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using Unity.ProjectAuditor.Editor.Modules;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -174,19 +175,10 @@ namespace Unity.ProjectAuditor.Editor
 
                 foreach (var d in report.UnfixedIssues)
                 {
-                    // bump severity if issue is found in a hot-path
-                    if (!d.IsMajorOrCritical() && d.Dependencies != null && d.Dependencies.PerfCriticalContext)
-                    {
-                        switch (d.Severity)
-                        {
-                            case Severity.Minor:
-                                d.Severity = Severity.Moderate;
-                                break;
-                            case Severity.Moderate:
-                                d.Severity = Severity.Major;
-                                break;
-                        }
-                    }
+                    // Percolate perf critical issues down stacks
+                    int index = (int)CodeProperty.PerformanceCritical;
+                    if (d.Dependencies != null && d.Dependencies.PerfCriticalContext && d.CustomProperties != null && d.CustomProperties.Length > index)
+                        d.CustomProperties[index] = bool.TrueString;
                 }
 
                 analysisParams.OnCompleted -= onCompletedInternal;

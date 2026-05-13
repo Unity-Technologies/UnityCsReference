@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -12,14 +11,9 @@ namespace Unity.UI.Builder
     // itself from the hierarchy as soon as it's added.
     // This should be removed once selection is moved to a separate object. See:
     // https://unity3d.atlassian.net/browse/UIT-456
-    internal class UnityUIBuilderSelectionMarker : VisualElement
+    [UxmlElement]
+    internal partial class UnityUIBuilderSelectionMarker : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new UnityUIBuilderSelectionMarker();
-        }
-
         public UnityUIBuilderSelectionMarker() {}
 
         [EventInterest(typeof(AttachToPanelEvent))]

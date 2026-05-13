@@ -162,8 +162,9 @@ namespace UnityEditor
         [ExcludeFromDocs]
         Il2CPP = 0,
 
-        // Include assertions in non development builds
-        ///<summary>Include assertions in the build. By default, the assertions are only included in development builds.</summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("BuildOptions.ForceEnableAssertions is deprecated. Use PlayerSettings.SetManagedCodeVariant(NamedBuildTarget, ManagedCodeVariant.Checked) instead.")]
+        [ExcludeFromDocs]
         ForceEnableAssertions = 1 << 17,
 
         // Forces chunk-based LZ4 compression for the asset bundle. Such asset bundles can be decompressed on the fly.

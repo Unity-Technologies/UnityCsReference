@@ -10,14 +10,9 @@ using UnityEngine.UIElements.Layout;
 
 namespace UnityEditor.Audio.UIElements;
 
-class AudioRandomRangeSliderTracker : VisualElement
+[UxmlElement]
+partial class AudioRandomRangeSliderTracker : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public override object CreateInstance() => new AudioRandomRangeSliderTracker();
-    }
-
     static readonly CustomStyleProperty<Color> s_TrackerEnabledColorProperty = new("--tracker-color");
 
     Slider m_ParentSlider;

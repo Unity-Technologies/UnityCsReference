@@ -91,7 +91,7 @@ namespace UnityEngine.SceneManagement
         public static extern Scene GetSceneByName(string name);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
-        /*UCBP-PUBLIC*/ internal static extern Scene GetSceneByLoadableSceneId(LoadableSceneId loadableSceneId);
+        public static extern Scene GetSceneByLoadableSceneId(LoadableSceneId loadableSceneId);
 
         public static Scene GetSceneByBuildIndex(int buildIndex)
         {
@@ -133,29 +133,7 @@ namespace UnityEngine.SceneManagement
             return SceneManagerAPI.ActiveAPI.UnloadSceneAsyncByNameOrIndex(sceneName, sceneBuildIndex, immediately, options, out outSuccess);
         }
 
-        /// <summary>
-        /// Asynchronously loads a Scene from built content using a LoadableSceneId reference.
-        /// </summary>
-        /// <remarks>
-        /// This overload of LoadSceneAsync enables loading scenes that have been built as part of a Content Directory. The scene
-        /// must be available through a registered content directory (via
-        /// <see cref="Loading.ContentLoadManager.RegisterContentDirectory"/>), or it must have been built into the player.
-        ///
-        /// This method works in both the Editor (when content directories are registered) and at runtime.
-        /// </remarks>
-        /// <param name="loadableSceneId">
-        /// The LoadableSceneId identifying which scene to load.
-        /// </param>
-        /// <param name="parameters">
-        /// Various parameters used during the loading operation, such as load mode.
-        /// </param>
-        /// <returns>
-        /// A ContentLoadSceneOperation that can be used to track the progress of the scene loading operation. Returns null if
-        /// scene loading is not allowed in the current context.
-        /// </returns>
-        /// <seealso cref="Unity.Loading.LoadableSceneId"/>
-        /// <seealso cref="Loading.ContentLoadManager"/>
-        /*UCBP-PUBLIC*/ internal static AsyncOperation LoadSceneAsync(LoadableSceneId loadableSceneId, LoadSceneParameters parameters = new LoadSceneParameters())
+        public static AsyncOperation LoadSceneAsync(LoadableSceneId loadableSceneId, LoadSceneParameters parameters = new LoadSceneParameters())
         {
             if (!s_AllowLoadScene)
                 return null;

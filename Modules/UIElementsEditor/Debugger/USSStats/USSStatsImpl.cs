@@ -223,7 +223,7 @@ class USSStatsImpl : PanelDebugger
         foreach (var property in properties)
         {
             var label = new TextField();
-            label.readOnly = true;
+            label.isReadOnly = true;
             label.label = property.Key;
             label.value = property.Value.value;
             label.tooltip = property.Value.tooltip;

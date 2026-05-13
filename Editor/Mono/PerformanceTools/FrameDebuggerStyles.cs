@@ -2,9 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {
@@ -162,6 +161,21 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static string s_DashesString = new string('-', 30);
             internal static string s_EqualsString = new string('=', 30);
 
+            // Cached width for two-column format label (matches k_TwoColumnFormat first column width of 22 chars)
+            private static float s_TwoColumnLabelWidth = -1f;
+            internal static float TwoColumnLabelWidth
+            {
+                get
+                {
+                    if (s_TwoColumnLabelWidth < 0f)
+                    {
+                        // Calculate once after GUI is initialized
+                        GUIContent tempContent = new GUIContent(new string(' ', 22));
+                        s_TwoColumnLabelWidth = s_MonoLabelStyle.CalcSize(tempContent).x;
+                    }
+                    return s_TwoColumnLabelWidth;
+                }
+            }
 
             internal static readonly GUIStyle s_ArrayFoldoutStyle = new GUIStyle(EditorStyles.foldout)
             {
@@ -182,11 +196,16 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             };
 
             internal static readonly GUIStyle s_FoldoutCategoryBoxStyle = new GUIStyle(EditorStyles.helpBox);
+            internal static readonly GUIStyle s_FoldoutCategoryHeaderStyle = new GUIStyle(EditorStyles.foldout)
+            {
+                fontStyle = FontStyle.Bold,
+            };
 
             internal static readonly GUIStyle s_MonoLabelStyle = new GUIStyle(EditorStyles.label)
             {
                 alignment = TextAnchor.UpperLeft
             };
+
             internal static readonly GUIStyle s_MonoLabelStylePadding = new GUIStyle(EditorStyles.label)
             {
                 alignment = TextAnchor.UpperLeft,
@@ -266,6 +285,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static readonly GUIContent s_RayTracingShaderText = EditorGUIUtility.TrTextContent("Ray Tracing Shader", "");
             internal static readonly GUIContent s_RayTracingGenerationShaderText = EditorGUIUtility.TrTextContent("Ray Generation Shader", "");
             internal static readonly GUIContent s_ComputeShaderText = EditorGUIUtility.TrTextContent("Compute Shader", "");
+            internal static readonly GUIContent s_ShadingRateImageText = EditorGUIUtility.TrTextContent("Shading Rate Image");
             internal static readonly GUIContent s_BatchCauseText = EditorGUIUtility.TrTextContent("Batch cause");
             internal static readonly GUIContent s_PassLightModeText = EditorGUIUtility.TrTextContent("Pass\nLightMode");
             internal static readonly GUIContent s_ArrayPopupButtonText = EditorGUIUtility.TrTextContent("...");
@@ -281,6 +301,58 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static readonly GUIContent s_FoldoutMatricesText = EditorGUIUtility.TrTextContent("Matrices");
             internal static readonly GUIContent s_FoldoutBuffersText = EditorGUIUtility.TrTextContent("Buffers");
             internal static readonly GUIContent s_FoldoutCBufferText = EditorGUIUtility.TrTextContent("Constant Buffers");
+            internal struct DetailsSectionInfo
+            {
+                internal GUIContent header;
+                internal string editorPrefsKey;
+                internal bool defaultOpenState;
+
+                internal DetailsSectionInfo(GUIContent header, string prefsKey, bool defaultOpen)
+                {
+                    this.header = header;
+                    this.editorPrefsKey = prefsKey;
+                    this.defaultOpenState = defaultOpen;
+                }
+            }
+
+            internal static readonly DetailsSectionInfo[] s_DetailsSections = new DetailsSectionInfo[]
+            {
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Event Info"),
+                    "FrameDebuggerDetailsEventInfo",
+                    false
+                ),
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Render Target"),
+                    "FrameDebuggerDetailsRenderTarget",
+                    true
+                ),
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Blending"),
+                    "FrameDebuggerDetailsBlending",
+                    false
+                ),
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Depth & Culling"),
+                    "FrameDebuggerDetailsDepthCulling",
+                    false
+                ),
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Stencil"),
+                    "FrameDebuggerDetailsStencil",
+                    false
+                ),
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Variable Rate Shading"),
+                    "FrameDebuggerDetailsVariableRateShading",
+                    false
+                ),
+                new DetailsSectionInfo(
+                    EditorGUIUtility.TrTextContent("Shader"),
+                    "FrameDebuggerDetailsShader",
+                    false
+                ),
+            };
             internal static readonly GUIContent s_NotAvailableText = EditorGUIUtility.TrTextContent(k_NotAvailable);
             internal static Texture2D s_RenderTargetMeshBackgroundTexture = null;
             internal static readonly string[] s_BatchBreakCauses = FrameDebuggerUtility.GetBatchBreakCauseStrings();

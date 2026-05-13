@@ -30,6 +30,12 @@ namespace Unity.Loading
             get;
         }
 
+        public extern bool BuiltWithTypeTrees
+        {
+            [NativeMethod("GetBuiltWithTypeTrees", IsThreadSafe = true)]
+            get;
+        }
+
         public void Dispose()
         {
             Destroy();

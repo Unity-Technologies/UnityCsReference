@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class BindingsStyleHelpers
     {
         enum DrivenPropertyState
@@ -29,9 +29,12 @@ namespace UnityEditor.UIElements
         static Action<VisualElement, SerializedProperty> s_UpdateElementStyleFromProperty;
         static Action<VisualElement, SerializedProperty> s_UpdatePrefabStateStyleFromProperty;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal delegate void HandleRightClickMenuDelegate(VisualElement element, ref bool handled);
+
         // Lets us bypass the default right click menu to show our own.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static Func<VisualElement, bool> HandleRightClickMenu;
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static HandleRightClickMenuDelegate HandleRightClickMenu;
 
         static BindingsStyleHelpers()
         {
@@ -438,15 +441,15 @@ namespace UnityEditor.UIElements
         internal static void RegisterRightClickMenu(Label field, SerializedProperty property)
         {
             field.userData = property.Copy();
-            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
-            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
+            field.RegisterCallback(s_RightClickMenuCallback, CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
+            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, CallbackOptions.TrickleDown);
         }
 
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
             field.userData = property.Copy();
-            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
-            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
+            field.RegisterCallback(s_RightClickMenuCallback, CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
+            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, CallbackOptions.TrickleDown);
         }
 
         internal static void RegisterRightClickMenu(Foldout field, SerializedProperty property)
@@ -455,23 +458,23 @@ namespace UnityEditor.UIElements
             if (toggle != null)
             {
                 toggle.userData = property.Copy();
-                toggle.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
-                toggle.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
+                toggle.RegisterCallback(s_RightClickMenuCallback, CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
+                toggle.RegisterCallback<ContextClickEvent>(StopContextClickEvent, CallbackOptions.TrickleDown);
             }
         }
 
         internal static void UnregisterRightClickMenu<TValue>(BaseField<TValue> field)
         {
            field.userData = null;
-           field.UnregisterCallback(s_RightClickMenuCallback);
-           field.UnregisterCallback<ContextClickEvent>(StopContextClickEvent);
+           field.UnregisterCallback(s_RightClickMenuCallback, CallbackOptions.TrickleDown);
+           field.UnregisterCallback<ContextClickEvent>(StopContextClickEvent, CallbackOptions.TrickleDown);
         }
 
         internal static void UnregisterRightClickMenu(Foldout field)
         {
             var toggle = field.Q<Toggle>(className: Foldout.toggleUssClassName);
-            toggle?.UnregisterCallback(s_RightClickMenuCallback);
-            toggle?.UnregisterCallback<ContextClickEvent>(StopContextClickEvent);
+            toggle?.UnregisterCallback(s_RightClickMenuCallback, CallbackOptions.TrickleDown);
+            toggle?.UnregisterCallback<ContextClickEvent>(StopContextClickEvent, CallbackOptions.TrickleDown);
         }
 
         internal static void RightClickFieldMenuEvent(PointerUpEvent evt)
@@ -481,7 +484,9 @@ namespace UnityEditor.UIElements
 
             var element = evt.currentTarget as VisualElement;
 
-            bool handledExternally = HandleRightClickMenu?.Invoke(element) == true;
+            var handledExternally = false;
+
+            HandleRightClickMenu?.Invoke(element, ref handledExternally);
 
             var property = element?.userData as SerializedProperty;
             if (property == null || handledExternally)

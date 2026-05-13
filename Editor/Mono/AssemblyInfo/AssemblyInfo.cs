@@ -179,6 +179,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
+[assembly: InternalsVisibleTo("Unity.Modules.GraphViewEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
 [assembly: InternalsVisibleTo("Unity.ProBuilder.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
@@ -249,6 +250,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.Server.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.AssetPostProcessor.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetPackage.Tests.Editor")]
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
@@ -289,10 +291,12 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.UnityType.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Camera.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Core.VersionControl.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.ProjectAuditor.Editor")]
 [assembly: InternalsVisibleTo("Unity.ProjectAuditor.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Analytics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.AssetLoading.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Terrain.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.AI.Tests.Editor")]
 

@@ -33,4 +33,7 @@
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Rocks.dll" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <ItemGroup>
+    <Analyzer Include="/tmp/uitoolkit_gen_1zvoxi0i/Unity.UIToolkit.SourceGenerator.dll" />
+  </ItemGroup>
 </Project>

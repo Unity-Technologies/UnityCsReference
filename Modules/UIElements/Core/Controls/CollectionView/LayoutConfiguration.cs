@@ -10,6 +10,41 @@ using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
+    internal class CellRow : VisualElement
+    {
+        public VisualElement scrollableClip;
+        public VisualElement scrollableContainer;
+        public List<VisualElement> cells = new();
+
+        public CellRow()
+        {
+            scrollableClip = new VisualElement { name = "scrollable-clip", style = { overflow = Overflow.Hidden, minWidth = 0 } };
+            scrollableContainer = new VisualElement { style = { flexDirection = FlexDirection.Row, flexGrow = 1 } };
+            scrollableClip.Add(scrollableContainer);
+            Add(scrollableClip);
+        }
+
+        public void SetScrollableContainerOffset(float value) => scrollableContainer.style.translate = new Vector2(value, 0);
+
+        public void AddCell(VisualElement cellContainer, FreezeState freezeState)
+        {
+            cells.Add(cellContainer);
+            switch (freezeState)
+            {
+                case FreezeState.FreezeLeft:
+                    var freeIndex = IndexOf(scrollableClip);
+                    Insert(freeIndex, cellContainer);
+                    break;
+                case FreezeState.FreezeRight:
+                    Add(cellContainer);
+                    break;
+                case FreezeState.None:
+                    scrollableContainer.Add(cellContainer);
+                    break;
+            }
+        }
+    }
+
     [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal abstract class CollectionViewLayoutConfiguration
     {
@@ -24,14 +59,18 @@ namespace UnityEngine.UIElements.HierarchyV2
     internal class MultiColumnLayoutConfiguration : CollectionViewLayoutConfiguration
     {
         Columns m_Columns;
-        MultiColumnCollectionHeader m_MultiColumnHeader;
+        CollectionViewMultiColumnCollectionHeader m_MultiColumnHeader;
         VisualElement m_HeaderContainer;
         const string k_HeaderViewDataKey = "Header";
         const string k_HeaderContainerViewDataKey = "unity-multi-column-header-container";
         readonly PropertyName k_BoundColumnVePropertyName = "__unity-multi-column-bound-column";
         readonly PropertyName bindableElementPropertyName = "__unity-multi-column-bindable-element";
 
-        internal MultiColumnCollectionHeader header => m_MultiColumnHeader;
+        static readonly UniqueStyleString k_HierarchyLastColumnHeader = new(MultiColumnHeaderColumn.ussClassName+"__last");
+
+        float m_HorizontalScroll;
+
+        public CollectionViewMultiColumnCollectionHeader header => m_MultiColumnHeader;
 
         public VisualElement headerContainer => m_HeaderContainer;
         public event Action<ContextualMenuPopulateEvent, Column> headerContextMenuPopulateEvent;
@@ -84,7 +123,8 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return new Label();
             }
 
-            var container = new VisualElement() { name = MultiColumnController.rowContainerUssClassName };
+            var container = new CellRow { name = MultiColumnController.rowContainerUssClassName};
+            container.SetScrollableContainerOffset(m_HorizontalScroll);
             container.AddToClassList(MultiColumnController.rowContainerUssClassNameUnique);
 
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
@@ -96,7 +136,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 cellContainer.SetProperty(bindableElementPropertyName, cellItem);
 
                 cellContainer.Add(cellItem);
-                container.Add(cellContainer);
+                container.AddCell(cellContainer, header.GetColumnFreezeState(column));
             }
 
             return container;
@@ -104,22 +144,47 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void BindCell(VisualElement element, int index)
         {
+            var row = element as CellRow;
             var i = 0;
-            element.style.width = header.columnContainer.layoutSize.x;
+            row.SetScrollableContainerOffset(m_HorizontalScroll);
+
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
                     continue;
 
-                var cellContainer = element[i++];
+                var cellContainer = row.cells[i++];
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
 
                 if (column.bindCell != null)
                 {
                     column.bindCell.Invoke(cellItem, index);
                 }
-                cellContainer.style.width = columnData.control.resolvedStyle.width;
+
+                var width = columnData.control.resolvedStyle.width;
+                cellContainer.style.width = width;
                 cellContainer.SetProperty(k_BoundColumnVePropertyName, column);
+            }
+
+            var frozenWidth = CalculateTotalFrozenWidth();
+            var totalWidth = header.columnContainer.layoutSize.x;
+
+            element.style.width = totalWidth;
+
+            var scrollableWidth = Mathf.Max(CollectionViewMultiColumnCollectionHeader.k_MinScrollableWidth, totalWidth - frozenWidth);
+            row.scrollableClip.style.maxWidth = scrollableWidth;
+            row.scrollableClip.style.width = scrollableWidth;
+        }
+
+        public void ScrollHorizontally(float horizontalOffset)
+        {
+            m_HorizontalScroll = -horizontalOffset;
+            header.ScrollHorizontally(m_HorizontalScroll);
+
+            foreach (var displayItem in m_View.m_DisplayedList)
+            {
+                if (displayItem.element is CellRow row)
+                    row.SetScrollableContainerOffset(m_HorizontalScroll);
             }
         }
 
@@ -128,20 +193,38 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// </summary>
         internal void UpdateRowCellsWidth(VisualElement element)
         {
-            var columnIndex = 0;
+            if (element is not CellRow row)
+                return;
+
             element.style.width = header.columnContainer.layoutSize.x;
+
+            var columnIndex = 0;
+
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
-                var columnData = m_MultiColumnHeader.columnDataMap[column];
+                if (columnIndex >= row.cells.Count)
+                    break;
 
-                element[columnIndex].style.width = columnData.control.resolvedStyle.width;
+                var columnData = m_MultiColumnHeader.columnDataMap[column];
+                var width = columnData.control.resolvedStyle.width;
+                row.cells[columnIndex].style.width = width;
                 columnIndex++;
             }
+
+            var frozenWidth = CalculateTotalFrozenWidth();
+            var scrollableWidth = Mathf.Max(CollectionViewMultiColumnCollectionHeader.k_MinScrollableWidth, header.columnContainer.layoutSize.x - frozenWidth);
+
+            row.scrollableClip.style.maxWidth = scrollableWidth;
+            row.scrollableClip.style.width = scrollableWidth;
         }
 
         void UnbindCell(VisualElement element, int index)
         {
-            foreach (var cellContainer in element.Children())
+            if (element is not CellRow row)
+                return;
+
+            // Use the cells list instead of Children()
+            foreach (var cellContainer in row.cells)
             {
                 if (cellContainer.GetProperty(k_BoundColumnVePropertyName) is not Column column)
                     continue;
@@ -153,7 +236,10 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void DestroyCell(VisualElement element)
         {
-            foreach (var cellContainer in element.Children())
+            if (element is not CellRow row)
+                return;
+
+            foreach (var cellContainer in row.cells)
             {
                 var column = cellContainer.GetProperty(k_BoundColumnVePropertyName) as Column;
                 if (column == null)
@@ -170,7 +256,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader != null)
                 Dispose();
 
-            m_MultiColumnHeader = new MultiColumnCollectionHeader(columns, new SortColumnDescriptions(), new List<SortColumnDescription>())
+            m_MultiColumnHeader = new CollectionViewMultiColumnCollectionHeader(columns, new SortColumnDescriptions(), new List<SortColumnDescription>())
             {
                 viewDataKey = k_HeaderViewDataKey
             };
@@ -183,12 +269,16 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_MultiColumnHeader.columns.columnReordered += OnColumnReordered;
             m_MultiColumnHeader.columns.columnChanged += OnColumnsChanged;
             m_MultiColumnHeader.columns.changed += OnColumnChanged;
+            m_MultiColumnHeader.RegisterCallback<GeometryChangedEvent>(OnHeaderGeometryChanged);
 
             // Create the header to the multi column view.
             m_HeaderContainer = new VisualElement { name = MultiColumnController.headerContainerUssClassName };
             m_HeaderContainer.AddToClassList(MultiColumnController.headerContainerUssClassNameUnique);
             m_HeaderContainer.viewDataKey = k_HeaderContainerViewDataKey;
             m_HeaderContainer.Add(m_MultiColumnHeader);
+
+            m_MultiColumnHeader.RegisterCallback<GeometryChangedEvent>(ResizeToFitCallback);
+
             return m_HeaderContainer;
         }
 
@@ -202,6 +292,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_MultiColumnHeader.columns.columnReordered -= OnColumnReordered;
             m_MultiColumnHeader.columns.columnChanged -= OnColumnsChanged;
             m_MultiColumnHeader.columns.changed -= OnColumnChanged;
+            m_MultiColumnHeader.UnregisterCallback<GeometryChangedEvent>(OnHeaderGeometryChanged);
             m_MultiColumnHeader.RemoveFromHierarchy();
             m_MultiColumnHeader.Dispose();
             m_MultiColumnHeader = null;
@@ -210,26 +301,58 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_HeaderContainer = null;
         }
 
+        void OnHeaderGeometryChanged(GeometryChangedEvent evt)
+        {
+            // When header layout stabilizes, ensure scrollbar is updated
+            if (!Mathf.Approximately(evt.oldRect.width, evt.newRect.width))
+            {
+                m_View.schedule.Execute(() => m_View.UpdateScrollingRangeAfterLayout());
+            }
+        }
+
         void OnContextMenuPopulateEvent(ContextualMenuPopulateEvent evt, Column column) => headerContextMenuPopulateEvent?.Invoke(evt, column);
 
         void OnColumnResized(int index, float width)
         {
-            if (m_View.isRebuildScheduled)
-            {
-                // We are waiting on a rebuild, so our elements are most likely not the right ones.
-                // We'll let the rebuild handle the new width.
+            if (m_MultiColumnHeader == null || index < 0 || index >= m_MultiColumnHeader.columns.Count)
                 return;
+
+            var header = m_MultiColumnHeader;
+            var column = header.columns[index];
+            var visibleIndex = -1;
+
+            for (var i = 0; i < header.columns.visibleList.Count; i++)
+            {
+                if (header.columns.visibleList[i] == column)
+                {
+                    visibleIndex = i;
+                    break;
+                }
             }
+
+            if (visibleIndex == -1)
+                return;
+
+            var frozenWidth = CalculateTotalFrozenWidth();
+            var totalRowWidth = header.columnContainer.layoutSize.x;
+            var scrollableWidth = Mathf.Max(CollectionViewMultiColumnCollectionHeader.k_MinScrollableWidth, totalRowWidth - frozenWidth);
 
             foreach (var displayItem in m_View.m_DisplayedList)
             {
-                // We need to make sure that the item's width is updated as well.
-                displayItem.element.style.width = header.columnContainer.layoutSize.x;
-                // Update the cell's width
-                displayItem.element[index].style.width = width;
+                displayItem.element.style.width = totalRowWidth;
+
+                if (displayItem.element is not CellRow row)
+                    continue;
+
+                if (visibleIndex < row.cells.Count)
+                {
+                    row.cells[visibleIndex].style.width = width;
+                }
+
+                row.scrollableClip.style.maxWidth = scrollableWidth;
+                row.scrollableClip.style.width = scrollableWidth;
             }
 
-            // Update the scroller's sizes
             m_View.UpdateScrollingRangeAfterLayout();
         }
 
@@ -248,6 +371,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
+            UpdateColumnsStyles();
             m_View.Rebuild();
         }
 
@@ -256,6 +380,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
+            UpdateColumnsStyles();
             if (type == ColumnDataType.Visibility)
                 m_View.ScheduleRebuild();
         }
@@ -265,6 +390,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_MultiColumnHeader.isApplyingViewState)
                 return;
 
+            UpdateColumnsStyles();
             if (type == ColumnsDataType.PrimaryColumn)
                 m_View.ScheduleRebuild();
         }
@@ -272,6 +398,38 @@ namespace UnityEngine.UIElements.HierarchyV2
         void OnViewDataRestored()
         {
             m_View.Rebuild();
+        }
+
+        void ResizeToFitCallback(GeometryChangedEvent _)
+        {
+            m_MultiColumnHeader.UnregisterCallback<GeometryChangedEvent>(ResizeToFitCallback);
+            m_MultiColumnHeader.ResizeToFit();
+        }
+
+        void UpdateColumnsStyles()
+        {
+            var scrollableContainer = m_MultiColumnHeader.Q(className: CollectionViewMultiColumnCollectionHeader.scrollableColumnsContainerUssClassName.value);
+            var headers = scrollableContainer?.Query<VisualElement>(className: "unity-multi-column-header__column").ToList();
+
+            if (headers == null)
+                return;
+
+            foreach (var column in headers)
+                column.RemoveFromClassList(k_HierarchyLastColumnHeader);
+
+            var horizontalScroller = m_View.scrollView.horizontalScroller;
+            // Expand only the last element, but only when the window content is smaller than the window
+            // (which means when the horizontal scroller is not shown)
+            if (!horizontalScroller.enabledSelf)
+            {
+                // Applying style.flexGrow = 1 to the last column
+                headers[^1].AddToClassList(k_HierarchyLastColumnHeader);
+            }
+        }
+
+        float CalculateTotalFrozenWidth()
+        {
+            return CollectionViewFrozenColumnUtility.CalculateTotalFrozenWidth(m_MultiColumnHeader, m_MultiColumnHeader.columns);
         }
     }
 

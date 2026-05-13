@@ -54,11 +54,15 @@ namespace UnityEditor
         // from a StandaloneSubtarget.
         ISubtargetPlatformProperties TextureSubtargetPlatformProperties { get; }
 
+        // This allows us to retrieve the ScriptingPlatformProperties derived from IPlatformProperties as quick access
+        IScriptingPlatformProperties ScriptingPlatformProperties { get; }
+
         // This function allows to retrieve properties of a give type, derived from IPlatformProperties
         // if they are available.
         bool TryGetProperties<T>(out T properties) where T: IPlatformProperties;
 
         // This functions allows to access the old BuildTarget enum value for a build target when instantiated.
         int GetLegacyId { get; }
+
     }
 }

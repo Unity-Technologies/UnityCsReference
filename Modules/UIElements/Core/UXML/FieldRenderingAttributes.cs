@@ -6,39 +6,37 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class EnumFieldValueDecoratorAttribute : PropertyAttribute { }
-
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class EnumFlagsFieldValueDecoratorAttribute : PropertyAttribute { }
-
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class TagFieldValueDecoratorAttribute : PropertyAttribute { }
-
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class ImageFieldValueDecoratorAttribute : PropertyAttribute
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    abstract class PropertyAttributeWithDisplayName : PropertyAttribute
     {
-        public string name;
-
-        public ImageFieldValueDecoratorAttribute(string fieldName)
-        {
-            name = fieldName;
-        }
+        public string displayName;
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    class EnumFieldValueDecoratorAttribute : PropertyAttribute { }
+
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    class EnumFlagsFieldValueDecoratorAttribute : PropertyAttribute { }
+
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    class TagFieldValueDecoratorAttribute : PropertyAttribute { }
+
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    class ImageFieldValueDecoratorAttribute : PropertyAttributeWithDisplayName { }
+
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class FixedItemHeightDecoratorAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class SelectableTextElementAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class MultilineDecoratorAttribute : PropertyAttribute { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class MultilineTextFieldAttribute : PropertyAttribute { }
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    class MultilineTextFieldAttribute() : PropertyAttributeWithDisplayName { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class LayerDecoratorAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -46,9 +44,6 @@ namespace UnityEngine.UIElements
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class DataSourceDrawerAttribute : PropertyAttribute { }
-
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class AdvanceTextGeneratorDecoratorAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class BindingPathDrawerAttribute : PropertyAttribute { }

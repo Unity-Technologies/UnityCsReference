@@ -83,9 +83,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 process.WaitForExit();
 
-                if (!process.StandardError.EndOfStream)
+                // Check both StandardError output and exit code
+                var errorOutput = process.StandardError.ReadToEnd();
+                var exitCode = process.ExitCode;
+
+                if (!string.IsNullOrEmpty(errorOutput) || exitCode != 0)
                 {
-                    error = process.StandardError.ReadToEnd();
+                    error = string.IsNullOrEmpty(errorOutput)
+                        ? $"Process exited with code {exitCode}"
+                        : errorOutput;
                     processID = process.Id;
                     return false;
                 }

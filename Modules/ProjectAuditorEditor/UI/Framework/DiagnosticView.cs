@@ -16,11 +16,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
     {
         public override string Description => $"A list of {m_Desc.DisplayName} issues found in the project.";
         public override bool OnlyCriticalIssues() { return m_OnlyCriticalIssues; }
+        public override bool OnlyPerfCriticalIssues() { return m_OnlyPerfCriticalIssues; }
         public override bool OnlyFixableIssues() { return m_OnlyFixableIssues; }
 
         Vector2 m_RecommendationScrollPos;
 
         bool m_OnlyCriticalIssues;
+        bool m_OnlyPerfCriticalIssues;
         bool m_OnlyFixableIssues;
         bool m_ShowUpgradeRecommendations;
 
@@ -173,6 +175,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 m_OnlyCriticalIssues = EditorGUILayout.ToggleLeft(Contents.OnlyMajor, m_OnlyCriticalIssues, GUILayout.Width(180));
                 if (m_Desc.ShowQuickFixes)
                     m_OnlyFixableIssues = EditorGUILayout.ToggleLeft(Contents.OnlyQuickFixes, m_OnlyFixableIssues, GUILayout.Width(180));
+                if (m_Desc.ShowPerformanceCritical)
+                    m_OnlyPerfCriticalIssues = EditorGUILayout.ToggleLeft(Contents.OnlyPerformanceCritical, m_OnlyPerfCriticalIssues, GUILayout.Width(180));
 
                 EditorGUI.BeginChangeCheck();
                 m_Table.showIgnoredIssues = EditorGUILayout.ToggleLeft(SharedContents.ShowIgnoredIssues, m_Table.showIgnoredIssues, GUILayout.Width(180));
@@ -296,6 +300,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent DisplayAll = new GUIContent("Display All", "Always show selected issues");
             public static readonly GUIContent OnlyMajor = new GUIContent("Only Major/Critical", "Only display the most important issues");
             public static readonly GUIContent OnlyQuickFixes = new GUIContent("Only Quick Fixes", "Only show issues where a Quick Fix is available");
+            public static readonly GUIContent OnlyPerformanceCritical = new GUIContent("Only Performance Critical", "Only show issues occurring in frequently executed code, such as per-frame Update loops");
             public static readonly GUIContent ShowUpgradeRecommendations = new GUIContent("Upgrade Recommendations", "Show issues relating to upgrading to future Unity versions");
             public static readonly GUIContent UpgradeTargetVersionLabel = new GUIContent("Target Version:");
         }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Unity.GraphToolkit.CSO;
@@ -252,6 +253,11 @@ namespace Unity.GraphToolkit.Editor
         public TypeHandle Type;
 
         /// <summary>
+        /// Individual types per variable (parallel to VariableDeclarationModels). Takes precedence over Type.
+        /// </summary>
+        public IReadOnlyList<TypeHandle> Types;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ChangeVariableTypeCommand"/> class.
         /// </summary>
         public ChangeVariableTypeCommand()
@@ -282,6 +288,16 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Constructor for mixed-type updates (each variable gets its own type).
+        /// Enables single undo operation for multi-variable type changes.
+        /// </summary>
+        public ChangeVariableTypeCommand(IReadOnlyList<VariableDeclarationModelBase> variableDeclarationModels, IReadOnlyList<TypeHandle> types) : this()
+        {
+            VariableDeclarationModels = variableDeclarationModels;
+            Types = types;
+        }
+
+        /// <summary>
         /// Default command handler.
         /// </summary>
         /// <param name="undoState">The undo state component.</param>
@@ -290,21 +306,83 @@ namespace Unity.GraphToolkit.Editor
         [UsedImplicitly]
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ChangeVariableTypeCommand command)
         {
-            if (command.Type.IsValid)
+            using (var undoStateUpdater = undoState.UpdateScope)
             {
-                using (var undoStateUpdater = undoState.UpdateScope)
-                {
-                    undoStateUpdater.SaveState(graphModelState);
-                }
+                undoStateUpdater.SaveState(graphModelState);
+            }
 
-                using (var graphUpdater = graphModelState.UpdateScope)
-                using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
+            using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
+            {
+                if (command.Types != null)
                 {
+                    // Individual types per variable
                     for (int i = 0; i < command.VariableDeclarationModels.Count; ++i)
                     {
-                        command.VariableDeclarationModels[i].DataType = command.Type;
+                        if (command.Types[i].IsValid)
+                        {
+                            var variable = command.VariableDeclarationModels[i];
+                            ChangeVariableTypeWithDataPreservation(variable, command.Types[i]);
+                        }
                     }
-                    graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+                }
+                else if (command.Type.IsValid)
+                {
+                    // Same type for all variables
+                    for (int i = 0; i < command.VariableDeclarationModels.Count; ++i)
+                    {
+                        ChangeVariableTypeWithDataPreservation(command.VariableDeclarationModels[i], command.Type);
+                    }
+                }
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+            }
+        }
+
+        static void ChangeVariableTypeWithDataPreservation(VariableDeclarationModelBase variable, TypeHandle newTypeHandle)
+        {
+            var oldType = variable.DataType.Resolve();
+            var newType = newTypeHandle.Resolve();
+    
+            // Capture data if converting between collection types
+            List<object> oldData = null;
+            if (TypeExtensions.IsListOrArray(oldType) && TypeExtensions.IsListOrArray(newType))
+            {
+                var oldList = variable.InitializationModel?.ObjectValue as IList;
+                if (oldList != null && oldList.Count > 0)
+                {
+                    oldData = new List<object>();
+                    foreach (var item in oldList)
+                    {
+                        oldData.Add(item);
+                    }
+                }
+            }
+    
+            // Change the type
+            variable.DataType = newTypeHandle;
+    
+            // Restore data if we captured any
+            if (oldData != null && oldData.Count > 0)
+            {
+                if (newType.IsArray)
+                {
+                    // Arrays are fixed-size
+                    var elementType = newType.GetElementType();
+                    var newArray = Array.CreateInstance(elementType, oldData.Count);
+                    for (int i = 0; i < oldData.Count; i++)
+                    {
+                        newArray.SetValue(oldData[i], i);
+                    }
+                    variable.InitializationModel.ObjectValue = newArray;
+                }
+                else if (variable.InitializationModel?.ObjectValue is IList newList)
+                {
+                    newList.Clear();
+                    foreach (var item in oldData)
+                    {
+                        newList.Add(item);
+                    }
                 }
             }
         }

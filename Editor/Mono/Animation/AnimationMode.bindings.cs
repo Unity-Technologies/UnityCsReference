@@ -37,7 +37,9 @@ namespace UnityEditor
         static private bool s_InAnimationPlaybackMode = false;
         static private bool s_InAnimationRecordMode = false;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         static internal event Action onAnimationRecordingStart;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         static internal event Action onAnimationRecordingStop;
         static internal event Action onAnimationPlaybackStart;
         static internal event Action onAnimationPlaybackStop;
@@ -136,6 +138,7 @@ namespace UnityEditor
             onAnimationRecordingStop?.Invoke();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool InAnimationRecording()
         {
             return s_InAnimationRecordMode;

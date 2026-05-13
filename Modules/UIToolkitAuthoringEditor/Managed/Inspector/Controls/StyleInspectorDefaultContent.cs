@@ -107,7 +107,7 @@ internal class StyleInspectorDefaultContent : VisualElement
             return;
         }
 
-        // A lot of time is spent on Mono.JIt during the first frame, so we'll create the elements by blocks across multiple frames.
+        // A lot of time is spent on Mono.JIT during the first frame, so we'll create the elements by blocks across multiple frames.
         var defaultContent = DefaultContent;
         if (defaultContent == null || !defaultContent)
             return;

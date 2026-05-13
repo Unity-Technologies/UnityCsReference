@@ -94,6 +94,11 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public static readonly Capabilities Editable;
 
+        /// <summary>
+        /// Can be animated.
+        /// </summary>
+        public static readonly Capabilities Animatable;
+
         static Capabilities()
         {
             s_NextId = 0;
@@ -111,6 +116,7 @@ namespace Unity.GraphToolkit.Editor
             NeedsContainer = new Capabilities(nameof(NeedsContainer));
             Disableable = new Capabilities(nameof(Disableable));
             Editable = new Capabilities(nameof(Editable));
+            Animatable = new Capabilities(nameof(Animatable));
         }
 
         protected Capabilities(string name, string prefix = k_CapabilityPrefix)

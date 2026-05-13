@@ -11,8 +11,8 @@ namespace Unity.Profiling.Editor
     // A wrapper around the existing singleton API for storing global Editor preferences. This exists to make it easier going forward to migrate away from the singleton approach, as well as to provide a single API to the multiple places where persistent preferences are currently stored.
     class LegacyGlobalProfilerPersistentSettingsService : IProfilerPersistentSettingsService
     {
-        const string k_PersistentSettingKey_BottlenecksViewVisible = "bottlenecks-view-visible";
-        const string k_PersistentSettingKey_BottleneckDetailsViewSelectedSummaryType = "bottlenecks-details-view__selected-summary-type";
+        internal const string k_PersistentSettingKey_BottlenecksViewVisible = "bottlenecks-view-visible";
+        internal const string k_PersistentSettingKey_BottleneckDetailsViewSelectedSummaryType = "bottlenecks-details-view__selected-summary-type";
 
         public LegacyGlobalProfilerPersistentSettingsService()
         {

@@ -7,18 +7,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackagePlatformList : VisualElement
+    [UxmlElement]
+    internal partial class PackagePlatformList : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        private readonly IUpmCache m_UpmCache;
+
+        public PackagePlatformList() : this(ServicesContainer.instance.Resolve<IUpmCache>())
         {
-            public override object CreateInstance()
-            {
-                return new PackagePlatformList(ServicesContainer.instance.Resolve<IUpmCache>());
-            }
         }
 
-        private readonly IUpmCache m_UpmCache;
         public PackagePlatformList(IUpmCache upmCache)
         {
             m_UpmCache = upmCache;

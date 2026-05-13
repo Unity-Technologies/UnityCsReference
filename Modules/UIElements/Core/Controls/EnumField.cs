@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
@@ -21,51 +20,6 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId textProperty = nameof(text);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Enum>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Enum>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(typeAsString), "type", typeof(Enum)),
-                    new (nameof(valueAsString), "value"),
-                    new (nameof(includeObsoleteValues), "include-obsolete-values"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [UxmlTypeReference(typeof(Enum))]
-            [SerializeField, UxmlAttribute("type")] string typeAsString;
-            [EnumFieldValueDecorator]
-            [SerializeField, UxmlAttribute("value")] string valueAsString;
-            [SerializeField] bool includeObsoleteValues;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags typeAsString_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueAsString_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags includeObsoleteValues_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new EnumField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (EnumField)obj;
-                if (ShouldWriteAttributeValue(includeObsoleteValues_UxmlAttributeFlags))
-                    e.includeObsoleteValues = includeObsoleteValues;
-                if (ShouldWriteAttributeValue(typeAsString_UxmlAttributeFlags))
-                    e.typeAsString = typeAsString;
-                if (ShouldWriteAttributeValue(valueAsString_UxmlAttributeFlags))
-                    e.valueAsString = valueAsString;
-                else
-                    // We need to do this to initialize the EnumField.
-                    e.valueAsString = null;
-            }
-        }
-
         private Type m_EnumType;
         private bool m_IncludeObsoleteValues;
         private TextElement m_TextElement;
@@ -73,12 +27,36 @@ namespace UnityEngine.UIElements
         private EnumData m_EnumData;
 
         // These properties exist so that the UIBuilder can read them.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [UxmlAttribute, UxmlTypeReference(typeof(Enum))]
         internal Type type
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get => m_EnumType;
+            set
+            {
+                if (m_EnumType == value)
+                    return;
+
+                m_EnumType = value;
+                if (m_EnumType == null)
+                {
+                    this.value = null;
+                    m_TextElement.text = string.Empty;
+                }
+                else
+                {
+                    PopulateDataFromType(value);
+
+                    if (this.value == null)
+                    {
+                        var enumValue = (Enum)Enum.ToObject(type, 0);
+                        Init(enumValue, includeObsoleteValues);
+                    }
+                }
+            }
         }
 
+        [UxmlAttribute]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool includeObsoleteValues
         {
@@ -86,22 +64,8 @@ namespace UnityEngine.UIElements
             set => m_IncludeObsoleteValues = value;
         }
 
-        internal string typeAsString
-        {
-            get => UxmlUtility.TypeToString(m_EnumType);
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            set
-            {
-                m_EnumType = UxmlUtility.ParseType(value);
-                if (m_EnumType == null)
-                {
-                    this.value = null;
-                    m_TextElement.text = string.Empty;
-                }
-            }
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [UxmlAttribute("value"), UxmlAttributeBindingPath("value"), EnumFieldValueDecoratorAttribute]
         internal string valueAsString
         {
             get => value?.ToString();
@@ -114,7 +78,6 @@ namespace UnityEngine.UIElements
                         if (Enum.TryParse(type, value, false, out var result) && result is Enum enumValue)
                         {
                             Init(enumValue, includeObsoleteValues);
-                            return;
                         }
                         else
                         {

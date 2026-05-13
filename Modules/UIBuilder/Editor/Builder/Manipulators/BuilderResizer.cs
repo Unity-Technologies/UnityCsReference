@@ -16,7 +16,8 @@ namespace Unity.UI.Builder
     ///  2. Apply the clamped value to the target element.
     ///  3. Check the geometry of the target element matches the requested value. If not, we need to adjust the drag value to match the geometry. This handles elements with min/max sizes.
     /// </summary>
-    class BuilderResizer : BuilderTransformer
+    [UxmlElement]
+    partial class BuilderResizer : BuilderTransformer
     {
         const string k_TopHandleName = "top-handle";
         const string k_LeftHandleName = "left-handle";
@@ -48,12 +49,6 @@ namespace Unity.UI.Builder
 
         // Used in tests
         public Dictionary<string, VisualElement> handleElements => m_HandleElements;
-
-        [Serializable]
-        public new class UxmlSerializedData : BuilderTransformer.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderResizer();
-        }
 
         public BuilderResizer()
         {

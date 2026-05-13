@@ -3,28 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class FontStyleToggleField : BaseField<FontStyle>
+    [UxmlElement]
+    internal partial class FontStyleToggleField : BaseField<FontStyle>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<FontStyle>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<FontStyle>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new FontStyleToggleField();
-        }
-
         static readonly string s_UssClassName = "unity-toggle-button-group_font-style-field";
 
         [Flags]

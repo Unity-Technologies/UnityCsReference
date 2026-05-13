@@ -5,9 +5,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
-using UnityEngine.Internal;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -68,66 +67,6 @@ namespace UnityEngine.UIElements
             GrowAndFill
         }
 
-        [ExcludeFromDocs, Serializable]
-        public class UxmlSerializedData : UIElements.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(primaryColumnName), "primary-column-name"),
-                    new (nameof(stretchMode), "stretch-mode"),
-                    new (nameof(reorderable), "reorderable"),
-                    new (nameof(resizable), "resizable"),
-                    new (nameof(resizePreview), "resize-preview"),
-                    new (nameof(columns), "columns"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string primaryColumnName;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags primaryColumnName_UxmlAttributeFlags;
-            [SerializeField] StretchMode stretchMode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchMode_UxmlAttributeFlags;
-            [SerializeField] bool reorderable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
-            [SerializeField] bool resizable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizable_UxmlAttributeFlags;
-            [SerializeField] bool resizePreview;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizePreview_UxmlAttributeFlags;
-            [SerializeReference, UxmlObjectReference] List<Column.UxmlSerializedData> columns;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columns_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Columns();
-
-            public override void Deserialize(object obj)
-            {
-                var e = (Columns)obj;
-                if (ShouldWriteAttributeValue(primaryColumnName_UxmlAttributeFlags))
-                    e.primaryColumnName = primaryColumnName;
-                if (ShouldWriteAttributeValue(stretchMode_UxmlAttributeFlags))
-                    e.stretchMode = stretchMode;
-                if (ShouldWriteAttributeValue(reorderable_UxmlAttributeFlags))
-                    e.reorderable = reorderable;
-                if (ShouldWriteAttributeValue(resizable_UxmlAttributeFlags))
-                    e.resizable = resizable;
-                if (ShouldWriteAttributeValue(resizePreview_UxmlAttributeFlags))
-                    e.resizePreview = resizePreview;
-
-                if (ShouldWriteAttributeValue(columns_UxmlAttributeFlags) && columns != null)
-                {
-                    foreach (var columnData in columns)
-                    {
-                        var column = (Column)columnData.CreateInstance();
-                        columnData.Deserialize(column);
-                        e.Add(column);
-                    }
-                }
-            }
-        }
-
         IList<Column> m_Columns = new List<Column>();
         List<Column> m_DisplayColumns;
         List<Column> m_VisibleColumns;
@@ -138,15 +77,6 @@ namespace UnityEngine.UIElements
         bool m_Resizable = true;
         bool m_ResizePreview;
         string m_PrimaryColumnName;
-
-        /// <summary>
-        /// Returns the list of columns.
-        /// </summary>
-        /// <remarks>
-        /// CreatePropertyAttribute is used to be able to bind to properties of the columns in the collection.
-        /// </remarks>
-        [CreateProperty]
-        internal IList<Column> columns => m_Columns;
 
         /// <summary>
         /// Called when a property has changed.
@@ -160,6 +90,7 @@ namespace UnityEngine.UIElements
         /// Needs to match a <see cref="Column"/>'s id, otherwise will be ignored.
         /// The primary column cannot be hidden and will contain the expand arrow for tree views.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public string primaryColumnName
         {
@@ -176,11 +107,31 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Indicates how the size of columns in this collection is automatically adjusted as other columns or the containing view get resized.
+        /// The default value is <see cref="StretchMode.GrowAndFill"/>
+        /// </summary>
+        [UxmlAttribute]
+        [CreateProperty]
+        public StretchMode stretchMode
+        {
+            get => m_StretchMode;
+            set
+            {
+                if (m_StretchMode == value)
+                    return;
+                m_StretchMode = value;
+                NotifyChange(ColumnsDataType.StretchMode);
+                NotifyPropertyChanged(stretchModeProperty);
+            }
+        }
+
+        /// <summary>
         /// Indicates whether the columns can be reordered interactively by user.
         /// </summary>
         /// <remarks>
         /// Reordering columns can be cancelled by pressing ESC key.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public bool reorderable
         {
@@ -202,6 +153,7 @@ namespace UnityEngine.UIElements
         /// The resize behaviour of a specific column in the column collection can be specified by setting <see cref="Column.resizable"/>.
         /// A column is effectively resizable if both <see cref="Column.resizable"/> and <see cref="Columns.resizable"/> are both true.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public bool resizable
         {
@@ -222,6 +174,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// When enabled, resizing can be cancelled by pressing ESC key.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public bool resizePreview
         {
@@ -233,6 +186,27 @@ namespace UnityEngine.UIElements
                 m_ResizePreview = value;
                 NotifyChange(ColumnsDataType.ResizePreview);
                 NotifyPropertyChanged(resizePreviewProperty);
+            }
+        }
+
+        /// <summary>
+        /// Returns the list of columns.
+        /// </summary>
+        /// <remarks>
+        /// CreatePropertyAttribute is used to be able to bind to properties of the columns in the collection.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlObjectReference]
+        internal List<Column> columns
+        {
+            get => m_Columns as List<Column>;
+            set
+            {
+                Clear();
+                foreach (var c in value)
+                {
+                    Add(c);
+                }
             }
         }
 
@@ -253,6 +227,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal IReadOnlyList<Column> visibleList
         {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")]
             get
             {
                 UpdateVisibleColumns();
@@ -264,24 +239,6 @@ namespace UnityEngine.UIElements
         /// Event sent whenever properties of the column collection change.
         /// </summary>
         internal event Action<ColumnsDataType> changed;
-
-        /// <summary>
-        /// Indicates how the size of columns in this collection is automatically adjusted as other columns or the containing view get resized.
-        /// The default value is <see cref="StretchMode.GrowAndFill"/>
-        /// </summary>
-        [CreateProperty]
-        public StretchMode stretchMode
-        {
-            get => m_StretchMode;
-            set
-            {
-                if (m_StretchMode == value)
-                    return;
-                m_StretchMode = value;
-                NotifyChange(ColumnsDataType.StretchMode);
-                NotifyPropertyChanged(stretchModeProperty);
-            }
-        }
 
         /// <summary>
         /// Event sent whenever a column is added to the collection at the specified index.

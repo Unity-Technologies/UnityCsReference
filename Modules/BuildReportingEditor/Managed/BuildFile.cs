@@ -13,7 +13,10 @@ namespace UnityEditor.Build.Reporting
     {
         ///<summary>The unique identifier of the build file.</summary>
         public uint id { get; }
-        ///<summary>The absolute path of the file produced by the build process.</summary>
+        ///<summary>The path of the file produced by the build process.</summary>
+        ///<remarks>For Player and AssetBundle builds this is an absolute path.
+        ///For <see cref="BuildType.ContentDirectory"/> builds this is a path relative
+        ///to <see cref="BuildSummary.outputPath"/>.</remarks>
         public string path { get; }
         ///<summary>The role the file plays in the build output.</summary>
         ///<remarks>Use this field to understand what purpose a file serves within the built player. Common roles for files are captured by the members of the <see cref="CommonRoles" /> class.</remarks>

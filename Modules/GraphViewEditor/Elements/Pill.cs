@@ -3,56 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public class Pill : VisualElement
+    [UxmlElement]
+    public partial class Pill : VisualElement
     {
-        [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(highlighted), "highlighted"),
-                    new(nameof(text), "text"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool highlighted;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highlighted_UxmlAttributeFlags;
-            [SerializeField] string text;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Pill();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (Pill)obj;
-                if (ShouldWriteAttributeValue(highlighted_UxmlAttributeFlags))
-                    e.highlighted = highlighted;
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.text = text;
-            }
-        }
-
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlFactoryObsoleteIsError)]
-        public new class UxmlFactory : UxmlFactory<Pill, UxmlTraits> {}
-
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlTraitsObsoleteIsError)]
-        public new class UxmlTraits : VisualElement.UxmlTraits {}
-
         private readonly Label m_TitleLabel;
         private readonly Image m_Icon;
         private VisualElement m_Left;
@@ -61,6 +19,7 @@ namespace UnityEditor.Experimental.GraphView
         private readonly VisualElement m_RightContainer;
         private bool m_Highlighted = false;
 
+        [UxmlAttribute]
         public bool highlighted
         {
             get { return m_Highlighted; }
@@ -80,6 +39,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
+        [UxmlAttribute]
         public string text
         {
             get { return m_TitleLabel.text; }

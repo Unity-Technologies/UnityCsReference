@@ -38,7 +38,6 @@ namespace UnityEditor.Embree
     [NativeHeader("Modules/EmbreeEditor/Embree.bindings.h")]
     public static class GpuBvh
     {
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static uint[] Build(GpuBvhBuildOptions options, Span<GpuBvhPrimitiveDescriptor> prims);
 
     }

@@ -6,13 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.Collections;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -26,7 +26,7 @@ namespace UnityEditor
 
     [Serializable]
     [VisibleToOtherModules("UnityEditor.PlayModeModule")]
-    internal abstract class PlayModeView : EditorWindow, ISerializationCallbackReceiver
+    internal abstract class PlayModeView : EditorWindow, ISerializationCallbackReceiver, IGameViewRenderInfo
     {
         static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
 
@@ -53,6 +53,7 @@ namespace UnityEditor
         protected bool m_SwitchingPlayModeViewType = false;
 
         protected const int k_MaxSupportedDisplays = 8;
+        protected const float k_defaultDPI = 96;
 
         static Dictionary<Type, string> s_AvailableWindowTypes;
 
@@ -342,12 +343,22 @@ namespace UnityEditor
 
                     dockAreaParent.AddTab(window);
                     dockAreaParent.RemoveTab(this);
-                    DestroyImmediate(this, true);
+                    // During Playmode it's better to ensure that the view is destroyed only at the end of the current
+                    // frame and not during the rendering of a PlayModeView (UUM-139011)
+                    if (EditorApplication.isPlaying)
+                        Destroy(this);
+                    else // In Editor Mode we can destroy the view directly
+                        DestroyImmediate(this, true);
                 }
                 else if (m_Parent is MaximizedHostView maximizedParent)
                 {
                     maximizedParent.actualView = window;
-                    DestroyImmediate(this, true);
+                    // During Playmode it's better to ensure that the view is destroyed only at the end of the current
+                    // frame and not during the rendering of a PlayModeView (UUM-139011)
+                    if (EditorApplication.isPlaying)
+                        Destroy(this);
+                    else // In Editor Mode we can destroy the view directly
+                        DestroyImmediate(this, true);
                 }
             }
             RemoveDisabledWindows();
@@ -508,6 +519,7 @@ namespace UnityEditor
                 m_Parent.SetAsLastPlayModeView();
                 m_Parent.SetMainPlayModeViewSize(targetSize);
                 Display.activeEditorGameViewTarget  = m_TargetDisplay;
+                SetLastInteractedGameViewForDisplay(this, m_TargetDisplay);
                 s_LastFocused = this;
                 // AddLastView(s_LastFocused);
                 Repaint();
@@ -562,7 +574,7 @@ namespace UnityEditor
 
         protected virtual void OnEnterPlayModeBehaviorChange() {}
 
-        int GetValidTargetDisplay(int display)
+        static int GetValidTargetDisplay(int display)
         {
             if (display < 0 || display >= k_MaxSupportedDisplays)
                 display = 0;
@@ -579,5 +591,131 @@ namespace UnityEditor
             // UUM-115918: Ensure deserialized target display is always valid, otherwise opening GameView will crash the editor.
             m_TargetDisplay = GetValidTargetDisplay(m_TargetDisplay);
         }
+
+        static List<PlayModeView> s_LastInteractedByDisplay;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.InputForUIModule")]
+        internal static IGameViewRenderInfo GetLastInteractedGameView(int displayIndex)
+        {
+            displayIndex = GetValidTargetDisplay(displayIndex);
+            EnsureLastInteractedListSize(displayIndex);
+
+            var candidate = s_LastInteractedByDisplay[displayIndex];
+            if (!IsValidLastInteractedCandidate(candidate, displayIndex))
+                candidate = FindAnyPlayModeViewForDisplay(displayIndex);
+
+            s_LastInteractedByDisplay[displayIndex] = candidate;
+            return candidate;
+        }
+
+        static void SetLastInteractedGameViewForDisplay(PlayModeView view, int displayIndex)
+        {
+            displayIndex = GetValidTargetDisplay(displayIndex);
+            EnsureLastInteractedListSize(displayIndex);
+            s_LastInteractedByDisplay[displayIndex] = view;
+        }
+
+        static void EnsureLastInteractedListSize(int displayIndex)
+        {
+            s_LastInteractedByDisplay ??= new List<PlayModeView>();
+            while (displayIndex >= s_LastInteractedByDisplay.Count)
+                s_LastInteractedByDisplay.Add(null);
+        }
+
+        static bool IsValidLastInteractedCandidate(PlayModeView view, int displayIndex)
+        {
+            if (view == null)
+                return false;
+            // UnityEngine.Object fake-null (destroyed window)
+            if ((UnityEngine.Object)view == null)
+                return false;
+            return view.m_TargetDisplay == displayIndex;
+        }
+
+        static PlayModeView FindAnyPlayModeViewForDisplay(int display)
+        {
+            var mainPlayModeView = GetMainPlayModeView();
+            if (IsValidLastInteractedCandidate(mainPlayModeView, display))
+                return mainPlayModeView;
+
+            RemoveDisabledWindows();
+            if (s_PlayModeViews == null)
+                return null;
+
+            foreach (var playModeView in s_PlayModeViews)
+            {
+                if (IsValidLastInteractedCandidate(playModeView, display))
+                    return playModeView;
+            }
+
+            return null;
+        }
+
+        protected void OnDestroy()
+        {
+            RemoveThisFromLastInteractedRegistry();
+        }
+
+        void RemoveThisFromLastInteractedRegistry()
+        {
+            if (s_LastInteractedByDisplay == null)
+                return;
+            for (var i = 0; i < s_LastInteractedByDisplay.Count; i++)
+            {
+                if (s_LastInteractedByDisplay[i] == this)
+                    s_LastInteractedByDisplay[i] = null;
+            }
+        }
+
+        /// <summary>
+        /// Backing pixels-per-point from this window's <see cref="HostView"/> / <see cref="GUIView"/> (stable across domain reload);
+        /// does not touch UI Toolkit on elements that may not be on a panel yet.
+        /// </summary>
+        bool TryGetGuiViewPixelsPerPoint(out float pixelsPerPoint)
+        {
+            pixelsPerPoint = 0f;
+            var host = m_Parent;
+            if (host == null)
+                return false;
+            var s = host.GetBackingScaleFactor();
+            if (s <= 0f)
+                return false;
+            pixelsPerPoint = s;
+            return true;
+        }
+
+        float GetGameViewScalingForRenderInfo()
+        {
+            if (TryGetGuiViewPixelsPerPoint(out var ppp))
+                return ppp;
+            if (Screen.dpi > 0f)
+                return Screen.dpi / k_defaultDPI;
+            return 1f;
+        }
+
+        /// <summary>
+        /// DPI used with <see cref="UnityEngine.UIElements.PanelSettings"/> physical-size scaling.
+        /// </summary>
+        /// <remarks>
+        /// Default: 96 � <see cref="GUIView.GetBackingScaleFactor"/> when hosted; otherwise <see cref="Screen.dpi"/> if set, else 96.
+
+        /// The Device Simulator <c>PlayModeView</c> overrides to prefer simulated <see cref="Screen.dpi"/>.
+        /// </remarks>
+        protected virtual float GetGameViewDpiForPhysicalSize()
+        {
+            if (TryGetGuiViewPixelsPerPoint(out var ppp))
+                return k_defaultDPI * ppp;
+            if (Screen.dpi > 0f)
+                return Screen.dpi;
+            return k_defaultDPI;
+        }
+
+        Vector2 IGameViewRenderInfo.targetSize => m_TargetSize;
+
+        int IGameViewRenderInfo.targetDisplay => m_TargetDisplay;
+
+        float IGameViewRenderInfo.scaling => GetGameViewScalingForRenderInfo();
+
+        float IGameViewRenderInfo.dpi => GetGameViewDpiForPhysicalSize();
     }
 }

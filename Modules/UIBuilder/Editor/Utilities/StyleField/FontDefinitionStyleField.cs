@@ -13,14 +13,9 @@ using UnityEngine.UIElements;
 namespace Unity.UI.Builder
 {
     [UsedImplicitly]
-    class FontDefinitionStyleField : MultiTypeField
+    [UxmlElement]
+    partial class FontDefinitionStyleField : MultiTypeField
     {
-        [Serializable]
-        public new class UxmlSerializedData : MultiTypeField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new FontDefinitionStyleField();
-        }
-
         const string k_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/FontDefinitionStyleField.uss";
 
         const string k_FieldInputName = "unity-visual-input";

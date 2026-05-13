@@ -223,5 +223,17 @@ namespace Unity.GraphToolkit.Editor
         {
             return HasCapability(Unity.GraphToolkit.Editor.Capabilities.Disableable);
         }
+
+        /// <summary>
+        /// Indicates whether a model can be animated.
+        /// </summary>
+        /// <returns>True if it has the capability.</returns>
+        /// <remarks>
+        /// This method checks if the model has the <see cref="Capabilities.Animatable"/> capability and can be animated in the graph.
+        /// </remarks>
+        public bool IsAnimatable()
+        {
+            return HasCapability(Unity.GraphToolkit.Editor.Capabilities.Animatable);
+        }
     }
 }

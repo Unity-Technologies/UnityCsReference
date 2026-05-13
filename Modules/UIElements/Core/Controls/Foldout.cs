@@ -37,45 +37,6 @@ namespace UnityEngine.UIElements
             VisualElementUtils.SetFoldoutType((typeof(Foldout)));
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(text), "text"),
-                    new (nameof(toggleOnLabelClick), "toggle-on-label-click"),
-                    new (nameof(value), "value"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineTextField] string text;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField] bool toggleOnLabelClick;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags toggleOnLabelClick_UxmlAttributeFlags;
-            [SerializeField] bool value;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Foldout();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (Foldout)obj;
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.text = text;
-                if (ShouldWriteAttributeValue(toggleOnLabelClick_UxmlAttributeFlags))
-                    e.toggleOnLabelClick = toggleOnLabelClick;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.SetValueWithoutNotify(value);
-            }
-        }
-
         readonly Toggle m_Toggle = new() { acceptClicksIfDisabled = true };
 
         internal Toggle toggle
@@ -102,26 +63,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether to toggle the foldout state when the user clicks the label.
-        /// </summary>
-        [CreateProperty]
-        public bool toggleOnLabelClick
-        {
-            get => m_Toggle.toggleOnTextClick;
-            set
-            {
-                if (m_Toggle.toggleOnTextClick == value)
-                    return;
-
-                m_Toggle.toggleOnTextClick = value;
-                NotifyPropertyChanged(toggleOnLabelClickProperty);
-            }
-        }
-
-        /// <summary>
         /// The label text for the toggle.
         /// </summary>
+        [MultilineTextField]
         [CreateProperty]
+        [UxmlAttribute]
         public string text
         {
             get => m_Toggle.text;
@@ -135,6 +81,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Whether to toggle the foldout state when the user clicks the label.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool toggleOnLabelClick
+        {
+            get => m_Toggle.toggleOnTextClick;
+            set
+            {
+                if (m_Toggle.toggleOnTextClick == value)
+                    return;
+
+                m_Toggle.toggleOnTextClick = value;
+                NotifyPropertyChanged(toggleOnLabelClickProperty);
+            }
+        }
+
         [SerializeField, DontCreateProperty]
         private bool m_Value;
 
@@ -143,6 +107,7 @@ namespace UnityEngine.UIElements
         /// visible, and false if the Foldout is closed, and its contents are hidden.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool value
         {
             get => m_Value;

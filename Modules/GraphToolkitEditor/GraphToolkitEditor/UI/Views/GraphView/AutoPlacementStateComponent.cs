@@ -26,9 +26,10 @@ namespace Unity.GraphToolkit.Editor
             /// Marks a model as needing to be aligned.
             /// </summary>
             /// <param name="model">The model to align.</param>
-            public void MarkModelToAutoAlign(GraphElementModel model)
+            /// <param name="reverse">True if it is the input node (instead of the output node) that should be repositioned for alignment.</param>
+            public void MarkModelToAutoAlign(GraphElementModel model, bool reverse = false)
             {
-                m_State.CurrentChangeset.AddModelToAutoAlign(model);
+                m_State.CurrentChangeset.AddModelToAutoAlign(model, reverse);
                 m_State.SetUpdateType(UpdateType.Partial);
             }
 
@@ -129,12 +130,16 @@ namespace Unity.GraphToolkit.Editor
             List<Hash128> m_ModelsToAutoAlignList;
 
             [SerializeField]
+            List<Hash128> m_ModelsToReverseAutoAlignList;
+
+            [SerializeField]
             List<ModelToReposition> m_ModelsToRepositionAtCreationList;
 
             [SerializeField]
             List<Hash128> m_ModelsToHideDuringAutoPlacementList;
 
             protected HashSet<Hash128> m_ModelsToAutoAlign;
+            protected HashSet<Hash128> m_ModelsToReverseAutoAlign;
             protected HashSet<ModelToReposition> m_ModelsToRepositionAtCreation;
             protected HashSet<Hash128> m_ModelsToHideDuringAutoPlacement;
 
@@ -142,6 +147,8 @@ namespace Unity.GraphToolkit.Editor
             /// The models that need to be aligned.
             /// </summary>
             public IReadOnlyCollection<Hash128> ModelsToAutoAlign => m_ModelsToAutoAlign;
+
+            public IReadOnlyCollection<Hash128> ModelsToReverseAutoAlign => m_ModelsToReverseAutoAlign;
 
             /// <summary>
             /// The models that need to be repositioned at their creation.
@@ -159,6 +166,7 @@ namespace Unity.GraphToolkit.Editor
             public Changeset()
             {
                 m_ModelsToAutoAlign = new HashSet<Hash128>();
+                m_ModelsToReverseAutoAlign = [];
                 m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>();
                 m_ModelsToHideDuringAutoPlacement = new HashSet<Hash128>();
             }
@@ -167,9 +175,20 @@ namespace Unity.GraphToolkit.Editor
             /// Adds a model to the list of models to auto-align.
             /// </summary>
             /// <param name="model">The model to add.</param>
-            public virtual void AddModelToAutoAlign(GraphElementModel model)
+            /// <param name="reverse">True if it is the input node (instead of the output node) that should be repositioned for alignment.</param>
+            public virtual void AddModelToAutoAlign(GraphElementModel model, bool reverse)
             {
-                m_ModelsToAutoAlign.Add(model.Guid);
+                if (reverse)
+                {
+                    m_ModelsToReverseAutoAlign.Add(model.Guid);
+                    m_ModelsToAutoAlign.Remove(model.Guid);
+                }
+                else
+                {
+                    m_ModelsToAutoAlign.Add(model.Guid);
+                    m_ModelsToReverseAutoAlign.Remove(model.Guid);
+                }
+
                 m_ModelsToRepositionAtCreation.RemoveWhere(e => e.Model == model.Guid);
             }
 
@@ -180,7 +199,7 @@ namespace Unity.GraphToolkit.Editor
             /// <param name="repositionType">The type of reposition work.</param>
             public virtual void AddModelToRepositionAtCreation((GraphElementModel, WireModel, WireSide) model, RepositionType repositionType)
             {
-                if (!m_ModelsToAutoAlign.Contains(model.Item1.Guid))
+                if (!m_ModelsToAutoAlign.Contains(model.Item1.Guid) && !m_ModelsToReverseAutoAlign.Contains(model.Item1.Guid))
                     m_ModelsToRepositionAtCreation.Add(new ModelToReposition
                     {
                         Model = model.Item1.Guid,
@@ -210,6 +229,7 @@ namespace Unity.GraphToolkit.Editor
             public virtual void Clear()
             {
                 m_ModelsToAutoAlign.Clear();
+                m_ModelsToReverseAutoAlign.Clear();
                 m_ModelsToRepositionAtCreation.Clear();
                 m_ModelsToHideDuringAutoPlacement.Clear();
             }
@@ -224,32 +244,29 @@ namespace Unity.GraphToolkit.Editor
                     if (cs is Changeset changeset)
                     {
                         m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
+                        m_ModelsToReverseAutoAlign.UnionWith(changeset.m_ModelsToReverseAutoAlign);
                         m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
                         m_ModelsToHideDuringAutoPlacement.UnionWith(changeset.m_ModelsToHideDuringAutoPlacement);
                     }
                 }
 
-                m_ModelsToRepositionAtCreation.RemoveWhere(m => m_ModelsToAutoAlign.Contains(m.Model));
+                m_ModelsToRepositionAtCreation.RemoveWhere(m => m_ModelsToAutoAlign.Contains(m.Model) || m_ModelsToReverseAutoAlign.Contains(m.Model));
             }
 
             /// <inheritdoc />
             public virtual void OnBeforeSerialize()
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ModelsToAutoAlignList = m_ModelsToAutoAlign.ToList();
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ModelsToRepositionAtCreationList = m_ModelsToRepositionAtCreation.ToList();
-#pragma warning restore UA2001
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                m_ModelsToHideDuringAutoPlacementList = m_ModelsToHideDuringAutoPlacement.ToList();
-#pragma warning restore UA2001
+                m_ModelsToAutoAlignList = new List<Hash128>(m_ModelsToAutoAlign);
+                m_ModelsToReverseAutoAlignList = new List<Hash128>(m_ModelsToReverseAutoAlign);
+                m_ModelsToRepositionAtCreationList = new List<ModelToReposition>(m_ModelsToRepositionAtCreation);
+                m_ModelsToHideDuringAutoPlacementList = new List<Hash128>(m_ModelsToHideDuringAutoPlacement);
             }
 
             /// <inheritdoc />
             public virtual void OnAfterDeserialize()
             {
                 m_ModelsToAutoAlign = new HashSet<Hash128>(m_ModelsToAutoAlignList);
+                m_ModelsToReverseAutoAlign = new HashSet<Hash128>(m_ModelsToReverseAutoAlignList);
                 m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>(m_ModelsToRepositionAtCreationList);
                 m_ModelsToHideDuringAutoPlacement = new HashSet<Hash128>(m_ModelsToHideDuringAutoPlacementList);
             }

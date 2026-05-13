@@ -160,7 +160,7 @@ class LiveAttributePropertyController
             if (!attributeDescription.TryGetValueFromObject(obj, out var value))
                 return;
 
-            var isBound = resolvedBindingLookup.Contains(property.GetBindingPath());
+            var isBound = resolvedBindingLookup.Contains(attributeDescription.bindingPath);
             var flags = uxmlSerializedData != null ? attributeDescription.GetSerializedValueAttributeFlags(uxmlSerializedData) : UxmlSerializedData.UxmlAttributeFlags.DefaultValue;
             var uxmlValue = (flags == UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml && uxmlSerializedData != null)
                 ? attributeDescription.GetSerializedValue(uxmlSerializedData)

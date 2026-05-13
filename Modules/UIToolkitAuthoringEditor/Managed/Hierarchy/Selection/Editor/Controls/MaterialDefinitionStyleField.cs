@@ -17,14 +17,8 @@ namespace Unity.UIToolkit.Editor
     [UxmlElement]
     [UsedImplicitly]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class MaterialDefinitionStyleField : BaseField<MaterialDefinition>
+    partial class MaterialDefinitionStyleField : BaseField<MaterialDefinition>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new MaterialDefinitionStyleField();
-        }
-
         internal const string k_MaterialPropertiesListViewName = "material-properties-list-view";
         internal const string k_MaterialWarningName = "material-warning";
 

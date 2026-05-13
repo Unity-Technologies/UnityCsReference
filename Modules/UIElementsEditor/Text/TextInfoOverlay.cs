@@ -69,6 +69,20 @@ namespace UnityEditor.UIElements.Text
         private const float k_SmallVisibleSize = 10;
         private const float k_LabelFontSize = 10;
 
+        /// <summary>True when handle returns metrics already in content Y-down (e.g. ATG after normalization).</summary>
+        private bool MetricsAreContentYDown => m_TargetTextElement != null && m_TargetTextElement.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
+
+        /// <summary>Content Y for a metric: use as-is when MetricsAreContentYDown, else contentHeight - metric (TextCore Y-up).</summary>
+        private float ContentY(float metricY, float contentHeight)
+        {
+            return MetricsAreContentYDown ? metricY : contentHeight - metricY;
+        }
+
+        private Vector2 ContentPoint(Vector2 v, float contentHeight)
+        {
+            return MetricsAreContentYDown ? new Vector2(v.x, v.y) : new Vector2(v.x, contentHeight - v.y);
+        }
+
         readonly FontAsset m_RobotoMonoRegular;
         Color m_LabelColor = new Color(0.6f, 0.6f, 0.6f, 1.0f);
 
@@ -98,7 +112,7 @@ namespace UnityEditor.UIElements.Text
         {
             m_DisplayOption = displayOption;
 
-            if (m_TargetTextElement == null || m_TargetTextElement.uitkTextHandle.useAdvancedText)
+            if (m_TargetTextElement == null)
                 return;
 
             Rect r = m_TargetTextElement.LocalToWorld(m_TargetTextElement.contentRect);
@@ -120,162 +134,150 @@ namespace UnityEditor.UIElements.Text
 
         private void DrawCharacters(MeshGenerationContext mgc)
         {
-            int characterCount = m_TargetTextElement.uitkTextHandle.GetTextElementCount();
+            var handle = m_TargetTextElement.uitkTextHandle;
+            int characterCount = handle.GetTextElementCount();
+            var content = m_TargetTextElement.contentRect;
+            float contentHeight = content.height;
 
             for (int i = 0; i < characterCount; i++)
             {
-                var currentChar = m_TargetTextElement.uitkTextHandle.GetScaledCharacterMetrics(i);
+                var currentChar = handle.GetScaledCharacterMetrics(i);
 
-                //TODO: check if visible: maxVisibleChar, maxVisibleLines, firstVisibleChar (not currently implemented in Text Element)
+                // Skip invisible characters (whitespace, control chars, newlines).
+                // They carry no meaningful glyph information for the overlay and would only add noise.
+                if (!currentChar.isVisible)
+                    continue;
 
                 float origin = currentChar.origin;
                 float advance = currentChar.xAdvance;
                 float ascentline = currentChar.ascentline;
                 float baseline = currentChar.baseline;
                 float descentline = currentChar.descentline;
-                float height = m_TargetTextElement.layout.height;
 
-                // Draw character bounds
-                if (currentChar.isVisible)
-                {
-                    static Vector2 Flip(Vector2 v, float height)
-                    {
-                        return new Vector2(v.x, height - v.y);
-                    }
+                // Draw character bounds (content Y-down: top = min y, bottom = max y)
+                DrawDottedRectangle(mgc,
+                    ContentPoint(currentChar.topLeft, contentHeight),
+                    ContentPoint(currentChar.topRight, contentHeight),
+                    ContentPoint(currentChar.bottomRight, contentHeight),
+                    ContentPoint(currentChar.bottomLeft, contentHeight),
+                    Color.green);
 
-                    DrawDottedRectangle(mgc, Flip(currentChar.topLeft,height), Flip(currentChar.topRight,height), Flip(currentChar.bottomRight,height), Flip(currentChar.bottomLeft,height), Color.green);
+                float ascY = ContentY(ascentline, contentHeight);
+                float descY = ContentY(descentline, contentHeight);
+                float baseY = ContentY(baseline, contentHeight);
+                Vector2 asc_start = new Vector2(currentChar.topLeft.x, ascY);
+                Vector2 asc_end = new Vector2(currentChar.topRight.x, ascY);
+                DrawDottedLine(mgc, asc_start, asc_end, Color.yellow);
+                Vector2 desc_start = new Vector2(currentChar.topLeft.x, descY);
+                Vector2 desc_end = new Vector2(currentChar.topRight.x, descY);
+                DrawDottedLine(mgc, desc_start, desc_end, Color.yellow);
+                Vector2 baseline_start = new Vector2(currentChar.topLeft.x, baseY);
+                Vector2 baseline_end = new Vector2(currentChar.topRight.x, baseY);
+                DrawDottedLine(mgc, baseline_start, baseline_end, Color.yellow);
 
-                    //All lines need to be reworked. I thin the height need to be scaled
-                    // Draw ascent line
-                    Vector2 asc_start = new Vector2(currentChar.topLeft.x, height - ascentline);
-                    Vector2 asc_end = new Vector2(currentChar.topRight.x, height - ascentline);
+                float capline = baseline + currentChar.fontCapLine * currentChar.scale;
+                float meanline = baseline + currentChar.fontMeanLine * currentChar.scale;
+                Vector2 cap_start = new Vector2(currentChar.topLeft.x, ContentY(capline, contentHeight));
+                Vector2 cap_end = new Vector2(currentChar.topRight.x, ContentY(capline, contentHeight));
+                DrawDottedLine(mgc, cap_start, cap_end, Color.cyan);
+                Vector2 mean_start = new Vector2(currentChar.topLeft.x, ContentY(meanline, contentHeight));
+                Vector2 mean_end = new Vector2(currentChar.topRight.x, ContentY(meanline, contentHeight));
+                DrawDottedLine(mgc, mean_start, mean_end, Color.cyan);
 
-                    DrawDottedLine(mgc, asc_start, asc_end, Color.yellow);
-
-                    // Draw descent line
-                    Vector2 desc_start = new Vector2(currentChar.topLeft.x, height - descentline);
-                    Vector2 desc_end = new Vector2(currentChar.topRight.x, height - descentline);
-                    DrawDottedLine(mgc, desc_start, desc_end, Color.yellow);
-
-                    // Draw baseline
-                    Vector2 baseline_start = new Vector2(currentChar.topLeft.x, height - baseline);
-                    Vector2 baseline_end = new Vector2(currentChar.topRight.x, height - baseline);
-                    DrawDottedLine(mgc, baseline_start, baseline_end, Color.yellow);
-
-                    float capline = baseline + currentChar.fontCapLine * currentChar.scale;
-                    float meanline = baseline + currentChar.fontMeanLine * currentChar.scale;
-
-                    // Draw cap line
-                    Vector2 cap_start = new Vector2(currentChar.topLeft.x, height - capline);
-                    Vector2 cap_end = new Vector2(currentChar.topRight.x, height - capline);
-                    DrawDottedLine(mgc, cap_start, cap_end, Color.cyan);
-
-                    // Draw mean line
-                    Vector2 mean_start = new Vector2(currentChar.topLeft.x, height - meanline);
-                    Vector2 mean_end = new Vector2(currentChar.topRight.x, height - meanline);
-                    DrawDottedLine(mgc, mean_start, mean_end, Color.cyan);
-
-                    // Draw labels if zoomed in to a certain scale
-                    // The check was only considering the scale of the parent, so it was bad in most cases.
-                    // the color of the label is not too distracting even if the label is too small to read.
-                    //if (m_TargetTextElement.parent.resolvedStyle.scale.value.x > 2)
-                    {
-                        DrawLabelForLine(mgc, "Ascent Line", asc_start);
-                        DrawLabelForLine(mgc, "Descent Line", desc_start);
-                        DrawLabelForLine(mgc, "Base Line", baseline_start);
-                        DrawLabelForLine(mgc, "Cap Line", cap_start);
-                        DrawLabelForLine(mgc, "Mean Line", mean_start);
-                    }
-                }
-
-                // Draw white space bounds
-                else
-                {
-                    float whiteSpaceAdvance = Math.Abs(origin - advance) > 0.01f
-                        ? advance
-                        : origin + (ascentline - descentline) * 0.03f;
-                    Rect currentRect = new Rect(origin, height - ascentline,
-                        Math.Abs(whiteSpaceAdvance - origin), Math.Abs(ascentline - descentline));
-                    DrawDottedRectangle(mgc, currentRect, Color.gray);
-                }
-
-                // Draw origin
-                Vector2 origin_position = new Vector2(origin, height - baseline);
+                Vector2 origin_position = new Vector2(origin, ContentY(baseline, contentHeight));
                 DrawCrossHair(mgc, origin_position, k_SmallVisibleSize / 2, Color.cyan);
-
-                // Draw horizontal advance
-                Vector2 advance_position = new Vector2(advance, m_TargetTextElement.layout.height - baseline);
+                Vector2 advance_position = new Vector2(advance, ContentY(baseline, contentHeight));
                 DrawCrossHair(mgc, advance_position, k_SmallVisibleSize / 2, Color.yellow);
-
             }
         }
 
+        // Eight visually distinct colors cycled per word so every word and each of its
+        // line-segments (when character-level wrapping splits a word across lines) share one color.
+        static readonly Color[] k_WordOutlineColors =
+        {
+            new Color(0.20f, 0.82f, 0.20f, 1f), // green
+            new Color(0.22f, 0.60f, 1.00f, 1f), // blue
+            new Color(1.00f, 0.60f, 0.20f, 1f), // orange
+            new Color(0.82f, 0.20f, 0.82f, 1f), // purple
+            new Color(0.20f, 0.82f, 0.82f, 1f), // teal
+            new Color(1.00f, 0.80f, 0.20f, 1f), // yellow
+            new Color(1.00f, 0.38f, 0.38f, 1f), // red
+            new Color(0.40f, 1.00f, 0.60f, 1f), // lime
+        };
+
         private void DrawWords(MeshGenerationContext mgc)
         {
-            //TODO user getter method to get the words instead of using textInfo directly
-            var textInfo = m_TargetTextElement.uitkTextHandle.textInfo;
-            int wordCount = textInfo.wordCount;
+            var handle = m_TargetTextElement.uitkTextHandle;
+            int wordCount = handle.GetWordCount();
+            float contentHeight = m_TargetTextElement.contentRect.height;
+            int totalCharCount = handle.GetTextElementCount();
 
             for (int i = 0; i < wordCount; i++)
             {
-                var currWord = textInfo.wordInfo[i];
+                var currWord = handle.GetWordInfo(i);
+                if (currWord.characterCount <= 0)
+                    continue;
 
-                bool isBeginRegion = false;
-                float maxAscender = -Mathf.Infinity;
-                float minDescender = Mathf.Infinity;
+                // All line-segments of the same logical word share one color so you can tell
+                // them apart visually from neighbouring words even when a word wraps.
+                var wordColor = k_WordOutlineColors[i % k_WordOutlineColors.Length];
 
-                float wordLeft = 0;
+                float segmentTop = float.MaxValue;
+                float segmentBottom = float.MinValue;
+                float segmentLeft = float.MaxValue;
+                float segmentRight = float.MinValue;
 
                 for (int j = 0; j < currWord.characterCount; j++)
                 {
                     int characterIndex = currWord.firstCharacterIndex + j;
-                    var currCharInfo = m_TargetTextElement.uitkTextHandle.GetScaledCharacterMetrics(characterIndex);
-                    int currentLine = currCharInfo.lineNumber;
+                    if (characterIndex >= totalCharCount)
+                        break;
 
-                    maxAscender = Mathf.Max(maxAscender, currCharInfo.ascentline);
-                    minDescender = Mathf.Min(minDescender, currCharInfo.descentline);
+                    var currCharInfo = handle.GetScaledCharacterMetrics(characterIndex);
 
-                    // Draw word bounds
-
-                    // If reached the first character of the word
-                    if (isBeginRegion == false)
+                    // Only visible glyphs contribute to the segment bounds.  Whitespace (spaces,
+                    // tabs, newlines) is excluded so trailing/leading whitespace is never folded
+                    // into a word rectangle.
+                    if (currCharInfo.isVisible)
                     {
-                        isBeginRegion = true;
-
-                        wordLeft = currCharInfo.topLeft.x;
-
-                        // If the word is one character
-                        if (currWord.characterCount == 1)
+                        float topY = ContentY(currCharInfo.ascentline, contentHeight);
+                        float bottomY = ContentY(currCharInfo.descentline, contentHeight);
+                        if (topY < bottomY)
                         {
-                            isBeginRegion = false;
-
-                            Rect currentRect = new Rect(wordLeft, m_TargetTextElement.layout.height - maxAscender,
-                                currCharInfo.topRight.x - wordLeft, Math.Abs(maxAscender - minDescender));
-                            DrawRectangle(mgc, currentRect, Color.green);
+                            segmentTop = Mathf.Min(segmentTop, topY);
+                            segmentBottom = Mathf.Max(segmentBottom, bottomY);
                         }
+
+                        // RTL glyphs can have topLeft.x > topRight.x; take the true X extremes.
+                        float charLeft = Mathf.Min(currCharInfo.topLeft.x, currCharInfo.topRight.x);
+                        float charRight = Mathf.Max(currCharInfo.topLeft.x, currCharInfo.topRight.x);
+                        segmentLeft = Mathf.Min(segmentLeft, charLeft);
+                        segmentRight = Mathf.Max(segmentRight, charRight);
                     }
 
-                    // If reached last character of the word
-                    if (isBeginRegion && j == currWord.characterCount - 1)
+                    bool isLastChar = j == currWord.characterCount - 1;
+                    // Detect a line change within this word — happens when character-level wrapping
+                    // splits a single ICU word across multiple lines.
+                    bool lineChanged = !isLastChar
+                        && characterIndex + 1 < totalCharCount
+                        && currCharInfo.lineNumber != handle.GetScaledCharacterMetrics(characterIndex + 1).lineNumber;
+
+                    if (isLastChar || lineChanged)
                     {
-                        isBeginRegion = false;
+                        // Draw one rectangle per line-segment. A word split across N lines yields
+                        // N rectangles, all the same color, making the wrapping easy to spot.
+                        if (segmentLeft < segmentRight && segmentTop < segmentBottom)
+                        {
+                            float h = Mathf.Max(0.001f, segmentBottom - segmentTop);
+                            float w = Mathf.Max(0.001f, segmentRight - segmentLeft);
+                            DrawRectangle(mgc, new Rect(segmentLeft, segmentTop, w, h), wordColor);
+                        }
 
-                        Rect currentRect = new Rect(wordLeft, m_TargetTextElement.layout.height - maxAscender,
-                            currCharInfo.topRight.x - wordLeft, Math.Abs(maxAscender - minDescender));
-                        DrawRectangle(mgc, currentRect, Color.green);
-                    }
-
-                    // If the word is split and will continue on the next line
-                    else if (isBeginRegion && currentLine != m_TargetTextElement.uitkTextHandle.GetScaledCharacterMetrics(characterIndex + 1).lineNumber)
-                    {
-                        isBeginRegion = false;
-
-                        Rect currentRect = new Rect(wordLeft, m_TargetTextElement.layout.height - maxAscender,
-                            currCharInfo.topRight.x - wordLeft, Math.Abs(maxAscender - minDescender));
-                        DrawRectangle(mgc, currentRect, Color.green);
-
-                        maxAscender = -Mathf.Infinity;
-                        minDescender = Mathf.Infinity;
+                        // Reset segment accumulators for the next line-segment of this word.
+                        segmentTop = float.MaxValue;
+                        segmentBottom = float.MinValue;
+                        segmentLeft = float.MaxValue;
+                        segmentRight = float.MinValue;
                     }
                 }
             }
@@ -283,152 +285,113 @@ namespace UnityEditor.UIElements.Text
 
         private void DrawLinks(MeshGenerationContext mgc)
         {
-            //TODO link info getter for ATG
-            var textInfo = m_TargetTextElement.uitkTextHandle.textInfo;
-            int linkCount = textInfo.linkCount;
+            var handle = m_TargetTextElement.uitkTextHandle;
+            int linkCount = handle.GetLinkCount();
+            if (linkCount == 0)
+                return;
 
-            for (int i = 0; i < linkCount; i++)
+            var rects = handle.GetLinkRects();
+            // Handle returns link rects in element content space: Y-down, origin top-left (UITK convention).
+            for (int i = 0; i < rects.Length; i++)
             {
-                var linkInfo = textInfo.linkInfo[i];
-                bool isBeginRegion = false;
-
-                float maxAscender = -Mathf.Infinity;
-                float minDescender = Mathf.Infinity;
-
-                var linkleft = 0f;
-
-                for (int j = 0; j < linkInfo.linkTextLength; j++)
-                {
-                    int characterIndex = linkInfo.linkTextfirstCharacterIndex + j;
-                    var currentCharInfo = m_TargetTextElement.uitkTextHandle.GetScaledCharacterMetrics(characterIndex);
-                    int currentLine = currentCharInfo.lineNumber;
-
-                    maxAscender = Mathf.Max(maxAscender, currentCharInfo.ascentline);
-                    minDescender = Mathf.Min(minDescender, currentCharInfo.descentline);
-
-
-                    // Draw link bounds
-
-                    // If reached the first character of the link
-                    if (isBeginRegion == false)
-                    {
-                        isBeginRegion = true;
-
-                        linkleft = currentCharInfo.bottomLeft.x;
-
-                        // If the link is one character
-                        if (linkInfo.linkTextLength == 1)
-                        {
-                            isBeginRegion = false;
-
-                            Rect currentRectangle = new Rect(linkleft, m_TargetTextElement.layout.height - maxAscender,
-                                currentCharInfo.topRight.x - linkleft, Math.Abs(maxAscender - minDescender));
-                            DrawRectangle(mgc, currentRectangle, Color.cyan);
-                        }
-                    }
-
-                    // If reached last character of the link
-                    if (isBeginRegion && j == linkInfo.linkTextLength - 1)
-                    {
-                        Rect currentRectangle = new Rect(linkleft, m_TargetTextElement.layout.height - maxAscender,
-                            currentCharInfo.topRight.x - linkleft, Math.Abs(maxAscender - minDescender));
-                        DrawRectangle(mgc, currentRectangle, Color.cyan);
-                    }
-
-                    // If the link is split on more than one line
-                    else if (isBeginRegion && currentLine != textInfo.textElementInfo[characterIndex + 1].lineNumber)
-                    {
-                        isBeginRegion = false;
-
-                        Rect currentRectangle = new Rect(linkleft, m_TargetTextElement.layout.height - maxAscender,
-                            currentCharInfo.topRight.x - linkleft, Math.Abs(maxAscender - minDescender));
-                        DrawRectangle(mgc, currentRectangle, Color.cyan);
-
-                        maxAscender = -Mathf.Infinity;
-                        minDescender = Mathf.Infinity;
-                    }
-                }
+                DrawRectangle(mgc, rects[i], Color.cyan);
             }
         }
 
+        private const float k_LabelOffsetAbove = -2f;
+        private const float k_LabelOffsetBelow = 4f;
+
         private void DrawLines(MeshGenerationContext mgc)
         {
-            //TODO LineCount getter for ATG
-            var textInfo = m_TargetTextElement.uitkTextHandle.textInfo;
-            int lineCount = textInfo.lineCount;
+            var handle = m_TargetTextElement.uitkTextHandle;
+            int lineCount = handle.GetLineCount();
+            float contentHeight = m_TargetTextElement.contentRect.height;
 
             for (int i = 0; i < lineCount; i++)
             {
-                var lineInfo = textInfo.lineInfo[i];
-                var firstCharacterInfo = m_TargetTextElement.uitkTextHandle.GetScaledCharacterMetrics(lineInfo.firstCharacterIndex);
-                var lastCharacterInfo = m_TargetTextElement.uitkTextHandle.GetScaledCharacterMetrics(lineInfo.lastCharacterIndex - 1);
+                var lineInfo = handle.GetLineInfo(i);
 
-                float lineLeft = firstCharacterInfo.bottomLeft.x;
-                float lineRight = lastCharacterInfo.topRight.x;
+                // TextCore LineInfo is in pixel space; ATG GetLineInfo already returns
+                // point-space values. Scale TextCore values so the overlay draws correctly.
+                if (!MetricsAreContentYDown)
+                {
+                    float invPPP = 1f / m_TargetTextElement.scaledPixelsPerPoint;
+                    lineInfo.ascender *= invPPP;
+                    lineInfo.baseline *= invPPP;
+                    lineInfo.descender *= invPPP;
+                    lineInfo.lineExtents = new Extents(
+                        lineInfo.lineExtents.min * invPPP,
+                        lineInfo.lineExtents.max * invPPP);
+                    lineInfo.length *= invPPP;
+                }
 
-                float ascentline = lineInfo.ascender;
-                float baseline = lineInfo.baseline;
-                float descentline = lineInfo.descender;
+                var firstCharacterInfo = handle.GetScaledCharacterMetrics(lineInfo.firstCharacterIndex);
 
-                // Draw line bounds
-                Rect currentRectangle = new Rect(lineInfo.lineExtents.min.x,
-                    m_TargetTextElement.layout.height - lineInfo.lineExtents.max.y,
-                    (lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x),
-                    Math.Abs((float)(lineInfo.lineExtents.max.y - lineInfo.lineExtents.min.y)));
+                float lineLeft = lineInfo.lineExtents.min.x;
+                float lineRight = lineInfo.lineExtents.max.x;
 
+                float ascY = ContentY(lineInfo.ascender, contentHeight);
+                float baseY = ContentY(lineInfo.baseline, contentHeight);
+                float descY = ContentY(lineInfo.descender, contentHeight);
+
+                float lineRectTop = MetricsAreContentYDown
+                    ? lineInfo.lineExtents.min.y
+                    : contentHeight - lineInfo.lineExtents.max.y;
+                float lineRectHeight = MetricsAreContentYDown
+                    ? lineInfo.lineExtents.max.y - lineInfo.lineExtents.min.y
+                    : Math.Abs(lineInfo.lineExtents.max.y - lineInfo.lineExtents.min.y);
+
+                Rect currentRectangle = new Rect(lineInfo.lineExtents.min.x, lineRectTop,
+                    lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x,
+                    Mathf.Max(0.001f, lineRectHeight));
                 DrawDottedRectangle(mgc, currentRectangle, Color.green);
 
-                // Draw ascent line
-                Vector2 asc_start = new Vector2(lineLeft, m_TargetTextElement.layout.height - ascentline);
-                Vector2 asc_end = new Vector2(lineRight, m_TargetTextElement.layout.height - ascentline);
+                Vector2 asc_start = new Vector2(lineLeft, ascY);
+                Vector2 asc_end = new Vector2(lineRight, ascY);
                 DrawDottedLine(mgc, asc_start, asc_end, Color.yellow);
-
-
-                // Draw descent line
-                Vector2 desc_start = new Vector2(lineLeft, m_TargetTextElement.layout.height - descentline);
-                Vector2 desc_end = new Vector2(lineRight, m_TargetTextElement.layout.height - descentline);
+                Vector2 desc_start = new Vector2(lineLeft, descY);
+                Vector2 desc_end = new Vector2(lineRight, descY);
                 DrawDottedLine(mgc, desc_start, desc_end, Color.yellow);
-
-                // Draw baseline
-                Vector2 baseline_start = new Vector2(lineLeft, m_TargetTextElement.layout.height - baseline);
-                Vector2 baseline_end = new Vector2(lineRight, m_TargetTextElement.layout.height - baseline);
+                Vector2 baseline_start = new Vector2(lineLeft, baseY);
+                Vector2 baseline_end = new Vector2(lineRight, baseY);
                 DrawDottedLine(mgc, baseline_start, baseline_end, Color.yellow);
 
-                float capline = baseline + firstCharacterInfo.fontCapLine * firstCharacterInfo.scale;
-                float meanline = baseline + firstCharacterInfo.fontMeanLine * firstCharacterInfo.scale;
+                bool hasCapMeanData = firstCharacterInfo.fontCapLine != 0f || firstCharacterInfo.fontMeanLine != 0f;
+                Vector2 cap_start = default, cap_end = default;
+                Vector2 mean_start = default, mean_end = default;
 
-                Vector2 cap_start = new Vector2(lineLeft, m_TargetTextElement.layout.height - capline);
-                Vector2 cap_end = new Vector2(lineRight, m_TargetTextElement.layout.height - capline);
-
-                Vector2 mean_start = new Vector2(lineLeft, m_TargetTextElement.layout.height - meanline);
-                Vector2 mean_end = new Vector2(lineRight, m_TargetTextElement.layout.height - meanline);
-
-                // Draw cap line
-                DrawDottedLine(mgc, cap_start, cap_end, Color.cyan);
-
-                // Draw mean line
-                DrawDottedLine(mgc, mean_start, mean_end, Color.cyan);
-
-                // Draw labels if zoomed in to a certain scale
-                if (m_TargetTextElement.parent.resolvedStyle.scale.value.x > 2)
+                if (hasCapMeanData)
                 {
-                    DrawLabelForLine(mgc, "Ascent Line", asc_start);
-                    DrawLabelForLine(mgc, "Descent Line", desc_start);
-                    DrawLabelForLine(mgc, "Base Line", baseline_start);
-                    DrawLabelForLine(mgc, "Cap Line", cap_start);
-                    DrawLabelForLine(mgc, "Mean Line", mean_start);
+                    float capline = lineInfo.baseline + firstCharacterInfo.fontCapLine * firstCharacterInfo.scale;
+                    float meanline = lineInfo.baseline + firstCharacterInfo.fontMeanLine * firstCharacterInfo.scale;
+                    cap_start = new Vector2(lineLeft, ContentY(capline, contentHeight));
+                    cap_end = new Vector2(lineRight, ContentY(capline, contentHeight));
+                    mean_start = new Vector2(lineLeft, ContentY(meanline, contentHeight));
+                    mean_end = new Vector2(lineRight, ContentY(meanline, contentHeight));
+                    DrawDottedLine(mgc, cap_start, cap_end, Color.cyan);
+                    DrawDottedLine(mgc, mean_start, mean_end, Color.cyan);
+                }
+
+                if (m_TargetTextElement.worldTransform.lossyScale.x > 2)
+                {
+                    DrawLabelForLine(mgc, "Ascent Line", asc_start, k_LabelOffsetAbove);
+                    DrawLabelForLine(mgc, "Base Line", baseline_start, k_LabelOffsetAbove);
+                    DrawLabelForLine(mgc, "Descent Line", desc_start, k_LabelOffsetBelow);
+
+                    if (hasCapMeanData)
+                    {
+                        DrawLabelForLine(mgc, "Cap Line", cap_start, k_LabelOffsetAbove);
+                        DrawLabelForLine(mgc, "Mean Line", mean_start, k_LabelOffsetAbove);
+                    }
                 }
             }
         }
 
         private Vector2 GetOffset()
         {
-            //adjust the rectangle to account for the padding and border
-            var style = m_TargetTextElement.resolvedStyle;
-            var x_offset = style.paddingLeft + style.borderLeftWidth;
-            var y_offset = style.paddingBottom + style.borderBottomWidth;
-
-            return new Vector2(x_offset, -y_offset);
+            // Map content space (0,0 = top-left of content) to element local space.
+            var content = m_TargetTextElement.contentRect;
+            return new Vector2(content.x, content.y);
         }
 
         private void DrawDottedRectangle(MeshGenerationContext mgc, Rect rectangle, Color color)
@@ -445,9 +408,9 @@ namespace UnityEditor.UIElements.Text
 
         private void DrawDottedLine(MeshGenerationContext mgc, Vector2 start, Vector2 end, Color color)
         {
-            //TODO : dotted line
-            start = m_TargetTextElement.LocalToWorld(start);
-            end = m_TargetTextElement.LocalToWorld(end);
+            var offset = GetOffset();
+            start = m_TargetTextElement.LocalToWorld(start + offset);
+            end = m_TargetTextElement.LocalToWorld(end + offset);
 
             var painter = mgc.painter2D;
             painter.strokeColor = color;
@@ -510,10 +473,11 @@ namespace UnityEditor.UIElements.Text
         }
 
         // Draw label with the same style as in TMP
-        private void DrawLabelForLine(MeshGenerationContext mgc, String name, Vector2 start)
+        private void DrawLabelForLine(MeshGenerationContext mgc, String name, Vector2 contentPos, float screenYOffset)
         {
-            start = m_TargetTextElement.LocalToWorld(start + GetOffset());
-            mgc.DrawText(name, new Vector2(start.x, start.y), k_LabelFontSize, m_LabelColor, m_RobotoMonoRegular);
+            var worldPos = m_TargetTextElement.LocalToWorld(contentPos + GetOffset());
+            worldPos.y += screenYOffset;
+            mgc.DrawText(name, worldPos, k_LabelFontSize, m_LabelColor, m_RobotoMonoRegular);
         }
     }
 }

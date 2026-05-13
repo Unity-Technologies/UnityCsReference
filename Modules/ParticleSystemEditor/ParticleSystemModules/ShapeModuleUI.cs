@@ -515,6 +515,7 @@ namespace UnityEditor
                         if (guiType == ParticleSystemShapeType.Mesh)
                         {
                             GUIObject(s_Texts.mesh, m_Mesh);
+                            ValidateMesh(m_Mesh);
                             srcMesh = (Mesh)m_Mesh.objectReferenceValue;
                         }
                         else if (guiType == ParticleSystemShapeType.MeshRenderer)
@@ -526,6 +527,12 @@ namespace UnityEditor
                                 material = mesh.sharedMaterial;
                                 if (mesh.GetComponent<MeshFilter>())
                                     srcMesh = mesh.GetComponent<MeshFilter>().sharedMesh;
+
+                                // Validate the mesh from the MeshRenderer/MeshFilter
+                                if (srcMesh != null && !srcMesh.isReadable)
+                                {
+                                    InternalEditorUtility.DrawMeshNotReadableHelpBox(srcMesh, "Particle System Shape Module's MeshRenderer");
+                                }
                             }
                         }
                         else
@@ -536,6 +543,12 @@ namespace UnityEditor
                             {
                                 material = mesh.sharedMaterial;
                                 srcMesh = mesh.sharedMesh;
+
+                                // Validate the mesh from the SkinnedMeshRenderer
+                                if (srcMesh != null && !srcMesh.isReadable)
+                                {
+                                    InternalEditorUtility.DrawMeshNotReadableHelpBox(srcMesh, "Particle System Shape Module's SkinnedMeshRenderer");
+                                }
                             }
                         }
 
@@ -632,7 +645,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.Space();
                 GUIObject(s_Texts.texture, m_Texture, typeof(Texture2D));
-                ValidateTexture(m_Texture, true);
+                ValidateTexture(m_Texture);
 
                 GUIPopup(s_Texts.textureClipChannel, m_TextureClipChannel, s_Texts.textureClipChannels);
                 GUIFloat(s_Texts.textureClipThreshold, m_TextureClipThreshold);
@@ -652,7 +665,7 @@ namespace UnityEditor
             }
         }
 
-        private void ValidateTexture(SerializedProperty prop, bool forceFixImmutable)
+        private void ValidateTexture(SerializedProperty prop)
         {
             if (prop.hasMultipleDifferentValues)
                 return;
@@ -664,10 +677,10 @@ namespace UnityEditor
             if (!texture.isReadableRaw)
             {
                 string texturePath = AssetDatabase.GetAssetPath(texture);
-                if (AssetModificationProcessorInternal.IsOpenForEdit(texturePath, out string message, StatusQueryOptions.UseCachedIfPossible))
+                if (!InternalEditorUtility.IsReadOnlyAsset(texturePath, out var isEngineAsset))
                 {
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture."),
+                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime."),
                         EditorGUIUtility.TrTextContent("Enable")))
                     {
                         InternalEditorUtility.ImportTextureAsReadable(texture);
@@ -675,11 +688,46 @@ namespace UnityEditor
                 }
                 else
                 {
+                    var advice = isEngineAsset ? $"'{texture.name}' is an engine asset and cannot be modified nor copied. It is recommended to choose another asset." : "Modify a copy of the Texture because it is not editable.";
+
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture. Modify a copy of the Texture because it is not editable."),
+                        EditorGUIUtility.TrTextContent($"Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime. {advice}"),
                         EditorGUIUtility.TrTextContent("View")))
                     {
                         Selection.objects = new UnityEngine.Object[] { texture };
+                    }
+                }
+            }
+        }
+
+        private void ValidateMesh(SerializedProperty prop)
+        {
+            if (prop.hasMultipleDifferentValues)
+                return;
+
+            Mesh mesh = prop.objectReferenceValue as Mesh;
+            if (mesh == null)
+                return;
+
+            if (!mesh.isReadable)
+            {
+                string meshPath = AssetDatabase.GetAssetPath(mesh);
+                if (InternalEditorUtility.CanMeshBeModifiedFromCode(meshPath))
+                {
+                    if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System Shape Module's Mesh."),
+                        EditorGUIUtility.TrTextContent("Enable")))
+                    {
+                        InternalEditorUtility.ImportMeshAsReadable(mesh);
+                    }
+                }
+                else
+                {
+                    if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System Shape Module's Mesh."),
+                        EditorGUIUtility.TrTextContent("View")))
+                    {
+                        Selection.objects = new UnityEngine.Object[] { mesh };
                     }
                 }
             }

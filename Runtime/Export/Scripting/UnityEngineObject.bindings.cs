@@ -151,14 +151,14 @@ namespace UnityEngine
         {
             return m_rawData == other.m_rawData;
         }
-        public int CompareTo(EntityId other) => ((int)(m_rawData & 0xFFFFFFFF)).CompareTo(((int)(other.m_rawData & 0xFFFFFFFF)));
+        public int CompareTo(EntityId other) => m_rawData.CompareTo(other.m_rawData);
         public static bool operator ==(EntityId left, EntityId right) => left.Equals(right);
         public static bool operator !=(EntityId left, EntityId right) => !left.Equals(right);
 
-        public static bool operator <(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) < (int)(right.m_rawData & 0xFFFFFFFF);
-        public static bool operator >(EntityId left, EntityId right)  => (int)(left.m_rawData & 0xFFFFFFFF) > (int)(right.m_rawData & 0xFFFFFFFF);
-        public static bool operator <=(EntityId left, EntityId right) => (int)(left.m_rawData & 0xFFFFFFFF) <= (int)(right.m_rawData & 0xFFFFFFFF);
-        public static bool operator >=(EntityId left, EntityId right) => (int)(left.m_rawData & 0xFFFFFFFF) >= (int)(right.m_rawData & 0xFFFFFFFF);
+        public static bool operator <(EntityId left, EntityId right)  => left.m_rawData < right.m_rawData;
+        public static bool operator >(EntityId left, EntityId right)  => left.m_rawData > right.m_rawData;
+        public static bool operator <=(EntityId left, EntityId right) => left.m_rawData <= right.m_rawData;
+        public static bool operator >=(EntityId left, EntityId right) => left.m_rawData >= right.m_rawData;
 
         public override int GetHashCode()
         {
@@ -180,11 +180,9 @@ namespace UnityEngine
         [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
         public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = MagicVersion | (ulong)(uint)intValue };
 
-
-        public override string ToString() => m_rawData.ToString(CultureInfo.InvariantCulture);
-        public string ToString(string format) => m_rawData.ToString(format, CultureInfo.InvariantCulture);
-        public string ToString(string format, IFormatProvider formatProvider) => m_rawData.ToString(format, formatProvider);
-
+        public override string ToString() => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(CultureInfo.InvariantCulture)}:{(int)(m_rawData >> 32)}";
+        public string ToString(string format) => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(format, CultureInfo.InvariantCulture)}:{(int)(m_rawData >> 32)}";
+        public string ToString(string format, IFormatProvider formatProvider) => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(format, formatProvider)}:{((int)(m_rawData >> 32)).ToString(format, formatProvider)}";
 
 
         [FreeFunction("AllocateNextEntityId")]
@@ -198,9 +196,20 @@ namespace UnityEngine
 
             // Same as native StringToEntityId: full raw UInt64, no reinterpretation (see EntityID.cpp).
             if (!ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ulongResult))
-                return EntityId.None;
+            {
+                var colonIndex = input.IndexOf(':');
+                if (colonIndex == -1 || colonIndex == 0 || colonIndex == input.Length - 1)
+                    return EntityId.None;
+                var indexStr = input.Substring(0, colonIndex);
+                var versionStr = input.Substring(colonIndex + 1);
+                if (!int.TryParse(indexStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityIndex))
+                    return EntityId.None;
+                if (!int.TryParse(versionStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityVersion))
+                    return EntityId.None;
+                ulongResult = ((ulong)entityVersion << 32) | (uint)entityIndex;
+            }
 
-            return FromULong(ulongResult);
+            return EntityId.FromULong(ulongResult);
         }
 
         [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]
@@ -1102,12 +1111,30 @@ namespace UnityEngine
                 if (gcHandlePtr == IntPtr.Zero)
                     return null;
 
-                var gcHandle = GCHandle.FromIntPtr(gcHandlePtr);
+                var gcHandle = FromIntPtrUnsafe(gcHandlePtr);
                 var target = (T)gcHandle.Target;
 
+            // This is to handle the MonoObjectNULL case
+            // If the instance ID is zero then this is a fake null object and there is no native
+            // object that owns this handle.  It was created in UnityEngineMarshalling.h and
+            // needs to be freed here
+            if (target.GetEntityId() == EntityId.None)
+                gcHandle.Free();
                 return target;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static GCHandle FromIntPtrUnsafe(IntPtr gcHandle)
+            {
+                // Use a unsafe memory cast to avoid the overhead of checking the
+                // IntPtr value for validity in the current domain. The Mono class
+                // library does this which introduces meaningful overhead. We assume
+                // the GC handle we hold is valid for the current domain. There
+                // is no such validity check when constructing and retrieving GC
+                // handles in C++, and we want to avoid the overhead of the check
+                // when doing the equivalent in C#.
+                return UnsafeUtility.As<IntPtr, GCHandle>(ref gcHandle);
+            }
 
             public unsafe static void Marshal<T, TCollectionAccessor>(in TCollectionAccessor collectionAccessor, ref MarshalledArray marshalledArray)
                 where T : UnityEngine.Object

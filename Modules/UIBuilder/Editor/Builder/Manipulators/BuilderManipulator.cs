@@ -11,14 +11,9 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
-    class BuilderManipulator : BuilderTracker
+    [UxmlElement]
+    partial class BuilderManipulator : BuilderTracker
     {
-        [Serializable]
-        public new class UxmlSerializedData : BuilderTracker.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderManipulator();
-        }
-
         protected static readonly string s_WidthStyleName = "width";
         protected static readonly string s_HeightStyleName = "height";
         protected static readonly string s_LeftStyleName = "left";

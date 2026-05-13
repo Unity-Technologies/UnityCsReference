@@ -160,7 +160,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         clonedAssets[0].name = themeName;
                         int assetIndex = 0;
                         foreach (var clonedAsset in clonedAssets)
-                            m_Context.AddObjectToAsset($"asset {assetIndex++}: clonedAsset.name", clonedAsset);
+                            m_Context?.AddObjectToAsset($"asset {assetIndex++}: clonedAsset.name", clonedAsset);
 
                         return clonedAssets[0];
                     }
@@ -1043,11 +1043,11 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 if (e.isWarning)
                 {
-                    m_Context.LogImportWarning(e.ToString(glossary), e.assetPath, e.line, errorContext);
+                    m_Context?.LogImportWarning(e.ToString(glossary), e.assetPath, e.line, errorContext);
                 }
                 else
                 {
-                    m_Context.LogImportError(e.ToString(glossary), e.assetPath, e.line, errorContext);
+                    m_Context?.LogImportError(e.ToString(glossary), e.assetPath, e.line, errorContext);
                 }
             }
         }
@@ -1142,7 +1142,7 @@ namespace UnityEditor.UIElements.StyleSheets
                             importedStyleSheet = response.resolvedQueryAsset as UnityStyleSheet;
                             if (importedStyleSheet)
                             {
-                                m_Context.DependsOnArtifact(projectRelativePath);
+                                m_Context?.DependsOnArtifact(projectRelativePath);
                             }
                             else
                             {
@@ -1151,7 +1151,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
                             if (!response.isLibraryAsset)
                             {
-                                m_Context.DependsOnImportedAsset(projectRelativePath);
+                                m_Context?.DependsOnImportedAsset(projectRelativePath);
                             }
                         }
 

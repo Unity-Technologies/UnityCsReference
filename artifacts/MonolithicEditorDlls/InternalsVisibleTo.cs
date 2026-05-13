@@ -5,7 +5,6 @@
 //This is a generated file
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine")]
-[assembly: InternalsVisibleTo("UnityEngine.SharedInternalsModule")]
 [assembly: InternalsVisibleTo("UnityEngine.ScriptingModule")]
 [assembly: InternalsVisibleTo("UnityEngine.MathematicsModule")]
 [assembly: InternalsVisibleTo("UnityEngine.CoreModule")]
@@ -79,11 +78,14 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.TimelineFoundationModule")]
 [assembly: InternalsVisibleTo("UnityEditor.AnimationWindowModule")]
 [assembly: InternalsVisibleTo("UnityEditor.AssetDatabaseModule")]
+[assembly: InternalsVisibleTo("UnityEditor.AssetPackageModule")]
+[assembly: InternalsVisibleTo("UnityEditor.AssetPackageUIModule")]
 [assembly: InternalsVisibleTo("UnityEditor.MeshLODGeneratorModule")]
 [assembly: InternalsVisibleTo("UnityEditor.AssetPipelineModule")]
 [assembly: InternalsVisibleTo("UnityEditor.AudioModule")]
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule")]
 [assembly: InternalsVisibleTo("UnityEditor.BuildReportingModule")]
+[assembly: InternalsVisibleTo("UnityEditor.BuildAnalysisModule")]
 [assembly: InternalsVisibleTo("UnityEditor.ClothModule")]
 [assembly: InternalsVisibleTo("UnityEditor.CloudServicesSettingsModule")]
 [assembly: InternalsVisibleTo("UnityEngine.ClusterInputModule")]

@@ -187,7 +187,7 @@ namespace UnityEditor.Search.Providers
                 fetchThumbnail = (item, context) => FetchThumbnail(item),
                 fetchPreview = (item, context, size, options) => FetchPreview(item, context, size, options),
                 startDrag = (item, context) => StartDrag(item, context),
-                trackSelection = (item, context) => EditorGUIUtility.PingObject(GetEntityId(item)),
+                trackSelection = (item, context) => EditorGUIUtility.PingObject(GetItemEntityId(item)),
                 fetchPropositions = (context, options) => FetchPropositions(context, options),
                 fetchColumns = (context, items) => AssetSelectors.Enumerate(items)
             };
@@ -254,11 +254,12 @@ namespace UnityEditor.Search.Providers
                 return Utils.GetSceneObjectPreview(context, go, size, options, item.thumbnail);
             else if (obj && options.HasAny(FetchPreviewOptions.Normal))
             {
-                var p = AssetPreview.GetAssetPreview(obj.GetEntityId(), clientId);
+                var entityId = obj.GetEntityId();
+                var p = AssetPreview.GetAssetPreview(entityId, clientId);
                 if (p)
                     return p;
 
-                if (AssetPreview.IsLoadingAssetPreview(obj.GetEntityId(), clientId))
+                if (AssetPreview.IsLoadingAssetPreview(entityId, clientId))
                     return null;
             }
 
@@ -363,12 +364,6 @@ namespace UnityEditor.Search.Providers
         private static GlobalObjectId GetGID(SearchItem item)
         {
             return GetInfo(item).gid;
-        }
-
-        private static EntityId GetEntityId(SearchItem item)
-        {
-            var gid = GetGID(item);
-            return GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid);
         }
 
         private static Type GetItemAssetType(in SearchItem item, in Type constrainedType)

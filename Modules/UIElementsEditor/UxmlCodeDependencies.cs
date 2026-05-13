@@ -18,32 +18,16 @@ namespace UnityEditor.UIElements
     // 2. The "version" is Hash128 created by sequentially combining attribute name and object type.
     // 3. The UXML importer declares a dependency using the name as previously described
     // All names are preceded by a prefix, which is left as a parameter here to make testing easier
-    #pragma warning disable CS0618 // Type or member is obsolete
     class UxmlCodeDependencies
     {
-        const string k_UxmlTraitsDependencyPrefix = "UxmlFactory/";
         const string k_UxmlSerializedDataDependencyPrefix = "UxmlSerializedData/";
 
-        internal static UxmlCodeDependencies instance { get; } = Build();
+        internal static UxmlCodeDependencies instance { get; } = new UxmlCodeDependencies();
 
-        readonly HashSet<string> m_Set;
+        readonly HashSet<string> m_Set = new();
 
-        UxmlCodeDependencies()
-        {
-            m_Set = new();
-        }
-
-        private static UxmlCodeDependencies Build()
-        {
-            // Since we will rebuild dependencies, clear any existing values registered with Asset Database first
-            AssetDatabase.UnregisterCustomDependencyPrefixFilter(k_UxmlTraitsDependencyPrefix);
-            return new UxmlCodeDependencies();
-        }
-
-        internal string FormatDependencyKeyName(string uxmlQualifiedName) => k_UxmlTraitsDependencyPrefix + uxmlQualifiedName;
         internal string FormatSerializedDependencyKeyName(string uxmlQualifiedName) => k_UxmlSerializedDataDependencyPrefix + uxmlQualifiedName;
 
-        static ProfilerMarker s_UxmlTraitsRegisterMarker = new(ProfilerCategory.UIToolkit, "UxmlCodeDependencies.UxmlTraits.RegisterAssetAttributeDependencies");
         static ProfilerMarker s_UxmlSerializationRegisterMarker = new(ProfilerCategory.UIToolkit, "UxmlCodeDependencies.UxmlSerialization.RegisterAssetAttributeDependencies");
 
         internal void RegisterUxmlSerializedDataDependencies(Dictionary<string, Type> serializedDataTypes)
@@ -74,62 +58,10 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal void RegisterAssetAttributeDependencies(IBaseUxmlFactory factory)
-        {
-            var uxmlAttributesDescription = factory.uxmlAttributesDescription;
-            if (uxmlAttributesDescription == null)
-                return;
-
-            using var _ = s_UxmlTraitsRegisterMarker.Auto();
-
-            var dependencyKeyName = FormatDependencyKeyName(factory.uxmlQualifiedName);
-            var valueHash = new Hash128();
-            uint count = 0;
-
-            foreach (var description in uxmlAttributesDescription)
-            {
-                if (description != null && description is IUxmlAssetAttributeDescription assetAttributeDescription)
-                {
-                    valueHash.Append(description.name);
-                    valueHash.Append(assetAttributeDescription.assetType.AssemblyQualifiedName);
-
-                    ++count;
-                }
-            }
-
-            if (count > 0)
-            {
-                // This actually will cause a reimport if the value hash has changed since last import of UXML
-                AssetDatabase.RegisterCustomDependency(dependencyKeyName, valueHash);
-                m_Set.Add(dependencyKeyName);
-            }
-            else
-            {
-                UnregisterDependencies(factory);
-            }
-        }
-
-        internal void UnregisterDependencies(IBaseUxmlFactory factory)
-        {
-            var dependencyKeyName = FormatDependencyKeyName(factory.uxmlQualifiedName);
-            if (m_Set.Contains(dependencyKeyName))
-            {
-                AssetDatabase.UnregisterCustomDependencyPrefixFilter(dependencyKeyName);
-                m_Set.Remove(dependencyKeyName);
-            }
-        }
-
-        internal bool HasAnyAssetAttributes(IBaseUxmlFactory factory)
-        {
-            var dependencyKeyName = FormatDependencyKeyName(factory.uxmlQualifiedName);
-            return m_Set.Contains(dependencyKeyName);
-        }
-
         internal bool HasAnyAssetAttributes(UxmlSerializedDataDescription description)
         {
             var dependencyKeyName = FormatSerializedDependencyKeyName(description.uxmlFullName);
             return m_Set.Contains(dependencyKeyName);
         }
     }
-    #pragma warning restore CS0618 // Type or member is obsolete
 }

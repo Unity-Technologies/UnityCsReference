@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using Object = UnityEngine.Object;
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEditor.PackageManager;
@@ -12,18 +11,14 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
+using System;
 
 namespace Unity.UI.Builder
 {
     [UsedImplicitly]
-    class AssetReferenceStyleField : MultiTypeField
+    [UxmlElement]
+    partial class AssetReferenceStyleField : MultiTypeField
     {
-        [Serializable]
-        public new class UxmlSerializedData : MultiTypeField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new AssetReferenceStyleField();
-        }
-
         const double k_TimeoutMilliseconds = 10000;
         const int k_TimeDeltaMilliseconds = 10;
 

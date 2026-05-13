@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field to receive any object type. For more information, refer to [[wiki:UIE-uxml-element-ObjectField|UXML element ObjectField]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ObjectField.png")]
     public partial class ObjectField : BaseField<Object>
     {
@@ -31,47 +32,6 @@ namespace UnityEditor.UIElements
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             add => m_OnObjectSelectorShow += value;
             remove => m_OnObjectSelectorShow -= value;
-        }
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Object>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(allowSceneObjects), "allow-scene-objects"),
-                    new (nameof(allowBuiltinResources), "allow-builtin-resources"),
-                    new (nameof(objectType), "type", typeof(Object)),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
-            [SerializeField] string objectType;
-            [SerializeField] bool allowSceneObjects;
-            [SerializeField] bool allowBuiltinResources;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowBuiltinResources_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new ObjectField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (ObjectField)obj;
-                if (ShouldWriteAttributeValue(allowSceneObjects_UxmlAttributeFlags))
-                    e.allowSceneObjects = allowSceneObjects;
-                if (ShouldWriteAttributeValue(allowBuiltinResources_UxmlAttributeFlags))
-                    e.allowBuiltinResources = allowBuiltinResources;
-                if (ShouldWriteAttributeValue(objectType_UxmlAttributeFlags))
-                    e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
-            }
         }
 
         internal override bool EqualsCurrentValue(Object value)
@@ -95,26 +55,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private Type m_objectType;
-
-        /// <summary>
-        /// The type of the objects that can be assigned.
-        /// </summary>
-        [CreateProperty]
-        public Type objectType
-        {
-            get { return m_objectType; }
-            set
-            {
-                if (m_objectType != value)
-                {
-                    m_objectType = value;
-                    UpdateDisplay();
-                    NotifyPropertyChanged(objectTypeProperty);
-                }
-            }
-        }
-
         internal void SetObjectTypeWithoutDisplayUpdate(Type type)
         {
             m_objectType = type;
@@ -125,6 +65,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Allows scene objects to be assigned to the field.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public bool allowSceneObjects
         {
@@ -160,6 +101,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Shows or hides built-in resources in the object selector popup. True by default to show built-in resources.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public bool allowBuiltinResources
         {
@@ -170,6 +112,27 @@ namespace UnityEditor.UIElements
                     return;
                 m_AllowBuiltinResources = value;
                 NotifyPropertyChanged(allowBuiltinResourcesProperty);
+            }
+        }
+
+        private Type m_objectType;
+
+        /// <summary>
+        /// The type of the objects that can be assigned.
+        /// </summary>
+        [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
+        [CreateProperty]
+        public Type objectType
+        {
+            get { return m_objectType; }
+            set
+            {
+                if (m_objectType != value)
+                {
+                    m_objectType = value;
+                    UpdateDisplay();
+                    NotifyPropertyChanged(objectTypeProperty);
+                }
             }
         }
 
@@ -187,7 +150,7 @@ namespace UnityEditor.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceEntityIdValue != EntityId.None && p.objectReferenceValue == null;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal class ObjectFieldDisplay : VisualElement
         {
             private readonly ObjectField m_ObjectField;
@@ -438,7 +401,7 @@ namespace UnityEditor.UIElements
 
         internal ObjectFieldDisplay objectFieldDisplay
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_ObjectFieldDisplay;
         }
 

@@ -4,6 +4,7 @@
 
 using System;
 using Unity.ProjectAuditor.Editor.Core;
+using Unity.ProjectAuditor.Editor.Modules;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEngine;
 
@@ -262,17 +263,29 @@ namespace Unity.ProjectAuditor.Editor
             category = cat;
             IsIgnored = false;
 
-            try
+            description = string.Empty;
+
+            if (args.Length > 0)
             {
-                description = string.IsNullOrEmpty(descriptor.MessageFormat) ? descriptor.Title : string.Format(descriptor.MessageFormat, args);
+                try
+                {
+                    description = string.IsNullOrEmpty(descriptor.MessageFormat) ? descriptor.Title : string.Format(descriptor.MessageFormat, args);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error formatting message for descriptor '{id}': " +
+                        $"Format: '{descriptor.MessageFormat}' | " +
+                        $"Args: [{string.Join(", ", args)}] | " +
+                        $"Error: {e.Message}");
+                }
             }
-            catch (Exception e)
-            {
-                Debug.LogError("Error formatting message: " + descriptor.MessageFormat + " with args: " + string.Join(", ", args) + " - " + e.Message);
+
+            if (string.IsNullOrEmpty(description))
                 description = descriptor.Title;
-            }
+
             severity = descriptor.DefaultSeverity;
         }
+
 
         /// <summary>
         /// Constructs and returns an instance of ReportItem.
@@ -313,6 +326,16 @@ namespace Unity.ProjectAuditor.Editor
         internal bool IsMajorOrCritical()
         {
             return Severity == Severity.Critical || Severity == Severity.Major || Severity == Severity.Error;
+        }
+
+        /// <summary>
+        /// Checks whether this issue is performance critical.
+        /// </summary>
+        /// <returns>True if the issue is in frequently called code. Otherwise, returns false.</returns>
+        internal bool IsPerformanceCritical()
+        {
+            int index = (int)CodeProperty.PerformanceCritical;
+            return (Category == IssueCategory.Code) && (properties?.Length > index) && (properties[index] == bool.TrueString);
         }
 
         /// <summary>

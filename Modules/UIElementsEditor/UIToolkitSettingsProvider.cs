@@ -175,9 +175,14 @@ namespace UnityEditor.UIElements
 
             var panelRendererAnimationToggle = rootElement.Q<Toggle>(k_EnablePanelRendererAnimation);
             panelRendererAnimationToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enablePanelRendererAnimation);
+            var animationRestartWarning = rootElement.Q("animation-restart-warning");
+            if (animationRestartWarning != null)
+                animationRestartWarning.style.display = UIToolkitProjectSettings.isAnimationSettingDirty ? DisplayStyle.Flex : DisplayStyle.None;
             panelRendererAnimationToggle.RegisterValueChangedCallback(e =>
             {
                 UIToolkitProjectSettings.enablePanelRendererAnimation = e.newValue;
+                if (animationRestartWarning != null)
+                    animationRestartWarning.style.display = UIToolkitProjectSettings.isAnimationSettingDirty ? DisplayStyle.Flex : DisplayStyle.None;
             });
 
             var enableDebuggerLowLevelToggle = rootElement.Q<Toggle>(k_EnableDebuggerLowLevelName);

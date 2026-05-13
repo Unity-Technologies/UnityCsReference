@@ -9,14 +9,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Audio.UIElements;
 
-class AudioContainerElementClipField : ObjectField
+[UxmlElement]
+partial class AudioContainerElementClipField : ObjectField
 {
-    [Serializable]
-    public new class UxmlSerializedData : ObjectField.UxmlSerializedData
-    {
-        public override object CreateInstance() => new AudioContainerElementClipField();
-    }
-
     public EntityId AssetElementEntityId { get; set; }
     public double Progress
     {

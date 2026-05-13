@@ -731,7 +731,7 @@ namespace UnityEditor
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assembly = m_AssemblyProvider.GetPrecompiledAssemblies(
 #pragma warning restore UA2001
-                    EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                    EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                     EditorUserBuildSettings.activeBuildTarget)
                     .First(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
                 nameProp.stringValue = selectedAssemblyName;
@@ -860,7 +860,7 @@ namespace UnityEditor
             var nameToPrecompiledReference = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider
 #pragma warning restore UA2001
                 .GetPrecompiledAssemblies(
-                    EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                    EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
                     EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & AssemblyFlags.UserAssembly) == AssemblyFlags.UserAssembly)
                 .Distinct()
@@ -1041,6 +1041,7 @@ namespace UnityEditor
             list.serializedProperty.arraySize += 1;
             var newProp = list.serializedProperty.GetArrayElementAtIndex(list.serializedProperty.arraySize - 1);
             newProp.FindPropertyRelative("name").stringValue = string.Empty;
+newProp.FindPropertyRelative(nameof(AssemblyDefinitionReference.serializedReference)).stringValue = string.Empty;
             newProp.FindPropertyRelative("asset").objectReferenceValue = null;
         }
     }

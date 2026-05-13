@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.PlayMode.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -75,13 +76,13 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
     [ActiveScenarioWindowMenu]
     public static void SetupActiveScenarioWindowMenu(GenericMenu menu)
     {
-        if (!HasActiveClones())
+        if (!HasActiveCloneEditors())
             menu.AddItem(new GUIContent("Refresh Virtual Project Folder"), false, RefreshVirtualProjectFolder);
         else
             menu.AddDisabledItem(new GUIContent("Refresh Virtual Project Folder"));
     }
 
-    static bool HasActiveClones()
+    internal static bool HasActiveCloneEditors()
     {
         var players = MultiplayerPlaymode.Players;
         if (players == null)
@@ -92,7 +93,39 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
             if (player.PlayerState is PlayerState.Launched or PlayerState.Launching && player.PlayerIdentifier != MultiplayerPlaymode.PlayerOne.PlayerIdentifier)
                 return true;
         }
+
         return false;
+    }
+
+    internal static void GetActiveCloneEditorNames(List<string> names)
+    {
+        names.Clear();
+        var players = MultiplayerPlaymode.Players;
+        if (players == null)
+            return;
+
+        foreach (var player in players)
+        {
+            if (player.PlayerIdentifier == MultiplayerPlaymode.PlayerOne.PlayerIdentifier)
+                continue;
+            if (player.PlayerState is PlayerState.Launched or PlayerState.Launching)
+                names.Add(player.Name);
+        }
+    }
+
+    internal static void DeactivateAllActiveCloneEditors()
+    {
+        var players = MultiplayerPlaymode.Players;
+        if (players == null)
+            return;
+
+        foreach (var player in players)
+        {
+            if (player.PlayerIdentifier == MultiplayerPlaymode.PlayerOne.PlayerIdentifier)
+                continue;
+            if (player.PlayerState is PlayerState.Launched or PlayerState.Launching)
+                player.Deactivate(out _);
+        }
     }
 
 

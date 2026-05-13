@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.IntegerTime;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Time;
@@ -16,50 +15,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.View
 {
-    partial class SequenceTreeView : SequenceElement, ISequenceTreeView
+    [UxmlElement]
+    internal partial class SequenceTreeView : SequenceElement, ISequenceTreeView
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData),
-                    new UxmlAttributeNames[]
-                    {
-                        new(nameof(showPlayhead), "show-playhead"),
-                        new(nameof(showControls), "show-controls"),
-                        new(nameof(controlsWidth), "controls-width")
-                    }, true);
-            }
-
-#pragma warning disable 649
-            [SerializeField] bool showPlayhead;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showPlayhead_UxmlAttributeFlags;
-            [SerializeField] bool showControls;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showControls_UxmlAttributeFlags;
-            [SerializeField] float controlsWidth;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags controlsWidth_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new SequenceTreeView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (SequenceTreeView)obj;
-                if (ShouldWriteAttributeValue(showPlayhead_UxmlAttributeFlags))
-                    e.ShowPlayHead = showPlayhead;
-                if (ShouldWriteAttributeValue(showControls_UxmlAttributeFlags))
-                    e.ShowControls = showControls;
-                if (ShouldWriteAttributeValue(controlsWidth_UxmlAttributeFlags))
-                    e.ControlsWidth = controlsWidth;
-            }
-        }
-
         const string k_ControlsBackground = "controlsBackground";
         const string k_HideFoldoutStyle = "hideTreeViewFoldout";
         const string k_ControlsColumnResizer = "controls-column-resizer";
@@ -94,18 +52,21 @@ namespace Unity.Timeline.Foundation.View
 
         protected ITreeViewDragAndDropHandler dragAndDropHandler { get; set; }
 
+        [UxmlAttribute]
         public bool ShowControls
         {
             get => m_Header.GetControlsVisibility();
             set => m_Header.SetControlsVisibility(value);
         }
 
+        [UxmlAttribute("show-playhead")]
         public bool ShowPlayHead
         {
             get => m_PlayHead.isShown;
             set => SetPlayHeadVisibility(value);
         }
 
+        [UxmlAttribute]
         public float ControlsWidth
         {
             get => m_Header.GetControlsWidth();

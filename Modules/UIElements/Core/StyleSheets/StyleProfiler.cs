@@ -26,7 +26,7 @@ static class StyleProfilerStorage<TProfilerType> where TProfilerType : struct, I
     public static ref TProfilerType InstanceByRef => ref s_Instance;
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 struct NoOpStyleProfiler : IStyleProfiler
 {
     public void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry)

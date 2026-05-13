@@ -18,8 +18,8 @@ namespace Unity.UI.Builder
     {
         static readonly string k_BindingProperty = nameof(DataBinding.property);
         static readonly string k_BindingMode = nameof(DataBinding.bindingMode);
-        static readonly string k_BindingDataSource = nameof(DataBinding.dataSource);
-        static readonly string k_BindingDataSourceType = nameof(DataBinding.dataSourceTypeString);
+        static readonly string k_BindingDataSource = nameof(DataBinding.dataSourceUnityObject);
+        static readonly string k_BindingDataSourceType = nameof(DataBinding.dataSourceType);
         static readonly string k_BindingDataSourcePathString = nameof(DataBinding.dataSourcePathString);
         static readonly string k_BindingUiToSourceConvertersString = nameof(DataBinding.uiToSourceConvertersString);
         static readonly string k_BindingSourceToUIConvertersString = nameof(DataBinding.sourceToUiConvertersString);

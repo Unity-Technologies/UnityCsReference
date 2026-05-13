@@ -7,33 +7,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal sealed class DetailsArea : VisualElement
+    [UxmlElement]
+    internal sealed partial class DetailsArea : VisualElement
     {
-        [System.Serializable]
-        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new DetailsArea(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPackageOperationDispatcher>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IPackageManagerPrefs>(),
-                    container.Resolve<IAssetStoreClient>(),
-                    container.Resolve<IAssetStoreDownloadManager>(),
-                    container.Resolve<IAssetStoreCache>(),
-                    container.Resolve<IBackgroundFetchHandler>(),
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IExtensionManager>(),
-                    container.Resolve<IUpmCache>(),
-                    container.Resolve<IIOProxy>(),
-                    container.Resolve<ISampleImporter>());
-            }
-        }
-
         private readonly ScrollView m_ScrollView;
 
         private readonly PackageDetails m_PackageDetails;
@@ -52,6 +28,26 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IPageManager m_PageManager;
         private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+
+        public DetailsArea() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>(),
+            ServicesContainer.instance.Resolve<IPackageOperationDispatcher>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IPackageManagerPrefs>(),
+            ServicesContainer.instance.Resolve<IAssetStoreClient>(),
+            ServicesContainer.instance.Resolve<IAssetStoreDownloadManager>(),
+            ServicesContainer.instance.Resolve<IAssetStoreCache>(),
+            ServicesContainer.instance.Resolve<IBackgroundFetchHandler>(),
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IExtensionManager>(),
+            ServicesContainer.instance.Resolve<IUpmCache>(),
+            ServicesContainer.instance.Resolve<IIOProxy>(),
+            ServicesContainer.instance.Resolve<ISampleImporter>())
+        {
+        }
+
         private readonly IAssetStoreClient m_AssetStoreClient;
         private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private readonly IAssetStoreCache m_AssetStoreCache;

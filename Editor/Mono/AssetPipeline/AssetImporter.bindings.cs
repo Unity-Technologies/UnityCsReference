@@ -20,7 +20,6 @@ namespace UnityEditor
     [UsedByNativeCode]
     public partial class AssetImporter : Object
     {
-        [NativeType(CodegenOptions.Custom, "MonoSourceAssetIdentifier")]
         public struct SourceAssetIdentifier
         {
             public SourceAssetIdentifier(Object asset)
@@ -126,17 +125,21 @@ namespace UnityEditor
         extern internal static long MakeLocalFileIDWithHash(int persistentTypeId, string name, long offset);
         extern internal long MakeInternalID(int persistentTypeId, string name);
 
-        extern public void AddRemap(SourceAssetIdentifier identifier, Object externalObject);
+        public void AddRemap(SourceAssetIdentifier identifier, Object externalObject) => AddRemap_Internal(this, identifier, externalObject);
 
-        extern public bool RemoveRemap(SourceAssetIdentifier identifier);
+        [FreeFunction("AssetImporterBindings::AddRemap_Internal")]
+        extern private static void AddRemap_Internal(AssetImporter self, SourceAssetIdentifier identifier, Object externalObject);
+
+        public bool RemoveRemap(SourceAssetIdentifier identifier) => RemoveRemap_Internal(this, identifier);
+
+        [FreeFunction("AssetImporterBindings::RemoveRemap_Internal")]
+        extern private static bool RemoveRemap_Internal(AssetImporter self, SourceAssetIdentifier identifier);
 
         extern internal void RenameSubAssets(int peristentTypeId, string[] oldNames, string[] newNames);
 
         [FreeFunction("AssetImporterBindings::GetIdentifiers")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static SourceAssetIdentifier[] GetIdentifiers(AssetImporter self);
         [FreeFunction("AssetImporterBindings::GetExternalObjects")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static Object[] GetExternalObjects(AssetImporter self);
 
         public Dictionary<SourceAssetIdentifier, Object> GetExternalObjectMap()

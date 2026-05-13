@@ -13,22 +13,11 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// The pop-up search field for the toolbar. The search field includes a menu button. For more information, refer to [[wiki:UIE-uxml-element-ToolbarPopupSearchField|UXML element ToolbarPopupSearchField]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarPopupSearchField.png")]
     public partial class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
         internal static readonly BindingId menuProperty = nameof(menu);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : ToolbarSearchField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarPopupSearchField();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
 
         /// <summary>
         /// The menu used by the pop-up search field element.

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -28,6 +27,7 @@ internal enum TrackedPropertyType
 internal interface ITrackablePropertyProvider
 {
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
+    event Action<ITrackablePropertyProvider, string, bool, bool> OnTrackedPropertySourceChanged;
 }
 
 internal interface INotifyCompositeStylePropertyChanged<in TValue>
@@ -179,42 +179,6 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
     }
 
-    [Serializable]
-    public new class UxmlSerializedData : CustomBinding.UxmlSerializedData
-    {
-        internal const string k_DataSourcePathTooltip = "The name of the style property that is targeted.";
-
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-            {
-                new (nameof(styleProperty), "style-property"),
-            }, true);
-        }
-
-#pragma warning disable 649
-        [SerializeField, HideInInspector, UxmlAttribute("style-property")]
-        [Tooltip(k_DataSourcePathTooltip)]
-        string styleProperty;
-        [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags styleProperty_UxmlAttributeFlags;
-#pragma warning restore 649
-
-        public override object CreateInstance() =>  new StylePropertyBinding();
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-
-            var e = (StylePropertyBinding) obj;
-            if (ShouldWriteAttributeValue(styleProperty_UxmlAttributeFlags))
-                e.styleProperty = styleProperty;
-        }
-    }
-
     static readonly UnityEngine.Pool.ObjectPool<GenericValueAtPath> s_VisitorPool = new (CreateVisitor, null, OnReleaseVisitor);
 
     static GenericValueAtPath CreateVisitor()
@@ -231,6 +195,16 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     public static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding");
     public static readonly string k_EditBindingText = L10n.Tr("Edit Binding");
     public static readonly string k_ViewBindingText = L10n.Tr("View Binding");
+    public static readonly string k_ViewVariableText = L10n.Tr("View variable");
+    public static readonly string k_SetVariableText = L10n.Tr("Set variable");
+    public static readonly string k_EditVariableText = L10n.Tr("Edit variable");
+    public static readonly string k_RemoveVariableText = L10n.Tr("Remove variable");
+
+    public static readonly UniqueStyleString k_InlineFieldUssClassName = new("style-property-field__inline-value");
+    public static readonly UniqueStyleString k_VariableFieldUssClassName = new("style-property-field__variable");
+    public static readonly UniqueStyleString k_BoundFieldUssClassName = new("style-property-field__bound");
+
+    const string k_ContextualMenuManipulatorPropertyName = "__ContextMenuManipulator";
 
     private readonly Dictionary<BindingInfoKey, State> m_State = new ();
     private UpdateFlags m_UpdateFlags;
@@ -239,6 +213,9 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     private StylePropertyId stylePropertyId;
 
     public event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
+    public event Action<ITrackablePropertyProvider, string, bool, bool> OnTrackedPropertySourceChanged;
+
+    internal const string k_DataSourcePathTooltip = "The name of the style property that is targeted.";
 
     /// <summary>
     /// Object that serves as a local source for the binding, and is particularly useful when the data source is not
@@ -248,7 +225,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     /// <remarks>
     /// Using a local source does not prevent children of the target from using the hierarchy source.
     /// </remarks>
-    [CreateProperty]
+    [UxmlAttribute, HideInInspector, Tooltip(k_DataSourcePathTooltip), CreateProperty]
     public string styleProperty
     {
         get => m_StyleProperty;
@@ -274,7 +251,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
     }
 
-    private StylePropertyBinding()
+    public StylePropertyBinding()
         :this(null)
     {
     }
@@ -290,6 +267,8 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         base.OnActivated(in context);
         SendTrackPropertyEvent(this, context.targetElement, styleProperty, PropertyTrackingType.Register);
         RegisterCallbacks(this, context.bindingId, stylePropertyId, context.targetElement);
+
+        SetupVariableEditingHandler(context.targetElement);
     }
 
     protected internal override void OnDeactivated(in BindingActivationContext context)
@@ -316,18 +295,35 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         return Update(context.bindingId, stylePropertyId, ctx, targetElement);
     }
 
-    static void ProcessChange<T>(T value, StyleDiff styleDiff, StylePropertyBinding binding, Action<StyleProperty, StyleSheet, T> setter)
+    static void ProcessChange<T>(T value, StyleInspectorElement.AuthoringContext authoringContext, StylePropertyBinding binding, Action<StyleProperty, StyleSheet, T> setter)
     {
+        var styleDiff = authoringContext.StyleDiff;
         switch (styleDiff.currentContextType)
         {
             case StyleDiff.ContextType.VisualElement:
             {
+                if (authoringContext.AnimationController != null)
+                {
+                    Debug.Assert(AnimationMode.InAnimationRecording(),
+                        "AnimationController is set but AnimationMode.InAnimationRecording() is false.");
+                    if (StyleDebug.IsShorthandProperty(binding.stylePropertyId))
+                        break;
+                    var inspectedElement = styleDiff.currentTarget;
+                    AnimationRecordingStyleBridge.TryRecordStylePropertyChange(inspectedElement, binding.stylePropertyId, false, in value, in value);
+                    break;
+                }
+
+                Debug.Assert(!AnimationMode.InAnimationRecording(),
+                    "AnimationMode is recording but AnimationController is null. Refresh must run before ProcessChange.");
+
                 var command = new SetInlineStylePropertyCommand<T>(styleDiff.currentTarget, binding.stylePropertyId, setter, value);
                 command.Execute();
                 break;
             }
             case StyleDiff.ContextType.StyleSheet:
             {
+                Debug.Assert(authoringContext.AnimationController == null,
+                    "AnimationController must be null in StyleSheet context.");
                 var command = new SetStyleSheetPropertyCommand<T>(styleDiff.currentStyleSheet, styleDiff.currentRule, binding.stylePropertyId, setter, value);
                 command.Execute();
 
@@ -339,6 +335,8 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             }
             case StyleDiff.ContextType.None:
             default:
+                Debug.Assert(authoringContext.AnimationController == null,
+                    "AnimationController must be null when context type is None.");
                 break;
         }
     }
@@ -349,27 +347,43 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             return;
 
         if (ShouldProcessChange(evt, ctx))
-            ProcessChange(evt.newValue, ctx.authoringContext.StyleDiff, ctx.binding, setter);
+            ProcessChange(evt.newValue, ctx.authoringContext, ctx.binding, setter);
     }
 
     static void ProcessChange<T>(CompositeStylePropertyChangeEvent<T> evt, CallbackContext ctx, Action<StyleProperty, StyleSheet, T> setter)
     {
-        if (ctx.binding.ignoreChanges|| evt.target != ctx.element || evt.Id != ctx.bindingId)
+        if (ctx.binding.ignoreChanges || evt.target != ctx.element || evt.Id != ctx.bindingId)
             return;
 
         if (ShouldProcessChange(evt, ctx))
-            ProcessChange(evt.NewValue, ctx.authoringContext.StyleDiff, ctx.binding, setter);
+            ProcessChange(evt.NewValue, ctx.authoringContext, ctx.binding, setter);
     }
 
-    void SetupContextMenu<TInline, TComputed>(FieldAffordanceElement fieldAffordanceElement,
+    void SetupContextMenu<TInline, TComputed>(VisualElement field, FieldAffordanceElement fieldAffordanceElement,
         StyleInspectorElement.AuthoringContext authoringContext, StylePropertyData<TInline, TComputed> value)
     {
+        if (!field.HasProperty(k_ContextualMenuManipulatorPropertyName))
+        {
+            var contextMenuManipulator = new ContextualMenuManipulator((evt) =>
+            {
+                // Dynamically retrieve the current affordance element instead of capturing it
+                var currentAffordanceElement = (field as IAffordanceField)?.affordanceElement;
+                currentAffordanceElement?.OnContextualMenuPopulate(evt);
+            });
+            contextMenuManipulator.acceptClicksIfDisabled = true;
+            field.AddManipulator(contextMenuManipulator);
+            field.SetProperty(k_ContextualMenuManipulatorPropertyName, contextMenuManipulator);
+        }
+
         fieldAffordanceElement.populateMenuItems = menu =>
         {
             var ve = authoringContext.StyleDiff.currentTarget;
             var bindingPath = "style." + m_StylePropertyCSharpName;
             var isBindableElement = UxmlSerializedDataRegistry.GetDescription(ve.GetType().FullName) != null;
             var isBindableProperty = PropertyContainer.IsPathValid(ve, bindingPath);
+
+            // Add a separator in case then menu is already filled with items (e.g: TextField's input)
+            menu.AppendSeparator();
 
             if (isBindableElement && isBindableProperty)
             {
@@ -405,7 +419,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 }
                 else
                 {
-                    if (!authoringContext.IsReadOnly)
+                    if (!authoringContext.IsReadOnly && vea != null)
                     {
                         menu.AppendAction(k_AddBindingText,
                             _ => { BindingWindow.OpenToCreate(ve, bindingPath, fieldAffordanceElement); });
@@ -421,7 +435,60 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             var hasAnyProperties = HasAnyProperties(authoringContext.StyleDiff);
             var unsetAllStatus = hasAnyProperties && !authoringContext.IsReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
             menu.AppendAction("Unset All", _ => UnsetAllStyleProperties(authoringContext.StyleDiff), unsetAllStatus);
+
+            menu.AppendSeparator();
+
+            if (value.uxmlValue.requireVariableResolve)
+            {
+                menu.AppendAction(k_EditVariableText,
+                    ViewVariableViaContextMenu,
+                    a => VariableActionStatus(a, authoringContext.IsReadOnly),
+                    field);
+
+                var removeVariableStatus = !authoringContext.IsReadOnly
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled;
+                menu.AppendAction(k_RemoveVariableText, (a) => RemoveVariableViaContextMenu(authoringContext),
+                    (a) => removeVariableStatus, field);
+            }
+            else
+            {
+                menu.AppendAction(k_SetVariableText, ViewVariableViaContextMenu,
+                    a => VariableActionStatus(a, authoringContext.IsReadOnly),
+                    field);
+            }
         };
+    }
+
+    DropdownMenuAction.Status VariableActionStatus(DropdownMenuAction action, bool isReadOnly)
+    {
+        var bindableElement = action.userData as BindableElement;
+        if (bindableElement == null)
+            return DropdownMenuAction.Status.Disabled;
+
+        var varEditingHandler = StyleVariableUtility.GetVarHandler(bindableElement);
+        if (varEditingHandler == null)
+            return DropdownMenuAction.Status.Disabled;
+
+        return !isReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+    }
+
+    void ViewVariableViaContextMenu(DropdownMenuAction action)
+    {
+        var bindableElement = action.userData as BindableElement;
+        var varEditingHandler = StyleVariableUtility.GetVarHandler(bindableElement);
+        varEditingHandler.ShowVariableField();
+    }
+
+    void RemoveVariableViaContextMenu(StyleInspectorElement.AuthoringContext authoringContext)
+    {
+        var styleDiff = authoringContext.StyleDiff;
+        new RemoveVariableCommand(styleDiff.currentStyleSheet, styleDiff.currentRule, stylePropertyId).Execute();
+
+        // Update selector element
+        var element = styleDiff.currentTarget;
+        element?.UpdateInlineRule(styleDiff.currentStyleSheet, styleDiff.currentRule, element.variableContext);
+        element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     void UnsetStyleProperty(StyleDiff styleDiff)
@@ -432,7 +499,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 UnsetInlineStyleProperty(styleDiff.currentTarget);
                 break;
             case StyleDiff.ContextType.StyleSheet:
-                UnsetStyleSheetProperty(styleDiff.currentStyleSheet, styleDiff.currentRule);
+                UnsetStyleSheetProperty(styleDiff.currentStyleSheet, styleDiff.currentRule, styleDiff.currentTarget);
                 break;
         }
     }
@@ -443,10 +510,13 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         command.Execute();
     }
 
-    void UnsetStyleSheetProperty(StyleSheet styleSheet, StyleRule rule)
+    void UnsetStyleSheetProperty(StyleSheet styleSheet, StyleRule rule, VisualElement element)
     {
         var command = new UnsetStyleSheetPropertyCommand(styleSheet, rule, stylePropertyId);
         command.Execute();
+
+        element?.UpdateInlineRule(styleSheet, rule, element.variableContext);
+        element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     bool HasAnyProperties(StyleDiff styleDiff)
@@ -489,7 +559,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 UnsetAllInlineStyleProperties(styleDiff.currentTarget);
                 break;
             case StyleDiff.ContextType.StyleSheet:
-                UnsetAllStyleSheetProperties(styleDiff.currentStyleSheet, styleDiff.currentRule);
+                UnsetAllStyleSheetProperties(styleDiff.currentStyleSheet, styleDiff.currentRule, styleDiff.currentTarget);
                 break;
         }
     }
@@ -500,10 +570,14 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         command.Execute();
     }
 
-    void UnsetAllStyleSheetProperties(StyleSheet styleSheet, StyleRule rule)
+    void UnsetAllStyleSheetProperties(StyleSheet styleSheet, StyleRule rule, VisualElement element)
     {
         var command = new UnsetAllStyleSheetPropertiesCommand(styleSheet, rule);
         command.Execute();
+
+        // Update selector element
+        element?.UpdateInlineRule(styleSheet, rule, element.variableContext);
+        element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     BindingResult Update<TInline, TComputed>(in BindingId id, StylePropertyData<TInline, TComputed> value,
@@ -531,26 +605,40 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             OnTrackedPropertyChanged?.Invoke(this, styleProperty, TrackedPropertyType.MarkOverride);
         }
 
-        targetElement.EnableInClassList("style-property-field__inline-value", value.uxmlValue.isInlined);
-        targetElement.EnableInClassList("style-property-field__variable", value.uxmlValue.requireVariableResolve);
-        targetElement.EnableInClassList("style-property-field__bound", value.binding != null);
+        targetElement.EnableInClassList(k_InlineFieldUssClassName, value.uxmlValue.isInlined);
+        targetElement.EnableInClassList(k_VariableFieldUssClassName, value.uxmlValue.requireVariableResolve);
+        targetElement.EnableInClassList(k_BoundFieldUssClassName, value.binding != null);
+        OnTrackedPropertySourceChanged?.Invoke(this, styleProperty, value.uxmlValue.requireVariableResolve, value.binding != null);
 
         var inlineValue = value.inlineValue;
         var computedValue = value.computedValue;
 
-        var shouldBeEnabled = true;
+        var targetEnabled = true;
 
         var fieldAffordanceElement = (targetElement as IAffordanceField)?.affordanceElement;
         if (fieldAffordanceElement != null)
         {
             FieldAffordanceController.UpdateFieldAffordanceData(fieldAffordanceElement.fieldAffordanceData,
                 authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentContextType, value);
-            SetupContextMenu(fieldAffordanceElement, authoringContext, value);
+            SetupContextMenu(targetElement, fieldAffordanceElement, authoringContext, value);
             var hasResolvedBinding = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.ResolvedBinding;
-            shouldBeEnabled &= !hasResolvedBinding;
+            var hasResolvedVariable = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable
+                && fieldAffordanceElement.fieldAffordanceData.variableSheet != null;
+            targetEnabled &= !hasResolvedBinding && !hasResolvedVariable;
         }
-        shouldBeEnabled &= !authoringContext.IsReadOnly;
-        targetElement.enabledSelf = shouldBeEnabled;
+
+        var inRecording = authoringContext.AnimationController != null;
+        Debug.Assert(inRecording == AnimationMode.InAnimationRecording(),
+            $"AnimationController presence ({inRecording}) must match AnimationMode.InAnimationRecording() ({AnimationMode.InAnimationRecording()}). " +
+            "Refresh must be called before the binding system re-evaluates.");
+        var propertyRecordable = !inRecording || authoringContext.AnimationController.IsPropertyRecordable(stylePropertyId);
+        if (inRecording && !propertyRecordable)
+            targetElement.tooltip = L10n.Tr("This property cannot be recorded in the Animation window.");
+        else
+            targetElement.tooltip = null;
+        targetEnabled &= propertyRecordable;
+        targetEnabled &= !authoringContext.IsReadOnly;
+        targetElement.enabledSelf = targetEnabled;
 
         using var _ = new IgnoreChangeScope(this);
         switch (targetElement)
@@ -714,6 +802,21 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         evt.StopImmediatePropagation();
 
         return false;
+    }
+
+    void SetupVariableEditingHandler(VisualElement targetElement)
+    {
+        if (targetElement is not BindableElement bindableField)
+            return;
+
+        var styleInspector = bindableField.GetFirstAncestorOfType<StyleInspectorElement>();
+        if (styleInspector?.VariableEditingContext == null)
+            return;
+
+        var handler = StyleVariableUtility.GetOrCreateVarHandler(bindableField, styleInspector.VariableEditingContext,
+            bindableField.GetFirstAncestorOfType<OverrideRow>(),
+            targetElement is StyleLengthField or StyleFloatField or StyleIntField);
+        handler.styleName = StylePropertyUtil.cSharpNameToUssName.GetValueOrDefault(styleProperty, styleProperty);
     }
 
     // These are implemented solely to opt-in the change tracking per property, we don't want these to be set

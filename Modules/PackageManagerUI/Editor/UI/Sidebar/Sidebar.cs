@@ -2,25 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class Sidebar : ScrollView
+[UxmlElement]
+internal partial class Sidebar : ScrollView
 {
-    [Serializable]
-    public new class UxmlSerializedData : ScrollView.UxmlSerializedData
-    {
-        public override object CreateInstance()
-        {
-            var container = ServicesContainer.instance;
-            return new Sidebar(container.Resolve<PageManager>(),
-                container.Resolve<IPackageManagerPrefs>());
-        }
-    }
-
     private SidebarRow m_CurrentlySelectedRow;
     private Foldout m_CloudFoldout;
     private Foldout m_RegistriesFoldout;
@@ -31,6 +20,13 @@ internal class Sidebar : ScrollView
 
     private readonly IPageManager m_PageManager;
     private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+
+    public Sidebar() : this(
+        ServicesContainer.instance.Resolve<PageManager>(),
+        ServicesContainer.instance.Resolve<IPackageManagerPrefs>())
+    {
+    }
+
     public Sidebar(IPageManager pageManager, IPackageManagerPrefs packageManagerPrefs)
     {
         m_PageManager = pageManager;

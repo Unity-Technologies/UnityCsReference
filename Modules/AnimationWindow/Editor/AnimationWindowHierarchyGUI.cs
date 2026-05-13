@@ -367,74 +367,90 @@ namespace UnityEditorInternal
 
                 EditorGUI.BeginChangeCheck();
 
-                if (curve.isPPtrCurve)
+                bool handledByCustomHandler = false;
+                foreach (var handler in AnimationWindowUtility.PropertyHandlers)
                 {
-                    var objType = curve.valueType;
-
-                    if (typeof(UnityEngine.Object).IsAssignableFrom(objType))
+                    if (handler.TryDoValueField(valueFieldRect, valueFieldDragRect, id,
+                            curve.binding, curve.valueType, node.animatableObjectType, value,
+                            out var handlerValue, ref node.handlerData))
                     {
-                        var height = Mathf.Min(k_ObjectFieldMaxHeight, valueFieldRect.height);
-                        var yOffset = (valueFieldRect.height - height) * 0.5f;
-                        valueFieldRect = new Rect(valueFieldRect.x - k_ObjectFieldAdditionalOffset, valueFieldRect.y + yOffset, valueFieldRect.width + k_ObjectFieldAdditionalWidth, height);
-                     
-                        value = EditorGUI.DoObjectField(valueFieldRect, valueFieldRect, id, value as UnityEngine.Object, null, objType, null, false);
+                        value = handlerValue;
+                        handledByCustomHandler = true;
+                        break;
                     }
                 }
-                else if (curve.valueType == typeof(bool))
-                {
-                    value = GUI.Toggle(valueFieldRect, id, Convert.ToSingle(value) != 0f, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
-                }
-                else
-                {
-                    bool enterInTextField = (EditorGUIUtility.keyboardControl == id
-                        && EditorGUIUtility.editingTextField
-                        && Event.current.type == EventType.KeyDown
-                        && (Event.current.character == '\n' || (int)Event.current.character == 3));
 
-                    // Force back keyboard focus to float field editor when editing it since the TreeView forces keyboard focus on itself at mouse down.
-                    // The focus will be reclaimed after the TreeViewController.OnGUI call.
-                    if (EditorGUI.s_RecycledEditor.controlID == id && Event.current.type == EventType.MouseDown && valueFieldRect.Contains(Event.current.mousePosition))
+                if (!handledByCustomHandler)
+                {
+                    if (curve.isPPtrCurve)
                     {
-                        m_NeedsToReclaimFieldFocus = true;
-                        m_FieldToReclaimFocus = id;
-                    }
+                        var objType = curve.valueType;
 
-                    if (curve.isDiscreteCurve)
-                    {
-                        value = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor,
-                            valueFieldRect,
-                            valueFieldDragRect,
-                            id,
-                            Convert.ToInt32(value),
-                            EditorGUI.kIntFieldFormatString,
-                            m_AnimationSelectionTextField,
-                            true,
-                            0);
-                        if (enterInTextField)
+                        if (typeof(UnityEngine.Object).IsAssignableFrom(objType))
                         {
-                            GUI.changed = true;
-                            Event.current.Use();
+                            var height = Mathf.Min(k_ObjectFieldMaxHeight, valueFieldRect.height);
+                            var yOffset = (valueFieldRect.height - height) * 0.5f;
+                            valueFieldRect = new Rect(valueFieldRect.x - k_ObjectFieldAdditionalOffset, valueFieldRect.y + yOffset, valueFieldRect.width + k_ObjectFieldAdditionalWidth, height);
+                         
+                            value = EditorGUI.DoObjectField(valueFieldRect, valueFieldRect, id, value as UnityEngine.Object, null, objType, null, false);
                         }
+                    }
+                    else if (curve.valueType == typeof(bool))
+                    {
+                        value = GUI.Toggle(valueFieldRect, id, Convert.ToSingle(value) != 0f, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
                     }
                     else
                     {
-                        value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor,
-                            valueFieldRect,
-                            valueFieldDragRect,
-                            id,
-                            Convert.ToSingle(value),
-                            "g5",
-                            m_AnimationSelectionTextField,
-                            true);
-                        if (enterInTextField)
+                        bool enterInTextField = (EditorGUIUtility.keyboardControl == id
+                            && EditorGUIUtility.editingTextField
+                            && Event.current.type == EventType.KeyDown
+                            && (Event.current.character == '\n' || (int)Event.current.character == 3));
+
+                        // Force back keyboard focus to float field editor when editing it since the TreeView forces keyboard focus on itself at mouse down.
+                        // The focus will be reclaimed after the TreeViewController.OnGUI call.
+                        if (EditorGUI.s_RecycledEditor.controlID == id && Event.current.type == EventType.MouseDown && valueFieldRect.Contains(Event.current.mousePosition))
                         {
-                            GUI.changed = true;
-                            Event.current.Use();
+                            m_NeedsToReclaimFieldFocus = true;
+                            m_FieldToReclaimFocus = id;
                         }
 
-                        var floatValue = Convert.ToSingle(value);
-                        if (float.IsInfinity(floatValue) || float.IsNaN(floatValue))
-                            value = 0f;
+                        if (curve.isDiscreteCurve)
+                        {
+                            value = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor,
+                                valueFieldRect,
+                                valueFieldDragRect,
+                                id,
+                                Convert.ToInt32(value),
+                                EditorGUI.kIntFieldFormatString,
+                                m_AnimationSelectionTextField,
+                                true,
+                                0);
+                            if (enterInTextField)
+                            {
+                                GUI.changed = true;
+                                Event.current.Use();
+                            }
+                        }
+                        else
+                        {
+                            value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor,
+                                valueFieldRect,
+                                valueFieldDragRect,
+                                id,
+                                Convert.ToSingle(value),
+                                "g5",
+                                m_AnimationSelectionTextField,
+                                true);
+                            if (enterInTextField)
+                            {
+                                GUI.changed = true;
+                                Event.current.Use();
+                            }
+
+                            var floatValue = Convert.ToSingle(value);
+                            if (float.IsInfinity(floatValue) || float.IsNaN(floatValue))
+                                value = 0f;
+                        }
                     }
                 }
 
@@ -688,6 +704,19 @@ namespace UnityEditorInternal
                 menu.AddDisabledItem(new GUIContent(str));
             else
                 menu.AddItem(new GUIContent(str), false, DeleteKeysAtCurrentTime, curves);
+
+            if (interactedNodes.Count == 1 && interactedNodes[0] is AnimationWindowHierarchyPropertyNode propNode
+                && propNode.curves is { Length: > 0 })
+            {
+                var propCurve = propNode.curves[0];
+                foreach (var handler in AnimationWindowUtility.PropertyHandlers)
+                {
+                    if (handler.TryPopulateContextMenu(menu,
+                            propCurve.binding, propCurve.valueType, propNode.animatableObjectType,
+                            propNode.handlerData, data => propNode.handlerData = data))
+                        break;
+                }
+            }
 
             return menu;
         }

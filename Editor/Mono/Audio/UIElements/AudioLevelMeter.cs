@@ -9,14 +9,9 @@ using Color = UnityEngine.Color;
 
 namespace UnityEditor.Audio.UIElements
 {
-    internal class AudioLevelMeter : VisualElement
+    [UxmlElement]
+    internal partial class AudioLevelMeter : VisualElement
     {
-        [Serializable]
-        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new AudioLevelMeter();
-        }
-
         private float m_Value = -80.0f; // Value of the meter in dBFS.
 
         public float Value

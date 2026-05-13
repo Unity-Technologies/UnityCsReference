@@ -87,6 +87,22 @@ namespace UnityEngine.TextCore.Text
             int meshInfoIndex = 0;
             bool trackColors = hasMultipleColorsByMesh != null;
 
+            // Per-vertex gradient tints only come from rich-text gradient tags. A single span carrying one is
+            // enough to commit the whole text to hasMultipleColors so UIR keeps the per-vertex tints (rather than
+            // doing per-glyph corner-variance checks on every text generation).
+            bool anyGradientSpan = false;
+            if (trackColors && settings.textSpans != null)
+            {
+                for (int s = 0; s < settings.textSpans.Length; s++)
+                {
+                    if (settings.textSpans[s].gradientAsset != IntPtr.Zero)
+                    {
+                        anyGradientSpan = true;
+                        break;
+                    }
+                }
+            }
+
             foreach (ref var meshInfo in meshInfosSpan)
             {
                 var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextAsset;
@@ -123,8 +139,8 @@ namespace UnityEngine.TextCore.Text
                     isSprite = true;
                     requiredAtlasCount = 1;
 
-                    inverseAtlasWidth = 1.0f / spriteAsset.m_SpriteAtlasTexture.width;
-                    inverseAtlasHeight = 1.0f / spriteAsset.m_SpriteAtlasTexture.height;
+                    inverseAtlasWidth = 1.0f / spriteAsset.width;
+                    inverseAtlasHeight = 1.0f / spriteAsset.height;
                 }
 
                 while (atlasList.Count < requiredAtlasCount)
@@ -134,7 +150,7 @@ namespace UnityEngine.TextCore.Text
 
                 var padding = settings.vertexPadding / 64.0f;
 
-                bool hasMultipleColors = false;
+                bool hasMultipleColors = anyGradientSpan;
                 Color? previousColor = null;
 
                 Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
@@ -161,7 +177,7 @@ namespace UnityEngine.TextCore.Text
                             continue;
                     }
 
-                    if (trackColors)
+                    if (trackColors && !hasMultipleColors)
                     {
                         var currentColor = textElementInfo.topLeft.color;
                         if (previousColor.HasValue && previousColor.Value != currentColor)
@@ -280,7 +296,22 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetGlyphCount(IntPtr ptr);
 
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern int GetLineCount(IntPtr ptr);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern int GetLogicalIndexFromGlyphIndex(IntPtr ptr, int glyphIndex);
+
         // Used for testing purposes
         public static extern NativeTextInfo GetTextInfo(IntPtr ptr);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineHeight(IntPtr ptr, int lineNumber);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineAscender(IntPtr ptr, int lineNumber);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineBaselineY(IntPtr ptr, int lineNumber);
     }
 }

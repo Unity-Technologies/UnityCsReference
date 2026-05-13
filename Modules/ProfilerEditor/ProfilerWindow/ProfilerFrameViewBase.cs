@@ -53,6 +53,7 @@ namespace UnityEditorInternal.Profiling
 
             public static readonly string selectionExtraInfoHierarhcyView = L10n.Tr("Selection Info: ");
             public static readonly string proxySampleMessage = L10n.Tr("Sample \"{0}\" {1} {2} deeper not found in this frame within the selected Sample Stack.");
+            public static readonly string proxySampleMessageHidden0msSamples =  L10n.Tr("If the sample is 0.00ms (CPU profiler) or 0.000ms (GPU profiler) it might be hidden.");
             public static readonly string proxySampleMessageScopeSingular = L10n.Tr("scope");
             public static readonly string proxySampleMessageScopePlural = L10n.Tr("scopes");
             public static readonly string proxySampleMessageTooltip = L10n.Tr("Selected Sample Stack: {0}");
@@ -60,6 +61,7 @@ namespace UnityEditorInternal.Profiling
 
             public static readonly string callstackText = LocalizationDatabase.GetLocalizedString("Call Stack:");
 
+            public static readonly string sampleHiddenText = L10n.Tr("This sample is hidden by the current filter.\nTry disabling 'Hide 0ms Samples' to see it.");
             // 6 seems like a good default value for margins used in quite some places. Do note though, that this is little more than a semi-randomly chosen magic number.
             public const int magicMarginValue = 6;
             const float k_DetailedViewTypeToolbarDropDownWidth = 150f;
@@ -637,7 +639,7 @@ namespace UnityEditorInternal.Profiling
                     GUILayout.BeginVertical();
                     GUILayout.Label(label);
                     GUILayout.TextArea(sampleStack.text, GUILayout.ExpandHeight(true));
-                    if (GUILayout.Button(BaseStyles.tooltipCopyTooltip))
+                    if (sampleStack.text != BaseStyles.sampleHiddenText && GUILayout.Button(BaseStyles.tooltipCopyTooltip))
                     {
                         Clipboard.stringValue = sampleStack.text;
                     }

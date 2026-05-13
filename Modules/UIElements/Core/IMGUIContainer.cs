@@ -13,17 +13,12 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Element that draws IMGUI content in the editor. For more information, refer to [[wiki:UIE-uxml-element-IMGUIContainer|UXML element IMGUIContainer]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/IMGUIContainer.png")]
     public partial class IMGUIContainer : VisualElement, IDisposable
     {
         internal static readonly BindingId cullingEnabledProperty = nameof(cullingEnabled);
         internal static readonly BindingId contextTypeProperty = nameof(contextType);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new IMGUIContainer();
-        }
 
         // Set this delegate to have your IMGUI code execute inside the container
         private Action m_OnGUIHandler;
@@ -223,7 +218,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            lastWorldClip = elementPanel.repaintData.currentWorldClip;
+            lastWorldClip = Rect.zero;
 
             // Access to the painter is internal and is not exposed to public
             // The IStylePainter is kept as an interface rather than a concrete class for now to support tests
@@ -566,11 +561,10 @@ namespace UnityEngine.UIElements
 
                 using (new GUIClip.ParentClipScope(worldTransform, worldClip))
                 {
-                    var offset = elementPanel.repaintData.currentOffset;
-                    m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
-                    m_CachedTransform = offset * worldTransform;
+                    m_CachedClippingRect = worldClip;
+                    m_CachedTransform = worldTransform;
 
-                    HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+                    HandleIMGUIEvent(Event.current, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
                 }
             }
         }
@@ -676,7 +670,7 @@ namespace UnityEngine.UIElements
 
         internal bool HandleIMGUIEvent(Event e, Action onGUIHandler, bool canAffectFocus)
         {
-            GetCurrentTransformAndClip(this, e, out m_CachedTransform, out m_CachedClippingRect);
+            GetCurrentTransformAndClip(this, out m_CachedTransform, out m_CachedClippingRect);
 
             return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, onGUIHandler, canAffectFocus);
         }
@@ -924,18 +918,10 @@ namespace UnityEngine.UIElements
             return clipRect;
         }
 
-        private static void GetCurrentTransformAndClip(IMGUIContainer container, Event evt, out Matrix4x4 transform, out Rect clipRect)
+        private static void GetCurrentTransformAndClip(IMGUIContainer container, out Matrix4x4 transform, out Rect clipRect)
         {
             clipRect = container.GetCurrentClipRect();
-
             transform = container.worldTransform;
-            if (evt?.rawType == EventType.Repaint
-                && container.elementPanel != null)
-            {
-                // during repaint, we must use in case the current transform is not relative to Panel
-                // this is to account for the pixel caching feature
-                transform =  container.elementPanel.repaintData.currentOffset * container.worldTransform;
-            }
         }
 
         /// <summary>

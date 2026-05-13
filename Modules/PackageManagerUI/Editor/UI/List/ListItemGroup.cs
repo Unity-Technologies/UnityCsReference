@@ -42,7 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!item.selected)
                     continue;
-                EditorApplication.delayCall += () => UIUtils.ScrollIfNeeded(this, item.element);
+
+                UIUtils.ScrollToWhenReady(item.element);
+
                 return;
             }
         }

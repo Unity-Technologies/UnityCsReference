@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -12,26 +10,9 @@ using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor;
 
-internal sealed class StyleSheetInspector : VisualElement
+[UxmlElement]
+internal sealed partial class StyleSheetInspector : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        public override object CreateInstance()
-        {
-            return new StyleSheetInspector();
-        }
-    }
-
     public static readonly BindingId StyleSheetProperty = nameof(StyleSheet);
 
     private NewSelectorField m_NewSelectorField;
@@ -98,7 +79,7 @@ internal sealed class StyleSheetInspector : VisualElement
 
     void OnCreateNewSelector(NewSelectorSubmitEvent evt)
     {
-        // TODO: use command when UI-4401 lands
+        new AddStyleRuleCommand(StyleSheet, evt.selectorStr).Execute();
     }
 
     void ConfigureImportsListView()
@@ -108,6 +89,8 @@ internal sealed class StyleSheetInspector : VisualElement
 
         m_ImportsListView.onAdd = OnAddImport;
         m_ImportsListView.onRemove = OnRemoveImport;
+        m_ImportsListView.showBorder = true;
+        m_ImportsListView.selectionType = SelectionType.Multiple;
         m_ImportsListView.makeItem = () => new ObjectField { objectType = typeof(StyleSheet) };
         m_ImportsListView.bindItem = (element, i) =>
         {
@@ -122,6 +105,15 @@ internal sealed class StyleSheetInspector : VisualElement
             var objectField = (ObjectField)element;
             objectField.UnregisterValueChangedCallback(OnImportChanged);
         };
+
+        Undo.undoRedoEvent += OnUndoRedo;
+    }
+
+    void OnUndoRedo(in UndoRedoInfo undo)
+    {
+        // This is needed as imports is a standard array. When updating the list, we must re-assign the ItemsSource property.
+        m_ImportsListView.itemsSource = m_StyleSheet.imports;
+        m_ImportsListView.RefreshItems();
     }
 
     void OnAddImport(BaseListView listView)
@@ -129,21 +121,25 @@ internal sealed class StyleSheetInspector : VisualElement
         if (m_StyleSheet == null)
             return;
 
-        m_StyleSheet.AddImportAtIndex(-1, new StyleSheet.ImportStruct());
+        new AddStyleSheetImportCommand(m_StyleSheet).Execute();
+
+        // This is needed as imports is a standard array. When updating the list, we must re-assign the ItemsSource property.
         listView.itemsSource = m_StyleSheet.imports;
         listView.RefreshItems();
     }
 
     void OnRemoveImport(BaseListView listView)
     {
-        if (m_StyleSheet == null)
+        if (m_StyleSheet == null || m_StyleSheet.imports.Length == 0)
             return;
 
         int index = listView.selectedIndex;
         if (index < 0 || index >= m_StyleSheet.imports.Length)
             index = m_StyleSheet.imports.Length - 1;
 
-        m_StyleSheet.RemoveImport(index);
+        new RemoveStyleSheetImportCommand(m_StyleSheet, index).Execute();
+
+        // This is needed as imports is a standard array. When updating the list, we must re-assign the ItemsSource property.
         listView.itemsSource = m_StyleSheet.imports;
         listView.RefreshItems();
     }
@@ -156,7 +152,6 @@ internal sealed class StyleSheetInspector : VisualElement
         var field = (ObjectField)evt.target;
         int index = (int)field.userData;
 
-        if (evt.newValue is StyleSheet sheet)
-            m_StyleSheet.SetStyleSheetImportAtIndex(index, sheet);
+        new SetStyleSheetImportCommand(m_StyleSheet, index, evt.newValue as StyleSheet).Execute();
     }
 }

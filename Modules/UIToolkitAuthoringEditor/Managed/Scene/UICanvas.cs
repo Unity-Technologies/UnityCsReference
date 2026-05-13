@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -95,15 +97,6 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         public CanvasChangedEvent() => LocalInit();
     }
 
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public new static void Register()
-            => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-
-        public override object CreateInstance() => new UICanvas();
-    }
-
     const string k_VisualTreeAsset = "UIToolkitAuthoring/UIViewportWindow/UICanvas.uxml";
     const string k_StyleSheetDark = "UIToolkitAuthoring/UIViewportWindow/UICanvasDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/UIViewportWindow/UICanvasLight.uss";
@@ -123,6 +116,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     readonly Label m_TitleTagLabel;
     readonly VisualElement m_CanvasDocument;
     readonly UICanvasDocumentRoot m_DocumentRoot;
+    readonly HighlightOverlayPainter2D m_HighlightOverlay;
     readonly CheckerboardBackground m_CheckerboardBackground;
     readonly VisualElement m_BackgroundColorOverlay;
     readonly VisualElement m_BackgroundImageOverlay;
@@ -254,6 +248,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         style.height = CanvasSettings.DefaultSize.y;
 
         m_DocumentRoot = this.Q<UICanvasDocumentRoot>(className: DocumentRootUssClass);
+        m_HighlightOverlay = new HighlightOverlayPainter2D(m_DocumentRoot);
         usageHints = UsageHints.DynamicTransform | UsageHints.LargePixelCoverage;
 
         m_PreviewMode = false;
@@ -361,10 +356,12 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
                 Selection.selectionChanged += OnSelectionChanged;
                 OnSelectionChanged();
                 PrefSettings.settingChanged += OnPrefsChanged;
+                UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
             case DetachFromPanelEvent:
                 Selection.selectionChanged -= OnSelectionChanged;
                 PrefSettings.settingChanged -= OnPrefsChanged;
+                UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
         }
 
@@ -377,6 +374,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         style.height = Length.Pixels(Size.y);
         style.translate = new StyleTranslate(Offset);
         m_DocumentRoot.style.translate = -Offset;
+        m_HighlightOverlay.ZoomScale = ZoomScale;
 
         if (panel == null)
             return;
@@ -581,5 +579,36 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
             return;
 
         m_PanelElement?.FrameUpdate();
+    }
+
+    void OnHighlight(in CommandContext context)
+    {
+        if (context.Status != CommandExecutionStatus.Success)
+            return;
+
+        switch (context.Command)
+        {
+            case HighlightCommand highlightEvent:
+                SetHighlight(highlightEvent.Elements, context.Source == CommandSources.Viewport);
+                break;
+            default:
+                break;
+        }
+    }
+
+    void SetHighlight(HashSet<VisualElement> elementsToHighlight, bool self)
+    {
+        if (m_PanelElement == null)
+            return;
+
+        m_HighlightOverlay.ClearOverlay();
+
+        if (elementsToHighlight == null)
+            return;
+
+        foreach (var element in elementsToHighlight)
+        {
+            m_HighlightOverlay.AddOverlay(element, self? OverlayContent.Outline : OverlayContent.AllBoxes);
+        }
     }
 }

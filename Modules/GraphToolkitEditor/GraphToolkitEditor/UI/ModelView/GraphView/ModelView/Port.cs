@@ -248,7 +248,11 @@ namespace Unity.GraphToolkit.Editor
             var toPort = portToConnect.Direction == PortDirection.Input ? portToConnect : PortModel;
             var fromPort = portToConnect.Direction == PortDirection.Input ? PortModel : portToConnect;
 
-            GraphView.Dispatch(new CreateWireCommand(toPort, fromPort, true));
+            // Normally, the node owner of the fromPort aligns itself to the owner of the toPort.
+            // However, if the owner of the toPort is a variable node, it should be the one to align itself with the owner of the fromPort.
+            var alignFromNode = toPort.NodeModel is VariableNodeModel { VariableDeclarationModel.IsOutput: true } ? NodeAlignment.AlignToNode : NodeAlignment.AlignFromNode;
+
+            GraphView.Dispatch(new CreateWireCommand(toPort, fromPort, alignFromNode));
         }
 
         /// <inheritdoc />
@@ -462,7 +466,7 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The connector visual content generator.</returns>
         protected virtual Action<MeshGenerationContext> GetConnectorVisualContentGenerator()
         {
-            if (PortModel.DataTypeHandle.Resolve() == TypeHandle.Untyped.Resolve())
+            if (PortModel.PortDataType == typeof(Untyped))
                 return OnGenerateTriangleConnectorVisualContent;
 
             return OnGenerateCircleConnectorVisualContent;

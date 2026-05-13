@@ -186,6 +186,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             => throw new NotSupportedException("This node does not support resuming.");
 
         private bool CanRequestDomainReload => GetType().IsDefined(typeof(CanRequestDomainReloadAttribute), true);
+        private bool CanRecoverFromDomainReload => GetType().IsDefined(typeof(CanRecoverFromDomainReloadAttribute), true);
 
         /// <summary>
         /// Runs the node.
@@ -264,7 +265,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void OnDomainReloadRequestedDuringExecution(bool executionCompleted)
         {
-            var domainReloadAllowed = CanRequestDomainReload;
+            var domainReloadAllowed = CanRequestDomainReload || CanRecoverFromDomainReload;
 
             if (domainReloadAllowed)
                 return;
@@ -283,9 +284,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private async Task<NodeExecutionScope> AssignTurnAndLockIfNeeded(CancellationToken cancellationToken)
         {
-            // Schedule this node's run execution via the Node scheduler.
-            var turn = NodeScheduler.AssignTurn(CanRequestDomainReload);
-            await turn.UntilActive(cancellationToken);
+            NodeScheduler.Turn turn = null;
+
+            if (!CanRecoverFromDomainReload || CanRequestDomainReload)
+            {
+                // Schedule this node's run execution via the Node scheduler to ensure that nodes that can cause domain reloads
+                // are not running in parallel with other nodes, as they can cause them to be interrupted and fail.
+                turn = NodeScheduler.AssignTurn(CanRequestDomainReload);
+                await turn.UntilActive(cancellationToken);
+            }
 
             // On it's turn, check if a domain reload or compilation is pending before
             // starting the node execution, we wait for it to be completed as it can affect it.

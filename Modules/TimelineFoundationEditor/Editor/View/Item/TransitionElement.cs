@@ -3,52 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.Timeline.Foundation.Widgets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.View
 {
-    partial class TransitionElement : VisualElement
+    [UxmlElement]
+    internal partial class TransitionElement : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData),
-                    new UxmlAttributeNames[]
-                    {
-                        new(nameof(blendType), "blend-type"),
-                    }, true);
-            }
-
-#pragma warning disable 649
-            [SerializeField] Type blendType;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags blendType_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new TransitionElement();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TransitionElement)obj;
-                if (ShouldWriteAttributeValue(blendType_UxmlAttributeFlags))
-                    e.type = blendType;
-            }
-        }
         public enum Type
         {
             In,
             Out
         }
 
+        [UxmlAttribute("blend-type")]
         public Type type { get; set; }
 
         public Action<MeshGenerationContext> generateBackGround;

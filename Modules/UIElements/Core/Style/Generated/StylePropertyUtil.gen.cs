@@ -38,6 +38,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 StylePropertyId.All
             },
                         {
+                "animation-play-state",
+                StylePropertyId.AnimationPlayState
+            },
+                        {
                 "aspect-ratio",
                 StylePropertyId.AspectRatio
             },
@@ -314,6 +318,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 StylePropertyId.Translate
             },
                         {
+                "-unity-animation-clip",
+                StylePropertyId.UnityAnimationClip
+            },
+                        {
                 "-unity-background-image-tint-color",
                 StylePropertyId.UnityBackgroundImageTintColor
             },
@@ -437,6 +445,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 StylePropertyId.All,
                 "all"
+            },
+                        {
+                StylePropertyId.AnimationPlayState,
+                "animation-play-state"
             },
                         {
                 StylePropertyId.AspectRatio,
@@ -715,6 +727,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "translate"
             },
                         {
+                StylePropertyId.UnityAnimationClip,
+                "-unity-animation-clip"
+            },
+                        {
                 StylePropertyId.UnityBackgroundImageTintColor,
                 "-unity-background-image-tint-color"
             },
@@ -838,6 +854,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "all",
                 "all"
+            },
+                        {
+                "animation-play-state",
+                "animationPlayState"
             },
                         {
                 "aspect-ratio",
@@ -1116,6 +1136,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "translate"
             },
                         {
+                "-unity-animation-clip",
+                "unityAnimationClip"
+            },
+                        {
                 "-unity-background-image-tint-color",
                 "unityBackgroundImageTintColor"
             },
@@ -1239,6 +1263,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "all",
                 "all"
+            },
+                        {
+                "animationPlayState",
+                "animation-play-state"
             },
                         {
                 "aspectRatio",
@@ -1517,6 +1545,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "translate"
             },
                         {
+                "unityAnimationClip",
+                "-unity-animation-clip"
+            },
+                        {
                 "unityBackgroundImageTintColor",
                 "-unity-background-image-tint-color"
             },
@@ -1688,6 +1720,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VersionChangeType.Styles | VersionChangeType.Layout,
             /*StylePropertyId.All*/
             VersionChangeType.Styles,
+            /*StylePropertyId.AnimationPlayState*/
+            VersionChangeType.Styles | VersionChangeType.AnimationProperty,
             /*StylePropertyId.AspectRatio*/
             VersionChangeType.Styles | VersionChangeType.Layout,
             /*StylePropertyId.BackgroundColor*/
@@ -1826,6 +1860,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VersionChangeType.Styles,
             /*StylePropertyId.Translate*/
             VersionChangeType.Styles | VersionChangeType.Transform,
+            /*StylePropertyId.UnityAnimationClip*/
+            VersionChangeType.Styles | VersionChangeType.AnimationProperty,
             /*StylePropertyId.UnityBackgroundImageTintColor*/
             VersionChangeType.Styles | VersionChangeType.Color,
             /*StylePropertyId.UnityBackgroundScaleMode*/
@@ -1913,6 +1949,20 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (string.Equals(value, "stretch", StringComparison.OrdinalIgnoreCase))
                     {
                         intValue = (int)Align.Stretch;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.AnimationPlayState:
+                    if (string.Equals(value, "running", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)AnimationPlayState.Running;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "paused", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)AnimationPlayState.Paused;
                         return true;
                     }
 
@@ -2629,6 +2679,11 @@ namespace UnityEngine.UIElements.StyleSheets
                     return Background.allowedAssetTypes;
                 case StylePropertyId.Cursor:
                     return Cursor.allowedAssetTypes;
+                case StylePropertyId.UnityAnimationClip:
+                    return new[]
+                    {
+                        typeof(UIAnimationClip)
+                    };
                 case StylePropertyId.UnityFont:
                     return new[]
                     {
@@ -2656,6 +2711,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return true;
                 case StylePropertyId.Cursor:
                     return true;
+                case StylePropertyId.UnityAnimationClip:
+                    return true;
                 case StylePropertyId.UnityFont:
                     return true;
                 case StylePropertyId.UnityFontDefinition:
@@ -2679,6 +2736,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VisualData visualData = default;
             switch (id)
             {
+                case StylePropertyId.AnimationPlayState:
+                    return (int)&rareData.animationPlayState - (int)&rareData;
                 case StylePropertyId.BackgroundColor:
                     return (int)&visualData.backgroundColor - (int)&visualData;
                 case StylePropertyId.BackgroundImage:
@@ -2739,6 +2798,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return (int)&transitionData.transitionTimingFunction - (int)&transitionData;
                 case StylePropertyId.Translate:
                     return (int)&transformData.translate - (int)&transformData;
+                case StylePropertyId.UnityAnimationClip:
+                    return (int)&rareData.unityAnimationClip - (int)&rareData;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (int)&rareData.unityBackgroundImageTintColor - (int)&rareData;
                 case StylePropertyId.UnityEditorTextRenderingMode:
@@ -2800,6 +2861,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VisualData visualData = default;
             switch (id)
             {
+                case StylePropertyId.AnimationPlayState:
+                    return (int)(&rareData.animationPlayState + 1) - (int)&rareData.animationPlayState;
                 case StylePropertyId.BackgroundColor:
                     return (int)(&visualData.backgroundColor + 1) - (int)&visualData.backgroundColor;
                 case StylePropertyId.BackgroundImage:
@@ -2860,6 +2923,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return (int)(&transitionData.transitionTimingFunction + 1) - (int)&transitionData.transitionTimingFunction;
                 case StylePropertyId.Translate:
                     return (int)(&transformData.translate + 1) - (int)&transformData.translate;
+                case StylePropertyId.UnityAnimationClip:
+                    return (int)(&rareData.unityAnimationClip + 1) - (int)&rareData.unityAnimationClip;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (int)(&rareData.unityBackgroundImageTintColor + 1) - (int)&rareData.unityBackgroundImageTintColor;
                 case StylePropertyId.UnityEditorTextRenderingMode:

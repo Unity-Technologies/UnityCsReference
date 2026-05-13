@@ -13,7 +13,7 @@ namespace UnityEditor
     {
         public abstract Vector3 position { get; }
     }
-    
+
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority)]
     [Icon(k_Icon)]
     class CenterPivotMode : CustomPivotMode
@@ -21,7 +21,7 @@ namespace UnityEditor
         const string k_DisplayName = "Center";
         const string k_Icon = "ToolHandleCenter";
         const string k_Tooltip = "The tool handle is placed at the center of the selection.";
-        
+
         public override  Vector3 position
         {
             get
@@ -30,12 +30,12 @@ namespace UnityEditor
                     return Tools.handleRotation * InternalEditorUtility
                         .CalculateSelectionBoundsInSpace(Vector3.zero, Tools.handleRotation, Tools.rectBlueprintMode)
                         .center;
-                
+
                 return InternalEditorUtility.CalculateSelectionBounds(true).center;
             }
         }
     }
-    
+
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority + 1)]
     [Icon(k_Icon)]
     class PivotPointPivotMode : CustomPivotMode
@@ -43,7 +43,7 @@ namespace UnityEditor
         const string k_DisplayName = "Pivot";
         const string k_Icon = "ToolHandlePivot";
         const string k_Tooltip = "The tool handle is placed at the active object's pivot point.";
-        
+
         public override Vector3 position
         {
             get
@@ -51,17 +51,17 @@ namespace UnityEditor
                 Transform t = Selection.activeTransform;
                 if (Tools.current == Tool.Rect && Tools.rectBlueprintMode && InternalEditorUtility.SupportsRectLayout(t))
                     return t.parent.TransformPoint(new Vector3(t.localPosition.x, t.localPosition.y, 0));
-                
+
                 return t.position;
             }
         }
     }
-    
+
     public abstract class CustomPivotRotation : ScriptableObject
     {
         public abstract Quaternion rotation { get; }
     }
-    
+
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority)]
     [Icon(k_Icon)]
     class GlobalPivotRotation : CustomPivotRotation
@@ -69,10 +69,10 @@ namespace UnityEditor
         const string k_DisplayName = "Global";
         const string k_Icon = "ToolHandleGlobal";
         const string k_Tooltip = "Tool handles are in global rotation.";
-        
+
         public override Quaternion rotation => Tools.globalHandleRotation;
     }
-    
+
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority + 1)]
     [Icon(k_Icon)]
     class LocalPivotRotation : CustomPivotRotation
@@ -92,7 +92,7 @@ namespace UnityEditor
             return t.rotation;
         }
     }
-    
+
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority + 2)]
     [Icon(k_Icon)]
     class GridPivotRotation : CustomPivotRotation
@@ -113,12 +113,12 @@ namespace UnityEditor
         internal static CustomPivotMode GetActivePivotMode(Type toolOwnerType) => EditorPivotManager.GetActivePivotMode(toolOwnerType);
         public static CustomPivotRotation GetActivePivotRotation() => EditorPivotManager.GetActivePivotRotation(typeof(SceneView));
         internal static CustomPivotRotation GetActivePivotRotation(Type toolOwnerType) => EditorPivotManager.GetActivePivotRotation(toolOwnerType);
-        
+
         public static void SetActivePivotMode<T>() where T : CustomPivotMode
         {
             SetActivePivotMode(typeof(T));
         }
-        
+
         public static void SetActivePivotMode(Type pivotModeType)
         {
             SetActivePivotMode(pivotModeType, typeof(SceneView));
@@ -128,7 +128,7 @@ namespace UnityEditor
         {
             SetActivePivotMode(typeof(T), toolOwnerType);
         }
-        
+
         internal static void SetActivePivotMode(Type pivotModeType, Type toolOwnerType)
         {
             EditorPivotManager.SetActivePivotMode(pivotModeType, toolOwnerType);
@@ -141,32 +141,32 @@ namespace UnityEditor
 
             activePivotModeChangedForOwner?.Invoke(toolOwnerType);
         }
-        
+
         public static void SetActivePivotRotation<T>() where T : CustomPivotRotation
         {
             SetActivePivotRotation(typeof(T));
         }
-        
+
         public static void SetActivePivotRotation(Type pivotRotationType)
         {
             SetActivePivotRotation(pivotRotationType, typeof(SceneView));
         }
-        
+
         internal static void SetActivePivotRotation<T>(Type toolOwnerType) where T : CustomPivotRotation
         {
             SetActivePivotRotation(typeof(T), toolOwnerType);
         }
-        
+
         internal static void SetActivePivotRotation(Type pivotRotationType, Type toolOwnerType)
         {
             EditorPivotManager.SetActivePivotRotation(pivotRotationType, toolOwnerType);
-            
+
             if (toolOwnerType == typeof(SceneView))
                 activePivotRotationChanged?.Invoke();
-            
+
             activePivotRotationChangedForOwner?.Invoke(toolOwnerType);
         }
-        
+
         public static event Action activePivotModeChanged;
         internal static event Action<Type> activePivotModeChangedForOwner;
         public static event Action activePivotRotationChanged;

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Net.Mime;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor
@@ -80,6 +80,57 @@ namespace UnityEditor
 
             ShowLayerOverridesProperties();
             serializedObject.ApplyModifiedProperties();
+
+            ValidateMesh();
+        }
+
+        private void ValidateMesh()
+        {
+            MeshCollider meshCollider = serializedObject.targetObject as MeshCollider;
+
+            if (m_Mesh.hasMultipleDifferentValues)
+                return;
+
+            Mesh mesh = m_Mesh.objectReferenceValue as Mesh;
+            if (mesh == null)
+                return;
+
+            string meshPath = AssetDatabase.GetAssetPath(mesh);
+            if (meshCollider.IsScaleBakingRequired())
+            {
+                if (!mesh.isReadable)
+                {
+                    InternalEditorUtility.DrawMeshNotReadableHelpBox(mesh, "Mesh Collider");
+                }
+            }
+            else
+            {
+                var isConvex = meshCollider.convex;
+                if (!mesh.HasPreBakeCollisionMesh(isConvex))
+                {
+                    var collisionName = isConvex ? "convex" : "triangle";
+                    var message = $"Mesh '{mesh.name}' used by the Mesh Collider is missing pre-baked {collisionName} collision. In future versions of Unity, the build process will no longer automatically pre bake collision data for Meshes referenced by Mesh Colliders.";
+
+                    if (InternalEditorUtility.CanMeshBeModifiedFromCode(meshPath))
+                    {
+                        if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                            EditorGUIUtility.TrTextContent(message),
+                            EditorGUIUtility.TrTextContent("Enable Pre-bake Collision"), 200.0f))
+                        {
+                            InternalEditorUtility.ImportMeshWithPreBakeCollision(mesh, isConvex);
+                        }
+                    }
+                    else
+                    {
+                        if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                            EditorGUIUtility.TrTextContent(message),
+                            EditorGUIUtility.TrTextContent("View")))
+                        {
+                            Selection.objects = new UnityEngine.Object[] { mesh };
+                        }
+                    }
+                }
+            }
         }
     }
 }

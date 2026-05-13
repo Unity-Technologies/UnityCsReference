@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -27,6 +28,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This is a base class for the Slider fields.
     /// </summary>
+    [UxmlElement]
     public abstract partial class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : IComparable<TValueType>
     {
@@ -38,49 +40,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId directionProperty = nameof(direction);
         internal static readonly BindingId invertedProperty = nameof(inverted);
         internal static readonly BindingId fillProperty = nameof(fill);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
-        {
-            public new static void Register()
-            {
-                BaseField<TValueType>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(valueOverride), "value"),
-                    new (nameof(lowValue), "low-value"),
-                    new (nameof(highValue), "high-value"),
-                    new (nameof(fill), "fill"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttributeBindingPath("value")]
-            [SerializeField, Delayed, UxmlAttribute("value")] TValueType valueOverride;
-            [SerializeField, Delayed] TValueType lowValue;
-            [SerializeField, Delayed] TValueType highValue;
-            [SerializeField] bool fill;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueOverride_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fill_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BaseSlider<TValueType>)obj;
-                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
-                    e.lowValue = lowValue;
-                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
-                    e.highValue = highValue;
-                if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
-                    e.valueOverride = valueOverride;
-                if (ShouldWriteAttributeValue(fill_UxmlAttributeFlags))
-                    e.fill = fill;
-            }
-        }
 
         internal VisualElement dragContainer { get; private set; }
         internal VisualElement dragElement { get; private set; }
@@ -107,13 +66,11 @@ namespace UnityEngine.UIElements
         [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
 
-        // Placeholder required to prevent issues syncing UxmlSerializedData.
-        internal TValueType valueOverride { get => value; set => SetValueWithoutNotify(value); }
-
         /// <summary>
         /// This is the minimum value that the slider encodes.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute, Delayed]
         public TValueType lowValue
         {
             get { return m_LowValue; }
@@ -137,6 +94,7 @@ namespace UnityEngine.UIElements
         /// This is the maximum value that the slider encodes.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute, Delayed]
         public TValueType highValue
         {
             get { return m_HighValue; }
@@ -152,6 +110,10 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        // Placeholder required to prevent issues syncing UxmlSerializedData.
+        [UxmlAttribute("value"), UxmlAttributeBindingPath("value"), Delayed]
+        internal TValueType valueOverride { get => value; set => SetValueWithoutNotify(value); }
 
         internal void SetHighValueWithoutNotify(TValueType newHighValue)
         {
@@ -171,52 +133,11 @@ namespace UnityEngine.UIElements
             get { return SliderRange(); }
         }
 
-        private float m_PageSize;
-
-        /// <summary>
-        /// Represents the value that should be applied to the calculated scroll offset while scrolling the slider, such as when clicking within the track or clicking the slider arrows.
-        /// </summary>
-        [CreateProperty]
-        public virtual float pageSize
-        {
-            get { return m_PageSize; }
-            set
-            {
-                if (m_PageSize == value)
-                    return;
-                m_PageSize = value;
-                NotifyPropertyChanged(pageSizeProperty);
-            }
-        }
-
-        private bool m_ShowInputField = false;
-
-        /// <summary>
-        /// The visibility of the optional field inside the slider control.
-        /// </summary>
-        /// <remarks>
-        /// Set this property to true to display a numerical text field that provides another way to
-        /// edit the slider value.
-        /// </remarks>
-        [CreateProperty]
-        public virtual bool showInputField
-        {
-            get { return m_ShowInputField; }
-            set
-            {
-                if (m_ShowInputField != value)
-                {
-                    m_ShowInputField = value;
-                    UpdateTextFieldVisibility();
-                    NotifyPropertyChanged(showInputFieldProperty);
-                }
-            }
-        }
-
         /// <summary>
         /// Enables fill to set the color and shape of a slider.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool fill
         {
             get => m_Fill;
@@ -237,6 +158,55 @@ namespace UnityEngine.UIElements
                 }
 
                 NotifyPropertyChanged(fillProperty);
+            }
+        }
+
+        private float m_PageSize;
+
+        // UxmlAttribute can not be used on virtual properties.
+        [UxmlAttribute("page-size"), UxmlAttributeBindingPath(nameof(pageSize))]
+        internal float uxmlPageSize { get => pageSize; set => pageSize = value; }
+
+        /// <summary>
+        /// Represents the value that should be applied to the calculated scroll offset while scrolling the slider, such as when clicking within the track or clicking the slider arrows.
+        /// </summary>
+        [CreateProperty]
+        public virtual float pageSize
+        {
+            get { return m_PageSize; }
+            set
+            {
+                if (m_PageSize == value)
+                    return;
+                m_PageSize = value;
+                NotifyPropertyChanged(pageSizeProperty);
+            }
+        }
+
+        private bool m_ShowInputField = false;
+
+        [UxmlAttribute("show-input-field"), UxmlAttributeBindingPath(nameof(showInputField))]
+        internal bool uxmlShowInputField { get => showInputField; set => showInputField = value; }
+
+        /// <summary>
+        /// The visibility of the optional field inside the slider control.
+        /// </summary>
+        /// <remarks>
+        /// Set this property to true to display a numerical text field that provides another way to
+        /// edit the slider value.
+        /// </remarks>
+        [CreateProperty]
+        public virtual bool showInputField
+        {
+            get { return m_ShowInputField; }
+            set
+            {
+                if (m_ShowInputField != value)
+                {
+                    m_ShowInputField = value;
+                    UpdateTextFieldVisibility();
+                    NotifyPropertyChanged(showInputFieldProperty);
+                }
             }
         }
 
@@ -325,6 +295,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the actual property to contain the direction of the slider.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public SliderDirection direction
         {
@@ -356,6 +327,7 @@ namespace UnityEngine.UIElements
         /// For an inverted horizontal slider, high value is located to the left, low value is located to the right
         /// For an inverted vertical slider, high value is located to the bottom, low value is located to the top.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public bool inverted
         {
@@ -467,7 +439,7 @@ namespace UnityEngine.UIElements
 
             dragContainer = new VisualElement { name = "unity-drag-container" };
             dragContainer.AddToClassList(dragContainerUssClassNameUnique);
-            dragContainer.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
+            Callbacks.OnDragGeometryChangedUpdatePosition.Register(dragContainer);
             visualInput.Add(dragContainer);
 
             trackElement = new VisualElement { name = "unity-tracker", usageHints = UsageHints.DynamicColor };
@@ -479,19 +451,15 @@ namespace UnityEngine.UIElements
             dragContainer.Add(dragBorderElement);
 
             dragElement = new VisualElement { name = "unity-dragger", usageHints = UsageHints.DynamicTransform };
-            dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             dragElement.AddToClassList(draggerUssClassNameUnique);
+            Callbacks.OnDragGeometryChangedUpdatePosition.Register(dragElement);
             dragContainer.Add(dragElement);
 
             clampedDragger = new ClampedDragger<TValueType>(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             dragContainer.pickingMode = PickingMode.Position;
             dragContainer.AddManipulator(clampedDragger);
 
-            RegisterCallback<KeyDownEvent>(OnKeyDown);
-            RegisterCallback<FocusInEvent>(OnFocusIn);
-            RegisterCallback<FocusOutEvent>(OnFocusOut);
-            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
+            Callbacks.OnKeyFocusNavigation.Register(this);
 
             UpdateTextFieldVisibility();
 
@@ -914,9 +882,7 @@ namespace UnityEngine.UIElements
                 {
                     inputTextField = new TextField() { name = "unity-text-field" };
                     inputTextField.AddToClassList(textFieldClassNameUnique);
-                    inputTextField.RegisterValueChangedCallback(OnTextFieldValueChange);
-                    inputTextField.RegisterCallback<FocusInEvent>(OnTextFieldFocusIn);
-                    inputTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
+                    Callbacks.OnInputTextFieldFocusValue.Register(inputTextField);
                     visualInput.Add(inputTextField);
                     UpdateTextFieldValue();
                 }
@@ -926,9 +892,7 @@ namespace UnityEngine.UIElements
                 if (inputTextField.panel != null)
                     inputTextField.RemoveFromHierarchy();
 
-                inputTextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
-                inputTextField.UnregisterCallback<FocusInEvent>(OnTextFieldFocusIn);
-                inputTextField.UnregisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
+                Callbacks.OnInputTextFieldFocusValue.Unregister(inputTextField);
                 inputTextField = null;
             }
         }
@@ -991,18 +955,52 @@ namespace UnityEngine.UIElements
 
         internal override void RegisterEditingCallbacks()
         {
-            labelElement.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-            dragContainer.RegisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-
-            dragContainer.RegisterCallback<PointerUpEvent>(EndEditing);
+            Callbacks.OnLabelOrDragPointerDownStartEditing.Register(labelElement);
+            Callbacks.OnLabelOrDragPointerDownStartEditing.Register(dragContainer);
+            Callbacks.OnDragPointerUpEndEditing.Register(dragContainer);
         }
 
         internal override void UnregisterEditingCallbacks()
         {
-            labelElement.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
-            dragContainer.UnregisterCallback<PointerDownEvent>(StartEditing, TrickleDown.TrickleDown);
+            Callbacks.OnDragPointerUpEndEditing.Unregister(dragContainer);
+            Callbacks.OnLabelOrDragPointerDownStartEditing.Unregister(dragContainer);
+            Callbacks.OnLabelOrDragPointerDownStartEditing.Unregister(labelElement);
+        }
 
-            dragContainer.UnregisterCallback<PointerUpEvent>(EndEditing);
+        private static class Callbacks
+        {
+            // Use with ?. syntax to avoid possible exceptions on events during DetachFromPanel
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static BaseSlider<TValueType> GetBaseSlider(VisualElement child) =>
+                child.GetFirstAncestorOfType<BaseSlider<TValueType>>();
+
+            public static readonly EventCallbackDefinition<VisualElement> OnDragGeometryChangedUpdatePosition =
+                EventCallback.Create<GeometryChangedEvent, VisualElement>(static (e, dragElement) =>
+                    GetBaseSlider(dragElement)?.UpdateDragElementPosition(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnLabelOrDragPointerDownStartEditing =
+                EventCallback.Create<PointerDownEvent, VisualElement>(
+                    static (e, labelOrDrag) => GetBaseSlider(labelOrDrag)?.StartEditing(e),
+                    CallbackOptions.TrickleDown);
+
+            public static readonly EventCallbackDefinition<VisualElement> OnDragPointerUpEndEditing =
+                EventCallback.Create<PointerUpEvent, VisualElement>(
+                    static (e, dragContainer) => GetBaseSlider(dragContainer)?.EndEditing(e));
+
+            public static readonly EventCallbackGroup<BaseSlider<TValueType>> OnKeyFocusNavigation = new(
+                EventCallback.Create<KeyDownEvent, BaseSlider<TValueType>>(static (e, self) => self.OnKeyDown(e)),
+                EventCallback.Create<FocusInEvent, BaseSlider<TValueType>>(static (e, self) => self.OnFocusIn(e)),
+                EventCallback.Create<FocusOutEvent, BaseSlider<TValueType>>(static (e, self) => self.OnFocusOut(e)),
+                EventCallback.Create<NavigationSubmitEvent, BaseSlider<TValueType>>(static (e, self) => self.OnNavigationSubmit(e)),
+                EventCallback.Create<NavigationMoveEvent, BaseSlider<TValueType>>(static (e, self) => self.OnNavigationMove(e)));
+
+            public static readonly EventCallbackGroup<TextField> OnInputTextFieldFocusValue = new(
+                EventCallback.Create<FocusInEvent, TextField>(static (e, textField) =>
+                    GetBaseSlider(textField)?.OnTextFieldFocusIn(e)),
+                EventCallback.Create<FocusOutEvent, TextField>(static (e, textField) =>
+                    GetBaseSlider(textField)?.OnTextFieldFocusOut(e)),
+                EventCallback.Create<ChangeEvent<string>, TextField>(static (e, textField) =>
+                    GetBaseSlider(textField)?.OnTextFieldValueChange(e)));
         }
     }
 }

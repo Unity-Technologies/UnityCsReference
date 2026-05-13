@@ -83,8 +83,9 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, useTrickleDown, default);
+            var callbackOptions = useTrickleDown == TrickleDown.TrickleDown ? CallbackOptionsInternal.TrickleDown : 0;
+            AddListenersAndCategories<TEventType>(callback, callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, callbackOptions);
         }
 
         /// <summary>
@@ -101,15 +102,17 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallbackOnce<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, useTrickleDown, InvokePolicy.Once);
+            var callbackOptions = CallbackOptionsInternal.Once |
+                                  (useTrickleDown == TrickleDown.TrickleDown ? CallbackOptionsInternal.TrickleDown : 0);
+            AddListenersAndCategories<TEventType>(callback, callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, callbackOptions);
         }
 
-        private void AddEventCategories<TEventType>(TrickleDown useTrickleDown) where TEventType : EventBase<TEventType>, new()
+        private void AddEventCategories<TEventType>(CallbackOptionsInternal callbackOptions) where TEventType : EventBase<TEventType>, new()
         {
             if (this is VisualElement ve)
             {
-                ve.AddEventCallbackCategories(1 << (int)EventBase<TEventType>.EventCategory, useTrickleDown);
+                ve.AddEventCallbackCategories(1 << (int)EventBase<TEventType>.EventCategory, callbackOptions);
             }
         }
 
@@ -130,8 +133,9 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, userArgs, useTrickleDown, default);
+            var callbackOptions = useTrickleDown == TrickleDown.TrickleDown ? CallbackOptionsInternal.TrickleDown : 0;
+            AddListenersAndCategories<TEventType>(callback, callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, userArgs, callbackOptions);
         }
 
         /// <summary>
@@ -149,50 +153,139 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
         public void RegisterCallbackOnce<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, userArgs, useTrickleDown, InvokePolicy.Once);
+            var callbackOptions = CallbackOptionsInternal.Once |
+                                  (useTrickleDown == TrickleDown.TrickleDown ? CallbackOptionsInternal.TrickleDown : 0);
+            AddListenersAndCategories<TEventType>(callback, callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, userArgs, callbackOptions);
         }
 
-        internal void RegisterCallback<TEventType>(EventCallback<TEventType> callback, InvokePolicy invokePolicy, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+        /// <summary>
+        /// Adds an event handler to the instance.
+        /// </summary>
+        /// <remarks>
+        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp), this method has no effect.
+        ///
+        /// Refer to the [[wiki:UIE-Events-Handling|Handle event callbacks and value changes]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase"/>
+        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.</param>
+        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, CallbackOptions callbackOptions) where TEventType : EventBase<TEventType>, new()
         {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, useTrickleDown, invokePolicy);
+            AddListenersAndCategories<TEventType>(callback, (CallbackOptionsInternal)callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, (CallbackOptionsInternal)callbackOptions);
+        }
+
+        /// <summary>
+        /// Adds an event handler to the instance.
+        /// </summary>
+        /// <remarks>
+        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp), this method has no effect.
+        ///
+        /// Refer to the [[wiki:UIE-Events-Handling|Handle event callbacks and value changes]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase"/>
+        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
+        /// <param name="userArgs">Data to pass to the callback. Use this argument to avoid closing on local variables.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.</param>
+        public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, CallbackOptions callbackOptions) where TEventType : EventBase<TEventType>, new()
+        {
+            AddListenersAndCategories<TEventType>(callback, (CallbackOptionsInternal)callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, userArgs, (CallbackOptionsInternal)callbackOptions);
         }
 
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
-        /// <seealso cref="CallbackEventHandler.RegisterCallback"/>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEventType}(EventCallback{TEventType}, CallbackOptions)"/>
         /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
+            var callbackOptions = useTrickleDown == TrickleDown.TrickleDown ? CallbackOptionsInternal.TrickleDown : 0;
             RemoveListeners<TEventType>(callback);
-            m_CallbackRegistry?.UnregisterCallback(callback, useTrickleDown);
+            m_CallbackRegistry?.UnregisterCallback(callback, callbackOptions);
         }
 
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
-        /// <seealso cref="CallbackEventHandler.RegisterCallback"/>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEventType, TUserArgsType}(EventCallback{TEventType, TUserArgsType}, TUserArgsType, CallbackOptions)"/>
         /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
+            var callbackOptions = useTrickleDown == TrickleDown.TrickleDown ? CallbackOptionsInternal.TrickleDown : 0;
             RemoveListeners<TEventType>(callback);
-            m_CallbackRegistry?.UnregisterCallback(callback, useTrickleDown);
+            m_CallbackRegistry?.UnregisterCallback(callback, callbackOptions);
+        }
+
+        /// <summary>
+        /// Remove callback from the instance.
+        /// </summary>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEventType}(EventCallback{TEventType}, CallbackOptions)"/>
+        /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback. Make sure to use the same CallbackOptions.TrickleDown value as was used for registering the callback.</param>
+        public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, CallbackOptions callbackOptions) where TEventType : EventBase<TEventType>, new()
+        {
+            RemoveListeners<TEventType>(callback);
+            m_CallbackRegistry?.UnregisterCallback(callback, (CallbackOptionsInternal)callbackOptions);
+        }
+
+        /// <summary>
+        /// Remove callback from the instance.
+        /// </summary>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEventType, TUserArgsType}(EventCallback{TEventType, TUserArgsType}, TUserArgsType, CallbackOptions)"/>
+        /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback. Make sure to use the same CallbackOptions.TrickleDown value as was used for registering the callback.</param>
+        public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, CallbackOptions callbackOptions) where TEventType : EventBase<TEventType>, new()
+        {
+            RemoveListeners<TEventType>(callback);
+            m_CallbackRegistry?.UnregisterCallback(callback, (CallbackOptionsInternal)callbackOptions);
+        }
+
+        /// <summary>
+        /// Removes all callbacks registered with <see cref="CallbackOptions.Removable"/> from the instance.
+        /// </summary>
+        /// <remarks>
+        /// This method throws an <see cref="InvalidOperationException"/> if called while an event callback is in the
+        /// process of being invoked on this element.
+        /// </remarks>
+        public void UnregisterAllRemovableCallbacks()
+        {
+            if (m_CallbackRegistry == null) return;
+
+            if (m_CallbackRegistry.isInvoking)
+                throw new InvalidOperationException("UnregisterAllRemovableCallbacks can't be called while an event is being dispatched on this element.");
+
+            if (!m_CallbackRegistry.UnregisterAllRemovableCallbacks_NotDuringInvoke())
+                return;
+
+            if (!m_CallbackRegistry.HasBubbleHandlers() && !m_CallbackRegistry.HasTrickleDownHandlers())
+            {
+                (this as VisualElement)?.ResetEventInterests();
+                GlobalCallbackRegistry.UnregisterAllListeners(this);
+                m_CallbackRegistry.Dispose();
+                m_CallbackRegistry = null;
+                return;
+            }
+
+            // Not recalculating the remaining event interests, as it's likely to have limited impact and to cost
+            // additional performance during the call to UnregisterAllRemovableCallbacks.
+
+            GlobalCallbackRegistry.UnregisterAllRemovableListeners(this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AddListenersAndCategories<TEventType>(Delegate callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
+        internal void AddListenersAndCategories<TEventType>(Delegate callback, CallbackOptionsInternal callbackOptions)
             where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
                 throw new ArgumentException("callback parameter is null");
 
-            GlobalCallbackRegistry.RegisterListeners(typeof(TEventType), this, callback, useTrickleDown);
+            GlobalCallbackRegistry.RegisterListeners(typeof(TEventType), this, callback, callbackOptions);
 
-            AddEventCategories<TEventType>(useTrickleDown);
+            AddEventCategories<TEventType>(callbackOptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

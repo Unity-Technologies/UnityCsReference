@@ -23,6 +23,7 @@ namespace UnityEditor.Toolbars
             RegisterCallback<AttachToPanelEvent>(AttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(DetachedFromPanel);
             clicked += OpenContextMenu;
+            UpdateDropdownVisibility();
         }
 
         void OnAvailablePivotSettingsChanged(Type changedOwnerType)
@@ -85,6 +86,13 @@ namespace UnityEditor.Toolbars
             }
 
             RefreshActiveSettingUI(pivotSettingDefs);
+            UpdateDropdownVisibility();
+        }
+
+        void UpdateDropdownVisibility()
+        {
+            // If there is no available setting for the current owner, hide the dropdown
+            style.display = m_DefToGUIContent.Count < 1 ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         protected abstract void RefreshActiveSettingUI();
@@ -139,7 +147,11 @@ namespace UnityEditor.Toolbars
 
         protected override bool IsSettingActivated(PivotSettingDefinition pivotSettingDef)
         {
-            return PivotManager.GetActivePivotMode(ownerType).GetType() == pivotSettingDef.type;
+            var activePivotMode = PivotManager.GetActivePivotMode(ownerType);
+            if (activePivotMode == null)
+                return false;
+
+            return activePivotMode.GetType() == pivotSettingDef.type;
         }
 
         protected override GenericMenu.MenuFunction GetMenuItemFunction(PivotSettingDefinition pivotSettingDef)
@@ -197,12 +209,16 @@ namespace UnityEditor.Toolbars
 
         protected override void OpenContextMenu()
         {
-            OpenContextMenu(EditorPivotManager.pivotRotationsDefs);
+            OpenContextMenu(EditorPivotManager.pivotRotationDefs);
         }
 
         protected override bool IsSettingActivated(PivotSettingDefinition pivotSettingDef)
         {
-            return PivotManager.GetActivePivotRotation(ownerType).GetType() == pivotSettingDef.type;
+            var activePivotRotation = PivotManager.GetActivePivotRotation(ownerType);
+            if (activePivotRotation == null)
+                return false;
+
+            return activePivotRotation.GetType() == pivotSettingDef.type;
         }
 
         protected override GenericMenu.MenuFunction GetMenuItemFunction(PivotSettingDefinition pivotSettingDef)
@@ -212,12 +228,12 @@ namespace UnityEditor.Toolbars
 
         protected override void RefreshAvailableSettings()
         {
-            RefreshAvailableSettings(EditorPivotManager.pivotRotationsDefs);
+            RefreshAvailableSettings(EditorPivotManager.pivotRotationDefs);
         }
 
         protected override void RefreshActiveSettingUI()
         {
-            RefreshActiveSettingUI(EditorPivotManager.pivotRotationsDefs);
+            RefreshActiveSettingUI(EditorPivotManager.pivotRotationDefs);
         }
 
         void OnPivotRotationChangedForOwner(Type changedOwnerType)

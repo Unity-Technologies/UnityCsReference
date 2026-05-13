@@ -14,6 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for selecting a color. For more information, refer to [[wiki:UIE-uxml-element-ColorField|UXML element ColorField]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ColorField.png")]
     public partial class ColorField : BaseField<Color>
     {
@@ -21,49 +22,10 @@ namespace UnityEditor.UIElements
         internal static readonly BindingId showAlphaProperty = nameof(showAlpha);
         internal static readonly BindingId hdrProperty = nameof(hdr);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Color>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Color>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(showEyeDropper), "show-eye-dropper"),
-                    new (nameof(showAlpha), "show-alpha"),
-                    new (nameof(hdr), "hdr"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool showEyeDropper;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showEyeDropper_UxmlAttributeFlags;
-            [SerializeField] bool showAlpha;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlpha_UxmlAttributeFlags;
-            [SerializeField] bool hdr;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hdr_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new ColorField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (ColorField)obj;
-                if (ShouldWriteAttributeValue(showEyeDropper_UxmlAttributeFlags))
-                    e.showEyeDropper = showEyeDropper;
-                if (ShouldWriteAttributeValue(showAlpha_UxmlAttributeFlags))
-                    e.showAlpha = showAlpha;
-                if (ShouldWriteAttributeValue(hdr_UxmlAttributeFlags))
-                    e.hdr = hdr;
-            }
-        }
-
         /// <summary>
         /// If true, the color picker will show the eyedropper control. If false, the color picker won't show the eyedropper control.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public bool showEyeDropper
         {
@@ -83,6 +45,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// If true, allows the user to set an alpha value for the color. If false, hides the alpha component.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public bool showAlpha
         {
@@ -101,6 +64,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// If true, treats the color as an HDR value. If false, treats the color as a standard LDR value.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public bool hdr
         {

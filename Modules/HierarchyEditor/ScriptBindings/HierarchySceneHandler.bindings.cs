@@ -251,6 +251,12 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
 
+        string IHierarchyEditorNodeTypeHandler.GetDragTitle(HierarchyView view, in HierarchyNode node)
+        {
+            var scene = GetScene(in node);
+            return !string.IsNullOrEmpty(scene.path) ? scene.path : null;
+        }
+
         void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
         {
             var nodeSpan = data.Nodes;
@@ -262,6 +268,8 @@ namespace Unity.Hierarchy.Editor
                 var scene = GetScene(in node);
                 if (!string.IsNullOrEmpty(scene.path))
                     data.Paths.Add(scene.path);
+                else if (scene.IsValid())
+                    data.EntityIds.Add(scene.handle.ToEntityId());
             }
         }
 
@@ -493,7 +501,24 @@ namespace Unity.Hierarchy.Editor
             if (perform)
             {
                 using var _ = ListPool<Scene>.Get(out var insertedOrMovedScenes);
-                OpenDraggedScenes(data, insertedOrMovedScenes);
+
+                // OpenDraggedScenes resolves scenes via paths/asset IDs and cannot handle unsaved scenes.
+                if (data.Source is CollectionView)
+                {
+                    foreach (ref readonly var node in data.View.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
+                    {
+                        if (data.View.ViewModel.GetNodeType(in node) != sceneNodeType)
+                            continue;
+
+                        var s = GetScene(in node);
+                        if (s.IsValid())
+                            insertedOrMovedScenes.Add(s);
+                    }
+                }
+                else
+                {
+                    OpenDraggedScenes(data, insertedOrMovedScenes);
+                }
 
                 var entityIds = new EntityId[insertedOrMovedScenes.Count];
                 for (var i = 0; i < insertedOrMovedScenes.Count; i++)

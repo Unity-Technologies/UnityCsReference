@@ -13,6 +13,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     {
         internal const string PAP0001 = nameof(PAP0001);
         internal const string PAP0002 = nameof(PAP0002);
+        internal const string PAP0003 = nameof(PAP0003);
 
         static readonly Descriptor k_RecommendPackageUpgrade = new Descriptor(
             PAP0001,
@@ -37,11 +38,23 @@ namespace Unity.ProjectAuditor.Editor.Modules
             MessageFormat = "Package '{0}' version '{1}' is a preview/experimental version"
         };
 
+        static readonly Descriptor k_RecommendPackageDowngrade = new Descriptor(
+            PAP0003,
+            "Older recommended package version",
+            Areas.Upgrade,
+            "An older package is the default for this version of Unity.",
+            "Downgrade the package via Package Manager."
+        )
+        {
+            MessageFormat = "Package '{0}' could be downgraded from version '{1}' to '{2}'",
+            DefaultSeverity = Severity.Minor
+        };
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_RecommendPackageUpgrade);
             registerDescriptor(k_RecommendPackagePreview);
+            registerDescriptor(k_RecommendPackageDowngrade);
         }
 
         public override IEnumerable<ReportItem> Analyze(PackageAnalysisContext context)
@@ -61,8 +74,16 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 {
                     if (!recommendedVersionString.Equals(package.version))
                     {
-                        yield return context.CreateIssue(IssueCategory.ProjectSetting, k_RecommendPackageUpgrade.Id, package.name, package.version, recommendedVersionString)
-                            .WithLocation(package.assetPath);
+                        if (PackageUtils.CompareVersions(package.version, recommendedVersionString) < 0)
+                        {
+                            yield return context.CreateIssue(IssueCategory.ProjectSetting, k_RecommendPackageUpgrade.Id, package.name, package.version, recommendedVersionString)
+                                .WithLocation(package.assetPath);
+                        }
+                        else
+                        {
+                            yield return context.CreateIssue(IssueCategory.ProjectSetting, k_RecommendPackageDowngrade.Id, package.name, package.version, recommendedVersionString)
+                                .WithLocation(package.assetPath);
+                        }
                     }
                 }
             }

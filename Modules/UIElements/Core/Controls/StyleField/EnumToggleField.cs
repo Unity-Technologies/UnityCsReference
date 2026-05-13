@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -13,19 +12,9 @@ namespace UnityEngine.UIElements
     /// Makes a field for selecting an enum value.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal class EnumToggleField<T> : BaseField<T> where T : struct, Enum, IConvertible
+    [UxmlElement]
+    internal partial class EnumToggleField<T> : BaseField<T> where T : struct, Enum, IConvertible
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<T>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<T>.UxmlSerializedData.Register();
-            }
-        }
-
         static readonly Dictionary<string, string> k_SpecialEnumNamesCases = new()
         {
             {"nowrap", "no-wrap"},
@@ -133,7 +122,8 @@ namespace UnityEngine.UIElements
             if (m_ToggleButtonGroup.userData is Type type)
             {
                 var index = Array.IndexOf(Enum.GetValues(type), newValue);
-                state[index] = true;
+                if (index != -1)
+                    state[index] = true;
             }
 
             m_ToggleButtonGroup.value = state;

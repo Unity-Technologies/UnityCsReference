@@ -254,9 +254,6 @@ namespace UnityEditorInternal
         {
             Init();
 
-            // drag'n'drops outside any dopelines
-            HandleDragAndDropToEmptyArea(position);
-
             GUIClip.Push(position, scrollPosition, Vector2.zero, false);
 
             HandleRectangleToolEvents();
@@ -272,6 +269,10 @@ namespace UnityEditorInternal
             RectangleToolGUI();
 
             GUIClip.Pop();
+
+            // Runs after per-dopeline handling so that drops on existing curves
+            // are consumed first and don't fall through to SpriteRenderer creation.
+            HandleDragAndDropToEmptyArea(position);
         }
 
         public void Init()
@@ -501,7 +502,7 @@ namespace UnityEditorInternal
                 Color keyColor = Color.gray.RGBMultiplied(1.2f);
                 Texture2D texture = null;
 
-                foreach (Object obj in GetSortedDragAndDropObjectReferences())
+                foreach (Object obj in GetSortedDragAndDropObjectReferences(DragAndDrop.objectReferences))
                 {
                     Rect rect = GetDragAndDropRect(dopeline, time);
 
@@ -796,8 +797,8 @@ namespace UnityEditorInternal
             // Create the new curve for our sprites
             AnimationWindowCurve newCurve = new AnimationWindowCurve(clip, (EditorCurveBinding)spriteBinding, typeof(Sprite));
 
-            // Perform the drop onto the curve
-            PerformDragAndDrop(newCurve, 0f);
+            // Perform the drop onto the curve, converting Texture2D refs to Sprites
+            PerformDragAndDrop(newCurve, 0f, ConvertToSpriteReferences(DragAndDrop.objectReferences));
 
             // Assign the Sprite in the first keyframe to the SpriteRenderer's Sprite property
             AssignSpriteToSpriteRenderer(newCurve);
@@ -1168,13 +1169,15 @@ namespace UnityEditorInternal
 
             System.Type targetType = DragAndDrop.objectReferences[0].GetType();
             AnimationWindowCurve curve = null;
+            Object[] handlerValidatedRefs = null;
+
             if (dopeLine.valueType == targetType)
             {
                 curve = dopeLine.curves[0];
             }
             else
             {
-                // dopeline ValueType wasn't exact match. We can still look for a curve that accepts our drop object type
+                List<Sprite> sprites = null;
                 foreach (AnimationWindowCurve dopelineCurve in dopeLine.curves)
                 {
                     if (dopelineCurve.isPPtrCurve)
@@ -1182,13 +1185,34 @@ namespace UnityEditorInternal
                         if (dopelineCurve.valueType == targetType)
                             curve = dopelineCurve;
 
-                        List<Sprite> sprites = SpriteUtility.GetSpriteFromPathsOrObjects(DragAndDrop.objectReferences, DragAndDrop.paths, Event.current.type);
-                        if (dopelineCurve.valueType == typeof(Sprite) && sprites.Count > 0)
+                        if (curve == null)
                         {
-                            curve = dopelineCurve;
-                            targetType = typeof(Sprite);
+                            foreach (var handler in AnimationWindowUtility.PropertyHandlers)
+                            {
+                                if (handler.TryValidateDragDrop(dopelineCurve.binding,
+                                        dopelineCurve.valueType, dopeLine.objectType,
+                                        DragAndDrop.objectReferences, out var validated))
+                                {
+                                    curve = dopelineCurve;
+                                    handlerValidatedRefs = validated;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (curve == null)
+                        {
+                            sprites ??= SpriteUtility.GetSpriteFromPathsOrObjects(DragAndDrop.objectReferences, DragAndDrop.paths, Event.current.type);
+                            if (dopelineCurve.valueType == typeof(Sprite) && sprites.Count > 0)
+                            {
+                                curve = dopelineCurve;
+                                targetType = typeof(Sprite);
+                            }
                         }
                     }
+
+                    if (curve != null)
+                        break;
                 }
             }
 
@@ -1201,48 +1225,62 @@ namespace UnityEditorInternal
             if (perform)
             {
                 float time = Mathf.Max(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame), 0f);
-                AnimationWindowCurve targetCurve = GetCurveOfType(dopeLine, targetType);
-                PerformDragAndDrop(targetCurve, time);
+
+                if (handlerValidatedRefs != null)
+                {
+                    PerformDragAndDrop(curve, time, handlerValidatedRefs);
+                }
+                else
+                {
+                    AnimationWindowCurve targetCurve = GetCurveOfType(dopeLine, targetType);
+                    Object[] refs = targetType == typeof(Sprite)
+                        ? ConvertToSpriteReferences(DragAndDrop.objectReferences)
+                        : DragAndDrop.objectReferences;
+                    PerformDragAndDrop(targetCurve, time, refs);
+                }
             }
 
             return true;
         }
 
-        private void PerformDragAndDrop(AnimationWindowCurve targetCurve, float time)
+        private void PerformDragAndDrop(AnimationWindowCurve targetCurve, float time, Object[] references)
         {
-            if (DragAndDrop.objectReferences.Length == 0 || targetCurve == null)
+            if (targetCurve == null)
+                return;
+
+            Object[] objectReferences = GetSortedDragAndDropObjectReferences(references);
+            if (objectReferences.Length == 0)
                 return;
 
             string undoLabel = L10n.Tr("Drop Key");
             state.SaveKeySelection(undoLabel);
 
             state.ClearSelections();
-            Object[] objectReferences = GetSortedDragAndDropObjectReferences();
 
             int startFrame = AnimationKeyTime.Time(time, targetCurve.clip.frameRate).frame;
 
             for (int i = 0; i < objectReferences.Length; ++i)
             {
-                Object value = objectReferences[i];
-
-                if (value is Texture2D)
-                    value = SpriteUtility.TextureToSprite(value as Texture2D);
-
-                CreateNewPPtrKeyframe(AnimationKeyTime.Frame(startFrame + i, targetCurve.clip.frameRate).time, value, targetCurve);
+                CreateNewPPtrKeyframe(AnimationKeyTime.Frame(startFrame + i, targetCurve.clip.frameRate).time, objectReferences[i], targetCurve);
             }
 
             state.SaveCurve(targetCurve.clip, targetCurve, undoLabel);
             DragAndDrop.AcceptDrag();
         }
 
-        private Object[] GetSortedDragAndDropObjectReferences()
+        private static Object[] GetSortedDragAndDropObjectReferences(Object[] references)
         {
-            Object[] objectReferences = DragAndDrop.objectReferences;
-
             // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
-            System.Array.Sort(objectReferences, (a, b) => EditorUtility.NaturalCompare(a.name, b.name));
+            System.Array.Sort(references, (a, b) => EditorUtility.NaturalCompare(a.name, b.name));
+            return references;
+        }
 
-            return objectReferences;
+        private static Object[] ConvertToSpriteReferences(Object[] references)
+        {
+            var result = new Object[references.Length];
+            for (int i = 0; i < references.Length; i++)
+                result[i] = references[i] is Texture2D tex ? SpriteUtility.TextureToSprite(tex) : references[i];
+            return result;
         }
 
         private void CreateNewPPtrKeyframe(float time, Object value, AnimationWindowCurve targetCurve)

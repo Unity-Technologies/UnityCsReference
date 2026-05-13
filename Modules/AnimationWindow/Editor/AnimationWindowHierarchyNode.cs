@@ -27,6 +27,9 @@ namespace UnityEditorInternal
         /// </summary>
         public string displayTooltip;
 
+        public object handlerData; // Opaque storage for IAnimationWindowPropertyHandler implementations
+
+
         public AnimationWindowHierarchyNode(int instanceID, int depth, TreeViewItem parent, System.Type animatableObjectType, string propertyName, string path, string displayName)
             : base(instanceID, depth, parent, displayName)
         {

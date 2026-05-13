@@ -2,33 +2,28 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class SignInBar : VisualElement
+    [UxmlElement]
+    internal partial class SignInBar : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new SignInBar(
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IPackageDatabase>());
-            }
-        }
-
         private static readonly string k_Message = L10n.Tr("to manage Asset Store packages");
         private static readonly string k_ButtonText = L10n.Tr("Sign in");
 
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IPageManager m_PageManager;
         private readonly IPackageDatabase m_PackageDatabase;
+
+        public SignInBar() : this(
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>())
+        {
+        }
+
         public SignInBar(
             IUnityConnectProxy unityConnect,
             IPageManager pageManager,

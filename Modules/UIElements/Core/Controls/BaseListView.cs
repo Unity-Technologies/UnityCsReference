@@ -5,11 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Unity.Properties;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -38,6 +36,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
+    [UxmlElement]
     public abstract partial class BaseListView : BaseVerticalCollectionView
     {
         private static readonly string k_SizeFieldLabel = "Size";
@@ -57,97 +56,9 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId allowRemoveProperty = nameof(allowRemove);
         internal static readonly BindingId onRemoveProperty = nameof(onRemove);
 
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(showFoldoutHeader), "show-foldout-header"),
-                    new (nameof(headerTitle), "header-title"),
-                    new (nameof(showAddRemoveFooter), "show-add-remove-footer"),
-                    new (nameof(allowAdd), "allow-add"),
-                    new (nameof(allowRemove), "allow-remove"),
-                    new (nameof(reorderMode), "reorder-mode"),
-                    new (nameof(showBoundCollectionSize), "show-bound-collection-size"),
-                    new (nameof(bindingSourceSelectionMode), "binding-source-selection-mode"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string headerTitle;
-            [SerializeField] ListViewReorderMode reorderMode;
-            [SerializeField] BindingSourceSelectionMode bindingSourceSelectionMode;
-            [SerializeField] bool showFoldoutHeader;
-            [SerializeField] bool showAddRemoveFooter;
-            [SerializeField] bool allowAdd;
-            [SerializeField] bool allowRemove;
-            [SerializeField] bool showBoundCollectionSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showFoldoutHeader_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTitle_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAddRemoveFooter_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowAdd_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowRemove_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderMode_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBoundCollectionSize_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingSourceSelectionMode_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BaseListView)obj;
-                if (ShouldWriteAttributeValue(showFoldoutHeader_UxmlAttributeFlags))
-                    e.showFoldoutHeader = showFoldoutHeader;
-                if (ShouldWriteAttributeValue(headerTitle_UxmlAttributeFlags))
-                    e.headerTitle = headerTitle;
-                if (ShouldWriteAttributeValue(showAddRemoveFooter_UxmlAttributeFlags))
-                    e.showAddRemoveFooter = showAddRemoveFooter;
-                if (ShouldWriteAttributeValue(allowAdd_UxmlAttributeFlags))
-                    e.allowAdd = allowAdd;
-                if (ShouldWriteAttributeValue(allowRemove_UxmlAttributeFlags))
-                    e.allowRemove = allowRemove;
-                if (ShouldWriteAttributeValue(reorderMode_UxmlAttributeFlags))
-                    e.reorderMode = reorderMode;
-                if (ShouldWriteAttributeValue(showBoundCollectionSize_UxmlAttributeFlags))
-                    e.showBoundCollectionSize = showBoundCollectionSize;
-                if (ShouldWriteAttributeValue(bindingSourceSelectionMode_UxmlAttributeFlags))
-                    e.bindingSourceSelectionMode = bindingSourceSelectionMode;
-            }
-        }
-
         // Custom index to ensure the fields are selected in the order they are displayed in the inspector. (UUM-32041)
         const int k_FoldoutTabIndex = 10;
         const int k_ArraySizeFieldTabIndex = 20;
-
-        bool m_ShowBoundCollectionSize = true;
-
-        /// <summary>
-        /// This property controls whether the list view displays the collection size (number of items).
-        /// </summary>
-        /// <remarks>
-        /// The default value is <c>true</c>.
-        /// When this property is set to to <c>true</c>, the ListView includes a TextField to control the array size.
-        /// </remarks>
-        /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
-        [CreateProperty]
-        public bool showBoundCollectionSize
-        {
-            get => m_ShowBoundCollectionSize;
-            set
-            {
-                if (m_ShowBoundCollectionSize == value)
-                    return;
-
-                m_ShowBoundCollectionSize = value;
-
-                SetupArraySizeField();
-                NotifyPropertyChanged(showBoundCollectionSizeProperty);
-            }
-        }
 
         bool m_ShowFoldoutHeader;
 
@@ -164,6 +75,7 @@ namespace UnityEngine.UIElements
         /// If the <see cref="makeHeader"/> callback is set, no Foldout is shown.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public bool showFoldoutHeader
         {
             get => m_ShowFoldoutHeader;
@@ -288,6 +200,7 @@ namespace UnityEngine.UIElements
         /// If the <see cref="makeHeader"/> callback is set, this property gets overridden and the title is not shown.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public string headerTitle
         {
             get => m_HeaderTitle;
@@ -435,6 +348,7 @@ namespace UnityEngine.UIElements
         /// If the <see cref="makeFooter"/> callback is set, it will override this property.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public bool showAddRemoveFooter
         {
             get => m_Footer != null;
@@ -451,6 +365,86 @@ namespace UnityEngine.UIElements
 
                 if (previous != showFoldoutHeader)
                     NotifyPropertyChanged(showAddRemoveFooterProperty);
+            }
+        }
+
+        bool m_AllowAdd = true;
+
+        /// <summary>
+        /// This property allows the user to allow or block the addition of an item when clicking on the Add Button.
+        /// It must return <c>true</c> or <c>false</c>.
+        /// </summary>
+        /// <remarks>
+        /// If the callback is not set to <c>false</c>, any Add operation will be allowed.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool allowAdd
+        {
+            get => m_AllowAdd;
+            set
+            {
+                if (value == m_AllowAdd)
+                    return;
+
+                m_AllowAdd = value;
+                m_AddButton?.SetEnabled(m_AllowAdd);
+                NotifyPropertyChanged(allowAddProperty);
+            }
+        }
+
+        bool m_AllowRemove = true;
+
+        /// <summary>
+        /// This property allows the user to allow or block the removal of an item when clicking on the Remove Button.
+        /// It must return <c>true</c> or <c>false</c>.
+        /// </summary>
+        /// /// <remarks>
+        /// If the property is not set to <c>false</c>, any Remove operation will be allowed.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool allowRemove
+        {
+            get => m_AllowRemove;
+            set
+            {
+                if (value == m_AllowRemove)
+                    return;
+
+                m_AllowRemove = value;
+                UpdateRemoveButton();
+                NotifyPropertyChanged(allowRemoveProperty);
+            }
+        }
+
+        ListViewReorderMode m_ReorderMode;
+        internal event Action reorderModeChanged;
+
+        /// <summary>
+        /// This property controls the drag and drop mode for the list view.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <c>Simple</c>.
+        /// When this property is set to <c>Animated</c>, Unity adds drag handles in front of every item and the drag and
+        /// drop manipulation pushes items with an animation when the reordering happens.
+        /// Multiple item reordering is only supported with the <c>Simple</c> drag mode.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public ListViewReorderMode reorderMode
+        {
+            get => m_ReorderMode;
+            set
+            {
+                if (value == m_ReorderMode)
+                    return;
+
+                m_ReorderMode = value;
+                InitializeDragAndDropController(reorderable);
+                reorderModeChanged?.Invoke();
+                Rebuild();
+                NotifyPropertyChanged(reorderModeProperty);
             }
         }
 
@@ -546,6 +540,34 @@ namespace UnityEngine.UIElements
         private Func<bool> m_WhileAutoAssign;
         private Func<bool> untilManualBindingSourceSelectionMode => m_WhileAutoAssign ??= () => !autoAssignSource;
 
+
+        bool m_ShowBoundCollectionSize = true;
+
+        /// <summary>
+        /// This property controls whether the list view displays the collection size (number of items).
+        /// </summary>
+        /// <remarks>
+        /// The default value is <c>true</c>.
+        /// When this property is set to to <c>true</c>, the ListView includes a TextField to control the array size.
+        /// </remarks>
+        /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool showBoundCollectionSize
+        {
+            get => m_ShowBoundCollectionSize;
+            set
+            {
+                if (m_ShowBoundCollectionSize == value)
+                    return;
+
+                m_ShowBoundCollectionSize = value;
+
+                SetupArraySizeField();
+                NotifyPropertyChanged(showBoundCollectionSizeProperty);
+            }
+        }
+
         BindingSourceSelectionMode m_BindingSourceSelectionMode = BindingSourceSelectionMode.Manual;
 
         /// <summary>
@@ -557,6 +579,7 @@ namespace UnityEngine.UIElements
         /// to fill the elements.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public BindingSourceSelectionMode bindingSourceSelectionMode
         {
             get => m_BindingSourceSelectionMode;
@@ -852,35 +875,6 @@ namespace UnityEngine.UIElements
             itemsSourceSizeChanged?.Invoke();
         }
 
-        ListViewReorderMode m_ReorderMode;
-        internal event Action reorderModeChanged;
-
-        /// <summary>
-        /// This property controls the drag and drop mode for the list view.
-        /// </summary>
-        /// <remarks>
-        /// The default value is <c>Simple</c>.
-        /// When this property is set to <c>Animated</c>, Unity adds drag handles in front of every item and the drag and
-        /// drop manipulation pushes items with an animation when the reordering happens.
-        /// Multiple item reordering is only supported with the <c>Simple</c> drag mode.
-        /// </remarks>
-        [CreateProperty]
-        public ListViewReorderMode reorderMode
-        {
-            get => m_ReorderMode;
-            set
-            {
-                if (value == m_ReorderMode)
-                    return;
-
-                m_ReorderMode = value;
-                InitializeDragAndDropController(reorderable);
-                reorderModeChanged?.Invoke();
-                Rebuild();
-                NotifyPropertyChanged(reorderModeProperty);
-            }
-        }
-
         private VisualElement m_NoneElement;
         Func<VisualElement> m_MakeNoneElement;
 
@@ -904,30 +898,6 @@ namespace UnityEngine.UIElements
                 m_NoneElement = null;
                 RefreshItems();
                 NotifyPropertyChanged(makeNoneElementProperty);
-            }
-        }
-
-        bool m_AllowAdd = true;
-
-        /// <summary>
-        /// This property allows the user to allow or block the addition of an item when clicking on the Add Button.
-        /// It must return <c>true</c> or <c>false</c>.
-        /// </summary>
-        /// <remarks>
-        /// If the callback is not set to <c>false</c>, any Add operation will be allowed.
-        /// </remarks>
-        [CreateProperty]
-        public bool allowAdd
-        {
-            get => m_AllowAdd;
-            set
-            {
-                if (value == m_AllowAdd)
-                    return;
-
-                m_AllowAdd = value;
-                m_AddButton?.SetEnabled(m_AllowAdd);
-                NotifyPropertyChanged(allowAddProperty);
             }
         }
 
@@ -978,30 +948,6 @@ namespace UnityEngine.UIElements
                 m_OnAdd = value;
                 RefreshItems();
                 NotifyPropertyChanged(onAddProperty);
-            }
-        }
-
-        bool m_AllowRemove = true;
-
-        /// <summary>
-        /// This property allows the user to allow or block the removal of an item when clicking on the Remove Button.
-        /// It must return <c>true</c> or <c>false</c>.
-        /// </summary>
-        /// /// <remarks>
-        /// If the property is not set to <c>false</c>, any Remove operation will be allowed.
-        /// </remarks>
-        [CreateProperty]
-        public bool allowRemove
-        {
-            get => m_AllowRemove;
-            set
-            {
-                if (value == m_AllowRemove)
-                    return;
-
-                m_AllowRemove = value;
-                UpdateRemoveButton();
-                NotifyPropertyChanged(allowRemoveProperty);
             }
         }
 

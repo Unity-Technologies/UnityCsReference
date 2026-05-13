@@ -2,61 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class FoldoutField : PersistedFoldout
+    [UxmlElement]
+    internal partial class FoldoutField : PersistedFoldout
     {
-        [Serializable]
-        public new class UxmlSerializedData : PersistedFoldout.UxmlSerializedData
+        [UxmlAttribute]
+        internal string bindingPaths
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(bindingPaths), "binding-paths")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string bindingPaths;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPaths_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new FoldoutField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(bindingPaths_UxmlAttributeFlags))
-                {
-                    var e = (FoldoutField)obj;
-                    e.bindingPathArray = bindingPaths.Split(' ');
-                    e.ReAssignTooltipToHeaderLabel();
-                }
-            }
+            get => bindingPathArray == null ? string.Empty : string.Join(" ", bindingPathArray);
+            set => bindingPathArray = string.IsNullOrEmpty(value) ? null : value.Split(' ');
         }
 
-        protected string[] m_BindingPathArray;
-
-        public string[] bindingPathArray
-        {
-            get
-            {
-                return m_BindingPathArray;
-            }
-            set
-            {
-                m_BindingPathArray = value;
-            }
-        }
+        public string[] bindingPathArray { get; set; }
 
         public FoldoutField()
         {

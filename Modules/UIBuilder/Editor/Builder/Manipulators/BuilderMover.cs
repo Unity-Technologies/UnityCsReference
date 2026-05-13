@@ -2,26 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BuilderMover : BuilderTransformer
+    [UxmlElement]
+    partial class BuilderMover : BuilderTransformer
     {
         static readonly string s_UssClassName = "unity-builder-mover";
 
         Manipulator m_MoveManipulator;
 
         public BuilderParentTracker parentTracker { get; set; }
-
-        [Serializable]
-        public new class UxmlSerializedData : BuilderTransformer.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderMover();
-        }
 
         public BuilderMover()
         {

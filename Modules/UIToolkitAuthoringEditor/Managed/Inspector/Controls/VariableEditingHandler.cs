@@ -13,7 +13,6 @@ internal class VariableEditingHandler
 {
     public static readonly string HiddenStyleClassName = "unity-inspector-hidden";
     public static readonly string ReadOnlyStyleClassName = "unity-ui-inspector--readonly";
-    public static readonly string InspectorStylePropertyNameVEPropertyName = "__unity-ui-builder-style-property-name";
     public static readonly string InspectorLocalStyleVariableEditingClassName = "unity-ui-inspector__style--variable-editing";
     public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
 
@@ -152,7 +151,8 @@ internal class VariableEditingHandler
 
         if (string.IsNullOrEmpty(variableName))
         {
-            m_Context.UnsetVariable(targetField);
+            m_Context.UnsetVariable(targetField, styleName);
+            m_Context.RefreshUI();
         }
         else
         {
@@ -221,7 +221,7 @@ internal class VariableEditingHandler
         if (handler.m_Context == null)
             return null;
 
-        var styleName = handler.targetField.GetProperty(InspectorStylePropertyNameVEPropertyName) as string;
+        var styleName = handler.styleName;
 
         var varName = handler.m_Context.GetBoundVariableNameFromCurrentRule(styleName, handler.index);
 

@@ -31,7 +31,8 @@ class StartProcessNode : ExecutionNode
 
     protected override Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        var process = StartProcess(GetInput(ExecutablePath), GetInput(Arguments));
+        cancellationToken.ThrowIfCancellationRequested();
+        using var process = StartProcess(GetInput(ExecutablePath), GetInput(Arguments));
         SetOutput(m_ProcessId, process.Id);
         return Task.CompletedTask;
     }

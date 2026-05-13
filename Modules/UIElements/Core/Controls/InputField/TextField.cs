@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -21,59 +20,20 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         TextInput textInput => (TextInput)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextInputBaseField<string>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        // Added so we can add support for the "text" attribute.
+        [UxmlAttribute("value", "text")]
+        string valueOverride
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextInputBaseField<string>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(multiline), "multiline")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineDecorator] bool multiline;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags multiline_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TextField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                // rely on multiline to set verticalScrollerVisibility, see: https://jira.unity3d.com/browse/UIT-2027
-                // TODO: Check https://jira.unity3d.com/browse/UIT-2027
-                var e = (TextField)obj;
-                if (ShouldWriteAttributeValue(multiline_UxmlAttributeFlags))
-                    e.multiline = multiline;
-                if (ShouldWriteAttributeValue(verticalScrollerVisibility_UxmlAttributeFlags))
-                    e.verticalScrollerVisibility = verticalScrollerVisibility;
-            }
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
-            {
-                if (bag.TryGetAttributeValue("text", out var text))
-                {
-                    Value = text;
-                    handledAttributes.Add("value");
-
-                    if (bag is UxmlAsset uxmlAsset)
-                    {
-                        uxmlAsset.RemoveAttribute("text");
-                        uxmlAsset.SetAttribute("value", Value);
-                    }
-                }
-            }
+            get => value;
+            set => this.value = value;
         }
 
         /// <summary>
         /// Set this to true to allow multiple lines in the textfield and false if otherwise.
         /// </summary>
+        [MultilineDecorator]
         [CreateProperty]
+        [UxmlAttribute]
         public bool multiline
         {
             get { return textInput.multiline; }
@@ -85,6 +45,14 @@ namespace UnityEngine.UIElements
                 if (previous != multiline)
                     NotifyPropertyChanged(multilineProperty);
             }
+        }
+
+        // We override the scroller visibility here so we can ensure that it gets set after multiline is set. (UIT-2027)
+        [UxmlAttribute("vertical-scroller-visibility"), UxmlAttributeBindingPath(nameof(verticalScrollerVisibility))]
+        internal ScrollerVisibility verticalScrollerVisibilityUXML
+        {
+            get => verticalScrollerVisibility;
+            set => verticalScrollerVisibility = value;
         }
 
         /// <summary>

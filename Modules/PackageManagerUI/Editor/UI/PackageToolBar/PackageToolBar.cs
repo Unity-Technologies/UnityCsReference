@@ -2,34 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageToolbar : VisualElement
+    [UxmlElement]
+    internal partial class PackageToolbar : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageToolbar(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IAssetStoreDownloadManager>(),
-                    container.Resolve<IUpmCache>(),
-                    container.Resolve<IPackageManagerPrefs>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPackageOperationDispatcher>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IModalManager>());
-            }
-        }
-
         private IPackage m_Package;
         private IPackageVersion m_Version;
 
@@ -54,6 +34,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageManager m_PageManager;
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IModalManager m_ModalManager;
+
+        public PackageToolbar() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IAssetStoreDownloadManager>(),
+            ServicesContainer.instance.Resolve<IUpmCache>(),
+            ServicesContainer.instance.Resolve<IPackageManagerPrefs>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>(),
+            ServicesContainer.instance.Resolve<IPackageOperationDispatcher>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IModalManager>())
+        {
+        }
+
         public PackageToolbar(
             IResourceLoader resourceLoader,
             IApplicationProxy application,

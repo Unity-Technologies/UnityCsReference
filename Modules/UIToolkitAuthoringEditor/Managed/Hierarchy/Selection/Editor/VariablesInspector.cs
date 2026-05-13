@@ -15,17 +15,9 @@ using Object = UnityEngine.Object;
 namespace Unity.UIToolkit.Editor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class VariablesInspector : VisualElement
+    [UxmlElement]
+    partial class VariablesInspector : VisualElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public new static void Register()
-                => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-
-            public override object CreateInstance() => new VariablesInspector();
-        }
-
         public VariablesInspector()
         {
             m_VariablesListView = new ListView
@@ -162,7 +154,11 @@ namespace Unity.UIToolkit.Editor
         protected virtual VariablesListItem CreateListItem() => new ();
 
         protected virtual StyleComplexSelector GetRootRule(StyleRule rule) { return null; }
-        protected virtual void OnStyleSheetModified() { }
+
+        protected virtual void OnStyleSheetModified()
+        {
+            UpdateOverrideFoldoutTrackedProperties();
+        }
 
         protected virtual void AfterAddVariable()
         {
@@ -658,6 +654,7 @@ namespace Unity.UIToolkit.Editor
                     m_VariablesListView.Rebuild();
                 }
 
+                UpdateOverrideFoldoutTrackedProperties();
                 return;
             }
 
@@ -671,6 +668,37 @@ namespace Unity.UIToolkit.Editor
             m_VariablesItemsSource = newVariablesList;
             m_VariablesListView.itemsSource = m_VariablesItemsSource;
             m_VariablesListView.RefreshItems();
+            UpdateOverrideFoldoutTrackedProperties();
+        }
+
+        void UpdateOverrideFoldoutTrackedProperties()
+        {
+            // Find the parent OverrideFoldout that contains this VariablesInspector
+            var parentFoldout = GetFirstAncestorOfType<OverrideFoldout>();
+            if (parentFoldout == null)
+                return;
+
+            // Clear existing tracked properties
+            parentFoldout.trackedProperties.Clear();
+
+            // Add all variable names to the tracked properties
+            foreach (var variable in m_VariablesItemsSource)
+            {
+                parentFoldout.AddTrackedProperty(variable.name);
+            }
+
+            var nameCount = m_VariablesItemsSource.Count;
+            if (nameCount == 0)
+            {
+                parentFoldout.UpdateTrackedProperties(Array.Empty<string>());
+            }
+            else
+            {
+                var names = new string[nameCount];
+                for (var i = 0; i < nameCount; i++)
+                    names[i] = m_VariablesItemsSource[i].name;
+                parentFoldout.UpdateTrackedProperties(names);
+            }
         }
     }
 }

@@ -23,6 +23,11 @@ namespace UnityEngine.UIElements
         // Cached values for TransitionData converted into a ComputedTransitionProperty array for easier access
         private static Dictionary<int, ComputedTransitionProperty[]> s_ComputedTransitionsCache = new Dictionary<int, ComputedTransitionProperty[]>();
 
+        static StyleCache()
+        {
+            UnloadingUtility.SubscribeToUnloading(UnloadingSubscriber.StyleCache, ClearStyleCache);
+        }
+
         public static bool TryGetValue(Int64 hash, out ComputedStyle data)
         {
             return s_ComputedStyleCache.TryGetValue(hash, out data);
@@ -75,9 +80,7 @@ namespace UnityEngine.UIElements
         where TTraversal : VisualTreeStyleUpdaterTraversal<TProfiler>, new()
         where TProfiler : struct, IStyleProfiler
     {
-        private HashSet<VisualElement> m_ApplyStyleUpdateList = new HashSet<VisualElement>();
         private HashSet<VisualElement> m_TransitionPropertyUpdateList = new HashSet<VisualElement>();
-        private bool m_IsApplyingStyles = false;
         private uint m_Version = 0;
         private uint m_LastVersion = 0;
 
@@ -112,15 +115,7 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & VersionChangeType.StyleSheet) != 0)
             {
-                // Applying styles can trigger new changes, store changes in a separate list
-                if (m_IsApplyingStyles)
-                {
-                    m_ApplyStyleUpdateList.Add(ve);
-                }
-                else
-                {
-                    m_StyleContextHierarchyTraversal.AddChangedElement(ve, versionChangeType);
-                }
+                m_StyleContextHierarchyTraversal.AddChangedElement(ve);
             }
 
             if ((versionChangeType & VersionChangeType.TransitionProperty) != 0)
@@ -137,14 +132,18 @@ namespace UnityEngine.UIElements
             m_LastVersion = m_Version;
             ApplyStyles();
 
-            m_StyleContextHierarchyTraversal.Clear();
-
-            // Add elements to process next frame
-            foreach (var ve in m_ApplyStyleUpdateList)
+            // Style resolution replaces computed styles wholesale via SetComputedStyle, which
+            // overwrites values that UIAnimationBinder applied via ApplyPropertyAnimation.
+            // CSS transitions are handled by ForceUpdateTransitions inside TraverseRecursive,
+            // but animation binders have no equivalent. Re-apply the last sampled binder values
+            // so they survive style re-resolution.
+            var animSystem = panel?.GetUpdater(VisualTreeUpdatePhase.Animation) as VisualElementAnimationSystem;
+            if (animSystem != null && animSystem.hasActiveAnimationBinders)
             {
-                m_StyleContextHierarchyTraversal.AddChangedElement(ve, VersionChangeType.StyleSheet);
+                animSystem.ReapplyAnimationBinderValues();
             }
-            m_ApplyStyleUpdateList.Clear();
+
+            m_StyleContextHierarchyTraversal.Clear();
 
             foreach (var ve in m_TransitionPropertyUpdateList)
             {
@@ -173,10 +172,8 @@ namespace UnityEngine.UIElements
         protected void ApplyStyles()
         {
             Debug.Assert(visualTree.panel != null);
-            m_IsApplyingStyles = true;
             m_StyleContextHierarchyTraversal.PrepareTraversal(panel, panel.scaledPixelsPerPoint);
             m_StyleContextHierarchyTraversal.Traverse(visualTree);
-            m_IsApplyingStyles = false;
         }
     }
 
@@ -237,12 +234,15 @@ namespace UnityEngine.UIElements
     internal class VisualTreeStyleUpdaterTraversal<TStyleProfiler> : HierarchyTraversal where TStyleProfiler : struct, IStyleProfiler
     {
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
-        private HashSet<VisualElement> m_UpdateList = new HashSet<VisualElement>();
-        private HashSet<VisualElement> m_ParentList = new HashSet<VisualElement>();
 
         private List<SelectorMatchRecord> m_TempMatchResults = new List<SelectorMatchRecord>();
 
+        private List<VisualElement> m_CustomStyleResolvedElements;
+
         private float currentPixelsPerPoint { get; set; } = 1.0f;
+        // Re-entrancy protection: set to true during style traversal, false before event dispatch
+        private bool m_IsApplyingStyles;
+        private List<VisualElement> m_ApplyStyleUpdateList = new List<VisualElement>();
 
         StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(OnProcessMatchResult);
         StylePropertyReader m_StylePropertyReader = new StylePropertyReader();
@@ -257,34 +257,75 @@ namespace UnityEngine.UIElements
             currentPixelsPerPoint = pixelsPerPoint;
         }
 
-        public void AddChangedElement(VisualElement ve, VersionChangeType versionChangeType)
+        public override void Traverse(VisualElement element)
         {
-            m_UpdateList.Add(ve);
+            m_CustomStyleResolvedElements = VisualElementListPool.Get();
 
-            // If VersionChangeType.StyleSheet is not set no need to propagate to children
-            if ((versionChangeType & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet)
-                PropagateToChildren(ve);
+            // Set flag to true during traversal - any AddChangedElement() calls will be queued
+            m_IsApplyingStyles = true;
 
-            PropagateToParents(ve);
+            base.Traverse(element);
+
+            // Set flag to false before dispatching events - user callbacks can directly modify elements
+            m_IsApplyingStyles = false;
+
+
+            // Process elements that were queued during traversal (before m_IsApplyingStyles was set to false)
+            // Mark them dirty for next frame
+            ProcessQueuedElements();
+
+            try
+            {
+                // Dispatch accumulated CustomStyleResolvedEvents
+                foreach (var elt in m_CustomStyleResolvedElements)
+                {
+                    using (var evt = CustomStyleResolvedEvent.GetPooled())
+                    {
+                        EventDispatchUtilities.SendEventDirectlyToTarget(evt, currentPanel, elt);
+                    }
+                }
+            }
+            finally
+            {
+                VisualElementListPool.Release(m_CustomStyleResolvedElements);
+                m_CustomStyleResolvedElements = null;
+            }
+        }
+
+        public void AddChangedElement(VisualElement ve)
+        {
+            // If we're inside style traversal, queue the element to avoid re-entrancy
+            if (m_IsApplyingStyles)
+            {
+                m_ApplyStyleUpdateList.Add(ve);
+            }
+            else
+            {
+                ve.stylesDirty = true;
+                PropagateToParents(ve);
+            }
+        }
+
+        public void ProcessQueuedElements()
+        {
+            // Move queued elements to changed list for next frame
+            foreach (var ve in m_ApplyStyleUpdateList)
+            {
+                // Since list may contain duplicate, skip if already dirty
+                // We assume ProcessQueuedElements() is called on a fully clean tree right after style updated
+                // So in theory no desync between stylesDirty and stylesAncestorOfDirty is possible
+                if (ve.stylesDirty)
+                    continue;
+                ve.stylesDirty = true;
+                PropagateToParents(ve);
+            }
+            m_ApplyStyleUpdateList.Clear();
         }
 
         public void Clear()
         {
-            m_UpdateList.Clear();
-            m_ParentList.Clear();
+            // Note: we don't need to clear flags here because they're cleared during traversal
             m_TempMatchResults.Clear();
-        }
-
-        private void PropagateToChildren(VisualElement ve)
-        {
-            int count = ve.hierarchy.childCount;
-            for (int i = 0; i < count; i++)
-            {
-                var child = ve.hierarchy[i];
-                bool result = m_UpdateList.Add(child);
-                if (result)
-                    PropagateToChildren(child);
-            }
         }
 
         private void PropagateToParents(VisualElement ve)
@@ -292,11 +333,13 @@ namespace UnityEngine.UIElements
             var parent = ve.hierarchy.parent;
             while (parent != null)
             {
-                if (!m_ParentList.Add(parent))
+                if (parent.stylesAncestorOfDirty)
                 {
+                    // Already marked, no need to continue up the chain
                     break;
                 }
 
+                parent.stylesAncestorOfDirty = true;
                 parent = parent.hierarchy.parent;
             }
         }
@@ -309,17 +352,21 @@ namespace UnityEngine.UIElements
 
         public override void TraverseRecursive(VisualElement element, int depth)
         {
-            if (ShouldSkipElement(element))
+            // Skip if element is neither dirty nor ancestor of dirty
+            // Note: We check parent.stylesDirty because children inherit from parent and need updating
+            var parent = element.hierarchy.parent;
+            bool isDirty = element.stylesDirty || (parent != null && parent.stylesDirty);
+
+            if (!element.stylesAncestorOfDirty && !isDirty)
             {
                 return;
             }
 
-            // If the element is fully dirty, we need to erase those flags since the full element and its subtree
-            // will be re-styled.
-            // If the element is not in the update list, it's a parent of something dirty and therefore it won't be restyled.
-            bool updateElement = m_UpdateList.Contains(element);
-            if (updateElement)
+            // If the element is dirty (either directly or inherited from parent), we need to erase pseudo masks
+            // and ensure the flag is set so children can inherit it during recursion
+            if (isDirty)
             {
+                element.stylesDirty = true; // Propagate inherited dirty to this element's flag for children
                 element.triggerPseudoMask = 0;
                 element.dependencyPseudoMask = 0;
             }
@@ -338,7 +385,7 @@ namespace UnityEngine.UIElements
             // at the matched custom styles won't suffice.
             var originalVariableContext = m_StyleMatchingContext.variableContext;
             int originalCustomStyleCount = element.computedStyle.customPropertiesCount;
-            if (updateElement)
+            if (isDirty)
             {
                 m_StyleMatchingContext.currentElement = element;
                 StyleSelectorHelper<TStyleProfiler>.FindMatches(m_StyleMatchingContext, m_TempMatchResults, originalStyleSheetCount - 1);
@@ -398,13 +445,11 @@ namespace UnityEngine.UIElements
 
             // Need to send the custom styles event after the inheritance is resolved because an element
             // may want to read standard styles too (TextInputFieldBase callback depends on it).
-            if (updateElement && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0) &&
+            // Accumulate elements that need the event; dispatch at the end to support future native code path.
+            if (isDirty && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0) &&
                 element.HasSelfEventInterests(CustomStyleResolvedEvent.EventCategory))
             {
-                using (var evt = CustomStyleResolvedEvent.GetPooled())
-                {
-                    EventDispatchUtilities.SendEventDirectlyToTarget(evt, currentPanel, element);
-                }
+                m_CustomStyleResolvedElements.Add(element);
             }
 
             m_StyleMatchingContext.ancestorFilter.PushElement(element);
@@ -412,6 +457,10 @@ namespace UnityEngine.UIElements
             Recurse(element, depth);
 
             m_StyleMatchingContext.ancestorFilter.PopElement();
+
+            // Clear flags after traversing children (so children can see parent's dirty state during traversal)
+            element.stylesDirty = false;
+            element.stylesAncestorOfDirty = false;
 
             m_StyleMatchingContext.variableContext = originalVariableContext;
             if (m_StyleMatchingContext.styleSheetCount > originalStyleSheetCount)
@@ -458,11 +507,6 @@ namespace UnityEngine.UIElements
                     element.styleAnimation.CancelAnimation(id);
             }
             m_AnimatedProperties.Clear();
-        }
-
-        protected bool ShouldSkipElement(VisualElement element)
-        {
-            return !m_ParentList.Contains(element) && !m_UpdateList.Contains(element);
         }
 
         ComputedStyle ProcessMatchedRules(VisualElement element, List<SelectorMatchRecord> matchingSelectors)

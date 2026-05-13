@@ -46,37 +46,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId unbindItemProperty = nameof(unbindItem);
         internal static readonly BindingId destroyItemProperty = nameof(destroyItem);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(itemTemplate), "item-template")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] VisualTreeAsset itemTemplate;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags itemTemplate_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TreeView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(itemTemplate_UxmlAttributeFlags))
-                {
-                    var e = (TreeView)obj;
-                    e.itemTemplate = itemTemplate;
-                }
-            }
-        }
-
         Func<VisualElement> m_MakeItem;
 
         /// <summary>
@@ -115,6 +84,7 @@ namespace UnityEngine.UIElements
         /// This template is designed to replace the <see cref="makeItem"/> definition.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public VisualTreeAsset itemTemplate
         {
             get => m_ItemTemplate;

@@ -13,5 +13,5 @@ internal interface IStyleDataGroup<T>
     T GetDefault();
     T Copy();
     void CopyFrom(ref T other);
-    void Dispose() { }
+    void Dispose();
 }

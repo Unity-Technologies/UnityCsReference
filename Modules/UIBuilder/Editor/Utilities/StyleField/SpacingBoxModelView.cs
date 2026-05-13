@@ -2,14 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class SpacingBoxModelView : VisualElement
+    [UxmlElement]
+    partial class SpacingBoxModelView : VisualElement
     {
         static readonly string k_UssPathNoExt = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleSectionsBoxModel";
         private static readonly string k_MouseOverClassName = "mouse-over";
@@ -51,12 +51,6 @@ namespace Unity.UI.Builder
 
         private BuilderInspector m_Inspector;
         private bool m_IsActivelyDragging;
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new SpacingBoxModelView();
-        }
 
         public SpacingBoxModelView()
         {

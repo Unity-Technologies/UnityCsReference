@@ -89,8 +89,6 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            static void NoProcessResult(VisualElement e, MatchResultInfo i) {}
-
             public override void TraverseRecursive(VisualElement element, int depth)
             {
                 int originalCount = m_Matchers.Count;
@@ -101,7 +99,7 @@ namespace UnityEngine.UIElements
                 {
                     RuleMatcher matcher = m_Matchers[j];
 
-                    if (StyleSelectorHelper.MatchRightToLeft(element, matcher.complexSelector, (e, i) => NoProcessResult(e, i)))
+                    if (LegacySelectorHelper.MatchRightToLeft(element, matcher.complexSelector))
                     {
                         // use by uQuery to determine if we need to stop
                         if (OnRuleMatchedElement(matcher, element))

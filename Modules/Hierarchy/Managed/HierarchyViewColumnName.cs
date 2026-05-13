@@ -23,7 +23,6 @@ namespace Unity.Hierarchy
 
         static readonly Length k_DefaultMinimumWidth = new Length(35f, LengthUnit.Pixel); // 35px is the default when unset
         static readonly Length k_MinimumWidth = new Length(200f, LengthUnit.Pixel);
-        static readonly Length k_DefaultWidth = new Length(300f, LengthUnit.Pixel);
 
         readonly HierarchyView m_View;
         readonly HierarchyViewItemContainerPool m_ViewItemContainerPool;
@@ -59,7 +58,6 @@ namespace Unity.Hierarchy
 
         internal void ApplyDefaultColumnProperties()
         {
-            width = k_DefaultWidth;
             minWidth = stretchable ? k_MinimumWidth : k_DefaultMinimumWidth;
 
             visible = true;

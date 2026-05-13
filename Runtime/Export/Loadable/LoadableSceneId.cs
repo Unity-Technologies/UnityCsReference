@@ -19,30 +19,32 @@ namespace Unity.Loading
     }
 
     /// <summary>
-    /// Reference to a Scene.
+    /// Stable serialized identifier for a Scene asset so it can be packed into content directory builds and loaded asynchronously at runtime.
     /// </summary>
     /// <remarks>
     /// This type can be used for a field on a ScriptableObject or MonoBehaviour to hold a "pointer" to a scene. When an object
-    /// with a LoadableSceneId field is included in a ContentDirectory build then the referenced scene will also automatically be included in the
+    /// with a LoadableSceneId field is included in a ContentDirectory build, the referenced scene is also automatically included in the
     /// build.
     ///
-    /// When authoring content in the Editor, use <see cref="LoadableSceneIdEditorUtility"/>  to create LoadableSceneId objects and assign
+    /// When authoring content in the Editor, use <see cref="LoadableSceneIdEditorUtility"/> to create LoadableSceneId objects and assign
     /// them to fields on ScriptableObject-derived classes.
     ///
-    /// Player and AssetBundle builds do not pull scenes referenced by LoadableSceneId into the build, only
-    /// the scenes listed in <see cref="EditorBuildSettings.scenes"/> are included.  But a LoadableSceneId field in any built content can be
+    /// Player and AssetBundle builds do not pull scenes referenced by LoadableSceneId into the build. Only
+    /// the scenes listed in <see cref="EditorBuildSettings.scenes"/> are included. However, a LoadableSceneId field in any built content can be
     /// used to load the scene at runtime if it is available inside a registered ContentDirectory.
     ///
-    /// When a scripting object that has LoadableSceneId fields loads it does not automatically load the referenced scenes. Instead,
-    /// scripts can use <see cref="SceneManager.LoadSceneAsync(LoadableSceneId, LoadSceneParameters)"/> to load the referenced scene at the point
-    /// when the scene is needed in memory. The loading capability is available in both Editor play mode and in the Player.
-    /// Similarly, scripts can use <see cref="SceneManager"/> APIs to unload the scenes when it is no longer needed.
+    /// When a scripting object that has LoadableSceneId fields loads, it does not automatically load the referenced scenes. Instead,
+    /// scripts can use <see cref="SceneManager.LoadSceneAsync(LoadableSceneId, LoadSceneParameters)"/> to load the referenced scene when needed.
+    /// The loading capability is available in both Editor play mode and in the Player.
+    /// Similarly, scripts can use <see cref="SceneManager"/> APIs to unload scenes when no longer needed.
     /// </remarks>
+    /// <example>
+    /// <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/LoadableSceneId_Example.cs"/>
+    /// </example>
     [Serializable, StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Export/SceneManager/LoadableSceneId.h")]
     [RequiredByNativeCode]
-    /*UCBP-REMOVE*/[VisibleToOtherModules]
-    /*UCBP-PUBLIC*/ internal struct LoadableSceneId : IEquatable<LoadableSceneId>
+    public struct LoadableSceneId : IEquatable<LoadableSceneId>
     {
         internal GUID m_SceneGUID;
 
@@ -59,7 +61,10 @@ namespace Unity.Loading
             m_SceneGUID = guid;
         }
 
-        public bool isValid => !m_SceneGUID.Empty();
+        /// <summary>
+        /// True if this LoadableSceneId is initialized with valid data.
+        /// </summary>
+        public bool IsValid => !m_SceneGUID.Empty();
 
         [ExcludeFromDocs]
         public override string ToString()

@@ -645,7 +645,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private void AddToSelectionNoUndoRecord(GraphElement graphElement)
+        internal void AddToSelectionNoUndoRecord(GraphElement graphElement)
         {
             graphElement.selected = true;
             selection.Add(graphElement);
@@ -690,7 +690,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private bool ClearSelectionNoUndoRecord()
+        internal bool ClearSelectionNoUndoRecord()
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var prevSelection = selection.OfType<GraphElement>().ToArray();

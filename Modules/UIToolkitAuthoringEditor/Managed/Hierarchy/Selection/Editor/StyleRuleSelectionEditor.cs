@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -10,7 +11,15 @@ namespace Unity.UIToolkit.Editor;
 [CustomEditor(typeof(StyleRuleSelection))]
 class StyleRuleSelectionEditor : UnityEditor.Editor
 {
+    StyleRuleInspector m_Inspector;
+
     private StyleRuleSelection Target => (StyleRuleSelection)target;
+
+    void OnEnable() => StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+
+    void OnDisable() => StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+
+    void OnStageChanged(Stage _) => m_Inspector?.ResetSearch();
 
     protected override void OnHeaderGUI()
     {
@@ -25,13 +34,15 @@ class StyleRuleSelectionEditor : UnityEditor.Editor
 
     public override VisualElement CreateInspectorGUI()
     {
-        var inspector = new StyleRuleInspector() { StyleRule = Target.StyleRule };
-        inspector.SetBinding(StyleRuleInspector.StyleRuleProperty, new DataBinding
+        m_Inspector = new StyleRuleInspector() { StyleRule = Target.StyleRule };
+        m_Inspector.SetBinding(StyleRuleInspector.StyleRuleProperty, new DataBinding
         {
             dataSource = Target,
             dataSourcePath = StyleRuleSelection.StyleRuleProperty,
             bindingMode = BindingMode.ToTarget
         });
-        return inspector;
+        return m_Inspector;
     }
+
+    void OnDestroy() => m_Inspector?.Dispose();
 }

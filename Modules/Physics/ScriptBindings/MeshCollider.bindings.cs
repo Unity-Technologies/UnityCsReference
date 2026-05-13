@@ -27,5 +27,9 @@ namespace UnityEngine
         extern public bool convex { get; set; }
 
         extern public MeshColliderCookingOptions cookingOptions { get; set; }
+
+        [NativeMethod("IsScaleBakingRequired")]
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        extern internal bool IsScaleBakingRequired();
     }
 }

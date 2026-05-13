@@ -602,7 +602,7 @@ namespace UnityEngine.TextCore.Text
 
         public float GetLineHeight(int lineNumber)
         {
-            return PixelsToPoints(useAdvancedText ? TextSelectionService.GetLineHeight(textGenerationInfo, lineNumber) : textInfo.GetLineHeight(lineNumber));
+            return PixelsToPoints(useAdvancedText ? TextGenerationInfo.GetLineHeight(textGenerationInfo, lineNumber) : textInfo.GetLineHeight(lineNumber));
         }
 
         public float GetLineHeightFromCharacterIndex(int index)
@@ -673,67 +673,16 @@ namespace UnityEngine.TextCore.Text
         internal virtual bool IsAdvancedTextEnabledForElement() { return false; }
 
 
-        //This method assumes the textInfo is populated
+        //This method assumes the textInfo is populated (TextCore) or text is generated (ATG).
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal int GetTextElementCount()
         {
             if (useAdvancedText)
-            {
-                Debug.LogError("Cannot use GetTextElementCount while using Advanced Text");
-                return 0;
-            }
+                return characterCount;
 
             return textInfo.textElementInfo.Length;
         }
 
-        internal readonly record struct GlyphMetricsForOverlay
-        {
-            public GlyphMetricsForOverlay(ref TextElementInfo textElementInfo, float pixelPerPoint)
-            {
-                float inversePPP = 1 / pixelPerPoint;
-                this.isVisible = textElementInfo.isVisible;
-                this.origin = textElementInfo.origin * inversePPP;
-                this.xAdvance = textElementInfo.xAdvance * inversePPP;
-                this.ascentline = textElementInfo.ascender * inversePPP;
-                this.baseline = textElementInfo.baseLine * inversePPP;
-                this.descentline = textElementInfo.descender * inversePPP;
-                this.topLeft = textElementInfo.topLeft * inversePPP;
-                this.bottomLeft = textElementInfo.bottomLeft * inversePPP;
-                this.topRight = textElementInfo.topRight * inversePPP;
-                this.bottomRight = textElementInfo.bottomRight * inversePPP;
-                this.scale = textElementInfo.scale;
-                this.lineNumber = textElementInfo.lineNumber;
-                this.fontCapLine = textElementInfo.fontAsset.faceInfo.capLine * inversePPP;
-                this.fontMeanLine = textElementInfo.fontAsset.faceInfo.meanLine * inversePPP;
-            }
-
-            readonly public bool isVisible;
-            readonly public float origin;
-            readonly public float xAdvance;
-            readonly public float ascentline;
-            readonly public float baseline;
-            readonly public float descentline;
-            readonly public Vector3 topLeft;
-            readonly public Vector3 bottomLeft;
-            readonly public Vector3 topRight;
-            readonly public Vector3 bottomRight;
-            readonly public float scale;
-            readonly public int lineNumber;
-            readonly public float fontCapLine;
-            readonly public float fontMeanLine;
-
-        }
-
-        //This method assumes the textInfo is populated
-        internal GlyphMetricsForOverlay GetScaledCharacterMetrics(int i)
-        {
-            // The goal of this method is to keep the concept of scaling inside the textHandle
-            // It will also serve in the future to handle conversion from the nativeTextInfo too.
-            if (useAdvancedText)
-            {
-                throw new InvalidOperationException("Cannot use GetScaledCharacterMetrics while using Advanced Text");
-            }
-            return new GlyphMetricsForOverlay(ref textInfo.textElementInfo[i], GetPixelsPerPoint());
-        }
 
         // int LinkID: The identifier for the link.
         // TagType: Specifies the type of tag (either Hyperlink or Link).

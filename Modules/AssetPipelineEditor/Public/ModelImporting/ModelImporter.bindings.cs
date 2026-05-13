@@ -29,17 +29,16 @@ namespace UnityEditor
         None = 3
     }
 
-    [UsedByNativeCode]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoTransformMaskElement")]
-    [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
+    [NativeHeader("Modules/Animation/AvatarMask.h")]
+    [StructLayout(LayoutKind.Sequential)]
     internal partial struct TransformMaskElement
     {
+        [NativeName("m_Path")]
         public string path;
+        [NativeName("m_Weight")]
         public float weight;
     }
 
-    [UsedByNativeCode]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoClipAnimationInfoCurve")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
     public partial struct ClipAnimationInfoCurve
@@ -48,44 +47,72 @@ namespace UnityEditor
         public AnimationCurve curve;
     }
 
-    [UsedByNativeCode]
+    [NativeAsStruct]
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoClipAnimationInfo")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
+    
     public sealed partial class ModelImporterClipAnimation
     {
+        [NativeName("takeName")]
         string m_TakeName;
+        [NativeName("name")]
         string m_Name;
+        [NativeName("firstFrame")]
         float m_FirstFrame;
+        [NativeName("lastFrame")]
         float m_LastFrame;
+        [NativeName("wrapMode")]
         WrapMode m_WrapMode;
+        [NativeName("loop")]
         int m_Loop;
 
+        [NativeName("orientationOffsetY")]
         float m_OrientationOffsetY;
+        [NativeName("level")]
         float m_Level;
+        [NativeName("cycleOffset")]
         float m_CycleOffset;
+        [NativeName("additiveReferencePoseFrame")]
         float m_AdditiveReferencePoseFrame;
 
+        [NativeName("hasAdditiveReferencePose")]
         int m_HasAdditiveReferencePose;
+        [NativeName("loopTime")]
         int m_LoopTime;
+        [NativeName("loopBlend")]
         int m_LoopBlend;
+        [NativeName("loopBlendOrientation")]
         int m_LoopBlendOrientation;
+        [NativeName("loopBlendPositionY")]
         int m_LoopBlendPositionY;
+        [NativeName("loopBlendPositionXZ")]
         int m_LoopBlendPositionXZ;
+        [NativeName("keepOriginalOrientation")]
         int m_KeepOriginalOrientation;
+        [NativeName("keepOriginalPositionY")]
         int m_KeepOriginalPositionY;
+        [NativeName("keepOriginalPositionXZ")]
         int m_KeepOriginalPositionXZ;
+        [NativeName("heightFromFeet")]
         int m_HeightFromFeet;
+        [NativeName("mirror")]
         int m_Mirror;
+        [NativeName("maskType")]
         int m_MaskType = 3;
+        [NativeName("maskSource")]
         AvatarMask m_MaskSource;
 
+        [NativeName("bodyMask")]
         int[] m_BodyMask;
-        AnimationEventBlittable[] m_AnimationEventsBlittable;
+        [NativeName("events")]
+        AnimationEvent[] m_AnimationEvents;
+        [NativeName("curves")]
         ClipAnimationInfoCurve[] m_AdditionnalCurves;
+        [NativeName("transformMask")]
         TransformMaskElement[] m_TransformMask;
 
+        [NativeName("maskNeedsUpdating")]
         bool m_MaskNeedsUpdating;
 
         long internalID;
@@ -129,7 +156,7 @@ namespace UnityEditor
 
         public AvatarMask maskSource { get { return m_MaskSource; } set { m_MaskSource = value; } }
 
-        public AnimationEvent[] events { get { return Array.ConvertAll(m_AnimationEventsBlittable, AnimationEventBlittable.ToAnimationEvent); } set { m_AnimationEventsBlittable = Array.ConvertAll(value, AnimationEventBlittable.FromAnimationEvent); } }
+        public AnimationEvent[] events { get { return m_AnimationEvents; } set { m_AnimationEvents = value; } }
         public ClipAnimationInfoCurve[] curves { get { return m_AdditionnalCurves; } set { m_AdditionnalCurves = value; } }
 
         public bool maskNeedsUpdating { get { return m_MaskNeedsUpdating; } }
@@ -447,10 +474,11 @@ namespace UnityEditor
 
         public extern ModelImporterMaterialLocation materialLocation { get; set; }
 
+        public extern bool searchTexturesGlobally { get; set; }
+
         internal extern SourceAssetIdentifier[] sourceMaterials
         {
             [FreeFunction(Name = "ModelImporterBindings::GetSourceMaterials", HasExplicitThis = true)]
-            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]    
             get;
         }
 
@@ -606,6 +634,31 @@ namespace UnityEditor
         /// Imports the vertex color channel from the source model.
         /// </summary>
         public extern bool importVertexColors
+        {
+            get;
+            set;
+        }
+
+        public bool HasPreBakeCollisionMesh(bool isConvex) => isConvex ? preBakeConvexCollisionMesh : preBakeTriangleCollisionMesh;
+        public void SetPreBakeCollisionMesh(bool isConvex, bool preBake)
+        {
+            if (isConvex)
+            {
+                preBakeConvexCollisionMesh = preBake;
+            }
+            else
+            {
+                preBakeTriangleCollisionMesh = preBake;
+            }
+        }
+
+        internal extern bool preBakeConvexCollisionMesh
+        {
+            get;
+            set;
+        }
+
+        internal extern bool preBakeTriangleCollisionMesh
         {
             get;
             set;
@@ -1060,17 +1113,15 @@ namespace UnityEditor
             set { SetClipAnimations(this, value); }
         }
         [FreeFunction("ModelImporterBindings::GetClipAnimations")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ModelImporterClipAnimation[] GetClipAnimations(ModelImporter self);
-        [FreeFunction("ModelImporterBindings::SetClipAnimations", ThrowsException = true)]
-        private extern static void SetClipAnimations([NotNull] ModelImporter self, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ModelImporterClipAnimation[] value);
+        [FreeFunction("ModelImporterBindings::SetClipAnimations")]
+        private extern static void SetClipAnimations([NotNull] ModelImporter self, ModelImporterClipAnimation[] value);
 
         public ModelImporterClipAnimation[] defaultClipAnimations
         {
             get { return GetDefaultClipAnimations(this); }
         }
         [FreeFunction("ModelImporterBindings::GetDefaultClipAnimations")]
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ModelImporterClipAnimation[] GetDefaultClipAnimations(ModelImporter self);
 
         internal extern bool isAssetOlderOr42

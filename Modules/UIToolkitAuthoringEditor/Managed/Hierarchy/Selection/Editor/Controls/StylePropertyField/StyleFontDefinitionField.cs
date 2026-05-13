@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,20 +12,9 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Makes a style field for editing a StyleFontDefinition.
     /// </summary>
-    internal class StyleFontDefinitionField : StylePropertyField<StyleFontDefinition, FontDefinitionField, FontDefinition>
+    [UxmlElement]
+    internal partial class StyleFontDefinitionField : StylePropertyField<StyleFontDefinition, FontDefinitionField, FontDefinition>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleFontDefinition, FontDefinitionField, FontDefinition>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleFontDefinition, FontDefinitionField, FontDefinition>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new StyleFontDefinitionField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.IntegerTime;
 using Unity.Timeline.Foundation.Time;
 using UnityEditor;
@@ -12,50 +11,17 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets
 {
-    partial class TimeField : VisualElement
+    [UxmlElement]
+    internal partial class TimeField : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData),
-                    new UxmlAttributeNames[]
-                    {
-                        new(nameof(label), "label"), new(nameof(showLabels), "show-labels"),
-                    }, true);
-            }
-
-#pragma warning disable 649
-            [SerializeField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            [SerializeField] bool showLabels;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showLabels_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new TimeField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TimeField)obj;
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                    e.Label = label;
-                if (ShouldWriteAttributeValue(showLabels_UxmlAttributeFlags))
-                    e.ShowLabels = showLabels;
-            }
-        }
-
+        [UxmlAttribute]
         public string Label
         {
             get => m_FieldName.text;
             set => m_FieldName.text = value;
         }
 
+        [UxmlAttribute("show-labels")]
         public bool ShowLabels
         {
             get => m_FieldName.style.display == DisplayStyle.Flex;

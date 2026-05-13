@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,34 +11,6 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
 sealed partial class UICanvasResizerHandle : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        [Conditional("UNITY_EDITOR")]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [
-                new UxmlAttributeNames(nameof(Position), "position")
-            ], true);
-        }
-
-#pragma warning disable 649
-        [SerializeField] Anchor Position;
-        [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags Position_UxmlAttributeFlags;
-#pragma warning restore 649
-
-
-        public override object CreateInstance() => new UICanvasResizerHandle();
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-            var element = (UICanvasResizerHandle)obj;
-            if (ShouldWriteAttributeValue(Position_UxmlAttributeFlags))
-                element.Position = Position;
-        }
-    }
-
     public const string UssClass = "unity-ui-viewport__canvas-resizer";
 
     public enum Anchor

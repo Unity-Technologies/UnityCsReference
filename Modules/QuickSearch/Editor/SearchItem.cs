@@ -337,7 +337,11 @@ namespace UnityEditor.Search
         internal EntityId GetEntityId()
         {
             if (provider != null && provider.toEntityId != null)
-                return provider.toEntityId(this);
+            {
+                var eid = provider.toEntityId(this);
+                if (eid != EntityId.None)
+                    return eid;
+            }
             return EntityId.FromULong((ulong)GetHashCode());
         }
 

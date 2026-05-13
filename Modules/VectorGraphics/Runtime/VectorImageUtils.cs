@@ -196,7 +196,7 @@ namespace Unity.VectorGraphics
             var root = panel.visualTree;
             root.StretchToParentSize();
             root.style.backgroundImage = new StyleBackground(vi);
-            panel.Repaint(Event.current);
+            panel.Repaint();
             panel.Render();
 
             GL.PopMatrix();

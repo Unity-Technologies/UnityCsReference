@@ -26,7 +26,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Function to determine if a port is an untyped port. Defaults to checking if the port's data type is Untyped.
         /// </summary>
-        public Func<PortModel, bool> IsUntypedPort = p => p.DataTypeHandle == TypeHandle.Untyped;
+        public Func<PortModel, bool> IsUntypedPort = p => p.PortDataType == typeof(Untyped);
 
         /// <summary>
         /// Resets the state of the action.

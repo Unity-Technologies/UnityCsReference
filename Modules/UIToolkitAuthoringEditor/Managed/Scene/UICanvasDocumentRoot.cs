@@ -22,19 +22,29 @@ enum CanvasEventMode
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
 sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeProcessor
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public new static void Register()
-            => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-
-        public override object CreateInstance() => new UICanvasDocumentRoot();
-    }
-
     readonly List<VisualElementSelection> m_ElementSelections = new();
     readonly VisualElement m_HandlesContainer;
     readonly SelectionHandleManager m_HandleManager;
     PanelElement m_PanelElement;
+
+    VisualElement m_HoveredElement;
+    bool m_IsPointerOver;
+    Vector2 m_LastPointerPickPosition;
+
+    VisualElement HoveredElement
+    {
+        get => m_HoveredElement;
+        set
+        {
+            if (m_HoveredElement == value)
+                return;
+            m_HoveredElement = value;
+            if (m_HoveredElement != null)
+                HighlightUtility.RequestHighlights(m_HoveredElement, CommandSources.Viewport);
+            else
+                HighlightUtility.ClearHighlights();
+        }
+    }
 
     CanvasEventMode m_EventMode = CanvasEventMode.Pick;
 
@@ -127,6 +137,29 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                 }
 
                 break;
+            case PointerEnterEvent pointerEnterEvent when EventMode == CanvasEventMode.Pick:
+            {
+                m_IsPointerOver = true;
+                if (m_PanelElement != null)
+                {
+                    m_LastPointerPickPosition = m_PanelElement.ConvertPosition(pointerEnterEvent);
+                    UpdateHoveredElement();
+                }
+                break;
+            }
+            case PointerLeaveEvent when EventMode == CanvasEventMode.Pick:
+            {
+                m_IsPointerOver = false;
+                HoveredElement = null;
+                break;
+            }
+            case PointerMoveEvent pointerMoveEvent when EventMode == CanvasEventMode.Pick:
+                if (m_PanelElement != null)
+                {
+                    m_LastPointerPickPosition = m_PanelElement.ConvertPosition(pointerMoveEvent);
+                    UpdateHoveredElement();
+                }
+                break;
             default:
                 if (EventMode == CanvasEventMode.Forward)
                     PanelElement?.ForwardEventBubbleUp(evt);
@@ -206,10 +239,22 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         }
         foreach (var selection in updateSet)
             m_HandleManager.UpdateSelectionHandle(selection);
+
+        if (m_IsPointerOver && EventMode == CanvasEventMode.Pick)
+            UpdateHoveredElement();
     }
 
     void IVisualElementChangeProcessor.EndProcessing(BaseVisualElementPanel panelElementPanel)
     {
+    }
+
+    void UpdateHoveredElement()
+    {
+        using (ListPool<VisualElement>.Get(out var pickedElements))
+        {
+            m_PanelElement?.SubPanel.PickAll(m_LastPointerPickPosition, pickedElements);
+            HoveredElement = pickedElements.Count > 0 ? pickedElements[0] : null;
+        }
     }
 
     static void PopulateUpdateSet(List<VisualElementSelection> selectedList, HashSet<VisualElement> set, HashSet<VisualElementSelection> updateSet)

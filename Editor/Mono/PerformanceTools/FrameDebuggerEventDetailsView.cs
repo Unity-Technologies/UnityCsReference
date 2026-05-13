@@ -4,7 +4,6 @@
 
 using System;
 using UnityEditor;
-using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Profiling;
@@ -39,7 +38,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private SelectedColorChannel m_SelectedColorChannel = SelectedColorChannel.All;
         private Vector2 m_ScrollViewVector = Vector2.zero;
         private Vector4 m_SelectedMask = Vector4.one;
-        private AnimBool[] m_FoldoutAnimators = null;
+        private bool[] m_FoldoutOpened = null;
+        private bool[] m_DetailsSectionFoldoutOpened = null;
         private MeshPreview m_Preview;
         private CachedEventDisplayData m_CachedEventData = null;
         private FrameDebuggerWindow m_FrameDebugger = null;
@@ -237,13 +237,28 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 }
             }
 
-            if (m_FoldoutAnimators == null || m_FoldoutAnimators.Length == 0)
+            if (m_FoldoutOpened == null)
             {
-                m_FoldoutAnimators = new AnimBool[k_NumberGUISections];
-                for (int i = 0; i < m_FoldoutAnimators.Length; i++)
+                m_FoldoutOpened = new bool[k_NumberGUISections];
+                for (int i = 0; i < m_FoldoutOpened.Length; i++)
+                    m_FoldoutOpened[i] = EditorPrefs.HasKey(k_foldoutKeys[i]) ? EditorPrefs.GetBool(k_foldoutKeys[i]) : false;
+            }
+
+            if (m_DetailsSectionFoldoutOpened == null)
+            {
+                m_DetailsSectionFoldoutOpened = new bool[(int)DetailsSectionType.Count];
+                for (int i = 0; i < m_DetailsSectionFoldoutOpened.Length; i++)
                 {
-                    bool val = EditorPrefs.HasKey(k_foldoutKeys[i]) ? EditorPrefs.GetBool(k_foldoutKeys[i]) : false;
-                    m_FoldoutAnimators[i] = new AnimBool(val);
+                    FrameDebuggerStyles.EventDetails.DetailsSectionInfo sectionInfo = FrameDebuggerStyles.EventDetails.s_DetailsSections[i];
+
+                    if (string.IsNullOrEmpty(sectionInfo.editorPrefsKey))
+                    {
+                        m_DetailsSectionFoldoutOpened[i] = sectionInfo.defaultOpenState;
+                    }
+                    else
+                    {
+                        m_DetailsSectionFoldoutOpened[i] = EditorPrefs.GetBool(sectionInfo.editorPrefsKey, sectionInfo.defaultOpenState);
+                    }
                 }
             }
             Profiler.EndSample();
@@ -405,14 +420,14 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         private void DrawOutputFoldout(Rect rect, bool shouldDrawOutput, bool isDebuggingEditor)
         {
-            if (BeginFoldoutBox(0, shouldDrawOutput, FrameDebuggerStyles.EventDetails.s_FoldoutOutputText, out float fadePercent, null))
+            if (BeginFoldoutBox(0, shouldDrawOutput, FrameDebuggerStyles.EventDetails.s_FoldoutOutputText, null))
             {
                 if (shouldDrawOutput)
                 {
                     EditorGUILayout.BeginVertical();
                     {
                         float viewportWidth = rect.width - 30f;
-                        float viewportHeightFaded = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight * fadePercent;
+                        float viewportHeight = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight;
                         float renderTargetWidth = m_CachedEventData.m_RenderTargetWidth;
                         float renderTargetHeight = m_CachedEventData.m_RenderTargetHeight;
 
@@ -433,7 +448,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                             scaledRenderTargetHeight = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight;
                         }
 
-                        DrawTargetTexture(rect, viewportWidth, viewportHeightFaded, renderTargetWidth, renderTargetHeight, scaledRenderTargetWidth, scaledRenderTargetHeight, fadePercent, isDebuggingEditor);
+                        DrawTargetTexture(rect, viewportWidth, viewportHeight, renderTargetWidth, renderTargetHeight, scaledRenderTargetWidth, scaledRenderTargetHeight, isDebuggingEditor);
                     }
                     GUILayout.EndVertical();
                 }
@@ -441,7 +456,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EndFoldoutBox();
         }
 
-        private void DrawTargetTexture(Rect rect, float viewportWidth, float viewportHeight, float renderTargetWidth, float renderTargetHeight, float scaledRenderTargetWidth, float scaledRenderTargetHeight, float fadePercent, bool isDebuggingEditor)
+        private void DrawTargetTexture(Rect rect, float viewportWidth, float viewportHeight, float renderTargetWidth, float renderTargetHeight, float scaledRenderTargetWidth, float scaledRenderTargetHeight, bool isDebuggingEditor)
         {
             EditorGUILayout.BeginHorizontal(FrameDebuggerStyles.EventDetails.s_RenderTargetMeshBackgroundStyle);
             Rect previewRect = GUILayoutUtility.GetRect(viewportWidth, viewportHeight);
@@ -468,11 +483,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 yPos += (viewportHeight - scaledRenderTargetHeight) * 0.5f;
 
             float xPos = 10f + Mathf.Max(viewportWidth * 0.5f - scaledRenderTargetWidth * 0.5f, 0f);
-
-            // This is a weird one. When opening/closing the foldout, the image
-            // shifts a tiny bit to the right. This magic code prevents that.
-            if (fadePercent < 1f)
-                xPos -= 7f;
 
             Rect textureRect = new Rect(xPos, yPos, scaledRenderTargetWidth, scaledRenderTargetHeight);
 
@@ -537,7 +547,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
 
 
-            if (BeginFoldoutBox(10, shouldDraw, header, out float fadePercent, null) && shouldDraw)
+            if (BeginFoldoutBox(10, shouldDraw, header, null) && shouldDraw)
             {
                 // Safety checks as things can get go wrong when switching between editor and remote...
                 m_MeshIndex = Mathf.Min(m_MeshIndex, m_CachedEventData.m_Meshes.Length - 1);
@@ -555,7 +565,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 EditorGUILayout.BeginVertical();
                 {
                     float viewportWidth = rect.width - 30f;
-                    float viewportHeightFaded = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight * fadePercent;
+                    float viewportHeight = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight;
                     float renderTargetWidth = m_CachedEventData.m_RenderTargetWidth;
                     float renderTargetHeight = m_CachedEventData.m_RenderTargetHeight;
 
@@ -576,7 +586,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         scaledRenderTargetHeight = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight;
                     }
 
-                    DrawEventMesh(viewportWidth, viewportHeightFaded, scaledRenderTargetWidth);
+                    DrawEventMesh(viewportWidth, viewportHeight, scaledRenderTargetWidth);
                 }
                 GUILayout.EndVertical();
                 EditorGUILayout.EndHorizontal();
@@ -658,15 +668,10 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUILayout.EndHorizontal();
         }
 
+        // Variable rate shading (VRS)
         private void DrawShadingRateImage()
         {
-            if (m_CachedEventData.m_ShadingRateImageTexture == null)
-            {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(m_CachedEventData.m_ShadingRateImageDetails, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle);
-                EditorGUILayout.EndHorizontal();
-            }
-            else
+            if (m_CachedEventData.m_ShadingRateImageTexture != null)
             {
                 // Blit to the copy first
                 if (m_ShadingRateImageTextureCopy == null)
@@ -685,51 +690,68 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     );
                 }
 
-                // Set up the Texture Preview
-                Rect previewRect = GUILayoutUtility.GetRect(10, 10);
-                previewRect.width = 10;
-                previewRect.height = 10;
-                previewRect.x += 180f;
-                previewRect.y += 47f;
+                GUIStyle style = FrameDebuggerStyles.EventDetails.s_MonoLabelStyle;
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(m_CachedEventData.m_ShadingRateImageDetails, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle, GUILayout.MinWidth(m_CachedEventData.m_DetailsGUIWidth), GUILayout.MinHeight(60));
-                
-                Texture previewTexture = m_ShadingRateImageTextureCopy;
-                GUI.DrawTexture(previewRect, previewTexture, ScaleMode.StretchToFill, false);
 
-                if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(previewRect))
+                // Get rect for the entire line
+                Rect lineRect = GUILayoutUtility.GetRect(0, EditorGUIUtility.singleLineHeight, GUILayout.ExpandWidth(true));
+
+                // Account for EditorGUI indent level (15 pixels per level)
+                float indentOffset = EditorGUI.indentLevel * 15f;
+
+                // First column: Label (22 characters width to match k_TwoColumnFormat)
+                float labelWidth = FrameDebuggerStyles.EventDetails.TwoColumnLabelWidth;
+                Rect labelRect = new Rect(lineRect.x + indentOffset, lineRect.y, labelWidth, lineRect.height);
+                GUI.Label(labelRect, FrameDebuggerStyles.EventDetails.s_ShadingRateImageText, style);
+
+                // Second column: Thumbnail + Name
+                const int thumbnailSize = 10;
+                const int thumbnailSpacing = 5; // Spacing between label and thumbnail
+                const int nameSpacing = 5; // Spacing between thumbnail and name
+
+                // Thumbnail rect - centered vertically
+                Rect thumbnailRect = new Rect(
+                    lineRect.x + indentOffset + labelWidth + thumbnailSpacing,
+                    lineRect.y + (lineRect.height - thumbnailSize) * 0.5f,
+                    thumbnailSize,
+                    thumbnailSize
+                );
+
+                GUI.DrawTexture(thumbnailRect, m_ShadingRateImageTextureCopy, ScaleMode.StretchToFill, false);
+
+                if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(thumbnailRect))
                 {
                     PopupWindowWithoutFocus.Show(
-                        previewRect,
+                        thumbnailRect,
                         new ObjectPreviewPopup(m_ShadingRateImageTextureCopy),
                         new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
                     );
                 }
+
+                // Texture name rect
+                float nameX = thumbnailRect.xMax + nameSpacing;
+                Rect nameRect = new Rect(
+                    nameX,
+                    lineRect.y,
+                    lineRect.width - (nameX - lineRect.x - indentOffset),
+                    lineRect.height
+                );
+                GUI.Label(nameRect, m_CachedEventData.m_ShadingRateImageTexture.name, style);
+
                 EditorGUILayout.EndHorizontal();
             }
         }
 
-        private void DrawDetails(Rect rect)
+        void DrawSection(string sectionString, GUIStyle style, GUILayoutOption options)
         {
-            bool isFoldoutOpen = BeginFoldoutBox(1, true, FrameDebuggerStyles.EventDetails.s_FoldoutEventDetailsText, out float fadePercent, () => m_CachedEventData.detailsCopyString);
-            if (!isFoldoutOpen)
-            {
-                EndFoldoutBox();
-                return;
-            }
-
-            GUIStyle style = FrameDebuggerStyles.EventDetails.s_MonoLabelStyle;
-
-            // Size, Color Actions, Blending, Z, Stencil...
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(m_CachedEventData.details, style, GUILayout.MinWidth(m_CachedEventData.m_DetailsGUIWidth), GUILayout.MinHeight(m_CachedEventData.m_DetailsGUIHeight));
+            EditorGUILayout.LabelField(sectionString, style, options);
             EditorGUILayout.EndHorizontal();
+        }
 
-            // Variable rate shading (VRS)
-            DrawShadingRateImage();
-
-            // Shader
+        private void DrawShaders(GUIStyle style)
+        {
             if (m_CachedEventData.m_ShouldDisplayRealAndOriginalShaders)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -756,6 +778,51 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 }
                 EditorGUILayout.EndHorizontal();
             }
+        }
+
+        private void DrawDetails(Rect rect)
+        {
+            bool isFoldoutOpen = BeginFoldoutBox(1, true, FrameDebuggerStyles.EventDetails.s_FoldoutEventDetailsText, () => m_CachedEventData.detailsCopyString);
+            if (isFoldoutOpen)
+            {
+                GUIStyle style = FrameDebuggerStyles.EventDetails.s_MonoLabelStyle;
+
+                var options = GUILayout.MinHeight(m_CachedEventData.GetDetailsSectionHeight(DetailsSectionType.EventInfo));
+
+                EditorGUI.indentLevel++;
+                for (int i = 0; i < (int)DetailsSectionType.Count; i++)
+                {
+                    DetailsSectionType sectionType = (DetailsSectionType)i;
+                    FrameDebuggerStyles.EventDetails.DetailsSectionInfo sectionInfo = FrameDebuggerStyles.EventDetails.s_DetailsSections[i];
+
+                    // Skip section if it has no content
+                    var sectionString = m_CachedEventData.GetDetailsSectionString(sectionType);
+                    if (string.IsNullOrEmpty(sectionString))
+                        continue;
+
+                    options = GUILayout.MinHeight(m_CachedEventData.GetDetailsSectionHeight(sectionType));
+
+                    bool wasOpened = m_DetailsSectionFoldoutOpened[i];
+                    bool isOpen = EditorGUILayout.Foldout(wasOpened, sectionInfo.header);
+                    if (isOpen)
+                    {
+                        EditorGUI.indentLevel++;
+                        DrawSection(sectionString, style, options);
+                        switch(sectionType)
+                        {
+                            case DetailsSectionType.VariableRateShading: DrawShadingRateImage(); break;
+                            case DetailsSectionType.Shader: DrawShaders(style); break;
+                        }
+                        EditorGUI.indentLevel--;
+                    }
+                    if (wasOpened != isOpen)
+                    {
+                        m_DetailsSectionFoldoutOpened[i] = isOpen;
+                        EditorPrefs.SetBool(sectionInfo.editorPrefsKey, isOpen);
+                    }
+                }
+                EditorGUI.indentLevel--;
+            }
 
             EndFoldoutBox();
         }
@@ -767,7 +834,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             // We disable and hide keywords and shader properties for clear and resolve events or when we don't have any data.
             bool shouldDisplayProperties = !m_CachedEventData.m_IsClearEvent && !m_CachedEventData.m_IsResolveEvent;
             bool shouldDraw = shouldDisplayProperties && propertyDisplayInfo != null && propertyDisplayInfo.Length > 0;
-            bool isFoldoutOpen = BeginFoldoutBox(foldoutIndex, shouldDraw, foldoutText, out float fadePercent, () => shaderProperties.copyString);
+            bool isFoldoutOpen = BeginFoldoutBox(foldoutIndex, shouldDraw, foldoutText, () => shaderProperties.copyString);
 
             if (!shouldDraw || !isFoldoutOpen)
             {
@@ -840,44 +907,54 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EndFoldoutBox();
         }
 
-        private bool BeginFoldoutBox(int foldoutIndex, bool hasData, GUIContent header, out float fadePercent, Func<string> copyStringAction = null)
+        void ShowContextMenu(int foldoutIndex, Func<string> copyStringAction)
+        {
+            GenericMenu menu = new GenericMenu();
+
+            menu.AddItem(FrameDebuggerStyles.EventDetails.s_FoldoutCopyText[foldoutIndex], false, () =>
+            {
+                EditorGUIUtility.systemCopyBuffer = copyStringAction();
+            });
+
+            menu.ShowAsContext();
+        }
+
+        private bool BeginFoldoutBox(int foldoutIndex, bool hasData, GUIContent header, Func<string> copyStringAction = null)
         {
             GUI.enabled = hasData;
 
             EditorGUILayout.BeginVertical(FrameDebuggerStyles.EventDetails.s_FoldoutCategoryBoxStyle);
-            Rect r = GUILayoutUtility.GetRect(2, 21);
 
-            EditorGUI.BeginChangeCheck();
-            bool expanded = EditorGUI.FoldoutTitlebar(r, header, m_FoldoutAnimators[foldoutIndex].target, true, EditorStyles.inspectorTitlebarFlat, EditorStyles.inspectorTitlebarText);
-            if (EditorGUI.EndChangeCheck())
+            Profiler.BeginSample("BeginFoldoutBox - " + header.text);
+
+            bool wasOpened = m_FoldoutOpened[foldoutIndex];
+
+            // Only create delegate if there's something to copy
+            Action<Rect> menuAction = copyStringAction != null && FrameDebuggerStyles.EventDetails.s_FoldoutCopyText[foldoutIndex] != null ?
+                (rect) => ShowContextMenu(foldoutIndex, copyStringAction) : null;
+
+            bool isOpened = EditorGUILayout.BeginFoldoutHeaderGroup(
+                    wasOpened,
+                    header,
+                    FrameDebuggerStyles.EventDetails.s_FoldoutCategoryHeaderStyle,
+                    menuAction
+                );
+
+            if (wasOpened != isOpened)
             {
-                bool newState = !m_FoldoutAnimators[foldoutIndex].target;
-                EditorPrefs.SetBool(k_foldoutKeys[foldoutIndex], newState);
-
-                // If Shift is being held down, we change the state for all of them...
-                if (Event.current.shift || Event.current.alt)
-                    for (int i = m_FoldoutAnimators.Length - 1; i >= 0; i--)
-                        m_FoldoutAnimators[i].target = newState;
-                else
-                    m_FoldoutAnimators[foldoutIndex].target = newState;
+                m_FoldoutOpened[foldoutIndex] = isOpened;
+                EditorPrefs.SetBool(k_foldoutKeys[foldoutIndex], isOpened);
             }
 
-            if (Event.current.type == EventType.ContextClick)
-                if (copyStringAction != null && FrameDebuggerStyles.EventDetails.s_FoldoutCopyText[foldoutIndex] != null && copyStringAction != null)
-                    ShaderPropertyCopyValueMenu(r, FrameDebuggerStyles.EventDetails.s_FoldoutCopyText[foldoutIndex], copyStringAction);
-
-            GUI.enabled = true;
-            EditorGUI.indentLevel++;
-            fadePercent = m_FoldoutAnimators[foldoutIndex].faded;
-
-            return EditorGUILayout.BeginFadeGroup(m_FoldoutAnimators[foldoutIndex].faded);
+            return isOpened;
         }
 
         private void EndFoldoutBox()
         {
-            EditorGUILayout.EndFadeGroup();
-            EditorGUI.indentLevel--;
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            Profiler.EndSample();
             EditorGUILayout.EndVertical();
+            GUI.enabled = true;
         }
 
         private void ShaderPropertyCopyValueMenu(Rect valueRect, GUIContent menuText, Func<string> textToCopy)

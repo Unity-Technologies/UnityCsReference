@@ -2,24 +2,21 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
-    class LoadingSpinner : VisualElement
+    [UxmlElement]
+    partial class LoadingSpinner : VisualElement
     {
 
         const int k_RotationSpeed = 360; // Euler degrees per second
 
         readonly VisualElement m_Spinner;
 
-        [UxmlAttribute]
         double m_LastRotationTime;
-        [UxmlAttribute]
         int m_Rotation;
-        [UxmlAttribute]
         bool m_Started;
 
         public LoadingSpinner()
@@ -103,13 +100,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             m_LastRotationTime = currentTime;
-        }
-
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new LoadingSpinner();
         }
     }
 }

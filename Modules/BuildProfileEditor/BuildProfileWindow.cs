@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEditor.Build.Profile.Elements;
 using UnityEditor.Build.Profile.Handlers;
+using UnityEditor.Modules;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -672,10 +673,6 @@ namespace UnityEditor.Build.Profile
 
         void UpdateFormButtonState(BuildProfile profile)
         {
-            var isCustomBuildProfile = !BuildProfileContext.IsClassicPlatformProfile(profile);
-            var isModuleInstalled = BuildProfileContext.IsModuleInstalled(profile);
-            var isBuildAutomationSupported = BuildProfileContext.IsBuildAutomationSupported(profile);
-
             // Reset any custom buttons
             m_CustomButtons.ForEach(button => button.RemoveFromHierarchy());
             m_CustomButtons.Clear();
@@ -690,60 +687,78 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
+            var isCustomBuildProfile = !BuildProfileContext.IsClassicPlatformProfile(profile);
+            var isModuleInstalled = BuildProfileModuleUtil.IsModuleInstalled(profile.platformGuid);
+            var isBuildAutomationSupported = BuildProfileModuleUtil.IsBuildAutomationSupported(profile.platformGuid);
+
             var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(profile.platformGuid);
-            if (profile.IsActiveBuildProfileOrPlatform())
-            {
-                m_WindowState.activateAction = ActionState.Hidden;
+
+            // Compute both cloud action state and tooltip in one call
+            var (cloudAction, cloudTooltip) = ComputeCloudData(isCustomBuildProfile, isModuleInstalled, isBuildAutomationSupported);
+
+            // Update the window state based on the selected profile.
+            ApplyProfileState(profile, sdkPlatformExtension, cloudAction, cloudTooltip, profile.IsActiveBuildProfileOrPlatform());
+
+            m_WindowState.Refresh();
+        }
+
+        (ActionState actionState, string tooltip) ComputeCloudData(bool isCustom, bool isModuleInstalled, bool isBuildAutomationSupported)
+        {
+            if (!isCustom)
+                return (ActionState.Disabled, TrText.cloudBuildRequiresProfileTooltip);
+
+            if (!isModuleInstalled)
+                return (ActionState.Hidden, TrText.cloudBuildRequiresProfileTooltip);
+
+            var action = isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled;
+            var tooltip = isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip;
+            return (action, tooltip);
+        }
+
+        void ApplyProfileState(BuildProfile profile, ISDKPlatformExtension sdkPlatformExtension, ActionState cloudAction, string cloudTooltip, bool isActive)
+        {
+            bool canBuild = profile.CanBuildLocally();
+            bool showBuildActions = sdkPlatformExtension == null || sdkPlatformExtension.shouldShowBuildActions;
+
+            // Activate button state differs between active/inactive
+            m_WindowState.activateAction = isActive ? ActionState.Hidden : (canBuild ? ActionState.Enabled : ActionState.Hidden);
+
+            if (isActive)
                 m_SwitchProfilePlatformButton.Hide();
 
-                if (profile.isMultiTarget && profile.activePlatformGuid != profile.selectedPlatformGuid)
-                {
-                    m_SwitchProfilePlatformButton.Show();
-                    HideBuildButtonActions();
-                    m_WindowState.Refresh();
-                    return;
-                }
+            // Multi-target profile with platform mismatch: show switch button, hide build actions.
+            if (isActive && profile.isMultiTarget && profile.activePlatformGuid != profile.selectedPlatformGuid)
+            {
+                m_SwitchProfilePlatformButton.Show();
+                HideBuildButtonActions();
+                return;
+            }
 
-                if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
-                {
-                    HideBuildButtonActions();
-                }
-                else
-                {
-                    m_WindowState.buildAction = ActionState.Enabled;
-                    m_WindowState.buildAndRunAction = ActionState.Enabled;
-                    m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
-                        isModuleInstalled ?
-                        isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
-                    m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
-                        isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
-                }
+            // When the SDK platform suppresses default build actions, hide them and let the
+            // platform populate its own custom buttons instead.
+            if (!showBuildActions)
+            {
+                HideBuildButtonActions();
+                if (isActive && sdkPlatformExtension != null)
+                    CreateFormButtonsForSDKPlatforms(profile, showBuildActions: false);
+                return;
+            }
 
+            if (isActive)
+            {
+                m_WindowState.buildAction = ActionState.Enabled;
+                m_WindowState.buildAndRunAction = ActionState.Enabled;
                 if (sdkPlatformExtension != null)
-                    CreateFormButtonsForSDKPlatforms(profile, sdkPlatformExtension.shouldShowBuildActions);
+                    CreateFormButtonsForSDKPlatforms(profile, showBuildActions: true);
             }
             else
             {
-                bool canBuild = profile.CanBuildLocally();
-                m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
-
-                if (sdkPlatformExtension != null && !sdkPlatformExtension.shouldShowBuildActions)
-                {
-                    HideBuildButtonActions();
-                }
-                else
-                {
-                    m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
-                    m_WindowState.buildAndRunAction = ActionState.Hidden;
-                    m_WindowState.buildInCloudPackageAction = isCustomBuildProfile ?
-                        isModuleInstalled ?
-                        isBuildAutomationSupported ? ActionState.Enabled : ActionState.Disabled : ActionState.Hidden : ActionState.Disabled;
-                    m_BuildInCloudPackageButton.tooltip = isCustomBuildProfile ?
-                        isBuildAutomationSupported ? string.Empty : TrText.cloudBuildUnsupportedTooltip : TrText.cloudBuildRequiresProfileTooltip;
-                }
+                m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
+                m_WindowState.buildAndRunAction = ActionState.Hidden;
             }
 
-            m_WindowState.Refresh();
+            m_WindowState.buildInCloudPackageAction = cloudAction;
+            m_BuildInCloudPackageButton.tooltip = cloudTooltip;
         }
 
         void HideBuildButtonActions()

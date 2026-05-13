@@ -2,14 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine;
+using System;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderTooltipPreview : VisualElement
+    [UxmlElement]
+    internal partial class BuilderTooltipPreview : VisualElement
     {
         public const string UssPath = BuilderConstants.UIBuilderPackagePath + "/BuilderTooltipPreview.uss";
         public const string UssPath_Dark = BuilderConstants.UIBuilderPackagePath + "/BuilderTooltipPreviewDark.uss";
@@ -25,12 +26,6 @@ namespace Unity.UI.Builder
         VisualElement m_Container;
 
         public bool isShowing => m_Enabler.resolvedStyle.display == DisplayStyle.Flex;
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderTooltipPreview();
-        }
 
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;
 

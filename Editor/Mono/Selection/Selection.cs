@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Scripting;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -47,21 +48,22 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_CallSelectionChanged()
         {
+            SelectionHistory.instance.OnSelectionChange();
             foreach (var evt in m_SelectionChangedEvent.UpdateAndInvoke(selectionChanged))
                 evt();
         }
 
-        internal static void SetSelection(Object[] newSelection, Object newActiveObject = null, Object newActiveContext = null, DataMode newDataModeHint = default)
+        internal static void SetSelection(Object[] newSelection, Object newActiveObject = null, Object newActiveContext = null, DataMode newDataModeHint = default, bool notifyOnReselection = false)
         {
-            SetFullSelection(newSelection, newActiveObject, newActiveContext, newDataModeHint);
+            SetFullSelection(newSelection, newActiveObject, newActiveContext, newDataModeHint, notifyOnReselection);
         }
 
-        internal static void SetSelection(Object newActiveObject, Object newActiveContext = null, DataMode newDataModeHint = default)
+        internal static void SetSelection(Object newActiveObject, Object newActiveContext = null, DataMode newDataModeHint = default, bool notifyOnReselection = false)
         {
             var activeObjectID = newActiveObject != null ? newActiveObject.GetEntityId() : EntityId.None;
             var activeContextID = newActiveContext != null ? newActiveContext.GetEntityId() : EntityId.None;
             k_SingleSelectionCache[0] = activeObjectID;
-            SetFullSelectionByID(k_SingleSelectionCache, activeObjectID, activeContextID, newDataModeHint);
+            SetFullSelectionByID(k_SingleSelectionCache, activeObjectID, activeContextID, newDataModeHint, notifyOnReselection);
         }
 
         public static bool Contains(Object obj) { return Contains(obj.GetEntityId()); }
@@ -131,5 +133,27 @@ namespace UnityEditor
             return GetFilteredInternal(type, mode).Cast<Object>().ToArray();
 #pragma warning restore UA2001
         }
+
+        public static void RegisterCustomHandler(string key, System.Action<string, EntityId[]> handler, System.Func<string, EditorWindow, bool> validator = null) => SelectionHistory.instance.RegisterCustomHandler(key, handler, validator);
+        public static void UnregisterCustomHandler(string key) => SelectionHistory.instance.UnregisterCustomHandler(key);
+
+        public static void SetCustomSelection(string key, string data) => SelectionHistory.instance.SetCustomSelection(key, data, System.ReadOnlySpan<EntityId>.Empty, false);
+        internal static void SetCustomSelection(string key, string data, EntityId activeContextEid, DataMode dataMode)
+            => SelectionHistory.instance.SetCustomSelection(key, data, System.ReadOnlySpan<EntityId>.Empty, false, activeContextEid, dataMode);
+
+        public static void SetCustomSelection(string key, string data, EntityId selectedEntityId)
+        {
+            System.ReadOnlySpan<EntityId> selection = MemoryMarshal.CreateReadOnlySpan(ref selectedEntityId, 1);
+            SelectionHistory.instance.SetCustomSelection(key, data, selection, true);
+        }
+        internal static void SetCustomSelection(string key, string data, EntityId selectedEntityId, EntityId activeContextEid, DataMode dataMode)
+        {
+            System.ReadOnlySpan<EntityId> selection = MemoryMarshal.CreateReadOnlySpan(ref selectedEntityId, 1);
+            SelectionHistory.instance.SetCustomSelection(key, data, selection, true, activeContextEid, dataMode);
+        }
+
+        public static void SetCustomSelection(string key, string data, System.ReadOnlySpan<EntityId> selectedEntityIds) => SelectionHistory.instance.SetCustomSelection(key, data, selectedEntityIds, true);
+        internal static void SetCustomSelection(string key, string data, System.ReadOnlySpan<EntityId> selectedEntityIds, EntityId activeContextEid, DataMode dataMode)
+            => SelectionHistory.instance.SetCustomSelection(key, data, selectedEntityIds, true, activeContextEid, dataMode);
     }
 }

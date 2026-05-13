@@ -169,6 +169,11 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (MultiColumnLayout != null)
                 {
                     Insert(0, MultiColumnLayout.CreateMultiColumnHeader());
+                    scrollView.applyOffset = (offset) =>
+                    {
+                        scrollView.contentContainer.style.translate = new Vector3(0, -offset.y, 0);
+                        MultiColumnLayout.ScrollHorizontally(offset.x);
+                    };
                 }
 
                 UnbindAllItems();
@@ -409,7 +414,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void OnHorizontalScrollerChangeEvent(ChangeEvent<double> evt)
         {
-            MultiColumnLayout?.header.ScrollHorizontally((float)evt.newValue);
+            MultiColumnLayout?.ScrollHorizontally((float)evt.newValue);
         }
 
         void OnHorizontalScrollerGeometryChange(GeometryChangedEvent evt)
@@ -467,6 +472,16 @@ namespace UnityEngine.UIElements.HierarchyV2
             var viewportWidth = m_ScrollView.viewport.layout.width;
             var headerPadding = header.resolvedStyle.paddingLeft + header.resolvedStyle.paddingRight;
             header.style.maxWidth = viewportWidth - headerPadding;
+
+            // Update all row widths to match the new header width
+            // Schedule to ensure header layout is complete
+            schedule.Execute(() =>
+            {
+                foreach (var displayItem in m_DisplayedList)
+                {
+                    MultiColumnLayout.UpdateRowCellsWidth(displayItem.element);
+                }
+            });
         }
 
         internal void UpdateVerticalScrollValue(double value)
@@ -488,14 +503,9 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             try
             {
-                // here we don`t want to react to further value changes in order not to trigger an
-                // infinite loop
-                using (new EventDispatcherGate(panel.dispatcher))
-                {
-                    m_VerticalScroller.highValue = maxScrollRange;
-                    m_VerticalScroller.value = currentScrollOffset;
-                    m_ScrollValue = m_VerticalScroller.value;
-                }
+                m_VerticalScroller.highValue = maxScrollRange;
+                m_VerticalScroller.value = currentScrollOffset;
+                m_ScrollValue = m_VerticalScroller.value;
             }
             finally
             {
@@ -803,11 +813,13 @@ namespace UnityEngine.UIElements.HierarchyV2
         void UpdateHorizontalScrollRange()
         {
             var maxWidth = 0f;
+            var containerWidth = m_Container.boundingBox.width;
             var verticalScrollerWidth = m_VerticalScroller.worldBound.width;
 
             if (MultiColumnLayout != null)
             {
-                maxWidth = MultiColumnLayout.header.columnContainer.layoutSize.x - verticalScrollerWidth;
+                maxWidth = MultiColumnLayout.header.maxScrollableWidth;
+                containerWidth = MultiColumnLayout.header.scrollableWidth;
             }
             else
             {
@@ -817,11 +829,11 @@ namespace UnityEngine.UIElements.HierarchyV2
                 }
             }
 
-            m_HorizontalScroller.style.display = maxWidth > m_Container.rect.width ? DisplayStyle.Flex : DisplayStyle.None;
+            m_HorizontalScroller.style.display = maxWidth > containerWidth && containerWidth > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             m_HorizontalScroller.lowValue = 0;
-            m_HorizontalScroller.highValue = maxWidth - m_Container.rect.width;
-            m_HorizontalScroller.scrollSize = k_DefaultScrollSize * m_Container.rect.width;
-            m_HorizontalScroller.factor = maxWidth > UIRUtility.k_Epsilon ? m_Container.worldBound.width / maxWidth : 1f;
+            m_HorizontalScroller.highValue = Mathf.Max(0, maxWidth - containerWidth);
+            m_HorizontalScroller.scrollSize = k_DefaultScrollSize * containerWidth;
+            m_HorizontalScroller.factor = maxWidth > UIRUtility.k_Epsilon ? containerWidth / maxWidth : 1f;
         }
 
         void BindVisibleItems(bool forceBindItem = false)

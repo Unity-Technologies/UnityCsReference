@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -25,46 +24,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId labelProperty = nameof(label);
         internal static readonly BindingId iconImageProperty = nameof(iconImage);
         internal static readonly BindingId closeableProperty = nameof(closeable);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(label), "label"),
-                    new(nameof(iconImageReference), "icon-image"),
-                    new(nameof(closeable), "closeable"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineTextField] string label;
-            [ImageFieldValueDecorator("Icon Image")]
-            [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;
-            [SerializeField] bool closeable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags closeable_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Tab();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (Tab) obj;
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                    e.label = label;
-                if (ShouldWriteAttributeValue(iconImageReference_UxmlAttributeFlags))
-                    e.iconImageReference = iconImageReference;
-                if (ShouldWriteAttributeValue(closeable_UxmlAttributeFlags))
-                    e.closeable = closeable;
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -176,13 +135,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Action<Tab> closed;
 
-        // Used privately to help the serializer convert the Unity Object to the appropriate asset type.
-        Object iconImageReference
-        {
-            get => iconImage.GetSelectedImage();
-            set => iconImage = Background.FromObject(value);
-        }
-
         string m_Label;
         Background m_IconImage;
         bool m_Closeable;
@@ -217,6 +169,8 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sets the label of the Tab's header.
         /// </summary>
+        [MultilineTextField]
+        [UxmlAttribute]
         [CreateProperty]
         public string label
         {
@@ -236,6 +190,15 @@ namespace UnityEngine.UIElements
                 m_Label = value;
                 NotifyPropertyChanged(labelProperty);
             }
+        }
+
+        [UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))]
+        [ImageFieldValueDecorator(displayName = "Icon Image")]
+        // Used privately to help the serializer convert the Unity Object to the appropriate asset type.
+        Object iconImageReference
+        {
+            get => iconImage.GetSelectedImage();
+            set => iconImage = Background.FromObject(value);
         }
 
         /// <summary>
@@ -288,6 +251,7 @@ namespace UnityEngine.UIElements
         /// The default value is <c>false</c>.
         /// Set this value to <c>true</c> to allow the user to close tabs in the tab view.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public bool closeable
         {
@@ -367,7 +331,7 @@ namespace UnityEngine.UIElements
             }.WithClassList(tabHeaderLabelUssClassNameUnique);
             m_TabHeader.Add(m_TabHeaderLabel);
 
-            m_TabHeader.RegisterCallback<PointerDownEvent>(OnTabClicked, InvokePolicy.IncludeDisabled);
+            m_TabHeader.RegisterCallback<PointerDownEvent>(OnTabClicked, CallbackOptions.IncludeDisabled);
 
             // Add the Tab's underline for active tab
             m_TabHeader.Add(new VisualElement()

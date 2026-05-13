@@ -586,7 +586,7 @@ namespace UnityEditor
         }
 
         [EditorTool("Shape", typeof(TrailRenderer))]
-        class ShapeGizmoTool : EditorTool, IDrawSelectedHandles
+        internal class ShapeGizmoTool : EditorTool, IDrawSelectedHandles
         {
             public override GUIContent toolbarIcon
             {

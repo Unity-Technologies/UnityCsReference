@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEditor.Connect;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
@@ -15,7 +16,8 @@ namespace UnityEditor.Build.Profile;
 [VisibleToOtherModules]
 internal class PlatformPackageServiceInfoProvider
 {
-    public Action OnPackageInfoUpdated;
+    public event Action OnPackageInfoUpdated;
+    public event Action OnUserLoginStateChanged;
     public RequestState currentRequestState { get; private set; }
     public enum RequestState
     {
@@ -31,6 +33,9 @@ internal class PlatformPackageServiceInfoProvider
     readonly UnityConnectProxy m_UnityConnectProxy = new UnityConnectProxy();
     readonly UnityOAuthProxy m_UnityOAuthProxy = new UnityOAuthProxy();
     readonly AssetStoreOAuth m_AssetStoreOAuth;
+
+    public bool isUserLoggedIn => UnityConnect.instance.loggedIn;
+    public void ShowLogin() => UnityConnect.instance.ShowLogin();
 
     string m_Host = string.Empty;
     string host
@@ -74,12 +79,19 @@ internal class PlatformPackageServiceInfoProvider
     internal PlatformPackageServiceInfoProvider()
     {
         m_AssetStoreOAuth = new AssetStoreOAuth(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
+        UnityConnect.instance.StateChanged += OnStateChanged;
     }
 
     public void Dispose()
     {
+        UnityConnect.instance.StateChanged -= OnStateChanged;
         foreach (var packageInfo in m_PackageServiceInfoList)
             packageInfo.Dispose();
+    }
+
+    void OnStateChanged(ConnectInfo state)
+    {
+        OnUserLoginStateChanged?.Invoke();
     }
 
     /// <summary>

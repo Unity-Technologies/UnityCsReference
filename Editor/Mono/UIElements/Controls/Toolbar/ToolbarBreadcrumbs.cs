@@ -47,21 +47,10 @@ namespace UnityEditor.UIElements
     /// ]]>
     /// </code>
     /// </example>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarBreadcrumbs.png")]
     public partial class ToolbarBreadcrumbs : VisualElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarBreadcrumbs();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
-
         /// <summary>
         /// A Unity style sheet (USS) class for the main ToolbarBreadcrumbs container.
         /// </summary>

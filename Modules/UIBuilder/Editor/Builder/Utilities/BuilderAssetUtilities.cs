@@ -539,7 +539,13 @@ namespace Unity.UI.Builder
 
         public static TemplateContainer GetVisualElementRootTemplate(VisualElement visualElement)
         {
-            return UxmlAssetUtilities.GetVisualElementRootTemplate(visualElement, VisualElementExtensions.GetVisualElementAsset);
+            var builder = Builder.ActiveWindow;
+
+            if (builder == null)
+                return null;
+
+            var editedVisualTree = builder.document.visualTreeAsset;
+            return UxmlAssetUtilities.GetRootTemplateContainerInEditedVisualTree(editedVisualTree, visualElement);
         }
 
         public static bool HasDynamicallyCreatedTemplateAncestor(VisualElement visualElement)

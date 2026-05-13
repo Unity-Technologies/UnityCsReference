@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEditor.AssetImporters;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -105,6 +106,10 @@ namespace UnityEditor
         SerializedProperty m_SortHierarchyByName;
         [CacheProperty]
         SerializedProperty m_AddColliders;
+        [CacheProperty]
+        SerializedProperty m_PreBakeConvexCollisionMesh;
+        [CacheProperty]
+        SerializedProperty m_PreBakeTriangleCollisionMesh;
         [CacheProperty("bakeAxisConversion")]
         SerializedProperty m_BakeAxisConversion;
 
@@ -157,7 +162,10 @@ namespace UnityEditor
             public static GUIContent GenerateMeshLods = EditorGUIUtility.TrTextContent("Generate Mesh LODs", "Generate Mesh LODs during the import process.");
             public static GUIContent MeshLodLimit = EditorGUIUtility.TrTextContent("Limit LODs", "Enable to limit the number of LODs that Unity generates.");
             public static GUIContent MaximumMeshLod = EditorGUIUtility.TrTextContent("Maximum Level", "Enter the maximum index number of generated LODs.");
+            public static GUIContent Collision = EditorGUIUtility.TrTextContent("Collision");
             public static GUIContent GenerateColliders = EditorGUIUtility.TrTextContent("Generate Colliders", "Should Unity generate mesh colliders for all meshes.");
+            public static GUIContent PreBakeConvexCollisionMesh = EditorGUIUtility.TrTextContent("Pre-bake Convex Collision Mesh", "Enable this property if the Mesh is used by a convex Mesh Collider.");
+            public static GUIContent PreBakeTriangleCollisionMesh = EditorGUIUtility.TrTextContent("Pre-bake Triangle Collision Mesh", "Enable this property if the Mesh is used by a non convex Mesh Collider.");
             public static GUIContent MeshLodDiscardOddLevels = EditorGUIUtility.TrTextContent("Discard Odd Levels", "Limits the number of generated LODs by discarding all odd LOD indices.");
 
             public static GUIContent Geometry = EditorGUIUtility.TrTextContent("Geometry", "Detailed mesh data");
@@ -222,7 +230,21 @@ namespace UnityEditor
 
             m_MeshOptimizationFlags.intValue = (int)(MeshOptimizationFlags)EditorGUILayout.EnumFlagsField(Styles.OptimizationFlags, (MeshOptimizationFlags)m_MeshOptimizationFlags.intValue);
 
+            EditorGUILayout.LabelField(Styles.Collision, EditorStyles.boldLabel);
+
             EditorGUILayout.PropertyField(m_AddColliders, Styles.GenerateColliders);
+            EditorGUILayout.PropertyField(m_PreBakeConvexCollisionMesh, Styles.PreBakeConvexCollisionMesh);
+            EditorGUILayout.PropertyField(m_PreBakeTriangleCollisionMesh, Styles.PreBakeTriangleCollisionMesh);
+
+            if (m_AddColliders.boolValue && !m_PreBakeTriangleCollisionMesh.boolValue && !m_IsReadable.boolValue)
+            {
+                if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
+                    EditorGUIUtility.TrTextContent("Generating Mesh Colliders is enabled but Read/Write and pre-bake triangle collision are both disabled. In future versions of Unity, the build process will require any of these 2 options to be enabled to generate collision data."),
+                    EditorGUIUtility.TrTextContent("Enable Pre-bake Collision"), 200.0f))
+                {
+                    m_PreBakeTriangleCollisionMesh.boolValue = true;
+                }
+            }
 
             EditorGUILayout.LabelField(Styles.MeshLods, EditorStyles.boldLabel);
 
@@ -489,8 +511,6 @@ namespace UnityEditor
 
         protected void UvsGUI()
         {
-            m_ImportUVs.intValue = (int)(ModelImporterUVs)EditorGUILayout.EnumFlagsField(Styles.ImportUVs, (ModelImporterUVs)m_ImportUVs.intValue);
-            EditorGUILayout.PropertyField(m_SwapUVChannels, Styles.SwapUVChannels);
             EditorGUILayout.PropertyField(m_GenerateSecondaryUV, Styles.GenerateSecondaryUV);
             if (m_GenerateSecondaryUV.boolValue)
             {
@@ -543,6 +563,21 @@ namespace UnityEditor
                         }
                     }
                 }
+            }
+
+            EditorGUI.BeginChangeCheck();
+            var importUVs = (ModelImporterUVs)EditorGUILayout.EnumFlagsField(Styles.ImportUVs, (ModelImporterUVs)m_ImportUVs.intValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_ImportUVs.intValue = (int)importUVs;
+            }
+
+            var swappedUVs = ModelImporterUVs.UV0 | ModelImporterUVs.UV1;
+            if ((importUVs & swappedUVs) == swappedUVs)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_SwapUVChannels, Styles.SwapUVChannels);
+                EditorGUI.indentLevel--;
             }
         }
     }

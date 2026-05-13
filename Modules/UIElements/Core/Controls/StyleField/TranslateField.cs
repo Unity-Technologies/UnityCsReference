@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -13,20 +11,9 @@ namespace UnityEngine.UIElements
     /// Makes a field for entering Translate.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal class TranslateField : BaseField<Translate>
+    [UxmlElement]
+    internal partial class TranslateField : BaseField<Translate>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Translate>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Translate>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TranslateField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

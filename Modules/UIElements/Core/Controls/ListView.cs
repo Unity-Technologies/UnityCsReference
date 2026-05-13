@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -79,37 +78,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId unbindItemProperty = nameof(unbindItem);
         internal static readonly BindingId destroyItemProperty = nameof(destroyItem);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseListView.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new ("itemTemplate", "item-template")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] VisualTreeAsset itemTemplate;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags itemTemplate_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new ListView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(itemTemplate_UxmlAttributeFlags))
-                {
-                    var e = (ListView)obj;
-                    e.itemTemplate = itemTemplate;
-                }
-            }
-        }
-
         Func<VisualElement> m_MakeItem;
 
         /// <summary>
@@ -155,6 +123,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// You can use it along with <see cref="BaseListView.bindingSourceSelectionMode"/> and bindings to have a completely codeless workflow.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public VisualTreeAsset itemTemplate
         {

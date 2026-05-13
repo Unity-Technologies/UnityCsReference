@@ -1222,8 +1222,7 @@ namespace UnityEditor
 
         void HandleUndo(in UndoRedoInfo info)
         {
-            //Update animations serialization in-case something has changed
-            m_ClipAnimations.serializedObject.UpdateIfRequiredOrScript();
+            serializedObject.UpdateIfRequiredOrScript();
 
             //Reset the cache to the serialized values
             DeserializeClips();

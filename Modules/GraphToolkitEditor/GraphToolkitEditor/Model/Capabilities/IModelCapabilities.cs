@@ -118,4 +118,22 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="name">New name to give to the model.</param>
         void Rename(string name);
     }
+
+    /// <summary>
+    /// An element that can be animated.
+    /// </summary>
+    [UnityRestricted]
+    internal interface IAnimatable
+    {
+        /// <summary>
+        /// Whether the element is animating. Set to <see langword="true"/> to start playback at the current
+        /// <see cref="AnimationSpeed"/>; set to <see langword="false"/> to stop.
+        /// </summary>
+        bool IsAnimating { get; set; }
+
+        /// <summary>
+        /// The playback speed of the animation on the element.
+        /// </summary>
+        float AnimationSpeed { get; set; }
+    }
 }

@@ -296,6 +296,7 @@ namespace UnityEditor
         private static DelegateWithPerformanceTracker<PostprocessModifications> m_PostprocessModificationsEvent = new DelegateWithPerformanceTracker<PostprocessModifications>($"{nameof(Undo)}.{nameof(postprocessModifications)}");
 
         [RequiredByNativeCode]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void InvokePostprocessModificationsReverseProxy(IntPtr modificationsNativePtr)
         {
             if (modificationsNativePtr == IntPtr.Zero)
@@ -320,6 +321,7 @@ namespace UnityEditor
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         private static extern void UpdatePropertyModificationFromInvokePostprocessModifications(IntPtr modificationsNativePtr, UndoPropertyModification[] remainingModifications);
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static UndoPropertyModification[] InvokePostprocessModifications(UndoPropertyModification[] modifications)
         {
             if (postprocessModifications == null)

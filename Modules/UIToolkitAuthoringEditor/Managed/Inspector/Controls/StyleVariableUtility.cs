@@ -142,7 +142,7 @@ internal static class StyleVariableUtility
         return result;
     }
 
-    public static VariableEditingHandler GetOrCreateVarHandler(BindableElement field, IVariableEditingContext context = null, VisualElement styleRow = null, bool attachCompleterOnTarget = true)
+    public static VariableEditingHandler GetOrCreateVarHandler(BindableElement field, IVariableEditingContext context, VisualElement styleRow = null, bool attachCompleterOnTarget = true)
     {
         if (field == null)
             return null;
@@ -154,7 +154,7 @@ internal static class StyleVariableUtility
             handler = new VariableEditingHandler(field, context, styleRow, attachCompleterOnTarget);
             field.SetProperty(ElementLinkedVariableHandlerVEPropertyName, handler);
         }
-        else if (context != null && handler.context == null)
+        else
         {
             handler.SetContext(context, styleRow);
         }

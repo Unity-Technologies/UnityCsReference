@@ -2,21 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BuilderTracker : VisualElement, IBuilderSelectionNotifier
+    [UxmlElement]
+    partial class BuilderTracker : VisualElement, IBuilderSelectionNotifier
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderTracker();
-        }
-
         static readonly string s_UssClassName = "unity-builder-tracker";
         internal static readonly string s_ActiveClassName = "unity-builder-tracker--active";
 

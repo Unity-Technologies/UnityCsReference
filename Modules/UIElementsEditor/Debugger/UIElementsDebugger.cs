@@ -194,7 +194,7 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
-    internal class UIElementsDebugger : EditorWindow
+    internal class UIElementsDebugger : EditorWindow, IHasCustomMenu
     {
         public const string k_WindowPath = "Window/UI Toolkit/Debugger";
         public static readonly string WindowName = L10n.Tr("UI Toolkit Debugger");
@@ -301,6 +301,14 @@ namespace UnityEditor.UIElements.Debugger
         protected internal void ScrollToSelection()
         {
             m_DebuggerImpl.ScrollToSelection();
+        }
+
+        void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(EditorGUIUtility.TrTextContent("Enable Low Level Debugger"), UIToolkitProjectSettings.EnableLowLevelDebugger, () =>
+            {
+                UIToolkitProjectSettings.EnableLowLevelDebugger = !UIToolkitProjectSettings.EnableLowLevelDebugger;
+            });
         }
     }
 
@@ -825,7 +833,15 @@ namespace UnityEditor.UIElements.Debugger
             TextField m_UnicodeResult;
             TextField m_SizeInfo;
             TextField m_CursorInfo;
-
+            TextField m_LogicalToVisualInfo;
+            Foldout m_GlyphMetricsFoldout;
+            TextField m_GlyphMetricsText;
+            Foldout m_LineInfoFoldout;
+            TextField m_LineInfoText;
+            Foldout m_WordInfoFoldout;
+            TextField m_WordInfoText;
+            Foldout m_LinkInfoFoldout;
+            TextField m_LinkInfoText;
 
             public TextDebugger(DebuggerSelection debuggerSelection):base("Text", debuggerSelection, true)
             {
@@ -840,6 +856,76 @@ namespace UnityEditor.UIElements.Debugger
                 Add(m_UnicodeResult = new TextField("Unicode Input") { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } });
                 Add(m_SizeInfo = new TextField("Size Info") { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } });
                 Add(m_CursorInfo = new TextField("Cursor Info") { isReadOnly = true });
+                Add(m_LogicalToVisualInfo = new TextField("Logical ↔ Visual indices") { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } });
+
+                m_GlyphMetricsFoldout = new Foldout { text = "Glyph metrics", value = false };
+                m_GlyphMetricsText = new TextField { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } };
+                m_GlyphMetricsFoldout.Add(m_GlyphMetricsText);
+                m_GlyphMetricsFoldout.RegisterValueChangedCallback(evt => { if (evt.newValue) RefreshGlyphMetrics(); });
+                Add(m_GlyphMetricsFoldout);
+
+                m_LineInfoFoldout = new Foldout { text = "Line info", value = false };
+                m_LineInfoText = new TextField { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } };
+                m_LineInfoFoldout.Add(m_LineInfoText);
+                m_LineInfoFoldout.RegisterValueChangedCallback(evt => { if (evt.newValue) RefreshLineInfo(); });
+                Add(m_LineInfoFoldout);
+
+                m_WordInfoFoldout = new Foldout { text = "Word info", value = false };
+                m_WordInfoText = new TextField { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } };
+                m_WordInfoFoldout.Add(m_WordInfoText);
+                m_WordInfoFoldout.RegisterValueChangedCallback(evt => { if (evt.newValue) RefreshWordInfo(); });
+                Add(m_WordInfoFoldout);
+
+                m_LinkInfoFoldout = new Foldout { text = "Link info", value = false };
+                m_LinkInfoText = new TextField { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } };
+                m_LinkInfoFoldout.Add(m_LinkInfoText);
+                m_LinkInfoFoldout.RegisterValueChangedCallback(evt => { if (evt.newValue) RefreshLinkInfo(); });
+                Add(m_LinkInfoFoldout);
+            }
+
+            void RefreshGlyphMetrics()
+            {
+                var textElement = m_SelectedElement as TextElement;
+                if (textElement == null)
+                {
+                    m_GlyphMetricsText.value = "";
+                    return;
+                }
+                var handle = textElement.uitkTextHandle;
+                m_GlyphMetricsText.value = BuildGlyphMetricsString(handle);
+            }
+
+            void RefreshLineInfo()
+            {
+                var textElement = m_SelectedElement as TextElement;
+                if (textElement == null)
+                {
+                    m_LineInfoText.value = "";
+                    return;
+                }
+                m_LineInfoText.value = BuildLineInfoString(textElement.uitkTextHandle);
+            }
+
+            void RefreshWordInfo()
+            {
+                var textElement = m_SelectedElement as TextElement;
+                if (textElement == null)
+                {
+                    m_WordInfoText.value = "";
+                    return;
+                }
+                m_WordInfoText.value = BuildWordInfoString(textElement.uitkTextHandle);
+            }
+
+            void RefreshLinkInfo()
+            {
+                var textElement = m_SelectedElement as TextElement;
+                if (textElement == null)
+                {
+                    m_LinkInfoText.value = "";
+                    return;
+                }
+                m_LinkInfoText.value = BuildLinkInfoString(textElement.uitkTextHandle);
             }
 
 
@@ -859,6 +945,11 @@ namespace UnityEditor.UIElements.Debugger
                     m_CacheInfo.text = null;
                     m_UnicodeResult.text = null;
                     m_SizeInfo.text = null;
+                    m_LogicalToVisualInfo.text = null;
+                    m_GlyphMetricsText.value = "";
+                    m_LineInfoText.value = "";
+                    m_WordInfoText.value = "";
+                    m_LinkInfoText.value = "";
                 }
                 else if (textElement.uitkTextHandle.IsAdvancedTextEnabledForElement())
                 {
@@ -867,19 +958,28 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         var settings = handle.nativeSettings;
                         m_GenerationSettings.text = settings.ToString();
-
                     }
                     else
                     {
                         m_GenerationSettings.text = "Failed to get Text Generation Settings";
-
                     }
 
-                    m_fontAsset.value = null;
-                    m_textSettings.value = null;
+                    var textSettings = TextUtilities.GetTextSettingsFrom(textElement);
+                    m_fontAsset.value = textElement.cachedFontAsset ?? textSettings?.GetFontAsset();
+                    m_textSettings.value = textSettings;
                     m_CacheInfo.text = handle.ATGMeasuredWidth.HasValue ? $"Measured:{handle.ATGMeasuredWidth} Rounded:{handle.ATGRoundedWidth} PixelPerPoint:{handle.LastPixelPerPoint}" : "No cache";
-                    m_UnicodeResult.text = null;
-                    m_SizeInfo.text = null;
+                    m_UnicodeResult.text = StringToHex(textElement.text);
+                    m_SizeInfo.text = $"input:{textElement.text.Length} chars:{handle.GetTextElementCount()} glyphs:{handle.GetGlyphCount()}";
+                    m_CursorInfo.text = textElement.isSelectable ? $"Cursor:{textElement.selectingManipulator.cursorIndex} Selection:{textElement.selectingManipulator.selectIndex}" : "Not Selectable";
+                    m_LogicalToVisualInfo.text = BuildLogicalToVisualMapping(handle);
+                    if (m_GlyphMetricsFoldout.value)
+                        RefreshGlyphMetrics();
+                    if (m_LineInfoFoldout.value)
+                        RefreshLineInfo();
+                    if (m_WordInfoFoldout.value)
+                        RefreshWordInfo();
+                    if (m_LinkInfoFoldout.value)
+                        RefreshLinkInfo();
                 }
                 else
                 {
@@ -904,13 +1004,126 @@ namespace UnityEditor.UIElements.Debugger
 
                     m_UnicodeResult.text = StringToHex(textElement.text);
 
-                    m_SizeInfo.text = $"input:{textElement.text.Length} glyphs:{handle.GetTextElementCount()}";
+                    m_SizeInfo.text = $"input:{textElement.text.Length} chars:{handle.GetTextElementCount()} glyphs:{handle.GetGlyphCount()}";
 
                     m_CursorInfo.text = textElement.isSelectable ? $"Cursor:{textElement.selectingManipulator.cursorIndex} Selection:{textElement.selectingManipulator.selectIndex}" : "Not Selectable";
 
+                    m_LogicalToVisualInfo.text = BuildLogicalToVisualMapping(handle);
+                    if (m_GlyphMetricsFoldout.value)
+                        RefreshGlyphMetrics();
+                    if (m_LineInfoFoldout.value)
+                        RefreshLineInfo();
+                    if (m_WordInfoFoldout.value)
+                        RefreshWordInfo();
+                    if (m_LinkInfoFoldout.value)
+                        RefreshLinkInfo();
                 }
 
             }
+
+            static string BuildLineInfoString(UITKTextHandle handle)
+            {
+                int lineCount = handle.GetLineCount();
+                if (lineCount <= 0)
+                    return "No lines.";
+                var sb = new StringBuilder();
+                for (int i = 0; i < lineCount; i++)
+                {
+                    var li = handle.GetLineInfo(i);
+                    sb.AppendFormat("Line {0}: ascender={1:F2} baseline={2:F2} descender={3:F2} extents=[{4:F2},{5:F2}]-[{6:F2},{7:F2}] firstChar={8} lastChar={9} charCount={10}",
+                        i, li.ascender, li.baseline, li.descender,
+                        li.lineExtents.min.x, li.lineExtents.min.y, li.lineExtents.max.x, li.lineExtents.max.y,
+                        li.firstCharacterIndex, li.lastCharacterIndex, li.characterCount);
+                    sb.AppendLine();
+                }
+                return sb.ToString();
+            }
+
+            static string BuildWordInfoString(UITKTextHandle handle)
+            {
+                int wordCount = handle.GetWordCount();
+                if (wordCount <= 0)
+                    return "No words.";
+                var sb = new StringBuilder();
+                for (int i = 0; i < wordCount; i++)
+                {
+                    var wi = handle.GetWordInfo(i);
+                    sb.AppendFormat("Word {0}: firstChar={1} lastChar={2} charCount={3}", i, wi.firstCharacterIndex, wi.lastCharacterIndex, wi.characterCount);
+                    sb.AppendLine();
+                }
+                return sb.ToString();
+            }
+
+            static string BuildLinkInfoString(UITKTextHandle handle)
+            {
+                int linkCount = handle.GetLinkCount();
+                if (linkCount <= 0)
+                    return "No links.";
+                var rects = handle.GetLinkRects();
+                var sb = new StringBuilder();
+                for (int i = 0; i < linkCount; i++)
+                {
+                    sb.AppendFormat("Link {0}: rect={1}", i, i < (rects?.Length ?? 0) ? rects[i].ToString() : "(n/a)");
+                    sb.AppendLine();
+                }
+                return sb.ToString();
+            }
+
+            static string BuildGlyphMetricsString(UITKTextHandle handle)
+            {
+                int count = handle.GetTextElementCount();
+                if (count <= 0)
+                    return "";
+                var sb = new StringBuilder();
+                const int maxGlyphs = 256;
+                int n = Math.Min(count, maxGlyphs);
+                for (int i = 0; i < n; i++)
+                {
+                    try
+                    {
+                        var m = handle.GetScaledCharacterMetrics(i);
+                        sb.AppendFormat(" [{0}] origin={1:F2} xAdvance={2:F2} topLeft=({3:F2},{4:F2}) bottomLeft=({5:F2},{6:F2}) ascent={7:F2} base={8:F2} descent={9:F2} line={10} vis={11}",
+                            i, m.origin, m.xAdvance, m.topLeft.x, m.topLeft.y, m.bottomLeft.x, m.bottomLeft.y,
+                            m.ascentline, m.baseline, m.descentline, m.lineNumber, m.isVisible);
+                        sb.AppendLine();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        sb.AppendFormat(" [{0}] error: {1}", i, ex.Message).AppendLine();
+                    }
+                }
+                if (count > maxGlyphs)
+                    sb.AppendFormat(" ... ({0} total, showing first {1})", count, maxGlyphs);
+                return sb.ToString();
+            }
+
+            static string BuildLogicalToVisualMapping(UITKTextHandle handle)
+            {
+                int count = handle.GetTextElementCount();
+                if (count <= 0)
+                    return "";
+                var sb = new StringBuilder();
+                sb.Append("Logical → Visual: ");
+                for (int i = 0; i < Math.Min(count, 32); i++)
+                {
+                    if (i > 0) sb.Append(", ");
+                    sb.Append(i).Append("→").Append(handle.LogicalToGlyphIndex(i));
+                }
+                if (count > 32)
+                    sb.Append(" ...");
+                sb.AppendLine();
+                sb.Append("Visual → Logical: ");
+                int glyphCount = handle.GetGlyphCount();
+                for (int g = 0; g < Math.Min(glyphCount, 32); g++)
+                {
+                    if (g > 0) sb.Append(", ");
+                    sb.Append(g).Append("→").Append(handle.GlyphIndexToLogicalIndex(g));
+                }
+                if (glyphCount > 32)
+                    sb.Append(" ...");
+                return sb.ToString();
+            }
+
             private string StringToHex(string hexstring)
             {
                 if( string.IsNullOrEmpty(hexstring))

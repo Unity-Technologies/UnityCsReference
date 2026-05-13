@@ -139,6 +139,8 @@ internal class StyleFontAttributeConverter : UxmlAttributeStyleConverter<StyleFo
 
 internal class StyleFontDefinitionAttributeConverter : UxmlAttributeStyleConverter<StyleFontDefinition, FontDefinition, FontDefinitionAttributeConverter> {};
 
+internal class StyleUIAnimationClipAttributeConverter : UxmlAttributeStyleConverter<StyleUIAnimationClip, UIAnimationClip, UIAnimationClipAttributeConverter> {};
+
 internal class StyleEnumAttributeConverter<T> : UxmlAttributeConverter<StyleEnum<T>> where T : struct, IConvertible
 {
     public override StyleEnum<T> FromString(string value)

@@ -13,7 +13,7 @@ namespace UnityEditor
     class EditorToolsSettingsData : EditorToolStateManager<EditorToolsSettingsData, EditorToolsSettingsData.EditorToolsSettingsState>
     {
         internal const string assetPath = "Library/EditorToolsSettings.asset";
-      
+
         [Serializable]
         public struct GroupSettingsData
         {
@@ -30,7 +30,8 @@ namespace UnityEditor
         [Serializable]
         internal class EditorToolsSettingsState : EditorToolStateBase, ISerializationCallbackReceiver
         {
-            [SerializeField] List<GroupSettingsData> m_GroupsSettingsList = new();
+            [SerializeField]
+            List<GroupSettingsData> m_GroupsSettingsList = new();
 
             Dictionary<string, GroupSettingsData> m_GroupToSettingsData = new();
 
@@ -44,9 +45,22 @@ namespace UnityEditor
             {
                 get
                 {
-                    var pivotModeType = PivotManager.defaultPivotModeType;
+                    Type pivotModeType = null;
                     if (!string.IsNullOrEmpty(m_LastPivotModeTypeString))
-                        pivotModeType = Type.GetType(m_LastPivotModeTypeString) ?? pivotModeType;
+                    {
+                        var lastPivotMode = Type.GetType(m_LastPivotModeTypeString);
+                        if (EditorPivotManager.IsPivotModeAvailable(lastPivotMode, stateToolOwnerType))
+                            pivotModeType = lastPivotMode;
+                    }
+
+                    if (pivotModeType == null)
+                    {
+                        if (stateToolOwnerType == typeof(SceneView))
+                            pivotModeType = PivotManager.defaultPivotModeType;
+                        else
+                            pivotModeType = EditorPivotManager.GetFirstAvailablePivotMode(stateToolOwnerType);
+                    }
+
                     return pivotModeType;
                 }
             }
@@ -55,9 +69,22 @@ namespace UnityEditor
             {
                 get
                 {
-                    var pivotRotationType = PivotManager.defaultPivotRotationType;
+                    Type pivotRotationType = null;
                     if (!string.IsNullOrEmpty(m_LastPivotRotationTypeString))
-                        pivotRotationType = Type.GetType(m_LastPivotRotationTypeString) ?? pivotRotationType;
+                    {
+                        var lastPivotRotation = Type.GetType(m_LastPivotRotationTypeString);
+                        if (EditorPivotManager.IsPivotRotationAvailable(lastPivotRotation, stateToolOwnerType))
+                            pivotRotationType = lastPivotRotation;
+                    }
+
+                    if (pivotRotationType == null)
+                    {
+                        if (stateToolOwnerType == typeof(SceneView))
+                            pivotRotationType = PivotManager.defaultPivotRotationType;
+                        else
+                            pivotRotationType = EditorPivotManager.GetFirstAvailablePivotRotation(stateToolOwnerType);
+                    }
+
                     return pivotRotationType;
                 }
             }
@@ -176,7 +203,7 @@ namespace UnityEditor
                     m_GroupToSettingsData.Add(groupSettings.groupType, groupToSettings);
                 }
             }
-            
+
             public bool MigrateObsoleteDataIfNeeded(List<GroupSettingsData> groupSettingsList, string lastPivotModeType, string lastPivotRotationType)
             {
                 var migrated = false;
@@ -199,7 +226,7 @@ namespace UnityEditor
                     m_LastPivotModeTypeString = lastPivotModeType;
                     migrated = true;
                 }
-            
+
                 if (!string.IsNullOrEmpty(lastPivotRotationType))
                 {
                     m_LastPivotRotationTypeString = lastPivotRotationType;
@@ -209,7 +236,7 @@ namespace UnityEditor
                 return migrated;
             }
         }
-        
+
         // Obsolete
         [SerializeField]
         List<GroupSettingsData> m_GroupsSettingsList = new();
@@ -219,15 +246,15 @@ namespace UnityEditor
         string m_LastPivotModeTypeString;
 
         // Obsolete
-        [SerializeField] 
+        [SerializeField]
         string m_LastPivotRotationTypeString;
 
         public static Type GetLastPivotModeType(Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
-            if (state != null) 
+            if (state != null)
                 return state.lastPivotModeType;
-            
+
             return null;
         }
 
@@ -241,14 +268,14 @@ namespace UnityEditor
 
         public static void SetLastPivotModeType(Type pivotModeType, Type ownerType)
         {
-            var state = instance.GetOrCreateStateForType(ownerType); 
+            var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 state.SetLastPivotModeType(pivotModeType);
         }
 
         public static void SetLastPivotRotationType(Type pivotRotationType, Type ownerType)
         {
-            var state = instance.GetOrCreateStateForType(ownerType); 
+            var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 state.SetLastPivotRotationType(pivotRotationType);
         }
@@ -256,7 +283,7 @@ namespace UnityEditor
         public static bool GetGroupSettings(Type groupType, Type ownerType, out GroupSettingsData groupSettings)
         {
             groupSettings = default;
-            var state = instance.GetOrCreateStateForType(ownerType); 
+            var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 return state.GetGroupSettings(groupType, out groupSettings);
             return false;
@@ -264,30 +291,30 @@ namespace UnityEditor
 
         public static void SetGroupCollapsed(Type groupType, bool collapsed, Type ownerType)
         {
-            var state = instance.GetOrCreateStateForType(ownerType); 
+            var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 state.SetGroupCollapsed(groupType, collapsed);
         }
 
         public static void SetGroupsCollapsed(bool collapsed, Type ownerType)
         {
-            var state = instance.GetOrCreateStateForType(ownerType); 
+            var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 state.SetGroupsCollapsed(collapsed);
         }
-        
+
         public override void OnEnable()
         {
             base.OnEnable();
             RefreshToolsData();
         }
-        
+
         public override void OnDisable()
         {
             base.OnDisable();
             Save();
         }
-        
+
         public void Save()
         {
             Save(true);
@@ -299,7 +326,7 @@ namespace UnityEditor
             foreach (var state in customStates)
                 state.RefreshToolsData();
         }
-        
+
         public void SetGroupCollapsed(Type groupType, bool collapsed)
         {
             defaultState.SetGroupCollapsed(groupType, collapsed);
@@ -309,16 +336,16 @@ namespace UnityEditor
         {
             defaultState.SetGroupsCollapsed(collapsed);
         }
-        
+
         public bool GetGroupSettings(Type groupType, out GroupSettingsData groupSettings)
         {
             return defaultState.GetGroupSettings(groupType, out groupSettings);
         }
-        
+
         public override void OnAfterDeserialize()
         {
             base.OnAfterDeserialize();
-               
+
             if (defaultState.MigrateObsoleteDataIfNeeded(m_GroupsSettingsList, m_LastPivotModeTypeString, m_LastPivotRotationTypeString))
             {
                 m_GroupsSettingsList = null;
@@ -327,20 +354,20 @@ namespace UnityEditor
             }
         }
     }
-    
+
     static class EditorToolsSettings
     {
         public static bool IsGroupCollapsed(Type groupType)
         {
             if (groupType == null)
                 return false;
-            
+
             if (EditorToolsSettingsData.instance.GetGroupSettings(groupType, out var groupSettings))
                 return groupSettings.collapsed;
 
             return false;
         }
-        
+
         public static void SetGroupCollapsed(Type groupType, bool collapsed)
         {
             EditorToolsSettingsData.instance.SetGroupCollapsed(groupType, collapsed);

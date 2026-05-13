@@ -798,12 +798,20 @@ namespace UnityEngine.InputForUI
         // copied from UIElementsRuntimeUtility.cs
         private static Vector2 ScreenBottomLeftToPanelPosition(Vector2 position, int targetDisplay)
         {
-            // Flip positions Y axis between input and UITK
-            var screenHeight = Screen.height;
-            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
-                screenHeight = Display.displays[targetDisplay].systemHeight;
+            // Flip positions Y axis between input and UITK (match UIElementsRuntimeUtility.GetScreenHeightForDisplay in editor)
+            var screenHeight = GetScreenHeight(targetDisplay);
             position.y = screenHeight - position.y;
             return position;
+        }
+
+        static float GetScreenHeight(int targetDisplay)
+        {
+            var gameView = GameViewRenderInfoQuery.getImplementation?.Invoke(targetDisplay);
+            if (gameView != null)
+                return gameView.targetSize.y;
+            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
+                return Display.displays[targetDisplay].systemHeight;
+            return Screen.height;
         }
 
         // copied from UIElementsRuntimeUtility.cs

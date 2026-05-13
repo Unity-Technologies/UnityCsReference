@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
         public Align alignContent => layoutData.Read().alignContent;
         public Align alignItems => layoutData.Read().alignItems;
         public Align alignSelf => layoutData.Read().alignSelf;
+        public AnimationPlayState animationPlayState => rareData.Read().animationPlayState;
         public Ratio aspectRatio => layoutData.Read().aspectRatio;
         public Color backgroundColor => visualData.Read().backgroundColor;
         public EntityId backgroundImage => visualData.Read().backgroundImage;
@@ -94,6 +95,7 @@ namespace UnityEngine.UIElements
         public ReadOnlySpan<StylePropertyId> transitionProperty => transitionData.Read().transitionProperty;
         public ReadOnlySpan<EasingFunction> transitionTimingFunction => transitionData.Read().transitionTimingFunction;
         public Translate translate => transformData.Read().translate;
+        public EntityId unityAnimationClip => rareData.Read().unityAnimationClip;
         public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
         public EditorTextRenderingMode unityEditorTextRenderingMode => inheritedData.Read().unityEditorTextRenderingMode;
         public EntityId unityFont => inheritedData.Read().unityFont;
@@ -219,6 +221,9 @@ namespace UnityEngine.UIElements
                         layoutData.Write().alignSelf = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.All:
+                        break;
+                    case StylePropertyId.AnimationPlayState:
+                        rareData.Write().animationPlayState = (AnimationPlayState)reader.ReadEnum(StyleEnumType.AnimationPlayState, 0);
                         break;
                     case StylePropertyId.AspectRatio:
                         layoutData.Write().aspectRatio = reader.ReadRatio(0);
@@ -427,6 +432,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.Translate:
                         transformData.Write().translate = reader.ReadTranslate(0);
                         break;
+                    case StylePropertyId.UnityAnimationClip:
+                        rareData.Write().unityAnimationClip = reader.ReadUIAnimationClip(0);
+                        break;
                     case StylePropertyId.UnityBackgroundImageTintColor:
                         rareData.Write().unityBackgroundImageTintColor = reader.ReadColor(0);
                         break;
@@ -537,6 +545,9 @@ namespace UnityEngine.UIElements
                     layoutData.Write().alignSelf = (Align)sv.number;
                     if (sv.keyword == StyleKeyword.Auto)
                         layoutData.Write().alignSelf = Align.Auto;
+                    break;
+                case StylePropertyId.AnimationPlayState:
+                    rareData.Write().animationPlayState = (AnimationPlayState)sv.number;
                     break;
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = (Ratio)sv.number;
@@ -789,6 +800,9 @@ namespace UnityEngine.UIElements
                     else
                         transitionData.Write().transitionTimingFunction.CopyFrom(sv.value as List<EasingFunction>);
                     break;
+                case StylePropertyId.UnityAnimationClip:
+                    rareData.Write().unityAnimationClip = sv.GetResource<UnityEngine.UIElements.UIAnimationClip>()?.GetEntityId() ?? EntityId.None;
+                    break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = sv.GetResource<UnityEngine.Font>()?.GetEntityId() ?? EntityId.None;
                     break;
@@ -831,6 +845,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AlignSelf:
                     layoutData.Write().alignSelf = other.layoutData.Read().alignSelf;
+                    break;
+                case StylePropertyId.AnimationPlayState:
+                    rareData.Write().animationPlayState = other.rareData.Read().animationPlayState;
                     break;
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = other.layoutData.Read().aspectRatio;
@@ -1015,6 +1032,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Translate:
                     transformData.Write().translate = other.transformData.Read().translate;
                     break;
+                case StylePropertyId.UnityAnimationClip:
+                    rareData.Write().unityAnimationClip = other.rareData.Read().unityAnimationClip;
+                    break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = other.rareData.Read().unityBackgroundImageTintColor;
                     break;
@@ -1099,130 +1119,130 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.BorderBottomLeftRadius:
                     visualData.Write().borderBottomLeftRadius = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderBottomLeftRadius]);
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderBottomRightRadius:
                     visualData.Write().borderBottomRightRadius = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderBottomRightRadius]);
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderTopLeftRadius:
                     visualData.Write().borderTopLeftRadius = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderTopLeftRadius]);
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderTopRightRadius:
                     visualData.Write().borderTopRightRadius = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderTopRightRadius]);
+                    ve.IncrementVersion(VersionChangeType.BorderRadius | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.Bottom:
                     layoutData.Write().bottom = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Bottom]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FlexBasis:
                     layoutData.Write().flexBasis = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.FlexBasis]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FontSize:
                     inheritedData.Write().fontSize = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.FontSize]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.Height:
                     layoutData.Write().height = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Height]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Left:
                     layoutData.Write().left = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Left]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.LetterSpacing:
                     inheritedData.Write().letterSpacing = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.LetterSpacing]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.MarginBottom:
                     layoutData.Write().marginBottom = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MarginBottom]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginLeft:
                     layoutData.Write().marginLeft = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MarginLeft]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginRight:
                     layoutData.Write().marginRight = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MarginRight]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginTop:
                     layoutData.Write().marginTop = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MarginTop]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MaxHeight:
                     layoutData.Write().maxHeight = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MaxHeight]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MaxWidth:
                     layoutData.Write().maxWidth = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MaxWidth]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MinHeight:
                     layoutData.Write().minHeight = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MinHeight]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MinWidth:
                     layoutData.Write().minWidth = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.MinWidth]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingBottom:
                     layoutData.Write().paddingBottom = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.PaddingBottom]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingLeft:
                     layoutData.Write().paddingLeft = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.PaddingLeft]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingRight:
                     layoutData.Write().paddingRight = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.PaddingRight]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingTop:
                     layoutData.Write().paddingTop = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.PaddingTop]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Right:
                     layoutData.Write().right = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Right]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Top:
                     layoutData.Write().top = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Top]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
                     inheritedData.Write().unityParagraphSpacing = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityParagraphSpacing]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.Width:
                     layoutData.Write().width = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Width]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.WordSpacing:
                     inheritedData.Write().wordSpacing = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.WordSpacing]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Length' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1236,44 +1256,44 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BorderBottomWidth:
                     layoutData.Write().borderBottomWidth = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderBottomWidth]);
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderLeftWidth:
                     layoutData.Write().borderLeftWidth = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderLeftWidth]);
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderRightWidth:
                     layoutData.Write().borderRightWidth = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderRightWidth]);
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderTopWidth:
                     layoutData.Write().borderTopWidth = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderTopWidth]);
+                    ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.FlexGrow:
                     layoutData.Write().flexGrow = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.FlexGrow]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FlexShrink:
                     layoutData.Write().flexShrink = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.FlexShrink]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Opacity:
                     visualData.Write().opacity = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Opacity]);
+                    ve.IncrementVersion(VersionChangeType.Opacity);
                     break;
                 case StylePropertyId.UnitySliceScale:
                     rareData.Write().unitySliceScale = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnitySliceScale]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnityTextOutlineWidth:
                     inheritedData.Write().unityTextOutlineWidth = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityTextOutlineWidth]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'float' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1289,7 +1309,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().alignContent = (Align)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.AlignContent]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1298,7 +1318,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().alignItems = (Align)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.AlignItems]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1307,7 +1327,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().alignSelf = (Align)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.AlignSelf]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1316,7 +1336,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().flexDirection = (FlexDirection)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.FlexDirection]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1325,7 +1345,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().flexWrap = (Wrap)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.FlexWrap]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1334,7 +1354,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().justifyContent = (Justify)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.JustifyContent]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1343,7 +1363,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().overflow = (OverflowInternal)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Overflow]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Overflow);
                     }
 
                     break;
@@ -1352,7 +1372,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().position = (Position)newValue;
                         ve.layoutNode.MarkDirty();
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Position]);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;
@@ -1360,7 +1380,7 @@ namespace UnityEngine.UIElements
                     if (rareData.Read().textOverflow != (TextOverflow)newValue)
                     {
                         rareData.Write().textOverflow = (TextOverflow)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TextOverflow]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1368,7 +1388,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().unityFontStyleAndWeight != (FontStyle)newValue)
                     {
                         inheritedData.Write().unityFontStyleAndWeight = (FontStyle)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityFontStyleAndWeight]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1376,31 +1396,31 @@ namespace UnityEngine.UIElements
                     if (rareData.Read().unityOverflowClipBox != (OverflowClipBox)newValue)
                     {
                         rareData.Write().unityOverflowClipBox = (OverflowClipBox)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityOverflowClipBox]);
+                        ve.IncrementVersion(VersionChangeType.Repaint);
                     }
 
                     break;
                 case StylePropertyId.UnitySliceBottom:
                     rareData.Write().unitySliceBottom = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnitySliceBottom]);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnitySliceLeft:
                     rareData.Write().unitySliceLeft = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnitySliceLeft]);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnitySliceRight:
                     rareData.Write().unitySliceRight = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnitySliceRight]);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnitySliceTop]);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnitySliceType:
                     if (rareData.Read().unitySliceType != (SliceType)newValue)
                     {
                         rareData.Write().unitySliceType = (SliceType)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnitySliceType]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1408,7 +1428,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().unityTextAlign != (TextAnchor)newValue)
                     {
                         inheritedData.Write().unityTextAlign = (TextAnchor)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityTextAlign]);
+                        ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1416,7 +1436,7 @@ namespace UnityEngine.UIElements
                     if (rareData.Read().unityTextOverflowPosition != (TextOverflowPosition)newValue)
                     {
                         rareData.Write().unityTextOverflowPosition = (TextOverflowPosition)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityTextOverflowPosition]);
+                        ve.IncrementVersion(VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1424,7 +1444,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().visibility != (Visibility)newValue)
                     {
                         inheritedData.Write().visibility = (Visibility)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Visibility]);
+                        ve.IncrementVersion(VersionChangeType.Picking | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1432,7 +1452,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().whiteSpace != (WhiteSpace)newValue)
                     {
                         inheritedData.Write().whiteSpace = (WhiteSpace)newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.WhiteSpace]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1449,7 +1469,7 @@ namespace UnityEngine.UIElements
                     if (visualData.Read().backgroundPositionX != newValue)
                     {
                         visualData.Write().backgroundPositionX = newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundPositionX]);
+                        ve.IncrementVersion(VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1457,7 +1477,7 @@ namespace UnityEngine.UIElements
                     if (visualData.Read().backgroundPositionY != newValue)
                     {
                         visualData.Write().backgroundPositionY = newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundPositionY]);
+                        ve.IncrementVersion(VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1474,7 +1494,7 @@ namespace UnityEngine.UIElements
                     if (visualData.Read().backgroundRepeat != newValue)
                     {
                         visualData.Write().backgroundRepeat = newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundRepeat]);
+                        ve.IncrementVersion(VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1489,7 +1509,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.BackgroundSize:
                     visualData.Write().backgroundSize = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundSize]);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundSize' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1502,35 +1522,35 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundColor]);
+                    ve.IncrementVersion(VersionChangeType.Color);
                     break;
                 case StylePropertyId.BorderBottomColor:
                     visualData.Write().borderBottomColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderBottomColor]);
+                    ve.IncrementVersion(VersionChangeType.Color);
                     break;
                 case StylePropertyId.BorderLeftColor:
                     visualData.Write().borderLeftColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderLeftColor]);
+                    ve.IncrementVersion(VersionChangeType.Color);
                     break;
                 case StylePropertyId.BorderRightColor:
                     visualData.Write().borderRightColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderRightColor]);
+                    ve.IncrementVersion(VersionChangeType.Color);
                     break;
                 case StylePropertyId.BorderTopColor:
                     visualData.Write().borderTopColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BorderTopColor]);
+                    ve.IncrementVersion(VersionChangeType.Color);
                     break;
                 case StylePropertyId.Color:
                     inheritedData.Write().color = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Color]);
+                    ve.IncrementVersion(VersionChangeType.Color | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityBackgroundImageTintColor]);
+                    ve.IncrementVersion(VersionChangeType.Color);
                     break;
                 case StylePropertyId.UnityTextOutlineColor:
                     inheritedData.Write().unityTextOutlineColor = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityTextOutlineColor]);
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Color' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1543,7 +1563,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.TextShadow:
                     inheritedData.Write().textShadow = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TextShadow]);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1556,7 +1576,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Filter:
                     rareData.Write().filter.CopyFrom(newValue);
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Filter]);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List<FilterFunction>' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1569,7 +1589,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Translate:
                     transformData.Write().translate = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Translate]);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Translate' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1582,7 +1602,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.TransformOrigin:
                     transformData.Write().transformOrigin = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.TransformOrigin]);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TransformOrigin' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1595,7 +1615,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Rotate:
                     transformData.Write().rotate = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Rotate]);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Rotate' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1608,7 +1628,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Scale:
                     transformData.Write().scale = newValue;
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Scale]);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Scale' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1621,7 +1641,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.UnityMaterial:
                     inheritedData.Write().unityMaterial.CopyFrom(newValue);
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityMaterial]);
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'MaterialDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1635,7 +1655,7 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = newValue;
                     ve.layoutNode.MarkDirty();
-                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.AspectRatio]);
+                    ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Ratio' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1650,7 +1670,7 @@ namespace UnityEngine.UIElements
                     if (visualData.Read().backgroundImage != newValue)
                     {
                         visualData.Write().backgroundImage = newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundImage]);
+                        ve.IncrementVersion(VersionChangeType.Overflow | VersionChangeType.Repaint);
                     }
 
                     break;
@@ -1658,7 +1678,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().unityFont != newValue)
                     {
                         inheritedData.Write().unityFont = newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityFont]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1666,7 +1686,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().unityFontDefinition != newValue)
                     {
                         inheritedData.Write().unityFontDefinition = newValue;
-                        ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityFontDefinition]);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1689,8 +1709,6 @@ namespace UnityEngine.UIElements
                     return visualData.Read().borderTopRightRadius;
                 case StylePropertyId.Bottom:
                     return layoutData.Read().bottom;
-                case StylePropertyId.Display:
-                    return (int)layoutData.Read().display;
                 case StylePropertyId.FlexBasis:
                     return layoutData.Read().flexBasis;
                 case StylePropertyId.FontSize:
@@ -1729,12 +1747,8 @@ namespace UnityEngine.UIElements
                     return layoutData.Read().right;
                 case StylePropertyId.Top:
                     return layoutData.Read().top;
-                case StylePropertyId.UnityEditorTextRenderingMode:
-                    return (int)inheritedData.Read().unityEditorTextRenderingMode;
                 case StylePropertyId.UnityParagraphSpacing:
                     return inheritedData.Read().unityParagraphSpacing;
-                case StylePropertyId.UnityTextGenerator:
-                    return (int)inheritedData.Read().unityTextGenerator;
                 case StylePropertyId.Width:
                     return layoutData.Read().width;
                 case StylePropertyId.WordSpacing:
@@ -3697,6 +3711,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.All:
                     break;
+                case StylePropertyId.AnimationPlayState:
+                    rareData.Write().animationPlayState = InitialStyle.Get().rareData.Read().animationPlayState;
+                    break;
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = InitialStyle.Get().layoutData.Read().aspectRatio;
                     break;
@@ -3924,6 +3941,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Translate:
                     transformData.Write().translate = InitialStyle.Get().transformData.Read().translate;
+                    break;
+                case StylePropertyId.UnityAnimationClip:
+                    rareData.Write().unityAnimationClip = InitialStyle.Get().rareData.Read().unityAnimationClip;
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = InitialStyle.Get().rareData.Read().unityBackgroundImageTintColor;
@@ -4245,6 +4265,12 @@ namespace UnityEngine.UIElements
 
             if (!x.rareData.ReferenceEquals(y.rareData))
             {
+                if (x.unityAnimationClip != y.unityAnimationClip ||
+                    x.animationPlayState != y.animationPlayState)
+                {
+                    changes |= VersionChangeType.AnimationProperty;
+                }
+
                 if ((changes & VersionChangeType.Repaint) == 0 && (x.filter != y.filter ||
                     x.unityOverflowClipBox != y.unityOverflowClipBox ||
                     x.unitySliceBottom != y.unitySliceBottom ||

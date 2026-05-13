@@ -138,6 +138,16 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
                     bindingContext.UnregisterSerializedPropertyChangeCallback(owner, propertyPathHash, callback);
                 }
 
+                // Auto-cleanup: If no more properties are tracked and no object callbacks are registered,
+                // remove the updater to allow tracking properties from a different SerializedObject
+                if (trackedProperties.Count == 0 && registeredCallbacks == null)
+                {
+                    // Clear the binding from the element BEFORE calling OnRelease() to ensure
+                    // the element no longer references this updater
+                    owner?.ClearBinding(BindingExtensions.s_SerializedBindingContextUpdaterId);
+                    OnRelease();
+                }
+
                 break;
             }
         }

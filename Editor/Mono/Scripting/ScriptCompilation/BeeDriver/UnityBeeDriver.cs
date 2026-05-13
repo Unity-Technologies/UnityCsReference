@@ -130,9 +130,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static BuildRequest BuildRequestFor(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, CacheMode cacheMode, string dagDirectory = null, bool useScriptUpdater = true)
+        public static BuildRequest BuildRequestFor(BuildTarget target, BuildOptions buildOptions, RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, CacheMode cacheMode, string dagDirectory = null, bool useScriptUpdater = true)
         {
-            return BuildRequestFor(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, new ILPostProcessingProgram(), cacheMode, StdOutModeForScriptCompilation);
+            return BuildRequestFor(target, buildOptions, buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, new ILPostProcessingProgram(), cacheMode, StdOutModeForScriptCompilation);
         }
 
         public const StdOutMode StdOutModeForScriptCompilation =
@@ -141,6 +141,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.Stream;
 
         public static BuildRequest BuildRequestFor(
+                BuildTarget target,
+                BuildOptions buildOptions,
                 RunnableProgram buildProgram,
                 string dagName,
                 string dagDirectory,
@@ -181,8 +183,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
                 Il2CppPath = IL2CPPUtils.GetExePath("il2cpp", out var il2CppIsDevelopmentLocation),
                 Il2CppUsingDevelopmentLocation = il2CppIsDevelopmentLocation,
+                Il2CppBclDistributionDirectory = IL2CPPUtils.GetIl2CppBclDistributionDirectory(target, buildOptions),
                 UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
-                NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
                 DotNetExe = NetCoreProgram.DotNetMuxerPath.ToString(),
                 EditorContentsPath = EditorApplication.applicationContentsPath,
                 EditorToolsPath = EditorApplication.applicationToolsPath,

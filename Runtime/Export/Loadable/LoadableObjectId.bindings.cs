@@ -21,22 +21,24 @@ namespace Unity.Loading
     /// to identify and load a specific object from built content.
     ///
     /// In the Editor, use <see cref="UnityEditor.LoadableObjectIdEditorUtility"/> to create LoadableObjectIds. Typically these
-    /// will be serialized as part of Loadable&lt;T&gt; fields on ScriptableObject-derived classes. When those ScriptableObjects are
-    /// built as part of a Content Directory, then the assets referenced by the LoadableObjectId will be recursively pulled into
-    /// the build output. At runtime, the <see cref="ContentLoadManager"/> takes care of resolving LoadableObjectIds to the
-    /// correct built content so long as it is part of the currently registered content directories.
+    /// will be serialized as part of `Loadable{T}` fields on ScriptableObject-derived classes. When those ScriptableObjects are
+    /// built as part of a Content Directory, the assets referenced by the LoadableObjectId are recursively pulled into
+    /// the build output. At runtime, the <see cref="ContentLoadManager"/> resolves LoadableObjectIds to the
+    /// correct built content as long as it is part of the currently registered content directories.
     ///
     /// Player and AssetBundle builds do not pull assets referenced by LoadableObjectId into the build, this is only supported
     /// by <see cref="BuildPipeline.BuildContentDirectory"/>.
     /// </remarks>
+    /// <example>
+    /// <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/LoadableObjectId_Example.cs"/>
+    /// </example>
     /// <seealso cref="Loadable{T}"/>
     /// <seealso cref="UnityEditor.LoadableObjectIdEditorUtility"/>
-    /*UCBP-REMOVE*/[VisibleToOtherModules]
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     [NativeHeader("Runtime/BaseClasses/LoadableObjectId.h")]
     [UsedByNativeCode]
-    /*UCBP-PUBLIC*/ internal struct LoadableObjectId : IEquatable<LoadableObjectId>
+    public struct LoadableObjectId : IEquatable<LoadableObjectId>
     {
         [VisibleToOtherModules] internal GUID m_GUID;
         [VisibleToOtherModules] internal FileIdentifierType m_FileIdentifierType;
@@ -44,9 +46,9 @@ namespace Unity.Loading
         internal Hash128 m_ObjectIdHash;
 
         /// <summary>
-        /// Returns true if this LoadableObjectId is initialized with valid data.
+        /// True if this LoadableObjectId is initialized with valid data.
         /// </summary>
-        public readonly bool isValid => ((!m_GUID.Empty() && m_LocalIdentifierInFile != 0) || m_ObjectIdHash.isValid);
+        public readonly bool IsValid => ((!m_GUID.Empty() && m_LocalIdentifierInFile != 0) || m_ObjectIdHash.isValid);
 
         [ExcludeFromDocs]
         public static bool operator ==(LoadableObjectId x, LoadableObjectId y)
@@ -103,7 +105,7 @@ namespace Unity.Loading
         /// </summary>
         public override string ToString()
         {
-            if (!isValid)
+            if (!IsValid)
                 return "{ Invalid }";
 
             return $"{{ oid-{GetOrCalculateObjectIdHash()}, guid: {m_GUID}, fileID: {m_LocalIdentifierInFile}, type: {(int)m_FileIdentifierType} }}";

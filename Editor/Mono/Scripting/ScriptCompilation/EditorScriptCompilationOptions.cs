@@ -27,5 +27,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingSkipCompile = 1 << 13,
         BuildingCleanCompilation = 1 << 14,
         BuildingWithoutOptimization = 1 << 15,
+        BuildingWithInstrumentation = 1 << 16,
     }
 }

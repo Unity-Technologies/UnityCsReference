@@ -38,6 +38,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (m_Stage)
             m_Stage.MainDocumentWasCloned -= StageOnMainDocumentWasCloned;
         m_Stage = null;
+        UICommandQueue.UnregisterHandler<AddClassCommand>(OnClassAddedToElement);
         base.Dispose(disposing);
     }
 
@@ -71,6 +72,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         m_Stage = stage;
         if (m_Stage)
             m_Stage.MainDocumentWasCloned += StageOnMainDocumentWasCloned;
+
+        UICommandQueue.RegisterHandler<AddClassCommand>(OnClassAddedToElement);
 
         SetContextForEditing(stage.Context, stage.GetAuthoringPanel());
     }
@@ -611,8 +614,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         if (performDrop)
         {
-            new AddClassToElementCommand(element.visualElementAsset, className).Execute();
-            element.AddToClassList(className);
+            using (var command = AddClassCommand.GetPooled(CommandSources.Hierarchy, element.visualElementAsset, className))
+                UICommandQueue.EnqueueCommand(command);
         }
 
         return DragVisualMode.Copy;
@@ -1021,8 +1024,17 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         StageContextMenuUtility.PopulateMenu(view, in node, menu, this);
     }
 
-    protected override PanelSettings GetPanelSettings(VisualElement element)
+    void OnClassAddedToElement(in CommandContext context)
     {
-        return m_Stage.Context.PanelSettings;
+        if (context.Status != CommandExecutionStatus.Success)
+            return;
+
+        var command = (AddClassCommand)context.Command;
+        var vea = command.ElementAsset;
+
+        m_Panel?.visualTree.Query().Where(e => e.visualElementAsset == vea).ForEach(e =>
+        {
+            e.AddToClassList(command.ClassName);
+        });
     }
 }

@@ -126,7 +126,6 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
     protected override VisualElement MakeDetailsContent()
     {
         m_DetailsView = new PropertyPathInfoDetailsView();
-        m_DetailsView.style.display = DisplayStyle.None;
         return m_DetailsView;
     }
 
@@ -150,25 +149,18 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
         if (m_DetailsView == null)
             return;
 
-        if (string.IsNullOrEmpty(propertyInfo.propertyPath.ToString()))
-        {
-            m_DetailsView.style.display = DisplayStyle.None;
-        }
-        else
-        {
-            IProperty property = null;
-            var source = BindingDataSourceObject;
+        IProperty property = null;
+        var source = BindingDataSourceObject;
 
-            if (BindingDataSourceObject != null)
-            {
-                if (BindingDataSourceObject is AnyObjectField.NonUnityObjectValue nonUnityObjVal)
-                    source = nonUnityObjVal.data;
+        if (source != null)
+        {
+            if (source is AnyObjectField.NonUnityObjectValue nonUnityObjVal)
+                source = nonUnityObjVal.data;
+            if (!propertyInfo.propertyPath.IsEmpty)
                 PropertyContainer.TryGetProperty(source, propertyInfo.propertyPath, out property);
-            }
-
-            m_DetailsView.SetInfo(source, propertyInfo, property);
-            m_DetailsView.style.display = DisplayStyle.Flex;
         }
+
+        m_DetailsView.SetInfo(source, propertyInfo, property);
     }
 
     protected override FieldSearchCompleterPopup CreatePopup()

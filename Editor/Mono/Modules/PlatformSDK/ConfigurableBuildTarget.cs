@@ -110,6 +110,17 @@ class ConfigurableBuildTarget : IBuildTarget
         }
     }
 
+    public IScriptingPlatformProperties ScriptingPlatformProperties
+    {
+        get
+        {
+            if (TryGetPropertiesOverride(out IScriptingPlatformProperties properties))
+                return properties;
+            else
+                return m_BuildTarget.ScriptingPlatformProperties;
+        }
+    }
+
     public bool TryGetProperties<T>(out T properties) where T : IPlatformProperties
     {
         if (TryGetPropertiesOverride(out properties))
@@ -126,15 +137,14 @@ class ConfigurableBuildTarget : IBuildTarget
 
     bool TryGetPropertiesOverride<T>(out T properties) where T : IPlatformProperties
     {
-        if (m_PlatformPropertiesOverrides.TryGetValue(typeof(T), out var propertiesObject))
+        if (m_PlatformPropertiesOverrides.TryGetValue(typeof(T), out var propertiesObject) 
+            && propertiesObject is T typedProperties)
         {
-            properties = (T)propertiesObject;
+            properties = typedProperties;
             return true;
         }
-        else
-        {
-            properties = default(T);
-            return false;
-        }
+
+        properties = default;
+        return false;
     }
 }

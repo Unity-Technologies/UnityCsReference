@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 30, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 32, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -111,21 +111,21 @@ namespace UnityEditor.UIElements
 
         const string k_ClassAttr = "class";
         const string k_StyleAttr = "style";
-        const string k_GenericPathAttr = UxmlGenericAttributeNames.k_PathAttributeName;
-        const string k_GenericSrcAttr = UxmlGenericAttributeNames.k_SrcAttributeName;
+        const string k_GenericPathAttr = "path";
+        const string k_GenericSrcAttr = "src";
 
         #pragma warning disable CS0618 // Type or member is obsolete
         const StringComparison k_Comparison = StringComparison.InvariantCulture;
-        public const string k_RootNode = UxmlRootElementFactory.k_ElementName;
-        const string k_TemplateNode = UxmlTemplateFactory.k_ElementName;
-        const string k_TemplateNameAttr = UxmlGenericAttributeNames.k_NameAttributeName;
-        const string k_TemplateInstanceNode = TemplateContainer.UxmlFactory.k_ElementName;
-        const string k_TemplateInstanceSourceAttr = TemplateContainer.UxmlTraits.k_TemplateAttributeName;
-        const string k_StyleReferenceNode = UxmlStyleFactory.k_ElementName;
+        public const string k_RootNode = VisualTreeAsset.RootElementName;
+        const string k_TemplateNode = "Template";
+        const string k_TemplateNameAttr = "name";
+        const string k_TemplateInstanceNode = "Instance";
+        const string k_TemplateInstanceSourceAttr = "template";
+        const string k_StyleReferenceNode = "Style";
         const string k_SlotDefinitionAttr = "slot-name";
         const string k_SlotUsageAttr = "slot";
-        const string k_AttributeOverridesNode = UxmlAttributeOverridesFactory.k_ElementName;
-        const string k_AttributeOverridesElementNameAttr = UxmlAttributeOverridesTraits.k_ElementNameAttributeName;
+        const string k_AttributeOverridesNode = "AttributeOverrides";
+        const string k_AttributeOverridesElementNameAttr = "element-name";
         #pragma warning restore CS0618 // Type or member is obsolete
 
         static UxmlAssetAttributeCache s_UxmlAssetAttributeCache = new();
@@ -1040,15 +1040,6 @@ namespace UnityEditor.UIElements
                 uxmlAsset = new UxmlObjectAsset(fullName, true, xmlns);
                 return true;
             }
-
-            #pragma warning disable CS0618 // Type or member is obsolete
-            // Check for "legacy" UxmlObject
-            if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
-            {
-                uxmlAsset = new UxmlObjectAsset(fullName, false, xmlns);
-                return true;
-            }
-            #pragma warning restore CS0618 // Type or member is obsolete
 
             if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == typeof(TemplateContainer).Namespace)
             {

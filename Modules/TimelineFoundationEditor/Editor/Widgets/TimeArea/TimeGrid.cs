@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.IntegerTime;
 using Unity.Timeline.Foundation.Time;
 using Unity.Timeline.Foundation.Widgets.Internals;
@@ -13,44 +11,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets
 {
-    partial class TimeGrid : VisualElement
+    [UxmlElement]
+    internal partial class TimeGrid : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData),
-                    new UxmlAttributeNames[]
-                    {
-                        new(nameof(displayStartTime), "display-start-time"), new(nameof(displayEndTime), "display-end-time"),
-                    }, true);
-            }
-
-#pragma warning disable 649
-            [SerializeField] double displayStartTime;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags displayStartTime_UxmlAttributeFlags;
-            [SerializeField] double displayEndTime;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags displayEndTime_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new TimeGrid();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TimeGrid)obj;
-                if (ShouldWriteAttributeValue(displayStartTime_UxmlAttributeFlags))
-                    e.StartTime = displayStartTime;
-                if (ShouldWriteAttributeValue(displayEndTime_UxmlAttributeFlags))
-                    e.EndTime = displayEndTime;
-            }
-        }
-
         const string k_Style = "timeGrid";
         const float k_StrengthMultiplier = .9f;
         static readonly CustomStyleProperty<Color> k_GridColor = new CustomStyleProperty<Color>("--grid-color");
@@ -58,12 +21,14 @@ namespace Unity.Timeline.Foundation.Widgets
 
         public TimeRange timeRange { get; private set; }
 
+        [UxmlAttribute("display-start-time")]
         public double StartTime
         {
             get => (double)timeRange.start;
             set => SetTimeRange(new TimeRange(timeRange.start, value));
         }
 
+        [UxmlAttribute("display-end-time")]
         public double EndTime
         {
             get => (double)timeRange.end;

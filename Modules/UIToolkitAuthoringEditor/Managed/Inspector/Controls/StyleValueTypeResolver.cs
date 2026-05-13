@@ -18,7 +18,8 @@ namespace Unity.UIToolkit.Editor;
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class StyleValueTypeResolver
 {
-    static readonly StyleValueType[] s_NumericTypes = { StyleValueType.Float, StyleValueType.Dimension, StyleValueType.Keyword };
+    static readonly StyleValueType[] s_FloatTypes = { StyleValueType.Float, StyleValueType.Keyword };
+    static readonly StyleValueType[] s_DimensionTypes = { StyleValueType.Dimension, StyleValueType.Keyword };
     static readonly StyleValueType[] s_ColorTypes = { StyleValueType.Color, StyleValueType.Keyword };
     static readonly StyleValueType[] s_FontTypes = { StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
     static readonly StyleValueType[] s_BackgroundTypes = { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
@@ -33,8 +34,11 @@ internal static class StyleValueTypeResolver
         if (computedType == null)
             return s_InvalidOnly;
 
-        if (IsNumericOrDimension(computedType))
-            return s_NumericTypes;
+        if (computedType == typeof(float) || computedType == typeof(int))
+            return s_FloatTypes;
+
+        if (computedType == typeof(Length) || computedType == typeof(Rotate) || computedType == typeof(List<TimeValue>))
+            return s_DimensionTypes;
 
         if (computedType == typeof(Color))
             return s_ColorTypes;
@@ -52,15 +56,6 @@ internal static class StyleValueTypeResolver
             return s_EnumTypes;
 
         return s_InvalidTypes;
-    }
-
-    static bool IsNumericOrDimension(Type t)
-    {
-        return t == typeof(float)
-            || t == typeof(int)
-            || t == typeof(Length)
-            || t == typeof(Rotate)
-            || t == typeof(List<TimeValue>);
     }
 
     static bool IsEnum(Type t)

@@ -332,7 +332,8 @@ namespace UnityEditor
                 point.y = height / 16 + s.m_Weight * 12 * height / 16;
                 vectorList.Add(point);
             }
-            if (loop && vectorList[vectorList.Count - 1].x <= rect.width)
+            // Skip loop extension if we don't have enough samples to create a meaningful loop (UUM-139812)
+            if (loop && vectorList.Count > 1 && vectorList[vectorList.Count - 1].x <= rect.width)
             {
                 float pos = vectorList[vectorList.Count - 1].x;
                 int iterator = 1;

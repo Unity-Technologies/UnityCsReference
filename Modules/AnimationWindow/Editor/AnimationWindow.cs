@@ -446,7 +446,13 @@ namespace UnityEditor
 
                 if (state == PlayModeStateChange.EnteredEditMode)
                 {
-                    // Reload selection
+                    // Reload selection when exiting play mode
+                    OnSelectionChangeInternal(false);
+                }
+
+                if (state == PlayModeStateChange.EnteredPlayMode)
+                {
+                    // Reload selection when entering play mode
                     OnSelectionChangeInternal(false);
                 }
             }

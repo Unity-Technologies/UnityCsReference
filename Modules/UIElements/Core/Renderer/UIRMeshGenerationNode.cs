@@ -42,8 +42,21 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null)
         {
+            DrawMesh(vertices, indices, texture, TextureOptions.None);
+        }
+
+        /// <summary>
+        /// Records a draw command with the provided triangle-list indexed mesh.
+        /// </summary>
+        /// <param name="vertices">The vertices to be drawn. All referenced vertices must be initialized.</param>
+        /// <param name="indices">The triangle list indices. Must be a multiple of 3. All indices must be initialized.</param>
+        /// <param name="texture">An optional texture to be applied on the triangles. Pass null to rely on vertex colors only.</param>
+        /// <param name="textureOptions">Flags that apply to the provided texture for this draw call.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions)
+        {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
-            m_UnsafeNode.DrawMesh(vertices, indices, texture);
+            m_UnsafeNode.DrawMesh(vertices, indices, texture, textureOptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -64,13 +77,7 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null)
-        {
-            GetManaged().DrawMesh(vertices, indices, texture);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void DrawMeshInternal(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
         {
             GetManaged().DrawMesh(vertices, indices, texture, textureOptions);
         }

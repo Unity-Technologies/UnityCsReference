@@ -583,11 +583,12 @@ namespace UnityEditor
         /// We need to call this method when importing humanoids, in order to have a valid avatar during the import process.
         /// </summary>
         [RequiredByNativeCode]
-        private static void SetupHumanSkeleton(GameObject modelPrefab, ref HumanBone[] humanBoneMappingArray, out SkeletonBone[] skeletonBones, out bool hasTranslationDoF)
+        private static void SetupHumanSkeleton(GameObject modelPrefab, IntPtr humanDescriptionPtr, out bool hasTranslationDoF)
         {
             SimpleProfiler.Begin("MapHumanBones Total");
 
             hasTranslationDoF = false;
+            var humanBoneMappingArray = AvatarSetupToolHelpers.GetHumanDescriptionBones(humanDescriptionPtr);
 
             var modelInstance = GameObject.Instantiate(modelPrefab);
 
@@ -679,10 +680,11 @@ namespace UnityEditor
 
             // Apply pose to SerializedObject
             SimpleProfiler.Begin("TransferPose");
-            skeletonBones = GetSkeletonBones(modelInstance.transform);
+            var skeletonBones = GetSkeletonBones(modelInstance.transform);
             SimpleProfiler.End();
 
             GameObject.DestroyImmediate(modelInstance);
+            AvatarSetupToolHelpers.SetHumanDescriptionMappings(humanDescriptionPtr, humanBoneMappingArray, skeletonBones);
 
             SimpleProfiler.End(); // MapHumanBones Total
         }

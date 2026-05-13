@@ -3,55 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.ProjectSettings
 {
-    internal class TabButton : VisualElement
+    [UxmlElement]
+    internal partial class TabButton : VisualElement
     {
-        [Serializable]
-        internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(text), "text"),
-                    new (nameof(target), "target"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string text;
-            [SerializeField] string target;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags target_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TabButton();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TabButton)obj;
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.m_Label.text = text;
-                if (ShouldWriteAttributeValue(target_UxmlAttributeFlags))
-                    e.TargetId = target;
-            }
-        }
-
         static readonly string UxmlName = "TabButton";
         static readonly string s_UssClassName = "unity-tab-button";
         static readonly string s_UssActiveClassName = s_UssClassName + "--active";
 
         public bool IsCloseable { get; set; }
+
+        [UxmlAttribute("target")]
         public string TargetId { get; private set; }
+
         public VisualElement Target { get; set; }
 
         public event Action<TabButton> OnSelect;
@@ -59,6 +27,13 @@ namespace UnityEditor.UIElements.ProjectSettings
 
         Label m_Label;
         VisualElement m_BottomBar;
+
+        [UxmlAttribute]
+        string text
+        {
+            get => m_Label?.text;
+            set { if (m_Label != null) m_Label.text = value; }
+        }
 
         public TabButton()
         {

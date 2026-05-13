@@ -25,6 +25,7 @@ namespace UnityEditor.UIElements
                 UnityEngine.UIElements.UIElementsInitialization.InitializeUIElementsManaged();
                 VisualTreeAssetHierarchyDropHandler.Register();
 
+                UIToolkitProjectSettings.CaptureBootValues();
                 if (UIToolkitProjectSettings.enablePanelRendererAnimation)
                     UnityEngine.UIElements.PanelRenderer.RegisterPanelRendererAnimationBinding();
             }

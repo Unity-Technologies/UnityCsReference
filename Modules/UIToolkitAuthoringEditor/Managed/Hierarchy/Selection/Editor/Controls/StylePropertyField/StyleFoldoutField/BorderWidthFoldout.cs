@@ -2,30 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal sealed class BorderWidthFoldout : StyleFoldoutField<TextField>
+    [UxmlElement]
+    internal sealed partial class BorderWidthFoldout : StyleFoldoutField<TextField>
     {
         public static readonly string textUssClassName = FoldoutFieldPropertyName + "__textfield";
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StyleFoldoutField<TextField>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleFoldoutField<TextField>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new BorderWidthFoldout();
-        }
 
         const string k_TopPropertyName = "borderTopWidth";
         const string k_RightPropertyName = "borderRightWidth";

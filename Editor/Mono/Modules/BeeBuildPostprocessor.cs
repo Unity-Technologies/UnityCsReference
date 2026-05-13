@@ -140,7 +140,7 @@ namespace UnityEditor.Modules
             return new PluginsData
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                Plugins = GetPluginBuildTargetsFor(args).SelectMany(GetPluginsFor).ToArray()
+                Plugins = GetPluginBuildTargetsFor(args).SelectMany(buildTarget => GetPluginsFor(buildTarget, args)).ToArray()
 #pragma warning restore UA2001
             };
         }
@@ -163,10 +163,27 @@ namespace UnityEditor.Modules
             };
         }
 
-        IEnumerable<Plugin> GetPluginsFor(BuildTarget target)
+        protected string[] GetDesktopCppPluginFilesMatchingDefineConstraints(BuildPostProcessArgs args)
         {
-            var buildTargetName = BuildPipeline.GetBuildTargetName(target);
-            var pluginImpExtension = GetPluginImpExtension();
+            var compilationContext = new EditorBuildRules.SymbolDefinitionContext(args.defineConstraints);
+
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            return PluginImporter.GetImporters(args.target)
+#pragma warning restore UA2001
+                // Only desktop C++ plugin files
+                .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
+
+                // Define constraints filtering
+                .Where(imp => DefineConstraintsHelper.IsDefineConstraintsCompatibleContext(compilationContext, imp.DefineConstraints))
+                .Select(imp => imp.assetPath)
+                .ToArray();
+        }
+
+        protected IEnumerable<PluginImporter> GetNativePluginsMatchingDefineConstraints(BuildTarget target,
+            BuildPostProcessArgs args)
+        {
+            var compilationContext = new EditorBuildRules.SymbolDefinitionContext(args.defineConstraints);
+
             foreach (PluginImporter imp in PluginImporter.GetImporters(target))
             {
                 if (!IsPluginCompatibleWithCurrentBuild(target, imp))
@@ -176,18 +193,34 @@ namespace UnityEditor.Modules
                 if (!imp.isNativePlugin)
                     continue;
 
+                // define constraints
+                if (!DefineConstraintsHelper.IsDefineConstraintsCompatibleContext(compilationContext,
+                        imp.DefineConstraints))
+                    continue;
+
+                yield return imp;
+            }
+        }
+
+        IEnumerable<Plugin> GetPluginsFor(BuildTarget target, BuildPostProcessArgs args)
+        {
+            var buildTargetName = BuildPipeline.GetBuildTargetName(target);
+            var pluginImpExtension = GetPluginImpExtension();
+
+            foreach(PluginImporter nativePlugin in GetNativePluginsMatchingDefineConstraints(target,args))
+            {
                 // HACK: This should never happen.
-                if (string.IsNullOrEmpty(imp.assetPath))
+                if (string.IsNullOrEmpty(nativePlugin.assetPath))
                 {
                     UnityEngine.Debug.LogWarning("Got empty plugin importer path for " + target);
                     continue;
                 }
 
-                var destinationPath = pluginImpExtension.CalculateFinalPluginPath(buildTargetName, imp);
+                var destinationPath = pluginImpExtension.CalculateFinalPluginPath(buildTargetName, nativePlugin);
                 if (string.IsNullOrEmpty(destinationPath))
                     continue;
 
-                var plugin = GetPluginFor(imp, target, destinationPath);
+                var plugin = GetPluginFor(nativePlugin, target, destinationPath);
                 if (plugin != null)
                     yield return plugin;
             }
@@ -386,12 +419,7 @@ namespace UnityEditor.Modules
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET),
 #pragma warning restore CS0618
                 CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.canUploadReports,
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                AdditionalCppFiles = PluginImporter.GetImporters(args.target)
-#pragma warning restore UA2001
-                    .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
-                    .Select(imp => imp.assetPath)
-                    .ToArray(),
+                AdditionalCppFiles = GetDesktopCppPluginFilesMatchingDefineConstraints(args),
                 AdditionalArgs = additionalArgs.ToArray(),
                 AllowDebugging = allowDebugging,
                 CompilerFlags = compilerFlags,
@@ -537,7 +565,7 @@ namespace UnityEditor.Modules
                 searchPaths = $"{IL2CPPUtils.ConstructBeeLibrarySearchPath()}{Path.PathSeparator}";
             }
 
-            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
+            return new SystemProcessRunnableProgram(NetCoreProgram.DotNetMuxerPath.ToString(),
                 new[]
                 {
                     buildProgramAssembly.InQuotes(SlashMode.Native),
@@ -566,7 +594,7 @@ namespace UnityEditor.Modules
                 ? UnityBeeDriver.CacheMode.WriteOnly
                 : UnityBeeDriver.CacheMode.ReadWrite;
 
-            var buildRequest = UnityBeeDriver.BuildRequestFor(buildProgram, DagName(args), DagDirectory.ToString(), false, "",ilpp, cacheMode, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
+            var buildRequest = UnityBeeDriver.BuildRequestFor(args.target, args.options, buildProgram, DagName(args), DagDirectory.ToString(), false, "",ilpp, cacheMode, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             buildRequest.DataForBuildProgram.Add(() => GetDataForBuildProgramFor(args).Where(o=> o is not null));
 #pragma warning restore UA2001
@@ -588,9 +616,80 @@ namespace UnityEditor.Modules
         void UnityLinkerResultProcessor(NodeFinishedMessage node)
         {
             if (node.ExitCode != 0 && node.Output.Contains("UnityEditor"))
-                Debug.LogError($"UnityEditor.dll assembly is referenced by user code, but this is not allowed.");
+            {
+                var offenders = FindAssembliesFromLinkerOutput(node.Output);
+                var msg = "UnityEditor.dll assembly is referenced by user code, but this is not allowed.";
+                if (offenders.Count > 0)
+                    msg += $"\nAssemblies referencing UnityEditor.dll:\n  - {string.Join("\n  - ", offenders)}";
+                Debug.LogError(msg);
+            }
             else
                 DefaultResultProcessor(node);
+        }
+
+        static List<string> FindAssembliesFromLinkerOutput(string linkerOutput)
+        {
+            var assemblies = new HashSet<string>();
+            var text = linkerOutput.AsSpan();
+
+            const string resolveAssemblyTrigger = "Failed to resolve assembly: 'UnityEditor";
+            int pos = 0;
+            while (pos < text.Length)
+            {
+                int hit = text.Slice(pos).IndexOf(resolveAssemblyTrigger.AsSpan(), StringComparison.Ordinal);
+                if (hit < 0)
+                    break;
+                TryExtractFromProcessingMarker(text.Slice(pos, hit), assemblies);
+                pos += hit + resolveAssemblyTrigger.Length;
+            }
+
+            const string baseTypeTrigger = "Failed to resolve base type UnityEditor";
+            pos = 0;
+            while (pos < text.Length)
+            {
+                int hit = text.Slice(pos).IndexOf(baseTypeTrigger.AsSpan(), StringComparison.Ordinal);
+                if (hit < 0)
+                    break;
+                int after = pos + hit + baseTypeTrigger.Length;
+                int lineEnd = text.Slice(after).IndexOf('\n');
+                var lineRest = lineEnd >= 0 ? text.Slice(after, lineEnd) : text.Slice(after);
+                TryExtractFromInAssemblyMarker(lineRest, assemblies);
+                pos = after;
+            }
+
+            return new List<string>(assemblies);
+        }
+
+        static void TryExtractFromProcessingMarker(ReadOnlySpan<char> textBeforeTrigger, HashSet<string> assemblies)
+        {
+            int prevLineEnd = textBeforeTrigger.LastIndexOf('\n');
+            if (prevLineEnd < 0)
+                return;
+            var prevLine = textBeforeTrigger.Slice(0, prevLineEnd);
+            prevLine = prevLine.Slice(prevLine.LastIndexOf('\n') + 1);
+            const string marker = "in assembly '";
+            int markerIndex = prevLine.IndexOf(marker.AsSpan(), StringComparison.Ordinal);
+            if (markerIndex < 0)
+                return;
+            var assemblyName = prevLine.Slice(markerIndex + marker.Length);
+            int comma = assemblyName.IndexOf(',');
+            int quote = assemblyName.IndexOf('\'');
+            int end = (comma >= 0 && (quote < 0 || comma < quote)) ? comma : quote;
+            if (end > 0)
+                assemblies.Add(assemblyName.Slice(0, end).ToString() + ".dll");
+        }
+
+        static void TryExtractFromInAssemblyMarker(ReadOnlySpan<char> lineAfterTrigger, HashSet<string> assemblies)
+        {
+            const string marker = "in assembly ";
+            int markerIndex = lineAfterTrigger.IndexOf(marker.AsSpan(), StringComparison.Ordinal);
+            if (markerIndex < 0)
+                return;
+            var assemblyName = lineAfterTrigger.Slice(markerIndex + marker.Length);
+            int space = assemblyName.IndexOf(' ');
+            int end = space >= 0 ? space : assemblyName.Length;
+            if (end > 0)
+                assemblies.Add(assemblyName.Slice(0, end).TrimEnd('\r').ToString());
         }
 
         void UsymtoolResultProcessor(NodeFinishedMessage node)

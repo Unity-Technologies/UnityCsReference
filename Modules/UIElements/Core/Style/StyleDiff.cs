@@ -245,6 +245,18 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        private bool SetComputedValue(ref StylePropertyData<StyleUIAnimationClip, UIAnimationClip> property, EntityId unmanagedValue)
+        {
+            var computedValue = (UIAnimationClip)Resources.EntityIdToObject(unmanagedValue);
+            if (property.computedValue != computedValue)
+            {
+                property.computedValue = computedValue;
+                return true;
+            }
+
+            return false;
+        }
+
         private bool SetComputedValue(ref StylePropertyData<StyleFont, Font> property, EntityId unmanagedValue)
         {
             var computedValue = (Font)Resources.EntityIdToObject(unmanagedValue);
@@ -551,10 +563,14 @@ namespace UnityEngine.UIElements
 
             property.binding = uxmlData.bindingInfo.binding;
             property.selector = uxmlData.selector;
+
             return property;
         }
 
-        private void Notify([CallerMemberName] string name = null)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void MarkAllPropertiesDirty() => Notify(null);
+
+        void Notify([CallerMemberName] string name = null)
         {
             m_Version += 1;
             propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(name));

@@ -3,48 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class PersistedFoldout : BindableElement, INotifyValueChanged<bool>
+    [UxmlElement]
+    internal partial class PersistedFoldout : BindableElement, INotifyValueChanged<bool>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(text), "text"),
-                    new (nameof(value), "value")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string text;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField] bool value;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new PersistedFoldout();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (PersistedFoldout)obj;
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.text = text;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.value = value;
-            }
-        }
-
         protected VisualElement m_Header;
         protected Toggle m_Toggle;
         VisualElement m_OverrideBox;
@@ -63,6 +29,14 @@ namespace Unity.UI.Builder
             }
         }
 
+        // UXML attribute as properties can not be virtual when using UxmlAttribute
+        [UxmlAttribute("text")]
+        internal string textValue
+        {
+            get => text;
+            set => text = value;
+        }
+
         public virtual string text
         {
             get
@@ -78,6 +52,7 @@ namespace Unity.UI.Builder
         [SerializeField]
         protected bool m_Value;
 
+        [UxmlAttribute]
         public bool value
         {
             get

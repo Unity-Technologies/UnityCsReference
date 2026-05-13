@@ -158,13 +158,17 @@ namespace UnityEditorInternal.Profiling
             CollapseEditorBoundarySamples = 1 << 0, // Session based override, default to off
             ShowFullScriptingMethodNames = 1 << 1,
             ShowExecutionFlow = 1 << 2,
+            Hide0msSamples = 1 << 3,
         }
+
+        internal const string k_Hide0msSamplesPrefKey = "Hide0msSamples";
 
         static readonly GUIContent[] k_ProfilerViewFilteringOptions =
         {
             EditorGUIUtility.TrTextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated."),
             EditorGUIUtility.TrTextContent("Show Full Scripting Method Names", "Display fully qualified method names including assembly name and namespace."),
             EditorGUIUtility.TrTextContent("Show Flow Events", "Visualize job scheduling and execution."),
+            EditorGUIUtility.TrTextContent("Hide 0ms Samples", "Hides samples displayed as 0 ms: < 0.01 ms (CPU profiler) and < 0.001 ms (GPU profiler). Child samples are also hidden." ),
         };
 
         [SerializeField]
@@ -359,6 +363,9 @@ namespace UnityEditorInternal.Profiling
                     if (option == ProfilerViewFilteringOptions.ShowExecutionFlow && ViewType != ProfilerViewType.Timeline)
                         continue;
 
+                    if (option == ProfilerViewFilteringOptions.Hide0msSamples && ViewType == ProfilerViewType.Timeline)
+                        continue;
+
                     pm.AddItem(k_ProfilerViewFilteringOptions[i], OptionEnabled(option), () => ToggleOption(option));
                 }
                 pm.Popup(position, -1);
@@ -379,6 +386,8 @@ namespace UnityEditorInternal.Profiling
 
             SessionState.SetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
             m_FrameDataHierarchyView.Clear();
+            if (selection != null)
+                ApplySelection(true, true);
         }
 
         protected virtual void ToggleOption(ProfilerViewFilteringOptions option)
@@ -407,6 +416,8 @@ namespace UnityEditorInternal.Profiling
             if (m_ViewType == ProfilerViewType.InvertedHierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.InvertHierarchy;
 
+            EditorPrefs.SetBool(k_Hide0msSamplesPrefKey, (ViewOptions & ProfilerViewFilteringOptions.Hide0msSamples) != 0);
+
             return ProfilerWindow.GetFrameDataView(threadGroupName, threadName, threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
 
@@ -419,6 +430,8 @@ namespace UnityEditorInternal.Profiling
 
             if (m_ViewType == ProfilerViewType.InvertedHierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.InvertHierarchy;
+
+            EditorPrefs.SetBool(k_Hide0msSamplesPrefKey, (ViewOptions & ProfilerViewFilteringOptions.Hide0msSamples) != 0);
 
             return ProfilerWindow.GetFrameDataView(threadIndex, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
@@ -554,6 +567,9 @@ namespace UnityEditorInternal.Profiling
                 if (selection.rawSampleIndices != null && selection.rawSampleIndices.Count > 1)
                 {
                     // multiple rawSampleIndices are currently only allowed if they all correspond to one item in Hierarchy view
+
+                    EditorPrefs.SetBool(k_Hide0msSamplesPrefKey, (ViewOptions & ProfilerViewFilteringOptions.Hide0msSamples) != 0);
+
                     using (var frameData = new HierarchyFrameDataView((int)selection.frameIndex,
                         threadIndex, HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName,
                         m_FrameDataHierarchyView.sortedProfilerColumn,
@@ -1140,5 +1156,8 @@ namespace UnityEditorInternal.Profiling
             };
             ProfilerWindowAnalytics.SwitchActiveView(viewName);
         }
+
+        public abstract float GetZeroSampleThresholdMs();
+        public abstract int GetZeroSampleTimeColumn();
     }
 }

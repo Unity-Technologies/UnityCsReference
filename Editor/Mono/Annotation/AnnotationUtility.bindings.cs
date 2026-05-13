@@ -29,10 +29,8 @@ namespace UnityEditor
             kIsDisabled = 1 << 2
         };
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal static  Annotation[] GetAnnotations();
 
-        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal static  Annotation[] GetRecentlyChangedAnnotations();
 
         extern internal static Annotation GetAnnotation(int classID, string scriptClass);

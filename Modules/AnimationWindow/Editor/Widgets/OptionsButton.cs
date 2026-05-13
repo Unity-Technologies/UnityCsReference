@@ -12,16 +12,9 @@ using UnityEditorInternal;
 
 namespace UnityEditor.Animations.AnimationWindow.Widgets
 {
-    class OptionsButton : VisualElement, IDisposable
+    [UxmlElement]
+    partial class OptionsButton : VisualElement, IDisposable
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new OptionsButton();
-        }
-
         const string k_TimeFormatGroupName = "timeFormat";
         const string k_ToolOptionsGroupName = "toolOptions";
         const string k_FrameRateGroupName = "frameRate";

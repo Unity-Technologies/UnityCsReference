@@ -379,5 +379,6 @@ namespace UnityEngine.UIElements
 
             return m_IsElided;
         }
+
     }
 }

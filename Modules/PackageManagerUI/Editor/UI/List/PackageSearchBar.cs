@@ -2,27 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using System;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal sealed class PackageSearchBar : VisualElement
+    [UxmlElement]
+    internal sealed partial class PackageSearchBar : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageSearchBar(
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IPageManager>());
-            }
-        }
-
         private SearchFieldDelayArgs m_SearchFieldDelayArgs;
 
         private const long k_SearchFieldDelayTicks = TimeSpan.TicksPerSecond / 3;
@@ -31,6 +20,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IPageManager m_PageManager;
+
+        public PackageSearchBar() : this(
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IPageManager>())
+        {
+        }
 
         public PackageSearchBar(IUnityConnectProxy unityConnect, IPageManager pageManager)
         {

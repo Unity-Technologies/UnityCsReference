@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -11,7 +10,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BorderBoxModelView : VisualElement
+    [UxmlElement]
+    partial class BorderBoxModelView : VisualElement
     {
         static readonly string k_UssPathNoExt = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleSectionsBoxModel";
         static readonly string k_BoxModelClassName = "unity-box-model";
@@ -62,12 +62,6 @@ namespace Unity.UI.Builder
         private VisualElement m_ContentTop = new VisualElement();
         private VisualElement m_ContentBottom = new VisualElement();
         private VisualElement m_CenterSpacer = new VisualElement();
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BorderBoxModelView();
-        }
 
         public BorderBoxModelView()
         {

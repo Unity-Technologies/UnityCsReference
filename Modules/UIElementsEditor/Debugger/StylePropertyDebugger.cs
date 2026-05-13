@@ -184,31 +184,38 @@ namespace UnityEditor.UIElements.Debugger
                     styleName.IndexOf(m_SearchFilter, StringComparison.InvariantCultureIgnoreCase) == -1)
                     continue;
 
-                var id = propertyInfo.id;
-                var val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
-
-                var specificity = m_PropertySpecificityDictionary.GetValueOrDefault(id, CSSSpec.InvalidSpecificityScore);
-
-                StyleField sf = null;
-                m_IdToFieldDictionary.TryGetValue(id, out sf);
-                if (m_ShowAll || specificity != StyleDebug.UndefinedSpecificity)
+                try
                 {
-                    if (sf != null)
+                    var id = propertyInfo.id;
+                    var val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
+
+                    var specificity = m_PropertySpecificityDictionary.GetValueOrDefault(id, CSSSpec.InvalidSpecificityScore);
+
+                    StyleField sf = null;
+                    m_IdToFieldDictionary.TryGetValue(id, out sf);
+                    if (m_ShowAll || specificity != StyleDebug.UndefinedSpecificity)
                     {
-                        sf.RefreshPropertyValue(val, specificity);
+                        if (sf != null)
+                        {
+                            sf.RefreshPropertyValue(val, specificity);
+                        }
+                        else
+                        {
+                            sf = new StyleField(m_SelectedElement, propertyInfo, val, specificity);
+                            m_FieldsContainer.Add(sf);
+                            m_IdToFieldDictionary[id] = sf;
+                        }
                     }
-                    else
+                    else if (sf != null)
                     {
-                        sf = new StyleField(m_SelectedElement, propertyInfo, val, specificity);
-                        m_FieldsContainer.Add(sf);
-                        m_IdToFieldDictionary[id] = sf;
+                        // Style property is not applied anymore, remove the field
+                        m_IdToFieldDictionary.Remove(id);
+                        m_FieldsContainer.Remove(sf);
                     }
                 }
-                else if (sf != null)
+                catch (Exception e)
                 {
-                    // Style property is not applied anymore, remove the field
-                    m_IdToFieldDictionary.Remove(id);
-                    m_FieldsContainer.Remove(sf);
+                    throw (new Exception($"Error while updating style property: {styleName}", e));
                 }
             }
         }
@@ -327,6 +334,13 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(fontDefinition.fontAsset != null ? (UnityEngine.Object)fontDefinition.fontAsset : (UnityEngine.Object)fontDefinition.font);
+            }
+            // val can also be null here
+            else if (m_PropertyInfo.type == typeof(StyleUIAnimationClip))
+            {
+                var field = GetOrCreateObjectField<UIAnimationClip>();
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(val as UIAnimationClip);
             }
             else if (val is Background bgValue)
             {
@@ -653,6 +667,9 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (type == typeof(StyleMaterialDefinition))
                     val = new StyleMaterialDefinition();
+
+                if (type == typeof(StyleUIAnimationClip))
+                    val = new StyleUIAnimationClip();
             }
             else if (type == newValue.GetType())
             {

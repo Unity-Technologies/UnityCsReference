@@ -128,7 +128,7 @@ namespace Unity.UI.Builder
 
                     var description = UxmlSerializedDataRegistry.GetDescription(attributesUxmlOwner.fullTypeName);
                     var isBindableElement = description != null;
-                    var attributeDesc = description?.FindAttributeWithPropertyName(csPropertyName);
+                    var attributeDesc = description?.FindAttributeWithPropertyName(csPropertyName) ?? description?.FindAttributeWithUxmlName(csPropertyName);
                     var bindingPath = attributeDesc?.bindingPath;
                     var isBindableProperty = attributeDesc != null && PropertyContainer.IsPathValid(ref container, bindingPath);
 
@@ -222,13 +222,6 @@ namespace Unity.UI.Builder
 
             inspector?.RegisterFieldToInlineEditingEvents(attributeField);
             targetVE.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindCallback);
-        }
-
-        protected override void ShowUxmlTraitsUsageWarningBox()
-        {
-            if (attributesContainer == null)
-                return;
-            attributesContainer.Add(new UnityEngine.UIElements.HelpBox(BuilderConstants.UsingDeprecatedAPIUxmlTraitsWarning, HelpBoxMessageType.Warning));
         }
     }
 }

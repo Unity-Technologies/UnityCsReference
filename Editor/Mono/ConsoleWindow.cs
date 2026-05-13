@@ -1387,9 +1387,32 @@ namespace UnityEditor
         internal static event Action<LogEntry> entryContextClicked;
 
         [UsedImplicitly, RequiredByNativeCode]
-        private static void SendEntryDoubleClicked(LogEntry entry)
+        private static void SendEntryDoubleClicked(
+            string message,
+            string file,
+            int line,
+            int column,
+            int mode,
+            ulong entityIdRaw,
+            int identifier)
         {
-            entryWithManagedCallbackDoubleClicked?.Invoke(entry);
+            var handler = entryWithManagedCallbackDoubleClicked;
+            if (handler == null)
+                return;
+
+            // globalLineIndex / callstackTextStartUTF8 / callstackTextStartUTF16 are
+            // intentionally left at default (0) to preserve prior behavior.
+            var entry = new LogEntry
+            {
+                message = message,
+                file = file,
+                line = line,
+                column = column,
+                mode = mode,
+                entityId = EntityId.FromULong(entityIdRaw),
+                identifier = identifier,
+            };
+            handler.Invoke(entry);
         }
 
         [UsedImplicitly] // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.

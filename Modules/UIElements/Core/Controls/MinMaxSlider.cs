@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -26,7 +25,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// SA: [[Slider]]
     /// </remarks>
-    [UxmlElement(libraryPath = "Controls")]
+    [UxmlElement(libraryPath = "Controls"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/MinMaxSlider.png")]
     public partial class MinMaxSlider : BaseField<Vector2>
     {
@@ -36,32 +35,10 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId lowLimitProperty = nameof(lowLimit);
         internal static readonly BindingId highLimitProperty = nameof(highLimit);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Vector2>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Vector2>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(valueOverride), "value"),
-                    new (nameof(lowLimit), "low-limit"),
-                    new (nameof(highLimit), "high-limit"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttributeBindingPath("value")]
-            [SerializeField, Delayed, UxmlAttribute("value")] Vector2 valueOverride;
-            [SerializeField, Delayed] float lowLimit;
-            [SerializeField, Delayed] float highLimit;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueOverride_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowLimit_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highLimit_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 int foundAttributeCounter = 0;
                 var minV = UxmlUtility.TryParseFloatAttribute("min-value", bag, ref foundAttributeCounter);
@@ -78,21 +55,6 @@ namespace UnityEngine.UIElements
                         uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(new Vector2(minV, maxV)));
                     }
                 }
-            }
-
-            public override object CreateInstance() => new MinMaxSlider();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (MinMaxSlider)obj;
-                if (ShouldWriteAttributeValue(lowLimit_UxmlAttributeFlags))
-                    e.lowLimit = lowLimit;
-                if (ShouldWriteAttributeValue(highLimit_UxmlAttributeFlags))
-                    e.highLimit = highLimit;
-                if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
-                    e.valueOverride = valueOverride;
             }
         }
 
@@ -114,9 +76,6 @@ namespace UnityEngine.UIElements
         Vector2 m_DragElementStartPos;
         Vector2 m_ValueStartPos;
         DragState m_DragState;
-
-        // Placeholder required to prevent issues syncing UxmlSerializedData.
-        internal Vector2 valueOverride { get => value; set => SetValueWithoutNotify(value); }
 
         // Minimum value of the current position of the slider
         /// <summary>
@@ -190,7 +149,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the low limit of the slider.
         /// </summary>
+        [Delayed]
         [CreateProperty]
+        [UxmlAttribute]
         public float lowLimit
         {
             get { return m_MinLimit; }
@@ -218,7 +179,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the high limit of the slider.
         /// </summary>
+        [Delayed]
         [CreateProperty]
+        [UxmlAttribute]
         public float highLimit
         {
             get { return m_MaxLimit; }
@@ -241,6 +204,10 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        [Delayed]
+        [UxmlAttribute("value")]
+        internal Vector2 valueOverride { get => value; set => SetValueWithoutNotify(value); }
 
         internal const float kDefaultHighValue = 10;
 

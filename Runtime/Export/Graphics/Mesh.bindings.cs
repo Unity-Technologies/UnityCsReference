@@ -285,7 +285,12 @@ namespace UnityEngine
 
         // random things
 
-        extern public   bool isReadable {[NativeMethod("GetIsReadable")] get; }
+        extern public bool isReadable
+        {
+            [NativeMethod("GetIsReadable")] get;
+            // Should not be called during playmode
+            [NativeMethod("SetIsReadable")] internal set;
+        }
         extern internal bool canAccess  {[NativeMethod("CanAccessFromScript")] get; }
 
         extern public int vertexCount   {[NativeMethod("GetVertexCount")] get; }
@@ -294,6 +299,12 @@ namespace UnityEngine
             [NativeMethod(Name = "GetSubMeshCount")] get;
             [FreeFunction(Name = "MeshScripting::SetSubMeshCount", HasExplicitThis = true)] set;
         }
+
+        [VisibleToOtherModules("UnityEditor.PhysicsEditorModule")]
+        extern internal bool HasPreBakeCollisionMeshInternal(bool isConvex);
+
+        [VisibleToOtherModules("UnityEditor.PhysicsEditorModule")]
+        extern internal void SetPreBakeCollisionMeshInternal(bool isConvex, bool preBake);
 
         [FreeFunction("MeshScripting::SetSubMesh", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetSubMesh(int index, SubMeshDescriptor desc, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);

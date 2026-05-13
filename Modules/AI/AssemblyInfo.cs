@@ -4,6 +4,6 @@
 
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Unity.AI.HeightMesh.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.AI.HeightMesh.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.AI.Navigation.Editor")]
 [assembly: InternalsVisibleTo("Unity.AI.Navigation.Updater")]

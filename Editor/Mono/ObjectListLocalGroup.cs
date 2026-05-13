@@ -842,46 +842,7 @@ namespace UnityEditor
                     }
                     else // Icon grid
                     {
-                        Texture previewImage = null;
-
-                        // Get icon
-                        if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().entityId == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
-                        {
-                            // If we are creating a new asset we might have an icon to use
-                            m_Content.image = m_Owner.GetCreateAssetUtility().icon;
-                        }
-                        else if (builtinResource is ExtraItem extraItem)
-                        {
-                            m_Content.image = extraItem.m_Icon;
-                        }
-                        else
-                        {
-                            // Check for asset preview
-                            bool shouldGetAssetPreview = ShouldGetAssetPreview(assetEntityId);
-                            if (shouldGetAssetPreview)
-                            {
-                                if (assetEntityId != EntityId.None)
-                                    previewImage = AssetPreview.GetAssetPreview(assetEntityId, m_Owner.GetAssetPreviewManagerID());
-                                else if (!string.IsNullOrEmpty(assetGuid))
-                                    previewImage = AssetPreview.GetAssetPreviewFromGUID(assetGuid, m_Owner.GetAssetPreviewManagerID());
-                            }
-
-                            m_Content.image = previewImage;
-
-                            if (filterItem != null)
-                            {
-                                // Otherwise use cached icon
-                                if (m_Content.image == null)
-                                    m_Content.image = filterItem.icon;
-                            }
-
-                            // If the icon is still hasn't been found, fall back to the default one
-                            if (m_Content.image == null && assetEntityId != EntityId.None)
-                            {
-                                m_Content.image = AssetPreview.GetMiniTypeThumbnail(EditorUtility.EntityIdToObject(assetEntityId));
-                            }
-                        }
-
+                        m_Content.image = GetGridModeIcon(filterItem, builtinResource, assetEntityId, assetGuid, out var previewImage);
 
                         position.height -= Styles.resultsGridLabel.fixedHeight; // get icon rect (remove label height which is included in the position rect)
 
@@ -948,35 +909,7 @@ namespace UnityEditor
                                     Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
 
-                                Texture2D typeIcon = null;
-                                if (filterItem != null && previewImage != null)
-                                {
-                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject(filterItem.entityId);
-
-                                    if (type != typeof(Texture2D))
-                                    {
-                                        typeIcon = filterItem.icon;
-                                        if (selected)
-                                        {
-                                            var activeIcon = EditorUtility.GetIconInActiveState(typeIcon) as Texture2D;
-                                            if (activeIcon)
-                                                typeIcon = activeIcon;
-                                        }
-                                    }
-                                }
-
-                                if (builtinResource != null)
-                                {
-                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject((EntityId)builtinResource.m_EntityId);
-
-                                    if (type != typeof(Texture2D))
-                                    {
-                                        typeIcon = AssetPreview.GetMiniTypeThumbnail(type);
-                                    }
-                                }
-
-                                var orgClipping = Styles.resultsGridLabel.clipping;
-                                var orgAlignment = Styles.resultsLabel.alignment;
+                                var typeIcon = GetGridModeLabelTypeIcon(filterItem, builtinResource, previewImage, selected);
                                 var size = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext, typeIcon), orgPosition.size);
                                 size.x += Styles.resultsGridLabel.padding.horizontal;
                                 labelRect.x = orgPosition.x + (orgPosition.width - size.x) / 2.0f;
@@ -984,11 +917,7 @@ namespace UnityEditor
                                 labelRect.height = size.y;
                                 m_Owner.sizeUsedForCroppingName = orgPosition.size;
 
-                                Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
-                                Styles.resultsGridLabel.alignment = TextAnchor.MiddleCenter;
-                                Styles.resultsGridLabel.Draw(labelRect, GUIContent.Temp(labeltext, typeIcon), false, false, selected, m_Owner.HasFocus());
-                                Styles.resultsGridLabel.clipping = orgClipping;
-                                Styles.resultsLabel.alignment = orgAlignment;
+                                DrawGridModeLabel(labelRect, GUIContent.Temp(labeltext, typeIcon), selected, m_Owner.HasFocus());
 
                                 // We only need to set the tooltip once, and not for every item.
                                 if (labelRect.Contains(Event.current.mousePosition))
@@ -1277,6 +1206,40 @@ namespace UnityEditor
                     m_BuiltinResourceMap.Add(typeName, resourceList);
             }
 
+            internal Texture GetGridModeIcon(FilteredHierarchy.FilterResult filterItem, BuiltinResource builtinResource, EntityId assetEntityId, string assetGuid, out Texture previewImage)
+            {
+                previewImage = null;
+
+                if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().entityId == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
+                    return m_Owner.GetCreateAssetUtility().icon;
+
+                if (builtinResource is ExtraItem extraItem)
+                    return extraItem.m_Icon;
+
+                bool shouldGetPreview = ShouldGetAssetPreview(assetEntityId);
+                if (shouldGetPreview)
+                {
+                    if (assetEntityId != EntityId.None)
+                        previewImage = AssetPreview.GetAssetPreview(assetEntityId, m_Owner.GetAssetPreviewManagerID());
+                    else if (!string.IsNullOrEmpty(assetGuid))
+                        previewImage = AssetPreview.GetAssetPreviewFromGUID(assetGuid, m_Owner.GetAssetPreviewManagerID());
+                }
+
+                if (previewImage != null)
+                    return previewImage;
+
+                if (filterItem?.icon != null)
+                    return filterItem.icon;
+
+                // Only fall back to a type thumbnail for non-previewable types (matching list mode behaviour).
+                // Previewable assets with no loaded preview and no filterItem.icon show nothing rather than
+                // a scaled-up type thumbnail placeholder.
+                if (!shouldGetPreview && assetEntityId != EntityId.None)
+                    return AssetPreview.GetMiniTypeThumbnail(EditorUtility.EntityIdToObject(assetEntityId));
+
+                return null;
+            }
+
             private bool ShouldGetAssetPreview(EntityId assetId)
             {
                 string path = AssetDatabase.GetAssetPath(assetId);
@@ -1286,6 +1249,50 @@ namespace UnityEditor
                 if (m_AssetPreviewIgnoreList.Contains(assetDataType))
                     return false;
                 return true;
+            }
+
+            // Returns the small type icon shown next to the grid-cell label, mirroring DrawItem's typeIcon logic.
+            // Only non-null when previewImage is non-null (a real preview is being shown) and the asset is not a
+            // Texture2D (where the preview itself acts as the visual identifier).
+            internal Texture2D GetGridModeLabelTypeIcon(FilteredHierarchy.FilterResult filterItem, BuiltinResource builtinResource, Texture previewImage, bool selected)
+            {
+                if (filterItem != null && previewImage != null)
+                {
+                    var type = InternalEditorUtility.GetTypeWithoutLoadingObject(filterItem.entityId);
+                    if (type != typeof(Texture2D))
+                    {
+                        var icon = filterItem.icon;
+                        if (selected)
+                        {
+                            var activeIcon = EditorUtility.GetIconInActiveState(icon) as Texture2D;
+                            if (activeIcon)
+                                icon = activeIcon;
+                        }
+                        return icon;
+                    }
+                }
+
+                if (builtinResource != null)
+                {
+                    var type = InternalEditorUtility.GetTypeWithoutLoadingObject((EntityId)builtinResource.m_EntityId);
+                    if (type != typeof(Texture2D))
+                        return AssetPreview.GetMiniTypeThumbnail(type);
+                }
+
+                return null;
+            }
+
+            // Draws the grid-cell label with the temporary style overrides (clipping + alignment) that both
+            // DrawItem and the ping label require, then restores the originals.
+            internal static void DrawGridModeLabel(Rect rect, GUIContent content, bool selected, bool hasFocus)
+            {
+                var orgClipping = Styles.resultsGridLabel.clipping;
+                var orgAlignment = Styles.resultsGridLabel.alignment;
+                Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
+                Styles.resultsGridLabel.alignment = TextAnchor.MiddleCenter;
+                Styles.resultsGridLabel.Draw(rect, content, false, false, selected, hasFocus);
+                Styles.resultsGridLabel.clipping = orgClipping;
+                Styles.resultsGridLabel.alignment = orgAlignment;
             }
 
             public void InitBuiltinResources()

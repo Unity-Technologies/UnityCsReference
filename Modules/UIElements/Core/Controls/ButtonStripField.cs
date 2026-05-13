@@ -4,24 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
+    [UxmlElement]
     partial class ButtonStripField : BaseField<int>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<int>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new ButtonStripField();
-        }
-
         public const string className = "unity-button-strip-field";
         internal static readonly UniqueStyleString classNameUnique = new(className);
 

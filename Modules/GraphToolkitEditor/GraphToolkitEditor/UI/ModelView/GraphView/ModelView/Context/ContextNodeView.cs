@@ -33,17 +33,13 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string blocksPartName = "blocks-container-part";
 
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> showing the category at the top of the context.
+        /// The name of the bottom color line part.
         /// </summary>
-        public static readonly string contextTopCategoryPartName = "top-category-part";
-
-        /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> showing the category at the bottom of the context.
-        /// </summary>
-        public static readonly string contextBottomCategoryPartName = "bottom-category-part";
+        public static readonly string bottomColorLineContainerPartName = "bottom-color-line-container";
 
         static readonly string k_ContextBorderName = "context-border";
         static readonly string k_ContextBorderTitleName = "context-border-title";
+
 
         internal static readonly CustomStyleProperty<Color> BlocksBorderColorStyle = new CustomStyleProperty<Color>("--blocks--border-color");
 
@@ -99,12 +95,19 @@ namespace Unity.GraphToolkit.Editor
         {
             base.BuildPartList();
 
-            PartList.InsertPartBefore(topPortContainerPartName, new CategoryPart(contextTopCategoryPartName, ContextNodeModel, this, ussClassName, true));
-
+            PartList.ReplacePart(topColorLineContainerPartName, NodeColorLinePart.Create(topColorLineContainerPartName, NodeModel, this, ussClassName,
+                new string[] {
+                    ussClassName.WithUssElement(NodeColorLinePart.colorLineName),
+                    ussClassName.WithUssElement(NodeColorLinePart.colorLineName).WithUssModifier("top")
+                }));
             ContextBlocksPart = CreateContextBlocksPart();
             PartList.InsertPartBefore(bottomPortContainerPartName, ContextBlocksPart);
             PartList.MovePartBefore(cachePartName, blocksPartName);
-            PartList.AppendPart(new CategoryPart(contextBottomCategoryPartName, ContextNodeModel, this, ussClassName, false));
+            PartList.AppendPart(NodeColorLinePart.Create(bottomColorLineContainerPartName, NodeModel, this, ussClassName,
+                new string[] {
+                    ussClassName.WithUssElement(NodeColorLinePart.colorLineName),
+                    ussClassName.WithUssElement(NodeColorLinePart.colorLineName).WithUssModifier("bottom")
+                }));
         }
 
         /// <summary>

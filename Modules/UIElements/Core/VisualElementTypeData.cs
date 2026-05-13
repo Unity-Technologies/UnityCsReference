@@ -53,6 +53,7 @@ namespace UnityEngine.UIElements
 
             private string m_FullTypeName = string.Empty;
             private string m_TypeName = string.Empty;
+            private int m_TypeNameId = -1;
 
             public string fullTypeName
             {
@@ -84,6 +85,21 @@ namespace UnityEngine.UIElements
                     }
 
                     return m_TypeName;
+                }
+            }
+
+            public int typeNameId
+            {
+                get
+                {
+                    if (m_TypeNameId == -1)
+                    {
+                        // Access typeName property to ensure it's initialized first
+                        var name = typeName;
+                        m_TypeNameId = new UniqueStyleString(name).id;
+                    }
+
+                    return m_TypeNameId;
                 }
             }
         }

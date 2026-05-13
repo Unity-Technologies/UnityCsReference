@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -54,9 +56,12 @@ namespace UnityEngine.UIElements
     /// A reusable identifier for an event callback argument of type @@TArg@@.
     /// </summary>
     /// <typeparam name="TArg">The type of the callback argument for which this identifier can be used.</typeparam>
-    /// <seealso cref="EventCallbackInternal.Create{TEvent, TArg}(EventCallback{TEvent, TArg}, EventArg{TArg}, TrickleDown)"/>
+    /// <seealso cref="EventCallback.Create{TEvent, TArg}(EventCallback{TEvent, TArg}, EventArg{TArg}, CallbackOptions)"/>
     public readonly struct EventArg<TArg>
     {
+        internal static readonly string k_Error =
+            $"EventArg<{typeof(TArg).Name}>: invalid argument identifier. Identifier must be the result of a call to EventArg.Create<TArg>.";
+
         internal readonly int m_Id;
         internal EventArg(int id) { m_Id = id; }
 
@@ -70,10 +75,11 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="element">The element to set a value for.</param>
         /// <param name="value">The value that will be used by callbacks on this element for the provided argument.</param>
+        /// <seealso cref="Unregister"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Register(VisualElement element, in TArg value)
         {
-            Debug.Assert(m_Id != 0, "EventArg<TArg>.Register: m_Id != 0. EventArg values for this method must be the result of a call to EventArg.Create<TArg>.");
+            Debug.Assert(m_Id != 0, k_Error);
             (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterArg(m_Id, in value);
         }
 
@@ -90,7 +96,7 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Unregister(VisualElement element)
         {
-            Debug.Assert(m_Id != 0, "EventArg<TArg>.Unregister: m_Id != 0. EventArg values for this method must be the result of a call to EventArg.Create<TArg>.");
+            Debug.Assert(m_Id != 0, k_Error);
             return element.m_CallbackRegistry?.UnregisterArg(m_Id) ?? false;
         }
     }
@@ -233,30 +239,28 @@ namespace UnityEngine.UIElements
     {
         internal EventBase.TypeData eventData { get; private set; }
         internal Delegate userCallback { get; private set; }
-        internal InvokePolicy invokePolicy { get; private set; }
+        internal CallbackOptionsInternal callbackOptions { get; private set; }
         internal int argId { get; private set; }
 
         internal long eventTypeId => eventData.eventTypeId;
         internal int eventCategories => eventData.eventCategories;
         internal Type eventType => eventData.eventType;
 
-        internal TrickleDown useTrickleDown => (invokePolicy & InvokePolicy.TrickleDown) != 0
-            ? TrickleDown.TrickleDown
-            : TrickleDown.NoTrickleDown;
-
         /// <summary>
         /// Creates an event callback instance that will call the given @@userCallback@@ delegate when registered on
         /// an element that is part of the propagation chain of any event of type @@TEvent@@.
         /// </summary>
         /// <param name="userCallback">The delegate called when this callback is triggered.</param>
-        /// <param name="useTrickleDown">Whether this callback is triggered during the TrickleDown phase of the event
-        /// propagation or not. If not, it will be triggered during the BubbleUp phase (default).</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptionsInternal.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptionsInternal.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEvent">The type of event this callback reacts to.</typeparam>
         /// <returns>The created event callback instance</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static EventCallbackInternal Create<TEvent>(EventCallback<TEvent> userCallback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
+            CallbackOptionsInternal callbackOptions = CallbackOptionsInternal.Default)
             where TEvent : EventBase<TEvent>, new() =>
-            Create(userCallback, InvokePolicy.Default, useTrickleDown);
+            Create<TEvent>(userCallback, EventArgId.None, callbackOptions);
 
         /// <summary>
         /// Creates an event callback instance that will call the given @@userCallback@@ delegate when registered on
@@ -264,16 +268,17 @@ namespace UnityEngine.UIElements
         /// The delegate will always be called with its second argument set to the element on which it's registered.
         /// </summary>
         /// <param name="userCallback">The delegate called when this callback is triggered.</param>
-        /// <param name="useTrickleDown">Whether this callback is triggered during the TrickleDown phase of the event
-        /// propagation or not. If not, it will be triggered during the BubbleUp phase (default).</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptionsInternal.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptionsInternal.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEvent">The type of event this callback reacts to.</typeparam>
         /// <typeparam name="TElement">The type of element this callback can be registered to.</typeparam>
         /// <returns>The created event callback instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static EventCallbackInternal Create<TEvent, TElement>(EventCallback<TEvent, TElement> userCallback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
+            CallbackOptionsInternal callbackOptions = CallbackOptionsInternal.Default)
             where TEvent : EventBase<TEvent>, new() where TElement : VisualElement =>
-            Create(userCallback, InvokePolicy.Default, useTrickleDown);
+            Create<TEvent>(userCallback, EventSelfArg<TElement>.Self.m_Id, callbackOptions);
 
         /// <summary>
         /// Creates an event callback instance that will call the given @@userCallback@@ delegate when registered on
@@ -284,56 +289,41 @@ namespace UnityEngine.UIElements
         /// <param name="userCallback">The delegate called when this callback is triggered.</param>
         /// <param name="arg">The identifier used to send specific argument values to the delegate for any element
         /// on which this callback is registered.</param>
-        /// <param name="useTrickleDown">Whether this callback is triggered during the TrickleDown phase of the event
-        /// propagation or not. If not, it will be triggered during the BubbleUp phase (default).</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptionsInternal.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptionsInternal.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEvent">The type of event this callback reacts to.</typeparam>
         /// <typeparam name="TArg">The identifier used to get and set the argument value for this callback.</typeparam>
         /// <returns>The created event callback instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EventCallbackInternal Create<TEvent, TArg>(EventCallback<TEvent, TArg> userCallback, EventArg<TArg> arg,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
+        public static EventCallbackInternal Create<TEvent, TArg>(EventCallback<TEvent, TArg> userCallback,
+            EventArg<TArg> arg, CallbackOptionsInternal callbackOptions = CallbackOptionsInternal.Default)
             where TEvent : EventBase<TEvent>, new() =>
-            Create(userCallback, arg, InvokePolicy.Default, useTrickleDown);
+            Create<TEvent>(userCallback, arg.m_Id, callbackOptions);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackInternal Create<TEvent>(EventCallback<TEvent> userCallback, InvokePolicy invokePolicy, TrickleDown trickleDown = TrickleDown.NoTrickleDown)
-            where TEvent : EventBase<TEvent>, new() =>
-            Create<TEvent>(userCallback, EventArgId.None, invokePolicy, trickleDown);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackInternal Create<TEvent, TElement>(EventCallback<TEvent, TElement> userCallback,
-            InvokePolicy invokePolicy, TrickleDown trickleDown = TrickleDown.NoTrickleDown)
-            where TEvent : EventBase<TEvent>, new() where TElement : VisualElement =>
-            Create<TEvent>(userCallback, EventSelfArg<TElement>.Self.m_Id, invokePolicy, trickleDown);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackInternal Create<TEvent, TArg>(EventCallback<TEvent, TArg> userCallback, EventArg<TArg> arg, InvokePolicy invokePolicy, TrickleDown trickleDown = TrickleDown.NoTrickleDown)
-            where TEvent : EventBase<TEvent>, new() =>
-            Create<TEvent>(userCallback, arg.m_Id, invokePolicy, trickleDown);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackInternal Create<TEvent>(Delegate userCallback, int argId, InvokePolicy invokePolicy, TrickleDown trickleDown)
+        private static EventCallbackInternal Create<TEvent>(Delegate userCallback, int argId, CallbackOptionsInternal callbackOptions)
             where TEvent : EventBase<TEvent>, new()
         {
-            return new(EventBase<TEvent>.k_TypeData, userCallback, invokePolicy | (trickleDown == TrickleDown.TrickleDown ? InvokePolicy.TrickleDown : 0), argId);
+            return new(EventBase<TEvent>.k_TypeData, userCallback, callbackOptions, argId);
         }
 
         public EventCallbackInternal() { }
 
-        internal EventCallbackInternal(EventBase.TypeData eventData, Delegate userCallback, InvokePolicy invokePolicy, int argId)
+        internal EventCallbackInternal(EventBase.TypeData eventData, Delegate userCallback, CallbackOptionsInternal callbackOptions, int argId)
         {
             this.eventData = eventData;
             this.userCallback = userCallback;
-            this.invokePolicy = invokePolicy;
+            this.callbackOptions = callbackOptions;
             this.argId = argId;
         }
 
-        internal void Reset<TEvent>(Delegate userCallback, int argId, InvokePolicy invokePolicy, TrickleDown trickleDown)
+        internal void Reset<TEvent>(Delegate userCallback, int argId, CallbackOptionsInternal callbackOptions)
             where TEvent : EventBase<TEvent>, new()
         {
             eventData = EventBase<TEvent>.k_TypeData;
             this.userCallback = userCallback;
-            this.invokePolicy = invokePolicy | (trickleDown == TrickleDown.TrickleDown ? InvokePolicy.TrickleDown : 0);
+            this.callbackOptions = callbackOptions;
             this.argId = argId;
         }
 
@@ -357,8 +347,8 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Register(VisualElement element)
         {
-            GlobalCallbackRegistry.RegisterListeners(eventType, element, userCallback, useTrickleDown);
-            element.AddEventCallbackCategories(eventCategories, useTrickleDown);
+            GlobalCallbackRegistry.RegisterListeners(eventType, element, userCallback, callbackOptions);
+            element.AddEventCallbackCategories(eventCategories, callbackOptions);
 
             (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(this);
         }
@@ -387,15 +377,16 @@ namespace UnityEngine.UIElements
         /// an element that is part of the propagation chain of any event of type @@TEvent@@.
         /// </summary>
         /// <param name="userCallback">The delegate called when this callback is triggered.</param>
-        /// <param name="useTrickleDown">Whether this callback is triggered during the TrickleDown phase of the event
-        /// propagation or not. If not, it will be triggered during the BubbleUp phase (default).</param>
-        /// <param name="invokeOnce">If true, callback will be unregistered automatically when invoked.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptions.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptions.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEvent">The type of event this callback reacts to.</typeparam>
         /// <returns>The created callback instance</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static EventCallbackDefinition Create<TEvent>(EventCallback<TEvent> userCallback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, bool invokeOnce = false)
+            CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEvent : EventBase<TEvent>, new() =>
-            Create(userCallback, Policy(useTrickleDown, invokeOnce));
+            Create<TEvent>(userCallback, EventArgId.None, (CallbackOptionsInternal)callbackOptions);
 
         /// <summary>
         /// Creates a callback instance that will call the given @@userCallback@@ delegate when registered on
@@ -403,17 +394,18 @@ namespace UnityEngine.UIElements
         /// The delegate will always be called with its second argument set to the element on which it's registered.
         /// </summary>
         /// <param name="userCallback">The delegate called when this callback is triggered.</param>
-        /// <param name="useTrickleDown">Whether this callback is triggered during the TrickleDown phase of the event
-        /// propagation or not. If not, it will be triggered during the BubbleUp phase (default).</param>
-        /// <param name="invokeOnce">If true, callback will be unregistered automatically when invoked.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptions.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptions.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEvent">The type of event this callback reacts to.</typeparam>
         /// <typeparam name="TElement">The type of element this callback can be registered to.</typeparam>
         /// <returns>The created callback instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EventCallbackDefinition<TElement> Create<TEvent, TElement>(EventCallback<TEvent, TElement> userCallback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, bool invokeOnce = false)
+        public static EventCallbackDefinition<TElement> Create<TEvent, TElement>(
+            EventCallback<TEvent, TElement> userCallback, CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEvent : EventBase<TEvent>, new() where TElement : VisualElement =>
-            Create(userCallback, Policy(useTrickleDown, invokeOnce));
+            Create<TEvent, TElement>(userCallback, EventSelfArg<TElement>.Self.m_Id,
+                (CallbackOptionsInternal)callbackOptions);
 
         /// <summary>
         /// Creates a callback instance that will call the given @@userCallback@@ delegate when registered on
@@ -424,60 +416,35 @@ namespace UnityEngine.UIElements
         /// <param name="userCallback">The delegate called when this callback is triggered.</param>
         /// <param name="arg">The identifier used to send specific argument values to the delegate for any element
         /// on which this callback is registered.</param>
-        /// <param name="useTrickleDown">Whether this callback is triggered during the TrickleDown phase of the event
-        /// propagation or not. If not, it will be triggered during the BubbleUp phase (default).</param>
-        /// <param name="invokeOnce">If true, callback will be unregistered automatically when invoked.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptions.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptions.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEvent">The type of event this callback reacts to.</typeparam>
         /// <typeparam name="TArg">The identifier used to get and set the argument value for this callback.</typeparam>
         /// <returns>The created callback instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EventCallbackDefinition Create<TEvent, TArg>(EventCallback<TEvent, TArg> userCallback, EventArg<TArg> arg,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, bool invokeOnce = false)
-            where TEvent : EventBase<TEvent>, new() =>
-            Create(userCallback, arg, Policy(useTrickleDown, invokeOnce));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackDefinition Create<TEvent>(EventCallback<TEvent> userCallback,
-            InvokePolicy invokePolicy)
-            where TEvent : EventBase<TEvent>, new() =>
-            Create<TEvent>(userCallback, EventArgId.None, invokePolicy);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackDefinition<TElement> Create<TEvent, TElement>(
-            EventCallback<TEvent, TElement> userCallback, InvokePolicy invokePolicy)
-            where TEvent : EventBase<TEvent>, new() where TElement : VisualElement =>
-            Create<TEvent, TElement>(userCallback, EventSelfArg<TElement>.Self.m_Id, invokePolicy);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackDefinition Create<TEvent, TArg>(EventCallback<TEvent, TArg> userCallback,
-            EventArg<TArg> arg, InvokePolicy invokePolicy)
+        public static EventCallbackDefinition Create<TEvent, TArg>(EventCallback<TEvent, TArg> userCallback,
+            EventArg<TArg> arg, CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEvent : EventBase<TEvent>, new()
         {
             Debug.Assert(arg.m_Id != 0, "EventCallback.Create: arg.m_Id != 0. EventArg values for this method must be the result of a call to EventArg.Create<TArg>.");
-            return Create<TEvent>(userCallback, arg.m_Id, invokePolicy);
+            return Create<TEvent>(userCallback, arg.m_Id, (CallbackOptionsInternal)callbackOptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackDefinition Create<TEvent>(Delegate userCallback, int argId,
-            InvokePolicy invokePolicy)
+        private static EventCallbackDefinition Create<TEvent>(Delegate userCallback, int argId,
+            CallbackOptionsInternal callbackOptions)
             where TEvent : EventBase<TEvent>, new()
         {
-            return new EventCallbackDefinition(new (EventBase<TEvent>.k_TypeData, userCallback, invokePolicy, argId));
+            return new EventCallbackDefinition(new (EventBase<TEvent>.k_TypeData, userCallback, callbackOptions, argId));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EventCallbackDefinition<TElement> Create<TEvent, TElement>(Delegate userCallback, int argId,
-            InvokePolicy invokePolicy)
+        private static EventCallbackDefinition<TElement> Create<TEvent, TElement>(Delegate userCallback, int argId,
+            CallbackOptionsInternal callbackOptions)
             where TEvent : EventBase<TEvent>, new() where TElement : VisualElement
         {
-            return new EventCallbackDefinition<TElement>(new (EventBase<TEvent>.k_TypeData, userCallback, invokePolicy, argId));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static InvokePolicy Policy(TrickleDown useTrickleDown, bool invokeOnce)
-        {
-            return (useTrickleDown == TrickleDown.TrickleDown ? InvokePolicy.TrickleDown : 0) |
-                   (invokeOnce ? InvokePolicy.Once : 0);
+            return new EventCallbackDefinition<TElement>(new (EventBase<TEvent>.k_TypeData, userCallback, callbackOptions, argId));
         }
     }
 
@@ -621,12 +588,12 @@ namespace UnityEngine.UIElements
             int trickleDownCount = 0;
             foreach (var callback in callbacks)
             {
-                if ((callback.invokePolicy & InvokePolicy.Once) != 0)
+                if ((callback.callbackOptions & CallbackOptionsInternal.Once) != 0)
                 {
-                    Debug.LogWarning("Callback group can't contain callbacks with InvokePolicy.Once.");
+                    Debug.LogWarning("Callback group can't contain callbacks with CallbackOptions.Once.");
                 }
 
-                if (callback.useTrickleDown == TrickleDown.TrickleDown)
+                if ((callback.callbackOptions & CallbackOptionsInternal.TrickleDown) != 0)
                 {
                     m_TrickleDownCategories |= callback.eventCategories;
                     trickleDownCount++;
@@ -646,7 +613,7 @@ namespace UnityEngine.UIElements
             bubbleUpCount = trickleDownCount = 0;
             foreach (var callback in callbacks)
             {
-                if (callback.useTrickleDown == TrickleDown.TrickleDown)
+                if ((callback.callbackOptions & CallbackOptionsInternal.TrickleDown) != 0)
                 {
                     m_TrickleDownCallbacks[trickleDownCount] = callback;
                     trickleDownCount++;
@@ -699,6 +666,30 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool IsRegistered(VisualElement ve)
+        {
+            var registry = ve.m_CallbackRegistry;
+            if (registry == null) return false;
+
+            if (m_BubbleUpCallbacks != null)
+            {
+                var list = registry.m_BubbleUpCallbacks.GetCallbackListForReading();
+                var i = list.FindGroup(m_BubbleUpCallbacks[0]);
+                if (i >= 0)
+                    return true;
+            }
+
+            if (m_TrickleDownCallbacks != null)
+            {
+                var list = registry.m_TrickleDownCallbacks.GetCallbackListForReading();
+                var i = list.FindGroup(m_TrickleDownCallbacks[0]);
+                if (i >= 0)
+                    return true;
+            }
+
+            return false;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AddListenersAndCategories(VisualElement ve)
         {
@@ -707,13 +698,13 @@ namespace UnityEngine.UIElements
                 if (m_BubbleUpCallbacks != null)
                 {
                     foreach(var callback in m_BubbleUpCallbacks)
-                        GlobalCallbackRegistry.RegisterListeners(callback.eventType, ve, callback.userCallback, callback.useTrickleDown);
+                        GlobalCallbackRegistry.RegisterListeners(callback.eventType, ve, callback.userCallback, callback.callbackOptions);
                 }
 
                 if (m_TrickleDownCallbacks != null)
                 {
                     foreach(var callback in m_TrickleDownCallbacks)
-                        GlobalCallbackRegistry.RegisterListeners(callback.eventType, ve, callback.userCallback, callback.useTrickleDown);
+                        GlobalCallbackRegistry.RegisterListeners(callback.eventType, ve, callback.userCallback, callback.callbackOptions);
                 }
             }
             ve.AddEventCallbackCategories(trickleDownCategories: m_TrickleDownCategories,
@@ -790,6 +781,23 @@ namespace UnityEngine.UIElements
         public void Unregister(VisualElement element)
         {
             g.Unregister(element);
+        }
+
+        /// <summary>
+        /// Returns whether this group is registered for the given element.
+        /// </summary>
+        /// <remarks>
+        /// If the <see cref="Register"/> method was never called for this element, this method is guaranteed to return @@false@@.
+        ///
+        /// If the <see cref="Register"/> method was called multiple times for this element, this method returns @@true@@
+        /// unless the <see cref="Unregister"/> method was called at least the same number of times.
+        /// </remarks>
+        /// <param name="element">The element to find the group on.</param>
+        /// <returns>True if this group was registered for this element and not subsequently unregistered.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsRegistered(VisualElement element)
+        {
+            return g.IsRegistered(element);
         }
     }
 
@@ -884,42 +892,18 @@ namespace UnityEngine.UIElements
         /// <seealso cref="PropagationPhase"/>
         /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
         /// <param name="arg">The event argument identifier used by the handler.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptions.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptions.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEventType">The event type handled by this callback.</typeparam>
         /// <typeparam name="TArg">The type of event argument expected by the handler.</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void RegisterCallback<TEventType, TArg>(EventCallback<TEventType, TArg> callback, EventArg<TArg> arg, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
+        internal void RegisterCallback<TEventType, TArg>(EventCallback<TEventType, TArg> callback, EventArg<TArg> arg, CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEventType : EventBase<TEventType>, new()
         {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, arg.m_Id, useTrickleDown, InvokePolicy.Default);
-        }
-
-        /// <summary>
-        /// Adds an event handler to this element.
-        /// The event handler is automatically unregistered after it has been invoked exactly once.
-        /// </summary>
-        /// <remarks>
-        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp)
-        /// and hasn't been invoked yet, this method has no effect.
-        ///
-        /// This element is also used as the data to pass to the callback. Use this method to avoid closing on local variables
-        /// </remarks>
-        /// <example>
-        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/RegisterCallbackExample.cs"/>
-        /// </example>
-        /// <seealso cref="PropagationPhase"/>
-        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
-        /// <param name="arg">The event argument identifier used by the handler.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
-        /// <typeparam name="TEventType">The event type handled by this callback.</typeparam>
-        /// <typeparam name="TArg">The type of event argument expected by the handler.</typeparam>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void RegisterCallbackOnce<TEventType, TArg>(EventCallback<TEventType, TArg> callback, EventArg<TArg> arg, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
-            where TEventType : EventBase<TEventType>, new()
-        {
-            AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (m_CallbackRegistry ??=EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, arg.m_Id, useTrickleDown, InvokePolicy.Once);
+            AddListenersAndCategories<TEventType>(callback, (CallbackOptionsInternal)callbackOptions);
+            (m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, this, arg.m_Id,
+                (CallbackOptionsInternal)callbackOptions);
         }
     }
 
@@ -942,42 +926,17 @@ namespace UnityEngine.UIElements
         /// <param name="element">The element to add the handler to.</param>
         /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.
         /// If this element is not and instance of the type of the second argument of the handler, this method throws an exception.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
+        /// <param name="callbackOptions">Extra properties to set for the callback.
+        /// Use the CallbackOptions.TrickleDown flag to specify the propagation phase.
+        /// Use CallbackOptions.Once to automatically unregister this callback when invoked.</param>
         /// <typeparam name="TEventType">The event type handled by this callback.</typeparam>
         /// <typeparam name="TElement">The type of element this callback is registered to.</typeparam>
-        internal static void RegisterCallback<TEventType, TElement>(this TElement element, EventCallback<TEventType, TElement> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
+        internal static void RegisterCallback<TEventType, TElement>(this TElement element, EventCallback<TEventType, TElement> callback, CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEventType : EventBase<TEventType>, new() where TElement : VisualElement
         {
-            element.AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, element, EventSelfArg<TElement>.Self.m_Id, useTrickleDown, InvokePolicy.Default);
-        }
-
-        /// <summary>
-        /// Adds an event handler to this element.
-        /// The event handler is automatically unregistered after it has been invoked exactly once.
-        /// </summary>
-        /// <remarks>
-        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp)
-        /// and hasn't been invoked yet, this method has no effect.
-        ///
-        /// This element is also used as the data to pass to the callback. Use this method to avoid closing on local variables
-        /// </remarks>
-        /// <example>
-        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/RegisterCallbackExample.cs"/>
-        /// </example>
-        /// <seealso cref="PropagationPhase"/>
-        /// <param name="element">The element to add the handler to.</param>
-        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.
-        /// If this element is not and instance of the type of the second argument of the handler, this method throws an exception.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
-        /// <typeparam name="TEventType">The event type handled by this callback.</typeparam>
-        /// <typeparam name="TElement">The type of element this callback is registered to.</typeparam>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void RegisterCallbackOnce<TEventType, TElement>(this TElement element, EventCallback<TEventType, TElement> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown)
-            where TEventType : EventBase<TEventType>, new() where TElement : VisualElement
-        {
-            element.AddListenersAndCategories<TEventType>(callback, useTrickleDown);
-            (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, element, EventSelfArg<TElement>.Self.m_Id, useTrickleDown, InvokePolicy.Once);
+            element.AddListenersAndCategories<TEventType>(callback, (CallbackOptionsInternal)callbackOptions);
+            (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, element,
+                EventSelfArg<TElement>.Self.m_Id, (CallbackOptionsInternal)callbackOptions);
         }
     }
 }

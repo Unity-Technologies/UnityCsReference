@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.Pool;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -17,7 +18,7 @@ namespace UnityEditor.IMGUI.Controls
     //
     // Note: if dealing with very large trees use LazyTreeViewDataSource instead: it assumes that tree only contains visible items.
 
-internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
+    internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
         protected TreeViewController<TIdentifier> m_TreeView { get { return m_TreeViewInternal; } set { m_TreeViewInternal = value; } } // TreeView using this data source
         protected TreeViewController<TIdentifier> m_TreeViewInternal;                   // TreeView using this data source
@@ -32,6 +33,8 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
         public TreeViewItem<TIdentifier> root { get { return m_RootItem; } }
         public System.Action onVisibleRowsChanged;
 
+        // Collapsed IDs for search mode
+        readonly HashSet<TIdentifier> m_SearchCollapsedIDs = new();
         protected List<TIdentifier> expandedIDs
         {
             get {return m_TreeView.state.expandedIDs; }
@@ -143,14 +146,56 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
                     GetVisibleItemsRecursive(child, items);
         }
 
+        static bool IsMatch(string search, TreeViewItem<TIdentifier> item) => item.displayName.Contains(search, StringComparison.OrdinalIgnoreCase);
+
         protected void SearchRecursive(TreeViewItem<TIdentifier> item, string search, IList<TreeViewItem<TIdentifier>> searchResult)
         {
-            if (item.displayName.ToLower().Contains(search))
+            if (IsMatch(search, item))
                 searchResult.Add(item);
 
             if (item.children != null)
                 foreach (TreeViewItem<TIdentifier> child in item.children)
                     SearchRecursive(child, search, searchResult);
+        }
+
+        bool CollectMatchingIDs(TreeViewItem<TIdentifier> item, string search, HashSet<TIdentifier> matchingIDs, bool parentMatches = false)
+        {
+            bool itemMatches = parentMatches || IsMatch(search, item);
+            bool hasMatchingDescendant = false;
+
+            if (item.children != null) 
+            {
+                foreach (var child in item.children)
+                {
+                    if (CollectMatchingIDs(child, search, matchingIDs, itemMatches))
+                        hasMatchingDescendant = true;
+                }
+            }
+
+            if (itemMatches || hasMatchingDescendant)
+            {
+                matchingIDs.Add(item.id);
+                return true;
+            }
+
+            return false;
+        }
+
+        // Pre-order traversal of the original tree, only emitting items whose IDs are in the
+        // matching set - preserves sibling order and parent-before-child ordering without any sort.
+        // Respects IsExpanded so the user can collapse parent nodes to hide their matched children.
+        void CollectVisibleItemsWithParents(TreeViewItem<TIdentifier> item, HashSet<TIdentifier> matchingIDs, IList<TreeViewItem<TIdentifier>> result)
+        {
+            if (!matchingIDs.Contains(item.id))
+                return;
+
+            result.Add(item);
+
+            if (item.children != null && IsExpanded(item))
+            {
+                foreach (var child in item.children)
+                    CollectVisibleItemsWithParents(child, matchingIDs, result);
+            }
         }
 
         virtual protected List<TreeViewItem<TIdentifier>> ExpandedRows(TreeViewItem<TIdentifier> root)
@@ -165,25 +210,51 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
         {
             var result = new List<TreeViewItem<TIdentifier>>();
 
-            if (showRootItem)
+            if (m_TreeView.showParentsInSearchResults)
             {
-                SearchRecursive(root, search, result);
-                result.Sort(new TreeViewItemAlphaNumericSort<TIdentifier>());
+                // First collect IDs, then pre-order traversal to emit in original tree order.
+                using var _ = HashSetPool<TIdentifier>.Get(out var matchingIDs);
+                if (showRootItem)
+                {
+                    CollectMatchingIDs(root, search, matchingIDs);
+                    CollectVisibleItemsWithParents(root, matchingIDs, result);
+                }
+                else
+                {
+                    int startIndex = alwaysAddFirstItemToSearchResult ? 1 : 0;
+                    if (root.hasChildren)
+                    {
+                        for (int i = startIndex; i < root.children.Count; ++i)
+                            CollectMatchingIDs(root.children[i], search, matchingIDs);
+
+                        for (int i = startIndex; i < root.children.Count; ++i)
+                            CollectVisibleItemsWithParents(root.children[i], matchingIDs, result);
+
+                        if (alwaysAddFirstItemToSearchResult)
+                            result.Insert(0, root.children[0]);
+                    }
+                }
             }
             else
             {
-                int startIndex = alwaysAddFirstItemToSearchResult ? 1 : 0;
-
-                if (root.hasChildren)
+                if (showRootItem)
                 {
-                    for (int i = startIndex; i < root.children.Count; ++i)
-                    {
-                        SearchRecursive(root.children[i], search, result);
-                    }
+                    SearchRecursive(root, search, result);
                     result.Sort(new TreeViewItemAlphaNumericSort<TIdentifier>());
+                }
+                else
+                {
+                    int startIndex = alwaysAddFirstItemToSearchResult ? 1 : 0;
+                    if (root.hasChildren)
+                    {
+                        for (int i = startIndex; i < root.children.Count; ++i)
+                            SearchRecursive(root.children[i], search, result);
 
-                    if (alwaysAddFirstItemToSearchResult)
-                        result.Insert(0, root.children[0]);
+                        result.Sort(new TreeViewItemAlphaNumericSort<TIdentifier>());
+
+                        if (alwaysAddFirstItemToSearchResult)
+                            result.Insert(0, root.children[0]);
+                    }
                 }
             }
 
@@ -229,10 +300,15 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
             {
                 if (m_RootItem != null)
                 {
-                    if (m_TreeView.isSearching)
-                        m_Rows = Search(m_RootItem, m_TreeView.searchString.ToLower());
+                    bool isSearching = m_TreeView.isSearching;
+                    if (isSearching)
+                        m_Rows = Search(m_RootItem, m_TreeView.searchString);
                     else
+                    {
+                        if (m_TreeView.showParentsInSearchResults)
+                            m_SearchCollapsedIDs.Clear();
                         m_Rows = ExpandedRows(m_RootItem);
+                    }
                 }
                 else
                 {
@@ -274,11 +350,25 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
 
         virtual public bool IsExpanded(TIdentifier id)
         {
+            if (m_TreeView.showParentsInSearchResults && m_TreeView.isSearching)
+                return !m_SearchCollapsedIDs.Contains(id);
             return expandedIDs.BinarySearch(id) >= 0;
         }
 
         virtual public bool SetExpanded(TIdentifier id, bool expand)
         {
+            if (m_TreeView.showParentsInSearchResults && m_TreeView.isSearching)
+            {
+                bool changed = expand ? m_SearchCollapsedIDs.Remove(id) : m_SearchCollapsedIDs.Add(id);
+                if (changed)
+                {
+                    m_NeedRefreshRows = true;
+                    OnExpandedStateChanged();
+                    return true;
+                }
+                return false;
+            }
+
             bool expanded = IsExpanded(id);
             if (expand != expanded)
             {
@@ -343,9 +433,9 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
         virtual public bool IsExpandable(TreeViewItem<TIdentifier> item) => IsExpandableInternal(item);
         virtual public bool IsExpandableInternal(TreeViewItem<TIdentifier> item)
         {
-            // Ignore expansion (foldout arrow) when showing search results
+            // When showing parents in search results, allow foldout arrows so the user can collapse nodes
             if (m_TreeView.isSearching)
-                return false;
+                return m_TreeView.showParentsInSearchResults && item.hasChildren;
             return item.hasChildren;
         }
 

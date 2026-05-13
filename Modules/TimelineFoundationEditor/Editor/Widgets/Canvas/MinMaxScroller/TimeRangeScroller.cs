@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.IntegerTime;
 using Unity.Timeline.Foundation.Time;
 using Unity.Timeline.Foundation.Widgets.Properties;
@@ -12,15 +11,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets
 {
-    partial class TimeRangeScroller : VisualElement
+    [UxmlElement]
+    internal partial class TimeRangeScroller : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new TimeRangeScroller();
-        }
-
         const float k_ContentDurationPaddingInPixels = 30f;
         const string k_UnityScroller = "unity-scroller";
         const string k_UnityScrollerHorizontal = k_UnityScroller + "--horizontal";

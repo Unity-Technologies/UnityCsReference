@@ -27,6 +27,9 @@ namespace UnityEngine.UIElements
             where TValue : struct, IConvertible
         {
         }
+        abstract class ResolvedUIAnimationClipProperty : ResolvedStyleProperty<UIAnimationClip>
+        {
+        }
 
         abstract class ResolvedColorProperty : ResolvedStyleProperty<Color>
         {
@@ -63,7 +66,7 @@ namespace UnityEngine.UIElements
         abstract class ResolvedIntProperty : ResolvedStyleProperty<int>
         {
         }
-
+  
         abstract class ResolvedRotateProperty : ResolvedStyleProperty<Rotate>
         {
         }

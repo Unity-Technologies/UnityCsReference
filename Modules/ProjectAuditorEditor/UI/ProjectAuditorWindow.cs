@@ -199,6 +199,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (activeView.OnlyCriticalIssues() && !issue.IsMajorOrCritical())
                 return false;
+            if (activeView.OnlyPerfCriticalIssues() && !issue.IsPerformanceCritical())
+                return false;
             if (activeView.OnlyFixableIssues() && issue.Id.GetDescriptor().Fixer == null)
                 return false;
 
@@ -868,6 +870,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 ShowInfoPanel = true,
                 ShowDetails = true,
                 ShowQuickFixes = false, // Remove this if we add support for quick-fixing code issues
+                ShowPerformanceCritical = true,
                 DependencyViewGuiContent = new GUIContent("Inverted Call Hierarchy", "Expand the tree to see all of the methods which lead to the call site of a selected issue."),
                 GetAssemblyName = issue => issue.GetCustomProperty(assemblyProperty),
                 OnOpenIssue = EditorInterop.OpenTextFile<TextAsset>,

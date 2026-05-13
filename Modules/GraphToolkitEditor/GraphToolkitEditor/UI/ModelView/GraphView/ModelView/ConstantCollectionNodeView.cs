@@ -10,17 +10,17 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class ConstantCollectionNodeView : CollapsibleInOutNodeView
     {
-        ConstantNodeModel Constant => Model as ConstantNodeModel;
-
         public static readonly string constantCollectionName = "ge-constant-collection";
+
+        const string k_TypeIconStylesheet = "TypeIcons.uss";
+
+        ConstantNodeModel Constant => Model as ConstantNodeModel;
 
         protected override void BuildPartList()
         {
-
             base.BuildPartList();
 
             PartList.ReplacePart(titleIconContainerPartName, ConstantCollectionNodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, NodeTitlePart.Options.Default));
-
             PartList.RemovePart(topPortContainerPartName);
             PartList.RemovePart(bottomPortContainerPartName);
         }
@@ -30,7 +30,7 @@ namespace Unity.GraphToolkit.Editor
             base.PostBuildUI();
 
             ConstantCollectionNodeTitlePart titlePart = PartList.GetPart(titleIconContainerPartName) as ConstantCollectionNodeTitlePart;
-            titlePart.Root.AddPackageStylesheet("TypeIcons.uss");
+            titlePart.Root.AddPackageStylesheet(k_TypeIconStylesheet);
 
             // Add buttons to the title part
             foreach (var b in NodeToolbarButtons)
@@ -38,8 +38,12 @@ namespace Unity.GraphToolkit.Editor
 
             RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, titlePart.Icon, Constant.OutputPort.DataTypeHandle);
 
-            var colorLine = titlePart.Root.Q<VisualElement>(name: ConstantCollectionNodeTitlePart.colorLineName);
-            colorLine.AddToClassList(GraphElementHelper.colorLineDatatTypeClassPrefix + RootView.TypeHandleInfos.GetUssName(Constant.OutputPort.DataTypeHandle));
+            NodeColorLinePart nodeColorLinePart = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
+
+            // We set the override so that the color line part doesn't update itself based on the model.
+            // The color is resolved directly from a stylesheet
+            nodeColorLinePart.OverrideColor();
+            nodeColorLinePart.Root.AddToClassList(GraphElementHelper.colorLineDatatTypeClassPrefix + RootView.TypeHandleInfos.GetUssName(Constant.OutputPort.DataTypeHandle));
 
             bool overrideIcon = true;
             (Texture2D icon, Color color)? typeStyle = GraphElementModel.GraphModel.GetDataTypeStyle(Constant.Type);
@@ -50,7 +54,8 @@ namespace Unity.GraphToolkit.Editor
             }
             if (typeStyle.HasValue)
             {
-                colorLine.style.backgroundColor = typeStyle.Value.color;
+                nodeColorLinePart.OverrideColor(typeStyle.Value.color);
+
                 var icon = (EditableTitlePart as NodeTitlePart).Icon;
                 if (icon != null)
                 {

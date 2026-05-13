@@ -88,8 +88,6 @@ namespace UnityEditor.UIElements
             if (s_Initialized)
                 return;
 
-            RegisterBuiltInTypes();
-
             var registrationMethods = TypeCache.GetMethodsWithAttribute<RegisterUxmlCacheAttribute>();
             foreach (var registrationMethod in registrationMethods)
             {
@@ -164,6 +162,18 @@ namespace UnityEditor.UIElements
                 cache[typeName] = serializedDataType;
             }
 
+            static string GetMovedUIControlTypeName(Type type, MovedFromAttribute attr)
+            {
+                if (type == null)
+                    return string.Empty;
+
+                var data = attr.data;
+                var namespaceName = data.nameSpaceHasChanged ? data.nameSpace : type.Namespace;
+                var typeName = data.classHasChanged ? data.className : type.Name;
+                var fullOldName = namespaceName + "." + typeName;
+                return fullOldName;
+            }
+
             [Pure]
             static void RegisterMovedFromType(Type declaringType, Type serializedDataType, Dictionary<string, Type> cache)
             {
@@ -171,7 +181,7 @@ namespace UnityEditor.UIElements
                 var movedFromAttribute = declaringType.GetCustomAttribute<MovedFromAttribute>();
                 if (movedFromAttribute != null)
                 {
-                    var fullOldName = VisualElementFactoryRegistry.GetMovedUIControlTypeName(declaringType, movedFromAttribute);
+                    var fullOldName = GetMovedUIControlTypeName(declaringType, movedFromAttribute);
                     if (cache.TryGetValue(fullOldName, out var conflict))
                     {
                         Debug.LogError($"The UxmlElement for the type {declaringType.FullName} contains a MovedFromAttribute with the old name {fullOldName} which is already registered to {conflict.DeclaringType.FullName}.");
@@ -181,103 +191,6 @@ namespace UnityEditor.UIElements
                     cache[fullOldName] = serializedDataType;
                 }
             }
-        }
-
-        private static void RegisterBuiltInTypes()
-        {
-            AbstractProgressBar.UxmlSerializedData.Register();
-            AngleField.UxmlSerializedData.Register();
-            BackgroundField.UxmlSerializedData.Register();
-            BaseBoolField.UxmlSerializedData.Register();
-            BaseListView.UxmlSerializedData.Register();
-            BaseTreeView.UxmlSerializedData.Register();
-            BaseVerticalCollectionView.UxmlSerializedData.Register();
-            BindableElement.UxmlSerializedData.Register();
-            Binding.UxmlSerializedData.Register();
-            BoundsField.UxmlSerializedData.Register();
-            BoundsIntField.UxmlSerializedData.Register();
-            Button.UxmlSerializedData.Register();
-            ButtonStripField.UxmlSerializedData.Register();
-            CategoryDropdownField.UxmlSerializedData.Register();
-            ColorField.UxmlSerializedData.Register();
-            Column.UxmlSerializedData.Register();
-            Columns.UxmlSerializedData.Register();
-            CursorField.UxmlSerializedData.Register();
-            CurveField.UxmlSerializedData.Register();
-            DataBinding.UxmlSerializedData.Register();
-            DoubleField.UxmlSerializedData.Register();
-            DropdownField.UxmlSerializedData.Register();
-            DropdownOptionListItem.UxmlSerializedData.Register();
-            EnumField.UxmlSerializedData.Register();
-            EnumFlagsField.UxmlSerializedData.Register();
-            FloatField.UxmlSerializedData.Register();
-            Foldout.UxmlSerializedData.Register();
-            FontDefinitionField.UxmlSerializedData.Register();
-            FontField.UxmlSerializedData.Register();
-            GradientField.UxmlSerializedData.Register();
-            GroupBox.UxmlSerializedData.Register();
-            GUIDField.UxmlSerializedData.Register();
-            Hash128Field.UxmlSerializedData.Register();
-            HelpBox.UxmlSerializedData.Register();
-            InspectorElement.UxmlSerializedData.Register();
-            IntegerField.UxmlSerializedData.Register();
-            Image.UxmlSerializedData.Register();
-            LayerField.UxmlSerializedData.Register();
-            LayerMaskField.UxmlSerializedData.Register();
-            LengthField.UxmlSerializedData.Register();
-            ListView.UxmlSerializedData.Register();
-            LongField.UxmlSerializedData.Register();
-            MaskField.UxmlSerializedData.Register();
-            Mask64Field.UxmlSerializedData.Register();
-            MinMaxSlider.UxmlSerializedData.Register();
-            MultiColumnListView.UxmlSerializedData.Register();
-            MultiColumnTreeView.UxmlSerializedData.Register();
-            ObjectField.UxmlSerializedData.Register();
-            PropertyField.UxmlSerializedData.Register();
-            RadioButton.UxmlSerializedData.Register();
-            RadioButtonGroup.UxmlSerializedData.Register();
-            RatioField.UxmlSerializedData.Register();
-            RectField.UxmlSerializedData.Register();
-            RectIntField.UxmlSerializedData.Register();
-            RepeatButton.UxmlSerializedData.Register();
-            RotateField.UxmlSerializedData.Register();
-            ScaleField.UxmlSerializedData.Register();
-            ScrollView.UxmlSerializedData.Register();
-            Scroller.UxmlSerializedData.Register();
-            Slider.UxmlSerializedData.Register();
-            SliderInt.UxmlSerializedData.Register();
-            SortColumnDescription.UxmlSerializedData.Register();
-            SortColumnDescriptions.UxmlSerializedData.Register();
-            Syntax.UxmlSerializedData.Register();
-            Tab.UxmlSerializedData.Register();
-            TabView.UxmlSerializedData.Register();
-            TagField.UxmlSerializedData.Register();
-            TemplateContainer.UxmlSerializedData.Register();
-            TextElement.UxmlSerializedData.Register();
-            TextField.UxmlSerializedData.Register();
-            TimeValueField.UxmlSerializedData.Register();
-            Toggle.UxmlSerializedData.Register();
-            ToggleButtonGroup.UxmlSerializedData.Register();
-            Toolbar.UxmlSerializedData.Register();
-            ToolbarBreadcrumbs.UxmlSerializedData.Register();
-            ToolbarButton.UxmlSerializedData.Register();
-            ToolbarMenu.UxmlSerializedData.Register();
-            ToolbarPopupSearchField.UxmlSerializedData.Register();
-            ToolbarSearchField.UxmlSerializedData.Register();
-            ToolbarSpacer.UxmlSerializedData.Register();
-            ToolbarToggle.UxmlSerializedData.Register();
-            TranslateField.UxmlSerializedData.Register();
-            TreeView.UxmlSerializedData.Register();
-            TwoPaneSplitView.UxmlSerializedData.Register();
-            UnityEventItem.UxmlSerializedData.Register();
-            UnsignedIntegerField.UxmlSerializedData.Register();
-            UnsignedLongField.UxmlSerializedData.Register();
-            Vector2Field.UxmlSerializedData.Register();
-            Vector2IntField.UxmlSerializedData.Register();
-            Vector3Field.UxmlSerializedData.Register();
-            Vector3IntField.UxmlSerializedData.Register();
-            Vector4Field.UxmlSerializedData.Register();
-            VisualElement.UxmlSerializedData.Register();
         }
     }
 }

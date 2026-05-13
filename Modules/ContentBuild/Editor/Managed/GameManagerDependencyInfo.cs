@@ -10,8 +10,9 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Content
 {
-    ///<summary>Contains dependency information for internal Unity game manager classes. Call <see cref="ContentBuildInterface.WriteGameManagersSerializedFile" /> or <see cref="ContentBuildInterface.CalculatePlayerDependenciesForGameManagers" /> to get an instance of this class.</summary>
+    ///<summary>Contains dependency information for internal Unity game manager classes. Call <see cref="ContentBuildInterface.WriteGameManagersSerializedFile" /> to get an instance of this class.</summary>
     ///<remarks>Note: this class and its members exist to provide low-level support for the **Scriptable Build Pipeline** package. This is intended for internal use only; use the &lt;a href="https://docs.unity3d.com/Packages/com.unity.scriptablebuildpipeline@latest/index.html"&gt;Scriptable Build Pipeline package&lt;/a&gt; to implement a fully featured build pipeline. You can install this via the [Package Manager window](/upm-ui.md).</remarks>
+    [Obsolete("GameManagerDependencyInfo will be removed in a future version. It is used a return type for ContentBuildInterface.WriteGameManagersSerializedFile, which will be also be removed.", false)]
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]

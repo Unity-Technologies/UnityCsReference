@@ -238,7 +238,7 @@ namespace Unity.UI.Builder
                 // We want to sync the length of the state with the number of buttons in the hierarchy.
                 if (element is ToggleButtonGroup group)
                 {
-                    var stateProperty = rootSerializedObject.FindProperty($"{serializedBasePath}.value");
+                    var stateProperty = rootSerializedObject.FindProperty($"{serializedBasePath}.valueUXML");
                     var lengthProperty = stateProperty.FindPropertyRelative("m_Length");
                     var length = lengthProperty.intValue;
 

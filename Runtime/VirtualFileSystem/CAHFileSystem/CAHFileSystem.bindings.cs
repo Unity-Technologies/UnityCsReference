@@ -14,7 +14,7 @@ namespace UnityEngine
     /// This handle is returned from RegisterArtifactDirectory and is used to unregister the directory.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEngine.ContentLoadModule")]
+    [VisibleToOtherModules("UnityEngine.ContentLoadModule", "ContentBuildLoadPreview")]
     internal struct CAHArtifactDirectoryHandle
     {
         internal UInt64 m_Handle;
@@ -33,7 +33,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/VirtualFileSystem/CAHFileSystem/CAHFileSystem.h")]
     [NativeHeader("Runtime/VirtualFileSystem/CAHFileSystem/CAHFileSystemSingleton.h")]
     [StaticAccessor("GetCAHFileSystem()", StaticAccessorType.Dot)]
-    [VisibleToOtherModules("UnityEngine.ContentLoadModule")]
+    [VisibleToOtherModules("UnityEngine.ContentLoadModule", "ContentBuildLoadPreview")]
     internal static class CAHFileSystem
     {
         /// <summary>
@@ -61,6 +61,9 @@ namespace UnityEngine
         /// <returns>The VFS path.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public static extern string GetVFSPath(Hash128 hash);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern void SetHasManagedHandlers(bool value);
     }
 
 }

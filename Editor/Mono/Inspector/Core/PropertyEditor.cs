@@ -111,6 +111,7 @@ namespace UnityEditor
 
         private static readonly List<PropertyEditor> m_AllPropertyEditors = new List<PropertyEditor>();
         private Object m_InspectedObject;
+        private string m_ExpectedTitle;
         private static PropertyEditor s_LastPropertyEditor;
         private DropdownField m_PreviewDropdown;
 
@@ -166,6 +167,7 @@ namespace UnityEditor
 
         EditorElementUpdater m_EditorElementUpdater;
         IPreviewable m_cachedPreviewEditor;
+        internal IPreviewable CachedPreviewEditor => m_cachedPreviewEditor;
 
         /// <summary>
         /// Delayer used to periodically check if the return value of <see cref="IPreviewable.HasPreviewGUI"/> has changed.
@@ -207,6 +209,8 @@ namespace UnityEditor
         }
 
         internal Rect scrollViewportRect => m_ScrollView.contentViewport.rect;
+
+        internal static bool s_StylesInit = false;
 
         protected static class Styles
         {
@@ -262,6 +266,7 @@ namespace UnityEditor
             {
                 vcsRevertStyle.padding.right = 15;
                 vcsBarStyleTwoRows.fixedHeight *= 2;
+                s_StylesInit = true;
             }
         }
 
@@ -549,7 +554,7 @@ namespace UnityEditor
                 Repaint();
             }
 
-            if (m_InspectedObject && !string.Equals(m_InspectedObject.name, titleContent.text))
+            if (m_InspectedObject && !string.Equals(m_ExpectedTitle, titleContent.text))
                 UpdateWindowObjectNameTitle();
         }
 
@@ -588,7 +593,8 @@ namespace UnityEditor
             else if (GlobalObjectId.TryParse(m_GlobalObjectId, out var gid))
                 titleTooltip = AssetDatabase.GUIDToAssetPath(gid.assetGUID);
 
-            titleContent = new GUIContent(obj.name, EditorGUIUtility.LoadIconRequired("UnityEditor.InspectorWindow"), titleTooltip);
+            m_ExpectedTitle = string.IsNullOrEmpty(obj.name) ? objTitle : obj.name;
+            titleContent = new GUIContent(m_ExpectedTitle, EditorGUIUtility.LoadIconRequired("UnityEditor.InspectorWindow"), titleTooltip);
             titleContent.image = AssetPreview.GetMiniThumbnail(obj);
         }
 
@@ -901,7 +907,12 @@ namespace UnityEditor
 
         protected virtual void UpdateWindowObjectNameTitle()
         {
-            titleContent.text = GetInspectedObject()?.name ?? titleContent.text;
+            var obj = GetInspectedObject();
+            if (obj != null)
+            {
+                m_ExpectedTitle = string.IsNullOrEmpty(obj.name) ? ObjectNames.GetInspectorTitle(obj) : obj.name;
+                titleContent.text = m_ExpectedTitle;
+            }
             Repaint();
         }
 
@@ -1418,6 +1429,12 @@ namespace UnityEditor
             else
             {
                 m_PreviewRootElement.m_EllipsisMenu.style.display = DisplayStyle.None;
+
+                // Hide the preview selector dropdown (and thus show label) in floating windows.
+                var header = m_PreviewRootElement.Q(PreviewRootElement.Styles.headerName);
+                var dropdown = header?.Q<DropdownField>("preview-selector-dropdown");
+                if (dropdown != null)
+                    dropdown.style.display = DisplayStyle.None;
             }
         }
 
@@ -1487,6 +1504,12 @@ namespace UnityEditor
 
         void SetupPreviewDropdown(VisualElement header, List<IPreviewable> editorsWithPreviews, IPreviewable currentPreview)
         {
+            // Ensure styles are correctly initialized before doing the setup of the preview dropdown
+            // This can be called before Styles are initialized on domain reload. This function will
+            // be called multiple times in that context, the first call only might sometimes be invalid.
+            if(!s_StylesInit)
+                return;
+
             // Build the choices list with formatted titles.
             var choices = new List<string>();
             int selectedIndex = 0;
@@ -1571,8 +1594,8 @@ namespace UnityEditor
                 var previewPane = m_PreviewRootElement.GetPreviewPane();
                 previewPane.Clear();
 
-                var previewItem = m_cachedPreviewEditor.CreatePreview(m_PreviewRootElement);
-                if (previewItem == null)
+                m_cachedPreviewEditor.CreatePreview(m_PreviewRootElement);
+                if (previewPane.childCount == 0)
                 {
                     // IMGUI fallback — same pattern as InitUITKPreview
                     var imguiContainer = CreateIMGUIContainer(() => DrawPreview(m_cachedPreviewEditor), "preview");
@@ -1728,9 +1751,13 @@ namespace UnityEditor
 
             if (m_SelectedPreview != null)
             {
-                if (!editors.Contains(m_SelectedPreview))
-                    m_SelectedPreview = null;
-                else
+                if (editors.Contains(m_SelectedPreview))
+                    return m_SelectedPreview;
+
+                // m_SelectedPreview may be a stale custom IPreviewable, so rematch by type target so the user's dropdown selection survives rebuilds.
+                var previousPreview = m_SelectedPreview;
+                m_SelectedPreview = editors.Find(p => p.GetType() == previousPreview.GetType() && p.target == previousPreview.target);
+                if (m_SelectedPreview != null)
                     return m_SelectedPreview;
             }
 
@@ -1820,7 +1847,7 @@ namespace UnityEditor
 
             foreach (var previewable in m_Previews)
             {
-                if (previewable.HasPreviewGUI())
+                if (previewable != null && previewable.HasPreviewGUI())
                     outEditorsWithPreview.Add(previewable);
             }
 

@@ -68,7 +68,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var references = new List<string>();
 
 
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
+            // CORECLR_FIXME : Once we want to allow compiling against .NET we need to add a separate if case for .NET
+#pragma warning disable CS0618
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard || apiCompatibilityLevel == ApiCompatibilityLevel.NET)
+#pragma warning restore CS0618
             {
                 references.AddRange(GetNetStandardClassLibraries());
             }
@@ -80,12 +83,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore UA2001
                 references.AddRange(referenceFileNames.FindReferencesInDirectories(monoAssemblyDirectories));
                 references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
-            }
-#pragma warning disable CS0618
-            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
-#pragma warning restore CS0618
-            {
-                throw new NotImplementedException("CORECLR_FIXME");
             }
             else
             {
@@ -103,8 +100,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
                 return GetUnityReferenceProfileDirectory();
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_2_0)
-                return MonoInstallationFinder.GetProfileDirectory("2.0-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
 #pragma warning disable CS0618
             if (apiCompatibilityLevel == ApiCompatibilityLevel.NET)
 #pragma warning restore CS0618

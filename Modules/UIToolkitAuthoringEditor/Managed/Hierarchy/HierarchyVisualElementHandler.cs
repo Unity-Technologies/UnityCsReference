@@ -12,6 +12,8 @@ using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using System.IO;
 using Unity.Scripting.LifecycleManagement;
+using Unity.UIToolkit.Editor.Utilities;
+using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 
 namespace Unity.UIToolkit.Editor;
@@ -149,9 +151,13 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
             }
         }
 
-        bool isPanelComponentRootElement = element is IPanelComponentRootElement;
+        var isPanelComponentRootElement = element is IPanelComponentRootElement;
 
-        var (ancestorVTAs, ancestorInstances) = GetTemplateChain(element);
+        var ancestorInstances = new List<TemplateAsset>();
+
+        element.GenerateSubDocumentPath(ancestorInstances);
+
+        var rootVisualTreeAsset = ancestorInstances.Count > 0 ? ancestorInstances[0].visualTreeAsset : vtaSource;
 
         if (isPanelComponentRootElement)
         {
@@ -166,7 +172,7 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
         {
             menu.AppendAction(
                 "Open in UI Builder",
-                a =>
+                _ =>
                 {
                     var cmd = new LoadUIDocumentCommand { selectedId = vea?.id ?? -1 };
                     SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
@@ -174,25 +180,46 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                     SessionState.EraseString(LoadUIDocumentCommand.CommandId);
                 });
 
-            if (VisualElementReferenceTools.TryCreateReference(element, out var pr, out var authoringIdPath, false) && authoringIdPath.path.Length > 0)
+            if (ancestorInstances.Count == 0 && UIToolkitAuthoringSettings.EnableUIStages)
             {
                 menu.AppendAction(
-                "Find References In Scene",
-                a =>
-                {
-                    var prId = pr.GetEntityId().GetHashCode();
-                    var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
-                    var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
-                    SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
-                });
+                    "Open Instance",
+                    _ =>
+                    {
+                        GoToStage(new VisualTreeAssetEditingContext(
+                            vtaSource,
+                            element.GetPanelSettings()
+                        ), BreadcrumbBar.SeparatorStyle.Arrow);
+                        UIToolkitStageUtility.RequestSelectionOnNextUpdate(new[] { vea });
+                    });
             }
+
+            var canBeReferenced = VisualElementReferenceTools.TryCreateReference(element, out var pr, out var authoringIdPath, false, true) && authoringIdPath.path.Length > 0;
+            menu.AppendAction(
+            "Find References In Scene",
+            a =>
+            {
+                var prId = pr.GetEntityId().GetHashCode();
+                var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
+                var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
+                SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
+            },
+            canBeReferenced ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
-        if (vtaSource != null && ancestorVTAs.Count > 0 && ancestorInstances.Count > 0 && !isPanelComponentRootElement)
+        if (vtaSource != null && ancestorInstances.Count > 0)
         {
+            var ancestorVTAs = new List<VisualTreeAsset>();
+
+            foreach (var ancestorInstance in ancestorInstances)
+            {
+                var asset = ancestorInstance.ResolveTemplate();
+                ancestorVTAs.Add(asset);
+            }
+
             menu.AppendAction(
                 "Open Instance in UI Builder/in Isolation",
-                a =>
+                _ =>
                 {
                     var cmd = new LoadUIDocumentCommand
                     {
@@ -205,7 +232,7 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                 });
             menu.AppendAction(
                 "Open Instance in UI Builder/in Context",
-                a =>
+                _ =>
                 {
                     var cmd = new LoadUIDocumentCommand
                     {
@@ -218,6 +245,26 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                     AssetDatabase.OpenAsset(vtaSource.GetEntityId());
                     SessionState.EraseString(LoadUIDocumentCommand.CommandId);
                 });
+
+            if (UIToolkitAuthoringSettings.EnableUIStages)
+            {
+                menu.AppendAction(
+                    "Open Instance/in Isolation",
+                    _ => GoToStage(new VisualTreeAssetEditingContext(
+                        rootVisualTreeAsset,
+                        ancestorInstances.ToArray(),
+                        SubDocumentOptions.Isolation,
+                        element.GetPanelSettings()
+                    ), BreadcrumbBar.SeparatorStyle.Line));
+                menu.AppendAction(
+                    "Open Instance/in Context",
+                    _ => GoToStage(new VisualTreeAssetEditingContext(
+                        rootVisualTreeAsset,
+                        ancestorInstances.ToArray(),
+                        SubDocumentOptions.InContext,
+                        element.GetPanelSettings()
+                    ), BreadcrumbBar.SeparatorStyle.Arrow));
+            }
         }
     }
     protected override bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)

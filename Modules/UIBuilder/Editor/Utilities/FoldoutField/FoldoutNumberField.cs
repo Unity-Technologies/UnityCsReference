@@ -2,20 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class FoldoutNumberField : FoldoutField
+    [UxmlElement]
+    internal partial class FoldoutNumberField : FoldoutField
     {
-        [Serializable]
-        public new class UxmlSerializedData : FoldoutField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new FoldoutNumberField();
-        }
-
         TextField m_TextField;
         IntegerField m_DraggerIntegerField;
         public List<string> fieldValues = new List<string>(); // Keeps track of child field values inputted from the header field

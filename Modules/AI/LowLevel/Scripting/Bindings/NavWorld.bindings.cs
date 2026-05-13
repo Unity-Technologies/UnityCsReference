@@ -31,20 +31,20 @@ struct NavMeshPointers
 public struct NavWorld : IDisposable, IEquatable<NavWorld>
 {
     [NativeDisableUnsafePtrRestriction]
-    internal IntPtr m_World;
+    internal IntPtr m_NavMeshPtr;
     [NativeDisableUnsafePtrRestriction]
     internal IntPtr m_ImmutableQuery;
     internal uint m_UniqueId;
-    internal readonly IntPtr navMesh => m_World;
+    internal readonly IntPtr navMeshPtr => m_NavMeshPtr;
     internal readonly uint uniqueId => m_UniqueId;
 
     internal AtomicSafetyHandle m_Safety;
 
-    internal static readonly int s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NavWorld>();
+    internal static readonly int k_StaticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NavWorld>();
 
     const string k_NoBufferAllocatedErrorMessage =
         "This query has no valid buffer allocated for pathfinding operations. " +
-        "Create a different NavQueryBuffer with an explicit node pool size.";
+        "Create and use a new NavQueryBuffer.";
 
     [NativeMethod(IsThreadSafe = true)]
     static extern bool IsWorldForQueryInternal(IntPtr navMesh, IntPtr query, uint queryUniqueId);
@@ -52,11 +52,11 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [NativeMethod(IsThreadSafe = true)]
     static extern bool IsValidWorldInternal(IntPtr navMesh, IntPtr immutableQuery, uint uniqueId);
 
-    public bool IsValid()
+    public readonly bool IsValid()
     {
-        return m_World != IntPtr.Zero
+        return m_NavMeshPtr != IntPtr.Zero
             && m_ImmutableQuery != IntPtr.Zero
-            && IsValidWorldInternal(m_World, m_ImmutableQuery, m_UniqueId);
+            && IsValidWorldInternal(m_NavMeshPtr, m_ImmutableQuery, m_UniqueId);
     }
 
     static extern NavMeshPointers GetDefaultWorldInternal();
@@ -67,7 +67,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
         var world = new NavWorld
         {
-            m_World = pointers.m_NavMesh,
+            m_NavMeshPtr = pointers.m_NavMesh,
             m_ImmutableQuery = pointers.m_ImmutableQuery,
             m_UniqueId = pointers.m_UniqueId
         };
@@ -78,8 +78,8 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
                 "most likely because there is not enough memory left.");
 
         AtomicSafetyHandle.CreateHandle(out world.m_Safety, Allocator.Persistent);
-        AtomicSafetyHandle.SetStaticSafetyId(ref world.m_Safety, s_staticSafetyId);
-        AddWorldSafety(world.m_World, world.m_Safety);
+        AtomicSafetyHandle.SetStaticSafetyId(ref world.m_Safety, k_StaticSafetyId);
+        AddWorldSafety(world.m_NavMeshPtr, world.m_Safety);
         return world;
     }
 
@@ -93,10 +93,10 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
             AtomicSafetyHandle.DisposeHandle(ref m_Safety);
 
-            if (canRemoveSafety && m_World != IntPtr.Zero)
-                RemoveWorldSafety(m_World, m_Safety);
+            if (canRemoveSafety && m_NavMeshPtr != IntPtr.Zero)
+                RemoveWorldSafety(m_NavMeshPtr, m_Safety);
         }
-        m_World = IntPtr.Zero;
+        m_NavMeshPtr = IntPtr.Zero;
         m_ImmutableQuery = IntPtr.Zero;
     }
 
@@ -115,7 +115,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly bool Equals(NavWorld other)
     {
-        return m_World == other.m_World
+        return m_NavMeshPtr == other.m_NavMeshPtr
             && m_ImmutableQuery == other.m_ImmutableQuery
             && m_UniqueId == other.m_UniqueId;
     }
@@ -129,52 +129,54 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly override int GetHashCode()
     {
-        return HashCode.Combine(m_World, m_ImmutableQuery, m_UniqueId);
+        return HashCode.Combine(m_NavMeshPtr, m_ImmutableQuery, m_UniqueId);
     }
 
-    void CheckValidPtrAndThrow()
+    readonly void CheckValidPtrAndThrow()
     {
         if (!IsValid())
             throw new InvalidOperationException(
-                "The NavMesh world is invalid. Call NavWorld.GetDefaultWorld() to obtain a valid world.");
+                "The NavWorld is invalid. Call NavWorld.GetDefaultWorld() to obtain a valid world.");
 
         AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
     }
 
-    void CheckBufferMatchAndThrow(NavQueryBuffer queryBuffer)
+    readonly void CheckBufferMatchAndThrow(NavQueryBuffer queryBuffer)
     {
-        if (!IsWorldForQueryInternal(m_World, queryBuffer.id, queryBuffer.worldUniqueId))
+        if (!IsWorldForQueryInternal(m_NavMeshPtr, queryBuffer.navMeshQueryPtr, queryBuffer.worldUniqueId))
             throw new InvalidOperationException(
-                "The NavWorld cannot use this NavQueryBuffer because it was created for a different NavWorld.");
+                "The NavWorld methods cannot use a NavQueryBuffer created for a different NavWorld. " +
+                "Call the method with a NavQueryBuffer created for this NavWorld " +
+                $"(index {uniqueId} instead of {queryBuffer.worldUniqueId}).");
     }
 
     static extern void AddWorldSafety(IntPtr navMesh, AtomicSafetyHandle handle);
 
     static extern void RemoveWorldSafety(IntPtr navMesh, AtomicSafetyHandle handle);
 
-    static extern void AddDependencyInternal(IntPtr navWorld, JobHandle handle);
+    static extern void AddDependencyInternal(IntPtr navMesh, JobHandle handle);
 
-    public void AddDependency(JobHandle job)
+    public readonly void AddDependency(JobHandle job)
     {
         CheckValidPtrAndThrow();
 
         if (JobsUtility.IsExecutingJob)
             throw new InvalidOperationException("NavWorld.AddDependency cannot be called from a job.");
-        AddDependencyInternal(m_World, job);
+        AddDependencyInternal(m_NavMeshPtr, job);
     }
 
     [NativeMethod(IsThreadSafe = true)]
     static extern NavLocation MapLocation(IntPtr navMeshQuery, Vector3 position, Vector3 extents,
         int agentTypeID, int areaMask = NavMesh.AllAreas);
 
-    public NavLocation MapLocation(Vector3 position, Vector3 extents, int agentTypeId,
+    public readonly NavLocation MapLocation(Vector3 position, Vector3 extents, int agentTypeId,
         int areaMask = NavMesh.AllAreas)
     {
         CheckValidPtrAndThrow();
         return MapLocation(m_ImmutableQuery, position, extents, agentTypeId, areaMask);
     }
 
-    public unsafe NavQueryStatus BeginFindPath(NavQueryBuffer queryBuffer,
+    public readonly unsafe NavQueryStatus BeginFindPath(NavQueryBuffer queryBuffer,
         NavLocation start, NavLocation end,
         int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new())
     {
@@ -214,17 +216,20 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
             throw new ArgumentException(
                 "The end location doesn't belong to any active NavMesh surface.", nameof(end));
 
-        var agentTypeStart = GetAgentTypeIdForNode(queryBuffer.id, start.node);
-        var agentTypeEnd = GetAgentTypeIdForNode(queryBuffer.id, end.node);
+        var agentTypeStart = GetAgentTypeIdForNode(m_NavMeshPtr, start.node);
+        var agentTypeEnd = GetAgentTypeIdForNode(m_NavMeshPtr, end.node);
         if (agentTypeStart != agentTypeEnd)
             throw new ArgumentException(string.Format(
                 "The start and end locations belong to different NavMesh surfaces, with agent type IDs {0} and {1}.",
                 agentTypeStart, agentTypeEnd));
+        if (queryBuffer.isNull || queryBuffer.worldUniqueId != m_UniqueId)
+            return NavQueryStatus.Failure | NavQueryStatus.InvalidParameter;
+
         void* costsPtr = costs.Length > 0 ? costs.GetUnsafePtr() : null;
-        return BeginFindPath(queryBuffer.id, start, end, areaMask, costsPtr);
+        return BeginFindPath(queryBuffer.navMeshQueryPtr, start, end, areaMask, costsPtr);
     }
 
-    public NavQueryStatus ContinueFindPath(NavQueryBuffer queryBuffer, int nodesToVisit, out int nodesVisited)
+    public readonly NavQueryStatus ContinueFindPath(NavQueryBuffer queryBuffer, int nodesToVisit, out int nodesVisited)
     {
         CheckValidPtrAndThrow();
         CheckBufferMatchAndThrow(queryBuffer);
@@ -232,10 +237,16 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
-        return ContinueFindPath(queryBuffer.id, nodesToVisit, out nodesVisited);
+        if (queryBuffer.isNull || queryBuffer.worldUniqueId != m_UniqueId)
+        {
+            nodesVisited = 0;
+            return NavQueryStatus.Failure | NavQueryStatus.InvalidParameter;
+        }
+
+        return ContinueFindPath(queryBuffer.navMeshQueryPtr, nodesToVisit, out nodesVisited);
     }
 
-    public NavQueryStatus EndFindPath(NavQueryBuffer queryBuffer, out int pathSize)
+    public readonly NavQueryStatus EndFindPath(NavQueryBuffer queryBuffer, out int pathSize)
     {
         CheckValidPtrAndThrow();
         CheckBufferMatchAndThrow(queryBuffer);
@@ -243,11 +254,16 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
+        if (queryBuffer.isNull || queryBuffer.worldUniqueId != m_UniqueId)
+        {
+            pathSize = 0;
+            return NavQueryStatus.Failure | NavQueryStatus.InvalidParameter;
+        }
 
-        return EndFindPath(queryBuffer.id, out pathSize);
+        return EndFindPath(queryBuffer.navMeshQueryPtr, out pathSize);
     }
 
-    public unsafe int GetResultFromFindPath(NavQueryBuffer queryBuffer, NativeSlice<NavNode> path)
+    public readonly unsafe int GetResultFromFindPath(NavQueryBuffer queryBuffer, NativeSlice<NavNode> path)
     {
         CheckValidPtrAndThrow();
         CheckBufferMatchAndThrow(queryBuffer);
@@ -255,13 +271,15 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
+        if (path.Length == 0 || queryBuffer.isNull || queryBuffer.worldUniqueId != m_UniqueId)
+            return 0;
 
-        return GetResultFromFindPath(queryBuffer.id, path.GetUnsafePtr(), path.Length);
+        return GetResultFromFindPath(queryBuffer.navMeshQueryPtr, path.GetUnsafePtr(), path.Length);
     }
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern unsafe NavQueryStatus BeginFindPath(IntPtr navMeshQuery, NavLocation start,
-        NavLocation end, int areaMask, void* costs);
+    static extern unsafe NavQueryStatus BeginFindPath(IntPtr navMeshQuery,
+        NavLocation start, NavLocation end, int areaMask, void* costs);
 
     [NativeMethod(IsThreadSafe = true)]
     static extern NavQueryStatus ContinueFindPath(IntPtr navMeshQuery, int nodesToVisit, out int nodesVisited);
@@ -273,41 +291,42 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern unsafe int GetResultFromFindPath(IntPtr navMeshQuery, void* path, int maxPath);
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern bool IsValidNode(IntPtr navMeshQuery, NavNode node);
+    static extern bool IsValidNode(IntPtr navMeshPtr, NavNode node);
 
-    public bool IsValid(NavNode node)
+    public readonly bool IsValid(NavNode node)
     {
         CheckValidPtrAndThrow();
-        return node.m_PolyRef != 0 && IsValidNode(m_ImmutableQuery, node);
+        return node.m_PolyRef != 0 && IsValidNode(m_NavMeshPtr, node);
     }
 
-    public bool IsValid(NavLocation location)
+    public readonly bool IsValid(NavLocation location)
     {
         return IsValid(location.node);
     }
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern int GetAgentTypeIdForNode(IntPtr navMeshQuery, NavNode node);
+    static extern int GetAgentTypeIdForNode(IntPtr navMeshPtr, NavNode node);
 
-    public int GetAgentTypeIdForNode(NavNode node)
+    public readonly int GetAgentTypeIdForNode(NavNode node)
     {
         CheckValidPtrAndThrow();
-        return GetAgentTypeIdForNode(m_ImmutableQuery, node);
+        return GetAgentTypeIdForNode(m_NavMeshPtr, node);
     }
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern int GetAreaIndexForNode(IntPtr navMeshQuery, NavNode node);
-    public int GetAreaIndexForNode(NavNode node)
+    static extern int GetAreaIndexForNode(IntPtr navMeshPtr, NavNode node);
+
+    public readonly int GetAreaIndexForNode(NavNode node)
     {
         CheckValidPtrAndThrow();
-        return GetAreaIndexForNode(m_ImmutableQuery, node);
+        return GetAreaIndexForNode(m_NavMeshPtr, node);
     }
 
     [NativeMethod(IsThreadSafe = true)]
     static extern NavQueryStatus GetClosestPointOnPoly(IntPtr navMeshQuery, NavNode node, Vector3 position,
         out Vector3 nearest);
 
-    public NavLocation CreateLocation(Vector3 position, NavNode node)
+    public readonly NavLocation CreateLocation(Vector3 position, NavNode node)
     {
         CheckValidPtrAndThrow();
         var status = GetClosestPointOnPoly(m_ImmutableQuery, node, position, out var nearest);
@@ -320,7 +339,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern unsafe void MoveLocations(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks,
         int count);
 
-    public unsafe void MoveLocations(NativeSlice<NavLocation> locations, NativeSlice<Vector3> destinations,
+    public readonly unsafe void MoveLocations(NativeSlice<NavLocation> locations, NativeSlice<Vector3> destinations,
         NativeSlice<int> areaMasks)
     {
         CheckValidPtrAndThrow();
@@ -335,7 +354,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern unsafe void MoveLocationsInSameAreas(IntPtr navMeshQuery, void* locations, void* targets,
         int count, int areaMask);
 
-    public unsafe void MoveLocations(NativeSlice<NavLocation> locations,
+    public readonly unsafe void MoveLocations(NativeSlice<NavLocation> locations,
         NativeSlice<Vector3> destinations, int areaMask = NavMesh.AllAreas)
     {
         CheckValidPtrAndThrow();
@@ -350,7 +369,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern NavLocation MoveLocation(IntPtr navMeshQuery, NavLocation location, Vector3 target,
         int areaMask);
 
-    public NavLocation MoveLocation(NavLocation location, Vector3 destination, int areaMask = NavMesh.AllAreas)
+    public readonly NavLocation MoveLocation(NavLocation location, Vector3 destination, int areaMask = NavMesh.AllAreas)
     {
         CheckValidPtrAndThrow();
         return MoveLocation(m_ImmutableQuery, location, destination, areaMask);
@@ -360,7 +379,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern bool GetPortalPoints(IntPtr navMeshQuery, NavNode node, NavNode neighbor,
         out Vector3 left, out Vector3 right);
 
-    public bool GetPortalPoints(NavNode node, NavNode neighbor, out Vector3 left, out Vector3 right)
+    public readonly bool GetPortalPoints(NavNode node, NavNode neighbor, out Vector3 left, out Vector3 right)
     {
         CheckValidPtrAndThrow();
         return GetPortalPoints(m_ImmutableQuery, node, neighbor, out left, out right);
@@ -370,10 +389,10 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern void GetInstanceTransform(IntPtr navMesh, NavNode node,
         out Vector3 position, out Quaternion rotation);
 
-    public void GetInstanceTransform(NavNode node, out Vector3 position, out Quaternion rotation)
+    public readonly void GetInstanceTransform(NavNode node, out Vector3 position, out Quaternion rotation)
     {
         CheckValidPtrAndThrow();
-        GetInstanceTransform(m_World, node, out position, out rotation);
+        GetInstanceTransform(m_NavMeshPtr, node, out position, out rotation);
     }
 
     [NativeMethod(IsThreadSafe = true)]
@@ -381,7 +400,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [NativeName("DecodePolyIdType")]
     static extern int GetNodeTypeInternal(NavNode node);
 
-    public NavNodeType GetNodeType(NavNode node)
+    public readonly NavNodeType GetNodeType(NavNode node)
     {
         CheckValidPtrAndThrow();
         if (node.IsNull())
@@ -395,7 +414,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [NativeName("GetLinkPolyRef")]
     static extern NavNode GetLinkNode(int linkInstance);
 
-    public NavNode GetLinkNode(NavMeshLinkInstance linkInstance)
+    public readonly NavNode GetLinkNode(NavMeshLinkInstance linkInstance)
     {
         CheckValidPtrAndThrow();
         return GetLinkNode(linkInstance.id);
@@ -406,7 +425,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     static extern unsafe NavQueryStatus Raycast(IntPtr navMeshQuery, NavLocation start, Vector3 targetPosition,
         int areaMask, void* costs, out NavMeshHit hit, void* path, out int pathCount, int maxPath);
 
-    public unsafe NavQueryStatus Raycast(out NavMeshHit hit, NavLocation start, Vector3 targetPosition,
+    public readonly unsafe NavQueryStatus Raycast(out NavMeshHit hit, NavLocation start, Vector3 targetPosition,
         int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new())
     {
         const int kAreaCount = 32;
@@ -425,7 +444,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         return status;
     }
 
-    public unsafe NavQueryStatus Raycast(out NavMeshHit hit, NativeSlice<NavNode> path, out int pathCount,
+    public readonly unsafe NavQueryStatus Raycast(out NavMeshHit hit, NativeSlice<NavNode> path, out int pathCount,
         NavLocation start, Vector3 targetPosition,
         int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new())
     {
@@ -448,12 +467,12 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     }
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern unsafe NavQueryStatus GetEdgesAndNeighbors(IntPtr navMeshQuery, NavNode node,
+    static extern unsafe NavQueryStatus GetEdgesAndNeighbors(IntPtr navMeshPtr, NavNode node,
         int maxVertices, int maxNei,
         void* vertices, void* neighbors, void* edgeIndices,
         out int vertCount, out int neighborsCount);
 
-    public unsafe NavQueryStatus GetEdgesAndNeighbors(NavNode node,
+    public readonly unsafe NavQueryStatus GetEdgesAndNeighbors(NavNode node,
         NativeSlice<Vector3> edgeVertices, NativeSlice<NavNode> neighbors, NativeSlice<byte> edgeIndices,
         out int verticesCount, out int neighborsCount)
     {
@@ -470,7 +489,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         void* edgesPtr = edgeIndices.Length > 0 ? edgeIndices.GetUnsafePtr() : null;
         var maxVertices = edgeVertices.Length;
         var maxNeighbors = neighbors.Length > 0 ? neighbors.Length : edgeIndices.Length;
-        var status = GetEdgesAndNeighbors(m_ImmutableQuery, node, maxVertices, maxNeighbors,
+        var status = GetEdgesAndNeighbors(m_NavMeshPtr, node, maxVertices, maxNeighbors,
             vertPtr, neiPtr, edgesPtr,
             out verticesCount, out neighborsCount);
         return status;
@@ -479,10 +498,11 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [NativeMethod(IsThreadSafe = true)]
     [StaticAccessor("GetNavMeshManager()")]
     [NativeName("GetPolyRefsForGeneratedLinks")]
-    static extern unsafe int GetGeneratedLinkNodes(int navMeshDataInstance, void* nodes, int nodesLength, int start, int size);
+    static extern unsafe int GetGeneratedLinkNodes(int navMeshDataInstance, void* nodes, int nodesLength,
+        int start, int size);
 
-    public unsafe int GetGeneratedLinkNodes(NavMeshDataInstance navMeshInstance, NativeSlice<NavNode> linkNodes,
-        int start = 0, int length = int.MaxValue)
+    public readonly unsafe int GetGeneratedLinkNodes(NavMeshDataInstance navMeshInstance,
+        NativeSlice<NavNode> linkNodes, int start = 0, int length = int.MaxValue)
     {
         CheckValidPtrAndThrow();
         void* nodesPtr = linkNodes.Length > 0 ? linkNodes.GetUnsafePtr() : null;
@@ -495,7 +515,7 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     [NativeName("GetGeneratedLinksCount")]
     static extern int GetGeneratedLinksCountInternal(int navMeshDataInstanceId);
 
-    public int GetGeneratedLinksCount(NavMeshDataInstance navMeshInstance)
+    public readonly int GetGeneratedLinksCount(NavMeshDataInstance navMeshInstance)
     {
         CheckValidPtrAndThrow();
         return GetGeneratedLinksCountInternal(navMeshInstance.id);

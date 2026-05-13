@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEngine;
@@ -14,39 +12,6 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 partial class StyleSheetHeader : UISelectionObjectHeader
 {
-    [Serializable]
-    public new class UxmlSerializedData : UISelectionObjectHeader.UxmlSerializedData
-    {
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(StyleSheetName), "style-sheet-name"),
-                }
-                , true);
-        }
-
-#pragma warning disable 649
-        [SerializeField] private string StyleSheetName;
-
-        [SerializeField, UxmlIgnore, HideInInspector] private UxmlAttributeFlags StyleSheetName_UxmlAttributeFlags;
-#pragma warning restore 649
-
-        public override object CreateInstance()
-        {
-            return new StyleSheetHeader();
-        }
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-            var ve = (StyleSheetHeader)obj;
-            if (ShouldWriteAttributeValue(StyleSheetName_UxmlAttributeFlags))
-                ve.StyleSheetName = StyleSheetName;
-        }
-    }
-
     public static readonly BindingId StyleSheetProperty = nameof(StyleSheet);
     public static readonly BindingId StyleSheetNameProperty = nameof(StyleSheetName);
 

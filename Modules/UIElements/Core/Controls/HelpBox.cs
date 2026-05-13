@@ -130,55 +130,6 @@ namespace UnityEngine.UIElements
         public static readonly string iconErrorUssClassName = iconUssClassName + "--error";
         internal static readonly UniqueStyleString iconErrorUssClassNameUnique = new(iconErrorUssClassName);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(text), "text"),
-                    new (nameof(messageType), "message-type"),
-                    new (nameof(buttonText), "button-text"),
-                    new (nameof(linkText), "link-text"),
-                    new (nameof(linkHref), "link-href"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, MultilineTextField] string text;
-            [SerializeField, MultilineTextField] string buttonText;
-            [SerializeField, MultilineTextField] string linkText;
-            [SerializeField] string linkHref;
-            [SerializeField] HelpBoxMessageType messageType;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags buttonText_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags linkText_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags linkHref_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags messageType_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new HelpBox();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (HelpBox)obj;
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.text = text;
-                if (ShouldWriteAttributeValue(messageType_UxmlAttributeFlags))
-                    e.messageType = messageType;
-                if (ShouldWriteAttributeValue(buttonText_UxmlAttributeFlags))
-                    e.buttonText = buttonText;
-                if (ShouldWriteAttributeValue(linkText_UxmlAttributeFlags))
-                    e.linkText = linkText;
-                if (ShouldWriteAttributeValue(linkHref_UxmlAttributeFlags))
-                    e.linkHref = linkHref;
-            }
-        }
-
         // This class is used to push the label down a few pixels when an icon is present.
         static readonly UniqueStyleString labelWithIconClassNameUnique = new(labelUssClassName + "--with-icon");
 
@@ -192,7 +143,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The message text.
         /// </summary>
+        [MultilineTextField]
         [CreateProperty]
+        [UxmlAttribute]
         public string text
         {
             get { return m_Label.text; }
@@ -210,6 +163,7 @@ namespace UnityEngine.UIElements
         /// The type of message.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public HelpBoxMessageType messageType
         {
             get { return m_HelpBoxMessageType; }
@@ -233,7 +187,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Provide a value to create a new <see cref="Button"/> or update the text of an existing one.
         /// </remarks>
+        [MultilineTextField]
         [CreateProperty]
+        [UxmlAttribute]
         public string buttonText
         {
             get => m_ButtonText;
@@ -303,7 +259,9 @@ namespace UnityEngine.UIElements
         /// Provide a value to create a <see cref="Label"/> if none exists. This property represents the readable string of the hyperlink. If a <c>HelpBox.linkHref</c>
         /// is provided, it renders as a hyperlink using rich text tags; otherwise, it displays as plain text. This property does not return the hyperlink rich text tag.
         /// </remarks>
+        [MultilineTextField]
         [CreateProperty]
+        [UxmlAttribute]
         public string linkText
         {
             get => m_LinkText;
@@ -330,6 +288,7 @@ namespace UnityEngine.UIElements
         /// reference value. If no <c>HelpBox.linkText</c> is provided, this value is used as the hyperlink's text. This property does not return the hyperlink rich text tag.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public string linkHref
         {
             get => m_LinkHref;

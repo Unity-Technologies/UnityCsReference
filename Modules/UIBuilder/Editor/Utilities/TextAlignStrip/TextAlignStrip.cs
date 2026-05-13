@@ -3,12 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class TextAlignStrip : BaseField<string>
+    [UxmlElement]
+    internal partial class TextAlignStrip : BaseField<string>
     {
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/TextAlignStrip/TextAlignStrip.uss";
 
@@ -17,18 +17,6 @@ namespace Unity.UI.Builder
 
         static readonly string[] s_HorizontalChoices = { "left", "center", "right" };
         static readonly string[] s_VerticalChoices = { "upper", "middle", "lower" };
-
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<string>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextAlignStrip();
-        }
 
         VisualElement m_ButtonStripContainer;
         ToggleButtonGroup m_HorizontalButtonGroup;

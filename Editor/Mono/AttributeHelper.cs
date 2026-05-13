@@ -29,6 +29,15 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        static void DeconstructGizmoArrayElementRaw(MonoGizmoMethod[] array, int index, out object drawGizmo, out object drawnType, out int options)
+        {
+            ref MonoGizmoMethod tmp = ref array[index];
+            drawGizmo = tmp.drawGizmo;
+            drawnType = tmp.drawnType;
+            options = tmp.options;
+        }
+
+        [RequiredByNativeCode]
         static MonoGizmoMethod[] ExtractGizmos(Assembly assembly)
         {
             var commands = new List<MonoGizmoMethod>();

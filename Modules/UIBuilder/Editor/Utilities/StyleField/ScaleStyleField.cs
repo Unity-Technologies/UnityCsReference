@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using JetBrains.Annotations;
-using System;
-using System.Diagnostics;
 using System.Globalization;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -13,20 +11,9 @@ using UnityEngine.UIElements;
 namespace Unity.UI.Builder
 {
     [UsedImplicitly]
-    class ScaleStyleField : BaseField<Scale>
+    [UxmlElement]
+    partial class ScaleStyleField : BaseField<Scale>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<Scale>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Scale>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new ScaleStyleField();
-        }
-
         static readonly string s_FieldClassName = "unity-scale-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/ScaleStyleField.uxml";
         static readonly string s_VisualInputName = "unity-visual-input";

@@ -237,7 +237,7 @@ namespace UnityEngine.UIElements
                 return;
 
             compatibilityEvt.elementTarget = target;
-            compatibilityEvt.skipDisabledElements = evt.skipDisabledElements;
+            compatibilityEvt.ignoreDisabledElements = evt.ignoreDisabledElements;
 
             if (DebuggerEventDispatchUtilities.InterceptEvent(compatibilityEvt, panel))
                 return;
@@ -448,7 +448,7 @@ namespace UnityEngine.UIElements
 
         private static bool Disabled([NotNull] EventBase evt, [NotNull] VisualElement target)
         {
-            return evt.skipDisabledElements && !target.enabledInHierarchy;
+            return evt.ignoreDisabledElements && !target.enabledInHierarchy;
         }
 
         public static void HandleEvent([NotNull] EventBase evt, [NotNull] VisualElement target)
@@ -499,10 +499,10 @@ namespace UnityEngine.UIElements
                 {
                     evt.elementTarget = capturingElement;
 
-                    var skipDisabledElements = evt.skipDisabledElements;
-                    evt.skipDisabledElements = false;
+                    var ignoreDisabledElements = evt.ignoreDisabledElements;
+                    evt.ignoreDisabledElements = false;
                     HandleEventAtTargetAndDefaultPhase(evt, panel, capturingElement);
-                    evt.skipDisabledElements = skipDisabledElements;
+                    evt.ignoreDisabledElements = ignoreDisabledElements;
                 }
 
                 evt.elementTarget = target;
@@ -612,7 +612,7 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            evt.skipDisabledElements = false;
+            evt.ignoreDisabledElements = false;
             evt.elementTarget = capturingElement;
             PropagateEvent(evt, panel, capturingElement, true);
 

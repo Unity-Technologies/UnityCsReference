@@ -203,23 +203,48 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal override bool WantsToDeselect()
         {
-            // If there's no scenario with actively free running instance, nothing to do here.
-            if (m_Scenario == null || !m_Scenario.HasActiveFreeRunInstance())
+            var hasFreeRun = m_Scenario != null && m_Scenario.HasActiveFreeRunInstance();
+            var hasActiveClones = CloneEditorController.HasActiveCloneEditors();
+
+            if (!hasFreeRun && !hasActiveClones)
                 return true;
 
-            // Else, display a dialog prompting the user to terminate actively running instances.
-            var activeInstanceNames = m_Scenario.GetActiveFreeRunInstanceNames();
-            string activeInstances = "";
-            foreach (var instanceName in activeInstanceNames)
-            {
-                activeInstances += "- " + instanceName + "\n";
-            }
-            activeInstances = activeInstances.TrimEnd('\n');
-            return EditorUtility.DisplayDialog(
-                "Playmode Scenario: Instances(s) are running",
-                "Do you want to terminate the following instances and switch scenario? \n \n" + activeInstances,
+            var message = BuildInstanceTerminationMessage(hasFreeRun, hasActiveClones);
+
+            if (!EditorUtility.DisplayDialog(
+                "Play Mode Scenario: Active instances",
+                message,
                 "Terminate and Switch",
-                "Cancel");
+                "Cancel"))
+                return false;
+
+            CloneEditorController.DeactivateAllActiveCloneEditors();
+            return true;
+        }
+
+        private string BuildInstanceTerminationMessage(bool hasFreeRun, bool hasActiveClones)
+        {
+            var message = new StringBuilder();
+            message.Append("Do you want to terminate the following and switch scenario?\n\n");
+
+            if (hasFreeRun)
+            {
+                message.Append("Free running instance(s):\n");
+                foreach (var instanceName in m_Scenario.GetActiveFreeRunInstanceNames())
+                    message.Append("- ").Append(instanceName).Append('\n');
+                message.Append('\n');
+            }
+
+            if (hasActiveClones)
+            {
+                var cloneNames = new List<string>();
+                CloneEditorController.GetActiveCloneEditorNames(cloneNames);
+                message.Append("Editor Instances still active:\n");
+                foreach (var name in cloneNames)
+                    message.Append("- ").Append(name).Append('\n');
+            }
+
+            return message.ToString().TrimEnd();
         }
 
         private void CreateAndLoadScenario(bool logErrorIfInvalid)

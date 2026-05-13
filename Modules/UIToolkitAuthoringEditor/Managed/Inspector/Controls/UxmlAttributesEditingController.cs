@@ -57,6 +57,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     /// </summary>
     public UxmlAttributesEditingController()
     {
+        UICommandQueue.RegisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
     }
 
     /// <summary>
@@ -107,6 +108,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
             EditorApplication.delayCall -= Sync;
         liveAttributePropertyController.RemoveLiveProperties();
         attributeChangeHandler.StopTrackingChanges();
+        UICommandQueue.UnregisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
     }
 
     // Called when a property has changed
@@ -165,6 +167,9 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
     public void RegisterUxmlAttributeFieldDecorator(UxmlAttributeFieldDecorator decorator)
     {
+        if (m_RegisteredDecorators.Contains(decorator))
+            return;
+
         m_RegisteredDecorators.Add(decorator);
     }
 
@@ -213,6 +218,23 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    void OnAttributeOverrideSet(in CommandContext commandContext)
+    {
+        if (commandContext.Status != CommandExecutionStatus.Success)
+            return;
+
+        var command = (SetAttributeOverrideCommand)commandContext.Command;
+
+        // Refresh all decorators that match the modified attribute
+        foreach (var decorator in m_RegisteredDecorators)
+        {
+            if (decorator.boundAttributeDescription == command.AttributeDescription)
+            {
+                decorator.ScheduleRefresh();
             }
         }
     }

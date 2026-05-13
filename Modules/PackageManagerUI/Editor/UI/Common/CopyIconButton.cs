@@ -2,28 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class CopyIconButton : Image
+    [UxmlElement]
+    internal partial class CopyIconButton : Image
     {
-        [Serializable]
-        public new class UxmlSerializedData : Image.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                return new CopyIconButton(
-                    ServicesContainer.instance.Resolve<IApplicationProxy>());
-            }
-        }
-
         private const string k_CopyIconName = "copyIcon";
         private const string k_ClickedClassName = "clicked";
         public string textToCopy { get; private set; }
 
         private readonly IApplicationProxy m_ApplicationProxy;
+
+        public CopyIconButton() : this(ServicesContainer.instance.Resolve<IApplicationProxy>())
+        {
+        }
+
         public CopyIconButton(IApplicationProxy applicationProxy)
         {
             m_ApplicationProxy = applicationProxy;

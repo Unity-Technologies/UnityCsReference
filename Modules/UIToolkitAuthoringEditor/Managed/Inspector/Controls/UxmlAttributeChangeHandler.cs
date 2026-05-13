@@ -4,9 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEditor;
-using UnityEditor.SceneManagement;
+using UnityEditor.UIElements.Bindings;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -24,7 +23,6 @@ class UxmlAttributeChangeHandler
         public VisualElementAsset editedElementAsset;
         public SerializedObject rootSerializedObject;
         public string serializedBasePath;
-        public int undoGroupId;
         public List<UndoPropertyModification> propertyModifications;
 
     }
@@ -32,6 +30,8 @@ class UxmlAttributeChangeHandler
     public bool IsTrackingChanges { get; private set; }
 
     internal readonly List<ChangeInfo> m_Changes = new List<ChangeInfo>();
+
+    int m_UndoGroupIdToCollapse = -1;
 
     /// <summary>
     /// Starts tracking changes to UXML attributes.
@@ -60,10 +60,15 @@ class UxmlAttributeChangeHandler
     {
         try
         {
-            bool isTemplateInstance = Context.element.templateAsset != null;
+            if (m_Changes.Count == 0)
+                return;
+
+            bool isTemplateInstance = Context.isInTemplateInstance;
+
             foreach (var change in m_Changes)
             {
                 var vta = change.visualTreeAsset;
+
                 Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(vta, "UXML Attribute Change");
                 EditorUtility.SetDirty(vta);
@@ -101,8 +106,8 @@ class UxmlAttributeChangeHandler
 
                     if (isTemplateInstance)
                     {
-                        var cmdOverride = new SetAttributeOverrideCommand(Context.editedVisualTreeAsset, syncPathResults.attributeDescription, Context.element, value);
-                        cmdOverride.Execute();
+                        using var cmdOverride = SetAttributeOverrideCommand.GetPooled(this, Context.editedVisualTreeAsset, syncPathResults.attributeDescription, Context.element, value);
+                        UICommandQueue.EnqueueCommand(cmdOverride);
                     }
                 }
 
@@ -117,15 +122,17 @@ class UxmlAttributeChangeHandler
                 }
 
                 ListPool<UndoPropertyModification>.Release(change.propertyModifications);
-                Undo.CollapseUndoOperations(change.undoGroupId);
-
                 // We need to mark the hierarchy as changed so a live update can occur if needed.
                 UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
             }
+
+            if (m_UndoGroupIdToCollapse != -1)
+                Undo.CollapseUndoOperations(m_UndoGroupIdToCollapse);
         }
         finally
         {
             m_Changes.Clear();
+            m_UndoGroupIdToCollapse = -1;
         }
     }
 
@@ -146,11 +153,16 @@ class UxmlAttributeChangeHandler
         if (capturedModifications != null)
         {
            var targetVta  = capturedModifications[0].currentValue.target as VisualTreeAsset;
+           var editingField = SerializedObjectBindingBase.editingField;
+           var undoGroupToCollapse = (int?)editingField?.GetProperty(SerializedObjectBindingBase.UndoGroupPropertyKey)
+                                     ?? Undo.GetCurrentGroup();
+
+           // Use the smallest group as the group to collapse to
+           m_UndoGroupIdToCollapse = (m_UndoGroupIdToCollapse != -1) ? Math.Min(m_UndoGroupIdToCollapse, undoGroupToCollapse) : undoGroupToCollapse;
 
            // Save the context data in case the context is cleared before we process the changes.
             m_Changes.Add(new ChangeInfo
             {
-                undoGroupId = Undo.GetCurrentGroup(),
                 propertyModifications = capturedModifications,
                 visualTreeAsset = targetVta,
                 editedUxmlSerializedData = Context.uxmlSerializedData,

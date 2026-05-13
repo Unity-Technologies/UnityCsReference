@@ -9,15 +9,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
-    // A BlocksGraphViewRender that includes support for mouse interactions.
-    class BlocksGraphView : BlocksGraphViewRender
+    [UxmlElement]
+    internal partial class BlocksGraphView : BlocksGraphViewRender
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BlocksGraphView();
-        }
-
         const string k_UssClass_HoverIndicator = "blocks-graph-view__hover-indicator";
 
         readonly VisualElement m_HoverIndicator;

@@ -133,76 +133,7 @@ namespace UnityEngine.UIElements
         /// <typeparam name="TDestination">The destination type to convert to.</typeparam>
         /// <returns><see langword="true"/> if the conversion succeeded, and <see langword="false"/> otherwise.</returns>
         public static bool TryConvert<TSource, TDestination>(ref TSource source, out TDestination destination)
-        {
-            var sourceType = typeof(TSource);
-            var destinationType = typeof(TDestination);
-
-            // Registered converters always has the highest priority.
-            if (s_GlobalConverters.registry.TryGetConverter(typeof(TSource), destinationType, out var converter))
-            {
-                destination = ((TypeConverter<TSource, TDestination>) converter)(ref source);
-                return true;
-            }
-
-            // If we are dealing with the same value type, do an unsafe cast, but not try to reinterpret it. This will
-            // avoid boxing allocations.
-            if (sourceType.IsValueType && destinationType.IsValueType)
-            {
-                if (sourceType == destinationType)
-                {
-                    destination = UnsafeUtility.As<TSource, TDestination>(ref source);
-                    return true;
-                }
-
-                // Conversions between primitive types.
-                if (TypeConversion.PrimitivesConverters.TryConvertPrimitiveOrString(ref source, out destination))
-                {
-                    return true;
-                }
-
-                destination = default;
-                return false;
-            }
-
-            if (source is TDestination d)
-            {
-                destination = d;
-                return true;
-            }
-
-            if (destinationType.IsAssignableFrom(sourceType) && null == source)
-            {
-                destination = default;
-                return true;
-            }
-
-            // T -> string conversions should be supported by default.
-            if (destinationType == typeof(string))
-            {
-                destination = (TDestination) (object) source?.ToString();
-                return true;
-            }
-
-            // T -> object conversions should be supported by default.
-            if (destinationType == typeof(object))
-            {
-                // ReSharper disable once PossibleInvalidCastException
-                destination = (TDestination) (object) source;
-                return true;
-            }
-
-            // Special case where the source is null and of type object
-            if (!typeof(TSource).IsValueType
-                && source == null
-                && typeof(TSource) == typeof(object))
-            {
-                destination = default;
-                return true;
-            }
-
-            destination = default;
-            return false;
-        }
+            => TypeConversion.TryConvert(in s_GlobalConverters.registerRef, ref source, out destination);
 
         /// <summary>
         /// Sets the value of a property at the given path to the given value, using the global converters.

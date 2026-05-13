@@ -35,6 +35,8 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public static readonly string blockWithoutTitleUssClassName = ussClassName.WithUssModifier("without-title");
 
+        static readonly string k_ColorLineElementName = "ge-node-color-line";
+
         float m_Border = 1.0f;
         BlockDrawParams m_DrawParams = BlockDrawParams.Default;
 
@@ -243,14 +245,21 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc/>
+        protected override void BuildPartList()
+        {
+            base.BuildPartList();
+            PartList.RemovePart(topColorLineContainerPartName);
+        }
+
+        /// <inheritdoc/>
         protected override void BuildUI()
         {
             base.BuildUI();
 
             if (BlockNodeModel.IsColorable())
             {
-                m_ColorLine = new VisualElement { name = NodeTitlePart.colorLineName };
-                m_ColorLine.AddToClassList(ussClassName.WithUssElement(NodeTitlePart.colorLineName));
+                m_ColorLine = new VisualElement { name = k_ColorLineElementName };
+                m_ColorLine.AddToClassList(ussClassName.WithUssElement("color-line"));
                 m_ColorLine.generateVisualContent = OnGenerateColorLineVisualContent;
                 hierarchy.Add(m_ColorLine);
             }
@@ -502,7 +511,7 @@ namespace Unity.GraphToolkit.Editor
 
             // Detection of block color override
             Color? patchColor = null;
-            
+
             // Connection States (Used when Collapsed)
             bool isCollapsed = ClassListContains(CollapsibleInOutNodeView.collapsedUssClassName);
             bool hasConnectedOutput = ClassListContains(CollapsibleInOutNodeView.hasConnectedOutputUssClassName);
@@ -532,7 +541,7 @@ namespace Unity.GraphToolkit.Editor
             else
             {
                 // When expanded, we look at the layout structure.
-                
+
                 // Case A: Expanded + Output Only
                 // The output container stretches to fill the block.
                 if (hasStructOutput && !hasStructInput)
@@ -546,7 +555,7 @@ namespace Unity.GraphToolkit.Editor
                     var optionsPart = this.Q(nodeOptionsContainerPartName);
                     if (optionsPart != null && optionsPart.childCount > 0)
                     {
-                        if (optionsPart.resolvedStyle.display != DisplayStyle.None && 
+                        if (optionsPart.resolvedStyle.display != DisplayStyle.None &&
                             optionsPart.resolvedStyle.visibility != Visibility.Hidden)
                         {
                             patchColor = m_OptionsBkgndColor;

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditorInternal;
@@ -16,41 +15,10 @@ namespace UnityEditor.UIElements
     /// A LayerField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerField|UXML element LayerField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerField.png")]
+    [UxmlElement]
     public partial class LayerField : PopupField<int>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : PopupField<int>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                PopupField<int>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(layer), "value"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttribute("value")]
-            [SerializeField, LayerDecorator] int layer;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layer_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new LayerField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(layer_UxmlAttributeFlags))
-                {
-                    var e = (LayerField)obj;
-                    e.SetValueWithoutNotify(layer);
-                }
-            }
-        }
-
+        [UxmlAttribute("value"), LayerDecorator]
         internal int layer { get => value; set => this.value = value; }
 
         internal override string GetValueToDisplay()

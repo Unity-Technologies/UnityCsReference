@@ -13,22 +13,10 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a text field for entering a Category.
     /// </summary>
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class CategoryDropdownField : BaseField<string>
+    internal partial class CategoryDropdownField : BaseField<string>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<string>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new CategoryDropdownField();
-        }
-
         public class WillDisplayContentEvent : EventBase<WillDisplayContentEvent>
         {
             public CategoryDropdownField field { get; set; }

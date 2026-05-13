@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -15,63 +14,37 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/DropdownField.png")]
     public partial class DropdownField : PopupField<string>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
+        // The index field is responsible for applying validation to the value entered by users.
+        // In order to ensure that users are able to enter the complete value without interruption,
+        // we need to introduce a delay before the validation is performed.
+        [Delayed]
+        [UxmlAttribute("index"), UxmlAttributeBindingPath(nameof(index))]
+        internal int indexUXML
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
+            get => index;
+            set => index = value;
+        }
+
+        [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices))]
+        internal List<string> choicesUXML
+        {
+            get => choices;
+            set
             {
-                PopupField<string>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(index), "index"),
-                    new (nameof(choices), "choices"),
-                    new (nameof(valueOverride), "value"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            // The index field is responsible for applying validation to the value entered by users.
-            // In order to ensure that users are able to enter the complete value without interruption,
-            // we need to introduce a delay before the validation is performed.
-            [Delayed, SerializeField] int index;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags index_UxmlAttributeFlags;
-            [SerializeField] List<string> choices;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choices_UxmlAttributeFlags;
-
-            // This field serves the purpose of overriding the value field so we can conceal it from the UI Builder.
-            // Displaying it could result in conflicts when trying to control the dropdown value using both the value and index fields.
-            [UxmlAttribute("value")]
-            [HideInInspector, SerializeField] int valueOverride;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueOverride_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new DropdownField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (DropdownField)obj;
-
-                // Assigning null value throws.
-                if (ShouldWriteAttributeValue(choices_UxmlAttributeFlags) && choices != null)
-                {
-                    // We must copy
-                    e.choices = new List<string>(choices);
-                }
+                choices = value;
 
                 // Index needs to be set after choices to initialize the field value
                 // Dont set the index if its default or it will revert the change that may have come from `value`.
-                if (ShouldWriteAttributeValue(index_UxmlAttributeFlags) && index != DropdownField.kPopupFieldDefaultIndex)
-                    e.index = index;
-
-                if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
-                    e.valueOverride = valueOverride;
+                if (index != DropdownField.kPopupFieldDefaultIndex)
+                {
+                    SetIndexWithoutNotify(index);
+                }
             }
         }
 
-        // Placeholder required to prevent issues syncing UxmlSerializedData.
+        // This field serves the purpose of overriding the value field so we can conceal it from the UI Builder.
+        // Displaying it could result in conflicts when trying to control the dropdown value using both the value and index fields.
+        [UxmlAttribute("value"), HideInInspector]
         internal int valueOverride { get; set; }
 
         /// <summary>

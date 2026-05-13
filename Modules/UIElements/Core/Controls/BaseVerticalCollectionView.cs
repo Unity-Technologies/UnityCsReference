@@ -93,6 +93,7 @@ namespace UnityEngine.UIElements
     /// You can use <c>id</c> to maintain distinct references, and use the <c>index</c> to handle rendering
     /// and layout tasks based on the visible order of items.
     /// </remarks>
+    [UxmlElement]
     public abstract partial class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
         internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
@@ -107,70 +108,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId showAlternatingRowBackgroundsProperty = nameof(showAlternatingRowBackgrounds);
         internal static readonly BindingId virtualizationMethodProperty = nameof(virtualizationMethod);
         internal static readonly BindingId fixedItemHeightProperty = nameof(fixedItemHeight);
-
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(fixedItemHeight), "fixed-item-height", null, "itemHeight", "item-height"),
-                    new (nameof(virtualizationMethod), "virtualization-method"),
-                    new (nameof(showBorder), "show-border"),
-                    new (nameof(selectionType), "selection-type"),
-                    new (nameof(showAlternatingRowBackgrounds), "show-alternating-row-backgrounds"),
-                    new (nameof(reorderable), "reorderable"),
-                    new (nameof(horizontalScrollingEnabled), "horizontal-scrolling"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttribute(obsoleteNames = new[] { "itemHeight", "item-height" })]
-            [SerializeField, FixedItemHeightDecorator] float fixedItemHeight;
-            [SerializeField] CollectionVirtualizationMethod virtualizationMethod;
-            [SerializeField] SelectionType selectionType;
-            [SerializeField] AlternatingRowBackground showAlternatingRowBackgrounds;
-            [SerializeField] bool showBorder;
-            [SerializeField] bool reorderable;
-            [UxmlAttribute("horizontal-scrolling")]
-            [SerializeField] bool horizontalScrollingEnabled;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags virtualizationMethod_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBorder_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectionType_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlternatingRowBackgrounds_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollingEnabled_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BaseVerticalCollectionView)obj;
-
-                // Clear the old controller so that the list refreshes
-                e.SetViewController(null);
-
-                if (ShouldWriteAttributeValue(fixedItemHeight_UxmlAttributeFlags))
-                    e.fixedItemHeight = fixedItemHeight;
-                if (ShouldWriteAttributeValue(virtualizationMethod_UxmlAttributeFlags))
-                    e.virtualizationMethod = virtualizationMethod;
-                if (ShouldWriteAttributeValue(showBorder_UxmlAttributeFlags))
-                    e.showBorder = showBorder;
-                if (ShouldWriteAttributeValue(selectionType_UxmlAttributeFlags))
-                    e.selectionType = selectionType;
-                if (ShouldWriteAttributeValue(showAlternatingRowBackgrounds_UxmlAttributeFlags))
-                    e.showAlternatingRowBackgrounds = showAlternatingRowBackgrounds;
-                if (ShouldWriteAttributeValue(reorderable_UxmlAttributeFlags))
-                    e.reorderable = reorderable;
-                if (ShouldWriteAttributeValue(horizontalScrollingEnabled_UxmlAttributeFlags))
-                    e.horizontalScrollingEnabled = horizontalScrollingEnabled;
-            }
-        }
-
         internal const string internalBindingKey = "__unity-collection-view-internal-binding";
         static readonly ProfilerMarker k_RefreshMarker = new (ProfilerCategory.UIToolkit, "BaseVerticalCollectionView.RefreshItems");
         static readonly ProfilerMarker k_RebuildMarker = new (ProfilerCategory.UIToolkit, "BaseVerticalCollectionView.Rebuild");
@@ -402,40 +339,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public override VisualElement contentContainer => null;
 
-        private SelectionType m_SelectionType;
-
-        /// <summary>
-        /// Controls the selection type.
-        /// </summary>
-        /// <remarks>
-        /// The default value is <see cref="SelectionType.Single"/>.
-        /// When you set the collection view to disable selections, any current selection is cleared.
-        /// </remarks>
-        [CreateProperty]
-        public SelectionType selectionType
-        {
-            get { return m_SelectionType; }
-            set
-            {
-                var previous = m_SelectionType;
-                m_SelectionType = value;
-                if (m_SelectionType == SelectionType.None)
-                {
-                    ClearSelection();
-                }
-                else if (m_SelectionType == SelectionType.Single)
-                {
-                    if (m_Selection.indexCount > 1)
-                    {
-                        SetSelection(m_Selection.FirstIndex());
-                    }
-                }
-
-                if (previous != m_SelectionType)
-                    NotifyPropertyChanged(selectionTypeProperty);
-            }
-        }
-
         /// <summary>
         /// Returns the selected item from the data source. If multiple items are selected, returns the first selected item.
         /// </summary>
@@ -540,6 +443,71 @@ namespace UnityEngine.UIElements
             return height < 0 ? fixedItemHeight : height;
         }
 
+        internal static readonly string k_InvalidTemplateError = "Template Not Found";
+        // If we ever change the default item height, we should consider changing the default max height of the view when
+        // used in property fields. The rule to look for is ".unity-property-field > .unity-collection-view"
+        internal const int s_DefaultItemHeight = 22;
+        internal float m_FixedItemHeight = s_DefaultItemHeight;
+        internal bool m_ItemHeightIsInline;
+
+        /// <summary>
+        /// The height of a single item in the list, in pixels.
+        /// </summary>
+        /// <remarks>
+        /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
+        /// If set when <see cref="virtualizationMethod"/> is <c>DynamicHeight</c>, it serves as the default height to help calculate the
+        /// number of items necessary and the scrollable area, before items are laid out. It should be set to the minimum expected height of an item.
+        /// </remarks>
+        [CreateProperty]
+        [FixedItemHeightDecorator]
+        [UxmlAttribute(obsoleteNames = new[]{ "itemHeight", "item-height" })]
+        public float fixedItemHeight
+        {
+            get => m_FixedItemHeight;
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(fixedItemHeight), "Value needs to be positive for virtualization.");
+
+                m_ItemHeightIsInline = true;
+                if (Math.Abs(m_FixedItemHeight - value) > float.Epsilon)
+                {
+                    m_FixedItemHeight = value;
+                    RefreshItems();
+                    NotifyPropertyChanged(fixedItemHeightProperty);
+                }
+            }
+        }
+
+        CollectionVirtualizationMethod m_VirtualizationMethod;
+
+        /// <summary>
+        /// The virtualization method to use for this collection when a scroll bar is visible.
+        /// Takes a value from the <see cref="CollectionVirtualizationMethod"/> enum.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <c>FixedHeight</c>.
+        /// When using fixed height, specify the <see cref="fixedItemHeight"/> property.
+        /// Fixed height is more performant but offers less flexibility on content.
+        /// When using <c>DynamicHeight</c>, the collection will wait for the actual height to be computed.
+        /// Dynamic height is more flexible but less performant.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public CollectionVirtualizationMethod virtualizationMethod
+        {
+            get => m_VirtualizationMethod;
+            set
+            {
+                if (m_VirtualizationMethod == value)
+                    return;
+                m_VirtualizationMethod = value;
+                CreateVirtualizationController();
+                Rebuild();
+                NotifyPropertyChanged(virtualizationMethodProperty);
+            }
+        }
+
         /// <summary>
         /// Enable this property to display a border around the collection view.
         /// </summary>
@@ -547,6 +515,7 @@ namespace UnityEngine.UIElements
         /// If set to true, a border appears around the ScrollView that the collection view uses internally.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public bool showBorder
         {
             get => m_ScrollView.ClassListContains(borderUssClassNameUnique);
@@ -560,6 +529,64 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private SelectionType m_SelectionType;
+
+        /// <summary>
+        /// Controls the selection type.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <see cref="SelectionType.Single"/>.
+        /// When you set the collection view to disable selections, any current selection is cleared.
+        /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute]
+        public SelectionType selectionType
+        {
+            get { return m_SelectionType; }
+            set
+            {
+                var previous = m_SelectionType;
+                m_SelectionType = value;
+                if (m_SelectionType == SelectionType.None)
+                {
+                    ClearSelection();
+                }
+                else if (m_SelectionType == SelectionType.Single)
+                {
+                    if (m_Selection.indexCount > 1)
+                    {
+                        SetSelection(m_Selection.FirstIndex());
+                    }
+                }
+
+                if (previous != m_SelectionType)
+                    NotifyPropertyChanged(selectionTypeProperty);
+            }
+        }
+
+        [SerializeField, DontCreateProperty]
+        private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
+
+        /// <summary>
+        /// This property controls whether the background colors of collection view rows alternate.
+        /// Takes a value from the <see cref="AlternatingRowBackground"/> enum.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public AlternatingRowBackground showAlternatingRowBackgrounds
+        {
+            get { return m_ShowAlternatingRowBackgrounds; }
+            set
+            {
+                if (m_ShowAlternatingRowBackgrounds == value)
+                    return;
+
+                m_ShowAlternatingRowBackgrounds = value;
+                RefreshItems();
+                NotifyPropertyChanged(showAlternatingRowBackgroundsProperty);
+            }
+        }
+
         /// <summary>
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
@@ -569,6 +596,7 @@ namespace UnityEngine.UIElements
         /// Set this value to <c>true</c> to allow the user to reorder items in the list.
         /// </remarks>
         [CreateProperty]
+        [UxmlAttribute]
         public bool reorderable
         {
             get => m_Dragger?.dragAndDropController?.enableReordering ?? false;
@@ -600,6 +628,7 @@ namespace UnityEngine.UIElements
         /// does not fit in the visible area.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute("horizontal-scrolling")]
         public bool horizontalScrollingEnabled
         {
             get => m_HorizontalScrollingEnabled;
@@ -615,62 +644,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField, DontCreateProperty]
-        private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
-
-        /// <summary>
-        /// This property controls whether the background colors of collection view rows alternate.
-        /// Takes a value from the <see cref="AlternatingRowBackground"/> enum.
-        /// </summary>
-        [CreateProperty]
-        public AlternatingRowBackground showAlternatingRowBackgrounds
-        {
-            get { return m_ShowAlternatingRowBackgrounds; }
-            set
-            {
-                if (m_ShowAlternatingRowBackgrounds == value)
-                    return;
-
-                m_ShowAlternatingRowBackgrounds = value;
-                RefreshItems();
-                NotifyPropertyChanged(showAlternatingRowBackgroundsProperty);
-            }
-        }
-
-        internal static readonly string k_InvalidTemplateError = "Template Not Found";
-        // If we ever change the default item height, we should consider changing the default max height of the view when
-        // used in property fields. The rule to look for is ".unity-property-field > .unity-collection-view"
-        internal const int s_DefaultItemHeight = 22;
-        internal float m_FixedItemHeight = s_DefaultItemHeight;
-        internal bool m_ItemHeightIsInline;
-        CollectionVirtualizationMethod m_VirtualizationMethod;
-
-        /// <summary>
-        /// The virtualization method to use for this collection when a scroll bar is visible.
-        /// Takes a value from the <see cref="CollectionVirtualizationMethod"/> enum.
-        /// </summary>
-        /// <remarks>
-        /// The default value is <c>FixedHeight</c>.
-        /// When using fixed height, specify the <see cref="fixedItemHeight"/> property.
-        /// Fixed height is more performant but offers less flexibility on content.
-        /// When using <c>DynamicHeight</c>, the collection will wait for the actual height to be computed.
-        /// Dynamic height is more flexible but less performant.
-        /// </remarks>
-        [CreateProperty]
-        public CollectionVirtualizationMethod virtualizationMethod
-        {
-            get => m_VirtualizationMethod;
-            set
-            {
-                if (m_VirtualizationMethod == value)
-                    return;
-                m_VirtualizationMethod = value;
-                CreateVirtualizationController();
-                Rebuild();
-                NotifyPropertyChanged(virtualizationMethodProperty);
-            }
-        }
-
         /// <summary>
         /// Obsolete. Use <see cref="BaseVerticalCollectionView.fixedItemHeight"/> instead.
         /// </summary>
@@ -682,33 +655,6 @@ namespace UnityEngine.UIElements
         {
             get => (int)fixedItemHeight;
             set => fixedItemHeight = value;
-        }
-
-        /// <summary>
-        /// The height of a single item in the list, in pixels.
-        /// </summary>
-        /// <remarks>
-        /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
-        /// If set when <see cref="virtualizationMethod"/> is <c>DynamicHeight</c>, it serves as the default height to help calculate the
-        /// number of items necessary and the scrollable area, before items are laid out. It should be set to the minimum expected height of an item.
-        /// </remarks>
-        [CreateProperty]
-        public float fixedItemHeight
-        {
-            get => m_FixedItemHeight;
-            set
-            {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(fixedItemHeight), "Value needs to be positive for virtualization.");
-
-                m_ItemHeightIsInline = true;
-                if (Math.Abs(m_FixedItemHeight - value) > float.Epsilon)
-                {
-                    m_FixedItemHeight = value;
-                    RefreshItems();
-                    NotifyPropertyChanged(fixedItemHeightProperty);
-                }
-            }
         }
 
         readonly ScrollView m_ScrollView;

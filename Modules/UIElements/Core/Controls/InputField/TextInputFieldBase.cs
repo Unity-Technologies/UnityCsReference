@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class used for all text-based fields.
     /// </summary>
+    [UxmlElement]
     public abstract partial class TextInputBaseField<TValueType> : BaseField<TValueType>, IDelayedField
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
@@ -43,165 +44,69 @@ namespace UnityEngine.UIElements
         internal const int kMaxLengthNone = -1;
         internal const char kMaskCharDefault = '*';
 
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
+        #region Properties for UXML Attributes
+
+        /// <summary>
+        /// Maximum number of characters for the field.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute(obsoleteNames = new[] { "maxLength" }), Delayed]
+        public int maxLength
         {
-            public new static void Register()
+            get => textEdition.maxLength;
+            set
             {
-                BaseField<TValueType>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(maxLength), "max-length", null, "maxLength"),
-                    new (nameof(isPasswordField), "password"),
-                    new (nameof(maskChar), "mask-character", null, "maskCharacter"),
-                    new (nameof(placeholderText), "placeholder-text"),
-                    new (nameof(hidePlaceholderOnFocus), "hide-placeholder-on-focus"),
-                    new (nameof(isReadOnly), "readonly"),
-                    new (nameof(isDelayed), "is-delayed"),
-                    new (nameof(verticalScrollerVisibility), "vertical-scroller-visibility"),
-                    new (nameof(selectAllOnMouseUp), "select-all-on-mouse-up"),
-                    new (nameof(selectAllOnFocus), "select-all-on-focus"),
-                    new (nameof(doubleClickSelectsWord), "select-word-by-double-click"),
-                    new (nameof(tripleClickSelectsLine), "select-line-by-triple-click"),
-                    new (nameof(emojiFallbackSupport), "emoji-fallback-support"),
-                    new (nameof(hideSoftKeyboard), "hide-soft-keyboard"),
-                    new (nameof(hideMobileInput), "hide-mobile-input"),
-                    new (nameof(keyboardType), "keyboard-type"),
-                    new (nameof(autoCorrection), "auto-correction"),
-                }, false);
-            }
+                if (textEdition.maxLength == value)
+                    return;
+                textEdition.maxLength = value;
+                textEdition.UpdateText(ValueToString(this.value));
 
-            #pragma warning disable 649
-            [SerializeField] string placeholderText;
-            [UxmlAttribute(obsoleteNames = new[] { "maxLength" }), Delayed]
-            [SerializeField] int maxLength;
-            [SerializeField] TouchScreenKeyboardType keyboardType;
-            [SerializeField] private protected ScrollerVisibility verticalScrollerVisibility;
-            [UxmlAttribute("password")]
-            [SerializeField] bool isPasswordField;
-            [UxmlAttribute("mask-character", obsoleteNames = new[] { "maskCharacter" })]
-            [SerializeField] char maskChar;
-            [SerializeField] bool hidePlaceholderOnFocus;
-            [UxmlAttribute("readonly")]
-            [SerializeField] bool isReadOnly;
-            [SerializeField] bool isDelayed;
-            [SerializeField] bool selectAllOnMouseUp;
-            [SerializeField] bool selectAllOnFocus;
-            [UxmlAttribute("select-word-by-double-click")]
-            [SerializeField] bool doubleClickSelectsWord;
-            [UxmlAttribute("select-line-by-triple-click")]
-            [SerializeField] bool tripleClickSelectsLine;
-            [SerializeField] bool emojiFallbackSupport;
-            [SerializeField] bool hideSoftKeyboard;
-            [SerializeField] bool hideMobileInput;
-            [SerializeField] bool autoCorrection;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isPasswordField_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maskChar_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hidePlaceholderOnFocus_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isReadOnly_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isDelayed_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] private protected UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnMouseUp_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnFocus_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideSoftKeyboard_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideMobileInput_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags keyboardType_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoCorrection_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => throw new MissingMethodException();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (TextInputBaseField<TValueType>)obj;
-                if (ShouldWriteAttributeValue(maxLength_UxmlAttributeFlags))
-                    e.maxLength = maxLength;
-                if (ShouldWriteAttributeValue(isPasswordField_UxmlAttributeFlags))
-                    e.isPasswordField = isPasswordField;
-                if (ShouldWriteAttributeValue(maskChar_UxmlAttributeFlags))
-                    e.maskChar = maskChar;
-                if (ShouldWriteAttributeValue(placeholderText_UxmlAttributeFlags))
-                    e.placeholderText = placeholderText;
-                if (ShouldWriteAttributeValue(hidePlaceholderOnFocus_UxmlAttributeFlags))
-                    e.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
-                if (ShouldWriteAttributeValue(isReadOnly_UxmlAttributeFlags))
-                    e.isReadOnly = isReadOnly;
-                if (ShouldWriteAttributeValue(isDelayed_UxmlAttributeFlags))
-                    e.isDelayed = isDelayed;
-                if (ShouldWriteAttributeValue(verticalScrollerVisibility_UxmlAttributeFlags))
-                    e.verticalScrollerVisibility = verticalScrollerVisibility;
-                if (ShouldWriteAttributeValue(selectAllOnMouseUp_UxmlAttributeFlags))
-                    e.textSelection.selectAllOnMouseUp = selectAllOnMouseUp;
-                if (ShouldWriteAttributeValue(selectAllOnFocus_UxmlAttributeFlags))
-                    e.textSelection.selectAllOnFocus = selectAllOnFocus;
-                if (ShouldWriteAttributeValue(doubleClickSelectsWord_UxmlAttributeFlags))
-                    e.doubleClickSelectsWord = doubleClickSelectsWord;
-                if (ShouldWriteAttributeValue(tripleClickSelectsLine_UxmlAttributeFlags))
-                    e.tripleClickSelectsLine = tripleClickSelectsLine;
-                if (ShouldWriteAttributeValue(emojiFallbackSupport_UxmlAttributeFlags))
-                    e.emojiFallbackSupport = emojiFallbackSupport;
-                if (ShouldWriteAttributeValue(hideSoftKeyboard_UxmlAttributeFlags))
-                    e.hideSoftKeyboard = hideSoftKeyboard;
-                if (ShouldWriteAttributeValue(hideMobileInput_UxmlAttributeFlags))
-                    e.hideMobileInput = hideMobileInput;
-                if (ShouldWriteAttributeValue(keyboardType_UxmlAttributeFlags))
-                    e.keyboardType = keyboardType;
-                if (ShouldWriteAttributeValue(autoCorrection_UxmlAttributeFlags))
-                    e.autoCorrection = autoCorrection;
+                NotifyPropertyChanged(maxLengthProperty);
             }
         }
 
-        #region Properties for UI Builder
-        // The UI Builder needs the property to be named exactly the same as the UXML attribute in order for
-        // serialization to work properly.
-
+        // Password field (indirectly lossy behaviour when activated via multiline)
         /// <summary>
-        /// DO NOT USE password, use isPassword instead. This property was added to rename the property in the UI Builder.
+        /// Returns true if the field is used to edit a password.
         /// </summary>
-        internal bool password
+        [CreateProperty]
+        [UxmlAttribute("password")]
+        public bool isPasswordField
         {
             get => textEdition.isPassword;
-            set => textEdition.isPassword = value;
+            set
+            {
+                if (textEdition.isPassword == value)
+                    return;
+
+                textEdition.isPassword = value;
+                m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
+                NotifyPropertyChanged(isPasswordFieldProperty);
+            }
         }
 
         /// <summary>
-        /// DO NOT USE selectWordByDoubleClick, use textSelection.doubleClickSelectsWord instead. This property was added to rename the property in the UI Builder.
+        /// The character used for masking in a password field.
         /// </summary>
-        internal bool selectWordByDoubleClick
+        [CreateProperty]
+        [UxmlAttribute("mask-character", obsoleteNames = new[] { "maskCharacter" })]
+        public char maskChar
         {
-            get => textSelection.doubleClickSelectsWord;
-            set => textSelection.doubleClickSelectsWord = value;
-        }
-
-        /// <summary>
-        /// DO NOT USE selectLineByTripleClick, use textSelection.tripleClickSelectsLine instead. This property was added to rename the property in the UI Builder.
-        /// </summary>
-        internal bool selectLineByTripleClick
-        {
-            get => textSelection.tripleClickSelectsLine;
-            set => textSelection.tripleClickSelectsLine = value;
-        }
-
-        /// <summary>
-        /// DO NOT USE readOnly, use isReadOnly instead. This property was added to rename the property in the UI Builder.
-        /// </summary>
-        internal bool readOnly
-        {
-            get => isReadOnly;
-            set => isReadOnly = value;
+            get => textEdition.maskChar;
+            set
+            {
+                if (textEdition.maskChar == value)
+                    return;
+                textEdition.maskChar = value;
+                NotifyPropertyChanged(maskCharProperty);
+            }
         }
 
         /// <summary>
         /// DO NOT USE placeholderText, use textEdition.placeholder instead. This property was added so it can be picked up properly by the UI Builder.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         internal string placeholderText
         {
             get => textEdition.placeholder;
@@ -218,6 +123,7 @@ namespace UnityEngine.UIElements
         /// DO NOT USE hidePlaceholderOnFocus, use textEdition.hidePlaceholderOnFocus instead. This property was added so it can be picked up properly by the UI Builder.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         internal bool hidePlaceholderOnFocus
         {
             get => textEdition.hidePlaceholderOnFocus;
@@ -226,6 +132,214 @@ namespace UnityEngine.UIElements
                 if (textEdition.hidePlaceholderOnFocus == value) return;
                 textEdition.hidePlaceholderOnFocus = value;
                 NotifyPropertyChanged(hidePlaceholderOnFocusProperty);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the field is read only.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute("readonly")]
+        public bool isReadOnly
+        {
+            get => textEdition.isReadOnly;
+            set
+            {
+                if (textEdition.isReadOnly == value)
+                    return;
+                textEdition.isReadOnly = value;
+                NotifyPropertyChanged(isReadOnlyProperty);
+            }
+        }
+
+        /// <summary>
+        /// If set to true, the value property isn't updated until either the user presses Enter or the text field loses focus.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool isDelayed
+        {
+            get => textEdition.isDelayed;
+            set
+            {
+                if (textEdition.isDelayed == value)
+                    return;
+                textEdition.isDelayed = value;
+                NotifyPropertyChanged(isDelayedProperty);
+            }
+        }
+
+        /// <summary>
+        /// Option for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public ScrollerVisibility verticalScrollerVisibility
+        {
+            get => textInputBase.verticalScrollerVisibility;
+            set
+            {
+                if (textInputBase.verticalScrollerVisibility == value)
+                    return;
+                textInputBase.SetVerticalScrollerVisibility(value);
+                NotifyPropertyChanged(verticalScrollerVisibilityProperty);
+            }
+        }
+
+        /// <summary>
+        /// Controls whether the element's content is selected when you mouse up for the first time.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool selectAllOnMouseUp
+        {
+            get => textSelection.selectAllOnMouseUp;
+            set
+            {
+                if (textSelection.selectAllOnMouseUp == value)
+                    return;
+                textSelection.selectAllOnMouseUp = value;
+                NotifyPropertyChanged(selectAllOnMouseUpProperty);
+            }
+        }
+
+        /// <summary>
+        /// Controls whether the element's content is selected upon receiving focus.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool selectAllOnFocus
+        {
+            get => textSelection.selectAllOnFocus;
+            set
+            {
+                if (textSelection.selectAllOnFocus == value)
+                    return;
+                textSelection.selectAllOnFocus = value;
+                NotifyPropertyChanged(selectAllOnFocusProperty);
+            }
+        }
+
+        /// <summary>
+        /// Controls whether double-clicking selects the word under the mouse pointer.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute("select-word-by-double-click")]
+        public bool doubleClickSelectsWord
+        {
+            get => textSelection.doubleClickSelectsWord;
+            set
+            {
+                if (textSelection.doubleClickSelectsWord == value)
+                    return;
+                textSelection.doubleClickSelectsWord = value;
+                NotifyPropertyChanged(doubleClickSelectsWordProperty);
+            }
+        }
+
+        /// <summary>
+        /// Controls whether triple clicking selects the entire line under the mouse pointer or not.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute("select-line-by-triple-click")]
+        public bool tripleClickSelectsLine
+        {
+            get => textSelection.tripleClickSelectsLine;
+            set
+            {
+                if (textSelection.tripleClickSelectsLine == value)
+                    return;
+                textSelection.tripleClickSelectsLine = value;
+                NotifyPropertyChanged(tripleClickSelectsLineProperty);
+            }
+        }
+
+        /// <summary>
+        /// Specifies the order in which the system should look for Emoji characters when rendering text.
+        /// If this setting is enabled, the global Emoji Fallback list will be searched first for characters defined as
+        /// Emoji in the Unicode 14.0 standard.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool emojiFallbackSupport
+        {
+            get => m_TextInputBase.textElement.emojiFallbackSupport;
+            set
+            {
+                if (m_TextInputBase.textElement.emojiFallbackSupport == value)
+                    return;
+
+                labelElement.emojiFallbackSupport = value;
+                m_TextInputBase.textElement.emojiFallbackSupport = value;
+                NotifyPropertyChanged(emojiFallbackSupportProperty);
+            }
+        }
+
+        /// <summary>
+        /// Prevents the OS soft keyboard from opening
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool hideSoftKeyboard
+        {
+            get => textEdition.hideSoftKeyboard;
+            set
+            {
+                if (textEdition.hideSoftKeyboard == value)
+                    return;
+                textEdition.hideSoftKeyboard = value;
+                NotifyPropertyChanged(hideSoftKeyboardProperty);
+            }
+        }
+
+        /// <summary>
+        /// Hides the mobile input field shown in the OS soft keyboard.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool hideMobileInput
+        {
+            get => textEdition.hideMobileInput;
+            set
+            {
+                if (textEdition.hideMobileInput == value)
+                    return;
+                textEdition.hideMobileInput = value;
+                NotifyPropertyChanged(hideMobileInputProperty);
+            }
+        }
+
+        /// <summary>
+        /// The type of mobile keyboard that will be used.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public TouchScreenKeyboardType keyboardType
+        {
+            get => textEdition.keyboardType;
+            set
+            {
+                if (textEdition.keyboardType == value)
+                    return;
+                textEdition.keyboardType = value;
+                NotifyPropertyChanged(keyboardTypeProperty);
+            }
+        }
+
+        /// <summary>
+        /// Determines if the touch screen keyboard auto correction is turned on or off.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public bool autoCorrection
+        {
+            get => textEdition.autoCorrection;
+            set
+            {
+                if (textEdition.autoCorrection == value)
+                    return;
+                textEdition.autoCorrection = value;
+                NotifyPropertyChanged(autoCorrectionProperty);
             }
         }
 
@@ -307,7 +421,7 @@ namespace UnityEngine.UIElements
             m_TextInputBase.textEdition.maxLength = maxLength;
             m_TextInputBase.textEdition.maskChar = maskChar;
 
-            RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
+            Callbacks.OnFieldCustomStyleResolved.Register(this);
             textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
 
             m_UpdateTextFromValue = true;
@@ -320,7 +434,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the text input visual element which presents the value in the field.
         /// </summary>
-        protected internal TextInputBase textInputBase => m_TextInputBase;
+        protected internal TextInputBase textInputBase
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_TextInputBase;
+        }
 
         /// <summary>
         /// Retrieves this Field's TextElement ITextSelection
@@ -345,160 +463,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if the field is read only.
-        /// </summary>
-        [CreateProperty]
-        public bool isReadOnly
-        {
-            get => textEdition.isReadOnly;
-            set
-            {
-                if (textEdition.isReadOnly == value)
-                    return;
-                textEdition.isReadOnly = value;
-                NotifyPropertyChanged(isReadOnlyProperty);
-            }
-        }
-
-        // Password field (indirectly lossy behaviour when activated via multiline)
-        /// <summary>
-        /// Returns true if the field is used to edit a password.
-        /// </summary>
-        [CreateProperty]
-        public bool isPasswordField
-        {
-            get => textEdition.isPassword;
-            set
-            {
-                if (textEdition.isPassword == value)
-                    return;
-
-                textEdition.isPassword = value;
-                m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
-                NotifyPropertyChanged(isPasswordFieldProperty);
-            }
-        }
-
-        /// <summary>
-        /// Determines if the touch screen keyboard auto correction is turned on or off.
-        /// </summary>
-        [CreateProperty]
-        public bool autoCorrection
-        {
-            get => textEdition.autoCorrection;
-            set
-            {
-                if (textEdition.autoCorrection == value)
-                    return;
-                textEdition.autoCorrection = value;
-                NotifyPropertyChanged(autoCorrectionProperty);
-            }
-        }
-
-        /// <summary>
-        /// Prevents the OS soft keyboard from opening
-        /// </summary>
-        [CreateProperty]
-        public bool hideSoftKeyboard
-        {
-            get => textEdition.hideSoftKeyboard;
-            set
-            {
-                if (textEdition.hideSoftKeyboard == value)
-                    return;
-                textEdition.hideSoftKeyboard = value;
-                NotifyPropertyChanged(hideSoftKeyboardProperty);
-            }
-        }
-
-        /// <summary>
-        /// Hides the mobile input field shown in the OS soft keyboard.
-        /// </summary>
-        [CreateProperty]
-        public bool hideMobileInput
-        {
-            get => textEdition.hideMobileInput;
-            set
-            {
-                if (textEdition.hideMobileInput == value)
-                    return;
-                textEdition.hideMobileInput = value;
-                NotifyPropertyChanged(hideMobileInputProperty);
-            }
-        }
-
-        /// <summary>
-        /// The type of mobile keyboard that will be used.
-        /// </summary>
-        [CreateProperty]
-        public TouchScreenKeyboardType keyboardType
-        {
-            get => textEdition.keyboardType;
-            set
-            {
-                if (textEdition.keyboardType == value)
-                    return;
-                textEdition.keyboardType = value;
-                NotifyPropertyChanged(keyboardTypeProperty);
-            }
-        }
-
-        /// <summary>
         /// The active touch keyboard being displayed.
         /// </summary>
         public TouchScreenKeyboard touchScreenKeyboard
         {
             get => textEdition.touchScreenKeyboard;
-        }
-
-        /// <summary>
-        /// Maximum number of characters for the field.
-        /// </summary>
-        [CreateProperty]
-        public int maxLength
-        {
-            get => textEdition.maxLength;
-            set
-            {
-                if (textEdition.maxLength == value)
-                    return;
-                textEdition.maxLength = value;
-                textEdition.UpdateText(ValueToString(this.value));
-
-                NotifyPropertyChanged(maxLengthProperty);
-            }
-        }
-
-        /// <summary>
-        /// If set to true, the value property isn't updated until either the user presses Enter or the text field loses focus.
-        /// </summary>
-        [CreateProperty]
-        public bool isDelayed
-        {
-            get => textEdition.isDelayed;
-            set
-            {
-                if (textEdition.isDelayed == value)
-                    return;
-                textEdition.isDelayed = value;
-                NotifyPropertyChanged(isDelayedProperty);
-            }
-        }
-
-        /// <summary>
-        /// The character used for masking in a password field.
-        /// </summary>
-        [CreateProperty]
-        public char maskChar
-        {
-            get => textEdition.maskChar;
-            set
-            {
-                if (textEdition.maskChar == value)
-                    return;
-                textEdition.maskChar = value;
-                NotifyPropertyChanged(maskCharProperty);
-            }
         }
 
         #endregion
@@ -581,70 +550,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Controls whether the element's content is selected upon receiving focus.
-        /// </summary>
-        [CreateProperty]
-        public bool selectAllOnFocus
-        {
-            get => textSelection.selectAllOnFocus;
-            set
-            {
-                if (textSelection.selectAllOnFocus == value)
-                    return;
-                textSelection.selectAllOnFocus = value;
-                NotifyPropertyChanged(selectAllOnFocusProperty);
-            }
-        }
-
-        /// <summary>
-        /// Controls whether the element's content is selected when you mouse up for the first time.
-        /// </summary>
-        [CreateProperty]
-        public bool selectAllOnMouseUp
-        {
-            get => textSelection.selectAllOnMouseUp;
-            set
-            {
-                if (textSelection.selectAllOnMouseUp == value)
-                    return;
-                textSelection.selectAllOnMouseUp = value;
-                NotifyPropertyChanged(selectAllOnMouseUpProperty);
-            }
-        }
-
-        /// <summary>
-        /// Controls whether double-clicking selects the word under the mouse pointer.
-        /// </summary>
-        [CreateProperty]
-        public bool doubleClickSelectsWord
-        {
-            get => textSelection.doubleClickSelectsWord;
-            set
-            {
-                if (textSelection.doubleClickSelectsWord == value)
-                    return;
-                textSelection.doubleClickSelectsWord = value;
-                NotifyPropertyChanged(doubleClickSelectsWordProperty);
-            }
-        }
-
-        /// <summary>
-        /// Controls whether triple clicking selects the entire line under the mouse pointer or not.
-        /// </summary>
-        [CreateProperty]
-        public bool tripleClickSelectsLine
-        {
-            get => textSelection.tripleClickSelectsLine;
-            set
-            {
-                if (textSelection.tripleClickSelectsLine == value)
-                    return;
-                textSelection.tripleClickSelectsLine = value;
-                NotifyPropertyChanged(tripleClickSelectsLineProperty);
-            }
-        }
-
-        /// <summary>
         /// Options for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
         /// </summary>
         [Obsolete("SetVerticalScrollerVisibility is deprecated. Use TextField.verticalScrollerVisibility instead.")]
@@ -661,42 +566,6 @@ namespace UnityEngine.UIElements
             get => m_TextInputBase.text;
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             protected internal set => m_TextInputBase.text = value;
-        }
-
-        /// <summary>
-        /// Specifies the order in which the system should look for Emoji characters when rendering text.
-        /// If this setting is enabled, the global Emoji Fallback list will be searched first for characters defined as
-        /// Emoji in the Unicode 14.0 standard.
-        /// </summary>
-        [CreateProperty]
-        public bool emojiFallbackSupport
-        {
-            get => m_TextInputBase.textElement.emojiFallbackSupport;
-            set
-            {
-                if (m_TextInputBase.textElement.emojiFallbackSupport == value)
-                    return;
-
-                labelElement.emojiFallbackSupport = value;
-                m_TextInputBase.textElement.emojiFallbackSupport = value;
-                NotifyPropertyChanged(emojiFallbackSupportProperty);
-            }
-        }
-
-        /// <summary>
-        /// Option for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
-        /// </summary>
-        [CreateProperty]
-        public ScrollerVisibility verticalScrollerVisibility
-        {
-            get => textInputBase.verticalScrollerVisibility;
-            set
-            {
-                if (textInputBase.verticalScrollerVisibility == value)
-                    return;
-                textInputBase.SetVerticalScrollerVisibility(value);
-                NotifyPropertyChanged(verticalScrollerVisibilityProperty);
-            }
         }
 
         /// <summary>
@@ -816,10 +685,9 @@ namespace UnityEngine.UIElements
 
         internal void OnPlaceholderChanged()
         {
+            Callbacks.OnChangeEventUpdatePlaceholderClassList.Unregister(this);
             if (!string.IsNullOrEmpty(textEdition.placeholder))
-                RegisterCallback<ChangeEvent<TValueType>>(UpdatePlaceholderClassList);
-            else
-                UnregisterCallback<ChangeEvent<TValueType>>(UpdatePlaceholderClassList);
+                Callbacks.OnChangeEventUpdatePlaceholderClassList.Register(this);
 
             UpdatePlaceholderClassList();
         }
@@ -850,13 +718,29 @@ namespace UnityEngine.UIElements
             m_TextInputBase.OnInputCustomStyleResolved(e);
         }
 
+        private static class Callbacks
+        {
+            public static readonly EventCallbackDefinition<TextInputBaseField<TValueType>> OnFieldCustomStyleResolved =
+                EventCallback.Create<CustomStyleResolvedEvent, TextInputBaseField<TValueType>>(static (e, self) =>
+                    self.OnFieldCustomStyleResolved(e));
+            public static readonly EventCallbackDefinition<TextInputBaseField<TValueType>> OnChangeEventUpdatePlaceholderClassList =
+                EventCallback.Create<ChangeEvent<TValueType>, TextInputBaseField<TValueType>>(static (e, self) =>
+                    self.UpdatePlaceholderClassList(e));
+        }
+
         /// <undoc/>
         /// <summary>
         /// This is the input text base class visual representation.
         /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         protected internal abstract class TextInputBase : VisualElement
         {
-            internal TextElement textElement { get; private set; }
+            internal TextElement textElement
+            {
+                [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+                get;
+                private set;
+            }
             internal ScrollView scrollView;
             internal VisualElement multilineContainer;
 
@@ -943,7 +827,7 @@ namespace UnityEngine.UIElements
 
                 SetSingleLine();
 
-                RegisterCallback<CustomStyleResolvedEvent>(OnInputCustomStyleResolved);
+                Callbacks.OnInputCustomStyleResolved.Register(this);
 
                 tabIndex = -1;
             }
@@ -1024,7 +908,7 @@ namespace UnityEngine.UIElements
                 AddToClassList(singleLineInputUssClassNameUnique);
                 textElement.AddToClassList(innerTextElementUssClassNameUnique);
 
-                textElement.RegisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+                Callbacks.OnTextElementGeometryChangedEvent.Register(textElement);
 
                 // Make sure we reinitialize the vertical scrollOffset but keep the horizontal scrollOffset.
                 if (scrollOffset != Vector2.zero)
@@ -1060,14 +944,14 @@ namespace UnityEngine.UIElements
                     scrollView.AddToClassList(innerScrollviewUssClassNameUnique);
                     scrollView.contentViewport.AddToClassList(innerViewportUssClassNameUnique);
                     scrollView.contentContainer.AddToClassList(innerContentContainerUssClassNameUnique);
-                    scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
+                    Callbacks.OnScrollViewGeometryChangedEvent.Register(scrollView.contentContainer);
 
                     // The ScrollView's slider can send ChangeEvent<float>. This makes sure these do not leak.
-                    scrollView.verticalScroller.slider.RegisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
+                    Callbacks.OnScrollViewSliderValueChangedMakeSureScrollViewDoesNotLeakEvents.Register(scrollView.verticalScroller.slider);
                     // We want to make sure the TextElement doesn't loose focus when users are using the slider.
                     scrollView.verticalScroller.slider.focusable = false;
 
-                    scrollView.horizontalScroller.slider.RegisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
+                    Callbacks.OnScrollViewSliderValueChangedMakeSureScrollViewDoesNotLeakEvents.Register(scrollView.horizontalScroller.slider);
                     scrollView.horizontalScroller.slider.focusable = false;
 
                     AddToClassList(multilineInputWithScrollViewUssClassNameUnique);
@@ -1075,7 +959,7 @@ namespace UnityEngine.UIElements
                 }
                 else if (multilineContainer == null)
                 {
-                    textElement.RegisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+                    Callbacks.OnTextElementGeometryChangedEvent.Register(textElement);
                     multilineContainer = new VisualElement().WithClassList(multilineContainerClassName);
 
                     multilineContainer.Add(textElement);
@@ -1274,7 +1158,7 @@ namespace UnityEngine.UIElements
                 RemoveFromClassList(singleLineInputUssClassNameUnique);
                 textElement.RemoveFromClassList(innerTextElementUssClassNameUnique);
                 textElement.RemoveFromHierarchy();
-                textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+                Callbacks.OnTextElementGeometryChangedEvent.Unregister(textElement);
             }
 
             void RemoveMultilineComponents()
@@ -1282,9 +1166,9 @@ namespace UnityEngine.UIElements
                 if (scrollView != null)
                 {
                     scrollView.RemoveFromHierarchy();
-                    scrollView.contentContainer.UnregisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
-                    scrollView.verticalScroller.slider.UnregisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
-                    scrollView.horizontalScroller.slider.UnregisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
+                    Callbacks.OnScrollViewSliderValueChangedMakeSureScrollViewDoesNotLeakEvents.Unregister(scrollView.horizontalScroller.slider);
+                    Callbacks.OnScrollViewSliderValueChangedMakeSureScrollViewDoesNotLeakEvents.Unregister(scrollView.verticalScroller.slider);
+                    Callbacks.OnScrollViewGeometryChangedEvent.Unregister(scrollView.contentContainer);
                     scrollView = null;
 
                     textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassNameUnique);
@@ -1301,7 +1185,7 @@ namespace UnityEngine.UIElements
                     textElement.style.translate = Vector3.zero;
 
                     multilineContainer.RemoveFromHierarchy();
-                    textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+                    Callbacks.OnTextElementGeometryChangedEvent.Unregister(textElement);
                     multilineContainer = null;
 
                     RemoveFromClassList(multilineInputUssClassNameUnique);
@@ -1322,6 +1206,31 @@ namespace UnityEngine.UIElements
                     return true;
                 }
                 return false;
+            }
+
+            private static class Callbacks
+            {
+                // Use with ?. syntax to avoid possible exceptions on events during DetachFromPanel
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                private static TextInputBase GetTextInputBase(VisualElement child) =>
+                    child.GetFirstAncestorOfType<TextInputBase>();
+
+                public static readonly EventCallbackDefinition<TextInputBase> OnInputCustomStyleResolved =
+                    EventCallback.Create<CustomStyleResolvedEvent, TextInputBase>(static (e, self) =>
+                        self.OnInputCustomStyleResolved(e));
+
+                public static readonly EventCallbackDefinition<TextElement> OnTextElementGeometryChangedEvent =
+                    EventCallback.Create<GeometryChangedEvent, TextElement>(static (e, textElement) =>
+                        GetTextInputBase(textElement)?.TextElementOnGeometryChangedEvent(e));
+
+                public static readonly EventCallbackDefinition<VisualElement> OnScrollViewGeometryChangedEvent =
+                        EventCallback.Create<GeometryChangedEvent, VisualElement>(static (e, scrollView) =>
+                            GetTextInputBase(scrollView)?.ScrollViewOnGeometryChangedEvent(e));
+
+                public static readonly EventCallbackDefinition<Slider>
+                    OnScrollViewSliderValueChangedMakeSureScrollViewDoesNotLeakEvents =
+                        EventCallback.Create<ChangeEvent<float>, Slider>(static (e, slider) =>
+                            GetTextInputBase(slider)?.MakeSureScrollViewDoesNotLeakEvents(e));
             }
 
             #region Obsolete

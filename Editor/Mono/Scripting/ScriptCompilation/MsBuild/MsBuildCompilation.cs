@@ -48,7 +48,8 @@ class MsBuildCompilation
         if (createInitCsprojs)
             ProjectGenerator.Instance.GenerateUnityProjectIfMissing(Path.Combine("Assets", "Runtime", "Runtime.csproj"));
 
-        UnityEditorMSBuildPropsTargetsGeneration.UpdateGeneratedMSBuildFileIfNeeded(EditorUserBuildSettings.activeBuildTarget, compilationOptions);
+        // Only update essential props on initialization; deferrable props will be updated during restore
+        UnityEditorMSBuildPropsTargetsGeneration.UpdateEssentialPropsOnly(EditorUserBuildSettings.activeBuildTarget);
     }
 
     private void EnsureCompilerClientInitialized()
@@ -130,7 +131,8 @@ class MsBuildCompilation
 
             Console.WriteLine($"Beginning build. Restoring: {_shouldRestore}");
 
-            UnityEditorMSBuildPropsTargetsGeneration.UpdateGeneratedMSBuildFileIfNeeded(buildTarget, compilationOptions);
+            // Update deferrable props in parallel before build (defines, references, plugins, search paths)
+            UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, compilationOptions);
 
             var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
             var disableNugetRestore = Application.HasARGV("disable-nuget-restore");

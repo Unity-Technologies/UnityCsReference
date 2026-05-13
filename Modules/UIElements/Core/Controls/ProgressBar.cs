@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class for the ProgressBar.
     /// </summary>
+    [UxmlElement]
     public abstract partial class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
     {
         internal static readonly BindingId titleProperty = nameof(title);
@@ -56,48 +57,6 @@ namespace UnityEngine.UIElements
         public static readonly string backgroundUssClassName = ussClassName + "__background";
         internal static readonly UniqueStyleString backgroundUssClassNameUnique = new(backgroundUssClassName);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(lowValue), "low-value"),
-                    new(nameof(highValue), "high-value"),
-                    new(nameof(value), "value"),
-                    new(nameof(title), "title"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] float lowValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
-            [SerializeField] float highValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
-            [SerializeField] float value;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-            [SerializeField] string title;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (AbstractProgressBar)obj;
-                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
-                    e.lowValue = lowValue;
-                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
-                    e.highValue = highValue;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.value = value;
-                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
-                    e.title = title;
-            }
-        }
-
         readonly VisualElement m_Background;
         readonly VisualElement m_Progress;
         readonly Label m_Title;
@@ -105,26 +64,10 @@ namespace UnityEngine.UIElements
         float m_HighValue = 100f;
 
         /// <summary>
-        /// Sets the title of the ProgressBar that displays in the center of the control.
-        /// </summary>
-        [CreateProperty]
-        public string title
-        {
-            get => m_Title.text;
-            set
-            {
-                var previous = title;
-                m_Title.text = value;
-
-                if (string.CompareOrdinal(previous, title) != 0)
-                    NotifyPropertyChanged(titleProperty);
-            }
-        }
-
-        /// <summary>
         /// Sets the minimum value of the ProgressBar.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public float lowValue
         {
             get => m_LowValue;
@@ -143,6 +86,7 @@ namespace UnityEngine.UIElements
         /// Sets the maximum value of the ProgressBar.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public float highValue
         {
             get => m_HighValue;
@@ -155,6 +99,28 @@ namespace UnityEngine.UIElements
 
                 if (!Mathf.Approximately(previous, highValue))
                     NotifyPropertyChanged(highValueProperty);
+            }
+        }
+
+        // We can not have a UxmlAttribute on a virtual property so need to do this. 
+        [UxmlAttribute("value"), UxmlAttributeBindingPath("value")]
+        internal float valueOverride { get => value; set => SetValueWithoutNotify(value); }
+
+        /// <summary>
+        /// Sets the title of the ProgressBar that displays in the center of the control.
+        /// </summary>
+        [CreateProperty]
+        [UxmlAttribute]
+        public string title
+        {
+            get => m_Title.text;
+            set
+            {
+                var previous = title;
+                m_Title.text = value;
+
+                if (string.CompareOrdinal(previous, title) != 0)
+                    NotifyPropertyChanged(titleProperty);
             }
         }
 
@@ -322,10 +288,5 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/ProgressBar.png")]
     public partial class ProgressBar : AbstractProgressBar
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : AbstractProgressBar.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ProgressBar();
-        }
     }
 }

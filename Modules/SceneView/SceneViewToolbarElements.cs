@@ -317,7 +317,7 @@ namespace UnityEditor.Toolbars
     {
         const int k_MaxHiddenObjectCount = 999;
         static readonly string k_MaxHiddenObjectCountString = $"{k_MaxHiddenObjectCount}+";
-        
+
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
 
@@ -327,7 +327,7 @@ namespace UnityEditor.Toolbars
         {
             name = "SceneViewVisibility";
             m_CountLabel = this.Q<TextElement>(className: EditorToolbar.elementLabelClassName);
-            
+
             this.RegisterValueChangedCallback(evt => sceneView.sceneVisActive = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -352,14 +352,14 @@ namespace UnityEditor.Toolbars
         {
             UpdateHiddenObjectCount();
         }
-        
+
         private void UpdateHiddenObjectCount()
         {
-            var hiddenGOCount = SceneVisibilityState.GetHiddenObjectCount();
-            
+            var hiddenGOCount = SceneVisibilityState.GetHiddenObjectCountWithoutCacheUpdate();
+
             tooltip = $"Number of hidden objects, click to toggle scene visibility\n\nCurrently hidden objects: {hiddenGOCount}";
             text = hiddenGOCount <= k_MaxHiddenObjectCount ? hiddenGOCount.ToString() : k_MaxHiddenObjectCountString;
-            
+
             if (m_CountLabel.resolvedStyle.display == DisplayStyle.Flex) // Label is only displayed in horizontal toolbars
             {
                 // Keep the toggle's width at 4 fixed widths to prevent toolbar jitter as the text's width changes
@@ -369,7 +369,7 @@ namespace UnityEditor.Toolbars
                     style.width = 45;
                 else if (hiddenGOCount < 1000)
                     style.width = 50;
-                else 
+                else
                     style.width = 55;
             }
             else
@@ -391,21 +391,21 @@ namespace UnityEditor.Toolbars
             SceneViewToolbarStyles.AddStyleSheets(this);
         }
     }
-    
+
     [EditorToolbarElement("SceneView/GridVisibility", typeof(SceneView))]
     sealed class GridVisibilityElement : VisualElement, IAccessContainerWindow
     {
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
-        
+
         EditorToolbarToggle m_GridVisToggle;
         SnapSizeField m_GridSizeField;
         GridSettingsElement m_GridSettingsDropdown;
-        
+
         public GridVisibilityElement()
         {
             name = "GridSettingsStrip";
-            
+
             m_GridVisToggle = new EditorToolbarToggle();
             m_GridVisToggle.name = "GridVisibility";
             m_GridVisToggle.tooltip = L10n.Tr("Toggle the visibility of the grid");
@@ -431,22 +431,22 @@ namespace UnityEditor.Toolbars
             m_GridSettingsDropdown = new GridSettingsElement(sceneView);
             m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap Settings");
             Add(m_GridSettingsDropdown);
-            
+
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
             SceneViewToolbarStyles.AddStyleSheets(this);
-            
+
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
-        
+
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
             sceneView.gridVisibilityChanged += SceneViewOngridVisibilityChanged;
             GridSettings.instance.sizeChanged += OnGridSizeChanged;
-            
+
             m_GridVisToggle.SetValueWithoutNotify(sceneView.sceneViewGrids.showGrid);
         }
-        
+
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             sceneView.gridVisibilityChanged -= SceneViewOngridVisibilityChanged;
@@ -456,7 +456,7 @@ namespace UnityEditor.Toolbars
         {
             m_GridSizeField.SetValueWithoutNotify(size.x, GridSettings.instance.linked);
         }
-        
+
         void OnDropdownClicked()
         {
             var w = PopupWindowBase.Show<GridVisualSettingsWindow>(this, new Vector2(300, 70));

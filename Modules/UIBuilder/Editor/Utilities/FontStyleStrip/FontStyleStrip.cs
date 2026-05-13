@@ -3,27 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class FontStyleStrip : BaseField<string>
+    [UxmlElement]
+    internal partial class FontStyleStrip : BaseField<string>
     {
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/FontStyleStrip/FontStyleStrip.uss";
         static readonly string s_UssClassName = "unity-font-style-strip";
-
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<string>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new FontStyleStrip();
-        }
 
         [Flags]
         enum FontStyleFlag

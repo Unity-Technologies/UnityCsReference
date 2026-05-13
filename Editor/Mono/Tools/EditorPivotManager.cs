@@ -86,7 +86,11 @@ namespace UnityEditor
                 get
                 {
                     if (m_ActivePivotMode == null)
-                        SetActivePivotMode(EditorToolsSettingsData.GetLastPivotModeType(stateToolOwnerType));
+                    {
+                        var lastPivotModeType = EditorToolsSettingsData.GetLastPivotModeType(stateToolOwnerType);
+                        if (lastPivotModeType != null)
+                            SetActivePivotMode(lastPivotModeType);
+                    }
 
                     return m_ActivePivotMode;
                 }
@@ -100,7 +104,11 @@ namespace UnityEditor
                 get
                 {
                     if (m_ActivePivotRotation == null)
-                        SetActivePivotRotation(EditorToolsSettingsData.GetLastPivotRotationType(stateToolOwnerType));
+                    {
+                        var lastPivotRotationType = EditorToolsSettingsData.GetLastPivotRotationType(stateToolOwnerType);
+                        if (lastPivotRotationType != null)
+                            SetActivePivotRotation(lastPivotRotationType);
+                    }
 
                     return m_ActivePivotRotation;
                 }
@@ -117,8 +125,16 @@ namespace UnityEditor
                 if (m_ActivePivotMode != null && m_ActivePivotMode.GetType() == pivotModeType)
                     return;
 
-                CheckAndThrowIfTypeIncompatible(pivotModeType, typeof(CustomPivotMode), stateToolOwnerType);
                 var toolManagerState = EditorToolManager.instance.GetOrCreateStateForType(stateToolOwnerType);
+                if (pivotModeType == null)
+                {
+                    m_ActivePivotMode = null;
+                    if (toolManagerState != null)
+                        toolManagerState.pivotMode = PivotMode.Custom;
+                    return;
+                }
+
+                CheckAndThrowIfTypeIncompatible(pivotModeType, typeof(CustomPivotMode), stateToolOwnerType);
                 if (toolManagerState != null)
                 {
                     m_ActivePivotMode = (CustomPivotMode)toolManagerState.GetSingleton(pivotModeType);
@@ -146,8 +162,16 @@ namespace UnityEditor
                 if (m_ActivePivotRotation != null && m_ActivePivotRotation.GetType() == pivotRotationType)
                     return;
 
-                CheckAndThrowIfTypeIncompatible(pivotRotationType, typeof(CustomPivotRotation), stateToolOwnerType);
                 var toolManagerState = EditorToolManager.instance.GetOrCreateStateForType(stateToolOwnerType);
+                if (pivotRotationType == null)
+                {
+                    m_ActivePivotRotation = null;
+                    if (toolManagerState != null)
+                        toolManagerState.pivotRotation = PivotRotation.Custom;
+                    return;
+                }
+
+                CheckAndThrowIfTypeIncompatible(pivotRotationType, typeof(CustomPivotRotation), stateToolOwnerType);
                 if (toolManagerState != null)
                 {
                     m_ActivePivotRotation = (CustomPivotRotation)toolManagerState.GetSingleton(pivotRotationType);
@@ -191,8 +215,8 @@ namespace UnityEditor
                 if (ownerType != stateToolOwnerType)
                     return;
 
-                FallbackActiveSettingsIfTargetsInvalid();
                 RefreshAvailablePivotSettings();
+                FallbackActiveSettingsIfTargetsInvalid();
             }
 
             void OnActiveContextChangedForType(Type ownerType)
@@ -200,8 +224,8 @@ namespace UnityEditor
                 if (ownerType != stateToolOwnerType)
                     return;
 
-                FallbackActiveSettingsIfTargetsInvalid();
                 RefreshAvailablePivotSettings();
+                FallbackActiveSettingsIfTargetsInvalid();
             }
 
             void FallbackActiveSettingsIfTargetsInvalid()
@@ -209,26 +233,36 @@ namespace UnityEditor
                 // If current active PivotMode is custom and incompatible with active tools, fallback to the last or default built-in pivot mode.
                 if (!IsBuiltInPivotMode(activePivotMode))
                 {
-                    if (!(instance.m_TypeToPivotSettingDef.TryGetValue(m_ActivePivotMode.GetType(), out var pivotModeDef) &&
-                          ShouldSettingBeAvailable(pivotModeDef)))
+                    if (m_ActivePivotMode == null ||
+                        !(instance.m_TypeToPivotSettingDef.TryGetValue(m_ActivePivotMode.GetType(), out var pivotModeDef) && ShouldSettingBeAvailable(pivotModeDef)))
                     {
                         if (m_LastBuiltInPivotMode != null)
                             SetActivePivotMode(m_LastBuiltInPivotMode.GetType());
                         else
-                            SetActivePivotMode(PivotManager.defaultPivotModeType);
+                        {
+                            if (stateToolOwnerType == typeof(SceneView))
+                                SetActivePivotMode(PivotManager.defaultPivotModeType);
+                            else
+                                SetActivePivotMode(GetFirstAvailablePivotMode());
+                        }
                     }
                 }
 
                 // If current active PivotRotation is custom and incompatible with active tools, fallback to the last or default built-in pivot rotation.
                 if (!IsBuiltInPivotRotation(activePivotRotation))
                 {
-                    if (!(instance.m_TypeToPivotSettingDef.TryGetValue(m_ActivePivotRotation.GetType(), out var pivotRotationDef) &&
-                          ShouldSettingBeAvailable(pivotRotationDef)))
+                    if (m_ActivePivotRotation == null ||
+                        !(instance.m_TypeToPivotSettingDef.TryGetValue(m_ActivePivotRotation.GetType(), out var pivotRotationDef) && ShouldSettingBeAvailable(pivotRotationDef)))
                     {
                         if (m_LastBuiltInPivotRotation != null)
                             SetActivePivotRotation(m_LastBuiltInPivotRotation.GetType());
                         else
-                            SetActivePivotRotation(PivotManager.defaultPivotRotationType);
+                        {
+                            if (stateToolOwnerType == typeof(SceneView))
+                                SetActivePivotRotation(PivotManager.defaultPivotRotationType);
+                            else
+                                SetActivePivotRotation(GetFirstAvailablePivotRotation());
+                        }
                     }
                 }
             }
@@ -237,9 +271,14 @@ namespace UnityEditor
             {
                 m_AvailablePivotSettings.Clear();
 
-                foreach (var typeSettingDefPair in instance.m_TypeToPivotSettingDef)
+                foreach (var settingDef in pivotModeDefs)
                 {
-                    var settingDef = typeSettingDefPair.Value;
+                    if (ShouldSettingBeAvailable(settingDef))
+                        m_AvailablePivotSettings.Add(settingDef);
+                }
+
+                foreach (var settingDef in pivotRotationDefs)
+                {
                     if (ShouldSettingBeAvailable(settingDef))
                         m_AvailablePivotSettings.Add(settingDef);
                 }
@@ -255,25 +294,29 @@ namespace UnityEditor
                 var activeToolType = EditorToolManager.GetActiveTool(stateToolOwnerType)?.GetType();
                 var activeContextType = EditorToolManager.GetActiveToolContext(stateToolOwnerType)?.GetType() ?? typeof(GameObjectToolContext);
 
-                // Pivots that don't target any tool and context are only available for SceneView or their type has to match the permitted built-in pivot types.
-                var isUnrestrictedPivot = settingDef.targetTool == null && settingDef.targetToolContext == null && 
-                                          (stateToolOwnerType == typeof(SceneView) || k_BuiltinPivotsAllowedInCustomOwners.Contains(settingDef.type));
-                
+                var noTargetToolOrContext = settingDef.targetTool == null && settingDef.targetToolContext == null;
                 var targetToolMatches = settingDef.targetTool == activeToolType && settingDef.targetToolContext == null;
                 var targetContextMatches = settingDef.targetToolContext == activeContextType && settingDef.targetTool == null;
                 var toolAndContextMatch = settingDef.targetTool == activeToolType && settingDef.targetToolContext == activeContextType;
 
-                return (isUnrestrictedPivot || targetToolMatches || targetContextMatches || toolAndContextMatch);
+                return (noTargetToolOrContext && stateToolOwnerType == typeof(SceneView)) || // Only SceneView supports pivots without specific targets
+                       targetToolMatches || targetContextMatches || toolAndContextMatch;
             }
 
             public Type GetNextPivotModeType()
             {
+                if (activePivotMode == null)
+                    return GetFirstAvailablePivotMode();
+
                 return GetNextAvailableSettingType(activePivotMode.GetType(), pivotModeDefs);
             }
 
             public Type GetNextPivotRotationType()
             {
-                return GetNextAvailableSettingType(activePivotRotation.GetType(), pivotRotationsDefs);
+                if (activePivotRotation == null)
+                    return GetFirstAvailablePivotRotation();
+
+                return GetNextAvailableSettingType(activePivotRotation.GetType(), pivotRotationDefs);
             }
 
             Type GetNextAvailableSettingType(Type pivotSettingType, List<PivotSettingDefinition> pivotSettings)
@@ -301,19 +344,36 @@ namespace UnityEditor
                 return pivotSettingType;
             }
 
-        }
+            public Type GetFirstAvailablePivotMode()
+            {
+                for (int i = 0; i < availablePivotSettings.Count; ++i)
+                {
+                    var availableSetting = availablePivotSettings[i];
 
-        static readonly List<Type> k_BuiltinPivotsAllowedInCustomOwners = 
-        [
-            typeof(CenterPivotMode),
-            typeof(PivotPointPivotMode),
-            typeof(GlobalPivotRotation),
-            typeof(LocalPivotRotation)
-        ];
+                    if (typeof(CustomPivotMode).IsAssignableFrom(availableSetting.type))
+                        return availableSetting.type;
+                }
+
+                return null;
+            }
+
+            public Type GetFirstAvailablePivotRotation()
+            {
+                for (int i = 0; i < availablePivotSettings.Count; ++i)
+                {
+                    var availableSetting = availablePivotSettings[i];
+
+                    if (typeof(CustomPivotRotation).IsAssignableFrom(availableSetting.type))
+                        return availableSetting.type;
+                }
+
+                return null;
+            }
+        }
 
         internal static List<PivotSettingDefinition> availablePivotSettings => instance.defaultState.availablePivotSettings;
         internal static ActiveRotationTracker activeRotationTracker => instance.defaultState.activeRotationTracker;
-        
+
         // Maps a pivot setting type to its corresponding pivot setting definition.
         Dictionary<Type, PivotSettingDefinition> m_TypeToPivotSettingDef;
 
@@ -328,7 +388,7 @@ namespace UnityEditor
             }
         }
 
-        internal static List<PivotSettingDefinition> pivotRotationsDefs
+        internal static List<PivotSettingDefinition> pivotRotationDefs
         {
             get
             {
@@ -396,8 +456,8 @@ namespace UnityEditor
             pivotModeDefs.Sort((a, b) => a.attribute.priority.CompareTo(b.attribute.priority));
             pivotModeDefs.Sort((a, b) => (!IsBuiltInPivotMode(a.type)).CompareTo(!IsBuiltInPivotMode(b.type)));
 
-            pivotRotationsDefs.Sort((a, b) => a.attribute.priority.CompareTo(b.attribute.priority));
-            pivotRotationsDefs.Sort((a, b) => (!IsBuiltInPivotRotation(a.type)).CompareTo(!IsBuiltInPivotRotation(b.type)));
+            pivotRotationDefs.Sort((a, b) => a.attribute.priority.CompareTo(b.attribute.priority));
+            pivotRotationDefs.Sort((a, b) => (!IsBuiltInPivotRotation(a.type)).CompareTo(!IsBuiltInPivotRotation(b.type)));
         }
 
         public void SyncToolsPivotStateIfNeeded()
@@ -407,7 +467,7 @@ namespace UnityEditor
                Multiple Tools SO instances can accumulate after a series of domain reloads.
                Due to how its singleton pattern is implemented, the last instance that receives an OnEnable call becomes the "current" one.
                This can cause the correct Tools pivot state to be dropped if the "domain reload survivor" Tools instance it not last one enabled.*/
-            
+
             var activePivotModeSV = GetActivePivotMode(typeof(SceneView));
             if (activePivotModeSV != null)
             {
@@ -447,7 +507,7 @@ namespace UnityEditor
                 _ = customState.activePivotRotation;
             }
         }
-        
+
         internal static bool IsActivePivotModeMatchingEnum(PivotMode pivotModeEnum, Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
@@ -492,7 +552,7 @@ namespace UnityEditor
         {
             CheckAndThrowIfTypeIncompatible(pivotSettingType, expectedBasePivotSettingType, typeof(SceneView));
         }
-        
+
         internal static void CheckAndThrowIfTypeIncompatible(Type pivotSettingType, Type expectedBasePivotSettingType, Type ownerType)
         {
             if (ownerType == null)
@@ -524,6 +584,9 @@ namespace UnityEditor
 
         internal static bool IsBuiltInPivotMode(CustomPivotMode pivotMode)
         {
+            if (pivotMode == null)
+                return false;
+
             return IsBuiltInPivotMode(pivotMode.GetType());
         }
 
@@ -534,6 +597,9 @@ namespace UnityEditor
 
         internal static bool IsBuiltInPivotRotation(CustomPivotRotation pivotRotation)
         {
+            if (pivotRotation == null)
+                return false;
+
             return IsBuiltInPivotRotation(pivotRotation.GetType());
         }
 
@@ -558,14 +624,57 @@ namespace UnityEditor
         {
             return GetAvailablePivotSettings(ownerType).IndexOf(pivotSettingDef) != -1;
         }
-        
+
+
+        internal static bool IsPivotModeAvailable(Type pivotModeType, Type ownerType)
+        {
+            for (int i = 0; i < pivotModeDefs.Count; ++i)
+            {
+                var pivotDef = pivotModeDefs[i];
+                if (pivotDef.type == pivotModeType)
+                    return IsPivotSettingAvailable(pivotDef, ownerType);
+            }
+
+            return false;
+        }
+
+        internal static Type GetFirstAvailablePivotMode(Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType);
+            if (state != null)
+                return state.GetFirstAvailablePivotMode();
+
+            return null;
+        }
+
+        internal static bool IsPivotRotationAvailable(Type pivotRotationType, Type ownerType)
+        {
+            for (int i = 0; i < pivotRotationDefs.Count; ++i)
+            {
+                var pivotDef = pivotRotationDefs[i];
+                if (pivotDef.type == pivotRotationType)
+                    return IsPivotSettingAvailable(pivotDef, ownerType);
+            }
+
+            return false;
+        }
+
+        internal static Type GetFirstAvailablePivotRotation(Type ownerType)
+        {
+            var state = instance.GetOrCreateStateForType(ownerType);
+            if (state != null)
+                return state.GetFirstAvailablePivotRotation();
+
+            return null;
+        }
+
         internal static void SetActivePivotMode(Type pivotModeType, Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 state.SetActivePivotMode(pivotModeType);
         }
-        
+
         internal static CustomPivotMode GetLastCustomPivotMode(Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
@@ -581,7 +690,7 @@ namespace UnityEditor
             if (state != null)
                 state.SetActivePivotRotation(pivotRotationType);
         }
-        
+
         internal static List<PivotSettingDefinition> GetAvailablePivotSettings(Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
@@ -599,7 +708,7 @@ namespace UnityEditor
 
             return null;
         }
-        
+
         internal static CustomPivotRotation GetActivePivotRotation(Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
@@ -608,7 +717,7 @@ namespace UnityEditor
 
             return null;
         }
-        
+
         internal static CustomPivotRotation GetLastCustomPivotRotation(Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);

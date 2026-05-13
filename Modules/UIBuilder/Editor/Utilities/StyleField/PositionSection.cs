@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -10,14 +9,9 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
-    class PositionSection : VisualElement
+    [UxmlElement]
+    partial class PositionSection : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new PositionSection();
-        }
-
         static readonly string k_FieldClassName = "unity-position-section";
 
         static readonly string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/PositionSection.uxml";

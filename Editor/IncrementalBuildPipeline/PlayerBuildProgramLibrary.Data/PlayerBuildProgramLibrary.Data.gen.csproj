@@ -25,4 +25,7 @@
     <ProjectReference Include="../BeeBuildProgramCommon.Data/BeeBuildProgramCommon.Data.gen.csproj" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <ItemGroup>
+    <Analyzer Include="/tmp/uitoolkit_gen_1zvoxi0i/Unity.UIToolkit.SourceGenerator.dll" />
+  </ItemGroup>
 </Project>

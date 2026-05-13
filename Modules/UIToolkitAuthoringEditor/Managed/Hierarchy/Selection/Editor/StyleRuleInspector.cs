@@ -3,34 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal sealed class StyleRuleInspector : VisualElement
+[UxmlElement]
+internal sealed partial class StyleRuleInspector : UIInspector
 {
     class __SelectorElement : VisualElement;
-
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        public override object CreateInstance()
-        {
-            return new StyleRuleInspector();
-        }
-    }
 
     public static readonly BindingId StyleRuleProperty = nameof(StyleRule);
     public static readonly BindingId IsReadOnlyProperty = nameof(IsReadOnly);
@@ -45,6 +28,7 @@ internal sealed class StyleRuleInspector : VisualElement
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
     internal const string VariablesFoldoutName = "style-inspector__style-section__variables";
+    internal const string AnimationFoldoutName = "style-inspector__style-section__animation";
 
     private readonly StyleInspectorElement m_StyleInspector;
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
@@ -77,12 +61,19 @@ internal sealed class StyleRuleInspector : VisualElement
                 {
                     SetSelectorElementInlineStyles();
                 }
+                else
+                {
+                    // If the element is still null, don't set the inline styles yet because the panel is still null.
+                    // Wait until AttachToPanel.
+                    m_Element = new __SelectorElement();
+                }
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule.styleSheet, m_StyleRule);
                 m_Header.Rule = m_StyleRule;
                 m_VariablesSection?.Refresh(m_StyleRule);
             }
 
+            MarkSearchDirty();
             NotifyPropertyChanged(StyleRuleProperty);
         }
     }
@@ -116,6 +107,7 @@ internal sealed class StyleRuleInspector : VisualElement
         IsReadOnly = false;
 
         m_Header = this.Q<StyleRuleHeader>(className: HeaderUssClass);
+        InitializeSearchField();
     }
 
     protected override void HandleEventBubbleUp(EventBase evt)
@@ -128,13 +120,14 @@ internal sealed class StyleRuleInspector : VisualElement
                     return;
                 m_PanelElement = new PanelElement();
                 m_PanelElement.CreateSubPanel();
-                m_Element = new __SelectorElement();
+                m_Element ??= new __SelectorElement();
                 m_PanelElement.SubPanel.visualTree.Add(m_Element);
 
                 SetSelectorElementInlineStyles();
 
                 m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
                 InitializeVariablesSection();
+                InitializeAnimationSectionVisibility();
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule?.styleSheet, m_StyleRule);
                 m_Header.Rule = m_StyleRule;
@@ -144,8 +137,12 @@ internal sealed class StyleRuleInspector : VisualElement
             {
                 if (detachFromPanelEvent.originPanel == null)
                     return;
+
                 if (m_StyleInspectorDefaultContent != null)
+                {
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGenerated;
+                    m_StyleInspectorDefaultContent.contentWasGenerated -= OnContentGeneratedForAnimation;
+                }
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
                 m_StyleInspectorDefaultContent = null;
@@ -186,6 +183,30 @@ internal sealed class StyleRuleInspector : VisualElement
         m_VariablesSection.Refresh(m_StyleRule);
     }
 
+    void InitializeAnimationSectionVisibility()
+    {
+        if (m_StyleInspectorDefaultContent.Q(AnimationFoldoutName) != null)
+        {
+            UpdateAnimationSectionVisibility(m_StyleInspectorDefaultContent);
+            return;
+        }
+
+        m_StyleInspectorDefaultContent.contentWasGenerated += OnContentGeneratedForAnimation;
+    }
+
+    void OnContentGeneratedForAnimation(StyleInspectorDefaultContent content)
+    {
+        content.contentWasGenerated -= OnContentGeneratedForAnimation;
+        UpdateAnimationSectionVisibility(content);
+    }
+
+    static void UpdateAnimationSectionVisibility(VisualElement content)
+    {
+        var animationSection = content.Q(AnimationFoldoutName);
+        if (animationSection != null)
+            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
     void SetSelectorElementInlineStyles()
     {
         if (m_StyleRule == null || m_StyleRule.styleSheet == null || m_Element == null)
@@ -201,4 +222,5 @@ internal sealed class StyleRuleInspector : VisualElement
         // Force immediate style resolution to update the element's variableContext
         m_PanelElement.SubPanel.ApplyStyles();
     }
+
 }

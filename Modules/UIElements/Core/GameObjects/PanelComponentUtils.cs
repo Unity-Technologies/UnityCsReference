@@ -8,6 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.UIElements
 {
     // Utility methods for both UIDocument and PanelRenderer
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class PanelComponentUtils
     {
         public static bool IsTransformControlledByGameObject(IPanelComponent panelComponent)

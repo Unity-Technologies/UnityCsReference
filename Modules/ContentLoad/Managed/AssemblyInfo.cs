@@ -4,8 +4,4 @@
 
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("BuildPipelineTestUtilities-UnityEngine")]
-[assembly: InternalsVisibleTo("ContentDirectoryUtilities")]
-[assembly: InternalsVisibleTo("Unity.Entities.Serialization")]
-[assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
-[assembly: InternalsVisibleTo("ContentBuildTests")]
+[assembly: InternalsVisibleTo("ContentBuildLoadPreview")]

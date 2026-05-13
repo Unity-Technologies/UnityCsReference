@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
@@ -11,20 +9,9 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Makes a style field for editing a StyleScale.
     /// </summary>
-    internal class StyleScaleField : StylePropertyField<StyleScale, ScaleField, Scale>
+    [UxmlElement]
+    internal partial class StyleScaleField : StylePropertyField<StyleScale, ScaleField, Scale>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleScale, ScaleField, Scale>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleScale, ScaleField, Scale>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new StyleScaleField();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

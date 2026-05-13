@@ -134,7 +134,8 @@ namespace PlayerBuildProgramLibrary.Data
     // Keep in sync with bee LTO modes
     public enum BuildProgramLTOMode
     {
-        Full = 0,
-        Thin = 1
+        None = 0,
+        Thin = 1,
+        Full = 2,
     }
 }

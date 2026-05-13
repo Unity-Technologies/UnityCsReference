@@ -18,18 +18,6 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         UnsignedIntegerInput integerInput => (UnsignedIntegerInput)textInputBase;
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextValueField<uint>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                TextValueField<uint>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new UnsignedIntegerField();
-        }
-
         /// <summary>
         /// Converts the given unsigned integer to a string.
         /// </summary>

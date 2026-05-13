@@ -410,13 +410,6 @@ namespace Unity.UI.Builder
 
             if (null != desc)
                 return desc.uxmlName;
-
-            if (VisualElementFactoryRegistry.TryGetValue(element.fullTypeName, out var factories))
-                return factories[0].uxmlName;
-
-            if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
-                return factories[0].uxmlName;
-
             return element.typeName;
         }
     }

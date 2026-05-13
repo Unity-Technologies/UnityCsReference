@@ -34,6 +34,8 @@ class BuildProfileField : VisualElement
         profileField.BindProperty(property);
         profileField.Bind(property.serializedObject);
         profileField.AddToClassList("unity-base-field__aligned");
+        // Make the profileField layout independent of the label’s text length, preventing long build profile names from squeezing other UI elements
+        profileField.Q(className: "unity-object-field__object").style.flexBasis = 0;
 
         var profileContainer = new VisualElement();
         var openWindowButton = new Button(OpenBuildProfilesWindow)
@@ -118,7 +120,7 @@ class BuildProfileField : VisualElement
         reason = null;
         return true;
     }
-    
+
     void OpenBuildProfilesWindow()
     {
         EditorApplication.ExecuteMenuItem("File/Build Profiles");

@@ -10,16 +10,11 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class FoldoutColorField : FoldoutField
+    [UxmlElement]
+    internal partial class FoldoutColorField : FoldoutField
     {
         static readonly string k_FieldClassName = BuilderConstants.FoldoutFieldPropertyName + "__color-field";
         static readonly string k_MixedValueLineClassName = BuilderConstants.FoldoutFieldPropertyName + "__mixed-value-line";
-
-        [Serializable]
-        public new class UxmlSerializedData : FoldoutField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new FoldoutColorField();
-        }
 
         ColorField m_ColorField;
         VisualElement m_MixedValueLine;

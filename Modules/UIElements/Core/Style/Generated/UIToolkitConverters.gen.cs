@@ -21,6 +21,10 @@ namespace UnityEngine.UIElements
         static StyleKeyword ConvertAlignToStyleKeyword(ref StyleEnum<Align> value) => value.keyword;
         static StyleEnum<Align> ConvertAlignToStyleAlignEnum(ref Align value) => value;
         static StyleEnum<Align> ConvertStyleKeywordToStyleAlignEnum(ref StyleKeyword value) => value;
+        static AnimationPlayState ConvertStyleAnimationPlayStateEnumToAnimationPlayState(ref StyleEnum<AnimationPlayState> value) => value.value;
+        static StyleKeyword ConvertAnimationPlayStateToStyleKeyword(ref StyleEnum<AnimationPlayState> value) => value.keyword;
+        static StyleEnum<AnimationPlayState> ConvertAnimationPlayStateToStyleAnimationPlayStateEnum(ref AnimationPlayState value) => value;
+        static StyleEnum<AnimationPlayState> ConvertStyleKeywordToStyleAnimationPlayStateEnum(ref StyleKeyword value) => value;
         static Ratio ConvertStyleRatioToRatio(ref StyleRatio value) => value.value;
         static StyleKeyword ConvertRatioToStyleKeyword(ref StyleRatio value) => value.keyword;
         static StyleRatio ConvertRatioToStyleRatio(ref Ratio value) => value;
@@ -121,6 +125,10 @@ namespace UnityEngine.UIElements
         static StyleKeyword ConvertTranslateToStyleKeyword(ref StyleTranslate value) => value.keyword;
         static StyleTranslate ConvertTranslateToStyleTranslate(ref Translate value) => value;
         static StyleTranslate ConvertStyleKeywordToStyleTranslate(ref StyleKeyword value) => value;
+        static UIAnimationClip ConvertStyleUIAnimationClipToUIAnimationClip(ref StyleUIAnimationClip value) => value.value;
+        static StyleKeyword ConvertUIAnimationClipToStyleKeyword(ref StyleUIAnimationClip value) => value.keyword;
+        static StyleUIAnimationClip ConvertUIAnimationClipToStyleUIAnimationClip(ref UIAnimationClip value) => value;
+        static StyleUIAnimationClip ConvertStyleKeywordToStyleUIAnimationClip(ref StyleKeyword value) => value;
         static EditorTextRenderingMode ConvertStyleEditorTextRenderingModeEnumToEditorTextRenderingMode(ref StyleEnum<EditorTextRenderingMode> value) => value.value;
         static StyleKeyword ConvertEditorTextRenderingModeToStyleKeyword(ref StyleEnum<EditorTextRenderingMode> value) => value.keyword;
         static StyleEnum<EditorTextRenderingMode> ConvertEditorTextRenderingModeToStyleEditorTextRenderingModeEnum(ref EditorTextRenderingMode value) => value;
@@ -184,6 +192,10 @@ namespace UnityEngine.UIElements
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<Align>), typeof(StyleKeyword), () => (TypeConverter<StyleEnum<Align>, StyleKeyword>)ConvertAlignToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Align), typeof(StyleEnum<Align>), () => (TypeConverter<Align, StyleEnum<Align>>)ConvertAlignToStyleAlignEnum);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleEnum<Align>), () => (TypeConverter<StyleKeyword, StyleEnum<Align>>)ConvertStyleKeywordToStyleAlignEnum);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<AnimationPlayState>), typeof(AnimationPlayState), () => (TypeConverter<StyleEnum<AnimationPlayState>, AnimationPlayState>)ConvertStyleAnimationPlayStateEnumToAnimationPlayState);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<AnimationPlayState>), typeof(StyleKeyword), () => (TypeConverter<StyleEnum<AnimationPlayState>, StyleKeyword>)ConvertAnimationPlayStateToStyleKeyword);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(AnimationPlayState), typeof(StyleEnum<AnimationPlayState>), () => (TypeConverter<AnimationPlayState, StyleEnum<AnimationPlayState>>)ConvertAnimationPlayStateToStyleAnimationPlayStateEnum);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleEnum<AnimationPlayState>), () => (TypeConverter<StyleKeyword, StyleEnum<AnimationPlayState>>)ConvertStyleKeywordToStyleAnimationPlayStateEnum);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleRatio), typeof(Ratio), () => (TypeConverter<StyleRatio, Ratio>)ConvertStyleRatioToRatio);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleRatio), typeof(StyleKeyword), () => (TypeConverter<StyleRatio, StyleKeyword>)ConvertRatioToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Ratio), typeof(StyleRatio), () => (TypeConverter<Ratio, StyleRatio>)ConvertRatioToStyleRatio);
@@ -284,6 +296,10 @@ namespace UnityEngine.UIElements
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleTranslate), typeof(StyleKeyword), () => (TypeConverter<StyleTranslate, StyleKeyword>)ConvertTranslateToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Translate), typeof(StyleTranslate), () => (TypeConverter<Translate, StyleTranslate>)ConvertTranslateToStyleTranslate);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleTranslate), () => (TypeConverter<StyleKeyword, StyleTranslate>)ConvertStyleKeywordToStyleTranslate);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleUIAnimationClip), typeof(UIAnimationClip), () => (TypeConverter<StyleUIAnimationClip, UIAnimationClip>)ConvertStyleUIAnimationClipToUIAnimationClip);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleUIAnimationClip), typeof(StyleKeyword), () => (TypeConverter<StyleUIAnimationClip, StyleKeyword>)ConvertUIAnimationClipToStyleKeyword);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(UIAnimationClip), typeof(StyleUIAnimationClip), () => (TypeConverter<UIAnimationClip, StyleUIAnimationClip>)ConvertUIAnimationClipToStyleUIAnimationClip);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleUIAnimationClip), () => (TypeConverter<StyleKeyword, StyleUIAnimationClip>)ConvertStyleKeywordToStyleUIAnimationClip);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<EditorTextRenderingMode>), typeof(EditorTextRenderingMode), () => (TypeConverter<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode>)ConvertStyleEditorTextRenderingModeEnumToEditorTextRenderingMode);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<EditorTextRenderingMode>), typeof(StyleKeyword), () => (TypeConverter<StyleEnum<EditorTextRenderingMode>, StyleKeyword>)ConvertEditorTextRenderingModeToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(EditorTextRenderingMode), typeof(StyleEnum<EditorTextRenderingMode>), () => (TypeConverter<EditorTextRenderingMode, StyleEnum<EditorTextRenderingMode>>)ConvertEditorTextRenderingModeToStyleEditorTextRenderingModeEnum);

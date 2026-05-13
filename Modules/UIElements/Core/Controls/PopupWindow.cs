@@ -22,14 +22,9 @@ namespace UnityEngine.UIElements
     /// popupWindow.Add(new Button());
     /// </code>
     /// </example>
+    [UxmlElement]
     public partial class PopupWindow : TextElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new PopupWindow();
-        }
-
         private VisualElement m_ContentContainer;
 
         /// <summary>

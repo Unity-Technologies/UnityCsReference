@@ -55,13 +55,15 @@ namespace UnityEngine.UIElements
 
         private void UnregisterRunningAnimations()
         {
+            var sys = GetAnimationSystem();
+
             if (m_RunningAnimations != null && m_RunningAnimations.Count > 0)
             {
-                var sys = GetAnimationSystem();
-
                 if (sys != null)
                     sys.UnregisterAnimations(m_RunningAnimations);
             }
+
+            elementPanel?.styleAnimationSystem?.CancelElementClipAnimation(this);
 
             styleAnimation.CancelAllAnimations();
         }

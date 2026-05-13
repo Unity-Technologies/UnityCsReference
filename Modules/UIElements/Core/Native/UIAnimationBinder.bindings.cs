@@ -31,17 +31,69 @@ namespace UnityEngine.UIElements
     };
 
     [NativeHeader("Modules/UIElements/Core/Native/UIAnimationBinder.h")]
+    [NativeHeader("Modules/UIElements/Core/Native/UIAnimationClip.h")]
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class UIAnimationBinder : Object, IValueAnimationUpdate
     {
+        [FreeFunction("UIAnimationBinder::Create")]
+        internal static extern UIAnimationBinder Create();
+
         extern private void Internal_AssignKnownElementNames(string[] names, PropertyName[] propertyHashes);
         extern private void Internal_ApplyBoundValues();
+        extern private void Internal_InvalidateBoundValueCaches();
+
+        /// <summary>
+        /// Clears native binder value caches so the next read through the animation binding path
+        /// refetches from the VisualElement (used when the inspector updates style without going through the binder).
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void InvalidateBoundValueCaches()
+        {
+            Internal_InvalidateBoundValueCaches();
+        }
+
+        /// <summary>
+        /// Directly evaluates a UIAnimationClip's float and PPtr curves at the given time
+        /// and applies the results to the bound visual elements, bypassing the Animator/PlayableGraph.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal extern void SampleClip(UIAnimationClip clip, float time);
+
+        internal extern void DeactivateAnimation();
 
         VisualElement rootVisualElement { get; set; }
 
         // Event invoked when element caches are cleared (for external selection cache management)
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal event Action ElementCachesClearedEvent;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal uint lastKnownHierarchyVersion { get; private set; }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal uint lastKnownNameVersion { get; private set; }
+
+        /// <summary>
+        /// Refreshes the element cache only when the visual tree structure or element
+        /// names have changed since the last refresh, or when the cache has never been
+        /// populated. Avoids the full tree traversal and allocation cost of
+        /// <see cref="UpdateElementNames"/> on hot paths that probe repeatedly without
+        /// changes (e.g. slider scrubbing during animation recording).
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void UpdateElementNamesIfNeeded()
+        {
+            if (m_Elements == null)
+            {
+                UpdateElementNames();
+                return;
+            }
+
+            if (rootVisualElement?.panel is Panel p
+                && (p.hierarchyVersion != lastKnownHierarchyVersion
+                    || p.nameVersion != lastKnownNameVersion))
+                UpdateElementNames();
+        }
 
         private bool exposeRootElement;
         internal void RegisterRootDocument(VisualElement element, bool exposeRootElement)
@@ -98,6 +150,7 @@ namespace UnityEngine.UIElements
 
         [RequiredMember]
         [RequiredByNativeCode(Optional = true)]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void UpdateElementNames()
         {
             if (m_Elements == null)
@@ -117,6 +170,13 @@ namespace UnityEngine.UIElements
 
             if (animationRoot != null)
             {
+                if (exposeRootElement)
+                {
+                    var rootPropName = new PropertyName(string.Empty);
+                    m_Elements.Add(new KeyValuePair<string, VisualElement>(string.Empty, animationRoot));
+                    m_ElementsMap[rootPropName] = animationRoot;
+                }
+
                 GatherAnimatableElements(string.Empty, animationRoot, !exposeRootElement);
             }
 
@@ -132,6 +192,12 @@ namespace UnityEngine.UIElements
 
 
             Internal_AssignKnownElementNames(names, propertyNames);
+
+            if (rootVisualElement?.panel is Panel p)
+            {
+                lastKnownHierarchyVersion = p.hierarchyVersion;
+                lastKnownNameVersion = p.nameVersion;
+            }
         }
 
 
@@ -292,6 +358,49 @@ namespace UnityEngine.UIElements
 
             return null;
         }
+
+        /// <summary>
+        /// Returns the path the binder uses to address <paramref name="element"/> when
+        /// sampling - e.g. "#parent/#child", or the empty string for a root that was
+        /// registered with <c>exposeRootElement = true</c>. Reads from the binder's
+        /// existing element cache without triggering a refresh: callers that need
+        /// up-to-date results should call <see cref="UpdateElementNames"/> first.
+        /// Returns false when <paramref name="element"/> is not in the cache, which
+        /// happens when the element has no name, when one of its named ancestors
+        /// shadows it via the binder's flatten-unnamed-ancestors logic, or when a
+        /// sibling with the same name was registered first.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal bool TryGetPathForElement(VisualElement element, out string path)
+        {
+            path = null;
+            if (element == null || m_Elements == null)
+                return false;
+
+            for (int i = 0; i < m_Elements.Count; i++)
+            {
+                if (ReferenceEquals(m_Elements[i].Value, element))
+                {
+                    path = m_Elements[i].Key;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the (path, element) pairs the binder currently has registered. Reads
+        /// from the binder's existing element cache without triggering a refresh.
+        /// Empty until <see cref="UpdateElementNames"/> has been called at least once.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal IReadOnlyList<KeyValuePair<string, VisualElement>> GetRegisteredElements()
+        {
+            if (m_Elements == null)
+                return Array.Empty<KeyValuePair<string, VisualElement>>();
+            return m_Elements;
+        }
+
         /// <summary>
         /// Static callback for getting selection EntityId.
         /// Set by editor-only code (VisualElementObjectTypeCustomizer) to provide custom selection handling.

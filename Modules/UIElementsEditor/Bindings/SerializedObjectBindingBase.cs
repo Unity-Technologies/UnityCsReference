@@ -10,9 +10,11 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSourceProvider, IDataSourceViewHashProvider
 {
+    public static VisualElement editingField { get; protected set; }
+
     private long m_LastUpdateTime;
     private ulong m_LastVersion;
 
@@ -165,7 +167,7 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
         bindingContext?.ResetUpdate();
     }
 
-    internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
+    public static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
 
     protected IBindable m_Field;
     private SerializedObjectBindingContext m_BindingContext;

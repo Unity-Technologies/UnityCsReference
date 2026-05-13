@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements
 {
@@ -132,6 +133,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetEventInterests()
+        {
+            m_TrickleDownEventCallbackCategories = m_TrickleDownHandleEventCategories;
+            m_BubbleUpEventCallbackCategories = m_BubbleUpHandleEventCategories;
+            UpdateEventInterestSelfCategories();
+        }
+
         internal void AddEventCallbackCategories(int trickleDownCategories, int bubbleUpCategories)
         {
             m_TrickleDownEventCallbackCategories |= trickleDownCategories;
@@ -139,9 +148,9 @@ namespace UnityEngine.UIElements
             UpdateEventInterestSelfCategories();
         }
 
-        internal void AddEventCallbackCategories(int eventCategories, TrickleDown trickleDown)
+        internal void AddEventCallbackCategories(int eventCategories, CallbackOptionsInternal callbackOptions)
         {
-            if (trickleDown == TrickleDown.TrickleDown)
+            if ((callbackOptions & CallbackOptionsInternal.TrickleDown) != 0)
                 m_TrickleDownEventCallbackCategories |= eventCategories;
             else
                 m_BubbleUpEventCallbackCategories |= eventCategories;

@@ -120,6 +120,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        abstract class InlineStyleUIAnimationClipProperty : InlineStyleProperty<StyleUIAnimationClip>
+        {
+        }
+
+
         public override PropertyCollection<InlineStyleAccess> GetProperties()
             => new PropertyCollection<InlineStyleAccess>(m_PropertiesList);
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -265,27 +266,51 @@ namespace UnityEditor.Build
 
         // ==================== Build Lifecycle (called from C++ build pipeline) ====================
 
+        // Folder name format: YYYYMMDD-HHMMSSZ-<8 hex chars of build session GUID>.
+        // The short suffix is for tie-breaking within a one-second window; the
+        // authoritative identifier is the full GUID in BuildReportSummary.BuildSessionGUID.
+        // The folder name is a label, not an ID - no production code parses it.
+        const int kFolderNameGuidPrefixLength = 8;
+
+        internal static string FormatBuildHistoryFolderName(GUID buildSessionGuid, DateTime startTimeUtc)
+        {
+            DateTime utc = startTimeUtc.Kind == DateTimeKind.Utc
+                ? startTimeUtc
+                : startTimeUtc.ToUniversalTime();
+            string timestamp = utc.ToString("yyyyMMdd-HHmmss'Z'", CultureInfo.InvariantCulture);
+            string shortGuid = buildSessionGuid.ToString().Substring(0, kFolderNameGuidPrefixLength);
+            return $"{timestamp}-{shortGuid}";
+        }
+
         /// <summary>
         /// Determine the metadata folder path and ensures the root BuildHistory directory exists.
         /// This can happen very early in a build, as soon as the unique build session guid has been generated.
         /// The folder itself is not created here; it is created later in BeginBuildTracking
         /// when we are ready to write the initial BuildReportSummary.json is written.
         /// </summary>
+        /// <param name="buildSessionGuidString">The build session GUID as a string.</param>
+        /// <param name="buildStartTimeTicks">Official build start time in UTC ticks
+        /// (System.DateTime.Ticks / C++ DateTime::ticks).</param>
         [RequiredByNativeCode]
-        internal static string ReserveBuildMetadataPath(string buildSessionGuidString)
+        internal static string ReserveBuildMetadataPath(string buildSessionGuidString, long buildStartTimeTicks)
         {
             try
             {
+                if (buildStartTimeTicks <= 0)
+                    throw new ArgumentException("buildStartTimeTicks must be a positive UTC tick count", nameof(buildStartTimeTicks));
+
                 string rootDirectory = BuildHistoryDirectory;
+                Directory.CreateDirectory(rootDirectory);
 
-                if (!Directory.Exists(rootDirectory))
-                    Directory.CreateDirectory(rootDirectory);
+                DateTime startTime = new DateTime(buildStartTimeTicks, DateTimeKind.Utc);
 
-                string metadataLocation = rootDirectory + "/" + buildSessionGuidString;
+                var buildSessionGuid = new GUID(buildSessionGuidString);
+                string folderName = FormatBuildHistoryFolderName(buildSessionGuid, startTime);
+                string metadataLocation = rootDirectory + "/" + folderName;
 
                 if (Directory.Exists(metadataLocation))
                 {
-                    Debug.LogError($"Build metadata folder already exists at: {metadataLocation}. The build session GUID should be unique.");
+                    Debug.LogError($"Build metadata folder already exists at: {metadataLocation}. The folder name should be unique.");
                     return "";
                 }
 

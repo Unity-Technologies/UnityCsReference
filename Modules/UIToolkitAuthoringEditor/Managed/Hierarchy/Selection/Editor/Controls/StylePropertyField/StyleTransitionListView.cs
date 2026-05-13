@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -14,7 +13,8 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-internal class StyleTransitionListView : VisualElement
+[UxmlElement]
+internal partial class StyleTransitionListView : VisualElement
 {
     [Flags]
     public enum TransitionChangeType
@@ -129,6 +129,9 @@ internal class StyleTransitionListView : VisualElement
             m_DelayOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_DelayField };
             m_DelayField.RegisterCallback<ChangeEvent<TimeValue>, FoldoutTransitionField>(OnDelayChanged, this);
             m_DelayField.tooltip = "USS property: transition-delay\n\nDuration to wait before starting a property's transition effect when its value changes.";
+
+            // Needed to support search by "Easing" rather than "Timing function"
+            AddTrackedProperty("Easing");
         }
 
         static void OnChanged<T>(ChangeEvent<T> evt, FoldoutTransitionField field, TransitionChangeType changeType, TransitionData data)
@@ -213,18 +216,6 @@ internal class StyleTransitionListView : VisualElement
         {
             return $"{(bold ? "<b>":"")}{input}{(bold ? "</b>":"")}";
         }
-    }
-
-    [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        [Conditional("UNITY_EDITOR")]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        public override object CreateInstance() => new StyleTransitionListView();
     }
 
     public const string IgnoredProperty = "ignored";

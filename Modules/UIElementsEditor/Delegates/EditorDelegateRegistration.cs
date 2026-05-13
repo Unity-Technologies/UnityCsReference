@@ -24,20 +24,7 @@ namespace UnityEditor.UIElements
 
             PanelSettings.CreateRuntimePanelDebug = UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug;
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme;
-            PanelSettings.GetGameViewResolution = (int display) =>
-                {
-                    // For events to work properly with multiple GameView on the same display, we need to prioritize the focused window
-                    var mainPlayModeView = PlayModeView.GetMainPlayModeView();
-                    if (mainPlayModeView?.targetDisplay == display)
-                        return mainPlayModeView.targetSize;
-
-                    foreach (var playModeView in PlayModeView.GetAllPlayModeViewWindows())
-                    {
-                        if (playModeView.targetDisplay == display)
-                            return playModeView.targetSize;
-                    }
-                    return null;
-                };
+            PanelSettings.GetGameViewRenderInfo = PlayModeView.GetLastInteractedGameView;
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
 

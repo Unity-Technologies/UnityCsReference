@@ -8,12 +8,13 @@ using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using Object = System.Object;
 
 namespace Unity.UIToolkit.Editor
 {
-    sealed class BindingView : UxmlAttributesView
+    sealed class BindingView : VisualElement
     {
         public enum BindingViewMode
         {
@@ -48,9 +49,9 @@ namespace Unity.UIToolkit.Editor
             public string displayName;
         }
 
-        public new const string UssClassName = "unity-binding-view";
+        public const string UssClassName = "unity-binding-view";
         private const string k_VisualTreeAssetPath = "UIToolkitAuthoring/Inspector/Binding/BindingView.uxml";
-        public const string RootPropertyViewName = "RootPropertyView";
+        public const string AttributesViewName = "AttributesView";
         public const string RootPropertyFieldName = "RootPropertyField";
         public const string BindingPropertyFieldName = "BindingPropertyField";
         public const string ConverterGroupWarningBoxName = "ConverterGroupWarningBox";
@@ -72,14 +73,12 @@ namespace Unity.UIToolkit.Editor
         int m_UndoGroupId;
         bool m_Accepted;
 
-        UxmlSerializedDataPropertyView m_RootPropertyView;
-        PropertyField m_RootPropertyField;
+        readonly UxmlAttributesView m_AttributesView;
+        readonly PropertyField m_RootPropertyField;
         UxmlAttributeField m_BindingPropertyField;
         internal Label m_TargetPropertyTypeName;
         internal DropdownField m_BindingTypeDropdown;
         internal VisualElement m_BindingAttributesContainer;
-        internal UxmlSerializedDataPropertyView m_AttributesView;
-        VisualElement m_ContentContainer;
         internal Button m_OkButton;
         internal Button m_CancelButton;
 
@@ -90,24 +89,34 @@ namespace Unity.UIToolkit.Editor
         public Action closeRequested;
 
         /// <summary>
-        /// The Content container for the view.
-        /// </summary>
-        public override VisualElement contentContainer => m_ContentContainer ?? this;
-
-        /// <summary>
         /// Indicates whether the view is used to either create, edit or view a binding.
         /// </summary>
         public BindingViewMode Mode { get; set; }
 
-        /// <summary>
-        /// The property of the binding to create or to edit.
-        /// </summary>
-        public string BindingPropertyName { get; private set; }
+        string m_BindingPropertyName;
+        PropertyPath m_BindingPropertyPath;
 
         /// <summary>
         /// The property of the binding to create or to edit.
         /// </summary>
-        public IProperty BindableProperty => Context?.element != null ? PropertyContainer.GetProperty(Context.element, new PropertyPath(BindingPropertyName)) : null;
+        public string BindingPropertyName {
+            get => m_BindingPropertyName;
+            private set
+            {
+                if (m_BindingPropertyName == value)
+                    return;
+                m_BindingPropertyName = value;
+                if (string.IsNullOrEmpty(m_BindingPropertyName))
+                    m_BindingPropertyPath = default;
+                else
+                    m_BindingPropertyPath = new PropertyPath(BindingPropertyName);
+            }
+        }
+
+        /// <summary>
+        /// The property of the binding to create or to edit.
+        /// </summary>
+        public IProperty BindableProperty => m_AttributesView.Context?.element != null ? PropertyContainer.GetProperty(m_AttributesView.Context.element, m_BindingPropertyPath) : null;
 
         /// <summary>
         /// Constructor for the BindingAttributesView.
@@ -127,13 +136,14 @@ namespace Unity.UIToolkit.Editor
             AddToClassList(UssClassName);
 
             var asset = EditorGUIUtility.LoadRequired(k_VisualTreeAssetPath) as VisualTreeAsset;
-            var container = asset.CloneTree();
+            asset.CloneTree(this);
 
-            container.style.flexGrow = 1;
-            hierarchy.Add(container);
+            m_AttributesView = this.Q<UxmlAttributesView>(AttributesViewName);
+
+            m_RootPropertyField = this.Q<PropertyField>(RootPropertyFieldName);
+            m_RootPropertyField.reset += OnPropertyFieldReset;
 
             m_BindingTypeDropdown = this.Q<DropdownField>("BindingTypeDropdownField");
-            m_ContentContainer = container.Q("ContentContainer");
             m_OkButton = this.Q<Button>("ConfirmButton");
             m_OkButton.clicked += () =>
             {
@@ -142,8 +152,6 @@ namespace Unity.UIToolkit.Editor
             };
             m_CancelButton = this.Q<Button>("CancelButton");
             m_CancelButton.clicked += CloseView;
-
-            Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
 
             m_BindingTypeDropdown.choices = k_UxmlBindingTypeDisplayNames;
             m_BindingTypeDropdown.index = 0;
@@ -254,7 +262,7 @@ namespace Unity.UIToolkit.Editor
             }
 
             // Add the Binding serialized data to the current element's binding list.
-            var property = Context.rootSerializedObject.FindProperty($"{Context.serializedBasePath}.bindings");
+            var property = m_AttributesView.Context.rootSerializedObject.FindProperty($"{m_AttributesView.Context.serializedBasePath}.bindings");
 
             var undoMessage = $"Modified {property.name}";
             if (property.serializedObject.targetObject.name != string.Empty)
@@ -271,8 +279,10 @@ namespace Unity.UIToolkit.Editor
             m_RootPropertyField.bindingPath = uxmlObjectPropertyPath;
             m_BindingUxmlSerializedDataDescription = description;
 
+            UxmlAssetUtilities.SyncUxmlObjectChanges(m_AttributesView.Context, uxmlObjectPropertyPath);
             // Recreate the actual bindings
-            Context.editingController.DeserializeElement();
+            m_AttributesView.Context.editingController.DeserializeElement();
+            m_AttributesView.Rebind();
         }
 
         /// <summary>
@@ -291,6 +301,7 @@ namespace Unity.UIToolkit.Editor
             if (Mode == BindingViewMode.Create && !m_Accepted)
                 Undo.RevertAllDownToGroup(m_UndoGroupBeforeStartId);
             DestroyTempContext();
+            m_AttributesView.Context.Dispose();
         }
 
         public bool Start(VisualElement element, string bindingPath, BindingViewMode mode)
@@ -343,29 +354,23 @@ namespace Unity.UIToolkit.Editor
 
             // Create a new VisualElementAsset with the same type as the source VisualElement
             var newVisualElementAsset = new VisualElementAsset(fullTypeName);
+            var originalAsset = visualElement.visualElementAsset;
 
-            // Create default serialized data
-            newVisualElementAsset.serializedData = description.CreateDefaultSerializedData();
+            Assert.IsNotNull(originalAsset);
 
-            // First, copy UXML attributes from the original VisualElementAsset if it exists
-            if (visualElement.visualElementAsset != null)
+            // Copy all UXML attribute properties from the original asset
+            if (originalAsset.properties != null)
             {
-                var originalAsset = visualElement.visualElementAsset;
-
-                // Copy all UXML attribute properties from the original asset
-                if (originalAsset.properties != null)
+                foreach (var property in originalAsset.properties)
                 {
-                    foreach (var property in originalAsset.properties)
-                    {
-                        newVisualElementAsset.SetAttribute(property.name, property.value);
-                    }
+                    newVisualElementAsset.SetAttribute(property.name, property.value);
                 }
+            }
 
-                // Copy the original serialized data if it exists
-                if (originalAsset.serializedData != null)
-                {
-                    newVisualElementAsset.serializedData = UxmlUtility.CloneObject(originalAsset.serializedData) as UnityEngine.UIElements.UxmlSerializedData;
-                }
+            // Copy the original serialized data if it exists
+            if (originalAsset.serializedData != null)
+            {
+                newVisualElementAsset.serializedData = UxmlUtility.CloneObject(originalAsset.serializedData) as UnityEngine.UIElements.UxmlSerializedData;
             }
 
             // Then sync the serialized data from the VisualElement's runtime state
@@ -393,16 +398,18 @@ namespace Unity.UIToolkit.Editor
         // Reset the context to prepare for creating a new binding or editing an existing binding.
         void ResetContext()
         {
-            Context.Clear();
+            var context = m_AttributesView.Context;
+
+            context.Clear();
 
             if (Mode == BindingViewMode.Create)
             {
-                Context.Set(m_TempVisualTreeAsset, m_TempElement);
-                Context.rootSerializedObject.Update();
+                context.Set(m_TempVisualTreeAsset, m_TempElement);
+                context.rootSerializedObject.Update();
             }
             else
             {
-                Context.Set(m_Element, Mode == BindingViewMode.View);
+                context.Set(m_Element, Mode == BindingViewMode.View);
             }
         }
 
@@ -410,16 +417,18 @@ namespace Unity.UIToolkit.Editor
         {
             Undo.SetCurrentGroupName("Add binding");
 
+            var context = m_AttributesView.Context;
+
             // Set the context to the real serialized data of the element being edited so that the changes made in the view are applied to the real serialized data when deserializing.
-            Context.Set(m_Element);
+            context.Set(m_Element);
 
             var attrDesc =
-                Context.uxmlSerializedDataDescription.FindAttributeWithPropertyName("bindings") as
+                context.uxmlSerializedDataDescription.FindAttributeWithPropertyName("bindings") as
                     UxmlSerializedUxmlObjectAttributeDescription;
 
-            var bindingsProperty = Context.rootSerializedObject.FindProperty($"{Context.serializedBasePath}.bindings");
+            var bindingsProperty = context.rootSerializedObject.FindProperty($"{context.serializedBasePath}.bindings");
 
-            UxmlAssetUtilities.AddUxmlObjectToSerializedData(Context,
+            UxmlAssetUtilities.AddUxmlObjectToSerializedData(context,
                 bindingsProperty, typeof(DataBinding.UxmlSerializedData), m_BindingUxmlSerializedData);
 
             Undo.CollapseUndoOperations(m_UndoGroupId);
@@ -478,8 +487,8 @@ namespace Unity.UIToolkit.Editor
             BindingPropertyName = binding.property;
 
             // Find the binding
-            var bindingsPath = $"{Context.serializedBasePath}.bindings";
-            var bindingsProperty = Context.rootSerializedObject.FindProperty(bindingsPath);
+            var bindingsPath = $"{m_AttributesView.Context.serializedBasePath}.bindings";
+            var bindingsProperty = m_AttributesView.Context.rootSerializedObject.FindProperty(bindingsPath);
             for (var i = 0; i < bindingsProperty.arraySize; i++)
             {
                 var item = bindingsProperty.GetArrayElementAtIndex(i);
@@ -488,6 +497,7 @@ namespace Unity.UIToolkit.Editor
                 {
                     m_RootPropertyField.bindingPath = item.propertyPath;
                     m_BindingUxmlSerializedDataDescription = description;
+                    m_AttributesView.Rebind();
                     break;
                 }
             }
@@ -506,26 +516,6 @@ namespace Unity.UIToolkit.Editor
                 m_TargetPropertyTypeName.text = TypeUtility.GetTypeDisplayName(propertyType);
                 m_TargetPropertyTypeName.tooltip = propertyType?.GetDisplayFullName();
             }
-        }
-
-        protected override void CreateViewContent(UxmlAttributesEditingContext context)
-        {
-            // If there is no UxmlSerializedData, there are no bindings to show.
-            if (context.uxmlSerializedDataDescription == null)
-            {
-                return;
-            }
-
-            m_RootPropertyView = new UxmlSerializedDataPropertyView();
-            m_RootPropertyView.name = RootPropertyViewName;
-            m_RootPropertyView.AddToClassList(InspectorElement.ussClassName);
-            m_RootPropertyView.context = context;
-            m_RootPropertyView.Bind(context.rootSerializedObject);
-            m_RootPropertyField = new PropertyField();
-            m_RootPropertyField.name = RootPropertyFieldName;
-            m_RootPropertyField.reset += OnPropertyFieldReset;
-            m_RootPropertyView.Add(m_RootPropertyField);
-            Add(m_RootPropertyView);
         }
 
         void OnPropertyFieldReset()
@@ -553,28 +543,16 @@ namespace Unity.UIToolkit.Editor
             var sourceToUiConvertersField = m_RootPropertyField.Q<UxmlAttributeField>(BindingConvertersToUiFieldName).Q<PropertyField>();
             sourceToUiConvertersField.reset += () =>
             {
-                sourceToUiConvertersField.Q<BindingConvertersField>().EditedElement = Context.element;
+                sourceToUiConvertersField.Q<BindingConvertersField>().EditedElement = m_AttributesView.Context.element;
             };
 
             var uiToSourceConvertersField = m_RootPropertyField.Q<UxmlAttributeField>(BindingConvertersToSourceFieldName).Q<PropertyField>();
             uiToSourceConvertersField.reset += () =>
             {
-                uiToSourceConvertersField.Q<BindingConvertersField>().EditedElement = Context.element;
+                uiToSourceConvertersField.Q<BindingConvertersField>().EditedElement = m_AttributesView.Context.element;
             };
 
             UpdateControls();
-        }
-
-        protected override void ReleaseViewContent(UxmlAttributesEditingContext context)
-        {
-            if (m_RootPropertyView == null)
-                return;
-
-            m_RootPropertyView?.Unbind();
-            m_RootPropertyView.context = null;
-            m_RootPropertyView = null;
-            m_RootPropertyField = null;
-            m_TargetPropertyTypeName = null;
         }
     }
 }

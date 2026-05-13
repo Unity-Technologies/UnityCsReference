@@ -41,7 +41,6 @@ namespace Unity.Hierarchy
         readonly VisualElement m_Icon;
         readonly VisualElement m_OverlayIcon;
         readonly HierarchyViewItemName m_Name;
-        readonly Lazy<Button> m_NavigateIntoButton;
 
         // Users can add their VE to this container, they will appear on the right beside the name,
         // with style left aligned.
@@ -96,7 +95,18 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Gets the <see cref="Button"/> used to navigate into a node. This button is typically displayed as an arrow button.
         /// </summary>
-        public Button NavigateIntoButton => m_NavigateIntoButton.Value;
+        public Button NavigateIntoButton
+        {
+            get
+            {
+                var row = RowContainer;
+                if (row == null)
+                    return null;
+
+                // Query for the button in the navigate column
+                return row.Q<Button>(className: "hierarchy-item__right-arrow-button");
+            }
+        }
 
         /// <summary>
         /// Gets the <see cref="VisualElement"/> that represents the override bar at the left of the item.
@@ -180,16 +190,6 @@ namespace Unity.Hierarchy
             m_RightCustomContainer = new VisualElement();
             m_RightCustomContainer.AddToClassList(k_HierarchyItemRightContainer);
 
-            m_NavigateIntoButton = new Lazy<Button>(() =>
-            {
-                var btn = new Button();
-                btn.AddToClassList(k_HierarchyItemRightArrowButton);
-                btn.RemoveFromClassList(Button.ussClassNameUnique);
-                btn.style.display = DisplayStyle.None;
-                m_RightCustomContainer.Add(btn);
-                return btn;
-            });
-
             root.Add(m_OverrideBarContainer);
             root.Add(m_LeftContainer);
             root.Add(m_RightCustomContainer);
@@ -218,7 +218,7 @@ namespace Unity.Hierarchy
             var oldValue = m_LeftContainer.style.translate.value;
             m_LeftContainer.style.translate = new Translate(m_LeftContainer.CeilToPanelPixelSize(indentWidth), oldValue.y, oldValue.z);
 
-            var showToggle = noFilter && viewModel.GetChildrenCount(in m_Node) > 0;
+            var showToggle = noFilter && viewModel.HasVisibleChildren(in m_Node);
             m_Toggle.EnableInClassList(k_HierarchyItemToggleHidden, !showToggle);
 
             var isExpanded = viewModel.HasFlags(in m_Node, HierarchyNodeFlags.Expanded);

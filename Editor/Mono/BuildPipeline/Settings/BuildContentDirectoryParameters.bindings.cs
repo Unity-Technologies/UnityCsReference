@@ -110,6 +110,18 @@ namespace UnityEditor
         /// before calling into native code.
         /// </summary>
         internal string metadataPath { get; set; }
+
+        /// <summary>
+        /// Internal: official build start time, set by the managed entry point and consumed
+        /// by native code. UTC ticks (System.DateTime.Ticks / C++ DateTime::ticks).
+        /// </summary>
+        internal long buildStartTimeTicks { get; set; }
+
+        /// <summary>
+        /// Internal: pre-compiled TypeDB to use instead of compiling player scripts during the build.
+        /// When set, script compilation is skipped and the provided TypeDB is serialized to disk for use by the build pipeline.
+        /// </summary>
+        internal Build.Player.TypeDB precompiledTypeDB { get; set; }
     }
 }
 

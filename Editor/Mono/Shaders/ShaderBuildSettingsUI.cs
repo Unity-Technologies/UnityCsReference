@@ -13,6 +13,8 @@ namespace UnityEditor.Shaders
     internal class ShaderBuildSettingsUI
     {
         private List<ShaderBuildSettings.KeywordDeclarationOverride> m_KeywordDeclarationOverrides = new();
+        private List<string> m_ConstantDefines = new();
+        private List<string> m_InternalConstantDefines = new();
         private bool[] m_LoadedItemInitialized = Array.Empty<bool>();
         private SerializedObject m_SettingsDataStore = null;
         private SerializedProperty m_SettingsProperty = null;
@@ -20,9 +22,12 @@ namespace UnityEditor.Shaders
 
         //private bool m_StateChanged = false;
 
-        private ListView m_ListView;
+        private ListView m_KeywordDeclarationOverridesListView;
+        private ListView m_ConstantDefinesListView;
         private Button m_ApplyButton;
         private Button m_RevertButton;
+
+        private VisualTreeAsset m_ConstantDefineUXML;
 
         public void Initialize(VisualElement root, SerializedObject settingsDataStore, bool isTargetingBuildProfile)
         {
@@ -33,13 +38,26 @@ namespace UnityEditor.Shaders
 
             var shaderBuildSettingsUI = root.Q<VisualElement>("ShaderBuildSettings");
 
-            m_ListView = shaderBuildSettingsUI.Q<ListView>();
-            m_ListView.itemsSource = m_KeywordDeclarationOverrides;
-            m_ListView.bindItem = BindKeywordFoldoutItem;
-            m_ListView.makeItem = MakeKeywordFoldoutItem;
+            m_ConstantDefineUXML = EditorGUIUtility.Load("ShaderBuildSettings/UXML/ShaderConstantDefine.uxml") as VisualTreeAsset;
 
-            m_ListView.itemsAdded += OnItemsAdded;
-            m_ListView.itemsRemoved += OnItemsRemoved;
+            m_KeywordDeclarationOverridesListView = shaderBuildSettingsUI.Q<ListView>("KeywordDeclarationOverrides");
+            m_KeywordDeclarationOverridesListView.itemsSource = m_KeywordDeclarationOverrides;
+            m_KeywordDeclarationOverridesListView.bindItem = BindKeywordFoldoutItem;
+            m_KeywordDeclarationOverridesListView.unbindItem = UnbindKeywordFoldoutItem;
+            m_KeywordDeclarationOverridesListView.makeItem = MakeKeywordFoldoutItem;
+
+            m_KeywordDeclarationOverridesListView.itemsAdded += OnItemsAdded;
+            m_KeywordDeclarationOverridesListView.itemsRemoved += OnItemsRemoved;
+            m_KeywordDeclarationOverridesListView.itemIndexChanged += OnItemIndexChanged;
+
+            m_ConstantDefinesListView = shaderBuildSettingsUI.Q<ListView>("ShaderConstDefines");
+            m_ConstantDefinesListView.itemsSource = m_ConstantDefines;
+            m_ConstantDefinesListView.makeItem = MakeConstantDefineItem;
+            m_ConstantDefinesListView.bindItem = BindConstantDefineItem;
+            m_ConstantDefinesListView.unbindItem = UnbindConstantDefineItem;
+            m_ConstantDefinesListView.itemsAdded += OnItemsAdded;
+            m_ConstantDefinesListView.itemsRemoved += OnItemsRemoved;
+            m_ConstantDefinesListView.itemIndexChanged += OnItemIndexChanged;
 
             m_ApplyButton = shaderBuildSettingsUI.Q<Button>("ApplyButton");
             m_ApplyButton.RegisterCallback<ClickEvent>(OnApplyClicked);
@@ -83,11 +101,93 @@ namespace UnityEditor.Shaders
 
             // Set the keywords for the item (creates also children if needed)
             var keywordsField = customFoldout.Q<TextField>("KeywordListField");
-            keywordsField.SetValueWithoutNotify(keywords);
+            keywordsField.value = keywords;
             customFoldout.SetKeywords(dataItem.keywords);
 
             var variantGenerationModeDropdown = customFoldout.Q<DropdownField>("VariantGenerationModeDropdown");
-            variantGenerationModeDropdown.SetIndexWithoutNotify((int)dataItem.variantGenerationMode);
+            variantGenerationModeDropdown.index = (int)dataItem.variantGenerationMode;
+
+            customFoldout.RegisterChangeEventCallbacks();
+        }
+
+        private void UnbindKeywordFoldoutItem(VisualElement element, int index)
+        {
+            var customFoldout = element.Q<ShaderKeywordDeclarationOverrideFoldout>();
+            customFoldout.UnregisterChangeEventCallbacks();
+        }
+
+        private VisualElement MakeConstantDefineItem()
+        {
+            return m_ConstantDefineUXML.Instantiate();
+        }
+
+        private void ValidateConstantDefineAndUpdateErrorBox(VisualElement element, string define)
+        {
+            string identifier, value, validationMsg = "";
+            bool isValid = true;
+
+            // Do in-place validation only after user has typed at least one character after a whitespace.
+            // This is so that the start of the typing would not show the validation errors. Apply-time validation
+            // will catch any invalid input that this does not.
+            if (define != null)
+            {
+                int spaceIndex = define.IndexOf(' ');
+                if (spaceIndex >= 0 && spaceIndex < (define.Length - 1)) 
+                    isValid = ShaderBuildSettings.SplitAndValidateDefine(define, out identifier, out value, out validationMsg);
+            }
+
+            var errorBox = element.Q<HelpBox>("DefineError");
+            if (errorBox != null)
+            {
+                if (!isValid)
+                {
+                    errorBox.text = validationMsg;
+                    errorBox.style.display = DisplayStyle.Flex;
+                }
+                else
+                {
+                    errorBox.style.display = DisplayStyle.None;
+                }
+            }
+        }
+
+        private void BindConstantDefineItem(VisualElement element, int index)
+        {
+            var textField = element.Q<TextField>("DefineField");
+            if (textField == null)
+                return;
+
+            if (index < m_ConstantDefines.Count)
+            {
+                textField.value = m_ConstantDefines[index];
+                textField.userData = index;
+                ValidateConstantDefineAndUpdateErrorBox(element, m_ConstantDefines[index]);
+            }
+
+            textField.RegisterValueChangedCallback(OnConstantDefineValueChanged);
+        }
+
+        private void UnbindConstantDefineItem(VisualElement element, int index)
+        {
+            var textField = element.Q<TextField>("DefineField");
+            if (textField != null)
+            {
+                textField.UnregisterValueChangedCallback(OnConstantDefineValueChanged);
+            }
+        }
+
+        private void OnConstantDefineValueChanged(ChangeEvent<string> evt)
+        {
+            var textField = evt.target as TextField;
+            if (textField != null && textField.userData is int index)
+            {
+                if (index >= 0 && index < m_ConstantDefines.Count)
+                {
+                    m_ConstantDefines[index] = evt.newValue;
+                    ValidateConstantDefineAndUpdateErrorBox(textField.parent, evt.newValue);
+                    SettingsChanged();
+                }
+            }
         }
 
         public void SettingsChanged()
@@ -114,17 +214,32 @@ namespace UnityEditor.Shaders
             SettingsChanged();
         }
 
+        private void OnItemIndexChanged(int oldIndex, int newIndex)
+        {
+            SettingsChanged();
+        }
+
         private void OnApplyClicked(ClickEvent evt)
         {
-            string msg;
-            if (ShaderBuildSettings.ValidateKeywordDeclarationOverrides(m_KeywordDeclarationOverrides.ToArray(), out msg))
+            string kdoValidationErrorMsg, defineValidationErrorMsg;
+            int internalDefineCount = m_InternalConstantDefines.Count;
+            m_InternalConstantDefines.InsertRange(m_InternalConstantDefines.Count, m_ConstantDefines); // temporarily combine the two define lists
+            bool isValidData = ShaderBuildSettings.ValidateKeywordDeclarationOverrides(m_KeywordDeclarationOverrides.ToArray(), out kdoValidationErrorMsg);
+            isValidData &= ShaderBuildSettings.ValidateDefinesInternal(m_InternalConstantDefines.ToArray(), (uint)internalDefineCount, out defineValidationErrorMsg);
+            m_InternalConstantDefines.RemoveRange(internalDefineCount, m_InternalConstantDefines.Count - internalDefineCount); // revert the list back
+
+            if (isValidData)
             {
                 SaveSettingsData();
                 ClearSettingsChangedState();
             }
             else
             {
-                Debug.LogError(msg);
+                if (kdoValidationErrorMsg.Length > 0)
+                    Debug.LogError(kdoValidationErrorMsg);
+
+                if (defineValidationErrorMsg.Length > 0)
+                    Debug.LogError(defineValidationErrorMsg);
             }
         }
 
@@ -137,6 +252,21 @@ namespace UnityEditor.Shaders
         private SerializedProperty GetKeywordDeclarationOverridesProperty()
         {
             return m_SettingsProperty.FindPropertyRelative("keywordDeclarationOverrides");
+        }
+
+        private SerializedProperty GetConstantDefinesProperty(out int firstUserDefineIndex)
+        {
+            var indexProp = m_SettingsProperty.FindPropertyRelative("numInternalDefines");
+            if (indexProp != null && indexProp.intValue >= 0)
+            {
+                firstUserDefineIndex = indexProp.intValue;
+            }
+            else
+            {
+                firstUserDefineIndex = 0;
+            }
+
+            return m_SettingsProperty.FindPropertyRelative("defines");
         }
 
         private SerializedProperty GetKeywordsProperty(SerializedProperty kwDeclarationOverridesArray, int index)
@@ -160,8 +290,11 @@ namespace UnityEditor.Shaders
 
         private void LoadSettingsData()
         {
-            m_ListView.Clear();
             m_KeywordDeclarationOverrides.Clear();
+            m_KeywordDeclarationOverridesListView.RefreshItems();
+            m_InternalConstantDefines.Clear();
+            m_ConstantDefines.Clear();
+            m_ConstantDefinesListView.RefreshItems();
 
             // When this UI is used for project settings, the serialized object is created from native GraphicsSettings.
             // Therefore the boxedValue etc are not usable here and we need to find the individual serialized properties manually.
@@ -195,11 +328,29 @@ namespace UnityEditor.Shaders
                         m_KeywordDeclarationOverrides.Add(kwo);
                     }
                 }
+
+                int firstUserDefineIndex;
+                var constantDefinesProp = GetConstantDefinesProperty(out firstUserDefineIndex);
+                if (constantDefinesProp != null)
+                {
+                    for (int i = 0, n = firstUserDefineIndex; i < n; ++i)
+                    {
+                        var element = constantDefinesProp.GetArrayElementAtIndex(i);
+                        m_InternalConstantDefines.Add(element.stringValue);
+                    }
+
+                    for (int i = firstUserDefineIndex, n = constantDefinesProp.arraySize; i < n; ++i)
+                    {
+                        var element = constantDefinesProp.GetArrayElementAtIndex(i);
+                        m_ConstantDefines.Add(element.stringValue);
+                    }
+                }
             }
 
             m_LoadedItemInitialized = new bool[m_KeywordDeclarationOverrides.Count]; // Defaults to false
 
-            m_ListView.RefreshItems();
+            m_KeywordDeclarationOverridesListView.RefreshItems();
+            m_ConstantDefinesListView.RefreshItems();
         }
 
         private void SaveSettingsData()
@@ -232,6 +383,22 @@ namespace UnityEditor.Shaders
                         vgmProp.intValue = (int)m_KeywordDeclarationOverrides[i].variantGenerationMode;
                     }
                 }
+
+                int firstUserDefineIndex;
+                var constantDefinesProp = GetConstantDefinesProperty(out firstUserDefineIndex);
+                if (constantDefinesProp != null)
+                {
+                    // resize the array to match current data amount
+                    constantDefinesProp.arraySize = m_ConstantDefines.Count + firstUserDefineIndex;
+
+                    // then set the user define values (leave the internal ones untouched)
+                    for (int i = 0, n = m_ConstantDefines.Count; i < n; ++i)
+                    {
+                        var element = constantDefinesProp.GetArrayElementAtIndex(firstUserDefineIndex + i);
+                        element.stringValue = m_ConstantDefines[i];
+                    }
+                }
+
                 m_SettingsDataStore.ApplyModifiedProperties();
 
                 // Ensure that the re-imports are triggered if the currently active settings were touched

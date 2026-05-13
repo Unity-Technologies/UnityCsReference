@@ -18,12 +18,6 @@ namespace Unity.GraphToolkit.Editor
     [UsedImplicitly]
     internal partial class StickyNote : GraphElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new StickyNote();
-        }
-
         public static readonly Vector2 defaultSize = new Vector2(200, 160);
 
         /// <summary>

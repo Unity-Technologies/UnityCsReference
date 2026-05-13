@@ -4,8 +4,10 @@
 
 using System;
 using UnityEditor;
-using UnityEngine.UIElements;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy.Editor
 {
@@ -43,6 +45,8 @@ namespace Unity.Hierarchy.Editor
                     ++refCount;
                     var obj = EditorUtility.EntityIdToObject(id);
                     if (obj is SceneAsset)
+                        sceneAssetCount++;
+                    else if (EditorSceneManager.GetSceneByHandle(SceneHandle.From(id)).IsValid())
                         sceneAssetCount++;
                 }
                 if (refCount != 0)

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.Properties;
@@ -19,6 +18,7 @@ namespace UnityEditor.UIElements
     /// A SerializedProperty wrapper VisualElement that, on [[BindingExtensions.Bind|Bind()]], will generate the correct field elements with the correct binding paths. For more information, refer to [[wiki:UIE-uxml-element-PropertyField|UXML element PropertyField]].
     /// </summary>
     [Icon("UIToolkit/Icons/PropertyField.png")]
+    [UxmlElement]
     public partial class PropertyField : VisualElement, IBindable
     {
         static readonly BindingId labelProperty = nameof(label);
@@ -33,40 +33,6 @@ namespace UnityEditor.UIElements
         static readonly string listViewNamePrefix = "unity-list-";
         static readonly string buttonGroupNamePrefix = "unity-button-group-";
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(bindingPath), "binding-path"),
-                    new (nameof(label), "label"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string bindingPath;
-            [SerializeField] internal string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new PropertyField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (PropertyField)obj;
-                if (ShouldWriteAttributeValue(bindingPath_UxmlAttributeFlags))
-                    e.bindingPath = bindingPath;
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                    e.label = label;
-            }
-        }
-
         /// <summary>
         /// Binding object that will be updated.
         /// </summary>
@@ -75,11 +41,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Path of the target property to be bound.
         /// </summary>
+        [UxmlAttribute]
         public string bindingPath { get; set; }
 
         /// <summary>
         /// Optionally overwrite the label of the generate property field. If no label is provided the string will be taken from the SerializedProperty.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public string label
         {
@@ -116,7 +84,7 @@ namespace UnityEditor.UIElements
 
         internal SerializedProperty serializedProperty
         {
-            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_SerializedProperty;
         }
 

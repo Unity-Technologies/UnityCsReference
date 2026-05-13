@@ -199,6 +199,8 @@ namespace UnityEditor
                 return;
 
             RebuildContentsContainers();
+            m_PreviewWindow?.RebuildContentsContainers();
+
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
                 m_MultiEditLabel.RemoveFromHierarchy();

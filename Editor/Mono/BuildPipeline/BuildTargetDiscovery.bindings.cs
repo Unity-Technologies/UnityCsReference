@@ -19,7 +19,7 @@ namespace UnityEditor
     [StaticAccessor("BuildTargetDiscovery::GetInstance()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetDiscovery.h")]
     [RequiredByNativeCode]
-    [VisibleToOtherModules("UnityEditor.BuildProfileModule", "UnityEditor.BurstModule")]
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "UnityEditor.BuildProfileModule", "UnityEditor.BurstModule")]
     internal static class BuildTargetDiscovery
     {
         [Flags]

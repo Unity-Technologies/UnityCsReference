@@ -2,26 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ProgressBar : VisualElement
+    [UxmlElement]
+    internal partial class ProgressBar : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                return new ProgressBar(
-                    ServicesContainer.instance.Resolve<IResourceLoader>());
-            }
-        }
-
         static private double s_LastWidthTime;
         private const double k_PaintInterval = 1f; // Time interval to repaint
+
+        public ProgressBar() : this(ServicesContainer.instance.Resolve<IResourceLoader>())
+        {
+        }
 
         public ProgressBar(IResourceLoader resourceLoader)
         {

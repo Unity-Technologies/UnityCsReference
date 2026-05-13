@@ -203,6 +203,11 @@ namespace Unity.UI.Builder
 
                     m_DataSourcePathField.label = "Data Source Path";
                     m_DataSourcePathField.isDelayed = true;
+                    // Reject syntactically invalid paths before they reach the UxmlSerializedData write,
+                    // which would otherwise throw inside `new PropertyPath(value)` and break the inspector.
+                    // Register on the PropertyField parent so this fires earlier in TrickleDown than the
+                    // serialized binding's own change handler on the inner TextField.
+                    target.RegisterCallback<ChangeEvent<string>>(OnDataSourcePathChanged, TrickleDown.TrickleDown);
                     m_DataSourcePathCompleter = new DataSourcePathCompleter(m_DataSourcePathField);
                     // HACK: We pass the text field as the field to "edit" by the completer.
                     // When writing directly into the field (so not choosing an item from the auto-complete),
@@ -540,6 +545,27 @@ namespace Unity.UI.Builder
             }
 
             m_DataSourcePathCompleter.UpdateResults(isShowingDataSource);
+        }
+
+        void OnDataSourcePathChanged(ChangeEvent<string> evt)
+        {
+            if (string.IsNullOrEmpty(evt.newValue))
+                return;
+
+            try
+            {
+                _ = new PropertyPath(evt.newValue);
+            }
+            catch (ArgumentException)
+            {
+                evt.StopImmediatePropagation();
+                m_DataSourcePathField.SetValueWithoutNotify(evt.previousValue);
+                if (m_PathWarningBox != null)
+                {
+                    m_PathWarningBox.text = BuilderConstants.BindingWindowInvalidPathSyntaxErrorMessage;
+                    m_PathWarningBox.style.display = DisplayStyle.Flex;
+                }
+            }
         }
 
         void UpdateWarningBox()

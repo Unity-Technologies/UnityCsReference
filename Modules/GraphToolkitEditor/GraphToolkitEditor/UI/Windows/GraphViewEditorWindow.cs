@@ -234,11 +234,18 @@ Would you like to save these changes?
         bool m_InitialAssetDirtyCache;
         bool m_CurrentAssetDirtyCache;
 
+        Hash128 m_RootGraphModelGuid;
+        Hash128 m_CurrentVisualizationContextId;
+        bool m_IsVisualizationContextAttached;
+
         protected GraphView m_GraphView;
         protected BlackboardView m_BlackboardView;
         protected VisualElement m_GraphContainer;
         protected BlankPage m_BlankPage;
         protected Label m_GraphProcessingPendingLabel;
+
+        internal event Action<GraphVisualization.Session> visualizationContextAttached;
+        internal event Action<GraphVisualization.Session> visualizationContextDetached;
 
         GraphProcessingStatusObserver m_GraphProcessingStatusObserver;
 
@@ -636,7 +643,7 @@ Would you like to save these changes?
                     return;
                 }
             }
-            
+
             AssetDatabase.SaveAssets();
         }
 
@@ -778,6 +785,9 @@ Would you like to save these changes?
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             ShortcutManager.instance.shortcutBindingChanged += OnShortcutUpdated;
             EditorApplication.delayCall += UpdateTooltips;
+            GraphVisualization.Registry.contextRegistered += ResolveAndAttachVisualizationContext;
+            GraphVisualization.Registry.contextWillUnregister += OnVisualizationContextWillUnregister;
+            ResolveAndAttachVisualizationContext();
 
             m_GraphProcessingPendingLabel = new Label("Graph Processing Pending") { name = "graph-processing-pending-label" };
 
@@ -991,6 +1001,8 @@ Would you like to save these changes?
             EditorApplication.update -= EditorUpdate;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             ShortcutManager.instance.shortcutBindingChanged -= OnShortcutUpdated;
+            GraphVisualization.Registry.contextRegistered -= ResolveAndAttachVisualizationContext;
+            GraphVisualization.Registry.contextWillUnregister -= OnVisualizationContextWillUnregister;
 
             ConsoleWindowHelper.RemoveLogEntries(WindowID.ToString());
 
@@ -1130,6 +1142,9 @@ Would you like to save these changes?
             {
                 Debug.Log($"UI Update ({GraphTool?.LastDispatchedCommandName ?? "Unknown command"}) took {sw.ElapsedMilliseconds} ms");
             }
+
+            if (!m_IsVisualizationContextAttached)
+                ResolveAndAttachVisualizationContext();
 
             Profiler.EndSample();
         }
@@ -1601,6 +1616,68 @@ Would you like to save these changes?
             // When opening a graph by clicking on a window tab, the graph view focus is lost to the IMGUIContainer of the window.
             // We try to get it back.
             UpdateGraphViewFocus();
+        }
+
+        Hash128 GetRootGraphModelGuid()
+        {
+            if (GraphTool?.ToolState?.SubgraphStack is { Count: > 0 })
+                return GraphTool.ToolState.GetSubGraphModel(0).Guid;
+
+            return GraphTool?.ToolState?.GraphModel?.Guid ?? default;
+        }
+
+        void ResolveAndAttachVisualizationContext(Hash128 visualizationContextId = default)
+        {
+            var currentRootGraphGuid = GetRootGraphModelGuid();
+            if (!currentRootGraphGuid.isValid)
+                return;
+
+            // If the graph model has changed, reset the visualization context binding
+            if (currentRootGraphGuid != m_RootGraphModelGuid)
+            {
+                m_CurrentVisualizationContextId = default;
+                m_IsVisualizationContextAttached = false;
+            }
+
+            m_RootGraphModelGuid = currentRootGraphGuid;
+
+            // Return early if the graph view is not initialized yet, or if we are already attached to a visualization context.
+            if (GraphView == null || m_CurrentVisualizationContextId.isValid || m_IsVisualizationContextAttached)
+                return;
+
+            GraphVisualization.Session session;
+
+            // Prefer the explicit context id if it matches this window's root graph.
+            if (visualizationContextId.isValid && GraphVisualization.Registry.TryGetVisualizationSession(visualizationContextId, out var explicitSession) && explicitSession?.GraphGuid == m_RootGraphModelGuid)
+            {
+                session = explicitSession;
+            }
+            else
+            {
+                // Fallback: find any existing session for this root graph.
+                GraphVisualization.Registry.TryGetVisualizationSessionForGraph(m_RootGraphModelGuid, out session);
+            }
+
+            if (session == null)
+                return;
+
+            m_CurrentVisualizationContextId = session.VisualizationContextId;
+            m_IsVisualizationContextAttached = true;
+
+            visualizationContextAttached?.Invoke(session);
+        }
+
+        void OnVisualizationContextWillUnregister(Hash128 visualizationContextId)
+        {
+            // Check if the unregistered visualization context is the one we are attached to. If not, do nothing.
+            if (m_CurrentVisualizationContextId != visualizationContextId)
+                return;
+
+            m_CurrentVisualizationContextId = default;
+            m_IsVisualizationContextAttached = false;
+
+            if (GraphVisualization.Registry.TryGetVisualizationSession(visualizationContextId, out var session))
+                visualizationContextDetached?.Invoke(session);
         }
 
         internal class TestAccess

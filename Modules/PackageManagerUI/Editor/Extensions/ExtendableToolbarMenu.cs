@@ -2,29 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ExtendableToolbarMenu : ToolbarWindowMenu, IToolbarMenuElement, IMenu
+    [UxmlElement]
+    internal partial class ExtendableToolbarMenu : ToolbarWindowMenu, IToolbarMenuElement, IMenu
     {
-        [Serializable]
-        public new class UxmlSerializedData : ToolbarWindowMenu.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                return new ExtendableToolbarMenu(
-                    ServicesContainer.instance.Resolve<IDropdownHandler>());
-            }
-        }
-
         private bool m_NeedRefresh;
         private readonly List<MenuDropdownItem> m_BuiltInItems;
         private readonly List<MenuDropdownItem> m_DropdownItems;
         public DropdownMenu menu { get; private set; }
+
+        public ExtendableToolbarMenu() : this(ServicesContainer.instance.Resolve<IDropdownHandler>())
+        {
+        }
 
         private readonly IDropdownHandler m_DropdownHandler;
         public ExtendableToolbarMenu(IDropdownHandler dropdownHandler)

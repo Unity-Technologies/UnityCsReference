@@ -8,24 +8,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageStatusBar : VisualElement
+    [UxmlElement]
+    internal partial class PackageStatusBar : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageStatusBar(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IBackgroundFetchHandler>(),
-                    container.Resolve<IPageRefreshHandler>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IUnityConnectProxy>());
-            }
-        }
-
         // The internal modifier is used (instead of private) to give our test project access to these properties/methods
         internal static readonly string k_OfflineErrorMessage = L10n.Tr("You seem to be offline");
 
@@ -36,6 +21,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageRefreshHandler m_PageRefreshHandler;
         private readonly IPageManager m_PageManager;
         private readonly IUnityConnectProxy m_UnityConnect;
+
+        public PackageStatusBar() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IBackgroundFetchHandler>(),
+            ServicesContainer.instance.Resolve<IPageRefreshHandler>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>())
+        {
+        }
+
         public PackageStatusBar(
             IResourceLoader resourceLoader,
             IApplicationProxy application,

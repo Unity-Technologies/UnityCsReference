@@ -281,16 +281,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        float GetScreenDpiForScaleResolution()
+        {
+            if (scaleMode == PanelScaleMode.ConstantPhysicalSize)
+            {
+                var gameViewInfo = GetGameViewRenderInfo?.Invoke(m_TargetDisplay);
+                if (gameViewInfo != null)
+                    return gameViewInfo.dpi;
+            }
+            return Screen.dpi;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void CacheDisplayRectAndScale()
         {
-
             m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
 
             if (renderMode == PanelRenderMode.WorldSpace)
                 m_ResolvedScale = 1.0f; // No panel scaling for world-space
             else
-                m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size); // dpi should be constant across all displays
+                m_ResolvedScale = PanelSettingsUtility.ResolveScale(this, m_TargetRect.size);
         }
 
         [SerializeField]
@@ -453,6 +463,9 @@ namespace UnityEngine.UIElements
         /// this value to the actual screen DPI, and scales the UI accordingly in the Game view.
         ///
         /// If Unity cannot determine the screen DPI, it uses the <see cref="PanelSettings.fallbackDpi"/> instead.
+        ///
+        /// In the editor, UI Builder and the Inspector use their own window scaling (IMGUI / editor pixels-per-point);
+        /// they are not the same context as play mode <see cref="UnityEngine.IGameViewRenderInfo"/> DPI used for Game view overlay panels.
         /// </remarks>
         public float referenceDpi
         {
@@ -689,7 +702,11 @@ namespace UnityEngine.UIElements
 
         internal static Action<BaseRuntimePanel> CreateRuntimePanelDebug;
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
-        internal static Func<int, Vector2?> GetGameViewResolution;
+        internal static Func<int, IGameViewRenderInfo> GetGameViewRenderInfo
+        {
+            get => GameViewRenderInfoQuery.getImplementation;
+            set => GameViewRenderInfoQuery.getImplementation = value;
+        }
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
 
         internal static void SetupLiveReloadPanelTrackers(bool isLiveReloadOn)
@@ -824,7 +841,8 @@ namespace UnityEngine.UIElements
         {
             // We assume users will want their UIDocument to look as closely as possible to what they look like in the UIBuilder.
             // This is no guarantee, but it's the best we can do at the moment.
-            referenceDpi = ScreenDPI;
+            // One-time authoring default from editor Screen.dpi (not game-view runtime DPI from CacheDisplayRectAndScale).
+            referenceDpi = Screen.dpi;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
             renderMode = PanelRenderMode.ScreenSpaceOverlay;
             colliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
@@ -840,7 +858,6 @@ namespace UnityEngine.UIElements
 
         private void OnEnable()
         {
-            UpdateScreenDPI();
             InitializeShaders();
             AssignICUData();
         }
@@ -855,9 +872,7 @@ namespace UnityEngine.UIElements
             m_PanelAccess.DisposePanel();
         }
 
-        // Internal for tests.
-        internal float ScreenDPI { get; set; }
-        float IPanelSettings.screenDpi => ScreenDPI;
+        float IPanelSettings.screenDpi => GetScreenDpiForScaleResolution();
 
         private IDebugPanelChangeReceiver m_PanelChangeReceiver = null;
 
@@ -885,11 +900,6 @@ namespace UnityEngine.UIElements
         }
 
         internal IDebugPanelChangeReceiver GetPanelChangeReceiver() {return m_PanelChangeReceiver; }
-
-        internal void UpdateScreenDPI()
-        {
-            ScreenDPI = Screen.dpi;
-        }
 
         private void ApplyThemeStyleSheet(VisualElement root = null)
         {
@@ -1041,7 +1051,10 @@ namespace UnityEngine.UIElements
             }
 
             // In the Unity Editor, Display.displays is not supported; displays.Length always has a value of 1, regardless of how many displays you have connected.
-            return new (Vector2.zero, GetGameViewResolution(m_TargetDisplay) ?? new (Display.main.renderingWidth, Display.main.renderingHeight));
+            var gameView = GetGameViewRenderInfo?.Invoke(m_TargetDisplay);
+            if (gameView != null)
+                return new Rect(Vector2.zero, gameView.targetSize);
+            return new Rect(Vector2.zero, new Vector2(Display.main.renderingWidth, Display.main.renderingHeight));
         }
 
         internal void AttachAndInsertPanelComponentToVisualTree(IPanelComponent panelComponent)

@@ -12,7 +12,6 @@ namespace Unity.UIToolkit.Editor;
 
 sealed partial class PanelElement
 {
-    static readonly Event k_RepaintEvent = new Event { type = EventType.Repaint };
     static readonly Vector2Int k_InitialSize = new (100, 100);
 
     PanelSettings m_PanelSettings;
@@ -162,7 +161,7 @@ sealed partial class PanelElement
         if (SubPanel == null)
             return;
         SubPanel.TickSchedulingUpdaters();
-        SubPanel.Repaint(k_RepaintEvent);
+        SubPanel.Repaint();
         SubPanel.Render();
     }
 

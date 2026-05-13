@@ -2211,7 +2211,7 @@ namespace NiceIO
                     if (findHandle.ToInt64() == Win32Native.ERROR_FILE_NOT_FOUND)
                         return DateTime.MinValue;
 
-                    var utcFileTime = ((long)findData.ftLastWriteTime.dwHighDateTime << 32) + findData.ftLastWriteTime.dwLowDateTime;
+                    var utcFileTime = ((long)findData.ftLastWriteTime.dwHighDateTime << 32) + (uint)findData.ftLastWriteTime.dwLowDateTime;
                     return DateTime.FromFileTimeUtc(utcFileTime);
                 }
                 finally

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
@@ -11,19 +10,9 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Makes a style field for editing a StyleEnum.
     /// </summary>
-    internal class StyleEnumField<T> : StylePropertyField<StyleEnum<T>, EnumToggleField<T>, T> where T : struct, Enum, IConvertible
+    [UxmlElement]
+    internal partial class StyleEnumField<T> : StylePropertyField<StyleEnum<T>, EnumToggleField<T>, T> where T : struct, Enum, IConvertible
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleEnum<T>, EnumToggleField<T>, T>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleEnum<T>, EnumToggleField<T>, T>.UxmlSerializedData.Register();
-            }
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.HierarchyV2
@@ -65,10 +66,16 @@ namespace UnityEngine.UIElements.HierarchyV2
                 {
                     m_ContainerOffset.x = horizontalScroller.highValue > 0 && value.x >= 0 ? value.x : 0;
                     m_ContainerOffset.y = verticalScroller.highValue > 0 && value.y >= 0 ? value.y : 0;
-                    m_Container.style.translate = new Vector3(-m_ContainerOffset.x, -m_ContainerOffset.y, 0);
+
+                    if (applyOffset != null)
+                        applyOffset(m_ContainerOffset);
+                    else
+                        m_Container.style.translate = new Vector3(-m_ContainerOffset.x, -m_ContainerOffset.y, 0);
                 }
             }
         }
+
+        public Action<Vector2> applyOffset;
 
         /// <summary>
         /// USS class name of elements of this type.

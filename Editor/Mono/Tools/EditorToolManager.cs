@@ -21,7 +21,7 @@ namespace UnityEditor.EditorTools
         internal static readonly string k_Tooltip = L10n.Tr("Creation Tools");
         CreationToolsGroup() {}
     }
-       
+
     sealed class EditorToolManager : EditorToolStateManager<EditorToolManager, EditorToolManager.EditorToolState>
     {
         [Serializable]
@@ -42,21 +42,21 @@ namespace UnityEditor.EditorTools
 
             [SerializeField]
             ToolVariantPrefs m_VariantPrefs = new ToolVariantPrefs();
-            
+
             [SerializeField]
             List<ComponentEditor> m_ComponentTools = new List<ComponentEditor>();
 
             [SerializeField]
             List<ComponentEditor> m_ComponentContexts = new List<ComponentEditor>();
-            
+
             [SerializeField]
             EditorToolContext m_ActiveToolContext;
-            
+
             [SerializeField]
             ComponentToolCache m_PreviousComponentToolCache;
-            
+
             bool m_ChangingActiveTool, m_ChangingActiveContext;
-            
+
             public PivotMode pivotMode
             {
                 get { return m_PivotMode; }
@@ -73,7 +73,17 @@ namespace UnityEditor.EditorTools
                             {
                                 var lastCustomMode = EditorPivotManager.GetLastCustomPivotMode(stateToolOwnerType);
                                 if (lastCustomMode != null && activePivotMode != lastCustomMode)
-                                    PivotManager.SetActivePivotMode(lastCustomMode.GetType(), stateToolOwnerType);
+                                {
+                                    var lastCustomModeType = lastCustomMode.GetType();
+                                    if (EditorPivotManager.IsPivotModeAvailable(lastCustomModeType, stateToolOwnerType))
+                                        PivotManager.SetActivePivotMode(lastCustomModeType, stateToolOwnerType);
+                                    else
+                                    {
+                                        var firstAvailable = EditorPivotManager.GetFirstAvailablePivotMode(stateToolOwnerType);
+                                        if (firstAvailable != null)
+                                            PivotManager.SetActivePivotMode(firstAvailable, stateToolOwnerType);
+                                    }
+                                }
                                 else
                                     return;
                             }
@@ -100,9 +110,9 @@ namespace UnityEditor.EditorTools
                     }
                 }
             }
-            
+
             PivotMode m_PivotMode;
-            
+
             public PivotRotation pivotRotation
             {
                 get { return m_PivotRotation; }
@@ -119,7 +129,17 @@ namespace UnityEditor.EditorTools
                             {
                                 var lastCustomRotation = EditorPivotManager.GetLastCustomPivotRotation(stateToolOwnerType);
                                 if (lastCustomRotation != null && activePivotRotation != lastCustomRotation)
-                                    PivotManager.SetActivePivotRotation(lastCustomRotation.GetType(), stateToolOwnerType);
+                                {
+                                    var lastCustomRotationType = lastCustomRotation.GetType();
+                                    if (EditorPivotManager.IsPivotRotationAvailable(lastCustomRotationType, stateToolOwnerType))
+                                        PivotManager.SetActivePivotRotation(lastCustomRotationType, stateToolOwnerType);
+                                    else
+                                    {
+                                        var firstAvailable = EditorPivotManager.GetFirstAvailablePivotRotation(stateToolOwnerType);
+                                        if (firstAvailable != null)
+                                            PivotManager.SetActivePivotRotation(firstAvailable, stateToolOwnerType);
+                                    }
+                                }
                                 else
                                     return;
                             }
@@ -139,7 +159,7 @@ namespace UnityEditor.EditorTools
                                     break;
                             }
                         }
-                        
+
                         m_PivotRotation = value;
                         Tools.InvokePivotRotationChangedCallback(stateToolOwnerType);
                     }
@@ -177,15 +197,15 @@ namespace UnityEditor.EditorTools
             {
                 get => m_SortedContextsDataCache ??= new EditorToolUtility.SortedContextDataCache(this);
             }
-            
+
             [SerializeField]
             List<ScriptableObject> m_SingletonObjects = new List<ScriptableObject>();
-            
+
             public List<ScriptableObject> singletonObjects { get => m_SingletonObjects; set => m_SingletonObjects = value; }
-            
+
             bool m_Hidden;
             public bool hidden { get => m_Hidden; set => m_Hidden = value; }
-            
+
             internal EditorTool lastManipulationTool
             {
                 get
@@ -212,7 +232,7 @@ namespace UnityEditor.EditorTools
                     return GetSingleton<MoveTool>();
                 }
             }
-            
+
             internal EditorTool activeTool
             {
                 get { return m_ActiveTool; }
@@ -267,10 +287,10 @@ namespace UnityEditor.EditorTools
                     m_ActiveTool.Activate(stateToolOwnerType);
 
                     ToolManager.ActiveToolDidChange(stateToolOwnerType);
-                    
+
                     if (stateToolOwnerType == typeof(SceneView))
                         activeToolChanged?.Invoke(previous, m_ActiveTool);
-                    
+
                     activeToolChangedForOwner?.Invoke(previous, m_ActiveTool, stateToolOwnerType);
 
                     Tools.SyncToolEnum();
@@ -283,7 +303,7 @@ namespace UnityEditor.EditorTools
                     m_ChangingActiveTool = false;
                 }
             }
-            
+
             internal EditorToolContext activeToolContext
             {
                 get
@@ -314,7 +334,7 @@ namespace UnityEditor.EditorTools
 
                     // Make sure to get the active tool enum prior to setting the context, otherwise we'll be comparing
                     // apples to oranges. Ie, the transform tools will be different despite being the same `Tool` enum value.
-                    
+
                     var toolEnum = Tools.GetCurrent(stateToolOwnerType);
     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     var wasAdditionalContextTool = toolEnum == Tool.Custom && additionalContextToolTypesCache.Contains(activeTool.GetType());
@@ -377,11 +397,11 @@ namespace UnityEditor.EditorTools
                     m_ChangingActiveContext = false;
                 }
             }
-            
+
             public override void OnEnable()
             {
                 base.OnEnable();
-                
+
                 Undo.undoRedoEvent += UndoRedoPerformed;
                 ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
                 Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
@@ -403,7 +423,7 @@ namespace UnityEditor.EditorTools
                 Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
                 AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
             }
-            
+
             internal void OnToolGUI(EditorWindow window)
             {
                 if (!IsGizmoCulledBySceneCullingMasksOrFocusedScene(activeToolContext.target))
@@ -435,12 +455,12 @@ namespace UnityEditor.EditorTools
                 if (evt.type == EventType.KeyDown && evt.keyCode == KeyCode.Escape && TryPopToolState(window.GetType()))
                     evt.Use();
             }
-            
+
             public void RestorePreviousPersistentTool()
             {
                 activeTool = lastManipulationTool;
             }
-            
+
             internal void InvokeOnSceneGUICustomEditorTools()
             {
                 foreach (var context in componentContexts)
@@ -463,7 +483,7 @@ namespace UnityEditor.EditorTools
                         handle.OnDrawHandles();
                 }
             }
-            
+
             internal bool IsGizmoCulledBySceneCullingMasksOrFocusedScene(UnityObject uobject)
             {
                 var cmp = uobject as UnityEngine.Component;
@@ -489,12 +509,12 @@ namespace UnityEditor.EditorTools
                         break;
                 }
             }
-            
+
             void UndoRedoPerformed(in UndoRedoInfo info)
             {
                 RestoreCustomEditorTool();
             }
-            
+
             void BeforeAssemblyReload()
             {
                 if (m_ActiveTool != null)
@@ -503,7 +523,7 @@ namespace UnityEditor.EditorTools
                 if (m_ActiveToolContext != null)
                     m_ActiveToolContext.Deactivate();
             }
-            
+
             void RestoreCustomEditorTool()
             {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -521,7 +541,7 @@ namespace UnityEditor.EditorTools
 
                 previousComponentToolCache = ComponentToolCache.Empty;
             }
-            
+
             public void TrackerRebuilt()
             {
                 // when entering play mode there is an intermediate tracker rebuild where nothing is selected. ignore it.
@@ -532,21 +552,21 @@ namespace UnityEditor.EditorTools
                 RebuildAvailableTools();
                 EnsureCurrentToolIsNotNull();
             }
-            
+
             void RebuildAvailableContexts()
             {
                 var activeContextType = activeToolContext.GetType();
                 ClearComponentContexts();
 
                 EditorToolUtility.InstantiateComponentContexts(componentContexts, stateToolOwnerType);
-                
+
                 var restoredContext = componentContexts.Find(x => x.editorType == activeContextType);
                 if (restoredContext != null)
                     activeToolContext = restoredContext.GetEditor<EditorToolContext>();
 
                 sortedContextsDataCache.SetDirty();
             }
-            
+
             public void EnsureCurrentToolIsNotNull()
             {
                 if (m_ActiveTool == null)
@@ -567,14 +587,14 @@ namespace UnityEditor.EditorTools
 
                 m_ComponentTools.Clear();
             }
-            
+
             void RebuildAvailableTools()
             {
                 ComponentToolCache activeComponentTool = new ComponentToolCache(activeToolContext, activeTool, stateToolOwnerType);
                 ClearCustomEditorTools();
 
                 EditorToolUtility.InstantiateComponentTools(activeToolContext, componentTools, stateToolOwnerType);
-                
+
                 if (activeComponentTool.toolType != null)
                 {
                     var restoredTool = componentTools.Find(x => x.editorType == activeComponentTool.toolType);
@@ -595,7 +615,7 @@ namespace UnityEditor.EditorTools
                     availableToolsChanged?.Invoke();
                 availableToolsChangedForOwner?.Invoke(stateToolOwnerType);
             }
-            
+
             // Checks the currently instantiated (or available global type) tools for a matching instance.
             internal bool GetAvailableTool(EditorTypeAssociation typeAssociation, out EditorTool tool)
             {
@@ -616,12 +636,12 @@ namespace UnityEditor.EditorTools
                 // if this is a component tool
                 if (typeAssociation.targetBehaviour != null && typeAssociation.targetBehaviour != typeof(NullTargetKey))
                     return (tool = GetComponentTool(typeAssociation.editor, stateToolOwnerType,  false)) != null;
-                
+
                 tool = (EditorTool) GetSingleton(typeAssociation.editor);
 
                 return true;
             }
-            
+
             void ClearComponentContexts()
             {
                 foreach (var context in componentContexts)
@@ -633,7 +653,7 @@ namespace UnityEditor.EditorTools
 
                 componentContexts.Clear();
             }
-            
+
             void CleanupSingletons()
             {
                 for (int i = m_SingletonObjects.Count - 1; i > -1; i--)
@@ -642,7 +662,7 @@ namespace UnityEditor.EditorTools
                         m_SingletonObjects.RemoveAt(i);
                 }
             }
-            
+
             public T GetSingleton<T>() where T : ScriptableObject
             {
                 return (T)GetSingleton(typeof(T));
@@ -675,7 +695,7 @@ namespace UnityEditor.EditorTools
                 singletonObjects.Add(res);
                 if (res is EditorToolContext context)
                     context.SetContextOwner(stateToolOwnerType);
-                
+
                 return res;
             }
 
@@ -683,7 +703,7 @@ namespace UnityEditor.EditorTools
             {
                 previousComponentToolCache = new ComponentToolCache(activeToolContext, activeTool, stateToolOwnerType);
             }
-            
+
             void SelectedObjectWasDestroyed(EntityId id)
             {
 #pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -708,7 +728,7 @@ namespace UnityEditor.EditorTools
                     RestorePreviousPersistentTool();
                 }
             }
-            
+
              // Collect all available tools into applicable UI categories and variant groups
             public void GetAvailableTools(List<ToolEntry> tools, EditorToolContext context = null)
             {
@@ -785,7 +805,7 @@ namespace UnityEditor.EditorTools
                 // Don't support component tools if this owner is not SceneView
                 if (stateToolOwnerType != typeof(SceneView))
                     return;
-                
+
                 // 4. component tools
                 foreach (var tool in componentTools)
                 {
@@ -809,26 +829,26 @@ namespace UnityEditor.EditorTools
         // Mimic behavior of Tools.toolChanged for backwards compatibility until existing tools are converted to the new
         // apis.
         internal static event Action<EditorTool, EditorTool> activeToolChanged;
-        
+
         internal static event Action<EditorTool, EditorTool, Type> activeToolChangedForOwner;
-        
+
         // unfiltered component tools includes locked inspectors
         internal IEnumerable<ComponentEditor> componentTools => defaultState.componentTools;
 
         internal static IEnumerable<ComponentEditor> componentContexts => instance.defaultState.componentContexts;
-        
+
         internal static IReadOnlyList<Type> additionalContextToolTypesCache = Array.Empty<Type>();
-       
+
         internal static EditorTool activeTool
         {
             get => instance.defaultState.activeTool;
             set => instance.defaultState.activeTool = value;
         }
-        
+
         internal static void SetActiveTool(EditorTool tool, Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
-            if (state != null) 
+            if (state != null)
                 state.activeTool = tool;
         }
 
@@ -852,7 +872,7 @@ namespace UnityEditor.EditorTools
                 return state.activeToolContext;
             return null;
         }
-        
+
         // this tool will transparently override the `OnToolGUI` method of the active tool.
         // do not expose this as public API with also considering how to handle lifecycle and active tool interop.
         // currently this is only used for EditorToolAction.
@@ -866,7 +886,7 @@ namespace UnityEditor.EditorTools
                 instance.defaultState.activeOverride = value;
             }
         }
-        
+
         internal static void SetActiveOverride(EditorActionTool editorActionToolOverride, Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
@@ -886,7 +906,7 @@ namespace UnityEditor.EditorTools
             public Type contextType;
             [NonSerialized]
             public Type toolType;
-            
+
             public UnityObject targetObject;
             public UnityObject[] targetObjects;
 
@@ -896,7 +916,7 @@ namespace UnityEditor.EditorTools
             {
                 bool customTool = EditorToolUtility.IsCustomEditorTool(tool, toolOwner);
                 bool customContext = EditorToolUtility.IsCustomToolContext(context);
-                
+
                 toolType = null;
                 contextType = null;
                 targetObject = null;
@@ -916,7 +936,7 @@ namespace UnityEditor.EditorTools
 #pragma warning restore UA2001
                     }
                 }
-                
+
                 m_ToolType = null;
                 m_ContextType = null;
             }
@@ -966,7 +986,7 @@ namespace UnityEditor.EditorTools
             foreach (var state in instance.customStates)
                 state.TrackerRebuilt();
         }
-        
+
         internal static T GetSingleton<T>() where T : ScriptableObject
         {
             return GetSingleton<T>(typeof(SceneView));
@@ -976,31 +996,31 @@ namespace UnityEditor.EditorTools
         {
             return GetSingleton(type, typeof(SceneView));
         }
-        
+
         internal static T GetSingleton<T>(Type ownerType) where T : ScriptableObject
         {
             return (T)GetSingleton(typeof(T), ownerType);
         }
-        
+
         internal static ScriptableObject GetSingleton(Type type, Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
             if (state != null)
                 return state.GetSingleton(type);
-            
+
             return null;
         }
-        
+
         internal static EditorToolState GetEditorToolStateForOwner(Type ownerType)
         {
             return instance.GetOrCreateStateForType(ownerType);
         }
-        
+
         public static EditorTool GetActiveTool()
         {
             return GetActiveTool(typeof(SceneView));
         }
-        
+
         internal static EditorTool GetActiveTool(Type ownerType)
         {
             var state = instance.GetOrCreateStateForType(ownerType);
@@ -1020,14 +1040,14 @@ namespace UnityEditor.EditorTools
                 return defaultState.lastManipulationTool;
             }
         }
-        
+
         internal static Tool previousTool => instance.defaultState.previousTool;
 
         internal static EditorTool lastCustomTool => instance.defaultState.lastCustomTool;
-        
+
         public static void RestorePreviousPersistentTool()
         {
-            RestorePreviousPersistentTool(typeof(SceneView));            
+            RestorePreviousPersistentTool(typeof(SceneView));
         }
 
         public static void RestorePreviousPersistentTool(Type toolOwner)
@@ -1042,7 +1062,7 @@ namespace UnityEditor.EditorTools
         {
             return TryPopToolState(typeof(SceneView));
         }
-        
+
         internal static bool TryPopToolState(Type toolOwnerType)
         {
             // Tools.viewToolActive is currently only tied to SceneView tool owners.
@@ -1056,7 +1076,7 @@ namespace UnityEditor.EditorTools
                 RestorePreviousPersistentTool(toolOwnerType);
                 return true;
             }
-            
+
             var state = instance.GetOrCreateStateForType(toolOwnerType);
             if (state != null && ToolManager.GetActiveContextType(toolOwnerType) != state.defaultToolContextType)
             {
@@ -1075,7 +1095,7 @@ namespace UnityEditor.EditorTools
             if (state != null)
                 state.OnToolGUI(window);
         }
-        
+
         internal static void InvokeOnSceneGUICustomEditorTools()
         {
             instance.defaultState.InvokeOnSceneGUICustomEditorTools();
@@ -1084,7 +1104,7 @@ namespace UnityEditor.EditorTools
                 state.InvokeOnSceneGUICustomEditorTools();
             }
         }
-        
+
         // Used by tests
         public static T GetComponentContext<T>(bool searchLockedInspectors = false) where T : EditorToolContext
         {
@@ -1096,7 +1116,7 @@ namespace UnityEditor.EditorTools
         {
             return GetComponentContext(x => x.editorType == contextType && (searchLockedInspectors || !x.lockedInspector));
         }
-        
+
         public static EditorToolContext GetComponentContext(Type contextType, Type toolOwner, bool searchLockedInspectors = false)
         {
             return GetComponentContext(toolOwner, x => x.editorType == contextType && (searchLockedInspectors || !x.lockedInspector));
@@ -1107,7 +1127,7 @@ namespace UnityEditor.EditorTools
         {
             return GetComponentContext(typeof(SceneView), predicate);
         }
-        
+
         internal static EditorToolContext GetComponentContext(Type toolOwner, Func<ComponentEditor, bool> predicate)
         {
             var state = instance.GetOrCreateStateForType(toolOwner);
@@ -1128,7 +1148,7 @@ namespace UnityEditor.EditorTools
         {
             GetComponentContexts(typeof(SceneView), predicate, list);
         }
-        
+
         public static void GetComponentContexts(Type toolOwner, Func<ComponentEditor, bool> predicate, List<EditorToolContext> list)
         {
             list.Clear();
@@ -1160,7 +1180,7 @@ namespace UnityEditor.EditorTools
         {
             return GetComponentTool(typeof(T), typeof(SceneView), searchLockedInspectors) as T;
         }
-        
+
         internal static T GetComponentTool<T>(Type toolOwner, bool searchLockedInspectors = false)
             where T : EditorTool
         {
@@ -1211,7 +1231,7 @@ namespace UnityEditor.EditorTools
         {
             GetComponentTools(x => true, list, searchLockedInspectors);
         }
-        
+
         internal static void GetComponentTools(Func<ComponentEditor, bool> predicate,
             List<EditorTool> list,
             bool searchLockedInspectors = false)
@@ -1235,18 +1255,18 @@ namespace UnityEditor.EditorTools
             if (state != null)
                 state.GetAvailableTools(tools, context);
         }
-        
+
         public static void GetAvailableTools(List<ToolEntry> tools, EditorToolContext context = null)
         {
             instance.defaultState.GetAvailableTools(tools, context);
-        } 
-        
+        }
+
         // Checks the currently instantiated (or available global type) tools for a matching instance.
         internal static bool GetAvailableTool(EditorTypeAssociation typeAssociation, out EditorTool tool)
         {
             return GetAvailableTool(typeAssociation, typeof(SceneView), out tool);
         }
-        
+
         internal static bool GetAvailableTool(EditorTypeAssociation typeAssociation, Type toolOwnerType, out EditorTool tool)
         {
             tool = null;

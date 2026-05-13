@@ -7,6 +7,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using System.Linq;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.AnimationWindowBuiltin
@@ -21,6 +22,26 @@ namespace UnityEditor.AnimationWindowBuiltin
             public static GUIContent textDeleteEvent = EditorGUIUtility.TrTextContent("Delete Animation Event");
             public static GUIContent textCopyEvents = EditorGUIUtility.TrTextContent("Copy Animation Events");
             public static GUIContent textPasteEvents = EditorGUIUtility.TrTextContent("Paste Animation Events");
+
+            public static GUIContent eventMarker = EditorGUIUtility.IconContent("Animation.LargeEventMarker");
+            public static GUIContent eventMarkerMultiOverlay = EditorGUIUtility.IconContent("Animation.LargeEventMarker.MultiOverlay");
+        }
+
+        // Event clustering data structure for grouping events at the same time
+        struct EventCluster
+        {
+            public int firstIndex;
+            public int lastIndex;
+            public int index;
+            public int indexCount;
+
+            public EventCluster()
+            {
+                firstIndex = -1;
+                lastIndex = -1;
+                index = -1;
+                indexCount = 0;
+            }
         }
 
         [System.NonSerialized]
@@ -29,7 +50,12 @@ namespace UnityEditor.AnimationWindowBuiltin
         private float[] m_EventTimes;
         [System.NonSerialized]
         bool m_IsDragging = false;
-        private static readonly Vector2 k_EventMarkerSize = new Vector2(16, 16);
+
+        // Updated to Timeline's Signal marker size (9x16) for better visibility
+        // Larger markers remain visible even when playhead overlaps them (fixes UUM-138402)
+        private static readonly Vector2 k_EventMarkerSize = new Vector2(9, 16);
+
+        private static readonly Vector2 k_TooltipOffset = new Vector2(-30f, 0f);
 
         private bool m_DirtyTooltip = false;
         private int m_HoverEvent = -1;
@@ -56,6 +82,108 @@ namespace UnityEditor.AnimationWindowBuiltin
                 int valueX = x.GetHashCode();
                 int valueY = y.GetHashCode();
                 return valueX - valueY;
+            }
+        }
+
+        // Build clusters of events at the same time (based on Timeline's MarkersLayer.cs)
+        PooledObject<Dictionary<int, EventCluster>> BuildClusters(AnimationEvent[] events, float frameRate, out Dictionary<int, EventCluster> clusters)
+        {
+            var pooledClusters = DictionaryPool<int, EventCluster>.Get(out clusters);
+            using var pooledAccumulator = ListPool<(int frame, int index)>.Get(out var accumulator);
+
+            // Events should already be sorted by time from GetAnimationEvents
+            for (int i = 0; i < events.Length; i++)
+            {
+                var evt = events[i];
+                var frame = AnimationKeyTime.Time(evt.time, frameRate).frame;
+
+                // Check if this event is at a different frame than accumulated events
+                if (accumulator.Count > 0)
+                {
+                    var lastFrame = accumulator[^1].frame;
+
+                    // Use frame-based comparison for precise frame alignment
+                    // Events snap to frames in Animation Window
+                    if (frame != lastFrame)
+                    {
+                        ProcessAccumulator(accumulator, clusters);
+                    }
+                }
+
+                accumulator.Add((frame, i));
+            }
+
+            ProcessAccumulator(accumulator, clusters);
+
+            return pooledClusters;
+        }
+
+        void ProcessAccumulator(List<(int frame, int index)> accumulator, Dictionary<int, EventCluster> clusters)
+        {
+            if (accumulator.Count == 0) return;
+
+            var cluster = new EventCluster
+            {
+                firstIndex = accumulator[0].index,
+                lastIndex = accumulator[^1].index,
+                index = accumulator[0].index,
+                indexCount = accumulator.Count
+            };
+            clusters[accumulator[0].frame] = cluster;
+            accumulator.Clear();
+        }
+
+        // Cycle to the next event in a cluster (Phase 3)
+        void CycleCluster(int clusterFrame, in EventCluster cluster, AnimationEvent[] events, GameObject animated, AnimationClip clip)
+        {
+            if (cluster.indexCount < 2)
+                return;
+
+            if (cluster.index < 0 || cluster.index >= events.Length)
+                return;
+
+            // Cycle back at first index if at the last index of the cluster.
+            if (cluster.index == cluster.lastIndex)
+            {
+                EditEvent(animated, clip, cluster.firstIndex);
+                return;
+            }
+
+            // Cycle to next event in the cluster
+            for (int i = cluster.index + 1; i < cluster.lastIndex; ++i)
+            {
+                var frame = AnimationKeyTime.Time(events[i].time, clip.frameRate).frame;
+                if (frame == clusterFrame)
+                {
+                    EditEvent(animated, clip, i);
+                    return;
+                }
+            }
+
+            // If no event was found in cycle, fall back to last index
+            EditEvent(animated, clip, cluster.lastIndex);
+        }
+
+        void UpdateInstantTooltip(Rect rect, float frameRate, GameObject root, AnimationEvent[] events, Dictionary<int, EventCluster> clusters, Rect[] hitRects)
+        {
+            if (m_HoverEvent >= 0 && m_HoverEvent < events.Length)
+            {
+                var animationEvent = events[m_HoverEvent];
+                var frame = AnimationKeyTime.Time(animationEvent.time, frameRate).frame;
+
+                // Find which cluster this event belongs to
+                if (clusters.TryGetValue(frame, out var hoveredCluster) &&
+                    hoveredCluster.indexCount > 1)
+                {
+                    // Show cluster count in tooltip
+                    m_InstantTooltipText = $"Multiple events ({hoveredCluster.indexCount})";
+                }
+                else
+                {
+                    m_InstantTooltipText = AnimationEventWrapperInspector.FormatEvent(root, animationEvent);
+                }
+
+                m_InstantTooltipPoint = new Vector2(hitRects[m_HoverEvent].xMin + (int)(hitRects[m_HoverEvent].width / 2) + rect.x + k_TooltipOffset.x, rect.yMax + k_TooltipOffset.y);
             }
         }
 
@@ -205,70 +333,57 @@ namespace UnityEditor.AnimationWindowBuiltin
             if (animationClip != null)
             {
                 AnimationEvent[] events = AnimationUtility.GetAnimationEvents(animationClip);
-                Texture eventMarker = EditorGUIUtility.IconContent("Animation.EventMarker").image;
 
-                // Calculate rects
-                Rect[] hitRects = new Rect[events.Length];
+                // Build clusters for events at the same time
+                using var pooledObjects = BuildClusters(events, state.frameRate, out var clusters);
+
+                // Calculate rects for clusters
+                // Map from original event index to cluster rect
                 Rect[] drawRects = new Rect[events.Length];
-                int shared = 1;
-                int sharedLeft = 0;
-                for (int i = 0; i < events.Length; i++)
+
+                for (int eventIndex = 0; eventIndex < events.Length; ++eventIndex)
                 {
-                    AnimationEvent evt = events[i];
+                    var animationEvent = events[eventIndex];
+                    var frame = AnimationKeyTime.Time(animationEvent.time, state.frameRate).frame;
 
-                    if (sharedLeft == 0)
-                    {
-                        shared = 1;
-                        while (i + shared < events.Length && events[i + shared].time == evt.time)
-                            shared++;
-                        sharedLeft = shared;
-                    }
-                    sharedLeft--;
+                    // Important to take floor of positions of GUI stuff to get pixel correct alignment
+                    float keypos = Mathf.Floor(state.FrameToPixel(frame, rect));
 
-                    // Important to take floor of positions of GUI stuff to get pixel correct alignment of
-                    // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
-                    float keypos = Mathf.Floor(state.FrameToPixel(evt.time * animationClip.frameRate, rect));
-                    int sharedOffset = 0;
-                    if (shared > 1)
-                    {
-                        float spread = Mathf.Min((shared - 1) * (k_EventMarkerSize.x - 1), (int)(state.FrameDeltaToPixel(rect) - k_EventMarkerSize.x * 2));
-                        sharedOffset = Mathf.FloorToInt(Mathf.Max(0, spread - (k_EventMarkerSize.x - 1) * (sharedLeft)));
-                    }
-
-                    Rect r = new Rect(
-                        keypos + sharedOffset - k_EventMarkerSize.x / 2,
-                        (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
+                    drawRects[eventIndex] = new Rect(
+                        keypos - k_EventMarkerSize.x / 2 + 1,
+                        0,  // Align to top of timeline
                         k_EventMarkerSize.x,
                         k_EventMarkerSize.y);
-
-                    hitRects[i] = r;
-                    drawRects[i] = r;
                 }
 
-                // Store tooptip info
+                // Store tooltip info (with cluster awareness)
                 if (m_DirtyTooltip)
                 {
-                    if (m_HoverEvent >= 0 && m_HoverEvent < hitRects.Length)
-                    {
-                        m_InstantTooltipText = AnimationEventWrapperInspector.FormatEvent(animated, events[m_HoverEvent]);
-                        m_InstantTooltipPoint = new Vector2(hitRects[m_HoverEvent].xMin + (int)(hitRects[m_HoverEvent].width / 2) + rect.x - 30, rect.yMax);
-                    }
+                    UpdateInstantTooltip(rect, state.frameRate, animated, events, clusters, drawRects);
                     m_DirtyTooltip = false;
                 }
 
                 bool[] selectedEvents = new bool[events.Length];
                 m_HasSelectedEvents = false;
 
-                Object[] selectedObjects = Selection.objects;
-                foreach (Object selectedObject in selectedObjects)
+                var selectedEventWrappers = Selection.GetFiltered<AnimationEventWrapper>(SelectionMode.Unfiltered);
+                foreach (AnimationEventWrapper eventWrapper in selectedEventWrappers)
                 {
-                    AnimationEventWrapper awe = selectedObject as AnimationEventWrapper;
-                    if (awe != null)
+                    if (eventWrapper.eventIndex >= 0 && eventWrapper.eventIndex < selectedEvents.Length)
                     {
-                        if (awe.eventIndex >= 0 && awe.eventIndex < selectedEvents.Length)
+                        selectedEvents[eventWrapper.eventIndex] = true;
+                        m_HasSelectedEvents = true;
+
+                        // To make sure top most event in a cluster always remains selected whenever
+                        // any event in that cluster is selected. Only performed during repaint
+                        // to avoid changing selection.
+                        if (Event.current.type == EventType.Repaint)
                         {
-                            selectedEvents[awe.eventIndex] = true;
-                            m_HasSelectedEvents = true;
+                            var frame = AnimationKeyTime.Time(events[eventWrapper.eventIndex].time, state.frameRate).frame;
+                            if (clusters.TryGetValue(frame, out var cluster))
+                            {
+                                selectedEvents[cluster.lastIndex] = true;
+                            }
                         }
                     }
                 }
@@ -277,12 +392,11 @@ namespace UnityEditor.AnimationWindowBuiltin
                 int clickedIndex;
                 float startSelection, endSelection;
 
-                // TODO: GUIStyle.none has hopping margins that need to be fixed
                 HighLevelEvent hEvent = EditorGUIExt.MultiSelection(
                     rect,
                     drawRects,
-                    new GUIContent(eventMarker),
-                    hitRects,
+                    Styles.eventMarker,
+                    drawRects,
                     ref selectedEvents,
                     null,
                     out clickedIndex,
@@ -291,6 +405,18 @@ namespace UnityEditor.AnimationWindowBuiltin
                     out endSelection,
                     GUIStyle.none
                 );
+
+                // Draw "+" overlay for clusters with multiple events
+                foreach (var (_, cluster) in clusters)
+                {
+                    if (cluster.indexCount > 1)
+                    {
+                        int firstIndex = cluster.firstIndex;
+                        Rect clusterRect = drawRects[firstIndex];
+
+                        GUI.DrawTexture(clusterRect, Styles.eventMarkerMultiOverlay.image, ScaleMode.ScaleToFit);
+                    }
+                }
 
                 if (hEvent != HighLevelEvent.None)
                 {
@@ -308,7 +434,46 @@ namespace UnityEditor.AnimationWindowBuiltin
                             break;
                         case HighLevelEvent.SelectionChanged:
                             state.ClearKeySelections();
-                            EditEvents(animated, animationClip, selectedEvents);
+
+                            // Check if this is a click on a cluster for cycling behavior
+                            if (clickedIndex >= 0 && clickedIndex < events.Length)
+                            {
+                                var animationEvent = events[clickedIndex];
+                                var frame = AnimationKeyTime.Time(animationEvent.time, state.frameRate).frame;
+
+                                // Find last selected cluster.
+                                var lastSelectedCluster = new EventCluster();
+                                if (selectedEventWrappers.Length == 1)
+                                {
+                                    AnimationEventWrapper awe = selectedEventWrappers[0];
+                                    if (awe.eventIndex >= 0 || awe.eventIndex < events.Length)
+                                    {
+                                        var selectedEventFrame = AnimationKeyTime.Time(events[awe.eventIndex].time, state.frameRate).frame;
+                                        if (clusters.TryGetValue(selectedEventFrame, out lastSelectedCluster))
+                                            lastSelectedCluster.index = awe.eventIndex;
+                                    }
+                                }
+
+                                // Check if clicking on the same cluster
+                                bool isSameClusterClick =
+                                    clusters.TryGetValue(frame, out var clickedCluster) &&
+                                    lastSelectedCluster.firstIndex == clickedCluster.firstIndex;
+
+                                if (isSameClusterClick && lastSelectedCluster.indexCount > 1)
+                                {
+                                    // Cycle to next event in cluster
+                                    CycleCluster(frame, lastSelectedCluster, events, animated, animationClip);
+                                }
+                                else
+                                {
+                                    // Regular selection
+                                    EditEvents(animated, animationClip, selectedEvents);
+                                }
+                            }
+                            else
+                            {
+                                EditEvents(animated, animationClip, selectedEvents);
+                            }
                             break;
                         case HighLevelEvent.Delete:
                             DeleteEvents(animationClip, selectedEvents);
@@ -376,7 +541,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                     m_InstantTooltipText = "";
                 }
                 else
-                    CheckRectsOnMouseMove(rect, events, hitRects);
+                    CheckRectsOnMouseMove(rect, state.frameRate, animated, events, clusters, drawRects);
 
                 // Bring up menu when context-clicking on an empty timeline area (context-clicking on events is handled above)
                 if (Event.current.type == EventType.ContextClick && eventLineRect.Contains(Event.current.mousePosition))
@@ -501,7 +666,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                 PasteEvents(ctx.m_Animated, clip, ctx.m_Time);
         }
 
-        private void CheckRectsOnMouseMove(Rect eventLineRect, AnimationEvent[] events, Rect[] hitRects)
+        void CheckRectsOnMouseMove(Rect eventLineRect, float frameRate, GameObject root, AnimationEvent[] events, Dictionary<int, EventCluster> clusters, Rect[] hitRects)
         {
             Vector2 mouse = Event.current.mousePosition;
             bool hasFound = false;
@@ -516,10 +681,11 @@ namespace UnityEditor.AnimationWindowBuiltin
                         if (m_HoverEvent != i)
                         {
                             m_HoverEvent = i;
-                            m_InstantTooltipText = events[m_HoverEvent].functionName;
-                            m_InstantTooltipPoint = new Vector2(hitRects[m_HoverEvent].xMin + (int)(hitRects[m_HoverEvent].width / 2) + eventLineRect.x, eventLineRect.yMax);
+                            UpdateInstantTooltip(eventLineRect, frameRate, root, events, clusters, hitRects);
                             m_DirtyTooltip = true;
                         }
+
+                        break;
                     }
                 }
             }

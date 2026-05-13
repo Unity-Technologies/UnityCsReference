@@ -52,16 +52,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths.Length > 0)
             {
-                if(scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined)
+                // Only set ruleset/config paths if not already set (e.g., by immutable package logic)
+                if (string.IsNullOrEmpty(scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath) &&
+                    string.IsNullOrEmpty(scriptAssembly.CompilerOptions.AnalyzerConfigPath))
                 {
-                    var originPath = Path.ChangeExtension(scriptAssembly.Filename, null);
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetRuleSetFilePathInRootFolder(originPath);
-                    scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigRootFolder(originPath);
-                }
-                else
-                {
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
-                    scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigForAssembly(scriptAssembly.OriginPath);
+                    if(scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined)
+                    {
+                        var originPath = Path.ChangeExtension(scriptAssembly.Filename, null);
+                        scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetRuleSetFilePathInRootFolder(originPath);
+                        scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigRootFolder(originPath);
+                    }
+                    else
+                    {
+                        scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                        scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigForAssembly(scriptAssembly.OriginPath);
+                    }
                 }
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 scriptAssembly.CompilerOptions.RoslynAdditionalFilePaths = scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths

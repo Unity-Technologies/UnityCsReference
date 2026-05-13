@@ -8,26 +8,13 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
-using System;
-using System.Diagnostics;
 
 namespace Unity.UI.Builder
 {
     [UsedImplicitly]
-    class TextShadowStyleField : BaseField<TextShadow>
+    [UxmlElement]
+    partial class TextShadowStyleField : BaseField<TextShadow>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<TextShadow>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TextShadow>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextShadowStyleField();
-        }
-
         static readonly string s_FieldClassName = "unity-text-shadow-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/TextShadowStyleField.uxml";
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/TextFoldoutStyleField.uss";

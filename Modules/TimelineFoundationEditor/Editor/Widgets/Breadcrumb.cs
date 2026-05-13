@@ -8,15 +8,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets
 {
-    partial class Breadcrumb : VisualElement
+    [UxmlElement]
+    internal partial class Breadcrumb : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new Breadcrumb();
-        }
-
         const string k_Class = "breadcrumb";
         const string k_ClassSelected = k_Class + "--selected";
         const string k_ClassIcon = "icon";

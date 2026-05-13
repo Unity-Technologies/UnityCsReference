@@ -32,6 +32,7 @@ namespace UnityEngine.TextCore.Text
         internal static extern int GetCursorLogicalIndexFromPosition(IntPtr textGenerationInfo, Vector2 position);
 
         [NativeMethod(Name = "TextSelectionService::GetCursorPositionFromLogicalIndex")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern Vector2 GetCursorPositionFromLogicalIndex(IntPtr textGenerationInfo, int logicalIndex);
 
         [NativeMethod(Name = "TextSelectionService::GetCursorPositionFromCursorIndex")]
@@ -43,17 +44,36 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextSelectionService::GetCharacterHeightFromIndex")]
         internal static extern float GetCharacterHeightFromIndex(IntPtr textGenerationInfo, int index);
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NativeMethod(Name = "TextSelectionService::GetStartOfNextWord")]
         internal static extern int GetStartOfNextWord(IntPtr textGenerationInfo, int currentIndex);
 
         [NativeMethod(Name = "TextSelectionService::GetEndOfPreviousWord")]
         internal static extern int GetEndOfPreviousWord(IntPtr textGenerationInfo, int currentIndex);
 
-        [NativeMethod(Name = "TextSelectionService::GetLineHeight")]
-        internal static extern float GetLineHeight(IntPtr textGenerationInfo, int lineIndex);
+        /// <summary>
+        /// Returns both the start (inclusive) and end (exclusive) of the word at index (read-only).
+        /// startIndex is set to -1 when index is on whitespace; endIndex still marks the segment boundary.
+        /// </summary>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NativeMethod(Name = "TextSelectionService::ComputeWordBounds")]
+        internal static extern void ComputeWordBounds(IntPtr textGenerationInfo, int index, out int startIndex, out int endIndex);
+
+        [NativeMethod(Name = "TextSelectionService::GetFirstCharacterIndexOnLine")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern int GetFirstCharacterIndexOnLine(IntPtr textGenerationInfo, int currentIndex);
+
+        [NativeMethod(Name = "TextSelectionService::GetLastCharacterIndexOnLine")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern int GetLastCharacterIndexOnLine(IntPtr textGenerationInfo, int currentIndex);
 
         [NativeMethod(Name = "TextSelectionService::GetLineNumberFromLogicalIndex")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern int GetLineNumber(IntPtr textGenerationInfo, int logicalIndex);
+
+        [NativeMethod(Name = "TextSelectionService::GetGlyphIndex")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern int GetGlyphIndex(IntPtr textGenerationInfo, int logicalIndex);
 
         [NativeMethod(Name = "TextSelectionService::GetValidPointIndex")]
         internal static extern int GetValidPointIndex(IntPtr textGenerationInfo, int index);

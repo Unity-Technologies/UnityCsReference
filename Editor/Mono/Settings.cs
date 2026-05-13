@@ -12,6 +12,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IPrefType
     {
         string ToUniqueString();
@@ -177,7 +178,7 @@ namespace UnityEditor
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class PrefSettings
     {
         static List<IPrefType> m_AddedPrefs = new List<IPrefType>();
@@ -185,11 +186,13 @@ namespace UnityEditor
         public static Action<string, Type> settingChanged;
         public static Action settingsReverted;
 
+        [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
         static internal void Add(IPrefType value)
         {
             m_AddedPrefs.Add(value);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
         static internal T Get<T>(string name, T defaultValue)
             where T : IPrefType, new()
         {
@@ -216,6 +219,7 @@ namespace UnityEditor
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
         static internal void Set<T>(string name, T value)
             where T : IPrefType
         {
@@ -226,6 +230,7 @@ namespace UnityEditor
             settingChanged?.Invoke(name, typeof(T));
         }
 
+        [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
         static internal IEnumerable<KeyValuePair<string, T>> Prefs<T>()
             where T : IPrefType
         {

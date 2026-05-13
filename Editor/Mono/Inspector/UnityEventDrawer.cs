@@ -132,6 +132,12 @@ namespace UnityEditorInternal
             m_Prop = property;
             m_Text = label.text;
 
+            if (IsNullManagedReference(property))
+            {
+                EditorGUI.LabelField(position, label);
+                return;
+            }
+
             State state = RestoreState(property);
 
             OnGUI(position);
@@ -246,6 +252,18 @@ namespace UnityEditorInternal
         {
             m_Prop = property;
             m_Text = preferredLabel;
+
+            if (IsNullManagedReference(property))
+            {
+                var wrapper = new VisualElement();
+                wrapper.AddToClassList(BaseField<int>.ussClassName);
+                wrapper.AddToClassList(BaseField<int>.alignedFieldUssClassName);
+                var label = new Label(preferredLabel) { tooltip = property.tooltip };
+                label.AddToClassList(PropertyField.labelUssClassName);
+                wrapper.Add(label);
+                return wrapper;
+            }
+
             m_DummyEvent = GetDummyEvent(m_Prop);
 
             var listViewContainer = new VisualElement();
@@ -322,6 +340,9 @@ namespace UnityEditorInternal
         {
             //TODO: Also we need to have a constructor or initializer called for this property Drawer, before OnGUI or GetPropertyHeight
             //otherwise, we get Restore the State twice, once here and again in OnGUI. Maybe we should only do it here?
+            if (IsNullManagedReference(property))
+                return EditorGUI.kSingleLineHeight;
+
             RestoreState(property);
 
             float height = 0f;
@@ -552,6 +573,12 @@ namespace UnityEditorInternal
             m_LastSelectedIndex = list.index;
         }
 
+        private static bool IsNullManagedReference(SerializedProperty property)
+        {
+            return property.propertyType == SerializedPropertyType.ManagedReference
+                && property.managedReferenceValue == null;
+        }
+
         internal static UnityEventBase GetDummyEvent(SerializedProperty prop)
         {
             //Use the SerializedProperty path to iterate through the fields of the inspected targetObject
@@ -559,8 +586,15 @@ namespace UnityEditorInternal
             if (tgtobj == null)
                 return new UnityEvent();
 
+            if (prop.propertyType == SerializedPropertyType.ManagedReference
+                && prop.managedReferenceValue is UnityEventBase managedRefEvent)
+            {
+                return managedRefEvent;
+            }
+
             ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(prop, out var propType);
-            if (propType.IsSubclassOf(typeof(UnityEventBase)))
+            if (propType != null && propType.IsSubclassOf(typeof(UnityEventBase))
+                && !propType.IsAbstract)
                 return Activator.CreateInstance(propType) as UnityEventBase;
             return new UnityEvent();
         }

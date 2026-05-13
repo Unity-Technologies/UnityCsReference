@@ -8,15 +8,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets
 {
-    partial class ContextMenuButton : VisualElement
+    [UxmlElement]
+    internal partial class ContextMenuButton : VisualElement
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ContextMenuButton();
-        }
-
         public event Action<ContextualMenuPopulateEvent> menuBuilding;
 
         public ContextMenuButton()

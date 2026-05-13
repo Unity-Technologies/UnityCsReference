@@ -7,8 +7,9 @@ using System;
 namespace UnityEditor.Build.Profile
 {
     /// <summary>
-    /// Created by occurrences of <see cref="BuildProfileSettingsProviderAttribute"/>, contains
-    /// display information for a build profile settings section.
+    /// Defines the display information and behavior for a custom settings foldout in
+    /// the Build Profile window. Use with <see cref="BuildProfileSettingsProviderAttribute"/>
+    /// to register a settings foldout for a given <see cref="UnityEngine.ScriptableObject"/> settings type.
     /// </summary>
     public class BuildProfileSettingsProvider
     {
@@ -23,12 +24,12 @@ namespace UnityEditor.Build.Profile
         internal int displayOrder { get; set; } = 0;
 
         /// <summary>
-        /// Foldout tooltip text. If empty, no tooltip is displayed.
+        /// Settings foldout tooltip text. If empty, no tooltip is displayed.
         /// </summary>
         public string tooltip { get; set; } = string.Empty;
 
         /// <summary>
-        /// When true, indicates that a custom implementation of <see cref="Editor"/> should be used.
+        /// When true, Unity uses a custom <see cref="Editor"/> implementation for this settings foldout.
         /// Otherwise, the default inspector for the settings object is displayed.
         /// </summary>
         public bool hasCustomEditor { get; set; } = false;
@@ -43,12 +44,17 @@ namespace UnityEditor.Build.Profile
 
         /// <summary>
         /// Callback determining if the settings object described by this provider can be
-        /// added to the given build profile.
+        /// added to the given build profile. Must be set for settings to appear in the
+        /// build profile editor; when not set, the settings will not be shown.
         /// </summary>
         public Func<BuildProfile, bool> canAddSetting { get; set; }
 
         internal Type settingsType { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="BuildProfileSettingsProvider"/> with the specified display name.
+        /// </summary>
+        /// <param name="displayName">Display name for the settings foldout in the Build Profile window.</param>
         public BuildProfileSettingsProvider(string displayName)
         {
             this.displayName = displayName;

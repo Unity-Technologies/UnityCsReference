@@ -204,6 +204,15 @@ namespace UnityEditor.DeviceSimulation
             m_Main.userInterface.UpdateEnterPlayModeBehaviorMsg();
         }
 
+        protected override float GetGameViewDpiForPhysicalSize()
+        {
+            // Simulation sets Screen.dpi from the device; do not fold simulator window UITK scale into physical DPI.
+            var fromScreen = Screen.dpi;
+            if (fromScreen > 0f)
+                return fromScreen;
+            return k_defaultDPI;
+        }
+
         private void OnDevicePackageStatus(DevicePackageStatus status)
         {
             m_Main.userInterface.DeviceButtonState = new DevicePackageInstallButtonState

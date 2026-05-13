@@ -84,6 +84,7 @@ namespace Unity.Hierarchy
         readonly CollectionView m_CollectionView;
         readonly MultiColumnLayoutConfiguration m_MultiColumnLayoutConfiguration;
         readonly HierarchyViewColumnName m_NameColumn;
+        readonly HierarchyViewColumnNavigate m_NavigateColumn;
         readonly HierarchyViewDragHandler m_DragHandler;
         readonly VisualElement m_ListViewScrollView;
         readonly HierarchyViewSelection m_Selection;
@@ -310,6 +311,7 @@ namespace Unity.Hierarchy
             [VisibleToOtherModules]
             get => m_NameColumn;
         }
+        internal HierarchyViewColumnNavigate NavigateColumn => m_NavigateColumn;
 
         /// <summary>
         /// Creates a new instance of the <see cref="HierarchyView"/>.
@@ -338,6 +340,7 @@ namespace Unity.Hierarchy
             };
 
             m_NameColumn = new HierarchyViewColumnName(this);
+            m_NavigateColumn = new HierarchyViewColumnNavigate(this);
             m_DragHandler = new HierarchyViewDragHandler(this);
 
             m_CollectionView.AddToClassList(k_ListViewName);
@@ -345,11 +348,15 @@ namespace Unity.Hierarchy
             m_CollectionView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
             m_CollectionView.scrollView.RegisterCallback<PointerDownEvent>(OnListViewPointerDown);
             m_MultiColumnLayoutConfiguration.columns.Add(m_NameColumn);
+            m_MultiColumnLayoutConfiguration.columns.Add(m_NavigateColumn);
             m_NameColumn.stretchable = true;
             m_NameColumn.OnBindItem += OnBindItem;
             m_NameColumn.OnUnbindItem += OnUnbindItem;
 
             m_CollectionView.layoutConfiguration = m_MultiColumnLayoutConfiguration;
+
+            // Freeze the navigate column
+            m_MultiColumnLayoutConfiguration.header?.SetColumnFreezeState(m_NavigateColumn, FreezeState.FreezeRight);
 
             m_ListViewScrollView = m_CollectionView.scrollView;
             m_ListViewScrollView.RegisterCallback<ClickEvent>(OnClickEvent);
@@ -1066,7 +1073,8 @@ namespace Unity.Hierarchy
         {
             var columns = new List<Column>
             {
-                NameColumn
+                NameColumn,
+                NavigateColumn
             };
 
             foreach (var colDesc in columnDescriptors)
@@ -1267,8 +1275,20 @@ namespace Unity.Hierarchy
             UnbindViewItem?.Invoke(this, item);
         }
 
+        void CancelScheduledRename()
+        {
+            if (m_ScheduledItem?.isActive == true)
+            {
+                m_ScheduledItem.Pause();
+                m_ScheduledItem = null;
+            }
+        }
+
         internal void InvokePopulateContextMenu(ContextualMenuPopulateEvent evt)
         {
+            // Cancel any pending rename when right-clicking to show context menu
+            CancelScheduledRename();
+
             var hierarchyView = evt.target as HierarchyView;
             if (hierarchyView == null)
                 return;
@@ -1529,6 +1549,9 @@ namespace Unity.Hierarchy
             if (m_IsRenamingItem)
                 return;
 
+            // Cancel any pending rename on any key press (shortcuts like Cmd+D, Delete, etc.)
+            CancelScheduledRename();
+
             var shouldStopPropagation = true;
             switch (evt.keyCode)
             {
@@ -1653,6 +1676,9 @@ namespace Unity.Hierarchy
         // Clear selection when left clicking on the empty space.
         void OnListViewPointerDown(PointerDownEvent evt)
         {
+            // Cancel any pending rename on pointer down, before selection changes
+            CancelScheduledRename();
+
             var target = evt.target as VisualElement;
             if (target != m_CollectionView.scrollView.contentContainer)
                 return;

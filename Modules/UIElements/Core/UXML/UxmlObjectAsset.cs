@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
 
     [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal abstract class UxmlAsset : IUxmlAttributes
+    internal abstract class UxmlAsset
     {
         [Flags]
         enum Flags

@@ -124,6 +124,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             RegisterCallback<MouseDownEvent>(OnMouseDown);
             RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
+
+            m_PageManager.onFiltersChange += OnFiltersChange;
+            m_PageManager.onTrimmedSearchTextChanged += OnTrimmedSearchTextChanged;
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -131,6 +134,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             UnregisterCallback<MouseDownEvent>(OnMouseDown);
             UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
+
+            m_PageManager.onFiltersChange -= OnFiltersChange;
+            m_PageManager.onTrimmedSearchTextChanged -= OnTrimmedSearchTextChanged;
+        }
+
+        private void OnFiltersChange(PageFiltersChangeArgs args)
+        {
+            ScrollToSelection();
+        }
+
+        private void OnTrimmedSearchTextChanged(IPage page)
+        {
+            ScrollToSelection();
         }
 
         public IListItem GetListItem(string itemUniqueId)
@@ -146,7 +162,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ScrollToSelection()
         {
-            UIUtils.ScrollIfNeeded(this, GetListItem(m_PageManager.activePage.GetSelection().last)?.element);
+            var target = GetListItem(m_PageManager.activePage.GetSelection().last)?.element;
+            if (target != null)
+                UIUtils.ScrollToWhenReady(target);
         }
 
         private IListItem CreateItem(VisualState visualState, bool isSample)

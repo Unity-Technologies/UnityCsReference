@@ -19,8 +19,8 @@ static class VisualElementReferenceTools
     {
         if (vea.serializedData is VisualElement.UxmlSerializedData uxmlData)
         {
-            if (!string.IsNullOrEmpty(uxmlData.nameValue))
-                return uxmlData.nameValue;
+            if (!string.IsNullOrEmpty(uxmlData.name))
+                return uxmlData.name;
             else if (fallbackToTypeName)
                 return uxmlData.GetType().DeclaringType.Name;
         }
@@ -68,6 +68,22 @@ static class VisualElementReferenceTools
     /// </returns>
     public static bool TryCreateReference(VisualElement element, out PanelRenderer panelRenderer, out AuthoringIdPath authoringIdPath, bool addMissingAuthoringIds)
     {
+        return TryCreateReference(element, out panelRenderer, out authoringIdPath, addMissingAuthoringIds, false);
+    }
+
+    /// <summary>
+    /// Attempts to create a reference to a <see cref="VisualElement"/> within a <see cref="PanelRenderer"/>.
+    /// </summary>
+    /// <param name="element">The element to reference.</param>
+    /// <param name="panelRenderer">The <see cref="PanelRenderer"/> that contains the target visual element.</param>
+    /// <param name="authoringIdPath">The resolved path to the element.</param>
+    /// <param name="addMissingAuthoringIds">If <see langword="true"/>, missing authoring IDs are added to the UXML. If <see langword="false"/>, the method returns false when authoring IDs are missing.</param>
+    /// <param name="suppressWarnings">If <see langword="true"/>, warnings are suppressed.</param>
+    /// <returns>
+    /// <see langword="true"/> if the reference was successfully created; otherwise, <see langword="false"/>.
+    /// </returns>
+    internal static bool TryCreateReference(VisualElement element, out PanelRenderer panelRenderer, out AuthoringIdPath authoringIdPath, bool addMissingAuthoringIds, bool suppressWarnings)
+    {
         panelRenderer = default;
         authoringIdPath = default;
 
@@ -77,13 +93,15 @@ static class VisualElementReferenceTools
         var panelComponent = element.FindRootPanelComponent();
         if (panelComponent is not PanelRenderer renderer)
         {
-            Debug.LogWarning($"Cannot reference the element '{GenerateVisualElementLabel(element)}' because referencing requires it to be part of a PanelRenderer. It is currently part of a '{panelComponent.GetType().Name}' component.");
+            if (!suppressWarnings)
+                Debug.LogWarning($"Cannot reference the element '{GenerateVisualElementLabel(element)}' because referencing requires it to be part of a PanelRenderer. It is currently part of a '{panelComponent.GetType().Name}' component.");
             return false;
         }
 
         if (element is not IPanelComponentRootElement && element.visualElementAsset == null)
         {
-            Debug.LogWarning($"Can not reference a temporary element {element.name} ({element.GetType().Name}).", renderer);
+            if (!suppressWarnings)
+                Debug.LogWarning($"Can not reference a temporary element {element.name} ({element.GetType().Name}).", renderer);
             return false;
         }
 
@@ -157,8 +175,6 @@ static class VisualElementReferenceTools
             throw new ArgumentNullException(nameof(panelRenderer));
         if (visualElement == null)
             throw new ArgumentNullException(nameof(visualElement));
-        if (visualElement.visualElementAsset == null)
-            throw new Exception("The visual element must be part of a VisualTreeAsset to create a reference.");
 
         if (visualElement is IPanelComponentRootElement rootElement)
         {
@@ -167,9 +183,12 @@ static class VisualElementReferenceTools
             return true;
         }
 
+        if (visualElement.visualElementAsset == null)
+            return false;
+
         var rootComponent = visualElement.FindRootPanelComponent();
         if (!ReferenceEquals(rootComponent, panelRenderer))
-            throw new Exception("The visual element is not part of the specified PanelRenderer.");
+            return false; // The visual element is not part of the specified PanelRenderer.
 
         using var pathPool = ListPool<VisualElementAsset>.Get(out var pathElements);
         using var missingIdsPool = ListPool<VisualElementAsset>.Get(out var missingAuthoringIds);

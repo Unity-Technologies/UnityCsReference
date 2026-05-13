@@ -16,23 +16,11 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for editing an <see cref="AnimationCurve"/>. For more information, refer to [[wiki:UIE-uxml-element-CurveField|UXML element CurveField]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/CurveField.png")]
     public partial class CurveField : BaseField<AnimationCurve>
     {
         internal static readonly BindingId renderModeProperty = nameof(renderMode);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<AnimationCurve>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<AnimationCurve>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new CurveField();
-        }
 
         /// <summary>
         /// USS class name of elements of this type.

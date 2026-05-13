@@ -238,7 +238,6 @@ namespace UnityEditor.UIElements
                 uxmlAttributeDescription.type = attDescription.fieldType;
                 uxmlAttributeDescription.serializedField = attDescription.serializedField;
                 uxmlAttributeDescription.serializedFieldAttributeFlags = attDescription.serializedFieldAttributeFlags;
-                uxmlAttributeDescription.obsoleteNames = attDescription.obsoleteNames;
 
                 // When a UxmlObjectAttribute does not contain a name then we treat it as a legacy field,
                 // one that does not have an element for the field name, e.g MultiColumnListView.

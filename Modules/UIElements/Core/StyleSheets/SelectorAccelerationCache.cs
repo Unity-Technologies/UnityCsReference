@@ -18,113 +18,93 @@ enum SelectorAccelerationTableType
     Length = 3 // Used to initialize the array
 }
 
+// Flattened selector part - leaf level
+struct FlattenedSelectorPart
+{
+    public int uniqueStringId;      // UniqueStyleString.id, -1 for wildcards/pseudo
+    public StyleSelectorType type;   // Class, ID, Type, Wildcard, PseudoClass
+}
+
+// Flattened selector - middle level
+struct FlattenedSelector
+{
+    public int pseudoStateMask;
+    public int negatedPseudoStateMask;
+    public StyleSelectorRelationship previousRelationship;  // Child or Descendent
+
+    // Range into parts array
+    public ushort startPartIndex;
+    public ushort partCount;
+}
+
+// Selector range descriptor - top level
+struct SelectorRangeDescriptor
+{
+    // Sorting key (used to sort allDescriptors)
+    public SelectorAccelerationTableType tableType;  // Name, Type, Class, or None (for wildcards/root)
+    public int tableKey;  // UniqueStyleString.id for the last part
+
+    // Range in flat selectors array
+    public ushort startSelectorIndex;
+    public ushort selectorCount;
+
+    // Reverse lookup
+    public int ruleIndex;
+    public int selectorIndexInRule;
+
+    // Cached metadata
+    public int orderInStyleSheet;
+    public int importedStyleSheetIndex;
+    public int specificity;
+    public bool isSimple;
+
+    // Bloom filter hashes
+    public unsafe fixed int ancestorHashes[Hashes.kSize];
+}
+
 struct SelectorAccelerationCacheEntry
 {
-    public TableType[] tables;
+    // Flattened data structures
+    public FlattenedSelectorPart[] allParts;        // Leaf level: individual parts
+    public FlattenedSelector[] allSelectors;        // Middle level: groups of parts
+    public SelectorRangeDescriptor[] allDescriptors; // Top level: SORTED by (tableType, tableKey, orderInStyleSheet)
 
-    internal int nonEmptyTablesMask;
+    // Range-based acceleration tables (store ranges instead of lists)
+    public Dictionary<int, (int startIndex, int count)> nameTable;   // UniqueStyleString.id → range in allDescriptors
+    public Dictionary<int, (int startIndex, int count)> typeTable;
+    public Dictionary<int, (int startIndex, int count)> classTable;
 
-    internal List<StyleSelectorLookupEntry> rootSelectors;
-
-    internal List<StyleSelectorLookupEntry> wildCardSelectors;
-
-    public static SelectorAccelerationCacheEntry Create()
+    public Dictionary<int, (int startIndex, int count)> GetTable(int index)
     {
-        var entry = new SelectorAccelerationCacheEntry();
-        entry.tables = new[]
+        switch((SelectorAccelerationTableType)index)
         {
-            // Name
-            new TableType(StringComparer.Ordinal),
-            // Type
-            new TableType(StringComparer.Ordinal),
-            // Class
-            new TableType(StringComparer.Ordinal)
-        };
-        return entry;
-    }
-
-    public static void AppendStyleSheetToEntry(ref SelectorAccelerationCacheEntry entry, StyleSheet styleSheet, int importedStyleSheetIndex = -1)
-    {
-        for (var index = 0; index < styleSheet.rules.Length; index++)
-        {
-            var rule = styleSheet.rules[index];
-            if (rule.complexSelectors == null)
-                continue;
-
-            foreach (var complexSelector in rule.complexSelectors)
-            {
-                var lastSelector = complexSelector.selectors[^1];
-                var part = lastSelector.parts[0];
-
-                var key = part.value;
-
-                var tableToUse = SelectorAccelerationTableType.None;
-
-                var entryToAdd = new StyleSelectorLookupEntry(complexSelector, importedStyleSheetIndex);
-
-                switch (part.type)
-                {
-                    case StyleSelectorType.Class:
-                        tableToUse = SelectorAccelerationTableType.Class;
-                        break;
-                    case StyleSelectorType.ID:
-                        tableToUse = SelectorAccelerationTableType.Name;
-                        break;
-                    case StyleSelectorType.Type:
-                        tableToUse = SelectorAccelerationTableType.Type;
-                        break;
-
-                    case StyleSelectorType.Wildcard:
-                        if (entry.wildCardSelectors == null)
-                            entry.wildCardSelectors = new List<StyleSelectorLookupEntry>();
-                        entry.wildCardSelectors.Add(entryToAdd);
-                        break;
-
-                    case StyleSelectorType.PseudoClass:
-                        // :root selector are put separately because they apply to very few elements
-                        if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
-                        {
-                            if (entry.rootSelectors == null)
-                                entry.rootSelectors = new List<StyleSelectorLookupEntry>();
-                            entry.rootSelectors.Add(entryToAdd);
-                        }
-                        // in this case we assume a wildcard selector
-                        // since a selector such as ":selected" applies to all elements
-                        else
-                        {
-                            if (entry.wildCardSelectors == null)
-                                entry.wildCardSelectors = new List<StyleSelectorLookupEntry>();
-                            entry.wildCardSelectors.Add(entryToAdd);
-                        }
-
-                        break;
-                    default:
-                        Debug.LogError($"Invalid first part type {part.type}", styleSheet);
-                        break;
-                }
-
-                if (tableToUse != SelectorAccelerationTableType.None)
-                {
-                    var table = entry.tables[(int)tableToUse];
-                    if (!table.TryGetValue(key, out var list))
-                    {
-                        list = new List<StyleSelectorLookupEntry>();
-                        table.Add(key, list);
-                    }
-                    entry.nonEmptyTablesMask |= (1 << (int)tableToUse);
-                    list.Add(entryToAdd);
-                }
-            }
+            case SelectorAccelerationTableType.Name:
+                return nameTable;
+            case SelectorAccelerationTableType.Type:
+                return typeTable;
+            case SelectorAccelerationTableType.Class:
+                return classTable;
         }
+        return null;
     }
+
+    // Special selectors (also as ranges in sorted allDescriptors)
+    public (int startIndex, int count) rootSelectorRange;      // :root pseudo-class descriptors
+    public (int startIndex, int count) wildCardSelectorRange;  // * and standalone pseudo-classes
+
+    // For reverse lookup
+    internal StyleSheet ownerStyleSheet;
+
+    // Used for early rejection of lookups
+    internal int nonEmptyTablesMask;
 
     // Only used in tests for now
     public static bool AreSame(SelectorAccelerationCacheEntry firstEntry, SelectorAccelerationCacheEntry secondEntry)
     {
-        // Take a shortcut by comparing all internal references
-        return firstEntry.tables == secondEntry.tables
-               && firstEntry.rootSelectors == secondEntry.rootSelectors
-               && firstEntry.wildCardSelectors == secondEntry.wildCardSelectors;
+        // Compare flattened data references
+        return firstEntry.allParts == secondEntry.allParts
+               && firstEntry.allSelectors == secondEntry.allSelectors
+               && firstEntry.allDescriptors == secondEntry.allDescriptors;
     }
 
 }
@@ -250,9 +230,12 @@ class SelectorAccelerationCache
         if (!m_Cache.TryGetValue(entityId, out var entry))
         {
             s_MarkerBuild.Begin();
-            entry = SelectorAccelerationCacheEntry.Create();
-            SelectorAccelerationCacheEntry.AppendStyleSheetToEntry(ref entry, styleSheet);
+            entry = new SelectorAccelerationCacheEntry();
 
+            // Ensure the main stylesheet has calculated hashes before building cache
+            styleSheet.RebuildIfNecessary();
+
+            // Track dependencies for imported stylesheets
             if (styleSheet.flattenedRecursiveImports != null && styleSheet.flattenedRecursiveImports.Count > 0)
             {
                 for (var i = styleSheet.flattenedRecursiveImports.Count - 1; i >= 0; i--)
@@ -262,7 +245,6 @@ class SelectorAccelerationCache
                         continue;
                     // This is very defensive, hopefully we can remove this in the future
                     sheet.RebuildIfNecessary();
-                    SelectorAccelerationCacheEntry.AppendStyleSheetToEntry(ref entry, sheet, i);
 
                     // Accumulate new keys at the end to avoid repetitive scans for a specific index
                     m_DependencyList.Add( (sheet.GetEntityId(), entityId));
@@ -270,6 +252,9 @@ class SelectorAccelerationCache
                 // Sort after adding values at the end
                 m_DependencyList.Sort(m_DependencyComparer);
             }
+
+            // Build flattened cache
+            SelectorAccelerationCacheBuilder.BuildFlattenedCache(ref entry, styleSheet);
 
             m_Cache.Add(entityId, entry);
             s_MarkerBuild.End();

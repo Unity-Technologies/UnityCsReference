@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor;
@@ -16,38 +15,8 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 [UxmlElement]
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-class Popup : VisualElement
+partial class Popup : VisualElement
 {
-    [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        [RegisterUxmlCache]
-        [Conditional("UNITY_EDITOR")]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [
-                new UxmlAttributeNames(nameof(UsesRealWindow), "uses-real-window")
-            ], true);
-        }
-
-#pragma warning disable 649
-        [SerializeField] bool UsesRealWindow;
-        [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags UsesRealWindow_UxmlAttributeFlags;
-#pragma warning restore 649
-
-        public override object CreateInstance() => new Popup();
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-
-            var e = (Popup)obj;
-
-            if (ShouldWriteAttributeValue(UsesRealWindow_UxmlAttributeFlags))
-                e.UsesRealWindow = UsesRealWindow;
-        }
-    }
-
     /// <summary>
     /// The USS class name of the popup. This class is added to the popup element and can be used to style the popup in
     /// USS. The real window variant of the popup also has a specific USS class name that can be used to style it
@@ -124,6 +93,7 @@ class Popup : VisualElement
     /// be displayed as a real window.If false, the popup will be displayed as an in-UI popup. The default value is
     /// false.
     /// </summary>
+    [UxmlAttribute]
     public bool UsesRealWindow
     {
         get => m_UsesRealWindow;

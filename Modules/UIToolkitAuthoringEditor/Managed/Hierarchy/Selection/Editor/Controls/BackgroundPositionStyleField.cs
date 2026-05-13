@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -21,40 +19,11 @@ namespace Unity.UIToolkit.Editor
         Vertical
     };
 
+    [UxmlElement]
     [UsedImplicitly]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class BackgroundPositionStyleField : BaseField<BackgroundPosition>
+    internal partial class BackgroundPositionStyleField : BaseField<BackgroundPosition>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<BackgroundPosition>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<BackgroundPosition>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[] { new(nameof(mode), "mode") }, true);
-            }
-
-            public override object CreateInstance() => new BackgroundPositionStyleField();
-
-#pragma warning disable 649
-            [SerializeField]
-            BackgroundPosition.Axis mode;
-            [SerializeField, UxmlIgnore, HideInInspector]
-            UxmlAttributeFlags mode_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-                var e = (BackgroundPositionStyleField)obj;
-                if (ShouldWriteAttributeValue(mode_UxmlAttributeFlags))
-                {
-                    e.mode = mode;
-                }
-            }
-        }
-
         static readonly string FieldClassName = "unity-background-position-style-field";
         static readonly string UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleField.uxml";
         static readonly string IconPath =  "UIToolkit/Icons";
@@ -74,6 +43,7 @@ namespace Unity.UIToolkit.Editor
 
         BackgroundPosition.Axis m_Mode;
 
+        [UxmlAttribute]
         public BackgroundPosition.Axis mode
         {
             get => m_Mode;

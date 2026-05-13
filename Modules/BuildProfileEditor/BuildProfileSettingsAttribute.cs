@@ -8,28 +8,29 @@ using UnityEngine;
 namespace UnityEditor.Build.Profile
 {
     /// <summary>
-    /// Configuration class specifying if a settings object applies for a build profile and
-    /// how it should be displayed in the editor. When defined, the given settings object can be
-    /// added to a selected build profile through the build profile editor UI.
-    ///
-    /// Currently only implementations from specific Unity packages are supported.
+    /// Marks a static method as the entry point for registering a custom settings foldout
+    /// in the Build Profile window. The decorated method must return a
+    /// <see cref="BuildProfileSettingsProvider"/> instance for the given settings type,
+    /// which must be a subclass of <see cref="ScriptableObject"/>.
     /// </summary>
     /// <remarks>
-    /// Expects a static method that returns a <see cref="BuildProfileSettingsProvider"/> instance for a given
-    /// settings type, which must be a subclass of <see cref="ScriptableObject"/>.
+    /// Only methods in assemblies from Unity package registry sources are supported.
     /// </remarks>
+    /// <example>
     /// <code>
     /// class SampleSettings : ScriptableObject
     /// {
     ///     public bool myBoolSetting;
     /// 
-    ///     [BuildProfileSettings(typeof(SampleSettings))]
+    ///     [BuildProfileSettingsProvider(typeof(SampleSettings))]
     ///     static BuildProfileSettingsProvider createProvider() => new BuildProfileSettingsProvider("MySampleSettings")
     ///     {
-    ///         tooltip = "Sample settings provider for a ScriptableObject."
+    ///         tooltip = "Sample settings provider for a ScriptableObject.",
+    ///         canAddSetting = profile => true
     ///     };
     /// }
     /// </code>
+    /// </example>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class BuildProfileSettingsProviderAttribute : Attribute
     {

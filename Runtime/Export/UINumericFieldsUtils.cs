@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UINumericFieldsUtils
     {
         public static readonly string k_AllowedCharactersForFloat = "inftynaeINFTYNAE0123456789.,-*/+%^()cosqrludxvRL=pP#";

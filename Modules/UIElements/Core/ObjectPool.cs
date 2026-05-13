@@ -4,13 +4,16 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class ObjectPool<T> where T : new()
     {
         private readonly Stack<T> m_Stack = new Stack<T>();
         private int m_MaxSize;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Func<T> CreateFunc;
 
         public int maxSize

@@ -9,7 +9,8 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderCanvasStyleControls : VisualElement
+    [UxmlElement]
+    partial class BuilderCanvasStyleControls : VisualElement
     {
         // Strings
         const string k_UssClassName = "unity-builder-canvas-style-controls";
@@ -51,12 +52,6 @@ namespace Unity.UI.Builder
         VisualElement m_Target;
 
         private BuilderBindingsCacheSubscriber m_BindingsCacheSubscriber;
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderCanvasStyleControls();
-        }
 
         public BuilderCanvasStyleControls()
         {

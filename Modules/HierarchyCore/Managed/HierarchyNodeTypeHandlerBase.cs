@@ -183,6 +183,20 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
+        /// Called when the hierarchy update begins.
+        /// </summary>
+        protected virtual void UpdateBegin()
+        {
+        }
+
+        /// <summary>
+        /// Called when the hierarchy update ends.
+        /// </summary>
+        protected virtual void UpdateEnd()
+        {
+        }
+
+        /// <summary>
         /// Called after the HierarchyViewModel finishes being updated.
         /// </summary>
         /// <param name="viewModel">The hierarchy view model.</param>
@@ -286,6 +300,12 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static void InvokeSearchEnd(IntPtr handlePtr) => FromIntPtr(handlePtr).SearchEnd();
+
+        [RequiredByNativeCode]
+        static void InvokeUpdateBegin(IntPtr handlePtr) => FromIntPtr(handlePtr).UpdateBegin();
+
+        [RequiredByNativeCode]
+        static void InvokeUpdateEnd(IntPtr handlePtr) => FromIntPtr(handlePtr).UpdateEnd();
 
         [RequiredByNativeCode]
         static void InvokeViewModelPostUpdate(IntPtr handlePtr, IntPtr viewModelPtr) => FromIntPtr(handlePtr).ViewModelPostUpdate(HierarchyViewModel.FromIntPtr(viewModelPtr));

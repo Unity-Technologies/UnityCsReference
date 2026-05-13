@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class BuilderSelectionIndicator : BuilderTracker
+    [UxmlElement]
+    partial class BuilderSelectionIndicator : BuilderTracker
     {
         static readonly string s_UssClassName = "unity-builder-selection-indicator";
         VisualElement m_Header;
@@ -15,12 +15,6 @@ namespace Unity.UI.Builder
         BuilderCanvasStyleControls m_CanvasStyleControls;
 
         public VisualElement header => m_Header;
-
-        [Serializable]
-        public new class UxmlSerializedData : BuilderTracker.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BuilderSelectionIndicator();
-        }
 
         public BuilderCanvasStyleControls canvasStyleControls => m_CanvasStyleControls;
 

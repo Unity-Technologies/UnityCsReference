@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -19,30 +18,13 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 internal partial class UxmlSerializedDataPropertyView : BindableElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-        }
-
-        public override object CreateInstance()
-        {
-            return new UxmlSerializedDataPropertyView();
-        }
-    }
-
     public const string ussClassName = "unity-uxml-serialized-data-property-view";
     public const string AddUxmlObjectMenuPropertyKey = "UxmlSerializedDataPropertyView_AddUxmlObjectMenu";
 
     UxmlAttributeFieldDecorator m_FieldDecoratorForListItem;
     UxmlAttributesEditingContext m_Context;
     List<UxmlAttributeFieldDecorator> m_RegisteredDecorators = new();
+    bool m_IsUxmlObject = false;
 
     public override VisualElement contentContainer =>
         m_FieldDecoratorForListItem != null ? m_FieldDecoratorForListItem : this;
@@ -68,13 +50,20 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
 
     void SetContext(UxmlAttributesEditingContext context)
     {
+        if (m_Context != null)
+            m_Context.contextChanged -= OnContextChanged;
+
         m_Context = context;
+
+        if (m_Context != null)
+            m_Context.contextChanged += OnContextChanged;
 
         // Propagate the context to any registered UxmlAttributeFieldDecorator
         foreach (var decorator in m_RegisteredDecorators)
         {
             decorator.context = context;
         }
+        UpdateEnableState();
     }
 
     /// <summary>
@@ -94,6 +83,8 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
 
         RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+
+        m_IsUxmlObject = property?.managedReferenceValue != null && property.managedReferenceValue is not VisualElement.UxmlSerializedData;
 
         // Find the parent serialized property and check if it is a list or array.
         // If so then this UxmlSerializedDataPropertyView represents a list item. Therefore, we add a field decorator
@@ -137,6 +128,25 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
         context = null;
     }
 
+    void OnContextChanged(object obj, UxmlAttributesEditingContext.ContextChangedEventArgs args)
+    {
+        UpdateEnableState();
+    }
+
+    void UpdateEnableState()
+    {
+        if (context != null)
+        {
+            var readOnly = context.isReadOnly || (context.isInTemplateInstance && m_IsUxmlObject);
+
+            SetEnabled(!readOnly);
+        }
+        else
+        {
+            SetEnabled(false);
+        }
+    }
+
     [EventInterest(typeof(SerializedPropertyBindEvent))]
     protected override void HandleEventBubbleUp(EventBase evt)
     {
@@ -145,8 +155,13 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
         // Stop propagation of SerializedPropertyBindEvent as binding to UxmlSerializedData is actually not supported.
         // It is mainly used to bind a UxmlSerializedDataPropertyView to a UxmlSerializedData property so that
         // children of this view can use binding path relative to the bound UxmlSerializedData.
-        if (evt is SerializedPropertyBindEvent)
+        if (evt is SerializedPropertyBindEvent bindEvent)
         {
+            // Update m_IsUxmlObject when the view is rebound to handle view recycling in lists
+            var property = bindEvent.bindProperty;
+            m_IsUxmlObject = property?.managedReferenceValue != null && property.managedReferenceValue is not VisualElement.UxmlSerializedData;
+            UpdateEnableState();
+
             evt.StopPropagation();
         }
     }

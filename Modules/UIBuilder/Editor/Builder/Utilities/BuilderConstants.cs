@@ -50,6 +50,7 @@ namespace Unity.UI.Builder
         public const string UIToolkitAuthoringControlsPath = UIToolkitAuthoringPackageRootPath + "/Inspector/Controls";
 
         public const string IconsResourcesPath = UIBuilderPackageRootPath + "/Icons";
+        public const string UIToolkitAuthoringIconsPath = UIToolkitAuthoringPackageRootPath + "/Icons";
         public const string UIBuilderTestsRootPath = "Assets/Editor";
         public const string LibraryUIPath = UIBuilderPackagePath + "/Library";
         public const string LibraryUssPathNoExt = UIBuilderPackagePath + "/Library/BuilderLibrary";
@@ -165,9 +166,6 @@ namespace Unity.UI.Builder
         public static readonly string InspectorCompositeStyleRowElementClassName = "unity-builder-composite-style-row-element";
         public static readonly string InspectorBindingIndicatorClassName = "unity-builder-foldout-binding-indicator";
         public static readonly string InspectorFieldBindingInlineEditingEnabledClassName = "unity-builder-binding-inline-editing-enabled";
-        public static readonly string InspectorFixedItemHeightFieldClassName = "unity-builder-uxml-attribute__fixed-item-height";
-        public static readonly string InspectorShownWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--shown";
-        public static readonly string InspectorHiddenWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--hidden";
         public static readonly string InspectorListViewAllowAddRemoveFieldClassName = "unity-builder-uxml-attribute__allow-add-remove";
 
         // Inspector Links VE Property Names
@@ -229,9 +227,6 @@ namespace Unity.UI.Builder
         public static readonly string VariableEnumFieldMustBeValidMessage = "An empty Enum is not a valid value.";
         public static readonly string UnnamedValue = "<No Name>";
         public static readonly string ManualUIBuilderUrl = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/UIBuilder.html";
-        static readonly string LinkToCustomControlMigrationDoc = "https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html";
-        public static readonly string UsingDeprecatedAPIUxmlTraitsWarning = L10n.Tr("Attributes for this control failed to load because it uses UxmlTraits, a deprecated API." +
-            $" To make attributes readable and editable, update the control to use UxmlAttribute. <a href=\"{LinkToCustomControlMigrationDoc}\">Learn more</a>.");
 
         // Tooltip Messages
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
@@ -365,7 +360,9 @@ namespace Unity.UI.Builder
             {"visibility", "Specifies whether or not an element is visible."},
             {"white-space", "Word wrap over multiple lines if not enough space is available to draw the text of an element."},
             {"width", "Fixed width of an element for the layout."},
-            {"word-spacing", "Increases or decreases the space between words."}
+            {"word-spacing", "Increases or decreases the space between words."},
+            {"-unity-animation-clip", "Apply an animation with that element as root"},
+            {"animation-play-state", "Control the play state of the animation in the -unity-animation-clip"}
         };
 
         internal const string PixelPercentageInitialValue = "Enter a value as a pixel, percentage, or initial.";
@@ -424,6 +421,8 @@ namespace Unity.UI.Builder
                 {$"white-space{FieldTooltipDictionarySeparator}pre-wrap", "Whitespace is preserved. Text will wrap when necessary."},
                 {$"text-overflow{FieldTooltipDictionarySeparator}clip", "Text that extends beyond the boundaries of its container will be cut off and will not be visible."},
                 {$"text-overflow{FieldTooltipDictionarySeparator}ellipsis", "Text that extends beyond the boundaries of its container will be truncated with an ellipsis."},
+                {$"animation-play-state{FieldTooltipDictionarySeparator}running", "The animation is currently playing."},
+                {$"animation-play-state{FieldTooltipDictionarySeparator}paused", "The animation is currently paused."},
                 {$"-unity-background-scale-mode{FieldTooltipDictionarySeparator}stretch-to-fill", "Stretches an image to cover the entire container. "},
                 {$"-unity-background-scale-mode{FieldTooltipDictionarySeparator}scale-and-crop", "Crops an image to fill the entire container while maintaining it's aspect ratio."},
                 {$"-unity-background-scale-mode{FieldTooltipDictionarySeparator}scale-to-fit", "Scales an image to fit the container while preserving its aspect ratio, may result in empty spaces on either side."},
@@ -671,6 +670,7 @@ namespace Unity.UI.Builder
         public static readonly string BindingWindowMissingDataSourceErrorMessage = "Data source is not required but only if it is defined elsewhere in code";
         public static readonly string BindingWindowNotResolvedPathErrorMessage = "Path cannot be resolved";
         public static readonly string BindingWindowMissingPathErrorMessage = "Path is missing";
+        public static readonly string BindingWindowInvalidPathSyntaxErrorMessage = "Invalid path syntax";
         public static readonly string BindingWindowCannotCreateBindingErrorMessage = "Cannot create binding on {0}";
         public static readonly string BindingWindowCannotEditBindingErrorMessage = "Cannot edit binding on {0}";
         public static readonly string BindingWindowLocalConverterPlaceholderText = "Enter a converter ID";

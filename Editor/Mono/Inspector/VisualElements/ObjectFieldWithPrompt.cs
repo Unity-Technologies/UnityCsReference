@@ -3,16 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using System.Text;
 using Unity.Properties;
-using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    internal class ObjectFieldWithPrompt : BaseField<Object>
+    [UxmlElement]
+    internal partial class ObjectFieldWithPrompt : BaseField<Object>
     {
         static readonly BindingId titleProperty = nameof(title);
         static readonly BindingId messageProperty = nameof(message);
@@ -20,60 +19,39 @@ namespace UnityEditor.UIElements
         static readonly BindingId objectTypeProperty = nameof(objectType);
         static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
+        bool m_AllowSceneObjects;
+
+        [CreateProperty, UxmlAttribute]
+        public bool allowSceneObjects
         {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
+            get => m_AllowSceneObjects;
+            set
             {
-                BaseField<Object>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(allowSceneObjects), "allow-scene-objects"),
-                    new (nameof(objectType), "type", typeof(Object)),
-                    new (nameof(title), "title"),
-                    new (nameof(message), "message"),
-                    new (nameof(removalMessage), "removal-message"),
-                }, true);
+                if (m_AllowSceneObjects == value) return;
+                m_AllowSceneObjects = value;
+                m_ObjectField.allowSceneObjects = value;
+                NotifyPropertyChanged(allowSceneObjectsProperty);
             }
+        }
 
-            #pragma warning disable 649
-            [SerializeField] bool allowSceneObjects;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
-            [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
-            [SerializeField] string objectType;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
-            [SerializeField] string title;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
-            [SerializeField] string message;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags message_UxmlAttributeFlags;
-            [SerializeField] string removalMessage;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags removalMessage_UxmlAttributeFlags;
-            #pragma warning restore 649
-            public override object CreateInstance() => new ObjectFieldWithPrompt();
+        Type m_objectType;
 
-            public override void Deserialize(object obj)
+        [CreateProperty, UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
+        public Type objectType
+        {
+            get { return m_objectType; }
+            set
             {
-                base.Deserialize(obj);
-
-                var e = (ObjectFieldWithPrompt)obj;
-                if (ShouldWriteAttributeValue(allowSceneObjects_UxmlAttributeFlags))
-                    e.allowSceneObjects = allowSceneObjects;
-                if (ShouldWriteAttributeValue(objectType_UxmlAttributeFlags))
-                    e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
-                if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
-                    e.title = title;
-                if (ShouldWriteAttributeValue(message_UxmlAttributeFlags))
-                    e.message = message;
-                if (ShouldWriteAttributeValue(removalMessage_UxmlAttributeFlags))
-                    e.removalMessage = removalMessage;
+                if (m_objectType == value) return;
+                m_objectType = value;
+                m_ObjectField.objectType = value;
+                NotifyPropertyChanged(objectTypeProperty);
             }
         }
 
         string m_Title;
 
-        [CreateProperty]
+        [CreateProperty, UxmlAttribute]
         public string title
         {
             get => m_Title;
@@ -88,7 +66,7 @@ namespace UnityEditor.UIElements
 
         string m_Message;
 
-        [CreateProperty]
+        [CreateProperty, UxmlAttribute]
         public string message
         {
             get => m_Message;
@@ -102,7 +80,7 @@ namespace UnityEditor.UIElements
 
         string m_RemovalMessage;
 
-        [CreateProperty]
+        [CreateProperty, UxmlAttribute]
         public string removalMessage
         {
             get => m_RemovalMessage;
@@ -111,36 +89,6 @@ namespace UnityEditor.UIElements
                 if (m_RemovalMessage == value) return;
                 m_RemovalMessage = value;
                 NotifyPropertyChanged(removalMessageProperty);
-            }
-        }
-
-        Type m_objectType;
-
-        [CreateProperty]
-        public Type objectType
-        {
-            get { return m_objectType; }
-            set
-            {
-                if (m_objectType == value) return;
-                m_objectType = value;
-                m_ObjectField.objectType = value;
-                NotifyPropertyChanged(objectTypeProperty);
-            }
-        }
-
-        bool m_AllowSceneObjects;
-
-        [CreateProperty]
-        public bool allowSceneObjects
-        {
-            get => m_AllowSceneObjects;
-            set
-            {
-                if (m_AllowSceneObjects == value) return;
-                m_AllowSceneObjects = value;
-                m_ObjectField.allowSceneObjects = value;
-                NotifyPropertyChanged(allowSceneObjectsProperty);
             }
         }
 

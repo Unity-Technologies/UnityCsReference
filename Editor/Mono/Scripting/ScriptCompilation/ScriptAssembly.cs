@@ -26,8 +26,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string ProjectRootNamespace { get; set; }
         public string ProjectDirectory { get; set; } = ".";
 
-        public CodeOptimization EditorCodeOptimization { get; set; }
-
         public ScriptAssemblySettings()
         {
             BuildTarget = BuildTarget.NoTarget;
@@ -35,11 +33,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             PredefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
             ExtraGeneralDefines = System.Array.Empty<string>();
             AdditionalCompilerArguments = System.Array.Empty<string>();
-        }
-
-        bool BuildingWithoutOptimization
-        {
-            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingWithoutOptimization) == EditorScriptCompilationOptions.BuildingWithoutOptimization; }
         }
 
         public bool BuildingForEditor
@@ -54,7 +47,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CodeOptimization CodeOptimization
         {
-            get { return BuildingForEditor ? EditorCodeOptimization : BuildingWithoutOptimization ? CodeOptimization.Debug : CodeOptimization.Release; }
+            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingWithoutOptimization) == EditorScriptCompilationOptions.BuildingWithoutOptimization ? CodeOptimization.Debug : CodeOptimization.Release; }
         }
 
         public bool BuildingWithoutScriptUpdater

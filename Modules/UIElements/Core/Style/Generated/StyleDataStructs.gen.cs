@@ -163,12 +163,14 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 88)]
+    [StructLayout(LayoutKind.Sequential, Size = 96)]
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Color unityBackgroundImageTintColor;
         public Cursor cursor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
+        public EntityId unityAnimationClip;
+        public AnimationPlayState animationPlayState;
         public TextOverflow textOverflow;
         public OverflowClipBox unityOverflowClipBox;
         public int unitySliceBottom;
@@ -178,7 +180,6 @@ namespace UnityEngine.UIElements
         public int unitySliceTop;
         public SliceType unitySliceType;
         public TextOverflowPosition unityTextOverflowPosition;
-        private int __dummy; // increasing group size to a multiple of 8
 
         public RareData GetDefault()
         {
@@ -188,9 +189,11 @@ namespace UnityEngine.UIElements
         public RareData Copy()
         {
             var data = new RareData();
+            data.animationPlayState = animationPlayState;
             data.cursor = cursor;
             data.filter.CopyFrom(filter);
             data.textOverflow = textOverflow;
+            data.unityAnimationClip = unityAnimationClip;
             data.unityBackgroundImageTintColor = unityBackgroundImageTintColor;
             data.unityOverflowClipBox = unityOverflowClipBox;
             data.unitySliceBottom = unitySliceBottom;
@@ -205,9 +208,11 @@ namespace UnityEngine.UIElements
 
         public void CopyFrom(ref RareData other)
         {
+            animationPlayState = other.animationPlayState;
             cursor = other.cursor;
             filter.CopyFrom(other.filter);
             textOverflow = other.textOverflow;
+            unityAnimationClip = other.unityAnimationClip;
             unityBackgroundImageTintColor = other.unityBackgroundImageTintColor;
             unityOverflowClipBox = other.unityOverflowClipBox;
             unitySliceBottom = other.unitySliceBottom;
@@ -226,9 +231,11 @@ namespace UnityEngine.UIElements
 
         public static bool operator ==(RareData lhs, RareData rhs)
         {
-            return lhs.cursor == rhs.cursor &&
+            return lhs.animationPlayState == rhs.animationPlayState &&
+                lhs.cursor == rhs.cursor &&
                 lhs.filter == rhs.filter &&
                 lhs.textOverflow == rhs.textOverflow &&
+                lhs.unityAnimationClip == rhs.unityAnimationClip &&
                 lhs.unityBackgroundImageTintColor == rhs.unityBackgroundImageTintColor &&
                 lhs.unityOverflowClipBox == rhs.unityOverflowClipBox &&
                 lhs.unitySliceBottom == rhs.unitySliceBottom &&
@@ -262,9 +269,11 @@ namespace UnityEngine.UIElements
         {
             unchecked
             {
-                var hashCode = cursor.GetHashCode();
+                var hashCode = (int)animationPlayState;
+                hashCode = (hashCode * 397) ^ cursor.GetHashCode();
                 hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textOverflow;
+                hashCode = (hashCode * 397) ^ unityAnimationClip.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityBackgroundImageTintColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityOverflowClipBox;
                 hashCode = (hashCode * 397) ^ unitySliceBottom;
@@ -301,6 +310,10 @@ namespace UnityEngine.UIElements
         public void CopyFrom(ref TransformData other)
         {
             this = other;
+        }
+
+        public void Dispose()
+        {
         }
 
         public static bool operator ==(TransformData lhs, TransformData rhs)
@@ -452,6 +465,10 @@ namespace UnityEngine.UIElements
         public void CopyFrom(ref VisualData other)
         {
             this = other;
+        }
+
+        public void Dispose()
+        {
         }
 
         public static bool operator ==(VisualData lhs, VisualData rhs)

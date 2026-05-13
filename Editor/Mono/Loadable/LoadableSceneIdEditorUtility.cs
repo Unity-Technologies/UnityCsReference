@@ -12,10 +12,10 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     /// <summary>
-    /// Utility class to create LoadableSceneId objects for use in the Editor. A typical use would be to populate fields of type
-    /// <see cref="LoadableSceneId"/> on a class derived from ScriptableObject (or MonoBehaviour).
+    /// Utility class to create <see cref="LoadableSceneId"/> objects for use in the Editor. A typical use would be to populate fields of type
+    /// <see cref="LoadableSceneId"/> on a class derived from <see cref="ScriptableObject"/> (or <see cref="MonoBehaviour"/>).
     /// </summary>
-    /*UCBP-PUBLIC*/ internal static class LoadableSceneIdEditorUtility
+    public static class LoadableSceneIdEditorUtility
     {
         /// <summary>
         /// Create a LoadableSceneId object based using a scene's GUID.

@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Rect"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectField|UXML element RectField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/RectField.png")]
     public partial class RectField : BaseCompositeField<Rect, FloatField, float>
     {
@@ -28,18 +28,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Rect, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Rect, FloatField, float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new RectField();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -50,7 +42,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new Rect(x, y, w, h);
+                    valueUXML = new Rect(x, y, w, h);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -59,7 +51,7 @@ namespace UnityEngine.UIElements
                         uxmlAsset.RemoveAttribute("y");
                         uxmlAsset.RemoveAttribute("w");
                         uxmlAsset.RemoveAttribute("h");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }
@@ -107,7 +99,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="RectInt"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectIntField|UXML element RectIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/RectIntField.png")]
     public partial class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
@@ -122,18 +114,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<RectInt, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<RectInt, IntegerField, int>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new RectIntField();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -144,7 +128,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new RectInt(x, y, w, h);
+                    valueUXML = new RectInt(x, y, w, h);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -153,7 +137,7 @@ namespace UnityEngine.UIElements
                         uxmlAsset.RemoveAttribute("y");
                         uxmlAsset.RemoveAttribute("w");
                         uxmlAsset.RemoveAttribute("h");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }
@@ -201,7 +185,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector2"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2Field|UXML element Vector2Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/Vector2Field.png")]
     public partial class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
@@ -214,18 +198,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new Vector2Field();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -234,14 +210,14 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new Vector2(x, y);
+                    valueUXML = new Vector2(x, y);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
                     {
                         uxmlAsset.RemoveAttribute("x");
                         uxmlAsset.RemoveAttribute("y");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }
@@ -288,7 +264,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector3"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3Field|UXML element Vector3Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/Vector3Field.png")]
     public partial class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
@@ -302,18 +278,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Vector3, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Vector3, FloatField, float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new Vector3Field();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -323,7 +291,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new Vector3(x, y, z);
+                    valueUXML = new Vector3(x, y, z);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -331,7 +299,7 @@ namespace UnityEngine.UIElements
                         uxmlAsset.RemoveAttribute("x");
                         uxmlAsset.RemoveAttribute("y");
                         uxmlAsset.RemoveAttribute("z");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }
@@ -379,7 +347,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector4"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector4Field|UXML element Vector4Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/Vector4Field.png")]
     public partial class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
     {
@@ -394,18 +362,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Vector4, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Vector4, FloatField, float>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new Vector4Field();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -416,7 +376,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new Vector4(x, y, z, w);
+                    valueUXML = new Vector4(x, y, z, w);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -425,7 +385,7 @@ namespace UnityEngine.UIElements
                         uxmlAsset.RemoveAttribute("y");
                         uxmlAsset.RemoveAttribute("z");
                         uxmlAsset.RemoveAttribute("w");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }
@@ -473,7 +433,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxml-element-Vector2IntField|UXML element Vector2IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/Vector2IntField.png")]
     public partial class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
     {
@@ -486,18 +446,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Vector2Int, IntegerField, int>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new Vector2IntField();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -507,14 +459,14 @@ namespace UnityEngine.UIElements
                 if (foundAttributeCounter > 0)
                 {
                     // Upgrade the attributes
-                    Value = new Vector2Int(x, y);
+                    valueUXML = new Vector2Int(x, y);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
                     {
                         uxmlAsset.RemoveAttribute("x");
                         uxmlAsset.RemoveAttribute("y");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }
@@ -561,7 +513,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector3Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3IntField|UXML element Vector3IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [UxmlElement(libraryPath = "Numeric Fields")]
+    [UxmlElement(libraryPath = "Numeric Fields"), UxmlPartialSerializedData]
     [Icon("UIToolkit/Icons/Vector3IntField.png")]
     public partial class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {
@@ -575,18 +527,10 @@ namespace UnityEngine.UIElements
             };
         }
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        [UnityEngine.Internal.ExcludeFromDocs]
+        public new partial class UxmlSerializedData : IUxmlSerializedDataCustomAttributeHandler
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseCompositeField<Vector3Int, IntegerField, int>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new Vector3IntField();
-
-            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(UxmlAsset bag, HashSet<string> handledAttributes)
             {
                 // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
                 int foundAttributeCounter = 0;
@@ -596,7 +540,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new Vector3Int(x, y, z);
+                    valueUXML = new Vector3Int(x, y, z);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -604,7 +548,7 @@ namespace UnityEngine.UIElements
                         uxmlAsset.RemoveAttribute("x");
                         uxmlAsset.RemoveAttribute("y");
                         uxmlAsset.RemoveAttribute("z");
-                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(valueUXML));
                     }
                 }
             }

@@ -81,20 +81,33 @@ namespace UnityEngine.UIElements
             m_Action = action;
         }
 
+        private class Callbacks
+        {
+            public readonly EventCallbackGroup OnNavigationKeyDown;
+
+            public Callbacks(EventArg<KeyboardNavigationManipulator> arg)
+            {
+                OnNavigationKeyDown = new(
+                    EventCallback.Create<NavigationMoveEvent, KeyboardNavigationManipulator>(static (e, self) => self.OnNavigationMove(e), arg),
+                    EventCallback.Create<NavigationSubmitEvent, KeyboardNavigationManipulator>(static (e, self) => self.OnNavigationSubmit(e), arg),
+                    EventCallback.Create<NavigationCancelEvent, KeyboardNavigationManipulator>(static (e, self) => self.OnNavigationCancel(e), arg),
+                    EventCallback.Create<KeyDownEvent, KeyboardNavigationManipulator>(static (e, self) => self.OnKeyDown(e), arg)
+                );
+            }
+        }
+
+        private static readonly EventCallbackGroupFactory<KeyboardNavigationManipulator> k_CallbackFactory = new(arg => new Callbacks(arg).OnNavigationKeyDown);
+        private EventCallbackGroupFactory<KeyboardNavigationManipulator>.Group m_RegisteredCallbacks;
+
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            target.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            target.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
-            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            m_RegisteredCallbacks = k_CallbackFactory.Register(target, this);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            target.UnregisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            target.UnregisterCallback<NavigationCancelEvent>(OnNavigationCancel);
-            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            m_RegisteredCallbacks?.Unregister(target);
+            m_RegisteredCallbacks = default;
         }
 
         internal void OnKeyDown(KeyDownEvent evt)

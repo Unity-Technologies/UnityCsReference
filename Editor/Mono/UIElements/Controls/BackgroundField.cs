@@ -12,22 +12,10 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
+    [UxmlElement]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal class BackgroundField : BaseField<Background>
+    internal partial class BackgroundField : BaseField<Background>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<Background>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<Background>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new BackgroundField();
-        }
-
         /// <summary>
         /// USS class name of the object field in elements of this type.
         /// </summary>

@@ -94,11 +94,13 @@ namespace UnityEditor
         {
             public string Name;
             public int Width;
+            public bool AutoResize;
 
-            public Column(string name, int width)
+            public Column(string name, int width, bool autoResize = true)
             {
                 Name = name;
                 Width = width;
+                AutoResize = autoResize;
             }
         }
 
@@ -446,8 +448,8 @@ namespace UnityEditor
             m_Overview.mostDependenciesHeader = CreateListLabel("Most Dependencies", TextAnchor.MiddleLeft, 0, FontStyle.Bold, 16, 8);
             m_Overview.mostDependenciesHeader.style.borderBottomColor = ListHeaderColor;
 
-            var mostDependenciesColumns = CreateColumns(new Column("Asset Path", 360), new Column("Total Dependencies", 125));
-            var longestDurationColumns = CreateColumns(new Column("Asset Path", 360), new Column("Import Duration (ms)", 125));
+            var mostDependenciesColumns = CreateColumns(new Column("Asset Path", 360), new Column("Total Dependencies", 125, false));
+            var longestDurationColumns = CreateColumns(new Column("Asset Path", 360), new Column("Import Duration (ms)", 125, false));
             var projectAnalysisColumns = CreateColumns(new Column("Message", 720), new Column("Info", 1280));
 
             GetMostDependencyAssets();
@@ -652,7 +654,7 @@ namespace UnityEditor
         {
             m_ItemContainers.PreviousRevisionsContainer = new VisualElement();
 
-            var previousRevisionsColumns = CreateColumns(new Column("Imported", 120), new Column("Import Result ID", 150), new Column("Importer", 150));
+            var previousRevisionsColumns = CreateColumns(new Column("Imported", 120, false), new Column("Import Result ID", 150, false), new Column("Importer", 150));
 
             var previousRevisionsVisibleColumns = m_ImportActivityState.previousRevisionsState.GetVisibleColumns();
             m_ItemContainers.previousRevisions.treeView = CreateTreeView(m_ItemContainers.previousRevisions.treeView, m_PreviousRevisionsList, previousRevisionsColumns,
@@ -907,7 +909,8 @@ namespace UnityEditor
                 }
                 else
                 {
-                    EditorUtility.RevealInFinder(entry.libraryPath);
+                    var fullPath = Path.GetFullPath(entry.libraryPath);
+                    EditorUtility.RevealInFinder(fullPath);
                 }
             }
         }
@@ -1269,10 +1272,10 @@ namespace UnityEditor
 
         private void CreateListViews()
         {
-            var artifactColumns = CreateColumns(new Column("Asset", 200), new Column("Last Import", 120), new Column("Duration (ms)", 85), new Column("Importer", 160));
+            var artifactColumns = CreateColumns(new Column("Asset", 200), new Column("Last Import", 120, false), new Column("Duration (ms)", 85, false), new Column("Importer", 160));
             var importStatsColumns = CreateColumns(new Column("Name", 260), new Column("Value", 330));
             var dependenciesColumn = CreateColumns(new Column("Dependency Name", 360), new Column("Dependency Value", 250));
-            var producedFilesColumns = CreateColumns(new Column("File Library Path", 420), new Column("Extension", 80), new Column("Size", 80));
+            var producedFilesColumns = CreateColumns(new Column("File Library Path", 420), new Column("Extension", 80, false), new Column("Size", 80, false));
 
             var allAssetsVisibleColumns = m_ImportActivityState.allAssetsState.GetVisibleColumns();
 
@@ -1725,7 +1728,7 @@ namespace UnityEditor
         {
             return index switch
             {
-                0 => element.libraryPath,
+                0 => Path.GetFullPath(element.libraryPath),
                 1 => element.extension,
                 2 => GetAssetFileSize(element),
                 _ => "",
@@ -1848,7 +1851,7 @@ namespace UnityEditor
                     headerContent = EditorGUIUtility.TrTextContent(col.Name),
                     headerTextAlignment = TextAlignment.Left,
                     sortingArrowAlignment = TextAlignment.Center,
-                    autoResize = false,
+                    autoResize = col.AutoResize,
                     width = col.Width,
                 };
             }).ToArray();
@@ -2212,22 +2215,15 @@ namespace UnityEditor
 
         private static string GetAssetFileSize(string importStatsAssetPath, out long sizeInBytes)
         {
-            var fullPath = Path.GetFullPath(importStatsAssetPath);
-            var fileInfo = new FileInfo(fullPath);
-
-            //Directory "size" isn't allowed
-            if ((fileInfo.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+            if (FileUtil.IsDir(importStatsAssetPath))
             {
                 sizeInBytes = 0;
-                //TODO: Handle in database files
-                if (!Directory.Exists(fullPath))
-                    return "";
                 return "Directory";
             }
 
-            sizeInBytes = fileInfo.Length;
+            sizeInBytes = (long)FileUtil.GetSize(importStatsAssetPath);
 
-            var fileSizeString = FormatBytes(fileInfo.Length);
+            var fileSizeString = FormatBytes(sizeInBytes);
             return fileSizeString;
         }
 

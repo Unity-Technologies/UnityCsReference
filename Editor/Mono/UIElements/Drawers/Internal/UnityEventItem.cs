@@ -10,7 +10,8 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    internal class UnityEventItem : VisualElement
+    [UxmlElement]
+    internal partial class UnityEventItem : VisualElement
     {
         public struct PropertyData
         {
@@ -21,18 +22,6 @@ namespace UnityEditor.UIElements
             public SerializedProperty listenerTarget;
             public SerializedProperty methodName;
             public SerializedProperty objectArgument;
-        }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new UnityEventItem();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
         }
 
         // uss names

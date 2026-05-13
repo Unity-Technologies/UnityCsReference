@@ -405,7 +405,11 @@ namespace UnityEditor
                 }
 
                 var iconUISettings = IconSettings.StandardIcons;
-                if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(platform.name), out IBuildTarget iBuildTarget))
+                // namedBuildTarget is deprecated, but it’s still the best way we currently have to identify servers
+                // We can revisit this once Dedicated Server has a proper build target
+                if (platform.namedBuildTarget == NamedBuildTarget.Server)
+                    iconUISettings = IconSettings.None;
+                else if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(platform.name), out IBuildTarget iBuildTarget))
                     iconUISettings = iBuildTarget.IconPlatformProperties?.IconUISettings ?? IconSettings.StandardIcons;
 
                 if (iconUISettings == IconSettings.None)

@@ -146,10 +146,12 @@ namespace Unity.Hierarchy.Editor
             var isDefaultParent = isActiveScene && gameObject.GetEntityId() == scene.defaultParent;
             item.EnableInClassList(k_GameObjectDefaultParentUssClass, isDefaultParent);
 
-            if (PrefabUtility.IsPartOfPrefabInstance(gameObject) || PrefabUtility.IsAddedGameObjectOverride(gameObject))
-                HierarchyViewPrefabStyleUtility.SetNodePrefabStyle(gameObject, item);
+            GameObjectIconUtility.SetNodeIconForObject(item, gameObject);
+
+            if (PrefabUtility.ShowPrefabModeButton(gameObject))
+                HierarchyViewPrefabStyleUtility.SetNavigationButton(gameObject, item);
             else
-                HierarchyViewPrefabStyleUtility.CleanUpNodePrefabStyle(item);
+                HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
         }
 
         void IHierarchyExtendCreateMenu.PopulateCreateMenu(DropdownMenu menu)
@@ -310,6 +312,12 @@ namespace Unity.Hierarchy.Editor
         }
 
         bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
+
+        string IHierarchyEditorNodeTypeHandler.GetDragTitle(HierarchyView view, in HierarchyNode node)
+        {
+            var go = GetGameObject(in node);
+            return go != null ? ObjectNames.GetDragAndDropTitle(go) : null;
+        }
 
         void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
         {

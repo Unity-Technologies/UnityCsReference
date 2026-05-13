@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Accessibility;
@@ -13,7 +11,8 @@ using TreeView = UnityEngine.UIElements.TreeView;
 
 namespace UnityEditor.Accessibility
 {
-    class AccessibilityHierarchyTreeViewItem : VisualElement
+    [UxmlElement]
+    partial class AccessibilityHierarchyTreeViewItem : VisualElement
     {
         public static readonly string s_UssClassName = AccessibilityHierarchyTreeView.s_UssClassName + "__item";
         public static readonly string s_RootUssClassName = s_UssClassName + "--root";
@@ -21,56 +20,6 @@ namespace UnityEditor.Accessibility
         public static readonly string s_IdTextUssClassName = s_UssClassName + "__id";
         public static readonly string s_LabelTextUssClassName = s_UssClassName + "__label";
         public static readonly string s_RoleTextUssClassName = s_UssClassName + "__role";
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(isRoot), "is-root"),
-                    new (nameof(id), "id"),
-                    new (nameof(label), "label"),
-                    new (nameof(role), "role"),
-                    new (nameof(isActive), "is-active"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool isRoot;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isRoot_UxmlAttributeFlags;
-            [SerializeField] int id;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags id_UxmlAttributeFlags;
-            [SerializeField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
-            [SerializeField] AccessibilityRole role;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags role_UxmlAttributeFlags;
-            [SerializeField] bool isActive;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isActive_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new AccessibilityHierarchyTreeViewItem();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (AccessibilityHierarchyTreeViewItem) obj;
-                if (ShouldWriteAttributeValue(isRoot_UxmlAttributeFlags))
-                    e.isRoot = isRoot;
-                if (ShouldWriteAttributeValue(isActive_UxmlAttributeFlags))
-                    e.isActive = isActive;
-                if (ShouldWriteAttributeValue(id_UxmlAttributeFlags))
-                    e.id = id;
-                if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
-                    e.label = label;
-                if (ShouldWriteAttributeValue(role_UxmlAttributeFlags))
-                    e.role = role;
-            }
-        }
 
         private readonly SearchableLabel m_IdText;
         private readonly SearchableLabel m_LabelText;
@@ -81,6 +30,7 @@ namespace UnityEditor.Accessibility
         private string m_Label;
         private AccessibilityRole m_Role;
 
+        [UxmlAttribute]
         [CreateProperty]
         public bool isRoot
         {
@@ -94,6 +44,7 @@ namespace UnityEditor.Accessibility
             }
         }
 
+        [UxmlAttribute]
         [CreateProperty]
         public int id
         {
@@ -107,6 +58,7 @@ namespace UnityEditor.Accessibility
             }
         }
 
+        [UxmlAttribute]
         [CreateProperty]
         public string label
         {
@@ -120,6 +72,7 @@ namespace UnityEditor.Accessibility
             }
         }
 
+        [UxmlAttribute]
         [CreateProperty]
         public AccessibilityRole role
         {
@@ -133,6 +86,7 @@ namespace UnityEditor.Accessibility
             }
         }
 
+        [UxmlAttribute]
         [CreateProperty]
         public bool isActive
         {
@@ -195,14 +149,9 @@ namespace UnityEditor.Accessibility
     /// <summary>
     /// Tree view that displays an accessibility hierarchy.
     /// </summary>
-    class AccessibilityHierarchyTreeView : VisualElement
+    [UxmlElement]
+    partial class AccessibilityHierarchyTreeView : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new AccessibilityHierarchyTreeView();
-        }
-
         internal static readonly string s_UssClassName = "hierarchy-tree-view";
 
         private TreeView m_TreeView;

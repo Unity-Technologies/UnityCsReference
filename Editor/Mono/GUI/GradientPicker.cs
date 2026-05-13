@@ -163,7 +163,7 @@ namespace UnityEditor
         public void OnDestroy()
         {
             this.UnregisterEvents();
-            m_GradientLibraryEditor.UnloadUsedLibraries();
+            m_GradientLibraryEditor?.UnloadUsedLibraries();
         }
 
         void OnPlayModeStateChanged()

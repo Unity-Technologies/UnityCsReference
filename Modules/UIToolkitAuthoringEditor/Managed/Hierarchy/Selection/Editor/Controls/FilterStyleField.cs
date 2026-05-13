@@ -17,14 +17,8 @@ namespace Unity.UIToolkit.Editor
     [UxmlElement]
     [UsedImplicitly]
     [MovedFrom("Unity.UI.Builder")]
-    internal class FilterStyleField : BaseField<List<FilterFunction>>
+    internal partial class FilterStyleField : BaseField<List<FilterFunction>>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new FilterStyleField();
-        }
-
         internal const string k_FilterListViewName = "filter-list-view";
 
         const string k_FilterFunctionDropdownClassName = "inspector-variables-dropdown";
@@ -43,6 +37,10 @@ namespace Unity.UIToolkit.Editor
         private List<FilterFunction> m_FilterSource;
 
         internal ListView filterListView => m_FilterListView;
+
+        // Added to prevent the error regarding a missing converter for List<FilterFunction>.
+        [UxmlAttribute("value"), HideInInspector]
+        internal string valueOverride { get; set; }
 
         public FilterStyleField()
             : this(null) { }

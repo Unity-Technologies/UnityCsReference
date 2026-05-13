@@ -29,7 +29,7 @@ public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
     /// <remarks>
     /// Strings with different storage addresses but identical content will always be translated to the same id.
     ///
-    /// The id associated with a string may very between consecutive runs and may be regenerated on domain reload.
+    /// The id associated with a string may vary between consecutive runs and may be regenerated on domain reload.
     /// Use the <see cref="value"/> field for serialization instead.
     /// </remarks>
     public int id => m_Id;

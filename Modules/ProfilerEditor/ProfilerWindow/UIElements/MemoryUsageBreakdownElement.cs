@@ -2,16 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor
 {
-    internal class MemoryUsageBreakdownElement : VisualElement
+    [UxmlElement]
+    internal partial class MemoryUsageBreakdownElement : VisualElement
     {
         // adaptation helper. MemoryUsageBreakdownElement is copied over from the memory profiler package which contains this helper
         static class UIElementsHelper
@@ -32,9 +30,13 @@ namespace Unity.Profiling.Editor
             public static readonly string ReservedClarificationForReservedPartOfTooltip = L10n.Tr("\nReserved");
         }
 
+        [UxmlAttribute]
+
         public string Text { get; private set;}
 
         ulong m_TotalBytes;
+
+        [UxmlAttribute]
         public long TotalBytes
         {
             get { return (long)m_TotalBytes; }
@@ -42,11 +44,15 @@ namespace Unity.Profiling.Editor
         }
 
         ulong m_UsedBytes;
+
+        [UxmlAttribute]
         public long UsedBytes
         {
             get { return (long)m_UsedBytes; }
             private set { m_UsedBytes = (ulong)value; }
         }
+
+        [UxmlAttribute]
         public bool ShowUsed { get; private set; }
 
         ulong m_SelectedBytes;
@@ -55,6 +61,8 @@ namespace Unity.Profiling.Editor
             get { return (long)m_SelectedBytes; }
             private set { m_SelectedBytes = (ulong)value; }
         }
+
+        [UxmlAttribute]
         public bool ShowSelected { get; private set; }
 
         public float PercentageUsed
@@ -66,6 +74,7 @@ namespace Unity.Profiling.Editor
             get { return m_TotalBytes == 0 ? 100 : m_SelectedBytes / (float)m_TotalBytes * 100; }
         }
 
+        [UxmlAttribute]
         public string BackgroundColorClass { get; private set; }
 
         VisualElement m_ReservedElement;
@@ -236,77 +245,6 @@ namespace Unity.Profiling.Editor
             m_Row.ShowUsed = ShowUsed;
 
             SetValues(m_TotalBytes, m_UsedBytes);
-        }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(text), "text"),
-                    new (nameof(backgroundColorClass), "background-color-class"),
-                    new (nameof(showUsed), "show-used"),
-                    new (nameof(usedBytes), "used-bytes"),
-                    new (nameof(totalBytes), "total-bytes"),
-                    new (nameof(showSelected), "show-selected"),
-                    new (nameof(selectedBytes), "selected-bytes"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] string text;
-            [SerializeField] string backgroundColorClass;
-            [SerializeField] long usedBytes;
-            [SerializeField] long totalBytes;
-            [SerializeField] long selectedBytes;
-            [SerializeField] bool showUsed;
-            [SerializeField] bool showSelected;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags backgroundColorClass_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showUsed_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usedBytes_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags totalBytes_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showSelected_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectedBytes_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new MemoryUsageBreakdownElement();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (MemoryUsageBreakdownElement)obj;
-
-                string resolvedText = "Other";
-                string resolvedBackgroundColorClass = "";
-                bool resolvedShowUsed = false;
-                bool resolvedShowSelected = false;
-                long resolvedUsedBytes = 50;
-                long resolvedTotalBytes = 100;
-                long resolvedSelectedBytes = 0;
-
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    resolvedText = text;
-                if (ShouldWriteAttributeValue(backgroundColorClass_UxmlAttributeFlags))
-                    resolvedBackgroundColorClass = backgroundColorClass;
-                if (ShouldWriteAttributeValue(showUsed_UxmlAttributeFlags))
-                    resolvedShowUsed = showUsed;
-                if (ShouldWriteAttributeValue(usedBytes_UxmlAttributeFlags))
-                    resolvedUsedBytes = usedBytes;
-                if (ShouldWriteAttributeValue(totalBytes_UxmlAttributeFlags))
-                    resolvedTotalBytes = totalBytes;
-                if (ShouldWriteAttributeValue(showSelected_UxmlAttributeFlags))
-                    resolvedShowSelected = showSelected;
-                if (ShouldWriteAttributeValue(selectedBytes_UxmlAttributeFlags))
-                    resolvedSelectedBytes = selectedBytes;
-
-                e.Init(resolvedText, resolvedShowUsed, (ulong)resolvedUsedBytes, (ulong)resolvedTotalBytes, resolvedShowSelected, (ulong)resolvedSelectedBytes, resolvedBackgroundColorClass);
-            }
         }
     }
 }

@@ -26,7 +26,7 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
         get { return m_Field as TField; }
         set
         {
-            var ve = field as VisualElement;
+            var ve = this.field as VisualElement;
             ve?.UnregisterCallback(m_FieldValueChanged, TrickleDown.TrickleDown);
 
             if (ve is BaseField<TValue> oldTextValueField)
@@ -37,7 +37,7 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
             boundElement = value as IBindable;
 
-            ve = field as VisualElement;
+            ve = this.field as VisualElement;
             ve?.RegisterCallback(m_FieldValueChanged, TrickleDown.TrickleDown);
 
             if (ve is BaseField<TValue> newTextValueField)
@@ -121,16 +121,26 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
                 UpdateLastFieldValue();
 
-                if (SyncFieldValueToProperty())
+                var fieldElement = field as VisualElement;
+                editingField = fieldElement;
+
+                try
                 {
-                    bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
-                    bindingContext?.ResetUpdate();
+                    if (SyncFieldValueToProperty())
+                    {
+                        bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
+                        bindingContext?.ResetUpdate();
+                    }
+
+                    var fieldUndoGroup = (int?)fieldElement?.GetProperty(UndoGroupPropertyKey);
+                    Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
+
+                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
                 }
-
-                var fieldUndoGroup = (int?)(field as VisualElement)?.GetProperty(UndoGroupPropertyKey);
-                Undo.CollapseUndoOperations(fieldUndoGroup ?? undoGroup);
-
-                BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
+                finally
+                {
+                    editingField = null;
+                }
 
                 return;
             }

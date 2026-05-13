@@ -100,8 +100,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private InvokePolicy invokePolicy =>
-            acceptClicksIfDisabled ? InvokePolicy.IncludeDisabled : InvokePolicy.Default;
+        private CallbackOptions callbackOptions =>
+            acceptClicksIfDisabled ? CallbackOptions.IncludeDisabled : CallbackOptions.Default;
 
         private IVisualElementScheduledItem m_Repeater;
         private IVisualElementScheduledItem m_PendingActivePseudoStateReset;
@@ -179,16 +179,35 @@ namespace UnityEngine.UIElements
             return (m_Delay > 0 || m_Interval > 0);
         }
 
+        class Callbacks
+        {
+            public readonly EventCallbackGroup OnPointer;
+
+            public Callbacks(EventArg<Clickable> arg, bool acceptClicksIfDisabled)
+            {
+                var callbackOptions =
+                    acceptClicksIfDisabled ? CallbackOptions.IncludeDisabled : CallbackOptions.Default;
+                OnPointer = new(
+                    EventCallback.Create<PointerDownEvent, Clickable>(static (e, self) => self.OnPointerDown(e), arg, callbackOptions),
+                    EventCallback.Create<PointerMoveEvent, Clickable>(static (e, self) => self.OnPointerMove(e), arg, callbackOptions),
+                    EventCallback.Create<PointerUpEvent, Clickable>(static (e, self) => self.OnPointerUp(e), arg, CallbackOptions.IncludeDisabled),
+                    EventCallback.Create<PointerCancelEvent, Clickable>(static (e, self) => self.OnPointerCancel(e), arg, CallbackOptions.IncludeDisabled),
+                    EventCallback.Create<PointerCaptureOutEvent, Clickable>(static (e, self) => self.OnPointerCaptureOut(e), arg, CallbackOptions.IncludeDisabled)
+                );
+            }
+        }
+
+        private static readonly EventCallbackGroupFactory<Clickable> k_DefaultCallbackFactory = new(arg => new Callbacks(arg, false).OnPointer);
+        private static readonly EventCallbackGroupFactory<Clickable> k_IncludeDisabledCallbackFactory = new(arg => new Callbacks(arg, true).OnPointer);
+        private EventCallbackGroupFactory<Clickable>.Group m_RegisteredCallbacks;
+
         /// <summary>
         /// Called to register mouse event callbacks on the target element.
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<PointerDownEvent>(OnPointerDown, invokePolicy);
-            target.RegisterCallback<PointerMoveEvent>(OnPointerMove, invokePolicy);
-            target.RegisterCallback<PointerUpEvent>(OnPointerUp, InvokePolicy.IncludeDisabled);
-            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel, InvokePolicy.IncludeDisabled);
-            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut, InvokePolicy.IncludeDisabled);
+            var callbackFactory = acceptClicksIfDisabled ? k_IncludeDisabledCallbackFactory : k_DefaultCallbackFactory;
+            m_RegisteredCallbacks = callbackFactory.Register(target, this);
         }
 
         /// <summary>
@@ -196,12 +215,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            target.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-            target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
-
+            m_RegisteredCallbacks?.Unregister(target);
+            m_RegisteredCallbacks = default;
             ResetActivePseudoState();
         }
 

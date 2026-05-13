@@ -19,6 +19,7 @@ namespace UnityEngine.TextCore.Text
 
     [System.Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
     [NativeHeader("Modules/TextCoreTextEngine/TextColorGradient.h")]
+    [HelpURL("UIE-color-gradient")]
     public class TextColorGradient : ScriptableObject
     {
         public ColorGradientMode colorMode = ColorGradientMode.FourCornersGradient;

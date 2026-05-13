@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using UnityEditor.Build.Player;
 using UnityEngine;
 using UnityEngine.Bindings;
+
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor.Tests")]
 
@@ -55,7 +56,6 @@ namespace UnityEditor.Build.Content
         ///<remarks>For internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
         ///<param name="target">The target platform.</param>
         ///<returns>An object containing the lighting and fog settings for the active scene on the specified platform.</returns>
-        [Obsolete("GetGlobalUsageFromActiveScene will be removed in a future version.", false)]
         public static extern BuildUsageTagGlobal GetGlobalUsageFromActiveScene(BuildTarget target);
 
         ///<summary>Validates if the object is supported in the build.</summary>
@@ -107,54 +107,6 @@ namespace UnityEditor.Build.Content
 
         [FreeFunction("CalculatePlayerDependenciesForScene")]
         static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
-
-        ///<summary>Calculates dependency information for various internal Unity game manager classes.</summary>
-        ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
-        ///<param name="settings">Settings for dependency calculation.</param>
-        ///<param name="globalUsage">Global usage tag for lighting and fog modes in use in the project.</param>
-        ///<param name="usageSet">Output usage tags generated from dependency calculation.</param>
-        ///<returns>The calculated dependencies for internal Unity game manager classes.</returns>
-        [Obsolete("CalculatePlayerDependenciesForGameManagers will be removed in a future version.", false)]
-        public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForGameManagers while a build is in progress");
-            return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, null, DependencyType.DefaultDependencies);
-        }
-
-        ///<summary>Calculates dependency information for various internal Unity game manager classes.</summary>
-        ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
-        ///<param name="settings">Settings for dependency calculation.</param>
-        ///<param name="globalUsage">Global usage tag for lighting and fog modes in use in the project.</param>
-        ///<param name="usageSet">Output usage tags generated from dependency calculation.</param>
-        ///<param name="usageCache">Optional cache object to use for improving performance with multiple calls to this api.</param>
-        ///<returns>The calculated dependencies for internal Unity game manager classes.</returns>
-        [Obsolete("CalculatePlayerDependenciesForGameManagers will be removed in a future version.", false)]
-        public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForGameManagers while a build is in progress");
-            return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, usageCache, DependencyType.DefaultDependencies);
-        }
-
-        ///<summary>Calculates dependency information for various internal Unity game manager classes.</summary>
-        ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
-        ///<param name="settings">Settings for dependency calculation.</param>
-        ///<param name="globalUsage">Global usage tag for lighting and fog modes in use in the project.</param>
-        ///<param name="usageSet">Output usage tags generated from dependency calculation.</param>
-        ///<param name="usageCache">Optional cache object to use for improving performance with multiple calls to this api.</param>
-        ///<param name="mode">Specifies how to calculate dependencies between internal Unity game managers and game assets.</param>
-        ///<returns>The calculated dependencies for internal Unity game manager classes.</returns>
-        [Obsolete("CalculatePlayerDependenciesForGameManagers will be removed in a future version.", false)]
-        public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call CalculatePlayerDependenciesForGameManagers while a build is in progress");
-            return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, usageCache, mode);
-        }
-
-        [FreeFunction("CalculatePlayerDependenciesForGameManagers")]
-        static extern GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagersInternal(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
 
         ///<summary>Returns a list of objects directly contained inside of an asset.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
@@ -364,18 +316,9 @@ namespace UnityEditor.Build.Content
         ///<param name="outputFolder">The location to write the file to.</param>
         ///<param name="parameters">The set of parameters used to write the file.</param>
         ///<returns>The detailed results from writing the file.</returns>
+        [Obsolete("WriteGameManagersSerializedFile will be removed in a future version. Calling the function will throw an exception.", false)]
         public static WriteResult WriteGameManagersSerializedFile(string outputFolder, WriteManagerParameters parameters)
         {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
-            if (string.IsNullOrEmpty(outputFolder))
-                throw new ArgumentException("String is null or empty.", "outputFolder");
-            if (parameters.referenceMap == null)
-                throw new ArgumentNullException("parameters.referenceMap");
-            if (parameters.settings.buildFlags.HasFlag(ContentBuildFlags.ExtractTypeTree) &&
-                parameters.settings.buildFlags.HasFlag(ContentBuildFlags.DisableWriteTypeTree))
-                throw new ArgumentException("Incompatible ContentBuildFlags - ExtractTypeTree cannot be used with DisableWriteTypeTree.");
-
             return WriteGameManagersSerializedFileRaw(outputFolder, parameters.settings, parameters.globalUsage, parameters.referenceMap);
         }
 

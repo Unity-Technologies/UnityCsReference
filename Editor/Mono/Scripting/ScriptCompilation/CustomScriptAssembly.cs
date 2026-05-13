@@ -88,6 +88,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static CustomScriptAssemblyData()
         {
+            // Keep in sync with AsmDefParser.s_RenamedReferences in
+            // Editor/Tools/AsmDefToCSProj/AsmDefToCSProjLib/AssemblyDefinition.cs (used by the MSBuild pipeline).
             renamedReferences["Unity.RenderPipelines.Lightweight.Editor"] = "Unity.RenderPipelines.Universal.Editor";
             renamedReferences["Unity.RenderPipelines.Lightweight.Runtime"] = "Unity.RenderPipelines.Universal.Runtime";
         }
@@ -230,6 +232,37 @@ namespace UnityEditor.Scripting.ScriptCompilation
     [DebuggerDisplay("{Name}")]
     class CustomScriptAssembly
     {
+        static readonly bool k_CompilerWarningsForImmutablePackages = Environment.GetEnvironmentVariable("UNITY_INTERNAL_NOSUPPRESSWARNINGS") == "1";
+
+        // Whitelisted packages that should not have analyzer rules applied
+        // All package names should have "com.unity." prefix
+        static readonly string[] k_WhitelistedPackages = new string[]
+        {
+            "ide.rider", // UAC0005/6/7/20
+            "ide.visualstudio", // UAC0005/6/7 in Testing folder for test runner integration
+            "addressables", // UAC0023
+            "memoryprofiler", // UAC0006
+            "purchasing", // UAC0005
+            "cinemachine", // UAC0005
+            "learn.iet-framework", // UAC0005
+            "polyspatial", // UAC0005/7
+            "web.stripping-tool", // UAC0005/7
+            "multiplayer.tools", // UAC0005
+            "formats.alembic", // UAC0005
+            "mars", // to be deprecated
+            "barracuda", // to be deprecated
+            "xrtools.utils", // to be deprecated
+            "test-framework", // UAC0007
+            "netcode", // UAC0005
+            "scriptablebuildpipeline", // UAC0023
+            "package-validation-suite", // UAC0005/7
+            "mobile.android-logcat", // UAC0005
+            "searcher", // CS0618: obsolete API usage
+            "xr.legacyinputhelpers", // CS0618: obsolete FindObjectsOfType
+            "inputsystem", // CS0109: unnecessary new keyword
+            "ads", // CS0168: unused variable
+        };
+
         public string FilePath { get; set; }
         public string PathPrefix { get; set; }
         public string Name { get; set; }
@@ -256,6 +289,68 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private AssemblyFlags assemblyFlags = AssemblyFlags.None;
 
         public bool IsPredefined { get; set; }
+
+        private static string s_immutablePackageRulesetPath;
+
+        private bool IsInWhitelistedPackage()
+        {
+            var pathSpan = PathPrefix.AsSpan();
+            foreach (var packageName in k_WhitelistedPackages)
+            {
+                var packagePath = $"com.unity.{packageName}";
+                if (pathSpan.Contains(packagePath.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool IsUnityPackage()
+        {
+            var pathSpan = PathPrefix.AsSpan();
+            return pathSpan.Contains("com.unity.".AsSpan(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static string GetImmutablePackageRulesetPath()
+        {
+            // When UNITY_INTERNAL_NOSUPPRESSWARNINGS=1, use default analyzer behavior (all warnings enabled)
+            // Otherwise, suppress all analyzer warnings except UAC0005/6/7/20/23 rules
+            var includeAllLine = k_CompilerWarningsForImmutablePackages ? "" : @"  <IncludeAll Action=""None"" />";
+
+            // Explicitly suppress UAC warnings (not intentional errors like UAC1003)
+            // Only applies when UNITY_INTERNAL_NOSUPPRESSWARNINGS is not set
+            var suppressedRules = k_CompilerWarningsForImmutablePackages ? "" : @"
+    <Rule Id=""UAC1001"" Action=""None"" />
+    <Rule Id=""UAC1002"" Action=""None"" />
+    <Rule Id=""UAC1004"" Action=""None"" />
+    <Rule Id=""UAC1008"" Action=""None"" />
+    <Rule Id=""UAC1009"" Action=""None"" />
+    <Rule Id=""UAC1010"" Action=""None"" />
+    <Rule Id=""UAC1011"" Action=""None"" />";
+
+            var rulesetContent = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<RuleSet Name=""Immutable Package Rules"" Description=""Errors for Forbidden API rules"" ToolsVersion=""16.0"">
+{includeAllLine}
+  <Rules AnalyzerId=""Unity.Analyzers"" RuleNamespace=""Unity.Analyzers"">
+    <Rule Id=""UAC0005"" Action=""Error"" />
+    <Rule Id=""UAC0006"" Action=""Error"" />
+    <Rule Id=""UAC0007"" Action=""Error"" />
+    <Rule Id=""UAC0020"" Action=""Error"" />
+    <Rule Id=""UAC0023"" Action=""Error"" />{suppressedRules}
+  </Rules>
+</RuleSet>";
+
+            var projectPath = System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath);
+            var rulesetDirectory = System.IO.Path.Combine(projectPath, "Library");
+            var rulesetPath = System.IO.Path.Combine(rulesetDirectory, "ImmutablePackage.ruleset");
+
+            System.IO.Directory.CreateDirectory(rulesetDirectory);
+            System.IO.File.WriteAllText(rulesetPath, rulesetContent);
+
+            if (s_immutablePackageRulesetPath == null)
+                s_immutablePackageRulesetPath = rulesetPath;
+
+            return s_immutablePackageRulesetPath;
+        }
 
         public AssemblyFlags AssemblyFlags
         {
@@ -287,12 +382,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 bool rootFolder, immutable;
                 bool imported = AssetDatabase.TryGetAssetFolderInfo(PathPrefix, out rootFolder, out immutable);
 
-                // Do not emit warnings for immutable (package) folders,
-                // as the user cannot do anything to fix them.
                 if (imported && immutable)
                 {
-                    assemblyFlags |= AssemblyFlags.SuppressCompilerWarnings;
+                    if (IsUnityPackage() && !IsInWhitelistedPackage())
+                    {
+                        // Non-whitelisted Unity packages: Apply analyzer rules as errors
+                        CompilerOptions.RoslynAnalyzerRulesetPath = GetImmutablePackageRulesetPath();
+                    }
+                    else if (!k_CompilerWarningsForImmutablePackages)
+                    {
+                        assemblyFlags |= AssemblyFlags.SuppressCompilerWarnings;
+                    }
                 }
+                // User code uses the default Warning severity from the analyzer
 
                 return assemblyFlags;
             }

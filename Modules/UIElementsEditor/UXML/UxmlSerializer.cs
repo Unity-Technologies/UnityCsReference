@@ -16,37 +16,26 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    #pragma warning disable CS0618 // Type or member is obsolete.
-    internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
-    #pragma warning restore CS0618 // Type or member is obsolete
+    internal class UxmlSerializedAttributeDescription
     {
-        static readonly Dictionary<Type, string> k_BaseTypes = new()
-        {
-            { typeof(short), "short" },
-            { typeof(int), "int" },
-            { typeof(long), "long" },
-            { typeof(float), "float" },
-            { typeof(double), "double" },
-            { typeof(bool), "boolean" }
-        };
-
-
         // Lazy loaded fields that are mostly used in the UI Builder.
         IList<Type> m_UxmlObjectAcceptedTypes;
         object m_ObjectField;
+        object m_DefaultValue;
+        string m_BindingPath;
         bool? m_IsUnityObject;
         bool? m_IsList;
         bool? m_IsUxmlObject;
         bool m_DefaultValueSet;
-        object m_DefaultValue;
-        string m_BindingPath;
 
         /// <summary>
-        /// The <see cref="UxmlAttributeDescription"/> that this attribute is part of.
+        /// The attribute name.
         /// </summary>
+        public string name { get; set; }
+
         public UxmlSerializedDataDescription dataDescription { get; set; }
 
-        public new Type type { get; set; }
+        public Type type { get; set; }
 
         /// <summary>
         /// The FieldInfo for the UxmlSerializedData.
@@ -74,9 +63,23 @@ namespace UnityEditor.UIElements
                 {
                     var bindingPathAttribute = serializedField.GetCustomAttribute<UxmlAttributeBindingPathAttribute>();
                     if (bindingPathAttribute != null)
+                    {
                         m_BindingPath = bindingPathAttribute.path;
+                    }
                     else
-                        m_BindingPath = overriddenFieldName ?? serializedField.Name;
+                    {
+                        if (!string.IsNullOrEmpty(overriddenFieldName))
+                        {
+                            // Extract the binding path from the overridden field if it exists, otherwise use the overridden field name as the binding path.
+                            var member = dataDescription.serializedDataType.GetMember(overriddenFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                            if (member?.Length > 0 && member[0].GetCustomAttribute<UxmlAttributeBindingPathAttribute>() is { } overriddenBindingPathAttribute)
+                            {
+                                m_BindingPath = overriddenBindingPathAttribute.path;
+                            }
+                        }
+
+                        m_BindingPath ??= overriddenFieldName ?? serializedField.Name;
+                    }
                 }
 
                 return m_BindingPath;
@@ -139,7 +142,7 @@ namespace UnityEditor.UIElements
 
         public object defaultValueClone => UxmlUtility.CloneObject(defaultValue);
 
-        public override string defaultValueAsString => Convert.ToString(defaultValue, CultureInfo.InvariantCulture) ?? "";
+        public string defaultValueAsString => Convert.ToString(defaultValue, CultureInfo.InvariantCulture) ?? "";
 
         public bool isUnityObject
         {
@@ -232,6 +235,11 @@ namespace UnityEditor.UIElements
                 return m_UxmlObjectAcceptedTypes;
             }
         }
+
+        /// <summary>
+        /// Restrictions on the possible values of the attribute.
+        /// </summary>
+        public UxmlTypeRestriction restriction { get; set; }
 
         /// <summary>
         /// Copies the value from the VisualElement/UxmlObject to the UxmlSerializedData.
@@ -555,7 +563,7 @@ namespace UnityEditor.UIElements
                     vea.serializedData is not VisualElement.UxmlSerializedData elementSerializedData)
                     continue;
 
-                var elementName = elementSerializedData.nameValue;
+                var elementName = elementSerializedData.name;
                 if (string.IsNullOrEmpty(elementName))
                     continue;
 
@@ -574,9 +582,9 @@ namespace UnityEditor.UIElements
                     if (parentAsset is TemplateAsset parentTemplateAsset)
                     {
                         if (parentTemplateAsset.serializedData is VisualElement.UxmlSerializedData parentElementSerializedData
-                            && !string.IsNullOrEmpty(parentElementSerializedData.nameValue))
+                            && !string.IsNullOrEmpty(parentElementSerializedData.name))
                         {
-                            namesCopy.Insert(nameInsertIndex, parentElementSerializedData.nameValue);
+                            namesCopy.Insert(nameInsertIndex, parentElementSerializedData.name);
                         }
 
                         idsCopy.Insert(idInsertIndex, parentAsset.id);
@@ -671,9 +679,9 @@ namespace UnityEditor.UIElements
                 var namesCopy = new List<string>(namesPath);
 
                 if (ta.serializedData is VisualElement.UxmlSerializedData taSerializedData
-                    && !string.IsNullOrEmpty(taSerializedData.nameValue))
+                    && !string.IsNullOrEmpty(taSerializedData.name))
                 {
-                    namesCopy.Add(taSerializedData.nameValue);
+                    namesCopy.Add(taSerializedData.name);
                 }
 
                 idsCopy.Add(ta.id);

@@ -13,6 +13,13 @@ namespace UnityEditor
     [VisibleToOtherModules("HierarchyModule")]
     internal static partial class HierarchyPreferences
     {
+        public enum IconMode
+        {
+            ComponentsAndGizmos,
+            ComponentsOnly,
+            GameObjectOnly
+        }
+
         const bool kUseNewHierarchy = false;
 
         public static PrefabStage.Mode DefaultPrefabModeFromHierarchy
@@ -27,10 +34,23 @@ namespace UnityEditor
             }
         }
 
+        public static IconMode GameObjectIconMode
+        {
+            get => (IconMode)s_GameObjectIconMode.value;
+            set
+            {
+                s_GameObjectIconMode.value = (int)value;
+                GameObjectIconModeChanged?.Invoke();
+            }
+        }
+
+        public static event Action GameObjectIconModeChanged;
         public static readonly SavedBool RenameNewObjects = new SavedBool("SceneHierarchyWindow.RenameNewObjects", true);
         public static readonly SavedBool UseQueryBuilder = new SavedBool("HierarchyWindow.UseQueryBuilder", true);
         public static readonly SavedBool AlternatingRowBackground = new SavedBool("HierarchyWindow.AlternatingRowBackground", true);
         public static readonly SavedBool UseNewHierarchy = new SavedBool("HierarchyWindow.UseNewHierarchy", kUseNewHierarchy);
+
+        static readonly SavedInt s_GameObjectIconMode = new SavedInt("HierarchyWindow.GameObjectIconMode", 0);
 
         public static void EnsureCorrectHierarchyIsInUse(EditorWindow window)
         {

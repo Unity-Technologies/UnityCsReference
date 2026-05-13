@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId alignContentProperty = "resolvedStyle." + nameof(IResolvedStyle.alignContent);
             internal static readonly BindingId alignItemsProperty = "resolvedStyle." + nameof(IResolvedStyle.alignItems);
             internal static readonly BindingId alignSelfProperty = "resolvedStyle." + nameof(IResolvedStyle.alignSelf);
+            internal static readonly BindingId animationPlayStateProperty = "resolvedStyle." + nameof(IResolvedStyle.animationPlayState);
             internal static readonly BindingId aspectRatioProperty = "resolvedStyle." + nameof(IResolvedStyle.aspectRatio);
             internal static readonly BindingId backgroundColorProperty = "resolvedStyle." + nameof(IResolvedStyle.backgroundColor);
             internal static readonly BindingId backgroundImageProperty = "resolvedStyle." + nameof(IResolvedStyle.backgroundImage);
@@ -76,6 +77,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId transitionPropertyProperty = "resolvedStyle." + nameof(IResolvedStyle.transitionProperty);
             internal static readonly BindingId transitionTimingFunctionProperty = "resolvedStyle." + nameof(IResolvedStyle.transitionTimingFunction);
             internal static readonly BindingId translateProperty = "resolvedStyle." + nameof(IResolvedStyle.translate);
+            internal static readonly BindingId unityAnimationClipProperty = "resolvedStyle." + nameof(IResolvedStyle.unityAnimationClip);
             internal static readonly BindingId unityBackgroundImageTintColorProperty = "resolvedStyle." + nameof(IResolvedStyle.unityBackgroundImageTintColor);
             internal static readonly BindingId unityEditorTextRenderingModeProperty = "resolvedStyle." + nameof(IResolvedStyle.unityEditorTextRenderingMode);
             internal static readonly BindingId unityFontProperty = "resolvedStyle." + nameof(IResolvedStyle.unityFont);

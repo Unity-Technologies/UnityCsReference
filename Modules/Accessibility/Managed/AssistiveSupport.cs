@@ -106,7 +106,7 @@ namespace UnityEngine.Accessibility
         /// <remarks>
         /// <para>
         /// Subscribe to this event to activate your <see cref="AccessibilityHierarchy"/> (see
-        /// <see cref="AssistiveSupport.activeHierarchy"/>) and if you need to customize your application’s interface
+        /// <see cref="AssistiveSupport.activeHierarchy"/>) and if you need to customize your application's interface
         /// for screen reader users.
         /// </para>
         /// <para>
@@ -199,7 +199,7 @@ namespace UnityEngine.Accessibility
         /// </summary>
         /// <remarks>
         /// <para>
-        /// You can use this property to customize your application’s interface for screen reader users. For example,
+        /// You can use this property to customize your application's interface for screen reader users. For example,
         /// you might want visual elements that usually disappear quickly to persist onscreen for screen reader users.
         /// </para>
         /// <para>

@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Reporting
     /// </example>
     /// <seealso cref="BuildHistory"/>
     /// <seealso cref="Build.BuildReportSummary"/>
-    [NativeHeader("Runtime/Utilities/DateTime.h")]
+    [NativeHeader("NativeKernel/Time/DateTime.h")]
     [NativeHeader("Modules/BuildReportingEditor/Public/BuildReport.h")]
     [NativeClass("BuildReporting::BuildReport")]
     public sealed class BuildReport : Object
@@ -183,6 +183,12 @@ namespace UnityEditor.Build.Reporting
 
         internal void ReplaceAllFileEntries(IEnumerable<NPath> paths)
         {
+            if (summary.buildType == BuildType.ContentDirectory)
+                // ContentDirectory builds store paths relative to summary.outputPath.
+                // ReplaceAllFileEntries re-adds via RecordFileAdded which canonicalizes to absolute,
+                // so it would corrupt a ContentDirectory report (see CBD-1988)
+                throw new InvalidOperationException("ReplaceAllFileEntries is not supported for ContentDirectory builds.");
+
             // Keep a copy of existing files in the build report to preserve file roles
             var fileNameToExistingBuildFile = new Dictionary<string, BuildFile>();
             foreach (var file in GetFiles())

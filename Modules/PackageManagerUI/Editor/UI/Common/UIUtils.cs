@@ -13,6 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private static readonly IReadOnlyList<string> k_SizeUnits = Array.AsReadOnly(new []{ "KB", "MB", "GB", "TB" });
 
+        private static readonly Dictionary<ScrollView, VisualElement> s_PendingScrollTargets = new();
+
         public static void SetElementDisplay(VisualElement element, bool value)
         {
             if (element == null)
@@ -40,40 +42,50 @@ namespace UnityEditor.PackageManager.UI.Internal
                 lastItem.element.tooltip = tooltip;
         }
 
-        public static void ScrollIfNeeded(VisualElement container, VisualElement target)
+        public static void ScrollToWhenReady(VisualElement target)
         {
-            if (target == null || container == null)
+            if (target is null)
                 return;
 
-            if (float.IsNaN(container.layout.height) || container.layout.height == 0 || float.IsNaN(target.layout.height))
+            var scrollViews = new List<ScrollView>();
+            foreach (var scrollView in GetParentsOfType<ScrollView>(target))
             {
-                EditorApplication.delayCall += () => ScrollIfNeeded(container, target);
-                return;
+                scrollViews.Add(scrollView);
+                s_PendingScrollTargets[scrollView] = target;
             }
 
-            var scrollViews = GetParentsOfType<ScrollView>(target);
+            // GeometryChangedEvent may or may not fire depending on whether the layout changes, and the scheduler
+            // takes up to 3 frames — using both gives us the fastest and most reliable scroll in all cases.
+            var scrollToCalled = false;
+            var numDelays = 0;
+            target.RegisterCallbackOnce<GeometryChangedEvent>(evt =>
+            {
+                if (scrollToCalled)
+                    return;
+                scrollToCalled = true;
+                ScrollToIfPending(target, scrollViews);
+            });
+
+            target.schedule.Execute(() =>
+            {
+                numDelays++;
+                if (scrollToCalled || numDelays <= 2)
+                    return;
+                scrollToCalled = true;
+                ScrollToIfPending(target, scrollViews);
+            }).Every(1).Until(() => scrollToCalled);
+        }
+
+        // During the up-to-3-frame delay, another ScrollToWhenReady call may have changed the pending target
+        // so we check each scroll view before scrolling to avoid scrolling to a stale target.
+        private static void ScrollToIfPending(VisualElement target, List<ScrollView> scrollViews)
+        {
             foreach (var scrollView in scrollViews)
             {
-                var scrollViewWorldBound = scrollView.worldBound;
-                var targetWorldBound = target.worldBound;
-
-                var minY = scrollViewWorldBound.yMin;
-                var maxY = scrollViewWorldBound.yMax;
-                var itemMinY = targetWorldBound.yMin;
-                var itemMaxY = targetWorldBound.yMax;
-
-                var scroll = scrollView.scrollOffset;
-
-                if (itemMinY < minY)
-                {
-                    scroll.y -= Math.Max(0, minY - itemMinY);
-                    scrollView.scrollOffset = scroll;
-                }
-                else if (itemMaxY > maxY)
-                {
-                    scroll.y += itemMaxY - maxY;
-                    scrollView.scrollOffset = scroll;
-                }
+                if (!s_PendingScrollTargets.TryGetValue(scrollView, out var pending) || pending != target)
+                    continue;
+                scrollView.ScrollTo(target);
+                s_PendingScrollTargets.Remove(scrollView);
             }
         }
 

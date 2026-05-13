@@ -178,6 +178,26 @@ namespace UnityEngine
         public static extern StructInt structIntProperty { get; set; }
     }
 
+    [ExcludeFromDocs]
+    [NativeAsStruct]
+    [StructLayout(LayoutKind.Sequential)]
+    internal class ClassInt
+    {
+        public int field;
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [ExcludeFromDocs]
+    internal class BlittableClassTests
+    {
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterClassInt(ClassInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterClassIntByRef(ref ClassInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterClassIntIn(in ClassInt param);
+        [NativeMethod(ThrowsException = true)] public static extern void ParameterClassIntOut(out ClassInt param);
+
+        public static extern ClassInt ReturnClassInt();
+    }
+
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class RealWorldTypesTests
@@ -1113,6 +1133,7 @@ namespace UnityEngine
         public static extern UIntPtr TestInvokeUIntPtr(UIntPtr arg);
         public static extern float TestInvokeFloat(float arg);
         public static extern double TestInvokeDouble(double arg);
+        public static extern SomeEnum TestInvokeEnum(SomeEnum arg);
 
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static bool InvokeBool(bool arg) { return arg; }
@@ -1147,6 +1168,8 @@ namespace UnityEngine
         static float InvokeFloat(float arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static double InvokeDouble(double arg) { return arg; }
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static SomeEnum InvokeEnum(SomeEnum arg) { return arg; }
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]

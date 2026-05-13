@@ -4499,8 +4499,8 @@ namespace UnityEditor
             Object newObject = ObjectField(position, label, currentObject, typeof(Object), false);
             if (EndChangeCheck())
             {
-                LoadableObjectId newLoadableObjectId = LoadableObjectIdEditorUtility.ObjectToLoadableObjectId(newObject);
-                if (newObject != null && !newLoadableObjectId.isValid)
+                LoadableObjectId newLoadableObjectId = LoadableObjectIdEditorUtility.CreateLoadableObjectId(newObject);
+                if (newObject != null && !newLoadableObjectId.IsValid)
                 {
                     Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId."));
                     return;

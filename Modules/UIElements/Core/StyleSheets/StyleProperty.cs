@@ -1129,16 +1129,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Sets a <see cref="Font"/> as the current value.
-        /// </summary>
-        /// <param name="styleSheet">The data store.</param>
-        /// <param name="value">The value to store.</param>
-        public void SetFont(StyleSheet styleSheet, Font value)
-        {
-            SetAssetReference(styleSheet, value);
-        }
-
-        /// <summary>
         /// Tries to read a <see cref="Font"/> from the <see cref="StyleProperty"/>'s value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>

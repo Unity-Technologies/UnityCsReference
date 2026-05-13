@@ -10,6 +10,7 @@ using UnityEngine.UIElements.Unmanaged;
 namespace UnityEngine.UIElements;
 
 // A class containing all 3-D input logic at the RuntimePanel level
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal static class WorldSpaceInput
 {
     // We don't expose the Pick3D methods in a public class until all the pieces are in place
@@ -428,6 +429,7 @@ internal static class WorldSpaceInput
         return returnedChild;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static Bounds GetPicking3DWorldBounds(VisualElement ve)
     {
         var bb = GetPicking3DLocalBounds(ve);

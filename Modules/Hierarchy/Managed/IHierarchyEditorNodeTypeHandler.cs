@@ -36,6 +36,7 @@ namespace Unity.Hierarchy
         bool AcceptParent(HierarchyView view, in HierarchyNode parent);
         bool AcceptChild(HierarchyView view, in HierarchyNode child);
         bool CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes);
+        string GetDragTitle(HierarchyView view, in HierarchyNode node) => null;
         void OnStartDrag(in HierarchyViewDragAndDropSetupData data);
         DragVisualMode CanDrop(in HierarchyViewDragAndDropHandlingData data);
         DragVisualMode OnDrop(in HierarchyViewDragAndDropHandlingData data);

@@ -13,23 +13,12 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A drop-down menu for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarMenu|UXML element ToolbarMenu]].
     /// </summary>
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarMenu.png")]
     public partial class ToolbarMenu : TextElement, IToolbarMenuElement
     {
         internal static readonly BindingId menuProperty = nameof(menu);
         internal static readonly BindingId variantProperty = nameof(variant);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new ToolbarMenu();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
 
         /// <summary>
         /// Display styles for the menu.

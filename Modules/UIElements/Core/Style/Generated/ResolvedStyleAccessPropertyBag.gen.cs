@@ -47,6 +47,16 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, Align value) => throw new System.InvalidOperationException();
         }
 
+        class AnimationPlayStateProperty : ResolvedEnumProperty<AnimationPlayState>
+        {
+            public override string Name => nameof(IResolvedStyle.animationPlayState);
+            public override string ussName => "animation-play-state";
+            public override bool IsReadOnly => true;
+
+            public override AnimationPlayState GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).animationPlayState;
+            public override void SetValue(ref ResolvedStyleAccess container, AnimationPlayState value) => throw new System.InvalidOperationException();
+        }
+
         class AspectRatioProperty : ResolvedRatioProperty
         {
             public override string Name => nameof(IResolvedStyle.aspectRatio);
@@ -627,6 +637,16 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, Vector3 value) => throw new System.InvalidOperationException();
         }
 
+        class UnityAnimationClipProperty : ResolvedUIAnimationClipProperty
+        {
+            public override string Name => nameof(IResolvedStyle.unityAnimationClip);
+            public override string ussName => "-unity-animation-clip";
+            public override bool IsReadOnly => true;
+
+            public override UIAnimationClip GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityAnimationClip;
+            public override void SetValue(ref ResolvedStyleAccess container, UIAnimationClip value) => throw new System.InvalidOperationException();
+        }
+
         class UnityBackgroundImageTintColorProperty : ResolvedColorProperty
         {
             public override string Name => nameof(IResolvedStyle.unityBackgroundImageTintColor);
@@ -849,9 +869,9 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(83);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(249);
-            AddPropertyRange(new AlignContentProperty(), new AlignItemsProperty(), new AlignSelfProperty(), new AspectRatioProperty(), new BackgroundColorProperty(), new BackgroundImageProperty(), new BackgroundPositionXProperty(), new BackgroundPositionYProperty(), new BackgroundRepeatProperty(), new BackgroundSizeProperty(), new BorderBottomColorProperty(), new BorderBottomLeftRadiusProperty(), new BorderBottomRightRadiusProperty(), new BorderBottomWidthProperty(), new BorderLeftColorProperty(), new BorderLeftWidthProperty(), new BorderRightColorProperty(), new BorderRightWidthProperty(), new BorderTopColorProperty(), new BorderTopLeftRadiusProperty(), new BorderTopRightRadiusProperty(), new BorderTopWidthProperty(), new BottomProperty(), new ColorProperty(), new DisplayProperty(), new FilterProperty(), new FlexBasisProperty(), new FlexDirectionProperty(), new FlexGrowProperty(), new FlexShrinkProperty(), new FlexWrapProperty(), new FontSizeProperty(), new HeightProperty(), new JustifyContentProperty(), new LeftProperty(), new LetterSpacingProperty(), new MarginBottomProperty(), new MarginLeftProperty(), new MarginRightProperty(), new MarginTopProperty(), new MaxHeightProperty(), new MaxWidthProperty(), new MinHeightProperty(), new MinWidthProperty(), new OpacityProperty(), new PaddingBottomProperty(), new PaddingLeftProperty(), new PaddingRightProperty(), new PaddingTopProperty(), new PositionProperty(), new RightProperty(), new RotateProperty(), new ScaleProperty(), new TextOverflowProperty(), new TopProperty(), new TransformOriginProperty(), new TransitionDelayProperty(), new TransitionDurationProperty(), new TransitionPropertyProperty(), new TransitionTimingFunctionProperty(), new TranslateProperty(), new UnityBackgroundImageTintColorProperty(), new UnityEditorTextRenderingModeProperty(), new UnityFontProperty(), new UnityFontDefinitionProperty(), new UnityFontStyleAndWeightProperty(), new UnityMaterialProperty(), new UnityParagraphSpacingProperty(), new UnitySliceBottomProperty(), new UnitySliceLeftProperty(), new UnitySliceRightProperty(), new UnitySliceScaleProperty(), new UnitySliceTopProperty(), new UnitySliceTypeProperty(), new UnityTextAlignProperty(), new UnityTextGeneratorProperty(), new UnityTextOutlineColorProperty(), new UnityTextOutlineWidthProperty(), new UnityTextOverflowPositionProperty(), new VisibilityProperty(), new WhiteSpaceProperty(), new WidthProperty(), new WordSpacingProperty());
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(85);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(255);
+            AddPropertyRange(new AlignContentProperty(), new AlignItemsProperty(), new AlignSelfProperty(), new AnimationPlayStateProperty(), new AspectRatioProperty(), new BackgroundColorProperty(), new BackgroundImageProperty(), new BackgroundPositionXProperty(), new BackgroundPositionYProperty(), new BackgroundRepeatProperty(), new BackgroundSizeProperty(), new BorderBottomColorProperty(), new BorderBottomLeftRadiusProperty(), new BorderBottomRightRadiusProperty(), new BorderBottomWidthProperty(), new BorderLeftColorProperty(), new BorderLeftWidthProperty(), new BorderRightColorProperty(), new BorderRightWidthProperty(), new BorderTopColorProperty(), new BorderTopLeftRadiusProperty(), new BorderTopRightRadiusProperty(), new BorderTopWidthProperty(), new BottomProperty(), new ColorProperty(), new DisplayProperty(), new FilterProperty(), new FlexBasisProperty(), new FlexDirectionProperty(), new FlexGrowProperty(), new FlexShrinkProperty(), new FlexWrapProperty(), new FontSizeProperty(), new HeightProperty(), new JustifyContentProperty(), new LeftProperty(), new LetterSpacingProperty(), new MarginBottomProperty(), new MarginLeftProperty(), new MarginRightProperty(), new MarginTopProperty(), new MaxHeightProperty(), new MaxWidthProperty(), new MinHeightProperty(), new MinWidthProperty(), new OpacityProperty(), new PaddingBottomProperty(), new PaddingLeftProperty(), new PaddingRightProperty(), new PaddingTopProperty(), new PositionProperty(), new RightProperty(), new RotateProperty(), new ScaleProperty(), new TextOverflowProperty(), new TopProperty(), new TransformOriginProperty(), new TransitionDelayProperty(), new TransitionDurationProperty(), new TransitionPropertyProperty(), new TransitionTimingFunctionProperty(), new TranslateProperty(), new UnityAnimationClipProperty(), new UnityBackgroundImageTintColorProperty(), new UnityEditorTextRenderingModeProperty(), new UnityFontProperty(), new UnityFontDefinitionProperty(), new UnityFontStyleAndWeightProperty(), new UnityMaterialProperty(), new UnityParagraphSpacingProperty(), new UnitySliceBottomProperty(), new UnitySliceLeftProperty(), new UnitySliceRightProperty(), new UnitySliceScaleProperty(), new UnitySliceTopProperty(), new UnitySliceTypeProperty(), new UnityTextAlignProperty(), new UnityTextGeneratorProperty(), new UnityTextOutlineColorProperty(), new UnityTextOutlineWidthProperty(), new UnityTextOverflowPositionProperty(), new VisibilityProperty(), new WhiteSpaceProperty(), new WidthProperty(), new WordSpacingProperty());
         }
     }
 }

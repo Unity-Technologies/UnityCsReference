@@ -2,25 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Globalization;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class SampleDetailsHeader: VisualElement
+    [UxmlElement]
+    internal partial class SampleDetailsHeader: VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new SampleDetailsHeader(
-                ServicesContainer.instance.Resolve<IResourceLoader>(),
-                ServicesContainer.instance.Resolve<IApplicationProxy>(),
-                ServicesContainer.instance.Resolve<IIOProxy>(),
-                ServicesContainer.instance.Resolve<IPackageManagerWindowProxy>(),
-                ServicesContainer.instance.Resolve<ISampleImporter>());
-        }
-
         private IPackageVersion m_ParentVersion;
         private Sample m_Sample;
         private SampleToolBarSimpleButton m_ImportButton;
@@ -31,6 +20,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IIOProxy m_IOProxy;
         private readonly IPackageManagerWindowProxy m_PackageManagerWindowProxy;
         private readonly ISampleImporter m_SampleImporter;
+
+        public SampleDetailsHeader() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IIOProxy>(),
+            ServicesContainer.instance.Resolve<IPackageManagerWindowProxy>(),
+            ServicesContainer.instance.Resolve<ISampleImporter>())
+        {
+        }
 
         public SampleDetailsHeader(IResourceLoader resourceLoader, IApplicationProxy applicationProxy, IIOProxy ioProxy, IPackageManagerWindowProxy packageManagerWindowProxy, ISampleImporter sampleImporter)
         {

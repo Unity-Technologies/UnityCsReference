@@ -3,51 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class OverrideFoldout : OverrideRow, INotifyValueChanged<bool>
+    [UxmlElement]
+    internal partial class OverrideFoldout : OverrideRow, INotifyValueChanged<bool>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : OverrideRow.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeField] string text;
-            [SerializeField] bool value;
-
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags value_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(text), "text"),
-                    new (nameof(value), "value")
-                }, true);
-            }
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-                var e = (OverrideFoldout)obj;
-
-                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
-                    e.text = text;
-                if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
-                    e.value = value;
-            }
-
-            public override object CreateInstance() => new OverrideFoldout();
-        }
-
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId valueProperty = nameof(value);
 
@@ -67,7 +31,12 @@ namespace Unity.UIToolkit.Editor
         public VisualElement header => m_Header;
         public Toggle toggle => m_Toggle;
 
-        protected override string GetIsOverriddenClassName() => isOverriddenUssClassName;
+        protected internal override string GetIsOverriddenClassName() => isOverriddenUssClassName;
+
+        protected override void OnTrackedPropertySourceChanged(ITrackablePropertyProvider provider, string propertyName, bool hasVariable, bool hasBinding)
+        {
+            // Foldouts are category containers — variable/binding styling applies only to leaf property rows.
+        }
 
         [UxmlAttribute]
         [CreateProperty]

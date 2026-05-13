@@ -6,3 +6,4 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]

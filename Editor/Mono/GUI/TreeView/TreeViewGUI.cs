@@ -640,8 +640,8 @@ namespace UnityEditor.IMGUI.Controls
 
         virtual public float GetFoldoutIndent(TreeViewItem<TIdentifier>  item)
         {
-            // Ignore depth when showing search results
-            if (m_TreeView.isSearching)
+            // Preserve depth-based indentation when showing parents in search results
+            if (m_TreeView.isSearching && !m_TreeView.showParentsInSearchResults)
                 return k_BaseIndent;
 
             return k_BaseIndent + item.depth * indentWidth;

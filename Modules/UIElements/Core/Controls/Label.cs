@@ -13,12 +13,6 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/Label.png")]
     public partial class Label : TextElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new Label();
-        }
-
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

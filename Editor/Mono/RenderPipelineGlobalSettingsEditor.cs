@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
@@ -37,6 +38,17 @@ namespace UnityEditor.Rendering
                 var property = serializedObject.FindProperty("m_Settings");
                 UnityEngine.Debug.Assert(property != null);
                 root.Add(new PropertyField(property));
+
+                var styleSheet = EditorGUIUtility.Load("StyleSheets/ProjectSettings/GraphicsSettings.uss") as StyleSheet;
+
+                if (styleSheet != null)
+                {
+                    root.styleSheets.Add(styleSheet);
+                }
+                else
+                {
+                    Debug.LogError($"Failed to load style sheet for {nameof(RenderPipelineGlobalSettingsEditor)}. Make sure the style sheet is located at 'Editor Default Resources/StyleSheets/ProjectSettings/GraphicsSettings.uss'");
+                }
             }
 
             return root;

@@ -2,36 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageDetailsBody : VisualElement
+    [UxmlElement]
+    internal partial class PackageDetailsBody : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance()
-            {
-                var container = ServicesContainer.instance;
-                return new PackageDetailsBody(
-                    container.Resolve<IResourceLoader>(),
-                    container.Resolve<IPackageDatabase>(),
-                    container.Resolve<IPackageOperationDispatcher>(),
-                    container.Resolve<IPackageManagerPrefs>(),
-                    container.Resolve<IApplicationProxy>(),
-                    container.Resolve<IIOProxy>(),
-                    container.Resolve<IAssetStoreCache>(),
-                    container.Resolve<IPageManager>(),
-                    container.Resolve<IUpmCache>(),
-                    container.Resolve<IUnityConnectProxy>(),
-                    container.Resolve<IPackageLinkFactory>(),
-                    container.Resolve<IDelayedSelectionHandler>(),
-                    container.Resolve<ISampleImporter>());
-            }
-        }
-
         private IPackageVersion m_Version;
         private readonly PackageDetailsTabView m_TabView;
 
@@ -48,6 +25,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageLinkFactory m_PackageLinkFactory;
         private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
         private readonly ISampleImporter m_SampleImporter;
+
+        public PackageDetailsBody() : this(
+            ServicesContainer.instance.Resolve<IResourceLoader>(),
+            ServicesContainer.instance.Resolve<IPackageDatabase>(),
+            ServicesContainer.instance.Resolve<IPackageOperationDispatcher>(),
+            ServicesContainer.instance.Resolve<IPackageManagerPrefs>(),
+            ServicesContainer.instance.Resolve<IApplicationProxy>(),
+            ServicesContainer.instance.Resolve<IIOProxy>(),
+            ServicesContainer.instance.Resolve<IAssetStoreCache>(),
+            ServicesContainer.instance.Resolve<IPageManager>(),
+            ServicesContainer.instance.Resolve<IUpmCache>(),
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<IPackageLinkFactory>(),
+            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>(),
+            ServicesContainer.instance.Resolve<ISampleImporter>())
+        {
+        }
 
         public PackageDetailsBody(
             IResourceLoader resourceLoader,

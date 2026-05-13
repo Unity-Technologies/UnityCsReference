@@ -30,16 +30,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         }
     }
 
-    class MainContentElement : AnimationWindowElement
+    [UxmlElement]
+    partial class MainContentElement : AnimationWindowElement
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new MainContentElement();
-        }
-
         public const string ussClassName = "animation-mainContent";
 
         public MainContentElement()
@@ -55,16 +48,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         }
     }
 
-    class DopeSheetElement : AnimationWindowElement
+    [UxmlElement]
+    partial class DopeSheetElement : AnimationWindowElement
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new DopeSheetElement();
-        }
-
         public const string ussClassName = "animation-dopeSheet";
 
         public DopeSheetElement()
@@ -80,16 +66,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         }
     }
 
-    class CurveEditorElement : AnimationWindowElement
+    [UxmlElement]
+    partial class CurveEditorElement : AnimationWindowElement
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new CurveEditorElement();
-        }
-
         public const string ussClassName = "animation-curveEditor";
 
         public CurveEditorElement()
@@ -105,16 +84,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         }
     }
 
-    class HierarchyElement : AnimationWindowElement
+    [UxmlElement]
+    partial class HierarchyElement : AnimationWindowElement
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new HierarchyElement();
-        }
-
         public const string ussClassName = "animation-hierarchy";
 
         public HierarchyElement()
@@ -134,16 +106,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         }
     }
 
-    class AnimationEventTimelineElement : AnimationWindowElement
+    [UxmlElement]
+    partial class AnimationEventTimelineElement : AnimationWindowElement
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new AnimationEventTimelineElement();
-        }
-
         public const string ussClassName = "animation-eventTimeline";
 
         public AnimationEventTimelineElement()

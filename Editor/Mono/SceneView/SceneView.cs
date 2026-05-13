@@ -4167,6 +4167,31 @@ namespace UnityEditor
             return !StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(gameObject, camera);
         }
 
+        bool HasActiveEditorWithFrameBounds()
+        {
+            // Check if any active editor has HasFrameBounds method that returns true
+            foreach (Editor editor in activeEditors)
+            {
+                MethodInfo hasBoundsMethod = editor.GetType().GetMethod("HasFrameBounds", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+
+                if (hasBoundsMethod != null)
+                {
+                    try
+                    {
+                        object hasBounds = hasBoundsMethod.Invoke(editor, null);
+                        if (hasBounds is bool && (bool)hasBounds)
+                            return true;
+                    }
+                    catch
+                    {
+                        // Ignore exceptions from editor methods
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public bool FrameSelected()
         {
             return FrameSelected(false);
@@ -4179,7 +4204,11 @@ namespace UnityEditor
 
         public virtual bool FrameSelected(bool lockView, bool instant)
         {
-            if (!IsGameObjectInThisSceneView(Selection.activeGameObject))
+            // Allow framing for GameObjects and other objects with custom editors that provide bounds (e.g., VisualElementSelection)
+            bool isGameObjectInScene = IsGameObjectInThisSceneView(Selection.activeGameObject);
+            bool hasCustomFrameBounds = HasActiveEditorWithFrameBounds();
+
+            if (!isGameObjectInScene && !hasCustomFrameBounds)
                 return false;
 
             viewIsLockedToObject = lockView;

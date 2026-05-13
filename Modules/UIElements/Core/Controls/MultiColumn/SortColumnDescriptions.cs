@@ -18,44 +18,8 @@ namespace UnityEngine.UIElements
     {
         static readonly BindingId sortColumnDescriptionsProperty = nameof(sortColumnDescriptions);
 
-        [ExcludeFromDocs, Serializable]
-        public class UxmlSerializedData : UIElements.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(sortColumnDescriptions), "sort-column-descriptions"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeReference, UxmlObjectReference] List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortColumnDescriptions_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new SortColumnDescriptions();
-
-            public override void Deserialize(object obj)
-            {
-                if (ShouldWriteAttributeValue(sortColumnDescriptions_UxmlAttributeFlags) && sortColumnDescriptions != null)
-                {
-                    var e = (SortColumnDescriptions)obj;
-                    foreach (var scdData in sortColumnDescriptions)
-                    {
-                        var scd = (SortColumnDescription)scdData.CreateInstance();
-                        scdData.Deserialize(scd);
-                        e.Add(scd);
-                    }
-                }
-            }
-        }
-
-        [SerializeField]
-        private readonly IList<SortColumnDescription> m_Descriptions = new List<SortColumnDescription>();
-
-        private IList<SortColumnDescription> sortColumnDescriptions => m_Descriptions;
+        [UxmlObjectReference]
+        internal List<SortColumnDescription> sortColumnDescriptions { get; set; } = new List<SortColumnDescription>();
 
         /// <summary>
         /// Event sent when the descriptions changed.
@@ -73,7 +37,7 @@ namespace UnityEngine.UIElements
         /// <returns>The enumerator.</returns>
         public IEnumerator<SortColumnDescription> GetEnumerator()
         {
-            return m_Descriptions.GetEnumerator();
+            return sortColumnDescriptions.GetEnumerator();
         }
 
         /// <summary>
@@ -91,7 +55,7 @@ namespace UnityEngine.UIElements
         /// <param name="item">The sort description to add.</param>
         public void Add(SortColumnDescription item)
         {
-            Insert(m_Descriptions.Count, item);
+            Insert(sortColumnDescriptions.Count, item);
         }
 
         /// <summary>
@@ -99,9 +63,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void Clear()
         {
-            while (m_Descriptions.Count > 0)
+            while (sortColumnDescriptions.Count > 0)
             {
-                Remove(m_Descriptions[0]);
+                Remove(sortColumnDescriptions[0]);
             }
         }
 
@@ -112,7 +76,7 @@ namespace UnityEngine.UIElements
         /// <returns>Whether the item is in the collection or not.</returns>
         public bool Contains(SortColumnDescription  item)
         {
-            return m_Descriptions.Contains(item);
+            return sortColumnDescriptions.Contains(item);
         }
 
         /// <summary>
@@ -122,7 +86,7 @@ namespace UnityEngine.UIElements
         /// <param name="arrayIndex">The starting index.</param>
         public void CopyTo(SortColumnDescription[] array, int arrayIndex)
         {
-            m_Descriptions.CopyTo(array, arrayIndex);
+            sortColumnDescriptions.CopyTo(array, arrayIndex);
         }
 
         /// <summary>
@@ -135,7 +99,7 @@ namespace UnityEngine.UIElements
             if (desc == null)
                 throw new ArgumentException("Cannot remove null description");
 
-            if (m_Descriptions.Remove(desc))
+            if (sortColumnDescriptions.Remove(desc))
             {
                 desc.column = null;
                 desc.propertyChanged -= OnDescriptionPropertyChanged;
@@ -155,7 +119,7 @@ namespace UnityEngine.UIElements
         void OnDescriptionPropertyChanged(object sender, BindablePropertyChangedEventArgs args)
         {
             var desc = (SortColumnDescription)sender;
-            var index = m_Descriptions.IndexOf(desc);
+            var index = sortColumnDescriptions.IndexOf(desc);
             if (index >= 0)
             {
                 var fullPath = $"{sortColumnDescriptionsProperty}[{index}].{args.propertyName}";
@@ -166,12 +130,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Gets the number of sort descriptions in the collection.
         /// </summary>
-        public int Count => m_Descriptions.Count;
+        public int Count => sortColumnDescriptions.Count;
 
         /// <summary>
         /// Gets a value indicating whether the collection is readonly.
         /// </summary>
-        public bool IsReadOnly => m_Descriptions.IsReadOnly;
+        public bool IsReadOnly => (sortColumnDescriptions as IList).IsReadOnly;
 
         /// <summary>
         /// Returns the index of the specified <see cref="SortColumnDescription"/> if it is contained in the collection; returns -1 otherwise.
@@ -180,7 +144,7 @@ namespace UnityEngine.UIElements
         /// <returns>The index of the <see cref="SortColumnDescriptions"/> if found in the collection; otherwise, -1.</returns>
         public int IndexOf(SortColumnDescription desc)
         {
-            return m_Descriptions.IndexOf(desc);
+            return sortColumnDescriptions.IndexOf(desc);
         }
 
         /// <summary>
@@ -196,7 +160,7 @@ namespace UnityEngine.UIElements
             if (Contains(desc))
                 throw new ArgumentException("Already contains this description");
 
-            m_Descriptions.Insert(index, desc);
+            sortColumnDescriptions.Insert(index, desc);
             desc.propertyChanged += OnDescriptionPropertyChanged;
             desc.changed += OnDescriptionChanged;
             changed?.Invoke();
@@ -209,7 +173,7 @@ namespace UnityEngine.UIElements
         /// <param name="index">The index of the sort description to remove.</param>
         public void RemoveAt(int index)
         {
-            Remove(m_Descriptions[index]);
+            Remove(sortColumnDescriptions[index]);
         }
 
         /// <summary>
@@ -219,7 +183,7 @@ namespace UnityEngine.UIElements
         /// <returns>The SortColumnDescription at the specified index.</returns>
         public SortColumnDescription this[int index]
         {
-            get { return m_Descriptions[index]; }
+            get { return sortColumnDescriptions[index]; }
         }
 
         void NotifyPropertyChanged(in BindingId property)

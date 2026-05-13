@@ -2,14 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using JetBrains.Annotations;
-using UnityEngine.UIElements;
-using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -17,20 +14,8 @@ namespace Unity.UIToolkit.Editor
     [UxmlElement]
     [UsedImplicitly]
     [MovedFrom("Unity.UI.Builder")]
-    internal class StyleFilterField : StylePropertyField<StyleList<FilterFunction>, FilterStyleField, List<FilterFunction>>
+    internal partial class StyleFilterField : StylePropertyField<StyleList<FilterFunction>, FilterStyleField, List<FilterFunction>>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : StylePropertyField<StyleList<FilterFunction>, FilterStyleField, List<FilterFunction>>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StylePropertyField<StyleList<FilterFunction>, FilterStyleField, List<FilterFunction>>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new StyleFilterField();
-        }
-
         // This is needed in order to not share references with the value being set
         public override StyleList<FilterFunction> value
         {

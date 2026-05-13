@@ -109,7 +109,7 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
-            return $"{id}{op}{value}";
+            return $"{id}{op}{EscapeLiteralString(value)}";
         }
 
         internal override void AddContextualMenuItems(GenericMenu menu)
@@ -531,11 +531,6 @@ namespace UnityEditor.Search
                     }
                 }
             }
-        }
-
-        public override string ToString()
-        {
-            return $"{id}{op}{EscapeLiteralString(value)}";
         }
 
         internal override string FormatUIValue(string originalValue)

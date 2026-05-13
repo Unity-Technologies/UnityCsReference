@@ -14,8 +14,10 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 
 
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]

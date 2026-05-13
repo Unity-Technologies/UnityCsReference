@@ -208,13 +208,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Used in the UI Builder
-        internal Object dataSourceUnityObject
-        {
-            get => dataSource as Object;
-            set => dataSource = value;
-        }
-
         /// <summary>
         /// Path from the data source to the value.
         /// </summary>
@@ -239,33 +232,8 @@ namespace UnityEngine.UIElements
 
         internal bool isDataSourcePathEmpty => m_DataSourcePath == null || m_DataSourcePath.IsEmpty;
 
-        internal string dataSourcePathString
-        {
-            get => dataSourcePath.ToString();
-            set => dataSourcePath = new PropertyPath(value);
-        }
-
         // Used for uxml serialization authoring only.
         List<Binding> m_Bindings;
-        List<Binding> bindings
-        {
-            get => m_Bindings ??= new List<Binding>();
-            set => m_Bindings = value;
-        }
-
-        /// <summary>
-        /// The possible type of data source assignable to this VisualElement.
-        /// <remarks>
-        /// This information is only used by the UI Builder as a hint to provide some completion to the data source path field when the effective data source cannot be specified at design time.
-        /// </remarks>
-        /// </summary>
-        public Type dataSourceType { get; set; }
-
-        internal string dataSourceTypeString
-        {
-            get => UxmlUtility.TypeToString(dataSourceType);
-            set => dataSourceType = UxmlUtility.ParseType(value);
-        }
 
         /// <summary>
         /// Assigns a binding between a target and a source.

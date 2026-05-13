@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Text;
+using Unity.UIToolkit.Editor;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
 
@@ -47,6 +48,7 @@ namespace Unity.UI.Builder
 
             // Undo/Redo
             Undo.undoRedoEvent += OnUndoRedo;
+            UICommandQueue.RegisterHandler<AddClassCommand>(OnClassAdded);
         }
 
         public void OnDisable()
@@ -61,6 +63,7 @@ namespace Unity.UI.Builder
 
             // Undo/Redo
             Undo.undoRedoEvent -= OnUndoRedo;
+            UICommandQueue.UnregisterHandler<AddClassCommand>(OnClassAdded);
         }
 
         public void RegisterPane(BuilderPaneContent paneContent)
@@ -633,6 +636,27 @@ namespace Unity.UI.Builder
         {
             var ussFile = m_PaneWindow.document.activeOpenUXMLFile.GetUssFileFromSheet(styleSheet);
             ussFile?.GeneratePreview();
+        }
+
+        private void OnClassAdded(in CommandContext context)
+        {
+            if (context.Status != CommandExecutionStatus.Success)
+                return;
+
+            var command = (AddClassCommand)context.Command;
+            var vea = command.ElementAsset;
+
+            var builder = Builder.ActiveWindow;
+            if (!builder)
+                return;
+
+            builder.documentRootElement.Query().Where(e => e.visualElementAsset == vea).ForEach(e =>
+                {
+                    e.AddToClassList(command.ClassName);
+                    builder.selection.NotifyOfHierarchyChange(null, e, BuilderHierarchyChangeType.ClassList);
+                });
+
+            builder.selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
         }
     }
 }

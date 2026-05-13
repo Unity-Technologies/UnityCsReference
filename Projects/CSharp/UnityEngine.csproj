@@ -454,6 +454,9 @@
     <Compile Include="..\..\Modules\AdaptivePerformance\Management\IAdaptivePerformanceSettings.cs">
       <Link>Modules\AdaptivePerformance\Management\IAdaptivePerformanceSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AdaptivePerformance\Profiler\AdaptivePerformanceProfilerNative.bindings.cs">
+      <Link>Modules\AdaptivePerformance\Profiler\AdaptivePerformanceProfilerNative.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformance\Profiler\AdaptivePerformanceProfilerStats.cs">
       <Link>Modules\AdaptivePerformance\Profiler\AdaptivePerformanceProfilerStats.cs</Link>
     </Compile>
@@ -1164,6 +1167,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewColumnName.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewColumnName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewColumnNavigate.cs">
+      <Link>Modules\Hierarchy\Managed\HierarchyViewColumnNavigate.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewColumnUtility.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewColumnUtility.cs</Link>
@@ -2194,6 +2200,15 @@
     <Compile Include="..\..\Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs">
       <Link>Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Scripting\Attributes\Attributes.cs">
+      <Link>Modules\Scripting\Attributes\Attributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Attributes\BindingsAttributes.cs">
+      <Link>Modules\Scripting\Attributes\BindingsAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Attributes\UnityString.cs">
+      <Link>Modules\Scripting\Attributes\UnityString.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Scripting\Burst\BurstAuthorizedExternalMethodAttribute.cs">
       <Link>Modules\Scripting\Burst\BurstAuthorizedExternalMethodAttribute.cs</Link>
     </Compile>
@@ -2256,15 +2271,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs">
       <Link>Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SharedInternals\Attributes.cs">
-      <Link>Modules\SharedInternals\Attributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SharedInternals\BindingsAttributes.cs">
-      <Link>Modules\SharedInternals\BindingsAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SharedInternals\UnityString.cs">
-      <Link>Modules\SharedInternals\UnityString.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SpriteMask\Public\ScriptBindings\SpriteMask.bindings.cs">
       <Link>Modules\SpriteMask\Public\ScriptBindings\SpriteMask.bindings.cs</Link>
@@ -3139,6 +3145,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\AlignmentUtils.cs">
       <Link>Modules\UIElements\Core\AlignmentUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\AnimationLengthChannel.cs">
+      <Link>Modules\UIElements\Core\AnimationLengthChannel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\AssemblyInfo.cs">
       <Link>Modules\UIElements\Core\AssemblyInfo.cs</Link>
     </Compile>
@@ -3172,9 +3181,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\BindableElement.cs">
       <Link>Modules\UIElements\Core\BindableElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Bindings\Binding.Factory.cs">
-      <Link>Modules\UIElements\Core\Bindings\Binding.Factory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\Binding.cs">
       <Link>Modules\UIElements\Core\Bindings\Binding.cs</Link>
     </Compile>
@@ -3199,14 +3205,8 @@
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\ConverterGroups.cs">
       <Link>Modules\UIElements\Core\Bindings\ConverterGroups.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Bindings\CustomBinding.Factory.cs">
-      <Link>Modules\UIElements\Core\Bindings\CustomBinding.Factory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\CustomBinding.cs">
       <Link>Modules\UIElements\Core\Bindings\CustomBinding.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataBinding.Factory.cs">
-      <Link>Modules\UIElements\Core\Bindings\DataBinding.Factory.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\DataBinding.cs">
       <Link>Modules\UIElements\Core\Bindings\DataBinding.cs</Link>
@@ -3378,6 +3378,24 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\LayoutConfiguration.cs">
       <Link>Modules\UIElements\Core\Controls\CollectionView\LayoutConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewColumnMover.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewColumnMover.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewColumnResizer.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewColumnResizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewFrozenColumnUtility.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewFrozenColumnUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewMultiColumnCollectionHeader.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewMultiColumnCollectionHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewMultiColumnHeaderColumn.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\CollectionViewMultiColumnHeaderColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\ColumnFreezeState.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\ColumnFreezeState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\RecycledItem.cs">
       <Link>Modules\UIElements\Core\Controls\CollectionView\RecycledItem.cs</Link>
@@ -3697,6 +3715,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Events\EventCallback.cs">
       <Link>Modules\UIElements\Core\Events\EventCallback.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\EventCallbackGroupFactory.cs">
+      <Link>Modules\UIElements\Core\Events\EventCallbackGroupFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Events\EventCallbackRegistry.cs">
       <Link>Modules\UIElements\Core\Events\EventCallbackRegistry.cs</Link>
     </Compile>
@@ -3991,6 +4012,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\MouseManipulator.cs">
       <Link>Modules\UIElements\Core\MouseManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\ProfilerUIToolkit.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\ProfilerUIToolkit.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\IPanelComponent.cs">
       <Link>Modules\UIElements\Core\Native\Renderer\IPanelComponent.cs</Link>
     </Compile>
@@ -4276,6 +4300,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Dimension.cs">
       <Link>Modules\UIElements\Core\StyleSheets\Dimension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\LegacySelectorHelper.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\LegacySelectorHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\MatchedRulesExtractor.cs">
       <Link>Modules\UIElements\Core\StyleSheets\MatchedRulesExtractor.cs</Link>
     </Compile>
@@ -4287,6 +4314,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorAccelerationCache.cs">
       <Link>Modules\UIElements\Core\StyleSheets\SelectorAccelerationCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorAccelerationCacheBuilder.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\SelectorAccelerationCacheBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorUtility.cs">
       <Link>Modules\UIElements\Core\StyleSheets\SelectorUtility.cs</Link>
@@ -4504,6 +4534,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\IStyle.cs">
       <Link>Modules\UIElements\Core\Style\IStyle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\InitialStyle.cs">
+      <Link>Modules\UIElements\Core\Style\InitialStyle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\InlineStyle.ManagedProps.cs">
       <Link>Modules\UIElements\Core\Style\InlineStyle.ManagedProps.cs</Link>
     </Compile>
@@ -4639,6 +4672,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTypes.cs">
       <Link>Modules\UIElements\Core\Style\StyleTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleUIAnimationClip.cs">
+      <Link>Modules\UIElements\Core\Style\StyleUIAnimationClip.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleValue.PropertyBag.cs">
       <Link>Modules\UIElements\Core\Style\StyleValue.PropertyBag.cs</Link>
     </Compile>
@@ -4723,6 +4759,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\UITKTextHandle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextHandleOverlay.cs">
+      <Link>Modules\UIElements\Core\Text\UITKTextHandleOverlay.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextJobSystem.cs">
       <Link>Modules\UIElements\Core\Text\UITKTextJobSystem.cs</Link>
     </Compile>
@@ -4734,6 +4773,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UIAnimationBinder.cs">
       <Link>Modules\UIElements\Core\UIAnimationBinder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIAnimationClip.cs">
+      <Link>Modules\UIElements\Core\UIAnimationClip.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UIElementsBridge.cs">
       <Link>Modules\UIElements\Core\UIElementsBridge.cs</Link>
@@ -4756,23 +4798,8 @@
     <Compile Include="..\..\Modules\UIElements\Core\UXML\FieldRenderingAttributes.cs">
       <Link>Modules\UIElements\Core\UXML\FieldRenderingAttributes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\IUxmlAttributes.cs">
-      <Link>Modules\UIElements\Core\UXML\IUxmlAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\OrphanFactories.cs">
-      <Link>Modules\UIElements\Core\UXML\OrphanFactories.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\TemplateAsset.cs">
       <Link>Modules\UIElements\Core\UXML\TemplateAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\UnityEngine.UIElements.deprecated.cs">
-      <Link>Modules\UIElements\Core\UXML\UnityEngine.UIElements.deprecated.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlAssetAttributeDescription.cs">
-      <Link>Modules\UIElements\Core\UXML\UxmlAssetAttributeDescription.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlAttributeDescription.cs">
-      <Link>Modules\UIElements\Core\UXML\UxmlAttributeDescription.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlAttributes.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlAttributes.cs</Link>
@@ -4783,14 +4810,8 @@
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlDescriptionRegistry.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlDescriptionRegistry.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlFactory.cs">
-      <Link>Modules\UIElements\Core\UXML\UxmlFactory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlObjectAsset.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlObjectAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlObjectFactoryRegistry.cs">
-      <Link>Modules\UIElements\Core\UXML\UxmlObjectFactoryRegistry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\UxmlSerializedData.cs">
       <Link>Modules\UIElements\Core\UXML\UxmlSerializedData.cs</Link>
@@ -4803,9 +4824,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualElementAsset.cs">
       <Link>Modules\UIElements\Core\UXML\VisualElementAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualElementFactoryRegistry.cs">
-      <Link>Modules\UIElements\Core\UXML\VisualElementFactoryRegistry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UXML\VisualTreeAsset.cs">
       <Link>Modules\UIElements\Core\UXML\VisualTreeAsset.cs</Link>
@@ -4878,9 +4896,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementStyleSheetSet.cs">
       <Link>Modules\UIElements\Core\VisualElementStyleSheetSet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\VisualElementTooltip.cs">
-      <Link>Modules\UIElements\Core\VisualElementTooltip.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementTransformData.cs">
       <Link>Modules\UIElements\Core\VisualElementTransformData.cs</Link>
@@ -5542,6 +5557,9 @@
     <Compile Include="..\..\Runtime\Export\File\File.bindings.cs">
       <Link>Runtime\Export\File\File.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\File\UnityFile.bindings.cs">
+      <Link>Runtime\Export\File\UnityFile.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\File\VirtualFileSystem.bindings.cs">
       <Link>Runtime\Export\File\VirtualFileSystem.bindings.cs</Link>
     </Compile>
@@ -5614,11 +5632,17 @@
     <Compile Include="..\..\Runtime\Export\Graphics\D3D12DeviceFilterLists.bindings.cs">
       <Link>Runtime\Export\Graphics\D3D12DeviceFilterLists.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\D3D12Validation.bindings.cs">
+      <Link>Runtime\Export\Graphics\D3D12Validation.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Display.bindings.cs">
       <Link>Runtime\Export\Graphics\Display.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\GPUFence.deprecated.cs">
       <Link>Runtime\Export\Graphics\GPUFence.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GameViewRenderInfo.cs">
+      <Link>Runtime\Export\Graphics\GameViewRenderInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Graphics.bindings.cs">
       <Link>Runtime\Export\Graphics\Graphics.bindings.cs</Link>
@@ -6403,6 +6427,9 @@
     <Compile Include="..\..\Runtime\Export\Serialization\Serialization.cs">
       <Link>Runtime\Export\Serialization\Serialization.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\SerializationBackendManagedCommands.bindings.cs">
+      <Link>Runtime\Export\Serialization\SerializationBackendManagedCommands.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\TypeTreeStoreManager.bindings.cs">
       <Link>Runtime\Export\Serialization\TypeTreeStoreManager.bindings.cs</Link>
     </Compile>
@@ -6766,6 +6793,15 @@
     <Compile Include="..\..\Runtime\VirtualFileSystem\CAHFileSystem\CAHFileSystem.bindings.cs">
       <Link>Runtime\VirtualFileSystem\CAHFileSystem\CAHFileSystem.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\VirtualFileSystem\CAHFileSystem\CAHManagedProvider.cs">
+      <Link>Runtime\VirtualFileSystem\CAHFileSystem\CAHManagedProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\VirtualFileSystem\ManagedVFS\ManagedVFSRouter.cs">
+      <Link>Runtime\VirtualFileSystem\ManagedVFS\ManagedVFSRouter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\VirtualFileSystem\ManagedVFS\ManagedVFSTypes.cs">
+      <Link>Runtime\VirtualFileSystem\ManagedVFS\ManagedVFSTypes.cs</Link>
+    </Compile>
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
@@ -6808,4 +6844,7 @@
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>
     </PropertyGroup>
   </Target>
+  <ItemGroup>
+    <Analyzer Include="/tmp/uitoolkit_gen_1zvoxi0i/Unity.UIToolkit.SourceGenerator.dll" />
+  </ItemGroup>
 </Project>

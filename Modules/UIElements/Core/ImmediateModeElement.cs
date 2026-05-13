@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using Unity.Properties;
-using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -16,13 +15,9 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// To use this element, create a new element inheriting from this type and override the ImmediateRepaint method.
     /// </remarks>
-    public abstract class ImmediateModeElement : VisualElement
+    [UxmlElement]
+    public abstract partial class ImmediateModeElement : VisualElement
     {
-        [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-        }
-
         internal static readonly BindingId cullingEnabledProperty = nameof(cullingEnabled);
 
         static readonly Dictionary<Type, ProfilerMarker> s_Markers = new Dictionary<Type, ProfilerMarker>();

@@ -60,9 +60,7 @@ namespace UnityEditor.Shaders
 
             // Register state change callbacks on the UI elements in the header
             m_KeywordsField = m_Header.Q<TextField>("KeywordListField");
-            m_KeywordsField.RegisterCallback<ChangeEvent<string>>(OnKeywordListChanged);
             m_VariantGenerationModeDropdown = m_Header.Q<DropdownField>("VariantGenerationModeDropdown");
-            m_VariantGenerationModeDropdown.RegisterCallback<ChangeEvent<string>>(OnVariantGenerationModeDropdownChanged);
             m_NumKeywordsLabel = m_Header.Q<Label>("SelectedKeywordsLabel");
 
             // Collapse foldout by default
@@ -73,6 +71,19 @@ namespace UnityEditor.Shaders
             helpTextLabel.AddToClassList("keyword-toggles-help-text");
             helpTextLabel.tooltip = "Defines the list of keywords included at this stage. This list can be further filtered by other processes, such as scriptable stripping, before the final build.";
             contentContainer.Add(helpTextLabel);
+        }
+
+        public void RegisterChangeEventCallbacks()
+        {
+            // Register state change callbacks on the UI elements in the header
+            m_KeywordsField.RegisterCallback<ChangeEvent<string>>(OnKeywordListChanged);
+            m_VariantGenerationModeDropdown.RegisterCallback<ChangeEvent<string>>(OnVariantGenerationModeDropdownChanged);
+        }
+
+        public void UnregisterChangeEventCallbacks()
+        {
+            m_KeywordsField.UnregisterCallback<ChangeEvent<string>>(OnKeywordListChanged);
+            m_VariantGenerationModeDropdown.UnregisterCallback<ChangeEvent<string>>(OnVariantGenerationModeDropdownChanged);
         }
 
         public void SetKeywords(ShaderBuildSettings.KeywordOverrideInfo[] keywords)

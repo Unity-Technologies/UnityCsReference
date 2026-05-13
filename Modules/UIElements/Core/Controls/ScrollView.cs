@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -127,104 +127,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId modeProperty = nameof(mode);
         internal static readonly BindingId elasticAnimationIntervalMsProperty = nameof(elasticAnimationIntervalMs);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(mode), "mode"),
-                    new (nameof(nestedInteractionKind), "nested-interaction-kind"),
-                    new (nameof(showHorizontal), "show-horizontal-scroller"),
-                    new (nameof(showVertical), "show-vertical-scroller"),
-                    new (nameof(horizontalScrollerVisibility), "horizontal-scroller-visibility"),
-                    new (nameof(verticalScrollerVisibility), "vertical-scroller-visibility"),
-                    new (nameof(horizontalPageSize), "horizontal-page-size"),
-                    new (nameof(verticalPageSize), "vertical-page-size"),
-                    new (nameof(mouseWheelScrollSize), "mouse-wheel-scroll-size"),
-                    new (nameof(touchScrollBehavior), "touch-scroll-type"),
-                    new (nameof(scrollDecelerationRate), "scroll-deceleration-rate"),
-                    new (nameof(elasticity), "elasticity"),
-                    new (nameof(elasticAnimationIntervalMs), "elastic-animation-interval-ms"),
-                }, false);
-            }
-
-#pragma warning disable 649
-            [SerializeField] long elasticAnimationIntervalMs;
-            [SerializeField] ScrollViewMode mode;
-            [SerializeField] NestedInteractionKind nestedInteractionKind;
-            [SerializeField] ScrollerVisibility horizontalScrollerVisibility;
-            [SerializeField] ScrollerVisibility verticalScrollerVisibility;
-            [SerializeField] float horizontalPageSize;
-            [SerializeField] float verticalPageSize;
-            [SerializeField] float mouseWheelScrollSize;
-            [UxmlAttribute("touch-scroll-type")]
-            [SerializeField] TouchScrollBehavior touchScrollBehavior;
-            [SerializeField] float scrollDecelerationRate;
-            [SerializeField] float elasticity;
-            [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
-            [SerializeField] bool showHorizontal;
-            [UxmlAttribute("show-vertical-scroller"), HideInInspector]
-            [SerializeField] bool showVertical;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags nestedInteractionKind_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showHorizontal_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showVertical_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollerVisibility_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalPageSize_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalPageSize_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mouseWheelScrollSize_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags touchScrollBehavior_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scrollDecelerationRate_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticity_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticAnimationIntervalMs_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance() => new ScrollView();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (ScrollView)obj;
-                if (ShouldWriteAttributeValue(mode_UxmlAttributeFlags))
-                    e.mode = mode;
-
-                // Remove once showHorizontal and showVertical are fully deprecated.
-#pragma warning disable 618
-                if (ShouldWriteAttributeValue(horizontalScrollerVisibility_UxmlAttributeFlags))
-                    e.horizontalScrollerVisibility = horizontalScrollerVisibility;
-                else if (ShouldWriteAttributeValue(showHorizontal_UxmlAttributeFlags))
-                    e.showHorizontal = showHorizontal;
-
-                if (ShouldWriteAttributeValue(verticalScrollerVisibility_UxmlAttributeFlags))
-                    e.verticalScrollerVisibility = verticalScrollerVisibility;
-                else if (ShouldWriteAttributeValue(showVertical_UxmlAttributeFlags))
-                    e.showVertical = showVertical;
-#pragma warning restore 618
-
-                if (ShouldWriteAttributeValue(nestedInteractionKind_UxmlAttributeFlags))
-                    e.nestedInteractionKind = nestedInteractionKind;
-                if (ShouldWriteAttributeValue(horizontalPageSize_UxmlAttributeFlags))
-                    e.horizontalPageSize = horizontalPageSize;
-                if (ShouldWriteAttributeValue(verticalPageSize_UxmlAttributeFlags))
-                    e.verticalPageSize = verticalPageSize;
-                if (ShouldWriteAttributeValue(mouseWheelScrollSize_UxmlAttributeFlags))
-                    e.mouseWheelScrollSize = mouseWheelScrollSize;
-                if (ShouldWriteAttributeValue(scrollDecelerationRate_UxmlAttributeFlags))
-                    e.scrollDecelerationRate = scrollDecelerationRate;
-                if (ShouldWriteAttributeValue(touchScrollBehavior_UxmlAttributeFlags))
-                    e.touchScrollBehavior = touchScrollBehavior;
-                if (ShouldWriteAttributeValue(elasticity_UxmlAttributeFlags))
-                    e.elasticity = elasticity;
-                if (ShouldWriteAttributeValue(elasticAnimationIntervalMs_UxmlAttributeFlags))
-                    e.elasticAnimationIntervalMs = elasticAnimationIntervalMs;
-            }
-        }
-
         VisualElement m_DeferredScrollToElement;
         IVisualElementScheduledItem m_DeferredScrollTo;
 
@@ -233,11 +135,57 @@ namespace UnityEngine.UIElements
         private const int k_MaxLocalLayoutPassCount = 5;
         private int m_FirstLayoutPass = -1; // The layout pass when the first geometry changed occurred. It may not be layoutPass = 0, which could occur when you have nested ScrollViews.
 
+        private ScrollViewMode m_Mode;
+
+        /// <summary>
+        /// Controls how the ScrollView allows the user to scroll the contents.
+        /// <seealso cref="ScrollViewMode"/>
+        /// </summary>
+        /// <remarks>
+        /// The default is <see cref="ScrollViewMode.Vertical"/>.
+        /// Writing to this property modifies the class list of the ScrollView according to the specified value of
+        /// <see cref="ScrollViewMode"/>. When the value changes, the class list matching the old value is removed and
+        /// the class list matching the new value is added.
+        /// </remarks>
+        [UxmlAttribute]
+        [CreateProperty]
+        public ScrollViewMode mode
+        {
+            get => m_Mode;
+            set
+            {
+                var previous = m_Mode;
+                SetScrollViewMode(value);
+                if (previous != m_Mode)
+                    NotifyPropertyChanged(modeProperty);
+            }
+        }
+
+        NestedInteractionKind m_NestedInteractionKind;
+
+        /// <summary>
+        /// The behavior to use when scrolling reaches limits of a nested <see cref="ScrollView"/>.
+        /// </summary>
+        [UxmlAttribute]
+        [CreateProperty]
+        public NestedInteractionKind nestedInteractionKind
+        {
+            get => m_NestedInteractionKind;
+            set
+            {
+                var previous = m_NestedInteractionKind;
+                m_NestedInteractionKind = value;
+                if (previous != m_NestedInteractionKind)
+                    NotifyPropertyChanged(nestedInteractionKindProperty);
+            }
+        }
+
         ScrollerVisibility m_HorizontalScrollerVisibility;
 
         /// <summary>
         /// Specifies whether the horizontal scroll bar is visible.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public ScrollerVisibility horizontalScrollerVisibility
         {
@@ -258,6 +206,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Specifies whether the vertical scroll bar is visible.
         /// </summary>
+        [UxmlAttribute]
         [CreateProperty]
         public ScrollerVisibility verticalScrollerVisibility
         {
@@ -269,27 +218,6 @@ namespace UnityEngine.UIElements
                 UpdateScrollers(needsHorizontal, needsVertical);
                 if (previous != m_VerticalScrollerVisibility)
                     NotifyPropertyChanged(verticalScrollerVisibilityProperty);
-            }
-        }
-
-        long m_ElasticAnimationIntervalMs = 16;
-
-        /// <summary>
-        /// The minimum amount of time, in milliseconds, between executions of elastic spring animation.
-        /// </summary>
-        [CreateProperty]
-        public long elasticAnimationIntervalMs
-        {
-            get { return m_ElasticAnimationIntervalMs; }
-            set
-            {
-                var previous = m_ElasticAnimationIntervalMs;
-                m_ElasticAnimationIntervalMs = value;
-                if (previous != m_ElasticAnimationIntervalMs)
-                {
-                    NotifyPropertyChanged(elasticAnimationIntervalMsProperty);
-                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
-                }
             }
         }
 
@@ -409,6 +337,7 @@ namespace UnityEngine.UIElements
         ///\\
         /// SA: [[UIElements.BaseSlider_1.pageSize]]
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public float horizontalPageSize
         {
@@ -433,6 +362,7 @@ namespace UnityEngine.UIElements
         /// The speed is calculated by multiplying the page size by the specified value. For example, a value of `2` means that each scroll movement covers a distance equal to twice the width of the page.\\
         /// SA: [[UIElements.BaseSlider_1.pageSize]]
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public float verticalPageSize
         {
@@ -462,6 +392,7 @@ namespace UnityEngine.UIElements
         /// when using the mouse wheel. Notice the difference in feel when selecting different values:
         /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_MouseWheelScrollSize.cs"/>
         /// </example>
+        [UxmlAttribute]
         [CreateProperty]
         public float mouseWheelScrollSize
         {
@@ -477,6 +408,35 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        private TouchScrollBehavior m_TouchScrollBehavior;
+        /// <summary>
+        /// The behavior to use when a user tries to scroll past the boundaries of the ScrollView content using a touch interaction.
+        /// </summary>
+        [UxmlAttribute("touch-scroll-type")]
+        [CreateProperty]
+        public TouchScrollBehavior touchScrollBehavior
+        {
+            get { return m_TouchScrollBehavior; }
+            set
+            {
+                var previous = m_TouchScrollBehavior;
+                m_TouchScrollBehavior = value;
+                if (m_TouchScrollBehavior == TouchScrollBehavior.Clamped)
+                {
+                    horizontalScroller.slider.clamped = true;
+                    verticalScroller.slider.clamped = true;
+                }
+                else
+                {
+                    horizontalScroller.slider.clamped = false;
+                    verticalScroller.slider.clamped = false;
+                }
+                if (previous != m_TouchScrollBehavior)
+                    NotifyPropertyChanged(touchScrollBehaviorProperty);
+            }
+        }
+
 
         internal float scrollableWidth
         {
@@ -502,6 +462,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The deceleration rate is the speed reduction per second. A value of 0.5 halves the speed each second. A value of 0 stops the scrolling immediately.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public float scrollDecelerationRate
         {
@@ -525,6 +486,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Elasticity is only used when <see cref="touchScrollBehavior"/> is set to Elastic.
         /// </remarks>
+        [UxmlAttribute]
         [CreateProperty]
         public float elasticity
         {
@@ -536,6 +498,28 @@ namespace UnityEngine.UIElements
 
                 if (!Mathf.Approximately(previous, m_Elasticity))
                     NotifyPropertyChanged(elasticityProperty);
+            }
+        }
+
+        long m_ElasticAnimationIntervalMs = 16;
+
+        /// <summary>
+        /// The minimum amount of time, in milliseconds, between executions of elastic spring animation.
+        /// </summary>
+        [UxmlAttribute]
+        [CreateProperty]
+        public long elasticAnimationIntervalMs
+        {
+            get { return m_ElasticAnimationIntervalMs; }
+            set
+            {
+                var previous = m_ElasticAnimationIntervalMs;
+                m_ElasticAnimationIntervalMs = value;
+                if (previous != m_ElasticAnimationIntervalMs)
+                {
+                    NotifyPropertyChanged(elasticAnimationIntervalMsProperty);
+                    m_PostPointerUpAnimation = schedule.Execute(PostPointerUpAnimation).Every(m_ElasticAnimationIntervalMs);
+                }
             }
         }
 
@@ -556,33 +540,6 @@ namespace UnityEngine.UIElements
             /// The content position is clamped to the ScrollView boundaries.
             /// </summary>
             Clamped,
-        }
-
-        private TouchScrollBehavior m_TouchScrollBehavior;
-        /// <summary>
-        /// The behavior to use when a user tries to scroll past the boundaries of the ScrollView content using a touch interaction.
-        /// </summary>
-        [CreateProperty]
-        public TouchScrollBehavior touchScrollBehavior
-        {
-            get { return m_TouchScrollBehavior; }
-            set
-            {
-                var previous = m_TouchScrollBehavior;
-                m_TouchScrollBehavior = value;
-                if (m_TouchScrollBehavior == TouchScrollBehavior.Clamped)
-                {
-                    horizontalScroller.slider.clamped = true;
-                    verticalScroller.slider.clamped = true;
-                }
-                else
-                {
-                    horizontalScroller.slider.clamped = false;
-                    verticalScroller.slider.clamped = false;
-                }
-                if (previous != m_TouchScrollBehavior)
-                    NotifyPropertyChanged(touchScrollBehaviorProperty);
-            }
         }
 
         /// <summary>
@@ -611,24 +568,6 @@ namespace UnityEngine.UIElements
             /// Scrolling will continue to the parent when no movement is possible in the scrolled direction.
             /// </summary>
             ForwardScrolling
-        }
-
-        NestedInteractionKind m_NestedInteractionKind;
-
-        /// <summary>
-        /// The behavior to use when scrolling reaches limits of a nested <see cref="ScrollView"/>.
-        /// </summary>
-        [CreateProperty]
-        public NestedInteractionKind nestedInteractionKind
-        {
-            get => m_NestedInteractionKind;
-            set
-            {
-                var previous = m_NestedInteractionKind;
-                m_NestedInteractionKind = value;
-                if (previous != m_NestedInteractionKind)
-                    NotifyPropertyChanged(nestedInteractionKindProperty);
-            }
         }
 
         void OnHorizontalScrollDragElementChanged(GeometryChangedEvent evt)
@@ -1018,11 +957,11 @@ namespace UnityEngine.UIElements
 
             contentViewport = new VisualElement() { name = "unity-content-viewport" };
             contentViewport.AddToClassList(viewportUssClassNameUnique);
-            contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            Callbacks.OnContentGeometryChanged.Register(contentViewport);
             contentViewport.pickingMode = PickingMode.Ignore;
 
-            m_ContentAndVerticalScrollContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            m_ContentAndVerticalScrollContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            Callbacks.OnContentAndVerticalScrollAttach.Register(m_ContentAndVerticalScrollContainer);
+            Callbacks.OnContentAndVerticalScrollDetach.Register(m_ContentAndVerticalScrollContainer);
             m_ContentAndVerticalScrollContainer.Add(contentViewport);
 
             m_ContentContainer = new VisualElement() { name = "unity-content-container" };
@@ -1030,7 +969,7 @@ namespace UnityEngine.UIElements
             // or else absolute elements might not be shown. The viewport is in charge of clipping.
             // See case 1247583
             m_ContentContainer.disableClipping = true;
-            m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            Callbacks.OnContentGeometryChanged.Register(m_ContentContainer);
             m_ContentContainer.AddToClassList(contentUssClassNameUnique);
             m_ContentContainer.usageHints = UsageHints.GroupTransform;
             contentViewport.Add(m_ContentContainer);
@@ -1080,46 +1019,21 @@ namespace UnityEngine.UIElements
 
             touchScrollBehavior = TouchScrollBehavior.Clamped;
 
-            RegisterCallback<WheelEvent>(OnScrollWheel, InvokePolicy.IncludeDisabled);
-            verticalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
-            horizontalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
+            Callbacks.OnScrollWheel.Register(this);
+            Callbacks.OnScrollerGeometryChanged.Register(verticalScroller);
+            Callbacks.OnScrollerGeometryChanged.Register(horizontalScroller);
 
             horizontalPageSize = k_UnsetPageSizeValue;
             verticalPageSize = k_UnsetPageSizeValue;
 
-            horizontalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollDragElementChanged);
-            verticalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollDragElementChanged);
+            Callbacks.OnHorizontalScrollDragElementGeometry.Register(horizontalScroller.slider.dragElement);
+            Callbacks.OnVerticalScrollDragElementGeometry.Register(verticalScroller.slider.dragElement);
 
             m_CapturedTargetPointerMoveCallback = OnPointerMove;
             m_CapturedTargetPointerUpCallback = OnPointerUp;
             scrollOffset = Vector2.zero;
 
             m_ContentContainer.receivesHierarchyGeometryChangedEvents = true;
-        }
-
-        private ScrollViewMode m_Mode;
-
-        /// <summary>
-        /// Controls how the ScrollView allows the user to scroll the contents.
-        /// <seealso cref="ScrollViewMode"/>
-        /// </summary>
-        /// <remarks>
-        /// The default is <see cref="ScrollViewMode.Vertical"/>.
-        /// Writing to this property modifies the class list of the ScrollView according to the specified value of
-        /// <see cref="ScrollViewMode"/>. When the value changes, the class list matching the old value is removed and
-        /// the class list matching the new value is added.
-        /// </remarks>
-        [CreateProperty]
-        public ScrollViewMode mode
-        {
-            get => m_Mode;
-            set
-            {
-                var previous = m_Mode;
-                SetScrollViewMode(value);
-                if (previous != m_Mode)
-                    NotifyPropertyChanged(modeProperty);
-            }
         }
 
         private void SetScrollViewMode(ScrollViewMode mode)
@@ -1171,17 +1085,12 @@ namespace UnityEngine.UIElements
 
             // There is a chance the root visual container has not had its pseudo style resolved yet.
             m_AttachedRootVisualContainer = GetRootVisualContainer() ?? evt.destinationPanel.visualTree;
-            m_AttachedRootVisualContainer?.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-            RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            m_AttachedRootVisualContainer.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            Callbacks.OnRootCustomStyleResolved.Register(this);
             MarkSingleLineHeightDirty();
 
-            m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-            contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-            contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
-            contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
-
-            contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
-            contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            Callbacks.OnContentAndVerticalScrollPointerMove.Register(m_ContentAndVerticalScrollContainer);
+            Callbacks.OnContentContainerPointer.Register(contentContainer);
 
             evt.destinationPanel.visualTree.RegisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
         }
@@ -1196,17 +1105,15 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_AttachedRootVisualContainer?.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-            m_AttachedRootVisualContainer = null;
-            UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            if (m_AttachedRootVisualContainer != null)
+            {
+                m_AttachedRootVisualContainer.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+                m_AttachedRootVisualContainer = null;
+            }
+            Callbacks.OnRootCustomStyleResolved.Unregister(this);
 
-            m_ContentAndVerticalScrollContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-            contentContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-            contentContainer.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-            contentContainer.UnregisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
-
-            contentContainer.UnregisterCallback<PointerCaptureEvent>(OnPointerCapture);
-            contentContainer.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            Callbacks.OnContentAndVerticalScrollPointerMove.Unregister(m_ContentAndVerticalScrollContainer);
+            Callbacks.OnContentContainerPointer.Unregister(contentContainer);
 
             evt.originPanel.visualTree.UnregisterCallback<PointerUpEvent>(OnRootPointerUp, TrickleDown.TrickleDown);
         }
@@ -2064,6 +1971,61 @@ namespace UnityEngine.UIElements
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
             UpdateContentViewTransform();
+        }
+
+        private static class Callbacks
+        {
+            // Use with ?. syntax to avoid possible exceptions on events during DetachFromPanel
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ScrollView GetScrollView(VisualElement child) => child.GetFirstAncestorOfType<ScrollView>();
+
+            public static readonly EventCallbackDefinition<ScrollView> OnScrollWheel =
+                EventCallback.Create<WheelEvent, ScrollView>(static (e, self) => self.OnScrollWheel(e),
+                    CallbackOptions.IncludeDisabled);
+
+            public static readonly EventCallbackDefinition<ScrollView> OnRootCustomStyleResolved =
+                EventCallback.Create<CustomStyleResolvedEvent, ScrollView>(static (e, self) =>
+                    self.OnRootCustomStyleResolved(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnContentGeometryChanged =
+                EventCallback.Create<GeometryChangedEvent, VisualElement>(static (e, content) =>
+                    GetScrollView(content)?.OnGeometryChanged(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnContentAndVerticalScrollAttach =
+                EventCallback.Create<AttachToPanelEvent, VisualElement>(static (e, contentAndVerticalScroll) =>
+                    GetScrollView(contentAndVerticalScroll)?.OnAttachToPanel(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnContentAndVerticalScrollDetach =
+                EventCallback.Create<DetachFromPanelEvent, VisualElement>(static (e, contentAndVerticalScroll) =>
+                    GetScrollView(contentAndVerticalScroll)?.OnDetachFromPanel(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnContentAndVerticalScrollPointerMove =
+                EventCallback.Create<PointerMoveEvent, VisualElement>(static (e, contentAndVerticalScroll) =>
+                    GetScrollView(contentAndVerticalScroll)?.OnPointerMove(e));
+
+            public static readonly EventCallbackDefinition<Scroller> OnScrollerGeometryChanged =
+                EventCallback.Create<GeometryChangedEvent, Scroller>(static (e, scroller) =>
+                    GetScrollView(scroller)?.OnScrollersGeometryChanged(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnHorizontalScrollDragElementGeometry =
+                EventCallback.Create<GeometryChangedEvent, VisualElement>(static (e, dragElement) =>
+                    GetScrollView(dragElement)?.OnHorizontalScrollDragElementChanged(e));
+
+            public static readonly EventCallbackDefinition<VisualElement> OnVerticalScrollDragElementGeometry =
+                EventCallback.Create<GeometryChangedEvent, VisualElement>(static (e, dragElement) =>
+                    GetScrollView(dragElement)?.OnVerticalScrollDragElementChanged(e));
+
+            public static readonly EventCallbackGroup<VisualElement> OnContentContainerPointer = new(
+                EventCallback.Create<PointerDownEvent, VisualElement>(static (e, contentContainer) =>
+                    GetScrollView(contentContainer)?.OnPointerDown(e), CallbackOptions.TrickleDown),
+                EventCallback.Create<PointerCancelEvent, VisualElement>(static (e, contentContainer) =>
+                    GetScrollView(contentContainer)?.OnPointerCancel(e)),
+                EventCallback.Create<PointerUpEvent, VisualElement>(static (e, contentContainer) =>
+                    GetScrollView(contentContainer)?.OnPointerUp(e), CallbackOptions.TrickleDown),
+                EventCallback.Create<PointerCaptureEvent, VisualElement>(static (e, contentContainer) =>
+                    GetScrollView(contentContainer)?.OnPointerCapture(e)),
+                EventCallback.Create<PointerCaptureOutEvent, VisualElement>(static (e, contentContainer) =>
+                    GetScrollView(contentContainer)?.OnPointerCaptureOut(e)));
         }
     }
 }

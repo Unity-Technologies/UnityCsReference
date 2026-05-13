@@ -4,14 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
-    class DynamicPanelOverlayContainer : OverlayContainer
+    [UxmlElement]
+    partial class DynamicPanelOverlayContainer : OverlayContainer
     {
         // The height of a toolbar overlay in panel mode. This is validated in a test for future proofing of style changes.
         public const float minChunkHeight = 44f; //Use rounded numbers to take into account 1x screens
@@ -23,35 +23,6 @@ namespace UnityEditor.Overlays
         public const float minWidth = 120;
 
         public const float maxPercentWidth = 40;
-
-        [Serializable]
-        public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData
-        {
-#pragma warning disable 649
-            [SerializeField] bool alignRight;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags alignRight_UxmlAttributeFlags;
-            public override object CreateInstance() => new DynamicPanelOverlayContainer();
-#pragma warning restore 649
-
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(alignRight), "align-right")
-                }, true);
-            }
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (DynamicPanelOverlayContainer)obj;
-                if (ShouldWriteAttributeValue(alignRight_UxmlAttributeFlags))
-                    e.alignRight = alignRight;
-            }
-        }
 
         struct OverlayCallback
         {
@@ -93,6 +64,7 @@ namespace UnityEditor.Overlays
         internal Action stateChanged;
         internal Action resized;
 
+        [UxmlAttribute]
         public bool alignRight
         {
             get => m_AlignRight;

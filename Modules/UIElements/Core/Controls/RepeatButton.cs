@@ -3,50 +3,46 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
     /// A button that executes an action repeatedly while it is pressed. For more information, refer to [[wiki:UIE-uxml-element-RepeatButton|UXML element RepeatButton]].
     /// </summary>
+    [UxmlElement]
     public partial class RepeatButton : TextElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : TextElement.UxmlSerializedData
+        private Clickable m_Clickable;
+
+        long m_Delay;
+
+        [UxmlAttribute]
+        internal long delay
         {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
+            get => m_Delay;
+            set
             {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(delay), "delay"),
-                    new (nameof(interval), "interval"),
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] long delay;
-            [SerializeField] long interval;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags delay_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags interval_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new RepeatButton();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(delay_UxmlAttributeFlags) || ShouldWriteAttributeValue(interval_UxmlAttributeFlags))
-                {
-                    var e = (RepeatButton)obj;
-                    e.SetAction(null, delay, interval);
-                }
+                if (m_Delay == value)
+                    return;
+                m_Delay = value;
+                SetAction(null, m_Delay, m_Interval);
             }
         }
 
-        private Clickable m_Clickable;
+        long m_Interval;
+
+        [UxmlAttribute]
+        internal long interval
+        {
+            get => m_Interval;
+            set
+            {
+                if (m_Interval == value)
+                    return;
+                m_Interval = value;
+                SetAction(null, m_Delay, m_Interval);
+            }
+        }
 
         private bool m_AcceptClicksIfDisabled;
 

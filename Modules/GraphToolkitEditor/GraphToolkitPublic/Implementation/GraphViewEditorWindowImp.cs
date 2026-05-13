@@ -4,18 +4,64 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
+using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor.Implementation
 {
-    class GraphViewEditorWindowImp : GraphViewEditorWindow
+    class GraphViewEditorWindowImp : GraphViewEditorWindow, IGraphWindow
     {
         class MainToolbarDefinition : ToolbarDefinition
         {
-            /// <inheritdoc />
-            public override IEnumerable<string> ElementIds => new[] { SaveButton.id, ShowInProjectWindowButton.id };
+            readonly GraphViewEditorWindowImp m_Window;
+
+            public MainToolbarDefinition(GraphViewEditorWindowImp window)
+            {
+                m_Window = window;
+            }
+
+            public override IEnumerable<string> ElementIds
+                => new[] { SaveButton.id, ShowInProjectWindowButton.id };
+
+            public override IReadOnlyDictionary<string, ToolbarElementDefinition> CustomElementMap
+            {
+                get
+                {
+                    var map = new Dictionary<string, ToolbarElementDefinition>();
+                    if (m_Window.Graph == null)
+                        return map;
+
+                    var graphType = m_Window.Graph.GetType();
+                    foreach (var type in TypeCache.GetTypesWithAttribute<GraphToolbarElementAttribute>())
+                    {
+                        var attrs = type.GetCustomAttributes<GraphToolbarElementAttribute>();
+                        foreach (var attr in attrs)
+                        {
+                            if (!attr.GraphType.IsAssignableFrom(graphType))
+                                continue;
+
+                            if (map.ContainsKey(attr.Id))
+                            {
+                                Debug.LogWarning($"Duplicate GraphToolbarElement id '{attr.Id}' on type {type.Name}. Skipping.");
+                                break;
+                            }
+
+                            map[attr.Id] = new ToolbarElementDefinition(attr.Order, type);
+                            break;
+                        }
+                    }
+
+                    return map;
+                }
+            }
         }
+
+
+        public Graph Graph =>
+                (GraphTool?.ToolState?.GraphModel as Implementation.GraphModelImp)?.Graph;
 
         public static GraphViewEditorWindowImp GetOpenedWindow(GraphObjectImp graphObject)
         {
@@ -77,7 +123,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             switch (toolbarId)
             {
                 case MainToolbar.toolbarId:
-                    return new MainToolbarDefinition();
+                    return new MainToolbarDefinition(this);
                 default:
                     return base.CreateToolbarDefinition(toolbarId);
             }

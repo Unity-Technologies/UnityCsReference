@@ -71,14 +71,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         }
     }
 
-    internal class GraphicsSettingsInspectorTierSettings : GraphicsSettingsElement
+    [UxmlElement]
+    internal partial class GraphicsSettingsInspectorTierSettings : GraphicsSettingsElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new GraphicsSettingsInspectorTierSettings();
-        }
-
         internal class Styles
         {
             public static readonly GUIContent[] shaderQualityName =

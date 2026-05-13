@@ -92,18 +92,13 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    class TransformOriginSelector : VisualElement
+    [UxmlElement]
+    partial class TransformOriginSelector : VisualElement
     {
         enum NavigationDirection
         {
             Backward = -1,
             Forward = 1
-        }
-
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new TransformOriginSelector();
         }
 
         static readonly string s_UssClassName = "unity-transform-origin-selector";

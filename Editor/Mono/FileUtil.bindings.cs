@@ -139,7 +139,16 @@ namespace UnityEditor
         public static extern string GetPhysicalPath(string path);
 
         [FreeFunction]
+        internal static extern bool IsDir(string path);
+
+        [FreeFunction]
         internal static extern UInt64 GetSize(string path);
+
+        [FreeFunction("ReadAllBytes")]
+        private static extern byte[] ReadAllBytesInternal(string path);
+
+        [FreeFunction("ReadAllText")]
+        private static extern string ReadAllTextInternal(string path);
 
         // Replaces a file.
         public static void ReplaceFile(string src, string dst)

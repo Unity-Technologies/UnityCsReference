@@ -28,7 +28,7 @@ namespace BeeBuildProgramCommon.Data
         public string UnityLinkerPath;
         public string Il2CppPath;
         public bool Il2CppUsingDevelopmentLocation;
-        public string NetCoreRunPath;
+        public string Il2CppBclDistributionDirectory;
         public string DotNetExe;
         public string EditorContentsPath;
         public string EditorToolsPath;

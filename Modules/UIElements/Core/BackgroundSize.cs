@@ -91,6 +91,17 @@ namespace UnityEngine.UIElements
             m_Y = new Length(0);
         }
 
+        // Internal ctor used by the animation binder to update individual channels
+        // without triggering the public setters' side-effects (which force sizeType
+        // back to Length or clear x/y). Callers are expected to pass all three
+        // fields explicitly.
+        internal BackgroundSize(BackgroundSizeType sizeType, Length x, Length y)
+        {
+            m_SizeType = sizeType;
+            m_X = x;
+            m_Y = y;
+        }
+
         internal static BackgroundSize Initial()
         {
             return BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize();

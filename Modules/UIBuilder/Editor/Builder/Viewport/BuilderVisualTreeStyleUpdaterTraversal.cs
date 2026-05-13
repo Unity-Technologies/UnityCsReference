@@ -66,12 +66,17 @@ namespace Unity.UI.Builder
 
         public override void TraverseRecursive(VisualElement element, int depth)
         {
-            if (ShouldSkipElement(element))
+            // Skip if element is neither dirty nor ancestor of dirty
+            // Note: We check parent.stylesDirty because children inherit from parent and need updating
+            var parent = element.hierarchy.parent;
+            bool isDirty = element.stylesDirty || (parent != null && parent.stylesDirty);
+
+            if (!element.stylesAncestorOfDirty && !isDirty)
             {
                 return;
             }
 
-            // In order to ensure that only the selected preview theme is applied to the document content in the viewport, 
+            // In order to ensure that only the selected preview theme is applied to the document content in the viewport,
             // we clear the current style context to prevent the document element from inheriting from the actual Unity Editor theme.
             bool shouldClearStyleContext = ShouldClearStyleContext(m_DocumentElement, element) || ShouldClearStyleContext(m_PreviewDocumentElement, element);
 

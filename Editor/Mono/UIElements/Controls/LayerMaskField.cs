@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
@@ -15,44 +14,10 @@ namespace UnityEditor.UIElements
     /// A LayerMaskField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerMaskField|UXML element LayerMaskField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerMaskField.png")]
+    [UxmlElement]
     public partial class LayerMaskField : MaskField
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : MaskField.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(layerMask), "value"),
-                    new(nameof(layerChoices), "choices"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [UxmlAttribute("value")]
-            [SerializeField] LayerMask layerMask;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layerMask_UxmlAttributeFlags;
-            [UxmlAttribute("choices")]
-            [SerializeField, HideInInspector] List<string> layerChoices;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layerChoices_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new LayerMaskField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (LayerMaskField)obj;
-                if (ShouldWriteAttributeValue(layerMask_UxmlAttributeFlags))
-                    e.SetValueWithoutNotify(layerMask.value);
-                if (ShouldWriteAttributeValue(layerChoices_UxmlAttributeFlags))
-                    e.layerChoices = layerChoices;
-            }
-        }
-
+        [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices)), HideInInspector]
         internal List<string> layerChoices
         {
             get => choices;
@@ -62,6 +27,7 @@ namespace UnityEditor.UIElements
                     choices = value;
             }
         }
+        [UxmlAttribute("value")]
         internal LayerMask layerMask { get => value; set => this.value = value.value; }
 
         /// <summary>

@@ -319,6 +319,9 @@ namespace UnityEditor.Modules
                 }
             }
 
+            if (BuildTargetDiscovery.TryGetSDKPlatformExtension(platformGuid, out var extension))
+                return extension.sdkPlatformBuildTarget;
+
             return null;
         }
 

@@ -12,7 +12,7 @@ namespace Unity.GraphToolkit.Editor
     /// The UI for an <see cref="WireModel"/>.
     /// </summary>
     [UnityRestricted]
-    internal class Wire : AbstractWire, IShowItemLibraryUI
+    internal class Wire : AbstractWire, IShowItemLibraryUI, IAnimatableView
     {
         /// <summary>
         /// The USS class name added to a <see cref="Wire"/>.
@@ -312,6 +312,14 @@ namespace Unity.GraphToolkit.Editor
                 m_WireControl.UpdateLayout();
             }
 
+            if (visitor.ChangeHints.HasChange(ChangeHint.Animation) && IsAnimatable())
+            {
+                if (WireModel is { IsAnimating: true })
+                    GraphView.Animator.Play(this, WireModel.AnimationSpeed);
+                else
+                    GraphView.Animator.Stop(this);
+            }
+
             UpdateWireControlColors();
             m_WireControl.MarkDirtyRepaint();
         }
@@ -400,6 +408,24 @@ namespace Unity.GraphToolkit.Editor
 
                 m_WireControl.SetColor(inputColor, outputColor);
             }
+        }
+
+        /// <inheritdoc />
+        public void BeginAnimating(float animationSpeed)
+        {
+            m_WireControl?.BeginAnimating(animationSpeed);
+        }
+
+        /// <inheritdoc />
+        public void StopAnimating()
+        {
+            m_WireControl?.StopAnimating();
+        }
+
+        /// <inheritdoc />
+        public void AnimationUpdate(double deltaTime)
+        {
+            m_WireControl?.AnimationUpdate(deltaTime);
         }
 
         void OnMouseDownWire(MouseDownEvent e)

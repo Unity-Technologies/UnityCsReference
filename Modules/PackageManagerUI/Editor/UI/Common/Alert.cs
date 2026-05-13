@@ -3,20 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class Alert : ExtendedHelpBox
+    [UxmlElement]
+    internal partial class Alert : ExtendedHelpBox
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        public Alert() : this(ServicesContainer.instance.Resolve<IApplicationProxy>())
         {
-            public override object CreateInstance()
-            {
-                return new Alert(ServicesContainer.instance.Resolve<IApplicationProxy>());
-            }
         }
 
         public Alert(IApplicationProxy application) : base(application)

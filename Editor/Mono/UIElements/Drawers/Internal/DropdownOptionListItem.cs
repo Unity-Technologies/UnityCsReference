@@ -9,20 +9,9 @@ using System.Diagnostics;
 
 namespace UnityEditor.UIElements
 {
-    internal class DropdownOptionListItem : BindableElement
+    [UxmlElement]
+    internal partial class DropdownOptionListItem : BindableElement
     {
-        [Serializable]
-        internal new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new DropdownOptionListItem();
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
-
         ObjectField imageProperty { get; set; }
         TextField textProperty { get; set; }
 

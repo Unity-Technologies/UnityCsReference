@@ -143,6 +143,7 @@ namespace Unity.UI.Builder
             { FlexDirection.ColumnReverse.ToString(), "Flex Column" },
             { FlexDirection.Row.ToString(), "Flex Row" },
             { FlexDirection.RowReverse.ToString(), "Flex Row" },
+            { "animation-play-state", "Play State" },
         };
 
         List<ToggleButtonGroup> m_FlexAlignmentToggleButtonGroups = new();
@@ -439,6 +440,13 @@ namespace Unity.UI.Builder
                     });
                 }
             }
+            else if (IsComputedStyleUIAnimationClip(val, styleName) && fieldElement is ObjectField objField)
+            {
+                objField.objectType = typeof(UIAnimationClip);
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(objField.typeName + BuilderConstants.FieldTooltipDictionarySeparator, out var styleValueTooltip))
+                    objField.visualInput.tooltip = styleValueTooltip;
+                objField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+            }
             else if (IsComputedStyleCursor(val) && fieldElement is CursorStyleField)
             {
                 var uiField = fieldElement as CursorStyleField;
@@ -514,10 +522,13 @@ namespace Unity.UI.Builder
                         }
                         else
                         {
+                            var iconImage = styleName == "animation-play-state"
+                                ? BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/", BuilderConstants.UIToolkitAuthoringIconsPath )
+                                : BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/");
                             uiField.Add(new Button()
                             {
                                 name = enumAsDash,
-                                iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
+                                iconImage = iconImage,
                                 tooltip = tooltip
                             });
                         }
@@ -1349,6 +1360,17 @@ namespace Unity.UI.Builder
                 return true;
             }
 
+            if (IsComputedStyleUIAnimationClip(val, styleName) && fieldElement is ObjectField)
+            {
+                var uiField = fieldElement as ObjectField;
+                var value = GetComputedStyleUIClipValue(val);
+                if (useStyleProperty && styleProperty.TryGetAssetReference<UIAnimationClip>(styleSheet, out var propertyValue))
+                    value = propertyValue;
+
+                uiField.SetValueWithoutNotify(value);
+                return true;
+            }
+
             return false;
         }
 
@@ -1571,6 +1593,16 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleRatio(val) && fieldElement is RatioField aspectRatioStyleField)
             {
                 DispatchChangeEvent(aspectRatioStyleField);
+            }
+            else if (IsComputedStyleUIAnimationClip(val, styleName) && fieldElement is ObjectField objectField)
+            {
+                DispatchChangeEvent(objectField);
+            }
+            else if (IsComputedStyleFilter(val) && fieldElement is FilterStyleField filterField)
+            {
+                // filterField.value was already populated from currentVisualElement.computedStyle
+                // by the RefreshStyleField call preceding this DispatchChangeEvent call.
+                ApplyFilterListChange(filterField.value, true, filterField);
             }
         }
 
@@ -3118,6 +3150,11 @@ namespace Unity.UI.Builder
             return val is StyleRatio || val is Ratio;
         }
 
+        static public bool IsComputedStyleUIAnimationClip(object val, string styleName)
+        {
+            return val is StyleUIAnimationClip || val is UIAnimationClip || styleName == "-unity-animation-clip";
+        }
+
         // Getters
 
         static public MaterialDefinition GetComputedStyleMaterialValue(object val)
@@ -3319,6 +3356,19 @@ namespace Unity.UI.Builder
 
             var style = (StyleRatio)val;
             return style.value;
+        }
+        static public UIAnimationClip GetComputedStyleUIClipValue(object val)
+        {
+            if (val == null)
+                return null;
+
+            if (val is UIAnimationClip clip)
+                return clip;
+
+            if (val is StyleUIAnimationClip style)
+                return style.value;
+
+            return null;
         }
     }
 }

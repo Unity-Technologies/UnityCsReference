@@ -14,16 +14,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
     }
 
     // Wrapper around ToggleButtonGroup that deals with list of items instead of indices for convenience
-    class ToggleButtonStrip : ToggleButtonGroup
+    [UxmlElement]
+    partial class ToggleButtonStrip : ToggleButtonGroup
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.ToggleButtonGroup.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new ToggleButtonStrip();
-        }
-
         List<IToggleButtonItem> m_Items;
         int m_NumItems;
 

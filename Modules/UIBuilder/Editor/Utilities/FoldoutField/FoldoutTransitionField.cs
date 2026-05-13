@@ -10,7 +10,8 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
-    sealed class FoldoutTransitionField : FoldoutField
+    [UxmlElement]
+    sealed partial class FoldoutTransitionField : FoldoutField
     {
         const string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/FoldoutTransitionField.uxml";
         const string k_UssPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionField.uss";
@@ -27,12 +28,6 @@ namespace Unity.UI.Builder
             StylePropertyId.TransitionTimingFunction.UssName(),
             StylePropertyId.TransitionDelay.UssName(),
         };
-
-        [Serializable]
-        public new class UxmlSerializedData : FoldoutField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new FoldoutTransitionField();
-        }
 
         TransitionChangeType m_Overrides;
 

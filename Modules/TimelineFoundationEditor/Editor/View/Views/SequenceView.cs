@@ -15,15 +15,9 @@ using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.View
 {
-    partial class SequenceView : SequenceTreeView
+    [UxmlElement]
+    internal partial class SequenceView : SequenceTreeView
     {
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new SequenceView();
-        }
-
         const string k_Name = "sequenceView";
         const string k_Class = "sequenceView";
         static readonly StylesheetResource k_Stylesheet = Internals.UIResources.StylesheetFactory.Get<SequenceView>();

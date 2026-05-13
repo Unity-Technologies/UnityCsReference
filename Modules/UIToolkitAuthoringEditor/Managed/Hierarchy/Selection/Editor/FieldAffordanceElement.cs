@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using Unity.Properties;
 using UnityEditor;
@@ -13,20 +12,9 @@ using UxmlAttributeFlags = UnityEngine.UIElements.UxmlSerializedData.UxmlAttribu
 
 namespace Unity.UIToolkit.Editor
 {
-    internal class FieldAffordanceElement : VisualElement
+    [UxmlElement]
+    internal partial class FieldAffordanceElement : VisualElement
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-
-            public override object CreateInstance() => new FieldAffordanceElement();
-        }
-
         // Tooltips
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
         public static readonly string FieldStatusIndicatorInlineTooltip = "Inline Value\n\nValue is set directly from the property field.";
@@ -109,13 +97,7 @@ namespace Unity.UIToolkit.Editor
         {
             AddToClassList(s_UssClassName);
             AddToClassList(InspectorLocalStyleDefaultStatusClassName);
-            var contextMenuManipulator = new ContextualMenuManipulator((evt) =>
-            {
-                populateMenuItems?.Invoke(evt.menu);
-
-                // Stop immediately to not propagate the event to the row.
-                evt.StopImmediatePropagation();
-            });
+            var contextMenuManipulator = new ContextualMenuManipulator(OnContextualMenuPopulate);
 
             contextMenuManipulator.acceptClicksIfDisabled = true;
 
@@ -137,6 +119,14 @@ namespace Unity.UIToolkit.Editor
             fieldAffordanceData = new FieldAffordanceData();
 
             onContextChanged += OnContextChanged;
+        }
+
+        internal void OnContextualMenuPopulate(ContextualMenuPopulateEvent evt)
+        {
+            populateMenuItems?.Invoke(evt.menu);
+
+            // Stop immediately to not propagate the event to the row.
+            evt.StopImmediatePropagation();
         }
 
         public void SetProperty(SerializedProperty property)

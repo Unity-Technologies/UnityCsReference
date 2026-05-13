@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditorInternal;
@@ -16,47 +15,15 @@ namespace UnityEditor.UIElements
     /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
     [Icon("UIToolkit/Icons/TagField.png")]
+    [UxmlElement]
     public partial class TagField : PopupField<string>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                PopupField<string>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(overrideValue), "value")
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [TagFieldValueDecorator]
-            [UxmlAttribute("value")]
-            [SerializeField] string overrideValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags overrideValue_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new TagField();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                if (ShouldWriteAttributeValue(overrideValue_UxmlAttributeFlags))
-                {
-                    var e = (TagField)obj;
-                    e.overrideValue = overrideValue;
-                }
-            }
-        }
-
         internal override string GetValueToDisplay()
         {
             return rawValue;
         }
 
+        [UxmlAttribute("value"), TagFieldValueDecorator, UxmlAttributeBindingPath("value")]
         internal string overrideValue
         {
             get => rawValue;

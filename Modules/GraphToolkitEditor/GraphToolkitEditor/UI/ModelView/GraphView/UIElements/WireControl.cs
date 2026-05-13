@@ -37,10 +37,16 @@ namespace Unity.GraphToolkit.Editor
         const float k_WireTurnRadius = k_WireTurnDiameter * 0.5f;
         const float k_MinWireWidth = 1.75f;
         const float k_MinOpacity = 0.6f;
+        const float k_MinTransparency = 0.5f;
+        const float k_Offset = 0.2f;
 
         protected Wire m_Wire;
 
         float m_Zoom = 1.0f;
+
+        float m_SegmentOffset = -0.25f;
+        float m_AnimationSpeed;
+        bool m_Animating;
 
         /// <summary>
         /// The control points of the wire expressed in the parent <see cref="Wire"/> coordinates.
@@ -220,6 +226,38 @@ namespace Unity.GraphToolkit.Editor
             DrawWire(mgc);
         }
 
+        public void BeginAnimating(float animationSpeed)
+        {
+            m_AnimationSpeed = animationSpeed;
+            m_Animating = true;
+        }
+
+        public void StopAnimating()
+        {
+            m_Animating = false;
+            MarkDirtyRepaint();
+        }
+
+        /// <summary>
+        /// Advances wire animation by the given elapsed time.
+        /// </summary>
+        /// <param name="deltaTime">Elapsed time in seconds since the last update.</param>
+        public void AnimationUpdate(double deltaTime)
+        {
+            AdvanceAnimation((float)deltaTime);
+            MarkDirtyRepaint();
+        }
+
+        void AdvanceAnimation(float deltaTime)
+        {
+            if (!m_Animating)
+                return;
+
+            m_SegmentOffset += deltaTime * m_AnimationSpeed;
+            if (m_SegmentOffset > 1.25f)
+                m_SegmentOffset = -0.25f;
+        }
+
         /// <inheritdoc />
         public override bool ContainsPoint(Vector2 localPoint)
         {
@@ -364,7 +402,8 @@ namespace Unity.GraphToolkit.Editor
         }
 
         static GradientColorKey[] s_ColorKeys = new GradientColorKey[2];
-        static GradientAlphaKey[] s_AlphaKeys = new GradientAlphaKey[1];
+        static GradientAlphaKey[] s_AnimAlphaKeys = new GradientAlphaKey[6];
+        static GradientAlphaKey[] s_FillAlphaKeys = new GradientAlphaKey[1];
 
         protected void DrawWire(MeshGenerationContext mgc)
         {
@@ -395,9 +434,24 @@ namespace Unity.GraphToolkit.Editor
             s_ColorKeys[0] = new GradientColorKey(outColor, 0);
             s_ColorKeys[1] = new GradientColorKey(inColor, 1);
 
-            s_AlphaKeys[0] = new GradientAlphaKey(alpha, 0);
+            if (m_Animating)
+            {
+                s_AnimAlphaKeys[0] = new GradientAlphaKey(k_MinTransparency, 0.0f);
+                s_AnimAlphaKeys[1] = new GradientAlphaKey(k_MinTransparency, m_SegmentOffset - k_Offset - 0.0000001f);
+                s_AnimAlphaKeys[2] = new GradientAlphaKey(1.0f, m_SegmentOffset - k_Offset);
+                s_AnimAlphaKeys[3] = new GradientAlphaKey(1.0f, m_SegmentOffset + k_Offset);
+                s_AnimAlphaKeys[4] = new GradientAlphaKey(k_MinTransparency, m_SegmentOffset + k_Offset + 0.0000001f);
+                s_AnimAlphaKeys[5] = new GradientAlphaKey(k_MinTransparency, 1.0f);
 
-            k_Gradient.SetKeys(s_ColorKeys, s_AlphaKeys);
+                k_Gradient.SetKeys(s_ColorKeys, s_AnimAlphaKeys);
+            }
+            else
+            {
+                s_FillAlphaKeys[0] = new GradientAlphaKey(alpha, 0);
+
+                k_Gradient.SetKeys(s_ColorKeys, s_FillAlphaKeys);
+            }
+
             painter2D.BeginPath();
             painter2D.strokeGradient = k_Gradient;
 
@@ -440,6 +494,14 @@ namespace Unity.GraphToolkit.Editor
             painter2D.Stroke();
 
             UnityEngine.Profiling.Profiler.EndSample();
+        }
+
+        internal class TestAccess
+        {
+            readonly WireControl m_WireControl;
+            public TestAccess(WireControl wireControl) { m_WireControl = wireControl; }
+            public bool IsWireAnimationActive => m_WireControl.m_Animating;
+            public float WireAnimationSegmentOffset => m_WireControl.m_SegmentOffset;
         }
     }
 }

@@ -45,11 +45,6 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string emptyUssClassName = ussClassName.WithUssModifier(GraphElementHelper.emptyUssModifier);
 
         /// <summary>
-        /// The name of the <see cref="VisualElement"/> of the colored line.
-        /// </summary>
-        public static readonly string colorLineName = "color-line";
-
-        /// <summary>
         /// The name of the icon to show when the graph is missing.
         /// </summary>
         public static readonly string missingWarningIconName = "missing-graph-icon";
@@ -199,13 +194,6 @@ namespace Unity.GraphToolkit.Editor
 
             m_Root.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             m_Root.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
-            if ((m_Options & Options.ShouldDisplayColor) != 0)
-            {
-                m_ColorLine = new VisualElement { name = colorLineName };
-                m_ColorLine.AddToClassList(m_ParentClassName.WithUssElement(colorLineName));
-                m_Root.Add(m_ColorLine);
-            }
 
             TitleContainer = new VisualElement();
             TitleContainer.AddToClassList(ussClassName.WithUssElement(GraphElementHelper.titleContainerName));
@@ -366,8 +354,6 @@ namespace Unity.GraphToolkit.Editor
                 CoroutineProgressBar.value = hasProgressNode.Progress;
             }
 
-            UpdateLineColorFromModel(visitor, nodeModel);
-
             if (visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
                 var subTitle = (m_Model as AbstractNodeModel)?.Subtitle;
@@ -461,31 +447,6 @@ namespace Unity.GraphToolkit.Editor
                     m_NeedsTitleTextfieldResize = true;
                 }
             }
-        }
-
-        /// <summary>
-        /// When handling a style change for a node, this method updates the color line based on the model's color.
-        /// </summary>
-        /// <param name="visitor"></param>
-        /// <param name="nodeModel"></param>
-        /// <returns>Returns true if the ColorLine's background color is set</returns>
-        private protected virtual bool UpdateLineColorFromModel(UpdateFromModelVisitor visitor, AbstractNodeModel nodeModel)
-        {
-            if (m_ColorLine == null)
-                return false;
-
-            if (visitor.ChangeHints.HasChange(ChangeHint.Style))
-            {
-                if (nodeModel.ElementColor.HasUserColor)
-                {
-                    m_ColorLine.style.backgroundColor = nodeModel.ElementColor.Color;
-                    return true;
-                }
-
-                m_ColorLine.style.backgroundColor = nodeModel.DefaultColor;
-            }
-
-            return false;
         }
 
         public static Image CreateMissingWarningIcon()
@@ -806,7 +767,6 @@ namespace Unity.GraphToolkit.Editor
                 this.nodeTitlePart = nodeTitlePart;
             }
 
-            public bool UpdateLineColorFromModel(UpdateFromModelVisitor visitor, AbstractNodeModel nodeModel) => nodeTitlePart.UpdateLineColorFromModel(visitor, nodeModel);
             public void BuildUI(VisualElement container) => nodeTitlePart.BuildUI(container);
         }
     }

@@ -541,8 +541,8 @@ namespace Unity.UIToolkit.Editor
     {
         static readonly string k_BindingProperty = nameof(DataBinding.property);
         static readonly string k_BindingMode = nameof(DataBinding.bindingMode);
-        static readonly string k_DataSource = nameof(DataBinding.dataSource);
-        static readonly string k_DataSourceType = nameof(DataBinding.dataSourceTypeString);
+        static readonly string k_DataSource = nameof(DataBinding.dataSourceUnityObject);
+        static readonly string k_DataSourceType = nameof(DataBinding.dataSourceType);
         static readonly string k_DataSourcePathString = nameof(DataBinding.dataSourcePathString);
         static readonly string k_UiToSourceConvertersString = nameof(DataBinding.uiToSourceConvertersString);
         public static readonly string BindingWindowLocalConverterNotApplicableMessage = L10n.Tr("It is not applicable for the specified binding mode");

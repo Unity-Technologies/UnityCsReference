@@ -2,49 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
-using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
     /// A BaseBoolField is a clickable element that represents a boolean value.
     /// </summary>
-    public abstract class BaseBoolField : BaseField<bool>
+    [UxmlElement]
+    public abstract partial class BaseBoolField : BaseField<bool>
     {
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId toggleOnLabelClickProperty = nameof(toggleOnLabelClick);
-
-        [ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseField<bool>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<bool>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new(nameof(toggleOnLabelClick), "toggle-on-label-click")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] bool toggleOnLabelClick;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags toggleOnLabelClick_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (BaseBoolField)obj;
-                if (ShouldWriteAttributeValue(toggleOnLabelClick_UxmlAttributeFlags))
-                    e.toggleOnLabelClick = toggleOnLabelClick;
-            }
-        }
 
         protected Label m_Label;
         internal protected readonly VisualElement m_CheckMark;
@@ -68,6 +38,7 @@ namespace UnityEngine.UIElements
         /// Whether to activate the toggle when the user clicks the label.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public bool toggleOnLabelClick { get; set; } = true;
 
         // Used by foldout
@@ -98,7 +69,7 @@ namespace UnityEngine.UIElements
             text = null;
             this.AddManipulator(m_Clickable = new Clickable(OnClickEvent));
 
-            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
+            Callbacks.OnNavigationSubmit.Register(this);
         }
 
         private void OnNavigationSubmit(NavigationSubmitEvent evt)
@@ -115,7 +86,8 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Unity creates a <see cref="Label"/> automatically if one does not exist.
         /// </remarks>
-        [CreateProperty]
+        [UxmlAttribute]
+        [CreateProperty, MultilineTextField]
         public string text
         {
             get { return m_Label?.text; }
@@ -260,14 +232,24 @@ namespace UnityEngine.UIElements
 
         internal override void RegisterEditingCallbacks()
         {
-            RegisterCallback<PointerUpEvent>(StartEditing);
-            RegisterCallback<FocusOutEvent>(EndEditing);
+            Callbacks.OnPointerUpStartEditing.Register(this);
+            Callbacks.OnFocusOutEndEditing.Register(this);
         }
 
         internal override void UnregisterEditingCallbacks()
         {
-            UnregisterCallback<PointerUpEvent>(StartEditing);
-            UnregisterCallback<FocusOutEvent>(EndEditing);
+            Callbacks.OnFocusOutEndEditing.Unregister(this);
+            Callbacks.OnPointerUpStartEditing.Unregister(this);
+        }
+
+        private static class Callbacks
+        {
+            public static readonly EventCallbackDefinition<BaseBoolField> OnNavigationSubmit =
+                EventCallback.Create<NavigationSubmitEvent, BaseBoolField>(static (evt, self) => self.OnNavigationSubmit(evt));
+            public static readonly EventCallbackDefinition<BaseBoolField> OnPointerUpStartEditing =
+                EventCallback.Create<PointerUpEvent, BaseBoolField>(static (evt, self) => self.StartEditing(evt));
+            public static readonly EventCallbackDefinition<BaseBoolField> OnFocusOutEndEditing =
+                EventCallback.Create<FocusOutEvent, BaseBoolField>(static (evt, self) => self.EndEditing(evt));
         }
     }
 }

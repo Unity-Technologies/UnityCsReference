@@ -53,14 +53,10 @@ namespace Unity.GraphToolkit.Editor
         {
             if (Type.IsListOrArray())
             {
-                ObjectValue = Activator.CreateInstance(Type, 1);
-                var elementType = Type.IsArray ? Type.GetElementType() : Type.GetGenericArguments()[0];
-                var defaultValue = elementType.IsValueType ? Activator.CreateInstance(elementType) : null;
-
                 if (Type.IsArray)
-                    (ObjectValue as Array).SetValue(defaultValue, 0);
-                else if (ObjectValue is IList list)
-                    list.Add(defaultValue);
+                    ObjectValue = Array.CreateInstance(Type.GetElementType(), 0);
+                else
+                    ObjectValue = Activator.CreateInstance(Type);
             }
             else
             {
@@ -147,6 +143,14 @@ namespace Unity.GraphToolkit.Editor
                 return false;
 
             ObjectValue = value;
+
+            // If this constant belongs to a collection node, its subports
+            // must be redefined to reflect the new collection size.
+            if (constantType.IsListOrArray() && OwnerModel is ConstantNodeModel constantNode)
+            {
+                constantNode.DefineNode();
+                constantNode.GraphModel?.CurrentGraphChangeDescription.AddChangedModel(constantNode, ChangeHint.Data);
+            }
 
             return true;
         }

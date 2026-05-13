@@ -585,5 +585,15 @@ namespace UnityEditorInternal.Profiling
                 ChartModelBuilder.ComputeChartScaleValue(firstEmptyFrame, firstFrame, frameCount);
             }
         }
+ 
+        public override float GetZeroSampleThresholdMs()
+        {
+            return 0.01f; // < 0.01ms displays as 0.00ms
+        }
+
+        public override int GetZeroSampleTimeColumn()
+        {
+            return HierarchyFrameDataView.columnTotalTime;
+        }
     }
 }

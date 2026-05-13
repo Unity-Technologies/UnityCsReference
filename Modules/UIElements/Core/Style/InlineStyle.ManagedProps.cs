@@ -34,6 +34,38 @@ partial class InlineStyleAccess
         return StyleKeyword.Null;
     }
 
+    StyleUIAnimationClip GetStyleUIAnimationClip(StylePropertyId id)
+    {
+        if (TryGetObject(id, out UIAnimationClip clip, out StyleKeyword keyword))
+        {
+            StyleUIAnimationClip style = clip;
+            style.keyword = keyword;
+            return style;
+        }
+
+        return StyleKeyword.Null;
+    }
+
+    private bool SetStyleValue(StylePropertyId id, StyleUIAnimationClip inlineValue)
+    {
+        StyleUIAnimationClip current = GetStyleUIAnimationClip(id);
+
+        if (current == inlineValue)
+            return false;
+
+        var sv = new StyleValueManaged();
+        sv.id = id;
+        sv.keyword = inlineValue.keyword;
+        sv.value = inlineValue.value;
+        SetStyleValueManaged(sv);
+
+        if (inlineValue.keyword == StyleKeyword.Null)
+            return RemoveInlineStyle(id);
+
+        ApplyStyleValue(sv);
+        return true;
+    }
+
     bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue)
     {
         StyleBackground current = GetStyleBackground(id);

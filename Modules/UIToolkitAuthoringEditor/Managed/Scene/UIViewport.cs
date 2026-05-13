@@ -8,21 +8,13 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 
 namespace Unity.UIToolkit.Editor;
 
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
 sealed partial class UIViewport : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        public new static void Register()
-            => UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [], true);
-
-        public override object CreateInstance() => new UIViewport();
-    }
-
     const string k_VisualTreeAsset = "UIToolkitAuthoring/UIViewportWindow/UIViewport.uxml";
     const string k_StyleSheetDark = "UIToolkitAuthoring/UIViewportWindow/UIViewportDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/UIViewportWindow/UIViewportLight.uss";
@@ -31,21 +23,33 @@ sealed partial class UIViewport : VisualElement
     public const string ToolbarUssClass = UssClass + "__toolbar";
     public const string ToolbarZoomMenuUssClass = ToolbarUssClass + "-zoom-menu";
     public const string ToolbarPreviewToggleUssClass = ToolbarUssClass + "-preview-button";
+    public const string ToolbarFitViewportButtonUssClass = ToolbarUssClass + "-fit-button";
 
     public const string ViewportSurfaceUssClass = UssClass + "__viewport-surface";
 
     public const string ViewportContainerUssClass = UssClass + "__viewport-container";
     public const string PreviewModeUssClass = ViewportContainerUssClass + "--preview";
 
+    public const string BreadcrumbsName = UssClass + "__breadcrumbs-view";
+
     readonly VisualElement m_ViewportContainer;
     readonly VisualElement m_Surface;
     readonly UICanvas m_Canvas;
     readonly ToolbarMenu m_ZoomMenu;
     readonly ToolbarToggle m_PreviewToggle;
+    readonly Button m_FitViewportButton;
+
+    readonly ToolbarBreadcrumbs m_Breadcrumbs;
 
     readonly UICanvasPanManipulator m_PanManipulator;
     readonly UICanvasZoomManipulator m_ZoomManipulator;
     readonly List<UICanvasResizeManipulator> m_ResizeManipulators = new();
+
+    const int k_FitAnimationDuration = 250;
+    ValueAnimation<float> m_FitAnimation;
+
+    // Used for tests
+    internal bool IsAnimating => m_FitAnimation?.isRunning == true;
 
     public UICanvas Canvas => m_Canvas;
     public VisualElement Surface => m_Surface;
@@ -81,6 +85,11 @@ sealed partial class UIViewport : VisualElement
         m_PreviewToggle = this.Q<ToolbarToggle>(className:ToolbarPreviewToggleUssClass);
         SetupPreviewToggle();
         EnableInClassList(PreviewModeUssClass, m_Canvas.PreviewMode);
+
+        m_Breadcrumbs = this.Q<ToolbarBreadcrumbs>(BreadcrumbsName);
+
+        m_FitViewportButton = this.Q<Button>(className: ToolbarFitViewportButtonUssClass);
+        m_FitViewportButton.clicked += FitViewport;
     }
 
     void OnSurfaceGeometryChanged(GeometryChangedEvent evt)
@@ -100,6 +109,8 @@ sealed partial class UIViewport : VisualElement
                 break;
             case DetachFromPanelEvent:
                 PrefSettings.settingChanged -= OnPrefsChanged;
+                if (m_FitAnimation != null && m_FitAnimation.isRunning)
+                    m_FitAnimation?.Stop();
                 break;
             case PointerUpEvent pointerUpEvent:
                 if (TrySelectCanvas(pointerUpEvent))
@@ -170,8 +181,121 @@ sealed partial class UIViewport : VisualElement
             UpdatePreviewBackgroundColor();
     }
 
+    public void FitViewport() => FitViewport(GetFirstSelectedElement());
+
+    public void FitViewport(VisualElement target)
+    {
+        const float padding = 20f;
+
+        var surfaceWidth = m_Surface.resolvedStyle.width;
+        var surfaceHeight = m_Surface.resolvedStyle.height;
+
+        if (float.IsNaN(surfaceWidth) || float.IsNaN(surfaceHeight) || surfaceWidth <= 0 || surfaceHeight <= 0)
+            return;
+
+        var currentZoom = m_Canvas.ZoomScale;
+        var currentOffset = m_Canvas.Offset;
+
+        float targetLeft, targetTop, targetWidth, targetHeight;
+
+        if (target != null)
+        {
+            var ppp = m_Canvas.PanelElement?.SubPanelPixelsPerPoint ?? 1f;
+            var bounds = target.worldBound;
+            targetLeft = bounds.x / ppp;
+            targetTop = bounds.y / ppp;
+            targetWidth = bounds.width / ppp;
+            targetHeight = bounds.height / ppp;
+        }
+        else
+        {
+            var canvasBaseSize = m_Canvas.BaseSize;
+            if (canvasBaseSize.x <= 0 || canvasBaseSize.y <= 0)
+                return;
+
+            // Canvas is visually positioned at Offset with visual size = BaseSize * ZoomScale
+            targetLeft = currentOffset.x;
+            targetTop = currentOffset.y;
+            targetWidth = canvasBaseSize.x * currentZoom;
+            targetHeight = canvasBaseSize.y * currentZoom;
+        }
+
+        // Convert visual size to canvas-local (unscaled) space; clamp to prevent division-by-zero
+        var baseWidth = Mathf.Max(targetWidth / currentZoom, 0.001f);
+        var baseHeight = Mathf.Max(targetHeight / currentZoom, 0.001f);
+        var canvasLocalX = (targetLeft - currentOffset.x) / currentZoom;
+        var canvasLocalY = (targetTop - currentOffset.y) / currentZoom;
+
+        // Zoom to fit the target with padding (padding is screen-space pixels, so subtract from surface)
+        var paddedWidth = Mathf.Max(surfaceWidth - padding * 2, 0.001f);
+        var paddedHeight = Mathf.Max(surfaceHeight - padding * 2, 0.001f);
+        var newZoom = Mathf.Max(Mathf.Min(
+            paddedWidth / baseWidth,
+            paddedHeight / baseHeight), Mathf.Epsilon);
+
+        // Offset to center the target in the surface at the new zoom
+        var newOffset = new Vector2(
+            (surfaceWidth - baseWidth * newZoom) / 2f - canvasLocalX * newZoom,
+            (surfaceHeight - baseHeight * newZoom) / 2f - canvasLocalY * newZoom);
+
+        // If the current zoom is not in the bounds of the zoom values list, return the closest zoom value.
+        if (newZoom < m_ZoomManipulator.zoomScaleValues[0])
+            newZoom = m_ZoomManipulator.zoomScaleValues[0];
+        if (newZoom > m_ZoomManipulator.zoomScaleValues[^1])
+            newZoom = m_ZoomManipulator.zoomScaleValues[^1];
+
+        StartFitAnimation(newZoom, newOffset);
+    }
+
+    void StartFitAnimation(float targetZoom, Vector2 targetOffset)
+    {
+        if (m_FitAnimation?.isRunning == true)
+            m_FitAnimation.Stop();
+
+        var startZoom = m_Canvas.ZoomScale;
+        var startOffset = m_Canvas.Offset;
+
+        m_FitAnimation = m_Surface.experimental.animation.Start(0f, 1f, k_FitAnimationDuration, (_, t) =>
+        {
+            using (m_Canvas.ManipulationScope())
+            {
+                m_Canvas.ZoomScale = Mathf.Lerp(startZoom, targetZoom, t);
+                m_Canvas.Offset = Vector2.Lerp(startOffset, targetOffset, t);
+            }
+        });
+    }
+
+    VisualElement GetFirstSelectedElement()
+    {
+        var subRoot = m_Canvas.PanelElement?.subRootVisualElement;
+        foreach (var selectedId in Selection.entityIds)
+        {
+            if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection { Element: { } element })
+            {
+                if (element.panel != null && element.panel == subRoot?.panel)
+                    return element;
+            }
+        }
+        return null;
+    }
+
     static string GetTextForZoomScale(float scale)
     {
         return $"{(int)(scale*100f)}%";
+    }
+
+    public void ClearBreadcrumbs()
+    {
+        m_Breadcrumbs.Clear();
+    }
+
+    public void PushBreadcrumb(string label, Texture2D icon = null, Action clickedEvent = null)
+    {
+        m_Breadcrumbs.PushItem(label, clickedEvent);
+        if (icon != null && m_Breadcrumbs.childCount > 0 &&
+            m_Breadcrumbs.children[m_Breadcrumbs.childCount - 1] is Button item)
+        {
+            item.iconImage = Background.FromTexture2D(icon);
+        }
     }
 }

@@ -34,8 +34,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private InvokePolicy invokePolicy =>
-            acceptClicksIfDisabled ? InvokePolicy.IncludeDisabled : InvokePolicy.Default;
+        private CallbackOptions callbackOptions =>
+            acceptClicksIfDisabled ? CallbackOptions.IncludeDisabled : CallbackOptions.Default;
 
         /// <summary>
         /// Constructor.
@@ -57,18 +57,18 @@ namespace UnityEngine.UIElements
         {
             if (IsOSXContextualMenuPlatform())
             {
-                target.RegisterCallback<PointerDownEvent>(OnPointerDownEventOSX, invokePolicy);
-                target.RegisterCallback<PointerUpEvent>(OnPointerUpEventOSX, invokePolicy);
-                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEventOSX, invokePolicy);
+                target.RegisterCallback<PointerDownEvent>(OnPointerDownEventOSX, callbackOptions);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUpEventOSX, callbackOptions);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEventOSX, callbackOptions);
             }
             else
             {
-                target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent, invokePolicy);
-                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent, invokePolicy);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent, callbackOptions);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent, callbackOptions);
             }
 
-            target.RegisterCallback<KeyUpEvent>(OnKeyUpEvent, invokePolicy);
-            target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent, invokePolicy);
+            target.RegisterCallback<KeyUpEvent>(OnKeyUpEvent, callbackOptions);
+            target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent, callbackOptions);
         }
 
         /// <summary>

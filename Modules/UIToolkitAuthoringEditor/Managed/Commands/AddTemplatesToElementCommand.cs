@@ -46,12 +46,12 @@ internal readonly record struct AddTemplatesToElementCommand
             var assetPath = AssetDatabase.GetAssetPath(template);
             var templateAsset = visualTreeAsset.AddTemplateInstance(ParentAsset, assetPath);
 
-            var uxmlTypeDescription = UxmlDescriptionRegistry.GetDescription(typeof(TemplateContainer.UxmlSerializedData));
             templateAsset.serializedData = new TemplateContainer.UxmlSerializedData();
-            var idIndex = uxmlTypeDescription.cSharpNameToIndex[nameof(TemplateContainer.templateId)];
-            var idAttribute = uxmlTypeDescription.attributeDescriptions[idIndex];
-            idAttribute.serializedField.SetValue(templateAsset.serializedData, ParentAsset.visualTreeAsset.GetTemplateNameFromPath(assetPath));
-            idAttribute.serializedFieldAttributeFlags.SetValue(templateAsset.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+            var uxmlTypeDescription = UxmlSerializedDataRegistry.GetDescription(typeof(TemplateContainer).FullName);
+            var attribute = uxmlTypeDescription.FindAttributeWithPropertyName(nameof(TemplateContainer.templateUXML));
+
+            var uxmlValue = new TemplateContainer.TemplateUXML { templateId = ParentAsset.visualTreeAsset.GetTemplateNameFromPath(assetPath) };
+            attribute.SetSerializedValue(templateAsset.serializedData, uxmlValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
             visualTreeAsset.ReparentElementInDocument(templateAsset, ParentAsset, index);
         }
 

@@ -7,6 +7,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.Assemblies;
 
-static partial class CurrentAssemblies
+public static partial class CurrentAssemblies
 {
 }

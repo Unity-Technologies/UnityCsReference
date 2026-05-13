@@ -2,9 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
@@ -33,52 +30,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId scaleModeProperty = nameof(scaleMode);
         internal static readonly BindingId tintColorProperty = nameof(tintColor);
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(source), "source"),
-                    new (nameof(tintColor), "tint-color"),
-                    new (nameof(scaleMode), "scale-mode"),
-                    new (nameof(uv), "uv")
-                }, false);
-            }
-
-            #pragma warning disable 649
-            [SerializeField, ImageFieldValueDecorator("Source")] Object source;
-            [SerializeField] Color tintColor;
-            [Tooltip("The base texture coordinates of the Image relative to the bottom left corner.")]
-            [SerializeField] Rect uv;
-            [SerializeField] ScaleMode scaleMode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags source_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tintColor_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags uv_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scaleMode_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override object CreateInstance() => new Image();
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (Image)obj;
-
-                if (ShouldWriteAttributeValue(source_UxmlAttributeFlags))
-                    e.source = source;
-                if (ShouldWriteAttributeValue(tintColor_UxmlAttributeFlags))
-                    e.tintColor = tintColor;
-                if (ShouldWriteAttributeValue(uv_UxmlAttributeFlags))
-                    e.uv = uv;
-                if (ShouldWriteAttributeValue(scaleMode_UxmlAttributeFlags))
-                    e.scaleMode = scaleMode;
-            }
-        }
-
         private ScaleMode m_ScaleMode;
         private Object m_Image;
 
@@ -91,7 +42,9 @@ namespace UnityEngine.UIElements
         internal bool m_TintColorIsInline;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [ImageFieldValueDecorator(displayName = "Source")]
         [CreateProperty]
+        [UxmlAttribute]
         internal Object source
         {
             get => m_Image;
@@ -174,18 +127,19 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The base texture coordinates of the Image relative to the bottom left corner.
+        /// Tinting color for this Image.
         /// </summary>
         [CreateProperty]
-        public Rect uv
+        [UxmlAttribute]
+        public Color tintColor
         {
-            get => m_UV;
+            get => m_TintColor;
             set
             {
-                if (m_UV == value)
+                if (m_TintColor == value && m_TintColorIsInline)
                     return;
-                m_UV = value;
-                NotifyPropertyChanged(uvProperty);
+                m_TintColorIsInline = true;
+                SetTintColor(value);
             }
         }
 
@@ -193,6 +147,7 @@ namespace UnityEngine.UIElements
         /// ScaleMode used to display the Image.
         /// </summary>
         [CreateProperty]
+        [UxmlAttribute]
         public ScaleMode scaleMode
         {
             get => m_ScaleMode;
@@ -206,18 +161,20 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tinting color for this Image.
+        /// The base texture coordinates of the Image relative to the bottom left corner.
         /// </summary>
+        [Tooltip("The base texture coordinates of the Image relative to the bottom left corner.")]
         [CreateProperty]
-        public Color tintColor
+        [UxmlAttribute]
+        public Rect uv
         {
-            get => m_TintColor;
+            get => m_UV;
             set
             {
-                if (m_TintColor == value && m_TintColorIsInline)
+                if (m_UV == value)
                     return;
-                m_TintColorIsInline = true;
-                SetTintColor(value);
+                m_UV = value;
+                NotifyPropertyChanged(uvProperty);
             }
         }
 

@@ -10,22 +10,18 @@ using Unity.Jobs;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
+using Unity.IO;
 
 namespace Unity.Loading
 {
-    /// <summary>
-    /// Partial extension class providing high-level content directory registration with path-based management,
-    /// archive mounting, and CAH filesystem integration.
-    /// </summary>
-    /// <remarks>
-    /// Registration and unregistration are main-thread only. The static state (s_RegisteredPaths, s_RegistrationsByHandle)
-    /// is not synchronized; do not call RegisterContentDirectory(string) or UnregisterContentDirectory from worker threads.
-    /// </remarks>
-    /*UCBP-PUBLIC*/ internal static partial class ContentLoadManager
+    // Additional implementation for ContentLoadManager providing path-based registration,
+    // archive mounting, and CAH filesystem integration.
+    // Registration and unregistration are main-thread only; do not call from worker threads.
+    public static partial class ContentLoadManager
     {
         struct ContentDirectoryRegistration
         {
-            public string NormalizedPath;
+            public string ContentDirectoryPath;
             public ContentDirectoryHandle ContentHandle;
             public List<CAHArtifactDirectoryHandle> CAHHandles;
             public List<ArchiveHandle> ArchiveHandles;
@@ -48,36 +44,47 @@ namespace Unity.Loading
 
         private static ContentDirectoryHandle RegisterContentDirectoryFromPath(string contentDirectoryPath)
         {
-            string normalizedPath = Path.GetFullPath(contentDirectoryPath).TrimEnd('/', '\\');
-            if (!Directory.Exists(normalizedPath))
-                throw new DirectoryNotFoundException($"Content directory not found: {normalizedPath}");
+            string sanitizedPath = contentDirectoryPath.TrimEnd('/', '\\');
 
-            if (s_RegisteredPaths.Contains(normalizedPath))
-                throw new InvalidOperationException($"Content directory is already registered: {normalizedPath}");
+            if (s_RegisteredPaths.Contains(sanitizedPath))
+                throw new InvalidOperationException($"Content directory is already registered: {sanitizedPath}");
 
             var registration = new ContentDirectoryRegistration
             {
-                NormalizedPath = normalizedPath,
+                ContentDirectoryPath = sanitizedPath,
                 CAHHandles = new List<CAHArtifactDirectoryHandle>(),
                 ArchiveHandles = new List<ArchiveHandle>()
             };
 
+            ContentManifest manifest;
             try
             {
                 MountAndRegisterArchives(ref registration);
-                ContentManifest manifest = LoadManifestFromDirectory(normalizedPath);
+                manifest = LoadManifestFromDirectory(sanitizedPath);
+            }
+            catch (Exception ex)
+            {
+                CleanupRegisteredResources(registration);
+                throw new InvalidOperationException($"Failed to register ContentDirectory at {contentDirectoryPath}.", ex);
+            }
+
+            try
+            {
+                // The manifest overload is the canonical validation entry point and may throw
+                // InvalidOperationException (edit-mode, future platform / has-type-trees checks, etc.).
+                // Those already name the reason — propagate unwrapped.
                 registration.ContentHandle = ContentLoadManager.RegisterContentDirectory(manifest);
 
-                s_RegisteredPaths.Add(normalizedPath);
+                s_RegisteredPaths.Add(sanitizedPath);
                 s_RegistrationsByHandle[registration.ContentHandle.m_Handle] = registration;
-
-                return registration.ContentHandle;
             }
             catch
             {
                 CleanupRegisteredResources(registration);
                 throw;
             }
+
+            return registration.ContentHandle;
         }
 
         internal static void CleanupTrackedRegistration(ContentDirectoryHandle contentDirectory)
@@ -89,18 +96,16 @@ namespace Unity.Loading
             }
 
             CleanupRegisteredResources(registration);
-            s_RegisteredPaths.Remove(registration.NormalizedPath);
+            s_RegisteredPaths.Remove(registration.ContentDirectoryPath);
             s_RegistrationsByHandle.Remove(contentDirectory.m_Handle);
         }
 
-        static ContentManifest LoadManifestFromDirectory(string normalizedPath)
+        static ContentManifest LoadManifestFromDirectory(string contentDirectoryPath)
         {
-            string manifestHashPath = Path.Combine(normalizedPath, ManifestHashFileName);
+            string manifestHashPath = contentDirectoryPath + "/" + ManifestHashFileName;
 
-            if (!File.Exists(manifestHashPath))
-                throw new FileNotFoundException($"Required manifest hash file not found: {manifestHashPath}");
-
-            string hashText = File.ReadAllText(manifestHashPath).Trim();
+            byte[] loaded = UnityFile.ReadAllBytes(manifestHashPath);
+            string hashText = System.Text.Encoding.UTF8.GetString(loaded).Trim();
             Hash128 manifestHash = Hash128.Parse(hashText);
 
             string vfsPath = CAHFileSystem.GetVFSPath(manifestHash);
@@ -111,13 +116,14 @@ namespace Unity.Loading
             return manifest;
         }
 
-        static string[] GetArchivePathsForFolder(string normalizedPath)
+        static string[] GetArchivePathsForFolder(string contentDirectoryPath)
         {
             var numberedPaths = new List<string>();
             for (int i = 0; i < kMaxArchiveCount; i++)
             {
-                string numberedPath = Path.Combine(normalizedPath, string.Format(NumberedArchiveFileNameFormat, i));
-                if (!File.Exists(numberedPath))
+                // Use string concatenation instead of Path.Combine to support Android URI paths (e.g., jar:file://...)
+                string numberedPath = contentDirectoryPath + "/" + string.Format(NumberedArchiveFileNameFormat, i);
+                if (!UnityFile.Exists(numberedPath))
                     break;
                 numberedPaths.Add(numberedPath);
             }
@@ -127,11 +133,11 @@ namespace Unity.Loading
 
         static void MountAndRegisterArchives(ref ContentDirectoryRegistration registration)
         {
-            string[] archivePaths = GetArchivePathsForFolder(registration.NormalizedPath);
+            string[] archivePaths = GetArchivePathsForFolder(registration.ContentDirectoryPath);
 
             if (archivePaths.Length == 0)
             {
-                registration.CAHHandles.Add(CAHFileSystem.RegisterArtifactDirectory(registration.NormalizedPath));
+                registration.CAHHandles.Add(CAHFileSystem.RegisterArtifactDirectory(registration.ContentDirectoryPath));
                 return;
             }
 

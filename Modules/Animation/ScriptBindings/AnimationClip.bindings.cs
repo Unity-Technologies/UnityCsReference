@@ -123,42 +123,22 @@ namespace UnityEngine
         {
             if (evt == null)
                 throw new ArgumentNullException("evt");
-            using (var animationEventBlittable = AnimationEventBlittable.FromAnimationEvent(evt))
-                AddEventInternal(animationEventBlittable);
+            AddEventInternal(evt);
         }
 
         [FreeFunction(Name = "AnimationClipBindings::AddEventInternal", HasExplicitThis = true)]
-        extern private void AddEventInternal(in AnimationEventBlittable evt);
+        extern private void AddEventInternal([NotNull] AnimationEvent evt);
 
         // Retrieves all animation events associated with the animation clip
-        unsafe public AnimationEvent[] events
+        public AnimationEvent[] events
         {
-            get
-            {
-                GetEventsInternal(out var blittableEventsPointer, out var numberOfEvents);
-                var animationEvents = AnimationEventBlittable.PointerToAnimationEvents(blittableEventsPointer, numberOfEvents);
-                AnimationEventBlittable.DisposeEvents(blittableEventsPointer, numberOfEvents);
-                return animationEvents;
-            }
-            set
-            {
-                using (NativeArray<AnimationEventBlittable> blittableEvents = new NativeArray<AnimationEventBlittable>(value.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory))
-                {
-                    var pBlittableEvents = (AnimationEventBlittable*)blittableEvents.GetUnsafePtr();
-                    AnimationEventBlittable.FromAnimationEvents(value, pBlittableEvents);
-                    SetEventsInternal(pBlittableEvents, blittableEvents.Length);
-                    for (var i = 0; i < value.Length; ++i)
-                    {
-                        pBlittableEvents->Dispose();
-                        pBlittableEvents++;
-                    }
-                }
-            }
+            get => GetEventsInternal();
+            set => SetEventsInternal(value);
         }
         [FreeFunction(Name = "AnimationClipBindings::SetEventsInternal", HasExplicitThis = true)]
-        extern unsafe private void SetEventsInternal(void* data, int length);
+        extern private void SetEventsInternal(AnimationEvent[] events);
         [FreeFunction(Name = "AnimationClipBindings::GetEventsInternal", HasExplicitThis = true)]
-        extern private void GetEventsInternal(out IntPtr values, out int size);
+        extern private AnimationEvent[] GetEventsInternal();
     }
 
     unsafe class GCHandlePool

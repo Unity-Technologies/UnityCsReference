@@ -2,11 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Internal;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -18,32 +15,14 @@ namespace Unity.UIToolkit.Editor;
 /// This view only shows data source information.
 /// </remarks>
 [UxmlElement]
-sealed class VisualElementBindingsInspectorElement : UxmlAttributesView
+sealed partial class VisualElementBindingsInspectorElement : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-        }
-
-        [ExcludeFromDocs]
-        public override object CreateInstance()
-        {
-            return new VisualElementBindingsInspectorElement();
-        }
-    }
-
-    public new const string UssClassName = "unity-bindings-inspector";
+    public const string UssClassName = "unity-bindings-inspector";
     const string k_VisualTreeAssetPath = "UIToolkitAuthoring/Inspector/VisualElementBindingsInspectorElement.uxml";
 
-    VisualTreeAsset m_VisualTreeAsset;
-    UxmlSerializedDataPropertyView m_RootPropertyView;
+    readonly UxmlAttributesView m_AttributesView;
+
+    public UxmlAttributesView AttributesView => m_AttributesView;
 
     /// <summary>
     /// Constructor for the VisualElementBindingsInspectorElement.
@@ -51,33 +30,10 @@ sealed class VisualElementBindingsInspectorElement : UxmlAttributesView
     public VisualElementBindingsInspectorElement()
     {
         AddToClassList(UssClassName);
-    }
 
-    protected override void CreateViewContent(UxmlAttributesEditingContext context)
-    {
-        // If there is no UxmlSerializedData, there are no bindings to show.
-        if (context.uxmlSerializedDataDescription == null)
-        {
-            return;
-        }
+        var visualTreeAsset = EditorGUIUtility.LoadRequired(k_VisualTreeAssetPath) as VisualTreeAsset;
 
-        if (m_VisualTreeAsset == null)
-        {
-            m_VisualTreeAsset = EditorGUIUtility.LoadRequired(k_VisualTreeAssetPath) as VisualTreeAsset;
-        }
-        m_VisualTreeAsset.CloneTree(this);
-        m_RootPropertyView = this.Q<UxmlSerializedDataPropertyView>("RootElement");
-        m_RootPropertyView.context = context;
-        m_RootPropertyView.bindingPath = context.serializedBasePath;
-        m_RootPropertyView.Bind(context.rootSerializedObject);
-    }
-
-    protected override void ReleaseViewContent(UxmlAttributesEditingContext context)
-    {
-        if (m_RootPropertyView == null)
-            return;
-        m_RootPropertyView.Unbind();
-        m_RootPropertyView.context = null;
-        m_RootPropertyView = null;
+        visualTreeAsset.CloneTree(this);
+        m_AttributesView = this.Q<UxmlAttributesView>("RootElement");
     }
 }

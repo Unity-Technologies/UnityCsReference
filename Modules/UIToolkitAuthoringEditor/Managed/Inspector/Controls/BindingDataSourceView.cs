@@ -19,44 +19,6 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 internal partial class BindingDataSourceView : BindableElement
 {
-    /// <summary>
-    /// The UXML serialized data for the BindingDataSourceView.
-    /// </summary>
-    [Serializable]
-    public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-    {
-        /// <summary>
-        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
-        /// </summary>
-        [Conditional("UNITY_EDITOR"), RegisterUxmlCache]
-        public new static void Register()
-        {
-            UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), [
-                new(nameof(bindingEditingMode), "binding-editing-mode"),
-            ], true);
-        }
-
-        public override object CreateInstance()
-        {
-            return new BindingDataSourceView();
-        }
-
-        public override void Deserialize(object obj)
-        {
-            base.Deserialize(obj);
-
-            var e = (BindingDataSourceView)obj;
-            if (ShouldWriteAttributeValue(bindingEditingMode_UxmlAttributeFlags))
-                e.IsBindingEditingMode = bindingEditingMode;
-        }
-
-#pragma warning disable 649
-        [SerializeField] bool bindingEditingMode;
-        [SerializeField, UxmlIgnore, HideInInspector]
-        UxmlAttributeFlags bindingEditingMode_UxmlAttributeFlags;
-#pragma warning restore 649
-    }
-
     public const string UssClassName = "unity-binding-data-source-view";
     public const string TabButtonUssClassName = "unity-binding-data-source-tab-button";
     const string k_DataSourceObjectTabStatusIndicatorName = "DataSourceAsObjTabStatusIndicator";
@@ -65,7 +27,6 @@ internal partial class BindingDataSourceView : BindableElement
     static readonly string k_DataSourceLabel = L10n.Tr("Data Source");
 
     internal const string k_DataSourceUnityObjectPropertyId = nameof(dataSourceUnityObject);
-    internal const string k_DataSourceTypePropertyId = nameof(dataSourceTypeString);
     internal const string k_DataSourcePathPropertyId = nameof(dataSourcePathString);
 
     const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/BindingDataSourceView.uxml";
@@ -112,8 +73,6 @@ internal partial class BindingDataSourceView : BindableElement
     DataSourcePathCompleter m_DataSourcePathCompleter;
     HelpBox m_PathWarningBox;
 
-    bool m_IsBindingEditingMode;
-
     IVisualElementScheduledItem m_UpdateControlsScheduledItem;
 
     bool m_UsesDataSourceObject;
@@ -137,18 +96,8 @@ internal partial class BindingDataSourceView : BindableElement
         }
     }
 
-    public bool IsBindingEditingMode
-    {
-        get => m_IsBindingEditingMode;
-        set
-        {
-            if (m_IsBindingEditingMode == value)
-                return;
-
-            m_IsBindingEditingMode = value;
-            m_DataSourceObjectField.bindingPath = value ? "dataSource" : "dataSourceUnityObject";
-        }
-    }
+    [UxmlAttribute("binding-editing-mode")]
+    public bool IsBindingEditingMode { get; set; }
 
     public BindingDataSourceView()
     {
@@ -264,9 +213,13 @@ internal partial class BindingDataSourceView : BindableElement
     void UpdateDataSourceFieldAffordanceData(UxmlAttributeFieldDecorator decorator,
         in FieldAffordanceData affordanceData, VisualElement element, Binding binding, bool isInline)
     {
-        // Do nothing if the property is overridden
+        // Do not update the affordance for overridden or bound properties, but still trigger a control update
+        // so tab indicators reflect whether the other tab's field has a value set.
         if (isInline || binding != null)
+        {
+            DelayedUpdateControls();
             return;
+        }
 
         // If we have an inherited data source or data source type, update the affordance to show it
         if (decorator == m_DataSourceObjectField.decorator && GetInheritedDataSourceObject() != null)
@@ -283,17 +236,18 @@ internal partial class BindingDataSourceView : BindableElement
 
     void UpdateTabsIndicators()
     {
-        bool showDataSourceObjectIndicator = m_DataSourceButtonStrip.value != new ToggleButtonGroupState(0b01, 2) &&
-                                             m_DataSourceObjectField.decorator.affordanceElement.fieldAffordanceData
-                                                 .sourceTypeInfo != FieldAffordanceSourceInfoType.Default;
-        bool showDataSourceTypeIndicator = m_DataSourceButtonStrip.value == new ToggleButtonGroupState(0b01, 2) &&
-                                           m_DataSourceTypeField.decorator.affordanceElement.fieldAffordanceData
-                                               .sourceTypeInfo != FieldAffordanceSourceInfoType.Default;
+        bool isOnObjectTab = m_DataSourceButtonStrip.value == new ToggleButtonGroupState(0b01, 2);
+
+        var typeValue = m_DataSourceTypeField.boundProperty?.stringValue;
+        bool typeHasValue = !string.IsNullOrEmpty(typeValue) || GetInheritedDataSourceType() != null;
+
+        var objectValue = m_DataSourceObjectField.boundProperty?.boxedValue;
+        bool objectHasValue = objectValue != null || GetInheritedDataSourceObject() != null;
 
         m_DataSourceObjectTabStatusIndicator.style.visibility =
-            showDataSourceObjectIndicator ? Visibility.Visible : Visibility.Hidden;
+            (!isOnObjectTab && objectHasValue) ? Visibility.Visible : Visibility.Hidden;
         m_DataSourceTypeTabStatusIndicator.style.visibility =
-            showDataSourceTypeIndicator ? Visibility.Visible : Visibility.Hidden;
+            (isOnObjectTab && typeHasValue) ? Visibility.Visible : Visibility.Hidden;
     }
 
     /// <summary>

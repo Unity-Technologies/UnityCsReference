@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
 {
-    [UxmlElement, VisibleToOtherModules]
+    [VisibleToOtherModules]
     sealed class HierarchyViewItemName : VisualElement
     {
         internal static readonly UniqueStyleString k_StyleName = new("hierarchy-item__name");

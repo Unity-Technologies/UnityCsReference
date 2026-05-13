@@ -2,17 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
-    class BoxPlotGraph : VisualElement
+    [UxmlElement]
+    internal partial class BoxPlotGraph : VisualElement
     {
         BoxPlotModel m_Model;
 
-        //[UxmlAttribute]
+        [UxmlAttribute]
         public Color StrokeColor { get; set; } = Color.white;
 
         public BoxPlotGraph()
@@ -118,13 +118,6 @@ namespace Unity.Profiling.Editor.UI
             painter.LineTo(new Vector2(rect.center.x, lowerQuartileY));
 
             painter.Stroke();
-        }
-
-        // [UxmlElement] does no codegen in trunk (6000.2); we have to provide the generated UxmlSerializedData manually.
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new BoxPlotGraph();
         }
     }
 }

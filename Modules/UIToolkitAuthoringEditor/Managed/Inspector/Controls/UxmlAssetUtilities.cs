@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -40,14 +41,6 @@ internal static class UxmlAssetUtilities
     static bool s_DocumentUndoRecorded = false;
 
     /// <summary>
-    /// Checks if a visual element is the Builder document root.
-    /// </summary>
-    static bool IsBuilderDocumentElement(VisualElement element)
-    {
-        return element.name == "document" && element.ClassListContains("unity-builder-viewport__document");
-    }
-
-    /// <summary>
     /// Synchronizes the UXML serialized data to the current UXML asset and sub-UXML objects that are part of the path.
     /// </summary>
     /// <param name="visualTreeAsset">The visual tree asset being edited.</param>
@@ -77,7 +70,8 @@ internal static class UxmlAssetUtilities
     {
         SynchronizePathResult result = default;
 
-        if (string.IsNullOrEmpty(propertyPath) || !propertyPath.StartsWith(serializedBasePath, StringComparison.Ordinal))
+        if (string.IsNullOrEmpty(propertyPath) ||
+            !propertyPath.StartsWith(serializedBasePath, StringComparison.Ordinal))
             return result;
 
         // Cache the split so we don't have to do it every time.
@@ -142,11 +136,13 @@ internal static class UxmlAssetUtilities
                 continue;
             }
 
-            result.dataDescription = UxmlSerializedDataRegistry.GetDescription(currentUxmlSerializedData.GetType().DeclaringType.FullName);
+            result.dataDescription =
+                UxmlSerializedDataRegistry.GetDescription(currentUxmlSerializedData.GetType().DeclaringType.FullName);
 
             var name = pathParts[i];
             result.attributeDescription = result.dataDescription.FindAttributeWithPropertyName(name);
-            var attributeObjectDescription = result.attributeDescription as UxmlSerializedUxmlObjectAttributeDescription;
+            var attributeObjectDescription =
+                result.attributeDescription as UxmlSerializedUxmlObjectAttributeDescription;
             if (attributeObjectDescription == null)
                 break;
 
@@ -167,7 +163,9 @@ internal static class UxmlAssetUtilities
                 uxmlSerializedDataList = s_SingleUxmlSerializedData;
             }
 
-            if (!SyncUxmlAssetsFromSerializedData(visualTreeAsset, uxmlSerializedDataList, parentUxmlSerializedData, currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets, onRecordUndo, isInTemplateInstance, element, onDeserializeElement, getVisualElementAsset))
+            if (!SyncUxmlAssetsFromSerializedData(visualTreeAsset, uxmlSerializedDataList, parentUxmlSerializedData,
+                    currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets, onRecordUndo,
+                    isInTemplateInstance, element, onDeserializeElement, getVisualElementAsset))
             {
                 if (!changeUxmlAssets)
                 {
@@ -229,8 +227,10 @@ internal static class UxmlAssetUtilities
             }
 
             // Find matching UxmlObjectAsset
-            if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(visualTreeAsset, currentSerializedData, parentUxmlSerialized, parentAsset,
-                attributeDescription, canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j, onRecordUndo, isInTemplateInstance, element, onDeserializeElement, getVisualElementAsset))
+            if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(visualTreeAsset, currentSerializedData,
+                    parentUxmlSerialized, parentAsset,
+                    attributeDescription, canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j, onRecordUndo,
+                    isInTemplateInstance, element, onDeserializeElement, getVisualElementAsset))
             {
                 if (!canMakeChanges)
                     return false;
@@ -304,7 +304,7 @@ internal static class UxmlAssetUtilities
             {
                 if (uxmlObjectAssets[expectedIndex] != null &&
                     ((uxmlSerializedData == null && uxmlObjectAssets[expectedIndex]?.isNull == true) ||
-                    uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[expectedIndex]?.id))
+                     uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[expectedIndex]?.id))
                 {
                     uxmlAsset = uxmlObjectAssets[expectedIndex];
 
@@ -346,10 +346,12 @@ internal static class UxmlAssetUtilities
 
         onRecordUndo?.Invoke();
 
-        attributeDescription.SetSerializedValueAttributeFlags(parentUxmlSerialized, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+        attributeDescription.SetSerializedValueAttributeFlags(parentUxmlSerialized,
+            UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
         // We could not find the asset so we need to create a new one.
-        uxmlAsset = CreateUxmlObjectAsset(visualTreeAsset, attributeDescription, uxmlSerializedData, parentAsset, isInTemplateInstance, onRecordUndo, element, onDeserializeElement, getVisualElementAsset);
+        uxmlAsset = CreateUxmlObjectAsset(visualTreeAsset, attributeDescription, uxmlSerializedData, parentAsset,
+            isInTemplateInstance, onRecordUndo, element, onDeserializeElement, getVisualElementAsset);
 
         return false;
     }
@@ -385,7 +387,9 @@ internal static class UxmlAssetUtilities
         Action<VisualTreeAsset, VisualElement> onDeserializeElement = null,
         Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
     {
-        var fullTypeName = serializedData == null ? UxmlAsset.NullNodeType : serializedData.GetType().DeclaringType.FullName;
+        var fullTypeName = serializedData == null
+            ? UxmlAsset.NullNodeType
+            : serializedData.GetType().DeclaringType.FullName;
         var xmlns = visualTreeAsset.FindUxmlNamespaceDefinitionForTypeName(parentAsset, fullTypeName);
         var uxmlAsset = visualTreeAsset.AddUxmlObject(parentAsset, attribute.rootName, fullTypeName, xmlns);
 
@@ -393,7 +397,8 @@ internal static class UxmlAssetUtilities
         if (serializedData != null)
         {
             // Recursively sync nested UXML objects and non-default attributes
-            SyncSerializedDataToNewUxmlAsset(visualTreeAsset, serializedData, uxmlAsset, isInTemplateInstance, onRecordUndo, element, onDeserializeElement, getVisualElementAsset);
+            SyncSerializedDataToNewUxmlAsset(visualTreeAsset, serializedData, uxmlAsset, isInTemplateInstance,
+                onRecordUndo, element, onDeserializeElement, getVisualElementAsset);
             serializedData.uxmlAssetId = uxmlAsset.id;
         }
 
@@ -405,7 +410,7 @@ internal static class UxmlAssetUtilities
     /// </summary>
     /// <param name="attributeName">The name of the attribute to set.</param>
     /// <param name="value">The string value to set.</param>
-    /// <param name="visualTreeAsset">The visual tree asset being edited.</param>
+    /// <param name="editedVisualTreeAsset">The visual tree asset being edited.</param>
     /// <param name="uxmlAsset">The UXML asset to set the attribute on.</param>
     /// <param name="isInTemplateInstance">Whether the element is inside a template instance.</param>
     /// <param name="element">The visual element instance (required for template overrides).</param>
@@ -415,7 +420,7 @@ internal static class UxmlAssetUtilities
     public static void PostAttributeValueChange(
         string attributeName,
         string value,
-        VisualTreeAsset visualTreeAsset,
+        VisualTreeAsset editedVisualTreeAsset,
         UxmlAsset uxmlAsset,
         bool isInTemplateInstance = false,
         object element = null,
@@ -428,19 +433,24 @@ internal static class UxmlAssetUtilities
         // Set value in asset.
         if (isInTemplateInstance && element is VisualElement visualElement)
         {
-            var templateContainerParent = GetVisualElementRootTemplate(visualElement, getVisualElementAsset);
+            var templateContainerParent =
+                GetRootTemplateContainerInEditedVisualTree(editedVisualTreeAsset, visualElement);
 
             if (templateContainerParent != null)
             {
-                var templateAsset = (getVisualElementAsset != null ? getVisualElementAsset(templateContainerParent) : templateContainerParent.visualElementAsset) as TemplateAsset;
+                var templateAsset =
+                    (getVisualElementAsset != null
+                        ? getVisualElementAsset(templateContainerParent)
+                        : templateContainerParent.visualElementAsset) as TemplateAsset;
                 var currentVisualElementName = visualElement.name;
 
                 if (!string.IsNullOrEmpty(currentVisualElementName) && templateAsset != null)
                 {
-                    var pathToTemplateAsset = GetPathToTemplateAsset(templateAsset, visualElement, getVisualElementAsset);
+                    var pathToTemplateAsset =
+                        GetPathToTemplateAsset(templateAsset, visualElement, getVisualElementAsset);
                     templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
 
-                    var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
+                    var elementsToChange = templateContainerParent.Query(currentVisualElementName).Where(v => v.GetType() == visualElement.GetType());
                     elementsToChange.ForEach(x =>
                     {
                         var templateVea = x.visualElementAsset;
@@ -448,8 +458,8 @@ internal static class UxmlAssetUtilities
                         if (templateVea == null)
                             return;
 
-                        UxmlSerializer.CreateSerializedDataOverrides(visualTreeAsset);
-                        onDeserializeElement?.Invoke(visualTreeAsset, x);
+                        UxmlSerializer.CreateSerializedDataOverrides(editedVisualTreeAsset);
+                        onDeserializeElement?.Invoke(editedVisualTreeAsset, x);
                     });
                 }
             }
@@ -485,13 +495,15 @@ internal static class UxmlAssetUtilities
         if (uxmlSerializedData == null)
             return;
 
-        var description = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
+        var description =
+            UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
         foreach (var attribute in description.serializedAttributes)
         {
             if (attribute.isUxmlObject)
             {
                 var attributeUxmlObjectDescription = attribute as UxmlSerializedUxmlObjectAttributeDescription;
-                attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                attribute.SetSerializedValueAttributeFlags(uxmlSerializedData,
+                    UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
                 if (attribute.isList)
                 {
@@ -499,7 +511,8 @@ internal static class UxmlAssetUtilities
                     var serializedDataList = (IList)attribute.GetSerializedValue(uxmlSerializedData);
                     foreach (UxmlSerializedData serializedDataItem in serializedDataList)
                     {
-                        CreateUxmlObjectAsset(visualTreeAsset, attributeUxmlObjectDescription, serializedDataItem, uxmlAsset);
+                        CreateUxmlObjectAsset(visualTreeAsset, attributeUxmlObjectDescription, serializedDataItem,
+                            uxmlAsset);
                     }
                 }
                 else
@@ -509,7 +522,8 @@ internal static class UxmlAssetUtilities
                     // Avoid creating null objects when attribute description is not a list
                     if (serializedData != null)
                     {
-                        CreateUxmlObjectAsset(visualTreeAsset, attributeUxmlObjectDescription, serializedData, uxmlAsset);
+                        CreateUxmlObjectAsset(visualTreeAsset, attributeUxmlObjectDescription, serializedData,
+                            uxmlAsset);
                     }
                 }
             }
@@ -518,12 +532,16 @@ internal static class UxmlAssetUtilities
                 var attributeValue = attribute.GetSerializedValue(uxmlSerializedData);
                 if (!UxmlAttributeComparison.ObjectEquals(attributeValue, attribute.defaultValue))
                 {
-                    attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                    attribute.SetSerializedValueAttributeFlags(uxmlSerializedData,
+                        UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
-                    if (attributeValue == null || !UxmlAttributeConverter.TryConvertToString(attributeValue, visualTreeAsset, out var stringValue))
+                    if (attributeValue == null ||
+                        !UxmlAttributeConverter.TryConvertToString(attributeValue, visualTreeAsset,
+                            out var stringValue))
                         stringValue = attributeValue?.ToString();
 
-                    PostAttributeValueChange(attribute.name, stringValue, visualTreeAsset, uxmlAsset, isInTemplateInstance, element, onRecordUndo, onDeserializeElement, getVisualElementAsset);
+                    PostAttributeValueChange(attribute.name, stringValue, visualTreeAsset, uxmlAsset,
+                        isInTemplateInstance, element, onRecordUndo, onDeserializeElement, getVisualElementAsset);
                 }
             }
         }
@@ -535,7 +553,8 @@ internal static class UxmlAssetUtilities
     /// <param name="templateAsset">The template asset to find the path to.</param>
     /// <param name="element">The visual element to start from.</param>
     /// <param name="getVisualElementAsset">Optional callback to get visual element assets (for custom property support).</param>
-    public static string[] GetPathToTemplateAsset(TemplateAsset templateAsset, VisualElement element, Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
+    public static string[] GetPathToTemplateAsset(TemplateAsset templateAsset, VisualElement element,
+        Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
     {
         var path = new List<string> { element.name };
         var parent = element.parent;
@@ -556,12 +575,13 @@ internal static class UxmlAssetUtilities
     }
 
     /// <summary>
-    /// Gets the root template container for a visual element.
+    /// Gets the root template container for a visual element in the edited document or sub document.
     /// </summary>
-    /// <param name="visualElement">The visual element to find the root template for.</param>
-    /// <param name="getVisualElementAsset">Optional callback to get visual element assets (for custom property support).</param>
-    /// <returns>The root template container, or null if not found.</returns>
-    public static TemplateContainer GetVisualElementRootTemplate(VisualElement visualElement, Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
+    /// <param name="editedVisualTreeAsset">The visual tree asset being edited</param>
+    /// <param name="visualElement">The visual element being edited.</param>
+    /// <returns>The root template container in the edited document, or null if not found.</returns>
+    public static TemplateContainer GetRootTemplateContainerInEditedVisualTree(VisualTreeAsset editedVisualTreeAsset,
+        VisualElement visualElement)
     {
         TemplateContainer templateContainerParent = null;
         var parent = visualElement.parent;
@@ -571,16 +591,13 @@ internal static class UxmlAssetUtilities
             // Check if it's a TemplateContainer with a visual element asset
             if (parent is TemplateContainer templateContainer)
             {
-                var asset = getVisualElementAsset != null ? getVisualElementAsset(templateContainer) : templateContainer.visualElementAsset;
-                if (asset != null)
+                var asset = templateContainer.visualElementAsset;
+                var vta = templateContainer.visualTreeAssetSource;
+                if (asset != null && editedVisualTreeAsset == vta)
                 {
                     templateContainerParent = templateContainer;
+                    break;
                 }
-            }
-
-            if (IsBuilderDocumentElement(parent))
-            {
-                break;
             }
 
             parent = parent.parent;
@@ -633,7 +650,10 @@ internal static class UxmlAssetUtilities
             property = property.GetArrayElementAtIndex(property.arraySize - 1);
         }
 
-        var serializedObj = serializedData ?? (type != null ? UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType) : null);
+        var serializedObj = serializedData ??
+                            (type != null
+                                ? UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType)
+                                : null);
 
         property.managedReferenceValue = serializedObj;
         property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
@@ -676,11 +696,12 @@ internal static class UxmlAssetUtilities
         return ret;
     }
 
-    public static SynchronizePathResult SynchronizePath(UxmlAttributesEditingContext context, string propertyPath, bool changeUxmlAssets)
+    public static SynchronizePathResult SynchronizePath(UxmlAttributesEditingContext context, string propertyPath,
+        bool changeUxmlAssets)
     {
         s_DocumentUndoRecorded = false;
 
-       Action<VisualTreeAsset, VisualElement> handleTemplateOverride = null;
+        Action<VisualTreeAsset, VisualElement> handleTemplateOverride = null;
 
         var result = SynchronizePath(
             context.visualTreeAsset,
@@ -719,5 +740,134 @@ internal static class UxmlAssetUtilities
             Undo.RegisterCompleteObjectUndo(context.element.visualTreeAssetSource, reason);
         }
     }
-}
 
+    /// <summary>
+    /// Returns whether the specified attribute of the specified visual element has been overridden in the context to
+    /// its top-level template container instance.
+    /// </summary>
+    public static bool HasAttributeOverrideInRootTemplate(VisualTreeAsset visualTreeAsset, VisualElement visualElement,
+        string attributeName)
+    {
+        var templateContainer = GetRootTemplateContainerInEditedVisualTree(visualTreeAsset, visualElement);
+        var templateAsset = templateContainer?.visualElementAsset as TemplateAsset;
+
+        if (templateAsset == null)
+            return false;
+
+        var pathToTemplateAsset = GetPathToTemplateAsset(templateAsset, visualElement);
+
+        if (templateAsset.attributeOverrides != null)
+        {
+            foreach (var attrOverride in templateAsset.attributeOverrides)
+            {
+                if (attrOverride.m_AttributeName == attributeName &&
+                    attrOverride.NamesPathMatchesElementNamesPath(pathToTemplateAsset))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Indicates whether the specified uxml attribute is inlined or template overridden.
+    /// </summary>
+    /// <param name="editedVisualTreeAsset">The edited Visual Tree Asset</param>
+    /// <param name="attributesOwner">An instance of the uxml element that owns the uxml attribute</param>
+    /// <param name="attribute">The uxml attribute</param>
+    public static bool IsAttributeOverridden(VisualTreeAsset editedVisualTreeAsset, VisualElement attributesOwner,
+        UxmlSerializedAttributeDescription attribute, bool isInTemplateInstance)
+    {
+        var vea = attributesOwner.visualElementAsset;
+        if (vea == null)
+            return false;
+
+        return IsAttributeOverridden(editedVisualTreeAsset, attributesOwner, vea, vea.serializedData, attribute, isInTemplateInstance);
+    }
+
+    /// <summary>
+    /// Indicates whether the specified uxml attribute is inlined or template overridden.
+    /// </summary>
+    /// <param name="attributeOwner">An instance created from the uxml element that owns the related xml attribute.</param>
+    /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute to evaluate.</param>
+    /// <param name="attribute">The uxml attribute.</param>
+    /// <returns></returns>
+    /// <returns>True if the attribute is overridden; otherwise, false.</returns>
+    public static bool IsAttributeOverridden(VisualTreeAsset editedVisualTreeAsset, object attributeOwner,
+        UxmlAsset attributeUxmlOwner,
+        UxmlSerializedData serializedData, UxmlSerializedAttributeDescription attribute, bool isInTemplateInstance)
+    {
+        if (attribute is { isUxmlObject: true })
+            return false;
+
+        if (attributeOwner is VisualElement ve)
+        {
+            if (attribute.name == "name")
+            {
+                if (!string.IsNullOrEmpty(ve.name))
+                    return !isInTemplateInstance;
+            }
+            else if (isInTemplateInstance)
+            {
+                return HasAttributeOverrideInRootTemplate(editedVisualTreeAsset, ve, attribute.name);
+            }
+            else
+            {
+                var templateContainer = GetRootTemplateContainerInEditedVisualTree(editedVisualTreeAsset, ve);
+                var templateVta = templateContainer?.visualTreeAssetSource;
+                var linkedOpenVta = templateContainer?.templateAsset?.visualTreeAsset;
+                if ((templateVta == null || templateVta == linkedOpenVta) &&
+                    DataBindingUtility.TryGetBinding(ve, new PropertyPath(attribute.name), out _))
+                {
+                    return true;
+                }
+            }
+        }
+
+        if (attributeUxmlOwner != null && attribute.GetSerializedValueAttributeFlags(serializedData) ==
+            UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsAnyAttributeSet(VisualTreeAsset editedVisualTreeAsset,
+        object attributesOwner,
+        UxmlAsset attributesUxmlOwner,
+        UxmlSerializedData serializedData,
+        UxmlSerializedDataDescription dataDescription,
+        bool isInTemplateInstance,
+        List<string> ignoredAttributeNames = null)
+    {
+        foreach (var attribute in dataDescription.serializedAttributes)
+        {
+            if (attribute?.name == null)
+                continue;
+
+            if (ignoredAttributeNames is { Count: > 0 } && ignoredAttributeNames.Contains(attribute.name))
+                continue;
+
+            if (isInTemplateInstance
+                && attribute.name == "name")
+            {
+                continue;
+            }
+
+            if (IsAttributeOverridden(editedVisualTreeAsset, attributesOwner, attributesUxmlOwner, serializedData,
+                    attribute, isInTemplateInstance))
+                return true;
+        }
+
+        if (attributesUxmlOwner != null)
+        {
+            // Do we have any UxmlObjects?
+            return attributesUxmlOwner.HasAnyUxmlObjectAsset();
+        }
+
+        return false;
+    }
+}

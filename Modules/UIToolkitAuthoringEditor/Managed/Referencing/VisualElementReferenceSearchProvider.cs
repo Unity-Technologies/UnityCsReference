@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
@@ -19,30 +18,49 @@ class VisualElementReferenceSearchProvider : SearchProvider
     public struct Data
     {
         public PanelRenderer panelRenderer;
-        public VisualElementAsset[] path;
+
+        // The full path including all ancestors, excluding the target element.
+        // Used for generating the tree view hierarchy.
+        public VisualElementAsset[] hierarchyPath;
+
+        // The path of TemplateAssets forming the authoring path through UXML files,
+        // plus the final target element. Each TemplateAsset represents a UXML file boundary.
+        public VisualElementAsset[] authoringPath;
+
         public VisualElementAsset visualElementAsset;
         public string name;
         public string label;
         public string pathLabel;
 
-        public Data(PanelRenderer pr, VisualElementAsset[] path, VisualElementAsset vea)
+        public Data(PanelRenderer pr, VisualElementAsset[] hierarchyPath, VisualElementAsset[] authoringPath, VisualElementAsset vea)
         {
             panelRenderer = pr;
-            this.path = path;
+            this.hierarchyPath = hierarchyPath;
+            this.authoringPath = authoringPath;
             visualElementAsset = vea;
             name = VisualElementReferenceTools.GenerateVisualElementAssetLabel(visualElementAsset, false);
             label = VisualElementReferenceTools.GenerateVisualElementAssetLabel(visualElementAsset);
             pathLabel = GeneratePathLabel();
         }
 
-        public AuthoringIdPath GeneratePath()
+        public AuthoringIdPath GenerateHierarchyPath()
         {
-            var generatedPath = new int[path.Length + 1];
-            for (int i = 0; i < path.Length; i++)
+            var generatedPath = new int[hierarchyPath.Length + 1];
+            for (int i = 0; i < hierarchyPath.Length; i++)
             {
-                generatedPath[i] = path[i].id;
+                generatedPath[i] = hierarchyPath[i].id;
             }
             generatedPath[^1] = visualElementAsset.id;
+            return new AuthoringIdPath(generatedPath);
+        }
+
+        public AuthoringIdPath GenerateAuthoringPath()
+        {
+            var generatedPath = new int[authoringPath.Length];
+            for (int i = 0; i < authoringPath.Length; i++)
+            {
+                generatedPath[i] = authoringPath[i].id;
+            }
             return new AuthoringIdPath(generatedPath);
         }
 
@@ -61,8 +79,8 @@ class VisualElementReferenceSearchProvider : SearchProvider
             // Reverse the list to go from root to leaf
             pathParts.Reverse();
 
-            // Walk downt the visual element path
-            foreach (var vea in path)
+            // Walk down the visual element path
+            foreach (var vea in hierarchyPath)
             {
                 var name = VisualElementReferenceTools.GenerateVisualElementAssetLabel(vea);
                 pathParts.Add(name);
@@ -79,6 +97,7 @@ class VisualElementReferenceSearchProvider : SearchProvider
 
     const string k_NameToken = "name";
     const string k_TypeToken = "type";
+    static readonly char[] k_Separator = new[] { '/' };
 
     readonly Scene m_Scene;
     readonly Type m_BaseType;
@@ -97,6 +116,9 @@ class VisualElementReferenceSearchProvider : SearchProvider
         fetchItems = FetchItems;
 
         fetchThumbnail = (item, _) => item.thumbnail;
+
+        fetchParentDescriptor = FetchParentDescriptor;
+        fetchParentsTokenSeparatedIds = FetchParentsTokenSeparatedIds;
 
         // The searchable data is what we search against when just typing in the search field.
         m_QueryEngine.SetSearchDataCallback(GetSearchableData, StringComparison.OrdinalIgnoreCase);
@@ -129,7 +151,7 @@ class VisualElementReferenceSearchProvider : SearchProvider
     {
         yield return new SearchProposition(null, "Name", $"{k_NameToken}:", "Filter by element name.");
 
-        
+
 
         foreach (var sdt in UxmlSerializedDataRegistry.SerializedDataTypes)
         {
@@ -139,56 +161,123 @@ class VisualElementReferenceSearchProvider : SearchProvider
 
     IEnumerable<Data> GetSearchData()
     {
-        using var _ = ListPool<VisualElementAsset>.Get(out var pathAssets);
-        foreach(var go in UnityEditor.Search.SearchUtils.FetchGameObjects(m_Scene))
+        using var hierarchyPoolHandle = ListPool<VisualElementAsset>.Get(out var hierarchyStack);
+        using var authoringPoolHandle = ListPool<VisualElementAsset>.Get(out var authoringStack);
+
+        foreach (var go in SearchUtils.FetchGameObjects(m_Scene))
         {
             var pr = go.GetComponent<PanelRenderer>();
-            if (pr == null)
+            if (pr == null || pr.visualTreeAsset == null)
                 continue;
 
-            // Add the root
-            if (m_BaseType == typeof(VisualElement))
-                yield return new Data(pr, Array.Empty<VisualElementAsset>(), pr.visualTreeAsset.visualTree);
+            var root = pr.visualTreeAsset.visualTree;
 
-            foreach (var v in AppendVisualTreeSearchData(pr, pr.visualTreeAsset, pathAssets))
+            // Add the root - it's part of authoring path as the starting UXML file
+            if (m_BaseType == typeof(VisualElement))
             {
-                yield return v;
+                authoringStack.Add(root);
+                yield return new Data(pr, Array.Empty<VisualElementAsset>(), ToArrayOrEmpty(authoringStack), root);
+                authoringStack.Clear();
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                if (root[i] is VisualElementAsset child)
+                {
+                    foreach (var v in TraverseElement(pr, child, hierarchyStack, authoringStack))
+                        yield return v;
+                }
             }
         }
     }
 
-    IEnumerable<Data> AppendVisualTreeSearchData(PanelRenderer pr, VisualTreeAsset visualTreeAsset, List<VisualElementAsset> pathAssets)
+    IEnumerable<Data> TraverseElement(
+        PanelRenderer pr, 
+        VisualElementAsset vea, 
+        List<VisualElementAsset> hierarchyStack,
+        List<VisualElementAsset> authoringStack)
     {
-        // The path is used by all referenceable elements in this visual tree
-        var currentPath = pathAssets.Count == 0 ? Array.Empty<VisualElementAsset>() : pathAssets.ToArray();
-
-        foreach (var uxmlElement in visualTreeAsset.DepthFirstTraversal())
+        if (vea is TemplateAsset templateAsset)
         {
-            if (uxmlElement is TemplateAsset templateAsset)
-            {
-                if (m_BaseType.IsAssignableFrom(typeof(TemplateContainer)))
-                    yield return new Data(pr, currentPath, templateAsset);
+            // TemplateAsset is part of the authoring path (UXML boundary)
+            authoringStack.Add(templateAsset);
 
-                var childVta = templateAsset.ResolveTemplate();
-                if (childVta != null)
+            if (m_BaseType.IsAssignableFrom(typeof(TemplateContainer)))
+                yield return new Data(pr, ToArrayOrEmpty(hierarchyStack), ToArrayOrEmpty(authoringStack), templateAsset);
+
+            var childVta = templateAsset.ResolveTemplate();
+            if (childVta != null && childVta.visualTree != null)
+            {
+                hierarchyStack.Add(templateAsset);
+
+                var innerRoot = childVta.visualTree;
+                for (var i = 0; i < innerRoot.childCount; i++)
                 {
-                    pathAssets.Add(templateAsset);
-                    foreach (var v in AppendVisualTreeSearchData(pr, childVta, pathAssets))
+                    if (innerRoot[i] is VisualElementAsset innerChild)
                     {
-                        yield return v;
+                        foreach (var v in TraverseElement(pr, innerChild, hierarchyStack, authoringStack))
+                            yield return v;
                     }
-                    pathAssets.RemoveAt(pathAssets.Count - 1);
+                }
+
+                hierarchyStack.RemoveAt(hierarchyStack.Count - 1);
+            }
+
+            authoringStack.RemoveAt(authoringStack.Count - 1);
+        }
+        else
+        {
+            if (vea.serializedData != null && m_BaseType.IsAssignableFrom(vea.serializedData.GetType().DeclaringType))
+            {
+                // Add the target element to authoring path
+                authoringStack.Add(vea);
+                yield return new Data(pr, ToArrayOrEmpty(hierarchyStack), ToArrayOrEmpty(authoringStack), vea);
+                authoringStack.RemoveAt(authoringStack.Count - 1);
+            }
+
+            hierarchyStack.Add(vea);
+            for (var i = 0; i < vea.childCount; i++)
+            {
+                if (vea[i] is VisualElementAsset child)
+                {
+                    foreach (var v in TraverseElement(pr, child, hierarchyStack, authoringStack))
+                        yield return v;
                 }
             }
-            else if (uxmlElement is VisualElementAsset vea && vea.serializedData != null && m_BaseType.IsAssignableFrom(vea.serializedData.GetType().DeclaringType))
-            {
-                yield return new Data(pr, currentPath, vea);
-            }
+            hierarchyStack.RemoveAt(hierarchyStack.Count - 1);
         }
+    }
+
+    static VisualElementAsset[] ToArrayOrEmpty(List<VisualElementAsset> list)
+    {
+        return list.Count == 0 ? Array.Empty<VisualElementAsset>() : list.ToArray();
     }
 
     static IEnumerable<string> GetSearchableData(Data data)
     {
         yield return data.pathLabel;
+    }
+
+    static SearchItemParentDescriptor FetchParentDescriptor(SearchItem item, SearchContext context)
+    {
+        if (item.data is not Data data)
+            return default;
+
+        var pathLabel = data.pathLabel;
+        var lastSlash = pathLabel.LastIndexOf('/');
+        if (lastSlash <= 0)
+            return default;
+
+        var parentId = pathLabel.Substring(0, lastSlash);
+        return new SearchItemParentDescriptor(parentId, SearchItemParentType.TokenSeparatedId);
+    }
+
+    static void FetchParentsTokenSeparatedIds(SearchItem item, SearchContext context, List<StringView> idsSubstrings)
+    {
+        var descriptor = item.GetParentDescriptor(context);
+        if (string.IsNullOrEmpty(descriptor.Id))
+            return;
+
+        descriptor.Id.GetStringView().Split(k_Separator, StringSplitOptions.RemoveEmptyEntries, idsSubstrings);
     }
 }

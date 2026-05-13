@@ -223,6 +223,12 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
 
+        string IHierarchyEditorNodeTypeHandler.GetDragTitle(HierarchyView view, in HierarchyNode node)
+        {
+            var go = GetGameObject(in node);
+            return go != null ? ObjectNames.GetDragAndDropTitle(go) : null;
+        }
+
         void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
         {
             var nodeSpan = data.Nodes;

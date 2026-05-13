@@ -94,10 +94,14 @@ namespace UnityEditor
         }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelection([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
+        internal static extern void SetFullSelection([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint, bool notifyOnReselection);
+        internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint)
+            => SetFullSelection(newSelection, activeObject, context, dataModeHint, false);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelectionByID([NotNull]EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint);
+        internal static extern void SetFullSelectionByID(ReadOnlySpan<EntityId> newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint, bool notifyOnReselection);
+        internal static void SetFullSelectionByID(EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint)
+            => SetFullSelectionByID(newSelection, activeObjectEntityId, contextEntityId, dataModeHint, false);
 
         [Obsolete("Use EntityId version of SetFullSelectionByID instead.", true)]
         internal static void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint)

@@ -3,18 +3,31 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Globalization;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
-
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 
 namespace UnityEditorInternal
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static partial class AnimationWindowUtility
     {
+        private static readonly List<IAnimationWindowPropertyHandler> s_PropertyHandlers = new();
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void RegisterPropertyHandler(IAnimationWindowPropertyHandler handler)
+            => s_PropertyHandlers.Add(handler);
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void UnregisterPropertyHandler(IAnimationWindowPropertyHandler handler)
+            => s_PropertyHandlers.Remove(handler);
+
+        internal static IReadOnlyList<IAnimationWindowPropertyHandler> PropertyHandlers => s_PropertyHandlers;
+
         public static void CreateDefaultCurves(AnimationWindowState state, ReadOnlySpan<EditorCurveBinding> properties)
         {
             CreateDefaultCurves(state, state.selection.clip, properties);
@@ -681,10 +694,22 @@ namespace UnityEditorInternal
         // We automatically group Vector4, Vector3 and Color
         static public int GetComponentIndex(string name)
         {
-            if (name == null || name.Length < 3 || name[name.Length - 2] != '.')
+            if (name == null || name.Length < 3)
+            {
                 return -1;
-            char lastCharacter = name[name.Length - 1];
-            switch (lastCharacter)
+            }
+
+            if (name[name.Length - 2] != '.')
+            { 
+                foreach (var h in s_PropertyHandlers)
+                {
+                    int idx = h.GetChannelIndex(name);
+                    if (idx != -1) return idx;
+                }
+                return -1;
+            }
+
+            switch (name[name.Length - 1])
             {
                 case 'r':
                     return 0;
@@ -703,6 +728,11 @@ namespace UnityEditorInternal
                 case 'w':
                     return 3;
                 default:
+                    foreach (var h in s_PropertyHandlers)
+                    {
+                        int idx = h.GetChannelIndex(name);
+                        if (idx != -1) return idx;
+                    }
                     return -1;
             }
         }
@@ -710,8 +740,20 @@ namespace UnityEditorInternal
         // If Vector4, Vector3 or Color, return group name instead of full name
         public static string GetPropertyGroupName(string propertyName)
         {
-            if (GetComponentIndex(propertyName) != -1)
+            if (propertyName == null || propertyName.Length < 3)
+                return propertyName;
+
+            if (propertyName[propertyName.Length - 2] == '.'
+                && GetComponentIndex(propertyName) != -1)
+            {
                 return propertyName.Substring(0, propertyName.Length - 2);
+            }
+
+            foreach (var h in s_PropertyHandlers)
+            {
+                string group = h.GetPropertyGroupName(propertyName);
+                if (group != null) return group;
+            }
 
             return propertyName;
         }

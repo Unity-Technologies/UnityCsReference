@@ -20,6 +20,7 @@ namespace UnityEditor.UIElements
     /// <remarks>
     /// Upon Bind(), the InspectorElement will generate PropertyFields inside according to the SerializedProperties inside the bound SerializedObject.
     /// </remarks>
+    [UxmlElement]
     public partial class InspectorElement : BindableElement
     {
         /// <summary>
@@ -106,18 +107,6 @@ namespace UnityEditor.UIElements
         internal static readonly string noScriptErrorContainerName = "unity-inspector-no-script-error-container";
 
         internal static bool disabledThrottling { get; set; } = false;
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
-        {
-            public override object CreateInstance() => new InspectorElement();
-
-            [System.Diagnostics.Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
 
         /// <summary>
         /// Gets the default backend to use based on the current editor settings.

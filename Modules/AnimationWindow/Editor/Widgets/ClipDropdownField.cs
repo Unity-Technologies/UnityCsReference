@@ -10,19 +10,17 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Animations.AnimationWindow.Widgets
 {
-    class ClipDropdownField : UnityEngine.UIElements.PopupField<IAnimationWindowClip>, IDisposable
+    [UxmlElement]
+    partial class ClipDropdownField : PopupField<IAnimationWindowClip>, IDisposable
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated]
-        [global::System.Serializable]
-        internal new class UxmlSerializedData : global::UnityEngine.UIElements.VisualElement.UxmlSerializedData
-        {
-
-            public override object CreateInstance() => new ClipDropdownField();
-        }
-
         static string s_CreateNewClip = L10n.Tr("Create New Clip...");
 
         private AnimationWindowState m_State;
+
+        // UXML serialization requires a string-typed attribute named "value" because no converter
+        // exists for IAnimationWindowClip. Hidden so it does not appear in the inspector.
+        [UxmlAttribute("value"), HideInInspector]
+        internal string valueOverride { get; set; }
 
         public void Initialize(AnimationWindowState state)
         {
@@ -114,7 +112,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
         private void OnRefresh()
         {
-            SetEnabled(m_State.selection.canChangeClip);
+            SetEnabled(!m_State.disabled && m_State.selection.canChangeClip);
             SetValueWithoutNotify(m_State.activeClip);
         }
     }

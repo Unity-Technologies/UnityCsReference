@@ -24,7 +24,13 @@ namespace UnityEditor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, property, label, typeof(UnityEngine.Object));
+            EditorGUI.BeginProperty(position, label, property);
+            EditorGUI.BeginChangeCheck();
+            var newObj = LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, property, label, typeof(UnityEngine.Object));
+
+            if (EditorGUI.EndChangeCheck())
+                LoadableObjectIdEditorUtility.ApplyLoadableObjectIdChange(property, newObj);
+            EditorGUI.EndProperty();
         }
     }
 }

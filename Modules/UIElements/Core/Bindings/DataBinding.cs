@@ -41,8 +41,16 @@ namespace UnityEngine.UIElements
     /// <summary>
     ///  Binding type that enables data synchronization between a property of a data source and a property of a <see cref="VisualElement"/>.
     /// </summary>
+    [UxmlObject]
     public partial class DataBinding : Binding, IDataSourceProvider
     {
+        internal const string k_DataSourceTooltip = "A data source is a collection of information. By default, a binding will inherit the existing data source from the hierarchy. " +
+            "You can instead define another object here as the data source, or define the type of property it may be if the source is not yet available.";
+        internal const string k_DataSourcePathTooltip = "The path to the value in the data source used by this binding. To see resolved bindings in the UI Builder, define a path that is compatible with the target source property.";
+        internal const string k_BindingModeTooltip = "Controls how a binding is updated, which can include the direction in which data is written.";
+        internal const string k_SourceToUiConvertersTooltip = "Define one or more converter groups for this binding that will be used between the data source to the target UI.";
+        internal const string k_UiToSourceConvertersTooltip = "Define one or more converter groups for this binding that will be used between the target UI to the data source.";
+
         private static MethodInfo s_UpdateUIMethodInfo;
         internal static MethodInfo updateUIMethod => s_UpdateUIMethodInfo ??= CacheReflectionInfo();
 
@@ -79,19 +87,24 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public object dataSource { get; set; }
 
+        [UxmlAttribute("data-source"), UxmlAttributeBindingPath("dataSource"), HideInInspector, DataSourceDrawer]
+        [Tooltip(k_DataSourceTooltip)]
+        internal Object dataSourceUnityObject
+        {
+            get => dataSource as Object;
+            set => dataSource = value ? value : null;
+        }
+
         /// <summary>
         /// The possible data source types that can be assigned to the binding.
         /// </summary>
         /// <remarks>
         /// This information is only used by the UI Builder as a hint to provide some completion to the data source path field when the effective data source cannot be specified at design time.
         /// </remarks>
+        [CreateProperty]
+        [UxmlAttribute, HideInInspector, UxmlTypeReference(typeof(object))]
+        [Tooltip(k_DataSourceTooltip)]
         public Type dataSourceType { get; set; }
-
-        internal string dataSourceTypeString
-        {
-            get => UxmlUtility.TypeToString(dataSourceType);
-            set => dataSourceType = UxmlUtility.ParseType(value);
-        }
 
         /// <summary>
         /// Path from the data source to the value.
@@ -99,6 +112,8 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public PropertyPath dataSourcePath { get; set; }
 
+        [Tooltip(k_DataSourcePathTooltip), HideInInspector]
+        [UxmlAttribute("data-source-path")]
         internal string dataSourcePathString
         {
             get => dataSourcePath.ToString();
@@ -110,6 +125,9 @@ namespace UnityEngine.UIElements
         /// The default value is <see cref="BindingMode.TwoWay"/>.
         /// </summary>
         [CreateProperty]
+        [Tooltip(k_BindingModeTooltip)]
+        [BindingModeDrawer, HideInInspector]
+        [UxmlAttribute("binding-mode")]
         public BindingMode bindingMode
         {
             get => m_BindingMode;
@@ -149,6 +167,10 @@ namespace UnityEngine.UIElements
 
         List<string> m_SourceToUIConvertersString;
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        [Tooltip(k_SourceToUiConvertersTooltip)]
+        [HideInInspector, ConverterDrawer(isConverterToSource = false)]
+        [UxmlAttributeBindingPath(nameof(sourceToUiConverters))]
+        [UxmlAttribute("source-to-ui-converters")]
         internal string sourceToUiConvertersString
         {
             get => m_SourceToUIConvertersString != null ? string.Join(", ", m_SourceToUIConvertersString) : null;
@@ -170,6 +192,10 @@ namespace UnityEngine.UIElements
 
         List<string> m_UiToSourceConvertersString;
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        [Tooltip(k_UiToSourceConvertersTooltip)]
+        [HideInInspector, ConverterDrawer(isConverterToSource = true)]
+        [UxmlAttributeBindingPath(nameof(uiToSourceConverters))]
+        [UxmlAttribute("ui-to-source-converters")]
         internal string uiToSourceConvertersString
         {
             get => m_UiToSourceConvertersString != null ? string.Join(", ", m_UiToSourceConvertersString) : null;

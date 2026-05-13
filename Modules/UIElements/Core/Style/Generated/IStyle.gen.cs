@@ -34,6 +34,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<Align> alignSelf { get; set; }
         /// <summary>
+        /// Controls whether the animation is running or paused.
+        /// </summary>
+        StyleEnum<AnimationPlayState> animationPlayState { get; set; }
+        /// <summary>
         /// Sets a preferred aspect ratio for the box, which will be used in the calculation of auto sizes and some other layout functions.
         /// </summary>
         StyleRatio aspectRatio { get; set; }
@@ -297,6 +301,10 @@ namespace UnityEngine.UIElements
         /// A translate transformation.
         /// </summary>
         StyleTranslate translate { get; set; }
+        /// <summary>
+        /// Animation to apply with the current element as root.
+        /// </summary>
+        StyleUIAnimationClip unityAnimationClip { get; set; }
         /// <summary>
         /// Tinting color for the element's backgroundImage.
         /// </summary>

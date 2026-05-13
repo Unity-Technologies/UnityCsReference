@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,21 +12,9 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Makes a style field for editing the TextAlign property.
     /// </summary>
-    internal class TextAlignToggleField : BaseField<TextAnchor>
+    [UxmlElement]
+    internal partial class TextAlignToggleField : BaseField<TextAnchor>
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseField<TextAnchor>.UxmlSerializedData
-        {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TextAnchor>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new TextAlignToggleField();
-        }
-
         static readonly string s_UssClassName = "unity-text-align-toggle-field";
         static readonly string s_ButtonStripContainerClassName = s_UssClassName + "__button-strip-container";
 

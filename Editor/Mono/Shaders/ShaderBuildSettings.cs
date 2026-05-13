@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -35,6 +36,34 @@ namespace UnityEditor.Shaders
             return isEmptyKeyword;
         }
 
+        private static bool IsValidIdentifierChar(char c)
+        {
+            return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z')
+                || ('0' <= c && c <= '9') || (c == '_');
+        }
+
+        private static bool IsValidIdentifier(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+                return false;
+
+            bool firstChar = true;
+            foreach (char c in identifier)
+            {
+                if (firstChar)
+                {
+                    if (char.IsDigit(c))
+                        return false;
+
+                    firstChar = false;
+                }
+
+                if (!IsValidIdentifierChar(c))
+                    return false;
+            }
+            return true;
+        }
+
         [RequiredByNativeCode(GenerateProxy = false)]
         [Serializable]
         public struct KeywordOverrideInfo
@@ -45,31 +74,9 @@ namespace UnityEditor.Shaders
                 this.keepInBuild = keepInBuild;
             }
 
-            private bool IsValidKeywordNameChar(char c)
-            {
-                return char.IsLetterOrDigit(c) || c == '_';
-            }
-
             public bool IsValid()
             {
-                if (string.IsNullOrEmpty(name))
-                    return false;
-
-                bool firstChar = true;
-                foreach (char c in name)
-                {
-                    if (firstChar)
-                    {
-                        if (char.IsDigit(c))
-                            return false;
-
-                        firstChar = false;
-                    }
-
-                    if (!IsValidKeywordNameChar(c))
-                        return false;
-                }
-                return true;
+                return IsValidIdentifier(name);
             }
 
             [SerializeField] public string name;
@@ -231,7 +238,9 @@ namespace UnityEditor.Shaders
             return true;
         }
 
-        [SerializeField] internal KeywordDeclarationOverride[] keywordDeclarationOverrides;
+        public ShaderBuildSettings() {}
+
+        [SerializeField] internal KeywordDeclarationOverride[] keywordDeclarationOverrides = Array.Empty<KeywordDeclarationOverride>();
         public KeywordDeclarationOverride[] KeywordDeclarationOverrides
         {
             set
@@ -249,10 +258,10 @@ namespace UnityEditor.Shaders
             return (KeywordDeclarationOverride[])keywordDeclarationOverrides.Clone();
         }
 
-        [SerializeField] internal string[] defines;
-        [SerializeField] internal uint numInternalDefines;
+        [SerializeField] internal string[] defines = Array.Empty<string>();
+        [SerializeField] private uint numInternalDefines = 0;
 
-        internal string[] GetDefinesCopy()
+        internal string[] GetAllDefinesCopy()
         {
             return (string[])defines.Clone();
         }
@@ -273,6 +282,140 @@ namespace UnityEditor.Shaders
                 defineList.AddRange(defines);
             defines = defineList.ToArray();
             numInternalDefines++;
+        }
+
+        internal static bool SplitAndValidateDefine(string define, out string identifier, out string value, out string msg)
+        {
+            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries); // null catches all whitespace variants
+            identifier = "";
+            value = "";
+
+            if (sections.Length != 2)
+            {
+                msg = "Invalid define '" + define + "'. Use identifier and numeric value pair separated with a whitespace.";
+                return false;
+            }
+
+            if (!IsValidIdentifier(sections[0]))
+            {
+                msg = "Invalid define: '" + define + "'. Please follow HLSL identifier rules.";
+                return false;
+            }
+
+            string val = sections[1]; 
+            char c = val[val.Length - 1];
+
+            // Check the valid postfix chars
+            if (c == 'h' || c == 'H' || c == 'f' || c == 'F' || c == 'u' || c == 'U' || c == 'l' ||  c == 'L')
+            {
+                // TODO @ SHADERS-1314: Uncomment below to accept UL suffix variations when the preprocessor 
+                // has been fixed to support them.
+                /*
+                char c2 = val[val.Length - 2];
+
+                // Check also valid UL combinations
+                if (((c == 'u' || c == 'U') && (c2 == 'l' || c2 == 'L')) ||
+                    ((c == 'l' || c == 'L') && (c2 == 'u' || c2 == 'U')))
+                {
+                    val = sections[1].Substring(0, val.Length - 2);
+                }
+                else*/
+                {
+                    val = sections[1].Substring(0, val.Length - 1);
+                }
+            }
+
+            // Try parsing as numeric value. Integer style first.
+            long longValue;
+            if (!long.TryParse(val, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out longValue))
+            {
+                // Next floating point
+                NumberStyles floatStyles = NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign;
+                decimal decimalValue;
+                if (!decimal.TryParse(val, floatStyles, CultureInfo.InvariantCulture, out decimalValue))
+                {
+                    // Last hex format. TryParse does not accept the prefix so we parse it manually.
+                    if(!(val.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && long.TryParse(val.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out longValue)))
+                    {
+                        // If the value was none of the above formats we return a validation error.
+                        msg = "Invalid define: '" + define + "'. Only numeric values are allowed.";
+                        return false;
+                    }
+                }
+            }
+
+            identifier = sections[0];
+            value = sections[1];
+            msg = "";
+            return true;
+        }
+
+        internal static bool ValidateDefinesInternal(string[] defines, uint numInternalDefines, out string msg)
+        {
+            for (int i = 0, n = defines.Length; i < n; ++i)
+            {
+                string identifier;
+                string value;
+
+                // Define syntax validity checks
+                if (!SplitAndValidateDefine(defines[i], out identifier, out value, out msg))
+                {
+                    return false;
+                }
+
+                // Duplication checks
+                string nameWithSpace = identifier + " ";
+                for (int j = 0; j < i; ++j)
+                {
+                    if (defines[j].TrimStart().StartsWith(nameWithSpace))
+                    {
+                        if (i >= numInternalDefines && j >= numInternalDefines)
+                            msg = "Duplicate definitions of '" + identifier + "'.";
+                        else
+                            msg = "Cannot redefine a built-in define '" + identifier + "'.";
+
+                        return false;
+                    }
+                }
+            }
+
+            msg = "";
+            return true;
+        }
+
+        public static bool ValidateDefines(string[] defines, out string msg)
+        {
+            return ValidateDefinesInternal(defines, 0, out msg);
+        }
+
+        public string[] Defines
+        {
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                string[] newDefines = new string[value.Length + numInternalDefines];
+                if (numInternalDefines > 0)
+                {
+                    Array.Copy(defines, newDefines, numInternalDefines);
+                }
+                Array.Copy(value, 0, newDefines, numInternalDefines, value.Length);
+
+                string msg;
+                if (ValidateDefinesInternal(newDefines, numInternalDefines, out msg))
+                    defines = newDefines;
+                else
+                    throw new ArgumentException(msg);
+                
+            }
+        }
+
+        public string[] GetDefinesCopy()
+        {
+            string[] defineArray = new string[defines.Length - numInternalDefines];
+            Array.Copy(defines, numInternalDefines, defineArray, 0, defineArray.Length);
+            return defineArray;
         }
     }
 }

@@ -75,7 +75,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 options = EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
                 if (buildingForEditor)
-                    options |= EditorScriptCompilationOptions.BuildingForEditor;
+                    options |= EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation;
             }
             else
             {

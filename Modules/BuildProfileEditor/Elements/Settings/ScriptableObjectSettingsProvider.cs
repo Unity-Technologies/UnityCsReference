@@ -97,14 +97,10 @@ namespace UnityEditor.Build.Profile.Elements
             if (instance is null || instance is not ScriptableObject so)
             {
                 Debug.LogWarning(profile.name + " does not have a component of type " + typeof(T).Name);
+                return;
             }
-
-            // Forcibly remove components so that required components can handled.
-            profile.ForceRemoveComponent<T>();
-            ScriptableObject.DestroyImmediate(instance);
-
-            instance = ScriptableObject.CreateInstance<T>();
-            profile.AddComponent(instance);
+            
+            Unsupported.SmartReset(so);
         }
     }
 }

@@ -94,12 +94,12 @@ namespace Unity.GraphToolkit
         /// <summary>
         /// The name of the type.
         /// </summary>
-        public string Name => m_Name ??= this.IsCustomTypeHandle() ? Identification : Resolve().Name;
+        public string Name => m_Name ??= Resolve() == typeof(Unknown) ? Identification : Resolve().Name;
 
         /// <summary>
         /// The friendly name of the type, ie the name people are used to see ( ex: "float" instead of "single" )
         /// </summary>
-        public string FriendlyName => m_FriendlyName ??= this.GetFriendlyName_Internal() ?? (this.IsCustomTypeHandle() ? Identification : TypeHelpers.GetFriendlyName(Resolve()));
+        public string FriendlyName => m_FriendlyName ??= this.GetFriendlyName_Internal() ?? (Resolve() == typeof(Unknown) ? Identification : TypeHelpers.GetFriendlyName(Resolve()));
 
         /// <summary>
         /// Determines whether this TypeHandle is equal to another TypeHandle.

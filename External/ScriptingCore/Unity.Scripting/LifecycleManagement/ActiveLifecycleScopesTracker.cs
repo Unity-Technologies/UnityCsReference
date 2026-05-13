@@ -384,7 +384,7 @@ namespace Unity.Scripting.LifecycleManagement
 
             if (IsInsideScopeWithActivationContext<TContext>(lifecycleScope))
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : could not enter scope '{lifecycleScope.Name}' as it is already active with the given activation context.");
+                DebugLifecycle.ReportError($"Lifecycle ERROR : could not enter scope '{lifecycleScope.Name}' as it is already active with activation context '{lifecycleScope.Context}'.");
                 return false;
             }
 
@@ -500,7 +500,7 @@ namespace Unity.Scripting.LifecycleManagement
         {
             if (!IsInsideScopeWithActivationContext(lifecycleScope))
             {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : could not exit scope '{lifecycleScope.Name}' as it is not active currently with the provided activation context.");
+                DebugLifecycle.ReportError($"Lifecycle ERROR : could not exit scope '{lifecycleScope.Name}' as it is not active currently with activation context '{activationContext}'.");
                 return false;
             }
 

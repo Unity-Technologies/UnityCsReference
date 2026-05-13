@@ -4,27 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    internal class ProjectSettingsThemeDropdown : DropdownField
+    [UxmlElement]
+    internal partial class ProjectSettingsThemeDropdown : DropdownField
     {
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : DropdownField.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                DropdownField.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), false);
-            }
-
-            public override object CreateInstance() => new ProjectSettingsThemeDropdown();
-        }
-
         public const string k_Separator = "|";
 
         internal override void AddMenuItems(AbstractGenericMenu menu)

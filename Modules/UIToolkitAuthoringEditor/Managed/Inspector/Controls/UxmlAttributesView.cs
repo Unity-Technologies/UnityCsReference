@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -10,16 +11,15 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// Represents a view to UXML attributes bound to a UXML attributes editing context.
 /// </summary>
-abstract class UxmlAttributesView : VisualElement
+[UxmlElement]
+partial class UxmlAttributesView : VisualElement
 {
-    [Serializable]
-    public new class UxmlSerializedData : VisualElement.UxmlSerializedData
-    {
-    }
-
     public const string UssClassName = "unity-uxml-attributes-view";
 
     UxmlAttributesEditingContext m_Context;
+    readonly UxmlSerializedDataPropertyView m_RootPropertyView;
+
+    public override VisualElement contentContainer => (VisualElement)m_RootPropertyView ?? this;
 
     /// <summary>
     /// The editing context used to edit UXML attributes of the selected VisualElement.
@@ -34,25 +34,24 @@ abstract class UxmlAttributesView : VisualElement
             if (m_Context != null)
             {
                 m_Context.contextChanged -= OnContextChanged;
-                if (m_Context.element != null)
-                {
-                    ReleaseViewContent(m_Context);
-                }
             }
 
             m_Context = value;
+            m_RootPropertyView.context = m_Context;
 
             if (m_Context != null)
             {
                 m_Context.contextChanged += OnContextChanged;
-
-                if (m_Context.element != null)
-                {
-                    CreateViewContent(m_Context);
-                }
             }
+            Rebind();
+            UpdateEnabledState();
         }
     }
+
+    /// <summary>
+    /// Event sent when the context changes.
+    /// </summary>
+    public event EventHandler<UxmlAttributesEditingContext.ContextChangedEventArgs> ContextChanged;
 
     /// <summary>
     /// Constructor for the UxmlAttributesView.
@@ -60,6 +59,10 @@ abstract class UxmlAttributesView : VisualElement
     public UxmlAttributesView()
     {
         AddToClassList(UssClassName);
+
+        m_RootPropertyView = new UxmlSerializedDataPropertyView();
+        hierarchy.Add(m_RootPropertyView);
+        Context = new UxmlAttributesEditingContext(new UxmlAttributesEditingController());
     }
 
     /// <summary>
@@ -71,27 +74,31 @@ abstract class UxmlAttributesView : VisualElement
         Context = otherView.Context;
     }
 
-    /// <summary>
-    /// Creates the content of the view.
-    /// </summary>
-    protected abstract void CreateViewContent(UxmlAttributesEditingContext context);
+    void UpdateEnabledState()
+    {
+        SetEnabled(Context is {isReadOnly: false});
+    }
 
-    /// <summary>
-    /// Destroys the content of the view.
-    /// </summary>
-    protected abstract void ReleaseViewContent(UxmlAttributesEditingContext context);
+    public void Rebind()
+    {
+        m_RootPropertyView.Unbind();
+
+        if (Context != null && Context.rootSerializedObject != null)
+        {
+            m_RootPropertyView.bindingPath = m_Context.serializedBasePath;
+            m_RootPropertyView.Bind(m_Context.rootSerializedObject);
+        }
+    }
 
     void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)
     {
-        if (childCount > 0)
-        {
-            ReleaseViewContent(Context);
-            Clear();
-        }
+        UpdateEnabledState();
+        NotifyContextChanged(args);
+        Rebind();
+    }
 
-        if (args.newElement != null)
-        {
-            CreateViewContent(Context);
-        }
+    void NotifyContextChanged(UxmlAttributesEditingContext.ContextChangedEventArgs args)
+    {
+        ContextChanged?.Invoke(this, args);
     }
 }

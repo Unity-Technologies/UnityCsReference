@@ -191,7 +191,8 @@ sealed class HierarchyViewDragHandler
                 editorHandler.OnStartDrag(setupData);
         }
 
-        var startDragArgs = new StartDragArgs(args.startDragArgs.title, args.startDragArgs.visualMode);
+        var title = GetDragTitle(draggedNodes, args.startDragArgs.title);
+        var startDragArgs = new StartDragArgs(title, args.startDragArgs.visualMode);
 
         startDragArgs.SetEntityIds(allEntityIds);
         startDragArgs.SetPaths(paths.ToArray());
@@ -199,6 +200,21 @@ sealed class HierarchyViewDragHandler
             startDragArgs.SetGenericData(kvp.Key, kvp.Value);
 
         return startDragArgs;
+    }
+
+    string GetDragTitle(ReadOnlySpan<HierarchyNode> draggedNodes, string fallbackTitle)
+    {
+        if (draggedNodes.Length > 1)
+            return "<Multiple>";
+
+        if (draggedNodes.Length == 1)
+        {
+            var node = draggedNodes[0];
+            if (node != HierarchyNode.Null && ViewModel.GetNodeTypeHandler(in node) is IHierarchyEditorNodeTypeHandler editorHandler)
+                return editorHandler.GetDragTitle(m_HierarchyView, in node) ?? fallbackTitle;
+        }
+
+        return fallbackTitle;
     }
 
     DragVisualMode DragAndDropUpdate(HandleDragAndDropArgs args)

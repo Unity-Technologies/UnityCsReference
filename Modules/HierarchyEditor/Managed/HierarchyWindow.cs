@@ -12,6 +12,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -158,11 +159,11 @@ namespace Unity.Hierarchy.Editor
             if (!HierarchyWindowManager.RegisterNodeTypeHandler<T>())
                 return;
 
-            // Instantiate the node type handlers for all hierarchy windows.
-            var windows = Resources.FindObjectsOfTypeAll<HierarchyWindow>();
-            foreach (var window in windows)
+            // Instantiate the node type handlers for all enabled hierarchy windows.
+            // s_HierarchyWindows avoids Resources.FindObjectsOfTypeAll: it's empty during domain reload
+            // (statics reset before OnEnable runs), skipping a costly scan with no useful result.
+            foreach (var window in s_HierarchyWindows)
             {
-                // This static method can be called before the hierarchy window is enabled, ensure the hierarchy is valid.
                 var hierarchy = window.m_Hierarchy;
                 if (hierarchy != null && hierarchy.IsCreated)
                     HierarchyWindowManager.InstantiateNodeTypeHandlers(hierarchy);
@@ -431,6 +432,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.UseQueryBuilder.valueChanged += OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged += OnToggleBackgroundStyleChange;
             HierarchyPreferences.UseNewHierarchy.valueChanged += OnUseNewHierarchyChanged;
+            HierarchyPreferences.GameObjectIconModeChanged += OnGameObjectIconModeChanged;
 
             // Now that the UI is initialized, set the hierarchy source.
             m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
@@ -499,6 +501,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.UseQueryBuilder.valueChanged -= OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged -= OnToggleBackgroundStyleChange;
             HierarchyPreferences.UseNewHierarchy.valueChanged -= OnUseNewHierarchyChanged;
+            HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
 
             m_StageNavigationView?.Dispose();
 
@@ -638,6 +641,8 @@ namespace Unity.Hierarchy.Editor
 
         void OnUseNewHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
 
+        void OnGameObjectIconModeChanged() => m_HierarchyView.ListView.RefreshItems();
+
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             // Note: OnBeforeSerialize is necessary for proper layout saves since OnDisable is not called.
@@ -681,8 +686,11 @@ namespace Unity.Hierarchy.Editor
 
             m_HierarchyView.Update();
 
-            // Convert EntityId to HierarchyNode
+            // Convert EntityId to HierarchyNode. If the entity is a component, fall back to its
+            // owning GameObject — matching the behaviour of the legacy SceneHierarchy.
             var node = m_Hierarchy.GetNode(entityId);
+            if (node == HierarchyNode.Null)
+                node = m_Hierarchy.GetNode(InternalEditorUtility.GetGameObjectEntityIdFromComponent(entityId));
             if (node == HierarchyNode.Null)
                 return;
 

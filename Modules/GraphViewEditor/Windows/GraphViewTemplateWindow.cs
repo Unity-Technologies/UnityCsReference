@@ -366,6 +366,8 @@ namespace UnityEditor.Experimental.GraphView
                 closeIndexingBannerButton.clicked += OnClosePackageIndexingBanner;
             }
 
+            SetupHiddenQueryBanner(hiddenSearchQuery);
+
             var actionButton = rootVisualElement.Q<Button>("CreateButton");
             if (m_CurrentMode == CreateMode.Insert)
             {
@@ -455,6 +457,20 @@ namespace UnityEditor.Experimental.GraphView
         private void HidePackageIndexingBanner()
         {
             rootVisualElement.Q<VisualElement>("PackageIndexingBanner").style.display = DisplayStyle.None;
+        }
+
+        private void SetupHiddenQueryBanner(string hiddenQuery)
+        {
+            var hiddenQueryBanner = rootVisualElement.Q<VisualElement>("HiddenQueryBanner");
+            if (string.IsNullOrEmpty(hiddenQuery))
+            {
+                hiddenQueryBanner.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                var hiddenQueryMessage = hiddenQueryBanner.Q<Label>("HiddenQueryMessage");
+                hiddenQueryMessage.text = string.Format(hiddenQueryMessage.text, hiddenQuery);
+            }
         }
 
         private void OnClosePackageIndexingBanner()
@@ -735,7 +751,8 @@ namespace UnityEditor.Experimental.GraphView
             searchViewState.flags = SearchViewFlags.None;
             searchViewState.queryBuilderEnabled = true;
             m_ViewModel = new TemplateSearchViewModel(searchViewState);
-            m_ViewModel.queryChanged += OnQueryChanged;
+            m_ViewModel.incomingItemsCallback += x => CollectTemplates(false);
+            m_ViewModel.refreshDoneCallback += () => CollectTemplates(true);
             context.searchView = m_ViewModel;
             m_SearchField = new SearchFieldElement("SearchField", m_ViewModel, SearchQueryBuilderViewFlags.Default);
 
@@ -752,7 +769,7 @@ namespace UnityEditor.Experimental.GraphView
             searchPanel.Add(dropDown);
 
             m_TemplateSorter = allSorters[lastUsedSorter];
-            SetQuery(initialSearchQuery);
+            m_SearchField.searchTextInput.value = initialSearchQuery;
         }
 
         private string FormatSortByLabel(string label) => $"Sort By {label}";
@@ -836,7 +853,7 @@ namespace UnityEditor.Experimental.GraphView
 
             var id = 0;
             var lastSelectedTemplateFound = false;
-            var fallBackTemplateAssetGuid = string.Empty;
+            var fallBackTemplateAssetGuid = (string)null;
             var indexToSelect = 2;
             foreach (var group in templates)
             {
@@ -845,9 +862,8 @@ namespace UnityEditor.Experimental.GraphView
                 group.Sort(this.m_TemplateSorter);
                 foreach (var child in group)
                 {
-                    // Check id == 2 because it corresponds to the first item in the list
-                    if (id == 2)
-                        fallBackTemplateAssetGuid = child.assetGuid;
+                    // Save the asset guid of the very first displayed template
+                    fallBackTemplateAssetGuid ??= child.assetGuid;
                     if (child.assetGuid == m_templateWindowPrefs.LastUsedTemplateGuid)
                     {
                         lastSelectedTemplateFound = true;
@@ -911,23 +927,6 @@ namespace UnityEditor.Experimental.GraphView
             {
                 m_ListOfTemplates.RefreshItems();
             }
-        }
-
-        public void OnQueryChanged(TemplateSearchViewModel viewModel, string searchText)
-        {
-            SetQuery(searchText);
-        }
-
-        public void SetQuery(string query)
-        {
-            m_SearchField.searchTextInput.SetValueWithoutNotify(query);
-            m_ViewModel.context.searchText = query;
-            Refresh();
-        }
-
-        public void Refresh()
-        {
-            m_ViewModel.RefreshItems(CollectTemplates, () => CollectTemplates(true));
         }
 
         private Texture2D GetSkinIcon(Texture2D templateIcon)

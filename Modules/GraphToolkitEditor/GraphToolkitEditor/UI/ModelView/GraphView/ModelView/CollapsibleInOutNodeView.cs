@@ -21,6 +21,11 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string titleIconContainerPartName = "title-icon-container";
 
         /// <summary>
+        /// The name of the top color line part.
+        /// </summary>
+        public static readonly string topColorLineContainerPartName = "top-color-line-container";
+
+        /// <summary>
         /// The USS class name added to collapsed nodes.
         /// </summary>
         public static readonly string collapsedUssClassName = ussClassName.WithUssModifier(GraphElementHelper.collapsedUssModifier);
@@ -58,7 +63,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public virtual float MaxInputLabelWidth => float.PositiveInfinity;
 
-        protected internal virtual int NodeTitleOptions => EditableTitlePart.Options.SetWidth | NodeTitlePart.Options.ShouldDisplayColor | NodeTitlePart.Options.HasIcon;
+        protected internal virtual int NodeTitleOptions => EditableTitlePart.Options.SetWidth | NodeTitlePart.Options.HasIcon;
 
         /// <inheritdoc />
         public override void ActivateRename()
@@ -73,6 +78,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void BuildPartList()
         {
+            PartList.AppendPart(NodeColorLinePart.Create(topColorLineContainerPartName, NodeModel, this, ussClassName));
             PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, Model, this, ussClassName, BasePortContainerPart.inputPortFilter));
 
             PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, EditableTitlePart.Options.UseEllipsis | EditableTitlePart.Options.SetWidth | NodeTitleOptions, k_DefaultMinWidth));

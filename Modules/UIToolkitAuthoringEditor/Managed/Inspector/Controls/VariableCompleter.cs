@@ -48,11 +48,13 @@ internal class VariableCompleter : FieldSearchCompleter<VariableInfo>
 
             item.Add(nameLabel);
             item.Add(editorOnlyLabel);
+
             return item;
         };
         BindItem = (e, i) =>
         {
             var res = Results[i];
+            e.Q<Label>(ItemEditorOnlyLabelName).style.display = res.IsEditorVar ? DisplayStyle.Flex : DisplayStyle.None;
             e.Q<Label>(ItemNameLabelName).text = res.Name;
         };
 

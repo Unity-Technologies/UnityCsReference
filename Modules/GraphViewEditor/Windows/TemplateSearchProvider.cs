@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+using UnityEngine;
 using UnityEditor.Search;
 
 namespace UnityEditor.Experimental.GraphView
@@ -43,7 +44,21 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             // We can used asset provider only when the indexing is complete
-            var canUseAssetProvider = !adbOnlyQuery && IsIndexingComplete();
+            var isIndexingComplete = true;
+            if (!adbOnlyQuery)
+            {
+                var sw = new System.Diagnostics.Stopwatch();
+                isIndexingComplete = IsIndexingComplete();
+                while (!isIndexingComplete && sw.Elapsed.TotalSeconds < 5)
+                {
+                    yield return null;
+                    isIndexingComplete = IsIndexingComplete();
+                }
+
+                sw.Stop();
+            }
+
+            var canUseAssetProvider = !adbOnlyQuery && isIndexingComplete;
             var defaultQuery = $"t:{m_TemplateHelper.assetType.Name}";
 
             if (!string.IsNullOrEmpty(searchQuery))
@@ -55,7 +70,7 @@ namespace UnityEditor.Experimental.GraphView
             if (!string.IsNullOrEmpty(m_HiddenSearchQuery))
             {
                 if (canUseAssetProvider)
-                    defaultQuery += $" ({m_HiddenSearchQuery})";
+                    defaultQuery = $"({m_HiddenSearchQuery}) and ({defaultQuery})";
                 else
                 {
                     // ADB doesn't support ( ) or boolean operator
@@ -201,14 +216,6 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private bool IsIndexingComplete()
-        {
-            foreach (var db in SearchDatabase.EnumerateAll())
-            {
-                if (!db.ready)
-                    return false;
-            }
-            return true;
-        }
+        private bool IsIndexingComplete() => SearchDatabase.GetDefaultSearchDatabase().ready;
     }
 }

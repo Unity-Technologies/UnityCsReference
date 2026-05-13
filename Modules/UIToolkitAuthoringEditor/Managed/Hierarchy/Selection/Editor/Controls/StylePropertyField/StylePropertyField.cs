@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Unity.Properties;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -12,57 +10,13 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    internal abstract class StylePropertyField<TStyleValue, TValueField, TValue> : BaseField<TStyleValue>, IValueField<TStyleValue>, IAffordanceField
+    [UxmlElement]
+    internal abstract partial class StylePropertyField<TStyleValue, TValueField, TValue> : BaseField<TStyleValue>, IValueField<TStyleValue>, IAffordanceField
         where TStyleValue : IStyleValue<TValue>
         where TValueField : BaseField<TValue>
     {
         public static readonly BindingId persistentValidationProperty = nameof(persistentValidation);
         public static readonly BindingId validationProperty = nameof(validation);
-
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new abstract class UxmlSerializedData : BaseField<TStyleValue>.UxmlSerializedData
-        {
-            #pragma warning disable 649
-            [SerializeReference, UxmlObjectReference] List<StylePropertyValidation.UxmlSerializedData> validation;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags validation_UxmlAttributeFlags;
-            [SerializeField] bool containsAffordance = true;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags containsAffordance_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<TStyleValue>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(validation), "validation"),
-                    new (nameof(containsAffordance), "contains-affordance"),
-                }, true);
-            }
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (StylePropertyField<TStyleValue, TValueField, TValue>)obj;
-
-                if (ShouldWriteAttributeValue(validation_UxmlAttributeFlags) && validation != null)
-                {
-                    e.validation.Clear();
-                    foreach (var validationData in validation)
-                    {
-                        var v = (StylePropertyValidation)validationData.CreateInstance();
-                        validationData.Deserialize(v);
-                        e.AddValidation(v);
-                    }
-                }
-
-                if (ShouldWriteAttributeValue(containsAffordance_UxmlAttributeFlags))
-                {
-                    e.containsAffordance = containsAffordance;
-                }
-            }
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -101,7 +55,7 @@ namespace Unity.UIToolkit.Editor
         /// <summary>
         /// The collection of syntax to validate the value of the field.
         /// </summary>
-        [CreateProperty]
+        [UxmlAttribute("validation"), UxmlObjectReference, CreateProperty]
         List<StylePropertyValidation> persistentValidation
         {
             get => m_PersistentValidation ??= new List<StylePropertyValidation>();
@@ -123,7 +77,7 @@ namespace Unity.UIToolkit.Editor
         /// <summary>
         /// Whether the style property field is preceded by an affordance.
         /// </summary>
-        [CreateProperty]
+        [UxmlAttribute, CreateProperty]
         internal bool containsAffordance
         {
             get => m_ContainAffordance;

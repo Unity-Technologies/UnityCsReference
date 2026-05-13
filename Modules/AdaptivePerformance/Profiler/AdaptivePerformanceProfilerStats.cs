@@ -133,6 +133,14 @@ namespace UnityEngine.AdaptivePerformance
         /// Profiler counter to report the performance mode.
         /// </summary>
         public static CustomProfilerMarker<int> PerformanceModeMarker = new CustomProfilerMarker<int>("Performance Mode", ProfilerMarkerDataUnit.Count);
+        /// <summary>
+        /// Profiler counter to report the CPU utilization (normalized 0-1).
+        /// </summary>
+        public static CustomProfilerMarker<float> CpuUtilizationMarker = new CustomProfilerMarker<float>("CPU Utilization", ProfilerMarkerDataUnit.Count);
+        /// <summary>
+        /// Profiler counter to report the GPU utilization (normalized 0-1).
+        /// </summary>
+        public static CustomProfilerMarker<float> GpuUtilizationMarker = new CustomProfilerMarker<float>("GPU Utilization", ProfilerMarkerDataUnit.Count);
 
         /// <summary>
         /// GUID for the Adaptive Performance Profile Module definition.
@@ -243,7 +251,7 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         public static void FlushScalerDataToProfilerStream()
         {
-            Profiler.EmitFrameMetaData<ScalerInfo>(kAdaptivePerformanceProfilerModuleGuid, kScalerDataTag, scalerInfos);
+            AdaptivePerformanceProfilerNative.EmitFrameMetaData<ScalerInfo>(kAdaptivePerformanceProfilerModuleGuid, kScalerDataTag, scalerInfos);
         }
     }
 }

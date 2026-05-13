@@ -2,23 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class VersionInfoIcon : VisualElement
+    [UxmlElement]
+    internal partial class VersionInfoIcon : VisualElement
     {
-        [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        private readonly IApplicationProxy m_Application;
+
+        public VersionInfoIcon() : this(ServicesContainer.instance.Resolve<IApplicationProxy>())
         {
-            public override object CreateInstance()
-            {
-                return new VersionInfoIcon(ServicesContainer.instance.Resolve<IApplicationProxy>());
-            }
         }
 
-        private readonly IApplicationProxy m_Application;
         public VersionInfoIcon(IApplicationProxy application)
         {
             m_Application = application;

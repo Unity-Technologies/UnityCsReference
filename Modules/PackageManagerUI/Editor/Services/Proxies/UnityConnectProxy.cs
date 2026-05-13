@@ -21,7 +21,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         string GetConfigurationURL(CloudConfigUrl config);
         void ShowLogin();
         void OpenAuthorizedURLInWebBrowser(string url);
-        OrganizationInfo[] ParseOrganizationInfos();
         public Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult);
     }
 
@@ -29,6 +28,53 @@ namespace UnityEditor.PackageManager.UI.Internal
     [ExcludeFromCodeCoverage]
     internal class UnityConnectProxy : BaseService<IUnityConnectProxy>, IUnityConnectProxy
     {
+        internal class OrganizationInfoParser
+        {
+            private static OrganizationInfo[] Parse()
+            {
+                var foreignKeys = UnityConnect.instance.userInfo.organizationForeignKeys.Split(',');
+                var parsedOrganizationInfos = new OrganizationInfo[foreignKeys.Length];
+                for (var i = 0; i < foreignKeys.Length; i++)
+                {
+                    var name = UnityConnect.instance.userInfo.organizationNames[i];
+                    var orgInfo = new OrganizationInfo
+                    {
+                        name = name,
+                        foreignKey = foreignKeys[i]
+                    };
+                    parsedOrganizationInfos[i] = orgInfo;
+                }
+
+                return parsedOrganizationInfos;
+            }
+
+            public async Task<OrganizationInfo[]> ParseAsync(Action<OrganizationInfo[]> onResult = null)
+            {
+                OrganizationInfo[] parsedOrganizationInfos;
+                try
+                {
+                    var organizations = await UnityConnectRequests.GetOrganizationsAsync();
+                    List<OrganizationInfo> sortedOrganizationList = new();
+                    foreach (var org in organizations)
+                    {
+                        sortedOrganizationList.Add(new OrganizationInfo
+                        {
+                            name = org.Name,
+                            foreignKey = org.GenesisId
+                        });
+                    }
+                    sortedOrganizationList.Sort((o, v) => o.name.CompareTo(v.name));
+                    parsedOrganizationInfos = sortedOrganizationList.ToArray();
+                }
+                catch (Exception)
+                {
+                    parsedOrganizationInfos = Parse();
+                }
+                onResult?.Invoke(parsedOrganizationInfos);
+                return parsedOrganizationInfos;
+            }
+        }
+
         [SerializeField]
         private bool m_IsUserInfoReady;
 
@@ -43,6 +89,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private string m_UserPrimaryOrg = string.Empty;
+
+        private readonly OrganizationInfoParser m_OrganizationInfoParser = new();
 
         public event Action<bool, bool> onUserLoginStateChange = delegate {};
         public bool isUserInfoReady => m_IsUserInfoReady;
@@ -84,49 +132,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UnityConnect.instance.OpenAuthorizedURLInWebBrowser(url);
         }
-                
-        public OrganizationInfo[] ParseOrganizationInfos()
-        {
-            var foreignKeys = UnityConnect.instance.userInfo.organizationForeignKeys.Split(',');
-            var parsedOrganizationInfos = new OrganizationInfo[foreignKeys.Length];
-            for (var i = 0; i < foreignKeys.Length; i++)
-            {
-                var name = UnityConnect.instance.userInfo.organizationNames[i];
-                var orgInfo = new OrganizationInfo
-                {
-                    name = name,
-                    foreignKey = foreignKeys[i]
-                };
-                parsedOrganizationInfos[i] = orgInfo;
-            }
 
-            return parsedOrganizationInfos;
-        }
-
-        public async Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult = null)
+        public Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult = null)
         {
-            OrganizationInfo[] parsedOrganizationInfos;
-            try
-            {
-                var organizations = await UnityConnectRequests.GetOrganizationsAsync();
-                List<OrganizationInfo> sortedOrganizationList = new();
-                foreach(var org in organizations)
-                {
-                    sortedOrganizationList.Add(new OrganizationInfo
-                    {
-                        name = org.Name,
-                        foreignKey = org.GenesisId
-                    });
-                }
-                sortedOrganizationList.Sort((o, v) => o.name.CompareTo(v.name));
-                parsedOrganizationInfos = sortedOrganizationList.ToArray();
-            }
-            catch (Exception)
-            {
-                parsedOrganizationInfos = ParseOrganizationInfos();
-            }
-            onResult?.Invoke(parsedOrganizationInfos);
-            return parsedOrganizationInfos;
+            return m_OrganizationInfoParser.ParseAsync(onResult);
         }
 
         private void OnUserStateChanged(UserInfo newInfo)

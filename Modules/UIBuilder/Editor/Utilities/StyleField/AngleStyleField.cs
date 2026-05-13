@@ -2,20 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
-    internal class AngleStyleField : DimensionStyleField
+    [UxmlElement]
+    internal partial class AngleStyleField : DimensionStyleField
     {
-        [Serializable]
-        public new class UxmlSerializedData : DimensionStyleField.UxmlSerializedData
-        {
-            public override object CreateInstance() => new AngleStyleField();
-        }
-
         public AngleStyleField() : this(string.Empty) { }
 
         public AngleStyleField(string label) : base(label)

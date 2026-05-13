@@ -245,6 +245,8 @@ namespace Unity.UI.Builder
             m_HighlightOverlayPainter = highlightOverlayPainter;
             m_Notifications = builderNotifications;
 
+            BindingsStyleHelpers.HandleRightClickMenu += HandleRightClickMenu;
+
             // Yes, we give ourselves a view data key. Don't do this at home!
             viewDataKey = "unity-ui-builder-inspector";
 
@@ -379,6 +381,19 @@ namespace Unity.UI.Builder
             m_RefreshAttributesAction = RefreshAttributesSection;
         }
 
+        static void HandleRightClickMenu(VisualElement ve, ref bool handled)
+        {
+            while (ve != null)
+            {
+                if (ve is BuilderUxmlAttributesView.UxmlAssetSerializedDataRoot)
+                {
+                    handled =  true;
+                    return;
+                }
+                ve = ve.parent;
+            }
+        }
+
         void BindFontUI()
         {
             m_BitmapWarningRow = this.Q<BuilderStyleRow>("bitmap-warning-row");
@@ -422,6 +437,7 @@ namespace Unity.UI.Builder
             m_HeaderSection.Dispose();
             m_PreviewWindow?.Close();
             batchedChangesController.Dispose();
+            BindingsStyleHelpers.HandleRightClickMenu -= HandleRightClickMenu;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)

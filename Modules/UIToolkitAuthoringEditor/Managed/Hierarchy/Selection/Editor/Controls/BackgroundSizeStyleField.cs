@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine.Bindings;
@@ -11,27 +9,16 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
+    [UxmlElement]
     [UsedImplicitly]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class BackgroundSizeStyleField : BaseField<BackgroundSize>
+    internal partial class BackgroundSizeStyleField : BaseField<BackgroundSize>
     {
-        [Serializable]
-        public new class UxmlSerializedData : BaseField<BackgroundSize>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                BaseField<BackgroundSize>.UxmlSerializedData.Register();
-            }
-
-            public override object CreateInstance() => new BackgroundSizeStyleField();
-        }
-
-        static readonly string s_FieldClassName = "unity-background-size-style-field";
+        static readonly string s_FieldClassName = "unity-background-Size-style-field";
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundSizeStyleField.uxml";
         public static readonly string s_BackgroundSizeWidthFieldName = "width";
         public static readonly string s_BackgroundSizeHeightFieldName = "height";
-        public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
+        public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
 
         LengthField m_BackgroundSizeXField;
         LengthField m_BackgroundSizeYField;

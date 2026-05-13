@@ -25,6 +25,7 @@ namespace Unity.UIToolkit.Editor
         public static void Register()
         {
             AlignStyleEnumField.UxmlSerializedData.Register();
+            AnimationPlayStateStyleEnumField.UxmlSerializedData.Register();
             BackgroundPositionStyleField.UxmlSerializedData.Register();
             BackgroundRepeatStyleField.UxmlSerializedData.Register();
             BackgroundSizeStyleField.UxmlSerializedData.Register();
@@ -57,6 +58,7 @@ namespace Unity.UIToolkit.Editor
             StyleCursorField.UxmlSerializedData.Register();
             StyleFloatField.UxmlSerializedData.Register();
             StyleFontDefinitionField.UxmlSerializedData.Register();
+            StyleUIAnimationClipField.UxmlSerializedData.Register();
             StyleFontField.UxmlSerializedData.Register();
             StyleIntField.UxmlSerializedData.Register();
             StyleLengthField.UxmlSerializedData.Register();

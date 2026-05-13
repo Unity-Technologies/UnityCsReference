@@ -24,6 +24,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public bool ShowInfoPanel;
         public bool ShowDetails;
         public bool ShowQuickFixes = true;
+        public bool ShowPerformanceCritical = false;
         public Func<AnalysisView, bool> ShowAdditionalInfoPanel;
         public GUIContent DependencyViewGuiContent;
         public Func<ReportItem, string> GetAssemblyName;

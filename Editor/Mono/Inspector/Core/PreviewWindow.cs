@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,7 +15,7 @@ namespace UnityEditor
 
         VisualElement m_previewElement;
 
-        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q(className: "unity-inspector-preview"));
+        VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement?.Q(className: "unity-inspector-preview"));
 
         internal bool IsFloatingWindow => parent is { window.rootView: not null, window.showMode: not ShowMode.MainWindow };
 
@@ -81,26 +82,38 @@ namespace UnityEditor
         {
             Editor.m_AllowMultiObjectAccess = true;
             var preview = previewElement;
+            if (preview == null)
+                return;
             preview.Clear();
+            ClearPreviewables();
             CreatePreviewables();
 
             m_PreviewRootElement = new PreviewRootElement();
-            IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
-            m_PreviewRootElement = editor?.CreatePreview(m_PreviewRootElement) as PreviewRootElement;
+            IPreviewable editor = m_ParentInspectorWindow != null
+                ? m_ParentInspectorWindow.CachedPreviewEditor
+                : GetEditorThatControlsPreview(tracker.activeEditors);
 
-            if (m_ParentInspectorWindow != null && m_PreviewRootElement != null)
+            if (editor != null)
             {
-                if (m_PreviewRootElement.childCount == 0)
-                {
-                    PrepareToolbar(true);
-                    UpdateLabel(m_PreviewRootElement);
-                    VisualElement previewPane = m_PreviewRootElement.GetPreviewPane();
+                // Match by reference first via tracker, fallback to type and target matching
+                var previewsInWindow = new List<IPreviewable>();
+                GetEditorsWithPreviews(tracker.activeEditors, previewsInWindow);
+                m_SelectedPreview = previewsInWindow.Find(p => ReferenceEquals(p, editor) || (p.GetType() == editor.GetType() && p.target == editor.target));
+            }
 
-                    // IMGUI fallback
-                    if (previewPane?.childCount == 0)
-                    {
-                        previewPane.Add(DrawPreview());
-                    }
+            // Populate the content-container for UITK editors, keeping m_PreviewRootElement valid so the unified toolbar path below is always taken
+            editor?.CreatePreview(m_PreviewRootElement);
+
+            if (m_ParentInspectorWindow != null && editor != null)
+            {
+                PrepareToolbar(true);
+                UpdateLabel(m_PreviewRootElement);
+
+                // IMGUI fallback
+                VisualElement previewPane = m_PreviewRootElement.GetPreviewPane();
+                if (previewPane?.childCount == 0)
+                {
+                    previewPane.Add(DrawPreview());
                 }
 
                 SetPreviewStyle(m_PreviewRootElement);

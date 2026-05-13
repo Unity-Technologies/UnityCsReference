@@ -168,6 +168,24 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         /// <value> CPU cluster information</value>
         public ClusterInfo ClusterInfo { get; set; }
+
+        /// <summary>
+        /// Current normalized CPU utilization in the range of [0.0, 1.0], or -1.0 when not available.
+        /// A value of 0.0 indicates the CPU is lightly loaded.
+        /// A value of 1.0 indicates the CPU is heavily loaded.
+        /// When a provider does not supply this value directly, it is -1.0.
+        /// </summary>
+        /// <value>CPU utilization in the range [0.0, 1.0] or -1.0</value>
+        public float CpuUtilization { get; set; }
+
+        /// <summary>
+        /// Current normalized GPU utilization in the range of [0.0, 1.0], or -1.0 when not available.
+        /// A value of 0.0 indicates the GPU is lightly loaded.
+        /// A value of 1.0 indicates the GPU is heavily loaded.
+        /// When a provider does not supply this value directly, it is -1.0.
+        /// </summary>
+        /// <value>GPU utilization in the range [0.0, 1.0] or -1.0</value>
+        public float GpuUtilization { get; set; }
     }
 
     /// <summary>

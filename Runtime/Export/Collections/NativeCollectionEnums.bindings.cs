@@ -48,6 +48,7 @@ namespace Unity.Collections
         MeshDataArray = 6,
         TransformAccessArray = 7,
         NavMeshQuery = 8,
-        NavQueryBuffer = 9
+        NavQueryBuffer = 9,
+        UIElementsStyleData = 10
     }
 }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
@@ -14,51 +13,13 @@ using UnityEngine.UIElements.StyleSheets.Syntax;
 
 namespace Unity.UI.Builder
 {
-    internal class DimensionStyleField : StyleField<float>
+    [UxmlElement]
+    internal partial class DimensionStyleField : StyleField<float>
     {
         static readonly string k_DraggerFieldUssClassName = "unity-style-field__dragger-field";
 
         List<string> m_Units = new List<string>() { StyleFieldConstants.UnitPixel };
         static readonly string s_DefaultUnit = StyleFieldConstants.UnitPixel;
-
-        [Serializable]
-        public new class UxmlSerializedData : StyleField<float>.UxmlSerializedData
-        {
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                StyleField<float>.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(min), "min"),
-                    new (nameof(max), "max"),
-                }, true);
-            }
-
-            #pragma warning disable 649
-            [SerializeField] float min;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags min_UxmlAttributeFlags;
-            [SerializeField] float max;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags max_UxmlAttributeFlags;
-            #pragma warning restore 649
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (DimensionStyleField)obj;
-                if (ShouldWriteAttributeValue(min_UxmlAttributeFlags))
-                {
-                    e.min = min;
-                }
-                if (ShouldWriteAttributeValue(max_UxmlAttributeFlags))
-                {
-                    e.max = max;
-                }
-            }
-
-            public override object CreateInstance() => new DimensionStyleField();
-        }
 
         static public string defaultUnit => s_DefaultUnit;
 

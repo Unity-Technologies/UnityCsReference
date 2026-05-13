@@ -3,63 +3,25 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ExtendedHelpBox : HelpBox
+    [UxmlElement]
+    internal partial class ExtendedHelpBox : HelpBox
     {
         private static readonly string k_WithLinksUssClass = "with-links";
 
-        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : HelpBox.UxmlSerializedData
+        protected readonly IApplicationProxy m_Application;
+
+        public ExtendedHelpBox() : this(ServicesContainer.instance.Resolve<IApplicationProxy>())
         {
-            [RegisterUxmlCache]
-            [Conditional("UNITY_EDITOR")]
-            public new static void Register()
-            {
-                HelpBox.UxmlSerializedData.Register();
-                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
-                {
-                    new (nameof(readMoreUrl), "read-more-url"),
-                    new (nameof(readMoreText), "read-more-text"),
-                    new (nameof(customIcon), "custom-icon"),
-                    new (nameof(analyticsId), "analytics-id")
-                }, true);
-            }
+        }
 
-#pragma warning disable 649
-            [SerializeField, MultilineTextField] string readMoreUrl;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags readMoreUrl_UxmlAttributeFlags;
-            [SerializeField, MultilineTextField] string readMoreText;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags readMoreText_UxmlAttributeFlags;
-            [SerializeField] Icon customIcon;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags customIcon_UxmlAttributeFlags;
-            [SerializeField] string analyticsId;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags analyticsId_UxmlAttributeFlags;
-#pragma warning restore 649
-
-            public override object CreateInstance()
-            {
-                return new ExtendedHelpBox(ServicesContainer.instance.Resolve<IApplicationProxy>());
-            }
-
-            public override void Deserialize(object obj)
-            {
-                base.Deserialize(obj);
-
-                var e = (ExtendedHelpBox)obj;
-                if (ShouldWriteAttributeValue(readMoreUrl_UxmlAttributeFlags))
-                    e.readMoreUrl = readMoreUrl;
-                if (ShouldWriteAttributeValue(readMoreText_UxmlAttributeFlags))
-                    e.readMoreText = readMoreText;
-                if (ShouldWriteAttributeValue(customIcon_UxmlAttributeFlags))
-                    e.customIcon = customIcon;
-                if (ShouldWriteAttributeValue(analyticsId_UxmlAttributeFlags))
-                    e.analyticsId = analyticsId;
-            }
+        public ExtendedHelpBox(IApplicationProxy application)
+        {
+            m_Application = application;
         }
 
         public new HelpBoxMessageType messageType
@@ -83,6 +45,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement m_CustomIconElement;
 
         private Icon m_CustomIcon = Icon.None;
+
+        [UxmlAttribute]
         public Icon customIcon
         {
             get => m_CustomIcon;
@@ -124,6 +88,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private string m_ReadMoreText = L10n.Tr("Learn More");
+
+        [UxmlAttribute, MultilineTextField]
         public string readMoreText
         {
             get => m_ReadMoreText;
@@ -139,6 +105,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private string m_ReadMoreUrl;
+
+        [UxmlAttribute, MultilineTextField]
         public string readMoreUrl
         {
             get => m_ReadMoreUrl;
@@ -153,6 +121,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private string m_AnalyticsId;
+
+        [UxmlAttribute]
         public string analyticsId
         {
             get => m_AnalyticsId;
@@ -169,12 +139,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Button m_CustomLinkButton;
         private VisualElement m_CustomLinkContainer;
-
-        protected readonly IApplicationProxy m_Application;
-        public ExtendedHelpBox(IApplicationProxy application)
-        {
-            m_Application = application;
-        }
 
         private void OnReadMoreUrlChanged()
         {

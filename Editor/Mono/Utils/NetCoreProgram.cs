@@ -16,13 +16,12 @@ namespace UnityEditor.Scripting
     {
         public static readonly NPath DotNetRuntimePath = EditorApplication.applicationScriptingPath + "/DotNetSdk";
         public static readonly NPath DotNetMuxerPath = DotNetRuntimePath.Combine(Application.platform == RuntimePlatform.WindowsEditor ? "dotnet.exe" : "dotnet");
-        public static string NetCoreRunPath => DotNetRuntimePath.Combine("dotnet").ToString();
 
         public NetCoreProgram(string executable, string arguments, Action<ProcessStartInfo> setupStartInfo)
         {
             _process.StartInfo = new ProcessStartInfo
             {
-                Arguments = $"\"{executable}\" {arguments}",
+                Arguments = $"exec \"{executable}\" {arguments}",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 FileName = DotNetMuxerPath.ToString(SlashMode.Native),

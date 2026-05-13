@@ -40,13 +40,17 @@ namespace UnityEditor.PackageManager
         [NativeName("publisherName")]
         private string m_PublisherName;
 
+        [SerializeField]
+        [NativeName("artifactType")]
+        private ArtifactType m_ArtifactType;
+
         public string format => m_Format;
         public string publishingChannel => m_PublishingChannel;
         public string[] entitlementKeys => m_EntitlementKeys;
         public string ownerOrgId => m_OwnerOrgId;
         public string ownerOrgName => m_OwnerOrgName;
-
         public string publisherName => m_PublisherName;
+        public ArtifactType artifactType => m_ArtifactType;
 
         internal Attestation() { }
     }
