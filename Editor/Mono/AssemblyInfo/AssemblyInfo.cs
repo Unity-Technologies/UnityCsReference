@@ -31,6 +31,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.PureCSharpTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.EditorDeeplink")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ExternalVersionControl")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
 [assembly: InternalsVisibleTo("Unity.PerformanceIntegrationTests")]

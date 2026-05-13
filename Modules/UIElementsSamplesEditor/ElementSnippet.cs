@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Samples
@@ -70,6 +71,7 @@ namespace UnityEditor.UIElements.Samples
 
             text = text.Substring(actualStartIndex, endIndex - actualStartIndex);
             text = text.Replace(leadingWhiteSpace, goodEndLine);
+            text = Regex.Replace(text, @"(^\s*#region[^\n]*\n?)|(\n\s*#endregion[^\n]*)", "", RegexOptions.Multiline);
 
             return text;
         }
@@ -93,6 +95,8 @@ namespace UnityEditor.UIElements.Samples
 
             if (path.EndsWith("_cs.asset")) // C#
                 text = ProcessCSharp(text);
+
+            text = text.Trim();
 
             var lineCount = text.Count(x => x == '\n') + 1;
             string lineNumbersText = "";

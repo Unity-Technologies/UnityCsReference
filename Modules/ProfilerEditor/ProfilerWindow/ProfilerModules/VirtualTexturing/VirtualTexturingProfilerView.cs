@@ -197,7 +197,8 @@ namespace UnityEditor
         {
             if (GUI.Button(infoBox, Styles.helpButtonContent, Styles.headerStyle))
             {
-                Application.OpenURL(Styles.linkToDocs);
+                var helpUrl = Help.FindHelpNamed("profiler-virtual-texturing-module");
+                Help.BrowseURL(helpUrl);
             }
         }
 
@@ -416,8 +417,7 @@ namespace UnityEditor
             public static GUIStyle oddStyle;
             public static readonly GUIStyle scrollStyle = "ProfilerScrollviewBackground";
 
-            public const string linkToDocs = "https://docs.unity3d.com/2020.2/Documentation/Manual/profiler-virtual-texturing-module.html";
-            public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help@2x", "Open Manual (in a web browser)");
+            public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)");
 
             static Styles()
             {

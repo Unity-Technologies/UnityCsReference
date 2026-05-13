@@ -13,10 +13,9 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            var treeView = container.Q<TreeView>();
-
-            #region sample
             /// <sample>
+            #region sample
+            var treeView = container.Q<TreeView>();
             // Create some list of data, here simply numbers in a few foldouts
             var items = new List<TreeViewItemData<string>>(10);
             for (var i = 0; i < 10; i++)
@@ -68,8 +67,8 @@ namespace UnityEditor.UIElements.Samples
                 }
                 Debug.Log(log.TrimEnd(',', ' '));
             };
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

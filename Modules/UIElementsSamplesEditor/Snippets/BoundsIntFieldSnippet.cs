@@ -12,8 +12,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<BoundsIntField>("the-uxml-field");
             uxmlField.value = new BoundsInt(new Vector3Int(1, 2, 3), new Vector3Int(2, 4, 6));
@@ -30,8 +30,8 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }

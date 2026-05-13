@@ -338,6 +338,7 @@ namespace UnityEditor
                 AudioMixerController or AudioMixerGroupController => "class-AudioMixer",
                 AudioImporter => "class-AudioClip", // UUM-96832: We don't have an entry in the manual for the audio importer.
                 VideoClipImporter => "class-VideoClip", // We don't have an entry in the manual for the video clip importer.
+                StreamingController => "TextureStreaming-configure", // Since https://github.cds.internal.unity3d.com/unity/unity/pull/49157 there's no longer the default 'class-StreamingController.md' manual entry
                 EditorSettings => "class-EditorManager",
                 SceneAsset => "CreatingScenes",
                 LightingDataAsset => "LightmapSnapshot",

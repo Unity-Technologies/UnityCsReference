@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
 {
@@ -150,18 +149,17 @@ namespace UnityEngine.Accessibility
 
         void CreateNativeNodeWithData(ref AccessibilityNodeData nodeData)
         {
-            // Ignore unsupported platforms because AccessibilityNodeManager.CreateNativeNodeWithData returns false.
-            if (AccessibilityManager.isSupportedPlatform)
+            // Ignore unsupported platforms, where AccessibilityNodeManager.CreateNativeNodeWithData returns false.
+            if (!AccessibilityManager.isSupportedPlatform)
             {
-                while (AccessibilityNodeManager.CreateNativeNodeWithData(nodeData) == false)
-                {
-                    Debug.LogWarning($"AccessibilityNode.CreateNativeNodeWithData: id '{nodeData.id}' is already used");
-
-                    nodeData.id++;
-                }
+                return;
             }
 
-            id = nodeData.id;
+            if (!AccessibilityNodeManager.CreateNativeNodeWithData(nodeData))
+            {
+                throw new InvalidOperationException($"{nameof(CreateNativeNodeWithData)}: Could not create native " +
+                    $"accessibility node with ID {nodeData.id}. Please check the Player log for more details.");
+            }
         }
 
         internal void AllocateNative()

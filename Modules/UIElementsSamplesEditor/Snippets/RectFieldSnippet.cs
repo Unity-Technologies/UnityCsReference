@@ -12,8 +12,8 @@ namespace UnityEditor.UIElements.Samples
     {
         internal override void Apply(VisualElement container)
         {
-            #region sample
             /// <sample>
+            #region sample
             // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<RectField>("the-uxml-field");
             uxmlField.value = new Rect(0.0f, 5.5f, 10.1f, 20.3f);
@@ -30,8 +30,8 @@ namespace UnityEditor.UIElements.Samples
             {
                 csharpField.value = evt.newValue;
             });
-            /// </sample>
             #endregion
+            /// </sample>
         }
     }
 }
