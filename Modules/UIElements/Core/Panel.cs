@@ -365,7 +365,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="VisualElement.visible"/>
         /// <seealso cref="IStyle.display"/>
         /// <seealso cref="VisualElement.pickingMode"/>
-        /// <param name="point">World coordinates.</param>
+        /// <param name="point">Coordinates in panel space.</param>
         /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement Pick(Vector2 point);
 
@@ -382,7 +382,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="VisualElement.visible"/>
         /// <seealso cref="IStyle.display"/>
         /// <seealso cref="VisualElement.pickingMode"/>
-        /// <param name="point">World coordinates.</param>
+        /// <param name="point">Coordinates in panel space.</param>
         /// <param name="picked">If not null, the list is cleared and filled with all VisualElements that overlap the specified point.</param>
         /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);

@@ -276,18 +276,18 @@ namespace UnityEngine.UIElements
     public static partial class VisualElementExtensions
     {
         /// <summary>
-        /// Transforms a point from the world space to the local space of the element.
+        /// Transforms a point from panel coordinates into the local space of the element.
         /// </summary>
         /// <remarks>
-        /// This element needs to be attached to a panel and must have a valid <see cref="VisualElement.layout"/>.
+        /// Attach the element to a panel. The element must have a valid <see cref="VisualElement.layout"/>.
         /// Otherwise, this method might return invalid results.
         /// </remarks>
         /// <remarks>
-        /// If the element's transform contains 3-D information, use
-        /// ele.worldTransform.inverse.MultiplyPoint3x4(p) to obtain a proper 3-D transformation.
+        /// If the element's transform contains 3D information, use
+        /// <c>ele.worldTransform.inverse.MultiplyPoint3x4(p)</c> to get a proper 3D transformation.
         /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
-        /// <param name="p">The point to transform, in world space.</param>
+        /// <param name="p">The point to transform, in panel coordinates.</param>
         /// <returns>A point in the local space of the element.</returns>
         public static Vector2 WorldToLocal(this VisualElement ele, Vector2 p)
         {
@@ -331,19 +331,17 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Transforms a point from the local space of the element to the world space.
+        /// Transforms a point from the local space of the element to panel coordinates.
         /// </summary>
         /// <remarks>
-        /// This element needs to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
-        /// Otherwise, this method may return invalid results.
-        /// </remarks>
-        /// <remarks>
-        /// If the element's transform contains 3-D information, use
-        /// ele.worldTransform.MultiplyPoint3x4(p) to obtain a proper 3-D transformation.
+        /// <para>Attach the element to a panel. The element must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.</para>
+        /// <para>If the element's transform contains 3D information, use
+        /// <c>ele.worldTransform.MultiplyPoint3x4(p)</c> to get a proper 3D transformation.</para>
         /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
         /// <param name="p">The point to transform, in local space.</param>
-        /// <returns>A point in the world space.</returns>
+        /// <returns>A point in panel coordinates.</returns>
         public static Vector2 LocalToWorld(this VisualElement ele, Vector2 p)
         {
             if (ele == null)
@@ -355,17 +353,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Transforms a point from the local space of the element to the world space.
-        /// The result is stored in a Vector3, such that the original point can be reobtained
-        /// by applying WorldToLocal3D with the same element on the returned point.
+        /// Transforms a point from the local space of the element to panel coordinates.
+        /// The result is a Vector3. To get the original point back, apply <c>WorldToLocal3D</c> with the same element to the returned point.
         /// </summary>
         /// <remarks>
-        /// This element needs to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
-        /// Otherwise, this method may return invalid results.
+        /// Attach the element to a panel. The element must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.
         /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
         /// <param name="p">The point to transform, in local space.</param>
-        /// <returns>A point in the world space.</returns>
+        /// <returns>A point in panel coordinates.</returns>
         internal static Vector3 LocalToWorld3D(this VisualElement ele, Vector3 p)
         {
             if (ele == null)
@@ -377,14 +374,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Transforms a rectangle from the world space to the local space of the element.
+        /// Transforms a rectangle from panel coordinates into the local space of the element.
         /// </summary>
         /// <remarks>
-        /// This element needs to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
-        /// Otherwise, this method may return invalid results.
+        /// Attach the element to a panel. The element must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.
         /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
-        /// <param name="r">The rectangle to transform, in world space.</param>
+        /// <param name="r">The rectangle to transform, in panel coordinates.</param>
         /// <returns>A rectangle in the local space of the element.</returns>
         public static Rect WorldToLocal(this VisualElement ele, Rect r)
         {
@@ -397,15 +394,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Transforms a rectangle from the local space of the element to the world space.
+        /// Transforms a rectangle from the local space of the element to panel coordinates.
         /// </summary>
         /// <remarks>
-        /// This element needs to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
-        /// Otherwise, this method may return invalid results.
+        /// Attach the element to a panel. The element must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.
         /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
         /// <param name="r">The rectangle to transform, in local space.</param>
-        /// <returns>A rectangle in the world space.</returns>
+        /// <returns>A rectangle in panel coordinates.</returns>
         public static Rect LocalToWorld(this VisualElement ele, Rect r)
         {
             if (ele == null)
@@ -432,8 +429,8 @@ namespace UnityEngine.UIElements
         /// Transforms a point from the local space of an element to the local space of another element.
         /// </summary>
         /// <remarks>
-        /// The elements both need to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
-        /// Otherwise, this method may return invalid results.
+        /// Attach both elements to a panel. Each element must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.
         /// </remarks>
         /// <param name="src">The element to use as a reference as the source local space.</param>
         /// <param name="dest">The element to use as a reference as the destination local space.</param>
@@ -472,8 +469,8 @@ namespace UnityEngine.UIElements
         /// Transforms a rectangle from the local space of an element to the local space of another element.
         /// </summary>
         /// <remarks>
-        /// The elements both need to be attached to a panel and have received a valid <see cref="VisualElement.layout"/>.
-        /// Otherwise, this method may return invalid results.
+        /// Attach both elements to a panel. Each element must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.
         /// </remarks>
         /// <param name="src">The element to use as a reference as the source local space.</param>
         /// <param name="dest">The element to use as a reference as the destination local space.</param>

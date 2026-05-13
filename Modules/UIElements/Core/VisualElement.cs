@@ -1228,7 +1228,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns a <see cref="Rect"/> representing the Axis-aligned Bounding Box (AABB) after applying the world transform.
+        /// Returns the axis-aligned bounding box of the element in panel coordinates after the cumulative transform from the <see cref="IPanel"/> root.
         /// </summary>
         [CreateProperty(ReadOnly = true)]
         public Rect worldBound
@@ -1322,12 +1322,13 @@ namespace UnityEngine.UIElements
         private Matrix4x4 m_WorldTransformInverseCache = Matrix4x4.identity;
 
         /// <summary>
-        /// Returns a matrix that cumulates the following operations (in order):
-        /// -Local Scaling
-        /// -Local Rotation
-        /// -Local Translation
-        /// -Layout Translation
-        /// -Parent <c>worldTransform</c> (recursive definition - consider identity when there is no parent)
+        /// Returns a matrix that cumulates the following transformations (in order):
+        /// 
+        ///- Local scaling
+        ///- Local rotation
+        ///- Local translation
+        ///- Layout translation
+        ///- Parent <c>worldTransform</c> (recursive definition - consider the identity matrix when there's no parent)
         /// </summary>
         /// <remarks>
         /// Multiplying the <c>layout</c> rect by this matrix is incorrect because it already contains the translation.

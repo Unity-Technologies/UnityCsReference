@@ -735,6 +735,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void InsertVectorImage(RenderData renderData, VectorImage vi)
         {
+            Debug.Assert(vi != null, "InsertVectorImage requires a non-null VectorImage; ResetGraphicEntries uses the reference's identity to discriminate entry types.");
             BasicNode<GraphicEntry> node = m_GraphicEntryPool.Get();
             node.data.vectorImage = vi;
             node.InsertFirst(ref renderData.graphicEntries);
@@ -751,7 +752,9 @@ namespace UnityEngine.UIElements.UIR
             while (current != null)
             {
                 var next = current.next;
-                if (current.data.vectorImage != null)
+                // UUM-140738: ReferenceEquals so a destroyed VectorImage (fake-null) is
+                // still dispatched to the vector-image branch.
+                if (!ReferenceEquals(current.data.vectorImage, null))
                 {
                     vectorImageManager.RemoveUser(current.data.vectorImage);
                     current.data.vectorImage = null;
