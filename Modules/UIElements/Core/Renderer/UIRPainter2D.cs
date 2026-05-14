@@ -596,6 +596,7 @@ namespace UnityEngine.UIElements
                     if (hasStrokeFillGradient)
                     {
                         VectorImage vi = ScriptableObject.CreateInstance<VectorImage>();
+                        vi.hideFlags = HideFlags.HideAndDontSave;
                         m_VectorImageToRelease.Add(vi);
                         CreateTextureAndGradientSettings(ref m_CachedStrokeFillGradient, out Texture2D texture, out GradientSettings gradientSettings);
                         vi.atlas = texture;
@@ -692,7 +693,7 @@ namespace UnityEngine.UIElements
         private static void CreateTextureAndGradientSettings(ref FillGradient fillGradient, out Texture2D texture, out GradientSettings gradientSettings)
         {
             const int width = 64;
-            texture = new Texture2D(width, 1, TextureFormat.RGBA32, false);
+            texture = new Texture2D(width, 1, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
             SetGradientTextureData(texture, width, 0, 0, fillGradient.gradient);
             texture.Apply(false, true);
             SetupGradient(ref fillGradient, width, 0, 0, out gradientSettings);
@@ -744,6 +745,7 @@ namespace UnityEngine.UIElements
                     if (hasFillGradient)
                     {
                         VectorImage vi = ScriptableObject.CreateInstance<VectorImage>();
+                        vi.hideFlags = HideFlags.HideAndDontSave;
                         m_VectorImageToRelease.Add(vi);
                         CreateTextureAndGradientSettings(ref m_CachedFillGradient, out Texture2D texture, out GradientSettings gradientSettings);
                         vi.atlas = texture;

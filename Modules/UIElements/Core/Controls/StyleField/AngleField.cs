@@ -301,11 +301,11 @@ namespace UnityEngine.UIElements
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
                 if (parentField.isDelayed)
                 {
-                    text = ValueToString(Mathf.ClampToInt((long)v));
+                    text = ValueToString(new Angle(Mathf.ClampToInt((long)v), startValue.unit));
                 }
                 else
                 {
-                    parentField.value = Mathf.ClampToInt((long)v);
+                    parentField.value = new Angle(Mathf.ClampToInt((long)v), startValue.unit);
                 }
             }
 

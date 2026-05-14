@@ -216,6 +216,8 @@ namespace Unity.UI.Builder
 
         public virtual void SelectionChanged()
         {
+            m_ElementHierarchyView.ClearHighlightOverlay();
+
 #pragma warning disable UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             if (!m_Selection.selection.Any())
 #pragma warning restore UA2002
@@ -301,6 +303,12 @@ namespace Unity.UI.Builder
                 {
                     var selectorStr = StyleSheetToUss.ToUssSelector(selector);
                     nameMatch = selectorStr.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                }
+
+                // If item is the document, stylesheets or selectors, no type/class match is needed
+                if (m_ElementHierarchyView.unfilteredTreeRootItems.Contains(item) || selector != null)
+                {
+                    classMatch = typeMatch = false;
                 }
 
                 if (nameMatch || classMatch || typeMatch)

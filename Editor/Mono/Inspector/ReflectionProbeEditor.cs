@@ -92,8 +92,8 @@ namespace UnityEditor
 
             public static GUIContent bakeButtonText = EditorGUIUtility.TrTextContent("Bake");
             public static GUIContent bakeButtonTextDisabled = EditorGUIUtility.TrTextContent("Bake", "You need to save the scene before bake");
-            public static string[] bakeCustomOptionText = { "Bake as new Cubemap..." };
-            public static string[] bakeButtonsText = { "Bake All Reflection Probes" };
+            public static readonly string[] bakeCustomOptionText = { "Bake as new Cubemap..." };
+            public static readonly string[] bakeButtonsText = { "Bake All Reflection Probes" };
 
             public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
             public static GUIContent bakeCustomButtonTextDisabled = EditorGUIUtility.TrTextContent("Bake", "You need to save the scene before bake");
@@ -147,7 +147,7 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.ReflectionProbeOrigin
             };
 
-            public static string baseSceneEditingToolText = "<color=grey>Probe Scene Editing Mode:</color> ";
+            public static readonly string baseSceneEditingToolText = "Probe Scene Editing Mode: ";
             public static GUIContent[] toolNames =
             {
                 new GUIContent(baseSceneEditingToolText + "Box Projection Bounds", ""),

@@ -19,12 +19,14 @@ namespace UnityEngine.UIElements.UIR
         public int useCount;
         public GradientRemap firstGradientRemap;
         public Alloc gradientSettingsAlloc;
+        public Texture2D atlas; // Cached in case VectorImage is destroyed (required for clean-up)
 
         public void Reset()
         {
             useCount = 0;
             firstGradientRemap = null;
             gradientSettingsAlloc = new Alloc();
+            atlas = null;
         }
     }
 
@@ -149,8 +151,7 @@ namespace UnityEngine.UIElements.UIR
                 return null;
             }
 
-            if (vi == null)
-                return null;
+            Debug.Assert(vi != null, "AddUser called with a null or destroyed VectorImage.");
 
             VectorImageRenderInfo renderInfo;
             if (m_Registered.TryGetValue(vi, out renderInfo))
@@ -169,8 +170,7 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            if (vi == null)
-                return;
+            Debug.Assert(!ReferenceEquals(vi, null), "RemoveUser called with a null VectorImage."); // Could be destroyed though
 
             VectorImageRenderInfo renderInfo;
             if (m_Registered.TryGetValue(vi, out renderInfo))
@@ -187,6 +187,7 @@ namespace UnityEngine.UIElements.UIR
 
             VectorImageRenderInfo renderInfo = m_RenderInfoPool.Get();
             renderInfo.useCount = 1;
+            renderInfo.atlas = vi.atlas;
             m_Registered[vi] = renderInfo;
 
             if (vi.settings?.Length > 0)
@@ -279,7 +280,7 @@ namespace UnityEngine.UIElements.UIR
             if (renderInfo.gradientSettingsAlloc.size > 0)
             {
                 m_GradientSettingsAtlas.Remove(renderInfo.gradientSettingsAlloc);
-                m_Atlas.ReturnAtlas(null, vi.atlas, remap.atlas);
+                m_Atlas.ReturnAtlas(null, renderInfo.atlas, remap.atlas);
             }
 
             while (remap != null)

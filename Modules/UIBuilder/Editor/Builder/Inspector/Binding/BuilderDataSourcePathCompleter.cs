@@ -108,7 +108,6 @@ namespace Unity.UI.Builder
         protected override VisualElement MakeDetailsContent()
         {
             m_DetailsView = new BuilderPropertyPathInfoView();
-            m_DetailsView.style.display = DisplayStyle.None;
             return m_DetailsView;
         }
 
@@ -129,25 +128,21 @@ namespace Unity.UI.Builder
 
         void ShowPropertyDetails(PropertyPathInfo propertyInfo)
         {
-            if (string.IsNullOrEmpty(propertyInfo.propertyPath.ToString()))
-            {
-                m_DetailsView.style.display = DisplayStyle.None;
-            }
-            else
-            {
-                IProperty property = null;
-                var source = bindingDataSource;
+            if (m_DetailsView == null)
+                return;
 
-                if (bindingDataSource != null)
-                {
-                    if (bindingDataSource is AnyObjectField.NonUnityObjectValue nonUnityObjVal)
-                        source = nonUnityObjVal.data;
+            IProperty property = null;
+            var source = bindingDataSource;
+
+            if (source != null)
+            {
+                if (source is AnyObjectField.NonUnityObjectValue nonUnityObjVal)
+                    source = nonUnityObjVal.data;
+                if (!propertyInfo.propertyPath.IsEmpty)
                     PropertyContainer.TryGetProperty(source, propertyInfo.propertyPath, out property);
-                }
-
-                m_DetailsView.SetInfo(source, propertyInfo, property);
-                m_DetailsView.style.display = DisplayStyle.Flex;
             }
+
+            m_DetailsView.SetInfo(source, propertyInfo, property);
         }
 
         protected override FieldSearchCompleterPopup CreatePopup()

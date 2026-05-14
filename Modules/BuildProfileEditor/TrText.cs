@@ -96,9 +96,6 @@ namespace UnityEditor.Build.Profile
         public static readonly string noModuleFoundWarning = L10n.Tr("No module found for the selected profile.");
         public static readonly string notSupportedWarning = L10n.Tr("Target platform does not currently support build profiles.");
         public static readonly string active = L10n.Tr("Active");
-        public static readonly string installedPlatforms = L10n.Tr("Installed Platforms: {0}");
-        public static readonly string availablePlatforms = L10n.Tr("Available Platforms: {0}");
-        public static readonly string noPlatformsFound =  L10n.Tr("None");
         public static readonly string description = L10n.Tr("Description");
         public static readonly string keyFeaturesTitle = L10n.Tr("Key Features");
         public static readonly string resourcesTitle = L10n.Tr("Resources & Links");
@@ -112,6 +109,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string buildProfileNameLabel = L10n.Tr("Name");
         public static readonly string buildProfileConfigurationLabel = L10n.Tr("Build Profile Configurations");
         public static readonly string browseSamplesCheckboxLabel = L10n.Tr("Browse related samples in package manager.");
+        public static readonly string signInRequiredForPackages = L10n.Tr("{0}Sign in to view and install platform packages.");
+        public static readonly string requiredPackagesInstalled = L10n.Tr("Required packages are installed. ");
+        public static readonly string requiredPackagesNotInstalled = L10n.Tr("Required packages are not installed. ");
+        public static readonly string signInButton = L10n.Tr("Sign in");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");

@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
         /// current mouse event.
         /// </summary>
         /// <remarks>
-        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel world coordinates.
+        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel coordinates.
         /// </remarks>
         Vector2 mouseDelta { get; }
         /// <summary>
@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements
         /// current mouse event.
         /// </summary>
         /// <remarks>
-        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel world coordinates.
+        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel coordinates.
         /// </remarks>
         public Vector2 mouseDelta { get; protected set; }
         /// <summary>
@@ -488,7 +488,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderMouse = true;
         }
 
@@ -554,7 +554,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderMouse = true;
         }
 
@@ -772,7 +772,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                          EventPropagation.SkipDisabledElements;
+                          EventPropagation.IgnoreDisabledElements;
             delta = Vector3.zero;
             recomputeTopElementUnderMouse = true;
         }

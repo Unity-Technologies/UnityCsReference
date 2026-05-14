@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
     internal abstract class EventCallbackFunctorBase : IDisposable
     {
         public long eventTypeId;
-        public InvokePolicy invokePolicy;
+        public CallbackOptions callbackOptions;
 
         public abstract void Invoke(EventBase evt);
         public abstract void UnregisterCallback(CallbackEventHandler target, TrickleDown useTrickleDown);
@@ -44,11 +44,11 @@ namespace UnityEngine.UIElements
         EventCallback<TEventType> m_Callback;
 
         public static EventCallbackFunctor<TEventType> GetPooled(long eventTypeId, EventCallback<TEventType> callback,
-            InvokePolicy invokePolicy = InvokePolicy.Default)
+            CallbackOptions callbackOptions = CallbackOptions.Default)
         {
             var self = GenericPool<EventCallbackFunctor<TEventType>>.Get();
             self.eventTypeId = eventTypeId;
-            self.invokePolicy = invokePolicy;
+            self.callbackOptions = callbackOptions;
             self.m_Callback = callback;
             return self;
         }
@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements
         public override void Dispose()
         {
             eventTypeId = default;
-            invokePolicy = default;
+            callbackOptions = default;
             m_Callback = default;
             GenericPool<EventCallbackFunctor<TEventType>>.Release(this);
         }
@@ -89,11 +89,11 @@ namespace UnityEngine.UIElements
 
         public static EventCallbackFunctor<TEventType, TCallbackArgs> GetPooled(long eventTypeId,
             EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs,
-            InvokePolicy invokePolicy = InvokePolicy.Default)
+            CallbackOptions callbackOptions = CallbackOptions.Default)
         {
             var self = GenericPool<EventCallbackFunctor<TEventType, TCallbackArgs>>.Get();
             self.eventTypeId = eventTypeId;
-            self.invokePolicy = invokePolicy;
+            self.callbackOptions = callbackOptions;
             self.userArgs = userArgs;
             self.m_Callback = callback;
             return self;
@@ -102,7 +102,7 @@ namespace UnityEngine.UIElements
         public override void Dispose()
         {
             eventTypeId = default;
-            invokePolicy = default;
+            callbackOptions = default;
             userArgs = default;
             m_Callback = default;
             GenericPool<EventCallbackFunctor<TEventType, TCallbackArgs>>.Release(this);

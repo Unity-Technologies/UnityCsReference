@@ -438,14 +438,14 @@ namespace UnityEditor.UIElements
         internal static void RegisterRightClickMenu(Label field, SerializedProperty property)
         {
             field.userData = property.Copy();
-            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
+            field.RegisterCallback(s_RightClickMenuCallback, CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
             field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
         }
 
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
             field.userData = property.Copy();
-            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
+            field.RegisterCallback(s_RightClickMenuCallback, CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
             field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
         }
 
@@ -455,7 +455,7 @@ namespace UnityEditor.UIElements
             if (toggle != null)
             {
                 toggle.userData = property.Copy();
-                toggle.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
+                toggle.RegisterCallback(s_RightClickMenuCallback, CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
                 toggle.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
             }
         }

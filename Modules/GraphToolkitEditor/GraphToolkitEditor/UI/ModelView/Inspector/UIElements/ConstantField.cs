@@ -119,7 +119,8 @@ namespace Unity.GraphToolkit.Editor
             var registerCallbackMethod = typeof(CallbackEventHandler)
 #pragma warning restore UA2001
                 .GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance)
-                .SingleOrDefault(m => m.Name == nameof(RegisterCallback) && m.GetGenericArguments().Length == 2);
+                .SingleOrDefault(m => m.Name == nameof(RegisterCallback) && m.GetGenericArguments().Length == 2 &&
+                                      m.GetParameters().Length == 3 && m.GetParameters()[2].ParameterType == typeof(TrickleDown));
 
             if (registerCallbackMethod == null)
                 return null;

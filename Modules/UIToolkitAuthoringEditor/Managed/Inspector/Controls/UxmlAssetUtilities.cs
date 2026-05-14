@@ -416,7 +416,7 @@ internal static class UxmlAssetUtilities
                     var pathToTemplateAsset = GetPathToTemplateAsset(templateAsset, visualElement, getVisualElementAsset);
                     templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
 
-                    var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
+                    var elementsToChange = templateContainerParent.Query(currentVisualElementName).Where(v => v.GetType() == visualElement.GetType());
                     elementsToChange.ForEach(x =>
                     {
                         var templateVea = x.visualElementAsset;

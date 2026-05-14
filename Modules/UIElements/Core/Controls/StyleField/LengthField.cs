@@ -499,17 +499,20 @@ namespace UnityEngine.UIElements
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Length startValue)
             {
+                if (startValue == Length.Auto())
+                    startValue.unit = LengthUnit.Pixel;
+
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);
                 float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
                 var v = StringToValue(text).value;
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
                 if (parentField.isDelayed)
                 {
-                    text = ValueToString(Mathf.ClampToInt((long)v));
+                    text = ValueToString(new Length(Mathf.ClampToInt((long)v), startValue.unit));
                 }
                 else
                 {
-                    parentField.value = Mathf.ClampToInt((long)v);
+                    parentField.value = new Length(Mathf.ClampToInt((long)v), startValue.unit);
                 }
             }
 

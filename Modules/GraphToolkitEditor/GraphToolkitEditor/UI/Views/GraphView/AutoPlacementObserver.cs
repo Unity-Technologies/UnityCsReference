@@ -43,11 +43,13 @@ namespace Unity.GraphToolkit.Editor
 
             AutoPlacementStateComponent.Changeset changeset;
 
-            using var disposeModels = ListPool<GraphElementModel>.Get(out var models);
+            using var disposeModelsToAlign = ListPool<GraphElementModel>.Get(out var modelsToAutoAlign);
+            using var disposeModelsToReverseAlign = ListPool<GraphElementModel>.Get(out var modelsToReverseAutoAlign);
             using var disposeElementsToReposition =
                 ListPool<AutoPlacementStateComponent.Changeset.ModelToReposition>.Get(out var elementsToReposition);
 
-            models.Clear();
+            modelsToAutoAlign.Clear();
+            modelsToReverseAutoAlign.Clear();
             elementsToReposition.Clear();
 
             // Only peek first to see if we need to wait before processing the placement.
@@ -68,21 +70,37 @@ namespace Unity.GraphToolkit.Editor
                     {
                         var model = graphModel.GetModel(modelHash);
                         if (model != null)
-                            models.Add(model);
+                            modelsToAutoAlign.Add(model);
                     }
+
+                    foreach (var modelHash in changeset.ModelsToReverseAutoAlign)
+                    {
+                        var model = graphModel.GetModel(modelHash);
+                        if (model != null)
+                            modelsToReverseAutoAlign.Add(model);
+                    }
+
                     foreach (var modelToReposition in changeset.ModelsToRepositionAtCreation)
+                    {
                         elementsToReposition.Add(modelToReposition);
+                    }
                 }
                 else
                 {
                     changeset = null;
 
                     foreach (var model in graphModel.NodeModels)
-                        models.Add(model);
+                        modelsToAutoAlign.Add(model);
                 }
 
                 // If any view is missing, then it will be created and layed out during this frame. So, wait until all relevant views are available.
-                foreach (var model in models)
+                foreach (var model in modelsToAutoAlign)
+                {
+                    if (model != null && model.GetView<GraphElement>(m_GraphView) == null)
+                        return;
+                }
+
+                foreach (var model in modelsToReverseAutoAlign)
                 {
                     if (model != null && model.GetView<GraphElement>(m_GraphView) == null)
                         return;
@@ -104,9 +122,18 @@ namespace Unity.GraphToolkit.Editor
             using (var graphUpdater = m_GraphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                if (models.Count > 0)
+                if (modelsToAutoAlign.Count > 0)
                 {
-                    m_GraphView.PositionDependenciesManager.AlignNodes(true, models);
+                    m_GraphView.PositionDependenciesManager.AlignNodes(true, false, modelsToAutoAlign);
+                }
+
+                if (modelsToReverseAutoAlign.Count > 0)
+                {
+                    // Reverse alignment is used on nodes owning a To port that need to reposition themselves relatively to the owner of
+                    // the connected From port, which essentially happens when drag and dropping an output variable node on an output port.
+                    // Follow is set to false because only the output variable node needs alignment, and it would be awkward if the other nodes
+                    // currently connected to the owner of the output port got also realigned.
+                    m_GraphView.PositionDependenciesManager.AlignNodes(false, true, modelsToReverseAutoAlign);
                 }
 
                 if (elementsToReposition.Count > 0)

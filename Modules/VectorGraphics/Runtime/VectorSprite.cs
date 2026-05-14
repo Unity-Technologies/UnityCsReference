@@ -377,12 +377,25 @@ namespace Unity.VectorGraphics
         private static Material s_ExpandEdgesMat;
         private static Material s_DemulMat;
         private static Material s_BlendMat;
+        private static HashSet<string> s_WarnedMissingShaders;
 
-        private static Material CreateMaterialForShaderName(string shaderName)
+        private static Material CreateMaterialForShaderName(string shaderBaseName)
         {
-            var shader = Shader.Find(shaderName);
+            var packageName = "Hidden/" + shaderBaseName;
+            var builtinName = "Hidden/VectorGraphics/" + shaderBaseName;
+
+            var shader = Shader.Find(packageName) ?? Shader.Find(builtinName);
             if (shader == null)
+            {
+                s_WarnedMissingShaders ??= new HashSet<string>();
+                if (s_WarnedMissingShaders.Add(packageName))
+                {
+                    Debug.LogError(
+                        $"VectorGraphics: shader '{packageName}' is missing from the build. " +
+                        $"Add it to Project Settings > Graphics > Always Included Shaders to keep it from being stripped.");
+                }
                 return null;
+            }
             return new Material(shader);
         }
 
@@ -414,7 +427,7 @@ namespace Unity.VectorGraphics
             // The rendered sprite is in premultipled form, so we need to convert it back to straight alpha
             // before further processing.
             if (s_DemulMat == null)
-                s_DemulMat = CreateMaterialForShaderName("Hidden/VectorGraphics/VectorDemultiply");
+                s_DemulMat = CreateMaterialForShaderName("VectorDemultiply");
 
             desc.msaaSamples = 1;
             var demulTex = RenderTexture.GetTemporary(desc);
@@ -432,7 +445,7 @@ namespace Unity.VectorGraphics
 
                 // Expand the edges and make completely transparent
                 if (s_ExpandEdgesMat == null)
-                    s_ExpandEdgesMat = CreateMaterialForShaderName("Hidden/VectorGraphics/VectorExpandEdges");
+                    s_ExpandEdgesMat = CreateMaterialForShaderName("VectorExpandEdges");
 
                 var expandTex = RenderTexture.GetTemporary(desc);
                 RenderTexture.active = expandTex;
@@ -443,7 +456,7 @@ namespace Unity.VectorGraphics
                 // The VectorBlendMax shader uses a "max" blend operation, which will keep the original texture in
                 // non-premultiplied alpha.
                 if (s_BlendMat == null)
-                    s_BlendMat = CreateMaterialForShaderName("Hidden/VectorGraphics/VectorBlendMax");
+                    s_BlendMat = CreateMaterialForShaderName("VectorBlendMax");
 
                 Graphics.Blit(demulTex, expandTex, s_BlendMat);
                 RenderTexture.ReleaseTemporary(demulTex);

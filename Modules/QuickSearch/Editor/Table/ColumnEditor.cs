@@ -36,7 +36,7 @@ namespace UnityEditor.Search
             s_Window.ShowAuxWindow();
             return s_Window;
         }
-        
+
         public void CreateGUI()
         {
             var sc = column.searchColumn;
@@ -142,7 +142,7 @@ namespace UnityEditor.Search
                     e.StopImmediatePropagation();
                 }
 
-            }, invokePolicy: InvokePolicy.IncludeDisabled, useTrickleDown: TrickleDown.TrickleDown);
+            }, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
         }
 
         void OnGUI()

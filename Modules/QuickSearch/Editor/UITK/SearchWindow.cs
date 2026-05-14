@@ -138,7 +138,7 @@ namespace UnityEditor.Search
 
             body.focusable = true;
             body.style.flexGrow = 1.0f;
-            body.RegisterCallback<KeyDownEvent>(OnGlobalKeyDownEvent, invokePolicy: InvokePolicy.IncludeDisabled, useTrickleDown: TrickleDown.TrickleDown);
+            body.RegisterCallback<KeyDownEvent>(OnGlobalKeyDownEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
 
             // Create main layout
             if (m_ViewState.flags.HasNone(SearchViewFlags.HideSearchBar))

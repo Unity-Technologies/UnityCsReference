@@ -199,7 +199,7 @@ namespace UnityEngine.UIElements
         /// current pointer event.
         /// </summary>
         /// <remarks>
-        /// This value is based on <see cref="IPointerEvent.position"/> and is expressed in panel world coordinates.
+        /// This value is based on <see cref="IPointerEvent.position"/> and is expressed in panel coordinates.
         /// </remarks>
         Vector3 deltaPosition { get; }
         /// <summary>
@@ -462,7 +462,7 @@ namespace UnityEngine.UIElements
         /// current pointer event.
         /// </summary>
         /// <remarks>
-        /// This value is based on <see cref="IPointerEvent.position"/> and is expressed in panel world coordinates.
+        /// This value is based on <see cref="IPointerEvent.position"/> and is expressed in panel coordinates.
         /// </remarks>
         public Vector3 deltaPosition { get; protected set; }
         /// <summary>
@@ -1404,7 +1404,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                          EventPropagation.SkipDisabledElements;
+                          EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderPointer = true;
         }
 
@@ -1615,7 +1615,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderPointer = true;
         }
 
@@ -1690,7 +1690,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderPointer = true;
         }
 
@@ -1775,7 +1775,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
         }
 
         /// <summary>

@@ -195,6 +195,14 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 
+    [UnityRestricted]
+    enum NodeAlignment
+    {
+        None, // No alignment
+        AlignFromNode, // The owner of the From port should align itself to the owner of the connected To port
+        AlignToNode // The owner of the To port should align itself to the owner of the connected From port
+    }
+
     /// <summary>
     /// Command to create a new wire.
     /// </summary>
@@ -207,14 +215,16 @@ namespace Unity.GraphToolkit.Editor
         /// Destination port.
         /// </summary>
         public PortModel ToPortModel;
+
         /// <summary>
         /// Origin port.
         /// </summary>
         public PortModel FromPortModel;
+
         /// <summary>
-        /// Align the node that owns the <see cref="FromPortModel"/> to the <see cref="ToPortModel"/>.
+        /// Indicates if and which port owner should align itself to its connection.
         /// </summary>
-        public bool AlignFromNode;
+        public NodeAlignment NodeAlignment;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateWireCommand" /> class.
@@ -229,13 +239,16 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="toPortModel">Destination port.</param>
         /// <param name="fromPortModel">Origin port.</param>
-        /// <param name="alignFromNode">Set to true if the node that owns the <paramref name="fromPortModel"/> should be aligned on the <paramref name="toPortModel"/>.</param>
-        public CreateWireCommand(PortModel toPortModel, PortModel fromPortModel, bool alignFromNode = false)
+        /// <param name="nodeAlignment">
+        /// Indicates if the node that owns the <paramref name="fromPortModel"/> should be aligned on the <paramref name="toPortModel"/>,
+        /// if the reverse should be done or if no alignment should be applied.
+        /// </param>
+        public CreateWireCommand(PortModel toPortModel, PortModel fromPortModel, NodeAlignment nodeAlignment = NodeAlignment.None)
             : this()
         {
             ToPortModel = toPortModel;
             FromPortModel = fromPortModel;
-            AlignFromNode = alignFromNode;
+            NodeAlignment = nodeAlignment;
         }
 
         /// <summary>
@@ -256,10 +269,8 @@ namespace Unity.GraphToolkit.Editor
                 undoStateUpdater.SaveState(graphModelState);
                 undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
 
-                if (command.AlignFromNode)
-                {
+                if (command.NodeAlignment != NodeAlignment.None)
                     undoStateUpdater.SaveState(autoPlacementState);
-                }
             }
 
             var createdElements = new List<GraphElementModel>();
@@ -284,9 +295,8 @@ namespace Unity.GraphToolkit.Editor
                 {
                     var itemizedNode = graphModel.CreateItemizedNode(WireCommandConfig.nodeOffset, ref fromPortModel);
                     if (itemizedNode != null)
-                    {
                         createdElements.Add(itemizedNode);
-                    }
+
                     wireModel = graphModel.CreateWire(toPortModel, fromPortModel);
                 }
                 else
@@ -295,10 +305,8 @@ namespace Unity.GraphToolkit.Editor
                     createdElements.Add(wireModel);
                 }
 
-                if (command.AlignFromNode)
-                {
-                    autoPlacementUpdater.MarkModelToAutoAlign(wireModel);
-                }
+                if (command.NodeAlignment != NodeAlignment.None)
+                    autoPlacementUpdater.MarkModelToAutoAlign(wireModel, command.NodeAlignment == NodeAlignment.AlignToNode);
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
@@ -309,6 +317,7 @@ namespace Unity.GraphToolkit.Editor
                 {
                     foreach (var updater in selectionUpdaters)
                         updater.ClearSelection();
+
                     selectionUpdaters.MainUpdateScope.SelectElements(createdElements, true);
                 }
             }

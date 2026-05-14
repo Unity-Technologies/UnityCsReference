@@ -164,14 +164,18 @@ namespace Unity.GraphToolkit.Editor
         /// The GraphView in charge of aligning the nodes.
         /// </summary>
         public readonly GraphView GraphView;
+
         /// <summary>
         /// A list of nodes to align.
         /// </summary>
         public readonly IReadOnlyList<GraphElementModel> Nodes;
+
         /// <summary>
         /// True if hierarchies should be aligned. Otherwise, only the nodes in <see cref="Nodes"/> are aligned.
         /// </summary>
         public readonly bool Follow;
+
+        public readonly bool Reverse;
 
         /// <summary>
         /// Initializes a new instance.
@@ -186,12 +190,14 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="graphView">The GraphView in charge of aligning the nodes.</param>
         /// <param name="follow">True if hierarchies should be aligned. Otherwise, only the nodes in <paramref name="nodes"/> are aligned.</param>
+        /// <param name="reverse">True if it is the input node (instead of the output node) that should be repositioned for alignment.</param>
         /// <param name="nodes">A list of nodes to align.</param>
-        public AlignNodesCommand(GraphView graphView, bool follow, IReadOnlyList<GraphElementModel> nodes) : this()
+        public AlignNodesCommand(GraphView graphView, bool follow, bool reverse, IReadOnlyList<GraphElementModel> nodes) : this()
         {
             GraphView = graphView;
             Nodes = nodes;
             Follow = follow;
+            Reverse = reverse;
 
             if (follow)
             {
@@ -203,10 +209,11 @@ namespace Unity.GraphToolkit.Editor
         /// Initializes a new instance.
         /// </summary>
         /// <param name="graphView">The GraphView in charge of aligning the nodes.</param>
+        /// <param name="reverse">True if it is the input node (instead of the output node) that should be repositioned for alignment.</param>
         /// <param name="nodes">A list of nodes to align.</param>
         /// <param name="follow">True if hierarchies should be aligned. Otherwise, only the nodes in <paramref name="nodes"/> are aligned.</param>
-        public AlignNodesCommand(GraphView graphView, bool follow, params GraphElementModel[] nodes)
-            : this(graphView, follow, (IReadOnlyList<GraphElementModel>)nodes)
+        public AlignNodesCommand(GraphView graphView, bool follow, bool reverse, params GraphElementModel[] nodes)
+            : this(graphView, follow, reverse, (IReadOnlyList<GraphElementModel>)nodes)
         {
         }
 
@@ -229,7 +236,7 @@ namespace Unity.GraphToolkit.Editor
                 using (var stateUpdater = graphModelState.UpdateScope)
                 using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
                 {
-                    command.GraphView.PositionDependenciesManager.AlignNodes(command.Follow, command.Nodes);
+                    command.GraphView.PositionDependenciesManager.AlignNodes(command.Follow, command.Reverse, command.Nodes);
                     stateUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }

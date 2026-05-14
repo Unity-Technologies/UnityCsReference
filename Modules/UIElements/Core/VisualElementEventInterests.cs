@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements
 {
@@ -132,9 +133,17 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void AddEventCallbackCategories(int eventCategories, TrickleDown trickleDown)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetEventInterests()
         {
-            if (trickleDown == TrickleDown.TrickleDown)
+            m_TrickleDownEventCallbackCategories = m_TrickleDownHandleEventCategories;
+            m_BubbleUpEventCallbackCategories = m_BubbleUpHandleEventCategories;
+            UpdateEventInterestSelfCategories();
+        }
+
+        internal void AddEventCallbackCategories(int eventCategories, CallbackOptions callbackOptions)
+        {
+            if ((callbackOptions & CallbackOptions.TrickleDown) != 0)
                 m_TrickleDownEventCallbackCategories |= eventCategories;
             else
                 m_BubbleUpEventCallbackCategories |= eventCategories;
@@ -142,9 +151,9 @@ namespace UnityEngine.UIElements
         }
 
         // For unit tests only
-        internal void RemoveEventCallbackCategories(int eventCategories, TrickleDown trickleDown)
+        internal void RemoveEventCallbackCategories(int eventCategories, CallbackOptions callbackOptions)
         {
-            if (trickleDown == TrickleDown.TrickleDown)
+            if ((callbackOptions & CallbackOptions.TrickleDown) != 0)
                 m_TrickleDownEventCallbackCategories &= ~eventCategories;
             else
                 m_BubbleUpEventCallbackCategories &= ~eventCategories;
@@ -455,9 +464,9 @@ namespace UnityEngine.UIElements
     ///\\
     ///\\
     /// If no <see cref="EventInterestAttribute"/> is specified, UI Toolkit
-    /// assumes that the method doesn't have enough information on necessary event types, and 
+    /// assumes that the method doesn't have enough information on necessary event types, and
     /// sends all incoming events to that method conservatively.
-    ///\\  
+    ///\\
     ///\\
     /// It is recommended to use the <see cref="EventInterestAttribute"/> attribute because it allows
     /// UI Toolkit to optimize performance by skipping unnecessary event-related calculations for methods

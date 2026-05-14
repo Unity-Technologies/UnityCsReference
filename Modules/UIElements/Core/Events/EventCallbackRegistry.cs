@@ -43,12 +43,32 @@ namespace UnityEngine.UIElements
         TrickleDown = 1
     }
 
+    /// <summary>
+    /// Extra properties that can be used in <see cref="CallbackEventHandler.RegisterCallback{TEvent}(TEvent, UnityEngine.UIElements.CallbackOptions)"/>.
+    /// </summary>
     [Flags]
-    internal enum InvokePolicy
+    public enum CallbackOptions
     {
+        /// <summary>
+        /// No option enabled.
+        /// </summary>
         Default = 0,
-        IncludeDisabled = 1,
-        Once = 2
+        /// <summary>
+        /// Callback reacts during the TrickleDown phase. If not set, callback reacts during the BubbleUp phase.
+        /// </summary>
+        TrickleDown = 1,
+        /// <summary>
+        /// Callback executes on disabled target even if the event has <see cref="EventBase.ignoreDisabledElements"/>.
+        /// </summary>
+        IncludeDisabled = 2,
+        /// <summary>
+        /// Callback is unregistered automatically after being successfully executed.
+        /// </summary>
+        Once = 4,
+        /// <summary>
+        /// Callback can be unregistered with <see cref="CallbackEventHandler.UnregisterAllRemovableCallbacks"/>.
+        /// </summary>
+        Removable = 8,
     }
 
     internal class EventCallbackListPool
@@ -135,6 +155,33 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        public bool RemoveAndDisposeAllRemovable(EventCallbackRegistry registry)
+        {
+            for (int i = 0; i < m_Count; i++)
+            {
+                var callbackOptions = m_Array[i].callbackOptions;
+                if ((callbackOptions & CallbackOptions.Removable) != 0)
+                {
+                    m_Array[i].Dispose();
+
+                    int newCount = i;
+                    for (i++; i < m_Count; i++)
+                    {
+                        var callbackOptions2 = m_Array[i].callbackOptions;
+                        if ((callbackOptions2 & CallbackOptions.Removable) == 0)
+                            m_Array[newCount++] = m_Array[i];
+                        else
+                            m_Array[i].Dispose();
+                    }
+                    Array.Clear(m_Array, newCount, m_Count - newCount);
+                    m_Count = newCount;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void Add(EventCallbackFunctorBase item)
         {
             if (m_Count >= m_Array.Length)
@@ -187,7 +234,13 @@ namespace UnityEngine.UIElements
             [NotNull] private EventCallbackList m_Callbacks;
             [CanBeNull] private EventCallbackList m_TemporaryCallbacks;
             [CanBeNull] private List<EventCallbackFunctorBase> m_UnregisteredCallbacksDuringInvoke;
+
             private int m_IsInvoking;
+            public bool isInvoking
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_IsInvoking != 0;
+            }
 
             public int Count => m_Callbacks.Count;
 
@@ -235,15 +288,15 @@ namespace UnityEngine.UIElements
                 try
                 {
                     // Some callbacks require an enabled target. For uniformity, we don't update this between calls.
-                    var enabled = !evt.skipDisabledElements || target.enabledInHierarchy;
+                    var enabled = !evt.ignoreDisabledElements || target.enabledInHierarchy;
                     var eventTypeId = evt.eventTypeId;
                     foreach (var callback in m_Callbacks.Span)
                     {
                         if (callback.eventTypeId == eventTypeId && target.elementPanel == panel &&
-                            (enabled || (callback.invokePolicy & InvokePolicy.IncludeDisabled) != 0))
+                            (enabled || (callback.callbackOptions & CallbackOptions.IncludeDisabled) != 0))
                         {
                             // Unregister once callbacks before invoke so they can be re-registered if needed
-                            if ((callback.invokePolicy & InvokePolicy.Once) != 0)
+                            if ((callback.callbackOptions & CallbackOptions.Once) != 0)
                                 callback.UnregisterCallback(target, m_UseTrickleDown);
 
                             callback.Invoke(evt);
@@ -305,41 +358,40 @@ namespace UnityEngine.UIElements
         internal DynamicCallbackList m_BubbleUpCallbacks = DynamicCallbackList.Create(TrickleDown.NoTrickleDown);
 
         // It's important to always call this with `ref`, otherwise we'll mutate a copy of the struct.
-        private ref DynamicCallbackList GetDynamicCallbackList(TrickleDown useTrickleDown)
+        private ref DynamicCallbackList GetDynamicCallbackList(CallbackOptions callbackOptions)
         {
-            return ref useTrickleDown == TrickleDown.TrickleDown ? ref m_TrickleDownCallbacks : ref m_BubbleUpCallbacks;
+            return ref (callbackOptions & CallbackOptions.TrickleDown) != 0 ? ref m_TrickleDownCallbacks : ref m_BubbleUpCallbacks;
         }
 
-        public void RegisterCallback<TEventType>([NotNull] EventCallback<TEventType> callback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default)
+        public void RegisterCallback<TEventType>([NotNull] EventCallback<TEventType> callback, CallbackOptions callbackOptions = default)
             where TEventType : EventBase<TEventType>, new()
         {
             long eventTypeId = EventBase<TEventType>.TypeId();
-            ref var dynamicCallbackList = ref GetDynamicCallbackList(useTrickleDown);
+            ref var dynamicCallbackList = ref GetDynamicCallbackList(callbackOptions);
 
             EventCallbackList callbackList = dynamicCallbackList.GetCallbackListForReading();
             if (callbackList.Find(eventTypeId, callback) is EventCallbackFunctor<TEventType> functor)
             {
-                functor.invokePolicy = invokePolicy;
+                functor.callbackOptions = callbackOptions;
                 return;
             }
 
             callbackList = dynamicCallbackList.GetCallbackListForWriting();
-            callbackList.Add(EventCallbackFunctor<TEventType>.GetPooled(eventTypeId, callback, invokePolicy));
+            callbackList.Add(EventCallbackFunctor<TEventType>.GetPooled(eventTypeId, callback, callbackOptions));
         }
 
         public void RegisterCallback<TEventType, TCallbackArgs>(
             [NotNull] EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default)
+            CallbackOptions callbackOptions = default)
             where TEventType : EventBase<TEventType>, new()
         {
             long eventTypeId = EventBase<TEventType>.TypeId();
-            ref var dynamicCallbackList = ref GetDynamicCallbackList(useTrickleDown);
+            ref var dynamicCallbackList = ref GetDynamicCallbackList(callbackOptions);
 
             EventCallbackList callbackList = dynamicCallbackList.GetCallbackListForReading();
             if (callbackList.Find(eventTypeId, callback) is EventCallbackFunctor<TEventType, TCallbackArgs> functor)
             {
-                functor.invokePolicy = invokePolicy;
+                functor.callbackOptions = callbackOptions;
                 functor.userArgs = userArgs;
                 return;
             }
@@ -347,21 +399,29 @@ namespace UnityEngine.UIElements
             callbackList = dynamicCallbackList.GetCallbackListForWriting();
             callbackList.Add(
                 EventCallbackFunctor<TEventType, TCallbackArgs>.GetPooled(eventTypeId, callback, userArgs,
-                    invokePolicy));
+                    callbackOptions));
         }
 
         // Return value is used for unit tests only
         public bool UnregisterCallback<TEventType>([NotNull] EventCallback<TEventType> callback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+            CallbackOptions callbackOptions = default) where TEventType : EventBase<TEventType>, new()
         {
-            return GetDynamicCallbackList(useTrickleDown).UnregisterCallback(EventBase<TEventType>.TypeId(), callback);
+            return GetDynamicCallbackList(callbackOptions).UnregisterCallback(EventBase<TEventType>.TypeId(), callback);
         }
 
         public bool UnregisterCallback<TEventType, TCallbackArgs>(
             [NotNull] EventCallback<TEventType, TCallbackArgs> callback,
-            TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+            CallbackOptions callbackOptions = default) where TEventType : EventBase<TEventType>, new()
         {
-            return GetDynamicCallbackList(useTrickleDown).UnregisterCallback(EventBase<TEventType>.TypeId(), callback);
+            return GetDynamicCallbackList(callbackOptions).UnregisterCallback(EventBase<TEventType>.TypeId(), callback);
+        }
+
+        internal bool UnregisterAllRemovableCallbacks_NotDuringInvoke()
+        {
+            var callbackList1 = m_BubbleUpCallbacks.GetCallbackListForWriting();
+            var removed = callbackList1.RemoveAndDisposeAllRemovable(this);
+            var callbackList2 = m_TrickleDownCallbacks.GetCallbackListForWriting();
+            return removed | callbackList2.RemoveAndDisposeAllRemovable(this);
         }
 
         // For unit tests only
@@ -373,10 +433,10 @@ namespace UnityEngine.UIElements
             switch (propagationPhase)
             {
                 case PropagationPhase.TrickleDown:
-                    GetDynamicCallbackList(TrickleDown.TrickleDown).Invoke(evt, panel, target);
+                    m_TrickleDownCallbacks.Invoke(evt, panel, target);
                     break;
                 case PropagationPhase.BubbleUp:
-                    GetDynamicCallbackList(TrickleDown.NoTrickleDown).Invoke(evt, panel, target);
+                    m_BubbleUpCallbacks.Invoke(evt, panel, target);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(propagationPhase),
@@ -399,5 +459,7 @@ namespace UnityEngine.UIElements
         {
             return m_BubbleUpCallbacks.Count > 0;
         }
+
+        public bool isInvoking => m_BubbleUpCallbacks.isInvoking || m_TrickleDownCallbacks.isInvoking;
     }
 }

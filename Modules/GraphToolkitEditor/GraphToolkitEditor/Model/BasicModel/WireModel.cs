@@ -367,6 +367,19 @@ namespace Unity.GraphToolkit.Editor
             return true;
         }
 
+        public virtual bool CreateReversedDependency(out LinkedNodesDependency linkedNodesDependency,
+            out AbstractNodeModel parentNodeModel)
+        {
+            linkedNodesDependency = new LinkedNodesDependency
+            {
+                DependentPort = ToPort,
+                ParentPort = FromPort,
+            };
+            parentNodeModel = FromPort.NodeModel;
+
+            return true;
+        }
+
         /// <summary>
         /// Creates missing ports in the case where the original ports are missing.
         /// </summary>

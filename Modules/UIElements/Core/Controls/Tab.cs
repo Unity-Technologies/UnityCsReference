@@ -356,7 +356,7 @@ namespace UnityEngine.UIElements
             };
             m_TabHeader.Add(m_TabHeaderLabel);
 
-            m_TabHeader.RegisterCallback<PointerDownEvent>(OnTabClicked, InvokePolicy.IncludeDisabled);
+            m_TabHeader.RegisterCallback<PointerDownEvent>(OnTabClicked, CallbackOptions.IncludeDisabled);
 
             // Add the Tab's underline for active tab
             m_TabHeader.Add(new VisualElement()

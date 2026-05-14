@@ -65,17 +65,32 @@ namespace Unity.GraphToolkit.Editor
             CheckFilePathAndGraphType<T>(assetPath);
 
             var graphObject = ScriptableObject.CreateInstance<GraphObjectImp>();
-            graphObject.GraphType = typeof(T);
-            graphObject.CreateMainGraph(typeof(GraphModelImp));
-            graphObject.AttachToAssetFile(assetPath, true);
+            try
+            {
+                graphObject.GraphType = typeof(T);
+                graphObject.CreateMainGraph(typeof(GraphModelImp));
+            }
+            catch // CreateMainGraph calls OnEnable on the graph mode, which can throw if users attempt to modify the graph in OnEnable.
+            {
+                if (graphObject != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(graphObject);
+                }
+
+                throw;
+            }
+
+            assetPath = graphObject.AttachToAssetFile(assetPath, true);
             graphObject.DestroyObjects();
 
             if (!File.Exists(graphObject.FilePath))
             {
+                UnityEngine.Object.DestroyImmediate(graphObject);
                 return null;
             }
 
-            return LoadGraph<T>(assetPath);
+            var loadGraph = LoadGraph<T>(assetPath);
+            return loadGraph;
         }
 
         static void CheckFilePathAndGraphType<T>(string assetPath) where T : Graph

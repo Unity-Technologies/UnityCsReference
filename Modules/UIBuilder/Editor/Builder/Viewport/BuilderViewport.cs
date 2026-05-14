@@ -384,18 +384,23 @@ namespace Unity.UI.Builder
             float targetZoom = 1;
             Vector2 targetOffset = Vector2.zero;
 
+            const float padding = 20;
+
             if (elementWidth == 0 && elementHeight == 0)
             {
                 elementHeight = 1;
                 elementWidth = 1;
+                targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
             }
             else
             {
+                float availableWidth  = m_Viewport.resolvedStyle.width  - 2 * padding;
+                float availableHeight = m_Viewport.resolvedStyle.height - 2 * padding;
                 float aspectRatio = elementWidth / elementHeight;
-                if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
-                    targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+                if (availableHeight * aspectRatio > availableWidth)
+                    targetZoom = availableWidth  / elementWidth;
                 else
-                    targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
+                    targetZoom = availableHeight / elementHeight;
                 targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
             }
 

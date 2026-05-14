@@ -282,6 +282,21 @@ namespace UnityEditor
             m_PreventSetSelectionOnClose = true;
         }
 
+        // Updates the visual selection in the ObjectSelector list without triggering callbacks
+        // Used to revert the selection display when a selection change is cancelled
+        internal void SetVisualSelection(EntityId entityId)
+        {
+            EntityId[] selection = entityId != EntityId.None ? [entityId] : Array.Empty<EntityId>();
+            if (IsUsingTreeView())
+                m_ObjectTreeWithSearch.SetSelection(selection);
+            else if (m_ListArea != null)
+                m_ListArea.InitSelection(selection);
+
+            SetSelectedInstanceID(entityId);
+            m_PreventSetSelectionOnClose = true;
+            Repaint();
+        }
+
         bool IsUsingTreeView()
         {
             return m_ObjectTreeWithSearch.IsInitialized();

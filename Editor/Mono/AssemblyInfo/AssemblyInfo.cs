@@ -284,4 +284,5 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Terrain.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.AI.Tests.Editor")]
 

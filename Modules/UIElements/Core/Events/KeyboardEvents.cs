@@ -220,7 +220,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             modifiers = default(EventModifiers);
             character = default(char);
             keyCode = default(KeyCode);
