@@ -24,7 +24,9 @@ namespace UnityEngine.TextCore
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static readonly Dictionary<string, System.IntPtr> s_FontAssetCache = new();
-        internal static readonly Dictionary<string, WeakReference<SpriteAsset>> s_SpriteAssetCache = new();
+        // Strong reference is intentional: if the cache were the only reference (WeakReference), the
+        // asset would be collected and we'd have to reload it from Resources every text generation pass.
+        internal static readonly Dictionary<string, SpriteAsset> s_SpriteAssetCache = new();
         internal static readonly Dictionary<string, System.IntPtr> s_GradientAssetCache = new();
 
         // Thread-safe tracking for one-time warnings (prevents console spam)
@@ -620,10 +622,9 @@ namespace UnityEngine.TextCore
                 spriteAssetNameOut = spriteAssetName.ToString();
 
                 // Check cache for preloaded sprite asset
-                if (!s_SpriteAssetCache.TryGetValue(spriteAssetNameOut, out var weakRef) ||
-                    !weakRef.TryGetTarget(out spriteAsset))
+                if (!s_SpriteAssetCache.TryGetValue(spriteAssetNameOut, out spriteAsset))
                 {
-                    // Asset not preloaded or was GC'd, return false but keep the asset name for HasSpriteTags extraction
+                    // Asset not preloaded, return false but keep the asset name for HasSpriteTags extraction
                     return false;
                 }
             }
@@ -658,7 +659,7 @@ namespace UnityEngine.TextCore
 
             var sprite = spriteAsset.spriteCharacterTable[spriteIndex];
 
-            spriteAssetValue = new TagValue(spriteAsset.instanceID, TagUnitType.Unknown, ValueID.AssetID);
+            spriteAssetValue = new TagValue(spriteAsset.entityId, TagUnitType.Unknown, ValueID.AssetID);
             glyphMetricsValue = new TagValue(sprite.glyph.metrics, ValueID.GlyphMetrics);
             scaleValue = new TagValue(sprite.scale, TagUnitType.Unknown, ValueID.Scale);
             // Sprites are assigned in the E000 Private Area + sprite Index
@@ -716,7 +717,10 @@ namespace UnityEngine.TextCore
                     continue;
 
                 spriteAsset.UpdateLookupTables();
-                s_SpriteAssetCache[spriteAssetName] = new WeakReference<SpriteAsset>(spriteAsset);
+                // Warm up entityId on the main thread so worker threads can access it
+                // without triggering EnsureRunningOnMainThread in Object.GetEntityId().
+                _ = spriteAsset.entityId;
+                s_SpriteAssetCache[spriteAssetName] = spriteAsset;
             }
         }
 
@@ -1135,6 +1139,12 @@ namespace UnityEngine.TextCore
                             value = new TagValue(gradientAssetName, ValueID.Gradient);
                         }
 
+                        if (tagType == TagType.Style && !preprocessingOnly)
+                        {
+                            pos = start + 1;
+                            continue;
+                        }
+
                         sbyte nestingLevel = 0;
                         if (tagType == TagType.Subscript || tagType == TagType.Superscript)
                         {
@@ -1171,6 +1181,12 @@ namespace UnityEngine.TextCore
                 {
                     if (SpanToEnum(input.AsSpan(start + 2, end - start - 2), out TagType tagType, out string? error, out var _))
                     {
+                        if (tagType == TagType.Style && !preprocessingOnly)
+                        {
+                            pos = start + 1;
+                            continue;
+                        }
+
                         result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing });
 
                         if (tagType == TagType.Subscript || tagType == TagType.Superscript)
@@ -1463,7 +1479,6 @@ namespace UnityEngine.TextCore
 
                         break;
                     case TagType.Style:
-                        Debug.Assert(false, "Style tags should be handled by the preprocessor.");
                         break;
                     case TagType.Font:
                         string fontAssetName = segment.tags[i].value?.StringValue ?? "";

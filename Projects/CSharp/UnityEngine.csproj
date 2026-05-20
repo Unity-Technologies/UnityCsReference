@@ -1278,6 +1278,24 @@
     <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsWorld.bindings.cs">
       <Link>Modules\Physics2D\LowLevel\Scripting\Bindings\PhysicsWorld.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Geometry\CapsuleGeometry.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\Geometry\CapsuleGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Geometry\ChainGeometry.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\Geometry\ChainGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Geometry\ChainSegmentGeometry.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\Geometry\ChainSegmentGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Geometry\CircleGeometry.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\Geometry\CircleGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Geometry\PolygonGeometry.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\Geometry\PolygonGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Geometry\SegmentGeometry.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\Geometry\SegmentGeometry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsDistanceJoint.cs">
       <Link>Modules\Physics2D\LowLevel\Scripting\Joints\PhysicsDistanceJoint.cs</Link>
     </Compile>
@@ -1373,9 +1391,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsEvents.cs">
       <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsGeometry.cs">
-      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsGeometry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsLowLevel2D.Obsolete.cs">
       <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsLowLevel2D.Obsolete.cs</Link>

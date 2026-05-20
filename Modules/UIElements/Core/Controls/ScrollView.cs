@@ -1134,7 +1134,7 @@ namespace UnityEngine.UIElements
 
             touchScrollBehavior = TouchScrollBehavior.Clamped;
 
-            RegisterCallback<WheelEvent>(OnScrollWheel, InvokePolicy.IncludeDisabled);
+            RegisterCallback<WheelEvent>(OnScrollWheel, CallbackOptions.IncludeDisabled);
             verticalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
             horizontalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
 

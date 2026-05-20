@@ -321,7 +321,11 @@ namespace UnityEditorInternal.Profiling
             {
                 if (m_CallsData.calls.Count == 0)
                 {
-                    base.RowGUI(args);
+                    if (column == Column.Name)
+                    {
+                        CenterRectUsingSingleLineHeight(ref cellRect);
+                        DefaultGUI.Label(cellRect, kNoneText, args.selected, args.focused);
+                    }
                     return;
                 }
 

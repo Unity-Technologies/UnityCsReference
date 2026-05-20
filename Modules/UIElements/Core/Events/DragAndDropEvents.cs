@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                          EventPropagation.SkipDisabledElements;
+                          EventPropagation.IgnoreDisabledElements;
         }
 
         protected DragAndDropEventBase()
@@ -129,7 +129,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.SkipDisabledElements;
+            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreDisabledElements;
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.SkipDisabledElements;
+            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreDisabledElements;
         }
 
         /// <summary>

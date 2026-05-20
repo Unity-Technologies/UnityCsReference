@@ -139,8 +139,8 @@ namespace UnityEngine.TextCore.Text
                     isSprite = true;
                     requiredAtlasCount = 1;
 
-                    inverseAtlasWidth = 1.0f / spriteAsset.m_SpriteAtlasTexture.width;
-                    inverseAtlasHeight = 1.0f / spriteAsset.m_SpriteAtlasTexture.height;
+                    inverseAtlasWidth = 1.0f / spriteAsset.width;
+                    inverseAtlasHeight = 1.0f / spriteAsset.height;
                 }
 
                 while (atlasList.Count < requiredAtlasCount)

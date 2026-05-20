@@ -23,6 +23,21 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// EntityId of the TMP Asset. Cached on first access so it can be read from
+        /// worker threads without triggering EnsureRunningOnMainThread in Object.GetEntityId().
+        /// </summary>
+        public EntityId entityId
+        {
+            get
+            {
+                if (m_EntityId == EntityId.None)
+                    m_EntityId = GetEntityId();
+
+                return m_EntityId;
+            }
+        }
+
+        /// <summary>
         /// Instance ID of the TMP Asset
         /// </summary>
         public int instanceID
@@ -86,6 +101,8 @@ namespace UnityEngine.TextCore.Text
 
         [SerializeField]
         internal string m_Version;
+
+        internal EntityId m_EntityId;
 
         internal int m_InstanceID;
 

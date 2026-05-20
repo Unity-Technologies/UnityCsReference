@@ -98,8 +98,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private InvokePolicy invokePolicy =>
-            acceptClicksIfDisabled ? InvokePolicy.IncludeDisabled : InvokePolicy.Default;
+        private CallbackOptions CallbackOptions =>
+            acceptClicksIfDisabled ? CallbackOptions.IncludeDisabled : CallbackOptions.Default;
 
         private IVisualElementScheduledItem m_Repeater;
         private IVisualElementScheduledItem m_PendingActivePseudoStateReset;
@@ -182,11 +182,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<PointerDownEvent>(OnPointerDown, invokePolicy);
-            target.RegisterCallback<PointerMoveEvent>(OnPointerMove, invokePolicy);
-            target.RegisterCallback<PointerUpEvent>(OnPointerUp, InvokePolicy.IncludeDisabled);
-            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel, InvokePolicy.IncludeDisabled);
-            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut, InvokePolicy.IncludeDisabled);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown, CallbackOptions);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove, CallbackOptions);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp, CallbackOptions.IncludeDisabled);
+            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel, CallbackOptions.IncludeDisabled);
+            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut, CallbackOptions.IncludeDisabled);
         }
 
         /// <summary>

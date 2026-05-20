@@ -676,6 +676,26 @@ namespace UnityEngine.LowLevelPhysics2D
                 }
             }
 
+            /// <summary>
+            /// Get the shape array as a span.
+            /// </summary>
+            /// <param name="count">The number of shape array elements to return.</param>
+            /// <returns>The span representing the shape array.</returns>
+            /// <exception cref="System.IndexOutOfRangeException">Thrown if the count is not in the range [0, <see cref="PhysicsConstants.MaxPolygonVertices"/>].</exception>
+            public unsafe Span<Vector2> AsSpan(int count = PhysicsConstants.MaxPolygonVertices)
+            {
+                if (count > 0 && count <= PhysicsConstants.MaxPolygonVertices)
+                {
+                    ref Vector2 vertex0 = ref m_Vertex0;
+                    fixed (Vector2* pThis = &vertex0)
+                    {
+                        return new Span<Vector2>(pThis, count);
+                    }
+                }
+
+                throw new IndexOutOfRangeException($"{count} must be in the range [0, {PhysicsConstants.MaxPolygonVertices}]");
+            }
+
             #region Internal
 
             [SerializeField] internal Vector2 m_Vertex0;
@@ -722,6 +742,36 @@ namespace UnityEngine.LowLevelPhysics2D
 
             [SerializeField][Min(0f)] float m_PushLimit;
             [SerializeField] bool m_ClipVelocity;
+
+            #endregion
+        }
+
+        /// <summary>
+        /// Collision results optionally returned from <see cref="LowLevelPhysics2D.PhysicsWorld.CastMover(PhysicsQuery.WorldMoverInput)"/> in <see cref="LowLevelPhysics2D.PhysicsQuery.WorldMoverResult"/>.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public readonly struct MoverCollision
+        {
+            /// <summary>
+            /// The shape the mover collided with.
+            /// </summary>
+            public readonly PhysicsShape shape => m_Shape;
+
+            /// <summary>
+            /// The collision point on the shape.
+            /// </summary>
+            public readonly Vector2 point => m_Point;
+
+            /// <summary>
+            /// The collision normal at the collision point on the shape.
+            /// </summary>
+            public readonly Vector2 normal => m_Normal;
+
+            #region Internal
+
+            readonly PhysicsShape m_Shape;
+            readonly Vector2 m_Point;
+            readonly Vector2 m_Normal;
 
             #endregion
         }

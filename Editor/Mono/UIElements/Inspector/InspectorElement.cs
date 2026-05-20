@@ -716,7 +716,7 @@ namespace UnityEditor.UIElements
                     AnimationMode.onAnimationRecordingStart -= inspector.MarkDirtyRepaint;
                     AnimationMode.onAnimationRecordingStop -= inspector.MarkDirtyRepaint;
                     AnimationMode.onAnimationPlaybackStart -= inspector.MarkDirtyRepaint;
-                    AnimationMode.onAnimationPlaybackStop -= inspector.MarkDirtyRepaint;  
+                    AnimationMode.onAnimationPlaybackStop -= inspector.MarkDirtyRepaint;
                 });
             }
 
@@ -879,7 +879,7 @@ namespace UnityEditor.UIElements
             // too tall an inspector on the first layout calculation
             while (displayElement != null && (float.IsNaN(inspectorWidth) || inspectorWidth == 0))
             {
-                inspectorWidth = displayElement.layout.width;
+                inspectorWidth = displayElement.layoutSize.x;
                 displayElement = displayElement.hierarchy.parent;
             }
 

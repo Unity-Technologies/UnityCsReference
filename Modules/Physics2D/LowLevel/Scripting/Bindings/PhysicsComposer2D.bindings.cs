@@ -24,11 +24,11 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "GetLayerCount", IsThreadSafe = true)] extern internal static int PhysicsComposer_GetLayerCount(PhysicsComposer composer);
         [NativeMethod(Name = "GetRejectedGeometryCount", IsThreadSafe = true)] extern internal static int PhysicsComposer_GetRejectedGeometryCount(PhysicsComposer composer);
         [NativeMethod(Name = "GetLayerHandles", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_GetLayerHandles(PhysicsComposer composer);
-        [NativeMethod(Name = "SetDelaunay", IsThreadSafe = true)] extern internal static void PhysicsComposer_SetDelaunay(PhysicsComposer composer, bool flag);
-        [NativeMethod(Name = "GetDelaunay", IsThreadSafe = true)] extern internal static bool PhysicsComposer_GetDelaunay(PhysicsComposer composer);
+        [NativeMethod(Name = "SetUseDelaunay", IsThreadSafe = true)] extern internal static void PhysicsComposer_SetUseDelaunay(PhysicsComposer composer, bool flag);
+        [NativeMethod(Name = "GetUseDelaunay", IsThreadSafe = true)] extern internal static bool PhysicsComposer_GetUseDelaunay(PhysicsComposer composer);
         [NativeMethod(Name = "SetMaxPolygonVertices", IsThreadSafe = true)] extern internal static void PhysicsComposer_SetMaxPolygonVertices(PhysicsComposer composer, int maxPolygonVertices);
         [NativeMethod(Name = "GetMaxPolygonVertices", IsThreadSafe = true)] extern internal static int PhysicsComposer_GetMaxPolygonVertices(PhysicsComposer composer);
-        [NativeMethod(Name = "CreatePolygonGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreatePolygonGeometry(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
+        [NativeMethod(Name = "CreatePolygonGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreatePolygonGeometry(PhysicsComposer composer, Vector2 vertexScale, float radius, Allocator allocator);
         [NativeMethod(Name = "CreateConvexHulls", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreateConvexHulls(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
         [NativeMethod(Name = "CreateChainGeometry", IsThreadSafe = true)] extern internal static PhysicsBufferPair PhysicsComposer_CreateChainGeometry(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
         [NativeMethod(Name = "GetGeometryIslands", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_GetGeometryIslands(PhysicsComposer composer, Allocator allocator);

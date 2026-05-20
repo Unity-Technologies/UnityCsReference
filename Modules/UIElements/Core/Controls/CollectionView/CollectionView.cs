@@ -550,7 +550,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             m_LastHeight = height;
 
-            var numberOfVisibleItems = (int)(m_Container.layout.height / averageItemHeight);
+            var numberOfVisibleItems = (int)(m_Container.layoutSize.y / averageItemHeight);
             if (itemsSource.Count - 1 < numberOfVisibleItems)
                 m_ScrollValue = 0;
 
@@ -953,11 +953,12 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
             }
 
-            var numberOfVisibleItems = (int)(m_Container.layout.height / averageItemHeight);
+            var containerHeight = m_Container.layoutSize.y;
+            var numberOfVisibleItems = (int)(containerHeight / averageItemHeight);
             if (index < m_FirstVisibleItemIndex + numberOfVisibleItems)
                 return;
 
-            var visibleOffset = averageItemHeight - (m_Container.layout.height - numberOfVisibleItems * averageItemHeight);
+            var visibleOffset = averageItemHeight - (containerHeight - numberOfVisibleItems * averageItemHeight);
             var yScrollOffset = averageItemHeight * (index - numberOfVisibleItems) + visibleOffset;
             UpdateVerticalScrollValue(yScrollOffset);
         }

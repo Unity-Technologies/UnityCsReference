@@ -195,7 +195,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class ObjectListPool<T>
     {
-        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(() => new List<T>(),20);
+        static ObjectPool<List<T>> pool = new ObjectPool<List<T>>(() => new List<T>(), 20);
 
         public static List<T> Get()
         {
@@ -478,7 +478,7 @@ namespace UnityEngine.UIElements
                 if (renderData == null)
                     return;
 
-                if (value && (renderData.pendingRepaint|| renderData.pendingHierarchicalRepaint))
+                if (value && (renderData.pendingRepaint || renderData.pendingHierarchicalRepaint))
                     IncrementVersion(VersionChangeType.Repaint);
             }
         }
@@ -546,6 +546,7 @@ namespace UnityEngine.UIElements
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
+
         /// <summary>
         /// Used for view data persistence, such as tree expanded states, scroll position, or zoom level.
         /// </summary>
@@ -719,6 +720,7 @@ namespace UnityEngine.UIElements
         }
 
         private RenderHints m_RenderHints;
+
         /// <summary>
         /// Requested render hints and change flags. Note that the renderer can ignore them: reading them does not
         /// guarantee that they are effective.
@@ -761,33 +763,35 @@ namespace UnityEngine.UIElements
         // TODO: Do some validation to make sure all effects actually have a material
         internal bool useRenderTexture
         {
-            get {
-                var r = layout;
-                if (r.width <= 0 || r.height <= 0 || float.IsNaN(r.width) || float.IsNaN(r.height))
+            get
+            {
+                if (!hasSize)
                     return false;
+
+                if ((renderHints & RenderHints.DynamicPostProcessing) != 0)
+                    return true;
 
                 var filter = resolvedStyle.filter as List<FilterFunction>;
                 if (filter == null)
                     throw new ArgumentException("resolvedStyle.filter is not a List<FilterFunction>");
 
-                bool hasValidFilterFunction = false;
-                foreach (var ff in filter)
+                for (int i = 0; i < filter.Count; i++)
                 {
-                    var def = ff.GetDefinition();
+                    var def = filter[i].GetDefinition();
                     if (def == null)
                         continue;
 
-                    foreach (var pass in def.passes)
+                    var passes = def.passes;
+                    for (int j = 0; j < passes.Length; ++j)
                     {
-                        if (pass.material != null)
+                        if (passes[j].material != null)
                         {
-                            hasValidFilterFunction = true;
-                            break;
+                            return true;
                         }
                     }
                 }
 
-                return hasValidFilterFunction || (renderHints & RenderHints.DynamicPostProcessing) != 0;
+                return false;
             }
         }
 
@@ -922,15 +926,15 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                var result = m_Layout;
-                if (!layoutNode.IsUndefined && !isLayoutManual)
+                if (isLayoutManual)
+                    return m_Layout;
+
+                if (!layoutNode.IsUndefined)
                 {
-                    result.x = layoutNode.LayoutX;
-                    result.y = layoutNode.LayoutY;
-                    result.width = layoutNode.LayoutWidth;
-                    result.height = layoutNode.LayoutHeight;
+                    return layoutNode.GetLayoutRect();
                 }
-                return result;
+
+                return new(float.NaN, float.NaN, float.NaN, float.NaN);
             }
             internal set
             {
@@ -986,6 +990,32 @@ namespace UnityEngine.UIElements
             styleAccess.bottom = StyleKeyword.Null;
             styleAccess.width = StyleKeyword.Null;
             styleAccess.height = StyleKeyword.Null;
+        }
+
+        internal bool hasSize
+        {
+            get
+            {
+                if (m_LayoutNode.IsUndefined)
+                    return false;
+
+                var lyt = m_LayoutNode.Layout;
+
+                unsafe
+                {
+                    var w = lyt.Dimensions[0];
+
+                    if (float.IsNaN(w) || w <= 0)
+                        return false;
+
+                    var h = lyt.Dimensions[1];
+
+                    if (float.IsNaN(h) || h <= 0)
+                        return false;
+                }
+
+                return true;
+            }
         }
 
         /// <summary>
@@ -1052,6 +1082,7 @@ namespace UnityEngine.UIElements
             get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
             set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirty : m_Flags & ~VisualElementFlags.BoundingBoxDirty;
         }
+
         private Rect m_BoundingBox;
 
         internal bool isWorldBoundingBoxDirty
@@ -1331,12 +1362,39 @@ namespace UnityEngine.UIElements
         internal Rect rect
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get
             {
-                var l = layout;
-                return new Rect(0.0f, 0.0f, l.width, l.height);
+                var l = layoutSize;
+                return new Rect(0.0f, 0.0f, l.x, l.y);
             }
         }
+
+        internal Vector2 layoutSize
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get
+            {
+                if (isLayoutManual)
+                    return m_Layout.size;
+
+                return layoutNode.GetLayoutSize();
+            }
+        }
+
+
+        internal Vector2 layoutPosition
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get
+            {
+                if (isLayoutManual)
+                    return m_Layout.min;
+
+                return layoutNode.GetLayoutPosition();
+            }
+        }
+
 
         internal bool isWorldSpaceRootUIDocument
         {
@@ -1428,7 +1486,7 @@ namespace UnityEngine.UIElements
                 else
                 {
                     GetPivotedMatrixWithLayout(out var mat);
-                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
+                    MultiplyMatrix34(ref hierarchy.parent.worldTransformRef, ref mat, out m_WorldTransformCache);
                 }
             }
             else
@@ -1469,8 +1527,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-       internal void EnsureWorldTransformAndClipUpToDate()
-       {
+        internal void EnsureWorldTransformAndClipUpToDate()
+        {
             if (renderData == null)
                 return;
 
@@ -1479,7 +1537,7 @@ namespace UnityEngine.UIElements
 
             renderData.UpdateClippingRect();
             renderData.flags &= ~RenderDataFlags.IsClippingRectDirty;
-       }
+        }
 
         // get the AA aligned bound
         internal static Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)

@@ -488,7 +488,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderMouse = true;
         }
 
@@ -554,7 +554,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             recomputeTopElementUnderMouse = true;
         }
 
@@ -772,7 +772,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                          EventPropagation.SkipDisabledElements;
+                          EventPropagation.IgnoreDisabledElements;
             delta = Vector3.zero;
             recomputeTopElementUnderMouse = true;
         }

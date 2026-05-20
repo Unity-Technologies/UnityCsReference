@@ -332,6 +332,23 @@ namespace UnityEngine.TextCore
                 }
 
                 char c = source[readIndex];
+
+                // Skip over other tags verbatim so spaces inside tag attributes
+                // (e.g. <sprite="Default Sprites" index=0>) are preserved.
+                // Abort if another '<' appears before '>' (stray '<' like "<3").
+                if (c == k_LessThan)
+                {
+                    int closeIndex = source.Slice(readIndex).IndexOf(k_GreaterThan);
+                    int nextOpenIndex = source.Slice(readIndex + 1).IndexOf(k_LessThan);
+
+                    if (closeIndex >= 0 && (nextOpenIndex == -1 || closeIndex < nextOpenIndex + 1))
+                    {
+                        sb.Append(source.Slice(readIndex, closeIndex + 1));
+                        readIndex += closeIndex + 1;
+                        continue;
+                    }
+                }
+
                 if (nobrDepth > 0 && c == k_Space)
                     sb.Append(k_NonBreakingSpace);
                 else

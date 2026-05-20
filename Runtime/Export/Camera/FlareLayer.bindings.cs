@@ -7,6 +7,7 @@ using System;
 namespace UnityEngine
 {
     [RequireComponent(typeof(Camera))]
+    [HelpURL("create-lens-flare")]
     public class FlareLayer : Behaviour
     {
         internal FlareLayer() {}

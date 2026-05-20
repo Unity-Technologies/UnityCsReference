@@ -155,9 +155,8 @@ namespace UnityEditor.VFX
         public UnityObject processor;
         public uint instanceSplitIndex;
         public int shaderSourceIndex;
-        public UnityObject model;
+        public EntityId modelId;
         public bool usesMaterialVariant;
-
     }
 
     [UsedByNativeCode]

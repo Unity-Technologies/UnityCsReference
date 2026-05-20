@@ -96,9 +96,7 @@ namespace UnityEngine.UIElements
             bool stackingContextChanged = false;
             if (ve.renderData != null)
             {
-                stackingContextChanged =
-                    (ve.useRenderTexture && ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0)) ||
-                    (!ve.useRenderTexture && (ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) != 0);
+                stackingContextChanged = ve.useRenderTexture == ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0);
             }
 
             if (renderHintsChanged || stackingContextChanged)

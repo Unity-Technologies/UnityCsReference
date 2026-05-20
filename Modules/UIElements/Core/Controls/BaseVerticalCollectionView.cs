@@ -1430,12 +1430,13 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            m_LastHeight = m_ScrollView.layout.height;
+            var size = m_ScrollView.layoutSize;
+            m_LastHeight = size.y;
 
-            if (panel== null || float.IsNaN(m_ScrollView.layout.height))
+            if (panel== null || float.IsNaN(size.y))
                 return;
 
-            Resize(m_ScrollView.layout.size);
+            Resize(size);
         }
 
         /// <summary>

@@ -81,15 +81,28 @@ namespace Unity.TLS.LowLevel
         public const int UNITYTLS_SSL_HANDSHAKE_SERVER_FINISHED = 13;
         public const int UNITYTLS_SSL_HANDSHAKE_FLUSH_BUFFERS = 14;
         public const int UNITYTLS_SSL_HANDSHAKE_WRAPUP = 15;
-        public const int UNITYTLS_SSL_HANDSHAKE_OVER = 27;
         public const int UNITYTLS_SSL_HANDSHAKE_SERVER_NEW_SESSION_TICKET = 16;
-        public const int UNITYTLS_SSL_HANDSHAKE_HELLO_VERIFY_REQUIRED = 17;
+        public const int UNITYTLS_SSL_HANDSHAKE_SERVER_HELLO_VERIFY_REQUEST_SENT = 17;
+        public const int UNITYTLS_SSL_HANDSHAKE_HELLO_RETRY_REQUEST = 18;
+        public const int UNITYTLS_SSL_HANDSHAKE_ENCRYPTED_EXTENSIONS = 19;
+        public const int UNITYTLS_SSL_HANDSHAKE_END_OF_EARLY_DATA = 20;
+        public const int UNITYTLS_SSL_HANDSHAKE_CLIENT_CERTIFICATE_VERIFY = 21;
+        public const int UNITYTLS_SSL_HANDSHAKE_CLIENT_CCS_AFTER_SERVER_FINISHED = 22;
+        public const int UNITYTLS_SSL_HANDSHAKE_CLIENT_CCS_BEFORE_2ND_CLIENT_HELLO = 23;
+        public const int UNITYTLS_SSL_HANDSHAKE_SERVER_CCS_AFTER_SERVER_HELLO = 24;
+        public const int UNITYTLS_SSL_HANDSHAKE_CLIENT_CCS_AFTER_CLIENT_HELLO = 25;
+        public const int UNITYTLS_SSL_HANDSHAKE_SERVER_CCS_AFTER_HELLO_RETRY_REQUEST = 26;
+        public const int UNITYTLS_SSL_HANDSHAKE_OVER = 27;
+        public const int UNITYTLS_SSL_HANDSHAKE_TLS1_3_NEW_SESSION_TICKET = 28;
+        public const int UNITYTLS_SSL_HANDSHAKE_TLS1_3_NEW_SESSION_TICKET_FLUSH = 29;
         /// <summary>Number of constant definitions</summary>
-        public const int UNITYTLS_SSL_HANDSHAKE_COUNT = 28;
+        public const int UNITYTLS_SSL_HANDSHAKE_COUNT = 30;
         /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_BEGIN = 0;
         /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_DONE = 27;
+        /// <summary>Deprecated: for backward compatibility only</summary>
+        public const int UNITYTLS_SSL_HANDSHAKE_HELLO_VERIFY_REQUIRED = 17;
         /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_FLUSH_BUFFERS = 14;
         /// <summary>Deprecated: for backward compatibility only</summary>
