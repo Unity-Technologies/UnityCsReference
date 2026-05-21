@@ -564,7 +564,7 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox("No mipmaps in the cubemap, Smoothness value in Standard shader will be ignored.", MessageType.Warning);
                 }
 
-                if (probe.texture && !(probe.texture is Cubemap))
+                if (probe.texture && !IsValidReflectionProbeTexture(probe.texture))
                     EditorGUILayout.HelpBox(Styles.textureTypeError.text, MessageType.Error);
             }
 
@@ -576,6 +576,13 @@ namespace UnityEditor
         internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
             return ((ReflectionProbe)targetObject).bounds;
+        }
+
+        static bool IsValidReflectionProbeTexture(Texture texture)
+        {
+            // Baked probes use Cubemap
+            // Realtime probes use RenderTexture with cube dimension
+            return texture is Cubemap or RenderTexture { dimension: UnityEngine.Rendering.TextureDimension.Cube };
         }
 
         bool ValidPreviewSetup()

@@ -4,11 +4,9 @@
 
 using System;
 using System.IO;
-using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor.Implementation
 {
-
     [Serializable]
     class GraphObjectImp : GraphObject
     {
@@ -16,22 +14,20 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         static bool s_LoadingGraphObjectFromFileOnDisk;
 
-        public Type GraphType
+        public override Type GraphType
         {
             get
             {
-                if (m_GraphType == null)
-                {
-                    var filePath = FilePath;
-                    if (!string.IsNullOrEmpty(filePath))
-                        m_GraphType = PublicGraphFactory.GetGraphTypeByExtension(Path.GetExtension(filePath));
-                }
+                if (m_GraphType != null) return m_GraphType;
+
+                var filePath = FilePath;
+                if (!string.IsNullOrEmpty(filePath))
+                    m_GraphType = PublicGraphFactory.GetGraphTypeByExtension(Path.GetExtension(filePath));
+
                 return m_GraphType;
             }
-            internal set
-            {
-                m_GraphType = value;
-            }
+
+            internal set => m_GraphType = value;
         }
 
 

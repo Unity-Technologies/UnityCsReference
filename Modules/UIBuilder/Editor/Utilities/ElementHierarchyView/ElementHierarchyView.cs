@@ -807,9 +807,14 @@ namespace Unity.UI.Builder
 
             int nextId = 1;
             if (includeParent)
+            {
                 m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTreeIncludingParent(rootVisualElement, ref nextId);
+            }
             else
-                m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, ref nextId);
+            {
+                using var _ = HashSetPool<int>.Get(out var usedIds);
+                m_UnfilteredTreeRootItems = GetTreeItemsFromVisualTree(rootVisualElement, usedIds, ref nextId);
+            }
 
             m_TreeRootItems = m_UnfilteredTreeRootItems;
             // Clear selection which would otherwise persist via view data persistence.
@@ -1141,13 +1146,23 @@ namespace Unity.UI.Builder
                 return null;
 
             var items = new List<TreeViewItem>();
+
+            // Track every TreeViewItem id we hand out so that our generated ids do not clash with ones taken from the VisualElementAssets.
+            using var _ = HashSetPool<int>.Get(out var usedIds);
+
             var id = nextId;
             nextId++;
 
+            if (parent.visualElementAsset is { } vea)
+            {
+                id = vea.id;
+            }
+
+            usedIds.Add(id);
             var item = new TreeViewItem(id, parent);
             items.Add(item);
 
-            var childItems = GetTreeItemsFromVisualTree(parent, ref nextId);
+            var childItems = GetTreeItemsFromVisualTree(parent, usedIds, ref nextId);
             if (childItems == null)
                 return items;
 
@@ -1156,7 +1171,7 @@ namespace Unity.UI.Builder
             return items;
         }
 
-        IList<TreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, ref int nextId)
+        IList<TreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, HashSet<int> usedIds, ref int nextId)
         {
             List<TreeViewItem> items = null;
 
@@ -1199,15 +1214,18 @@ namespace Unity.UI.Builder
                     }
                     else
                     {
+                        while (usedIds.Contains(nextId))
+                            nextId++;
                         id = nextId;
                         nextId++;
                     }
                 }
 
+                usedIds.Add(id);
                 var item = new TreeViewItem(id, element);
                 items.Add(item);
 
-                var childItems = GetTreeItemsFromVisualTree(element, ref nextId);
+                var childItems = GetTreeItemsFromVisualTree(element, usedIds, ref nextId);
                 if (childItems == null)
                     continue;
 

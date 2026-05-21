@@ -521,6 +521,13 @@ namespace UnityEngine.UIElements.StyleSheets
             using var _ = ListPool<FilterFunction>.Get(out var list);
             do
             {
+                var value = m_Values[m_CurrentValueIndex + index];
+
+                if (value.handle.valueType == StyleValueType.Keyword)
+                {
+                    break;
+                }
+
                 var filterType = (StyleValueFunction)GetValue(index++).handle.valueIndex;
                 int argCount = ReadInt(index++);
 

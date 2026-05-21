@@ -1561,9 +1561,10 @@ namespace UnityEngine.UIElements
         public override void Render()
         {
             using var scope = new UITKScope();
-            m_MarkerRender.Begin();
-            base.Render();
-            m_MarkerRender.End();
+            using (m_MarkerRender.Auto())
+            {
+                base.Render();
+            }
 
             (panelDebug?.debuggerOverlayPanel as Panel)?.Render();
         }

@@ -251,6 +251,9 @@ namespace UnityEditor
 
         internal void HierarchyOnGUI(Rect hierarchyLayoutRect)
         {
+            if (m_State.disabled)
+                return;
+
             if (!m_State.showReadOnly && m_State.selection.isReadOnly)
             {
                 Vector2 labelSize = GUI.skin.label.CalcSize(AnimationWindowStyles.readOnlyPropertiesLabel);
@@ -275,8 +278,7 @@ namespace UnityEditor
                 return;
             }
 
-            if (!m_State.disabled)
-                m_Hierarchy.OnGUI(hierarchyLayoutRect);
+            m_Hierarchy.OnGUI(hierarchyLayoutRect);
         }
 
         internal void DopeSheetOnGUI(Rect position)

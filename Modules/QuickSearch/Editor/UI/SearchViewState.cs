@@ -180,6 +180,20 @@ namespace UnityEditor.Search
         [SerializeField] internal SearchQueryTreeConfig queryTreeConfig;
         [SerializeField] internal SearchWindowCustomPanelConfig customPanelConfig;
 
+        // Assuming this is not something that uis serialzied or else it would change the behavior of the search window when executing queries.
+        private SearchFunctor<Func<ISearchView, string, SearchQueryError, bool>> m_DisplaySearchErrors;
+        internal Func<ISearchView, string, SearchQueryError, bool> displaySearchErrors
+        {
+            get
+            {
+                return m_DisplaySearchErrors == null ? null : m_DisplaySearchErrors.handler;
+            }
+            set
+            {
+                m_DisplaySearchErrors = new SearchFunctor<Func<ISearchView, string, SearchQueryError, bool>>(value);
+            }
+        }
+
         internal void SetDisplayMode(DisplayMode displayMode)
         {
             // Keep the itemSize in sync.

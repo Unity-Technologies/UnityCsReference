@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -85,7 +86,7 @@ namespace UnityEngine
             get { return layerCullSphericalInternal; }
             set
             {
-                if (GraphicsSettings.currentRenderPipeline != null)
+                if (GraphicsSettings.isScriptableRenderPipelineEnabled)
                 {
                     Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.layerCullSpherical only with the built-in renderer.");
                 }
@@ -288,7 +289,7 @@ namespace UnityEngine
             get { return stereoTargetEyeInternal; }
             set
             {
-                if (GraphicsSettings.currentRenderPipeline != null)
+                if (GraphicsSettings.isScriptableRenderPipelineEnabled)
                 {
                     Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.stereoTargetEye only with the built-in renderer.");
                 }
@@ -430,24 +431,29 @@ namespace UnityEngine
         [NativeName("RemoveCommandBuffers")] extern void RemoveCommandBuffersImpl(CameraEvent evt);
         [NativeName("RemoveAllCommandBuffers")] extern void RemoveAllCommandBuffersImpl();
 
+        static void LogWarningOnlyBuiltIn([CallerMemberName] string memberName = "")
+        {
+            Debug.LogWarning($"Your project uses a scriptable render pipeline. You can use Camera.{memberName} only with the built-in renderer.");
+        }
+
         public void RemoveCommandBuffers(CameraEvent evt)
         {
-		    if(RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.RemoveCommandBuffers only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             else
             {
-			    m_NonSerializedVersion++;
+                m_NonSerializedVersion++;
                 RemoveCommandBuffersImpl(evt);
             }
         }
 
         public void RemoveAllCommandBuffers()
         {
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.RemoveAllCommandBuffers only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             else
             {
@@ -473,9 +479,9 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
 
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.AddCommandBuffer only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             else
             {
@@ -490,9 +496,9 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
 
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.AddCommandBufferAsync only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             else
             {
@@ -507,9 +513,9 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
 
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.RemoveCommandBuffer only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             else
             {
@@ -520,9 +526,9 @@ namespace UnityEngine
 
         public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt)
         {
-            if(RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.GetCommandBuffers only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
 
             return GetCommandBuffersImpl(evt);

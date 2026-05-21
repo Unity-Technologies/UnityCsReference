@@ -1152,7 +1152,6 @@ namespace Unity.U2D.Physics
         /// <param name="bodies">The bodies to set ownership for.</param>
         /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
         /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public static void SetOwner(ReadOnlySpan<PhysicsBody> bodies, UnityEngine.Object owner, int ownerKey) => PhysicsBody_SetOwner(bodies, owner, ownerKey);
 
         /// <summary>
@@ -1163,7 +1162,6 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
         {
             var body = this;
@@ -1416,7 +1414,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The geometry to use.</param>
         /// <param name="definition">The chain definition to use.</param>
         /// <returns>The created chain.</returns>
-        public readonly PhysicsChain CreateChain(ChainGeometry geometry, PhysicsChainDefinition definition) => PhysicsChain.Create(this, geometry, definition);
+        public readonly PhysicsChain CreateChain(ChainGeometry geometry, PhysicsChainDefinition definition) => PhysicsChain.Create(this, geometry.vertices, definition);
 
         #endregion
 

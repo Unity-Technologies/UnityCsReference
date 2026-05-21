@@ -669,7 +669,7 @@ namespace UnityEngine.UIElements
                     }
                     else if (panelComponent is PanelRenderer panelRenderer)
                     {
-                        panelRenderer.RegisterUIReloadCallback((pr, root) =>
+                        panelRenderer.RegisterUIReloadCallback((pr, root, version) =>
                         {
                             m_PanelRootVisualContainer = root;
                             OnAttachToPanelInternal(position, anchored);

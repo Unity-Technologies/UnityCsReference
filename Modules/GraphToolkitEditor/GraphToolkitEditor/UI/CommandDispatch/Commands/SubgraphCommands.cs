@@ -782,7 +782,7 @@ namespace Unity.GraphToolkit.Editor
                 var elementsToRemove = new List<GraphElementModel>();
 
                 // Patch up wires in the target graph.
-                var existingWiresConnectedToSubgraphNode = command.SubgraphNode.GetConnectedWires();
+                var existingWiresConnectedToSubgraphNode = new List<WireModel>(command.SubgraphNode.GetConnectedWires());
                 foreach (var existingWire in existingWiresConnectedToSubgraphNode)
                 {
                     elementsToRemove.Add(existingWire);

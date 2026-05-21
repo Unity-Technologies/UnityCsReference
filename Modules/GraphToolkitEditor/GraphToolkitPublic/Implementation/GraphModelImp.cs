@@ -238,9 +238,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.CreateGraphProcessors();
 
-            var overridden = Graph.GetType().GetMethod(nameof(GraphToolkit.Editor.Graph.OnGraphChanged)).DeclaringType != typeof(Graph);
+            var declaringType = Graph?.GetType().GetMethod(nameof(GraphToolkit.Editor.Graph.OnGraphChanged))?.DeclaringType;
+            var overridden = declaringType != null && declaringType != typeof(Graph);
 
-            if( overridden )
+            if (overridden)
                 GetGraphProcessorContainer().AddGraphProcessor(new GraphProcessorImp(this));
         }
 
@@ -865,6 +866,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         void InitializeSupportedTypes()
         {
+            using var _ = BlockAssetDirtyScope();
             m_SupportedTypes = new List<Type>();
             var supportedTypes = new HashSet<Type>();
             var nodeCreationData = new GraphNodeCreationData(this, Vector2.zero, SpawnFlags.Orphan);

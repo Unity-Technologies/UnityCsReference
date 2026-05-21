@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 29, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 30, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -1084,6 +1084,11 @@ namespace UnityEditor.UIElements
             if (uxmlSerializedDataDescription != null)
             {
                 vea.serializedData = CreateSerializedData(uxmlSerializedDataDescription);
+            }
+            else
+            {
+                // Unknown types need to be registered so that we can trigger a reimport if they become known in the future.
+                RegisterDependency(fullName);
             }
 
             return true;

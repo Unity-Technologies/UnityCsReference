@@ -263,7 +263,7 @@ namespace Unity.U2D.Physics
                 targetPosition = Vector2.zero,
                 maxIterations = 5,
                 moveTolerance = 0.1f,
-                m_CollisionResults = false
+                collisionResults = false
             };
 
             #region Internal

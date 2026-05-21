@@ -15639,7 +15639,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_ca6f/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_6e5e/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_a647/buildTools/UnityEditor.MSBuild.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_a647/msbuild.host/Unity.BuildService.Host.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_a647/buildTools/Unity.BuildService.dll" />

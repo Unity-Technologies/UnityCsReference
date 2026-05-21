@@ -1782,6 +1782,24 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsWorld.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsWorld.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\CapsuleGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\CapsuleGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\ChainGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\ChainGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\ChainSegmentGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\ChainSegmentGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\CircleGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\CircleGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\PolygonGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\PolygonGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\SegmentGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\SegmentGeometry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJoint.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJoint.cs</Link>
     </Compile>
@@ -1877,9 +1895,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs">
       <Link>Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsGeometry.cs">
-      <Link>Modules\PhysicsCore2D\Scripting\PhysicsGeometry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsMath.cs">
       <Link>Modules\PhysicsCore2D\Scripting\PhysicsMath.cs</Link>

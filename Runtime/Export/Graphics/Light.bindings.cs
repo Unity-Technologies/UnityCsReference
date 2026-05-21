@@ -61,7 +61,7 @@ namespace UnityEngine
             get => ShadowResolution;
             set
             {
-                if (RenderPipelineManager.currentPipeline != null)
+                if (GraphicsSettings.isScriptableRenderPipelineEnabled)
                     LogWarningOnlyBuiltIn();
                 ShadowResolution = value;
             }
@@ -118,7 +118,7 @@ namespace UnityEngine
 
         public void AddCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask)
         {
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
                 LogWarningOnlyBuiltIn();
             AddCommandBufferInternal(evt, buffer, shadowPassMask);
         }
@@ -133,7 +133,7 @@ namespace UnityEngine
 
         public void AddCommandBufferAsync(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask, UnityEngine.Rendering.ComputeQueueType queueType)
         {
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 LogWarningOnlyBuiltIn();
             }
@@ -145,7 +145,7 @@ namespace UnityEngine
 
         public void RemoveCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer)
         {
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 LogWarningOnlyBuiltIn();
             }
@@ -155,7 +155,7 @@ namespace UnityEngine
 
         public void RemoveCommandBuffers(UnityEngine.Rendering.LightEvent evt)
         {
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 LogWarningOnlyBuiltIn();
             }
@@ -165,7 +165,7 @@ namespace UnityEngine
 
         public void RemoveAllCommandBuffers()
         {
-            if (RenderPipelineManager.currentPipeline != null)
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 LogWarningOnlyBuiltIn();
             }
@@ -175,7 +175,7 @@ namespace UnityEngine
 
         public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.LightEvent evt)
         {
-            if(RenderPipelineManager.currentPipeline != null)
+            if(GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 LogWarningOnlyBuiltIn();
             }

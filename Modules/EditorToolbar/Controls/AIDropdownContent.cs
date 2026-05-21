@@ -54,7 +54,7 @@ class AIDropdownContent : PopupWindowContent
             "com.unity.ai.inference"
         },
 
-        installButtonText = "Agree and install Unity AI"
+        installButtonText = "Agree and continue to Unity AI Beta"
     };
 
     Label m_Text;

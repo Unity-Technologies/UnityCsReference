@@ -47,6 +47,8 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Indicates a closed chain formed by connecting the first and last vertices specified.
+        /// When enabled, no ghost vertices should be defined in the <see cref="ChainGeometry.vertices"/> with all being used to define <see cref="ChainSegmentGeometry"/> with the ghost vertices being calculated automatically to force a closed loop.
+        /// When disabled, the <see cref="ChainGeometry.vertices"/> should define <see cref="ChainSegmentGeometry.ghost1"/> as the first vertex followed by at least two vertices or more defining the subsequent edges and finally a <see cref="ChainSegmentGeometry.ghost2"/> vertex, therefore there must be at least 4 vertices.
         /// </summary>
         public bool isLoop { readonly get => m_IsLoop; set => m_IsLoop = value; }
 

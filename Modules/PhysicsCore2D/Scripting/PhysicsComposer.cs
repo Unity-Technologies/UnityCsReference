@@ -61,10 +61,10 @@ namespace Unity.U2D.Physics
             {
                 // Validate.
                 if (geometry.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single geometry must be specified.");
+                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single CircleGeometry must be specified.");
 
                 if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"Curve Stride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
+                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"CircleGeometry curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
 
                 m_LayerType = LayerType.Geometry;
                 m_GeometryType = ShapeType.Circle;
@@ -81,10 +81,10 @@ namespace Unity.U2D.Physics
             {
                 // Validate.
                 if (geometry.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single geometry must be specified.");
+                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single CapsuleGeometry must be specified.");
 
                 if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"Curve Stride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
+                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"CapsuleGeometry curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
 
                 m_LayerType = LayerType.Geometry;
                 m_GeometryType = ShapeType.Capsule;
@@ -101,10 +101,10 @@ namespace Unity.U2D.Physics
             {
                 // Validate.
                 if (geometry.Length < 1)
-                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single geometry must be specified.");
+                    throw new ArgumentOutOfRangeException(nameof(geometry), "At least a single PolygonGeometry must be specified.");
 
                 if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"Curve Stride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
+                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"PolygonGeometry curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
 
                 m_LayerType = LayerType.Geometry;
                 m_GeometryType = ShapeType.Polygon;
@@ -120,15 +120,12 @@ namespace Unity.U2D.Physics
             internal Layer(ReadOnlySpan<PhysicsShape> shapes, PhysicsTransform transform, Operation operation, int order, float curveStride, bool reverseWinding)
             {
                 // Validate.
+                // NOTE: We don't need to validate the shapes here as this is done when adding the layer internally.
                 if (shapes.Length < 1)
                     throw new ArgumentOutOfRangeException(nameof(shapes), "At least a single PhysicsShape must be specified.");
 
-                foreach (var shape in shapes)
-                    if (!shape.isValid)
-                        throw new ArgumentException(nameof(shapes), "At least one of the shapes was invalid.");
-
                 if (curveStride < MinCurveStride || curveStride > 1.0f)
-                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"Curve Stride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
+                    throw new ArgumentOutOfRangeException(nameof(curveStride), $"PhysicsShape curveStride must be in the range [{PhysicsComposer.MinCurveStride}, 1.0]");
 
                 m_LayerType = LayerType.Shape;
                 m_DataBuffer = PhysicsBuffer.FromSpan(shapes);
@@ -316,7 +313,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="geometry">The geometry to convert to polygon geometry.</param>
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride only used when creating curves i.e. shapes with a non-zero radius. Lower values produce more vertices, larger values fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public static NativeArray<PolygonGeometry> ToPolygons(CircleGeometry geometry, PhysicsTransform transform, float curveStride = DefaultCurveStride, Allocator allocator = Allocator.Temp)
@@ -336,7 +333,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="geometry">The geometry to convert to polygon geometry.</param>
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride only used when creating curves i.e. shapes with a non-zero radius. Lower values produce more vertices, larger values fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public static NativeArray<PolygonGeometry> ToPolygons(CapsuleGeometry geometry, PhysicsTransform transform, float curveStride = DefaultCurveStride, Allocator allocator = Allocator.Temp)
@@ -356,15 +353,15 @@ namespace Unity.U2D.Physics
         public readonly bool isValid => Composer_IsValid(this);
 
         /// <summary>
-        /// The default curve stride used when composing geometry with curves, in radians. Lower values produce more vertices, larger values fewer vertices.
+        /// The default curve stride used when composing geometry that has a non-zero radius.
         /// </summary>
         public const float DefaultCurveStride = 0.06f;
 
         /// <summary>
-        /// The minimum curve stride, in radians.
+        /// The minimum curve stride allowed when composing geometry that has a non-zero radius.
         /// </summary>
         public const float MinCurveStride = 0.01f;
-        
+
         /// <summary>
         /// Add a Circle Geometry layer to the Physics Composer.
         /// </summary>
@@ -372,7 +369,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride controls how many vertices are used to approximate the circle geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public unsafe readonly LayerHandle AddLayer(CircleGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -387,7 +384,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride controls how many vertices are used to approximate the circle geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public readonly LayerHandle AddLayer(ReadOnlySpan<CircleGeometry> geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -402,7 +399,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride controls how many vertices are used to approximate the curved end-caps of the capsule geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public unsafe readonly LayerHandle AddLayer(CapsuleGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0,  float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -417,7 +414,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride controls how many vertices are used to approximate the curved end-caps of the capsule geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public readonly LayerHandle AddLayer(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -427,12 +424,14 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Add a Polygon Geometry layer to the Physics Composer.
+        /// Note that the physics composer will convert the polygon geometry into outlines (edges) approximating the geometry, therefore if the a non-zero radius is used, multiple edges are used for the radius meaning a single polygon geometry would not be returned if used as the only operation.
+        /// when using Polygon Geometry with a non-zero radius, the composer will no longer see that as a single polygon but will instead convert the 
         /// </summary>
         /// <param name="geometry">The Polygon Geometry to use.</param>
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride is only used when a non-zero radius is used. It controls how many vertices are used to approximate the curved polygon geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public unsafe readonly LayerHandle AddLayer(PolygonGeometry geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -441,13 +440,14 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Add multiple PhysicsShape layer to the Physics Composer.
+        /// Add multiple Polygon Geometry layer to the Physics Composer.
+        /// Note that the physics composer will convert the polygon geometry into outlines (edges) approximating the geometry, therefore if the a non-zero radius is used, multiple edges are used for the radius meaning a single polygon geometry would not be returned if used as the only operation.
         /// </summary>
         /// <param name="geometry">The Polygon Geometry to use. This geometry will be copied so the geometry the span is referring to can be disposed of afterwards if required.</param>
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride is only used when a non-zero radius is used. It controls how many vertices are used to approximate the curved polygon geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public unsafe readonly LayerHandle AddLayer(ReadOnlySpan<PolygonGeometry> geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -463,7 +463,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride is used to approximately the curved geometry but is applied according to the specific shape geometry type. Lower values produce more vertices, larger values fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public unsafe readonly LayerHandle AddLayer(PhysicsShape shape, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -472,14 +472,14 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Add a Polygon Geometry layer to the Physics Composer.
+        /// Add multiple PhysicsShape layer to the Physics Composer.
         /// Only PhysicsShape with a geometry of <see cref="PhysicsShape.ShapeType.Circle"/>, <see cref="PhysicsShape.ShapeType.Capsule"/> or <see cref="PhysicsShape.ShapeType.Polygon"/> will be used. All other types will be ignored.
         /// </summary>
         /// <param name="shapes">The PhysicsShapes to use. The geometry these shapes used will be copied so the geometry the span is referring to can changed afterwards if required.</param>
         /// <param name="transform">The transform to use on the geometry.</param>
         /// <param name="operation">The composer operation to use.</param>
         /// <param name="order">The order to perform the composer operation.</param>
-        /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
+        /// <param name="curveStride">The curve stride is used to approximately the curved geometry but is applied according to the specific shape geometry type. Lower values produce more vertices, larger values fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
         public unsafe readonly LayerHandle AddLayer(ReadOnlySpan<PhysicsShape> shapes, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
@@ -516,8 +516,10 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get/Set if Delaunay tessellation is to be used.
+        /// Delaunay tessellation is enabled by default and produces far superior results.
+        /// When Delaunay tessellation is disabled, curved areas can produce invalid geometry which is rejected therefore increase the <see cref="rejectedGeometryCount"/>.
         /// </summary>
-        public readonly bool useDelaunay { get => PhysicsComposer_GetDelaunay(this); set => PhysicsComposer_SetDelaunay(this, value); }
+        public readonly bool useDelaunay { get => PhysicsComposer_GetUseDelaunay(this); set => PhysicsComposer_SetUseDelaunay(this, value); }
 
         /// <summary>
         /// Get/Set the maximum number of polygon vertices to be used when composing polygon output.
@@ -558,12 +560,38 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Create <see cref="PolygonGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
+        /// A limit is imposed on small vertex distances so be aware that this overload uses a vertex scale of <see cref="Vector2.one"/> so consider using the overload which allows you to increase this if required.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing the Polygon Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Allocator allocator = Allocator.Temp) => CreatePolygonGeometry(vertexScale: Vector2.one, radius: 0.0f, allocator);
+
+        /// <summary>
+        /// Create <see cref="PolygonGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
         /// A limit is imposed on small vertex distances so it is recommended that scaling is applied here rather than on the returned geometry so geometry is not discarded due to it being invalid.
         /// </summary>
         /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A NativeArray containing the Polygon Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, Allocator allocator = Allocator.Temp) => PhysicsComposer_CreatePolygonGeometry(this, vertexScale, allocator).ToNativeArray<PolygonGeometry>();
+        public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, Allocator allocator = Allocator.Temp) => CreatePolygonGeometry(vertexScale, radius: 0.0f, allocator);
+
+        /// <summary>
+        /// Create <see cref="PolygonGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
+        /// A limit is imposed on small vertex distances so it is recommended that scaling is applied here rather than on the returned geometry so geometry is not discarded due to it being invalid.
+        /// </summary>
+        /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
+        /// <param name="radius">The radius to apply to all generated polygons. Note that this will likely mean that the same polygon region defined by the vertices will not match.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing the Polygon Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, float radius, Allocator allocator = Allocator.Temp) => PhysicsComposer_CreatePolygonGeometry(this, vertexScale, radius, allocator).ToNativeArray<PolygonGeometry>();
+
+        /// <summary>
+        /// Create <see cref="PolygonGeometry.ConvexHull"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
+        /// A default vertex scale of <see cref="Vector2.one"/> is used here.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing the Polygon Geometry convex hull created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PolygonGeometry.ConvexHull> CreateConvexHulls(Allocator allocator = Allocator.Temp) => CreateConvexHulls(Vector2.one, allocator);
 
         /// <summary>
         /// Create <see cref="PolygonGeometry.ConvexHull"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
@@ -572,6 +600,15 @@ namespace Unity.U2D.Physics
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>A NativeArray containing the Polygon Geometry convex hull created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public readonly NativeArray<PolygonGeometry.ConvexHull> CreateConvexHulls(Vector2 vertexScale, Allocator allocator = Allocator.Temp) => PhysicsComposer_CreateConvexHulls(this, vertexScale, allocator).ToNativeArray<PolygonGeometry.ConvexHull>();
+
+        /// <summary>
+        /// Create <see cref="ChainGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
+        /// A limit is imposed on small vertex distances so be aware that this overload uses a vertex scale of <see cref="Vector2.one"/> so consider using the overload which allows you to increase this if required.
+        /// </summary>
+        /// <param name="vertices">The total set of vertices that the chain geometry uses. This must be disposed.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing the Chain Geometry created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<ChainGeometry> CreateChainGeometry(out NativeArray<Vector2> vertices, Allocator allocator = Allocator.Temp) => CreateChainGeometry(out vertices, vertexScale: Vector2.one, allocator);
 
         /// <summary>
         /// Create <see cref="ChainGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
@@ -606,7 +643,7 @@ namespace Unity.U2D.Physics
             for (var i = 0; i < physicsBuffers.Length; ++i)
             {
                 var buffer = physicsBuffers[i];
-                chainGeometry[i] = new ChainGeometry(buffer.ToSpan<Vector2>());
+                chainGeometry[i] = new ChainGeometry(buffer.ToNativeArray<Vector2>());
             }
 
             return chainGeometry;

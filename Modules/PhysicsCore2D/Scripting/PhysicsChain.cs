@@ -20,7 +20,7 @@ namespace Unity.U2D.Physics
     /// This will produce shapes of type <see cref="PhysicsShape.ShapeType.ChainSegment"/>.
     ///
     ///- Chains are one-sided.
-    ///- A chain has no mass and should be used on static bodies.
+    ///- A chain has no mass therefore should ideally be used on static bodies.
     ///- A chain can have a counter-clockwise winding order (normal points right of segment direction).
     ///- A chain is either a loop or open.
     ///- A chain must have at least 4 points.
@@ -70,7 +70,16 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The shape geometry to use.</param>
         /// <param name="definition">The shape definition to use.</param>
         /// <returns>The created shape.</returns>
-        public unsafe static PhysicsChain Create(PhysicsBody body, ChainGeometry geometry, PhysicsChainDefinition definition) => PhysicsChain_Create(body, geometry, definition);
+        public static PhysicsChain Create(PhysicsBody body, ChainGeometry geometry, PhysicsChainDefinition definition) => Create(body, geometry.vertices, definition);
+
+        /// <summary>
+        /// Create a Chain of multiple shapes attached to the specified body which itself is within a world.
+        /// </summary>
+        /// <param name="body">The body to attach the shape(s) to.</param>
+        /// <param name="vertices">The vertices that will create the ChainSegment shapes.</param>
+        /// <param name="definition">The shape definition to use.</param>
+        /// <returns>The created chain.</returns>
+        public static PhysicsChain Create(PhysicsBody body, ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition) => PhysicsChain_Create(body, vertices, definition);
 
         /// <summary>
         /// Destroy the <see cref="PhysicsChain"/> and all the <see cref="PhysicsShape.ShapeType.ChainSegment"/> it owns.
@@ -196,7 +205,6 @@ namespace Unity.U2D.Physics
         /// <param name="chains">The chains to set ownership for.</param>
         /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
         /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public static void SetOwner(ReadOnlySpan<PhysicsChain> chains, UnityEngine.Object owner, int ownerKey) => PhysicsChain_SetOwner(chains, owner, ownerKey);
 
         /// <summary>
@@ -207,7 +215,6 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
         {
             var chain = this;

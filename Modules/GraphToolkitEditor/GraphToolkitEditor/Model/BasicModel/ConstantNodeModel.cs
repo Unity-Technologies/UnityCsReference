@@ -189,7 +189,7 @@ namespace Unity.GraphToolkit.Editor
     class CollectionOptionsHandler
     {
         // Collection size limits.
-        const int k_MinCollectionSize = 1;
+        const int k_MinCollectionSize = 0;
         const int k_MaxCollectionSize = 50;
 
         ConstantNodeModel m_Node;
@@ -215,39 +215,44 @@ namespace Unity.GraphToolkit.Editor
                 initializationCallback: InitializeSizeOption);
 
             input.SetExpandable(true);
-            (input.NodeModel as NodeModel).SetPortExpanded(input, true);
             input.Capacity = PortCapacity.None;
+
+            // Only expand if the collection actually has items
+            var collection = m_Node.Value.ObjectValue as IList;
+            m_Node.SetPortExpanded(input, collection != null && collection.Count > 0);
         }
 
         internal void OnDefineSubports(ISubPortDefinition subPortsDefinition, PortModel port)
         {
             var type = port.DataTypeHandle.Resolve();
-            if (type.IsListOrArray())
+            if (!type.IsListOrArray())
+                return;
+
+            var collection = m_Node.Value.ObjectValue as IList;
+            int collectionSize = Math.Min(collection?.Count ?? 0, k_MaxCollectionSize);
+
+            // Keep the Size option widget in sync with reality
+            m_Size.PortModel.EmbeddedValue.TrySetValue<int>(collectionSize);
+
+            Type elementType = type.IsArray ? type.GetElementType() : type.GetGenericArguments()[0];
+            TypeHandle elementTH = TypeHandleHelpers.GenerateTypeHandle(elementType);
+
+            for (int i = 0; i < collectionSize; ++i)
             {
-                m_Size.PortModel.EmbeddedValue.TryGetValue<int>(out var collectionSize);
-                Type elementType = (type.IsArray) ? type.GetElementType() : type.GetGenericArguments()[0];
-                TypeHandle elementTH = TypeHandleHelpers.GenerateTypeHandle(elementType);
-
-                for (int i = 0; i < collectionSize; ++i)
-                {
-                    int index = i;
-
-                    var subPort = subPortsDefinition.AddInputSubPort($"{i}", elementTH,
-                        () =>
-                        {
-                            var collection = m_Node.Value.ObjectValue as IList;
-                            if (collection != null && index < collection.Count)
-                                return collection[index];
-                            return null;
-                        },
-                        (o) =>
-                        {
-                            if (m_Node.Value.TrySetValueAt(index, o))
-                                m_Node.GraphModel?.CurrentGraphChangeDescription.AddChangedModel(m_Node, ChangeHint.Data);
-                        },
-                        $"{i}", attributes: new[] { new DelayedAttribute() });
-                    subPort.Capacity = PortCapacity.None;
-                }
+                int index = i;
+                var subPort = subPortsDefinition.AddInputSubPort($"{i}", elementTH,
+                    () =>
+                    {
+                        var col = m_Node.Value.ObjectValue as IList;
+                        return col != null && index < col.Count ? col[index] : null;
+                    },
+                    (o) =>
+                    {
+                        if (m_Node.Value.TrySetValueAt(index, o))
+                            m_Node.GraphModel?.CurrentGraphChangeDescription.AddChangedModel(m_Node, ChangeHint.Data);
+                    },
+                    $"{i}", attributes: new[] { new DelayedAttribute() });
+                subPort.Capacity = PortCapacity.None;
             }
         }
 

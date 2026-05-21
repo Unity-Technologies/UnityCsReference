@@ -32,7 +32,7 @@ namespace Unity.U2D.Physics
 
         // Polygon Geometry.
         [NativeMethod(Name = "PolygonGeometry::CreateBox", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_CreateBox(Vector2 size, float radius, PhysicsTransform transform, bool inscribe);
-        [NativeMethod(Name = "PolygonGeometry::CreatePolygons", IsThreadSafe = true)] extern internal static PhysicsBuffer PolygonGeometry_CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Vector2 vertexScale, Allocator allocator);
+        [NativeMethod(Name = "PolygonGeometry::CreatePolygons", IsThreadSafe = true)] extern internal static PhysicsBuffer PolygonGeometry_CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Vector2 vertexScale, float radius, bool useDelaunay, Allocator allocator);
         [NativeMethod(Name = "PolygonGeometry::Create_WithPhysicsTransform", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_Create_WithPhysicsTransform(ReadOnlySpan<Vector2> vertices, float radius, PhysicsTransform transform);
         [NativeMethod(Name = "PolygonGeometry::Create_WithMatrix", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_Create_WithMatrix(ReadOnlySpan<Vector2> vertices, float radius, Matrix4x4 transform);
         [NativeMethod(Name = "PolygonGeometry::Transform_WithPhysicsTransform", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_Transform_WithPhysicsTransform(PolygonGeometry geometry, PhysicsTransform transform);

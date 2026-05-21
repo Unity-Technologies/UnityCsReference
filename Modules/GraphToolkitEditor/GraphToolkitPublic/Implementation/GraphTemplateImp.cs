@@ -14,7 +14,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override string NewAssetName { get; }
 
-        public Type GraphType { get; }
+        public override Type GraphType { get; }
 
         public GraphTemplateImp(Type graphType, string newAssetName = "New Graph")
             : base(newAssetName, GetGraphExtension(graphType))

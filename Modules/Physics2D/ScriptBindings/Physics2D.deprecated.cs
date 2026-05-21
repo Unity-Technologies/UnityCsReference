@@ -628,7 +628,7 @@ namespace UnityEngine
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("ContactFilter2D.NoFilter method has been deprecated. Please use the static ContactFilter2D.noFilter property.", false)]
-        public ContactFilter2D NoFilter() => noFilter;
+        public ContactFilter2D NoFilter() => this = noFilter;
     }
 }
 

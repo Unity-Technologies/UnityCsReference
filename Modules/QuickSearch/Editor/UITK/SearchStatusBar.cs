@@ -235,18 +235,21 @@ namespace UnityEditor.Search
             var currentGroup = m_ViewModel.currentGroup;
             var hasProgress = context.searchInProgress;
             var ignoreErrors = m_ViewModel.results.Count > 0 || hasProgress;
+            if (ignoreErrors)
+                return false;
+
             var alwaysPrintError = currentGroup == null ||
                 !string.IsNullOrEmpty(context.filterId) ||
                 (m_ViewModel.totalCount == 0 && string.Equals(GroupedSearchList.allGroupId, currentGroup, StringComparison.Ordinal));
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!ignoreErrors && m_ViewModel.GetAllVisibleErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_ViewModel.currentGroup) is SearchQueryError err)
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            error = m_ViewModel.GetAllVisibleErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_ViewModel.currentGroup);
 #pragma warning restore UA2001
-            {
-                error = err;
-                return true;
-            }
+            if (error == null)
+                return false;
 
-            return false;
+            var displayErrorsFunctor = m_ViewModel.state.displaySearchErrors;
+            return displayErrorsFunctor != null ?
+                displayErrorsFunctor(m_ViewModel, currentGroup, error) : true;
         }
 
         void HandleStatusMessageClicked(PointerDownEvent evt)

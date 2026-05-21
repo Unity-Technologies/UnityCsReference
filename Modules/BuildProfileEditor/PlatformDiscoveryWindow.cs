@@ -503,7 +503,8 @@ namespace UnityEditor.Build.Profile
             m_SelectedCard = card;
             SetCardSelected(card);
             m_SelectedDisplayNameLabel.text = card.displayName;
-            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIconHero(card.platformId);
+
+            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformHeroImage(card.platformId);
             m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
 
             // Only color if not a default color and color can be parsed.

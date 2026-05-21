@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEditor;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
@@ -99,8 +100,9 @@ namespace Unity.GraphToolkit.Editor
 
             var graphObject = ScriptableObject.CreateInstance(graphObjectType) as GraphObject;
             if (graphObject == null)
-                return graphObject;
+                return null;
 
+            graphObject.GraphType = graphTemplate?.GraphType;
             graphObject.CreateMainGraph(graphModelType);
             graphObject.name = name;
             graphTemplate?.InitBasicGraph(graphObject.GraphModel);

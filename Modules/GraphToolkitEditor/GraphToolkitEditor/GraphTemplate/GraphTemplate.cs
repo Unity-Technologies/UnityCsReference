@@ -15,7 +15,14 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The graphModel type.
         /// </summary>
+        /// <see cref="GraphModel"/>
         public abstract Type GraphModelType { get; }
+
+        /// <summary>
+        /// The graph type.
+        /// </summary>
+        /// <see cref="Graph"/>
+        public virtual Type GraphType => null;
 
         /// <summary>
         /// The graph type name.

@@ -122,12 +122,30 @@ namespace UnityEngine.UIElements
         /// <param name="rootElement">The root visual element that was reloaded in the PanelRenderer.</param>
         public delegate void UIReloadCallback(PanelRenderer panelRenderer, VisualElement rootElement);
 
+        /// <summary>
+        /// Callback type for UI reload events.
+        /// </summary>
+        /// <param name="panelRenderer">The PanelRenderer in which the UI was reloaded.</param>
+        /// <param name="rootElement">The root visual element that was reloaded in the PanelRenderer.</param>
+        /// <param name="version">The version of the UI that was reloaded.</param>
+        public delegate void VersionedUIReloadCallback(PanelRenderer panelRenderer, VisualElement rootElement, int version);
+
         private UIReloadCallback m_OnUIReloadCallback;
+        private VersionedUIReloadCallback m_OnVersionedUIReloadCallback;
+
+        // Start UI version at 1 so that users can rely on version 0 being "not initialized".
+        private int m_UIVersion = 1;
 
         /// <summary>
         /// Registers a callback to be invoked when the UI is reloaded.
         /// </summary>
         /// <param name="callback">The callback to register.</param>
+        /// <remarks>
+        /// This callback will be invoked immediately if the root VisualElement is already initialized, and then
+        /// every time the UI is reloaded afterwards. Using this method may result in redundant work. It is recommended
+        /// to use <see cref="RegisterUIReloadCallback(VersionedUIReloadCallback)"/> instead, which provides a version
+        /// number so the callback can skip redundant work when the UI has not actually changed.
+        /// </remarks>
         public void RegisterUIReloadCallback(UIReloadCallback callback)
         {
             if (callback == null)
@@ -136,7 +154,36 @@ namespace UnityEngine.UIElements
             m_OnUIReloadCallback += callback;
 
             if (rootVisualElement != null)
+            {
                 callback(this, rootVisualElement);
+            }
+        }
+
+        /// <summary>
+        /// Registers a versioned callback to be invoked when the UI is reloaded.
+        /// </summary>
+        /// <param name="callback">The callback to register.</param>
+        /// <remarks>
+        /// This callback will be invoked immediately if the root VisualElement is already initialized, and then
+        /// every time the UI is reloaded afterwards. Use the version parameter to check if the root VisualElement was
+        /// actually reloaded since the last time the callback was invoked.
+        /// </remarks>
+        /// <example>
+        /// The following example registers a versioned callback to initialize the UI. If the component is repeatedly disabled an
+        /// re-enabled, the callback version will stay the same. So, the callback can safely skip the initialization logic after the first time.
+        /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/get-started-runtime-ui/VersionedPanelRendererCallback.cs"/>
+        /// </example>
+        public void RegisterUIReloadCallback(VersionedUIReloadCallback callback)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            m_OnVersionedUIReloadCallback += callback;
+
+            if (rootVisualElement != null)
+            {
+                callback(this, rootVisualElement, m_UIVersion);
+            }
         }
 
         /// <summary>
@@ -149,6 +196,18 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(callback));
 
             m_OnUIReloadCallback -= callback;
+        }
+
+        /// <summary>
+        /// Unregisters a previously registered versioned UI reload callback.
+        /// </summary>
+        /// <param name="callback">The callback to unregister.</param>
+        public void UnregisterUIReloadCallback(VersionedUIReloadCallback callback)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            m_OnVersionedUIReloadCallback -= callback;
         }
 
         extern private ScriptableObject nativePanelSettings { get; set; }
@@ -408,19 +467,17 @@ namespace UnityEngine.UIElements
             requiresReinsertion = true;
         }
 
+        bool IsActiveAndEnabled() => enabled && gameObject.activeInHierarchy;
+
         internal void RefreshAssets()
         {
             if (panelSettings != previousPanelSettings)
                 previousPanelSettings?.DetachPanelComponent(this);
 
-            if (!enabled)
+            if (!IsActiveAndEnabled())
                 return;
 
             bool visualTreeAssetChanged = visualTreeAsset != previousVisualTreeAsset;
-            previousVisualTreeAsset = visualTreeAsset;
-            previousPanelSettings = panelSettings;
-            isAssetDirty = false;
-
             InitRootVisualElement(visualTreeAssetChanged);
         }
 
@@ -461,7 +518,17 @@ namespace UnityEngine.UIElements
 
                 requiresReinsertion = true;
 
-                m_OnUIReloadCallback?.Invoke(this, rootVisualElement);
+                // Increase the version to let users know they should re-initialize their UIs.
+                ++m_UIVersion;
+
+                if (m_OnUIReloadCallback != null)
+                {
+                    m_OnUIReloadCallback.Invoke(this, rootVisualElement);
+                }
+                if (m_OnVersionedUIReloadCallback != null)
+                {
+                    m_OnVersionedUIReloadCallback.Invoke(this, rootVisualElement, m_UIVersion);
+                }
             }
             else
             {
@@ -471,6 +538,10 @@ namespace UnityEngine.UIElements
             firstChildInsertIndex = rootVisualElement.hierarchy.childCount;
 
             SetupRootClassList();
+
+            previousVisualTreeAsset = visualTreeAsset;
+            previousPanelSettings = panelSettings;
+            isAssetDirty = false;
         }
 
         internal void SetupFromHierarchy()
@@ -497,7 +568,7 @@ namespace UnityEngine.UIElements
 
         internal void AddRootVisualElementToTree()
         {
-            if (!enabled)
+            if (!IsActiveAndEnabled())
                 return;
 
             // If we do have a parent, it will add us.
@@ -534,7 +605,7 @@ namespace UnityEngine.UIElements
 
         internal void ReactToHierarchyChanges()
         {
-            if (!enabled)
+            if (!IsActiveAndEnabled())
                 return;
 
             if (requiresReinsertion)
@@ -851,7 +922,7 @@ namespace UnityEngine.UIElements
 
             if(binder != null)
             {
-                RegisterUIReloadCallback((pr, root) => binder.RegisterRootDocument(root, false));
+                RegisterUIReloadCallback((pr, root, version) => binder.RegisterRootDocument(root, false));
             }
         }
 

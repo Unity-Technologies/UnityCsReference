@@ -813,7 +813,6 @@ namespace Unity.U2D.Physics
         /// <param name="worlds">The worlds to set ownership for.</param>
         /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
         /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public static void SetOwner(ReadOnlySpan<PhysicsWorld> worlds, UnityEngine.Object owner, int ownerKey) => PhysicsWorld_SetOwner(worlds, owner, ownerKey);
 
 
@@ -825,7 +824,6 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
         {
             var world = this;

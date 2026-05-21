@@ -2629,7 +2629,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (panel.GetCapturingElement(PointerId.mousePointerId) == null)
             {
-                Vector3 frameTranslation = Vector3.zero;
+                Vector3 frameTranslation = new Vector3(layout.width / 2f, layout.height / 2f, 0);
                 Vector3 frameScaling = Vector3.one;
                 Dispatch(new ReframeGraphViewCommand(frameTranslation, frameScaling));
                 e.StopPropagation();

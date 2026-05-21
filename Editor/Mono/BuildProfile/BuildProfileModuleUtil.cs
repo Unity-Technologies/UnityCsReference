@@ -32,9 +32,8 @@ namespace UnityEditor.Build.Profile
         const string k_BuyProUrl = "https://store.unity.com/products/unity-pro";
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
-        const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
-        const string k_HeroPathPrefix = "BuildProfile/Hero/";
-        const string k_HeroPathSuffix = ".Hero";
+        const string k_HeroImagesPath = "BuildProfile/Icons/Hero";
+        const string k_HeroSuffix = ".Hero.png";
         // The asset database supports file name length to max. 250 symbols
         // Leave 5 symbols for the GenerateUniqueAssetPath() that adds " (1)"(2,3...) in case
         // an asset with such name already exists.
@@ -187,25 +186,6 @@ namespace UnityEditor.Build.Profile
                 return icon;
 
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId) + ".Small");
-        }
-
-        /// <summary>
-        /// Fetches the Hero image associated with the platform.
-        /// If no specific hero image is found, it falls back to the platform icon.
-        /// </summary>
-        public static Texture2D GetPlatformIconHero(GUID platformId)
-        {
-            if (LoadBuildProfileIcon(platformId, out Texture2D icon))
-                return icon;
-
-            // Attempt to load the hero icon for the platform
-            icon = EditorGUIUtility.LoadIcon($"{k_HeroPathPrefix}{GetPlatformIconId(platformId)}{k_HeroPathSuffix}");
-
-            // If no specific hero icon is found, fallback to the platform icon
-            if (icon == null)
-                icon = GetPlatformIcon(platformId);
-
-            return icon;
         }
 
         [Obsolete("Do not use internal APIs from packages.")]
@@ -969,6 +949,20 @@ namespace UnityEditor.Build.Profile
 
             icon = null;
             return false;
+        }
+
+        /// <summary>
+        /// Fetches the Hero image associated with the platform.
+        /// If no specific hero image is found, it falls back to the platform icon.
+        /// </summary>
+        public static Texture2D GetPlatformHeroImage(GUID platformId)
+        {
+            // Early out check for platforms that we don't have icon approval for (i.e. Switch)
+            if (LoadBuildProfileIcon(platformId, out Texture2D icon))
+                return icon;
+
+            // Attempt to load the hero icon for the platform
+            return EditorGUIUtility.LoadIcon($"{k_HeroImagesPath}/{GetPlatformIconId(platformId)}{k_HeroSuffix}") ?? GetPlatformIcon(platformId);
         }
 
         static string GetPlatformIconId(GUID platformId)

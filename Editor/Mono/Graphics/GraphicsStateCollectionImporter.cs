@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.AssetImporters;
@@ -9,16 +10,34 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
 {
-    [ScriptedImporter(version: 1, ext: "graphicsstate")]
+    [HelpURL("https://docs.unity3d.com/ScriptReference/Experimental.Rendering.GraphicsStateCollection.html")]
+    [ScriptedImporter(version: 1, ext: k_FileExtension)]
     [ExcludeFromPreset]
     class GraphicsStateCollectionImporter : ScriptedImporter
     {
+        private const string k_FileExtension = "graphicsstate";
+        private const string k_DefaultFileName = "New Graphics State Collection." + k_FileExtension;
+
         public RuntimePlatform runtimePlatform;
         public GraphicsDeviceType graphicsDeviceType;
         public int version;
         public string qualityLevelName;
         public int shaderVariantCount;
         public int graphicsStateCount;
+
+        [MenuItem("Assets/Create/Shader/Graphics State Collection", false, 309)]
+        internal static void CreateGraphicsStateCollectionAsset()
+        {
+            var action = ScriptableObject.CreateInstance<DoCreateGraphicsStateCollection>();
+            Texture2D icon = EditorGUIUtility.FindTexture(typeof(DefaultAsset));
+            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
+                EntityId.None,
+                action,
+                k_DefaultFileName,
+                icon,
+                null
+            );
+        }
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
@@ -34,6 +53,25 @@ namespace UnityEditor.Rendering
             qualityLevelName = asset.qualityLevelName;
             shaderVariantCount = asset.variantCount;
             graphicsStateCount = asset.totalGraphicsStateCount;
+        }
+    }
+
+    internal class DoCreateGraphicsStateCollection : ProjectWindowCallback.AssetCreationEndAction
+    {
+        public override void Action(EntityId entityId, string pathName, string resourceFile)
+        {
+            File.WriteAllText(pathName, "{}");
+            AssetDatabase.ImportAsset(pathName);
+            Object asset = AssetDatabase.LoadAssetAtPath<GraphicsStateCollection>(pathName);
+            if (asset != null)
+            {
+                ProjectWindowUtil.ShowCreatedAsset(asset);
+            }
+            else
+            {
+                File.Delete(pathName);
+                Debug.LogError($"Failed to create Graphics State Collection asset at path: {pathName}");
+            }
         }
     }
 
