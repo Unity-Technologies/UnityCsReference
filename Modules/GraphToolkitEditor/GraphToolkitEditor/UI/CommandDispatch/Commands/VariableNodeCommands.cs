@@ -109,9 +109,10 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var constantModel in command.ConstantNodeModels ?? Enumerable.Empty<ConstantNodeModel>())
                 {
+                    var valueTypeHandle = constantModel.Value.GetTypeHandle();
                     var declarationModel = graphModel.CreateGraphVariableDeclaration(
-                        constantModel.Type.GenerateTypeHandle(),
-                        TypeHelpers.GetFriendlyName(constantModel.Type).CodifyString(), ModifierFlags.None,
+                        valueTypeHandle,
+                        TypeHelpers.GetFriendlyName(valueTypeHandle.Resolve()).CodifyString(), ModifierFlags.None,
                         VariableScope.Local, null, -1, constantModel.Value.Clone());
 
                     var variableModel = graphModel.CreateVariableNode(declarationModel, constantModel.Position);

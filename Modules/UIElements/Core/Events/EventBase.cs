@@ -39,7 +39,7 @@ namespace UnityEngine.UIElements
             None = 0,
             Bubbles = 1,
             TricklesDown = 2,
-            SkipDisabledElements = 4,
+            IgnoreDisabledElements = 4,
             BubblesOrTricklesDown = Bubbles | TricklesDown,
         }
 
@@ -171,18 +171,23 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool skipDisabledElements
+        /// <summary>
+        /// If this property is true, callbacks for this event are not invoked when the current target is disabled,
+        /// unless those callbacks are registered using the <see cref="CallbackOptions.IncludeDisabled"/> option.
+        /// </summary>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEvent}(EventCallback{TEvent}, CallbackOptions)"/>
+        public bool ignoreDisabledElements
         {
-            get { return (propagation & EventPropagation.SkipDisabledElements) != 0; }
-            set
+            get { return (propagation & EventPropagation.IgnoreDisabledElements) != 0; }
+            protected internal set
             {
                 if (value)
                 {
-                    propagation |= EventPropagation.SkipDisabledElements;
+                    propagation |= EventPropagation.IgnoreDisabledElements;
                 }
                 else
                 {
-                    propagation &= ~EventPropagation.SkipDisabledElements;
+                    propagation &= ~EventPropagation.IgnoreDisabledElements;
                 }
             }
         }

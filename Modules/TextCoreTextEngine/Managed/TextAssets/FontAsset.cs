@@ -106,6 +106,7 @@ namespace UnityEngine.TextCore.Text
     [Serializable][ExcludeFromPreset]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/FontAsset.h")]
+    [HelpURL("UIE-font-asset-landing")]
     public partial class FontAsset : TextAsset
     {
         static void EnsureAdditionalCapacity<T>(List<T> container, int additionalCapacity)

@@ -19,7 +19,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// This will produce shapes of type <see cref="LowLevelPhysics2D.PhysicsShape.ShapeType.ChainSegment"/>.
     ///
     ///- Chains are one-sided.
-    ///- A chain has no mass and should be used on static bodies.
+    ///- A chain has no mass therefore should ideally be used on static bodies.
     ///- A chain can have a counter-clockwise winding order (normal points right of segment direction).
     ///- A chain is either a loop or open.
     ///- A chain must have at least 4 points.

@@ -1551,6 +1551,12 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(aspectRatioStyleField);
             }
+            else if (IsComputedStyleFilter(val) && fieldElement is FilterStyleField filterField)
+            {
+                // filterField.value was already populated from currentVisualElement.computedStyle
+                // by the RefreshStyleField call preceding this DispatchChangeEvent call.
+                ApplyFilterListChange(filterField.value, true, filterField);
+            }
         }
 
         public void RefreshStyleField(FoldoutField foldoutElement)

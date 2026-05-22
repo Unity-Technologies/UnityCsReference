@@ -542,6 +542,7 @@ namespace Unity.GraphToolkit.Editor
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
+            var copyStr = shouldAddCopyStr ? "Copy of " : string.Empty;
             Dictionary<Hash128, DeclarationModel> portalDeclarations = new Dictionary<Hash128, DeclarationModel>();
             List<WirePortalModel> portalModels = new List<WirePortalModel>();
             List<WirePortalModel> existingPortalNodes = graphModel.NodeModels.OfType<WirePortalModel>().ToList();
@@ -610,6 +611,7 @@ namespace Unity.GraphToolkit.Editor
                     )
                     {
                         var declaration = graphModel.DuplicatePortal(portalNodeModel.DeclarationModel);
+                        declaration.Title = copyStr + portalNodeModel.Title;
 
                         portalDeclarations[portalNodeModel.DeclarationModel.Guid] = declaration;
                         portalNodeModel.SetDeclarationModel(declaration);
@@ -694,8 +696,6 @@ namespace Unity.GraphToolkit.Editor
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
-
-            var copyStr = shouldAddCopyStr ? "Copy of " : string.Empty;
 
             // Keep placemats relative order
             foreach (var placemat in copyPasteData.m_Placemats)

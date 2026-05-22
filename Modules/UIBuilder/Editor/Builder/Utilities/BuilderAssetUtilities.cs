@@ -1131,7 +1131,7 @@ namespace Unity.UI.Builder
                         var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(context.element);
                         templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
 
-                        var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
+                        var elementsToChange = templateContainerParent.Query(currentVisualElementName).Where(v => v.GetType() == context.element.GetType());
                         elementsToChange.ForEach(x =>
                         {
                             var templateVea = x.GetVisualElementAssetInTemplate();

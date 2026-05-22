@@ -474,6 +474,13 @@ namespace UnityEngine.UIElements.StyleSheets
             list.Clear();
             do
             {
+                var value = m_Values[m_CurrentValueIndex + index];
+
+                if (value.handle.valueType == StyleValueType.Keyword)
+                {
+                    break;
+                }
+
                 var filterType = (StyleValueFunction)GetValue(index++).handle.valueIndex;
                 int argCount = ReadInt(index++);
 

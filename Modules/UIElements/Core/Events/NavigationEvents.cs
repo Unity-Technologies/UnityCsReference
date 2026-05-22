@@ -197,7 +197,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
-                EventPropagation.SkipDisabledElements;
+                EventPropagation.IgnoreDisabledElements;
             modifiers = EventModifiers.None;
             deviceType = NavigationDeviceType.Unknown;
         }

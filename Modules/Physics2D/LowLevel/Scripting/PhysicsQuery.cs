@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Unity.Collections;
 using static UnityEngine.LowLevelPhysics2D.PhysicsLowLevelScripting2D;
 
 namespace UnityEngine.LowLevelPhysics2D
@@ -370,6 +371,12 @@ namespace UnityEngine.LowLevelPhysics2D
             public float moveTolerance { readonly get => m_MoveTolerance; set => m_MoveTolerance = Mathf.Max(0.01f, value); }
 
             /// <summary>
+            /// Whether to return all the individual <see cref="LowLevelPhysics2D.PhysicsShape.MoverCollision"/> results for all iterations or not.
+            /// All the collisions will be returned in the <see cref="LowLevelPhysics2D.PhysicsQuery.WorldMoverResult"/> results.
+            /// </summary>
+            public bool collisionResults { readonly get => m_CollisionResults; set => m_CollisionResults = value; }
+
+            /// <summary>
             /// Create a default world mover input.
             /// </summary>
             public static WorldMoverInput defaultInput { get => s_WorldMoverInput; }
@@ -382,7 +389,8 @@ namespace UnityEngine.LowLevelPhysics2D
                 velocity = Vector2.zero,
                 targetPosition = Vector2.zero,
                 maxIterations = 5,
-                moveTolerance = 0.1f
+                moveTolerance = 0.1f,
+                collisionResults = false
             };
 
             #region Internal
@@ -395,6 +403,7 @@ namespace UnityEngine.LowLevelPhysics2D
             [SerializeField] QueryFilter m_CastFilter;
             [SerializeField] int m_MaxIterations;
             [SerializeField] float m_MoveTolerance;
+            [SerializeField] bool m_CollisionResults;
 
             #endregion
         }
@@ -403,7 +412,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The world mover result used by the world mover.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct WorldMoverResult
+        public readonly struct WorldMoverResult : IDisposable
         {
             /// <summary>
             /// The final transform the mover finished at.
@@ -416,10 +425,23 @@ namespace UnityEngine.LowLevelPhysics2D
             /// </summary>
             public Vector2 velocity => m_Velocity;
 
+            /// <summary>
+            /// All the individual <see cref="LowLevelPhysics2D.PhysicsShape.MoverCollision"/> results for all iterations.
+            /// Multiple non-unique contacts for the same <see cref="LowLevelPhysics2D.PhysicsShape"/> may be returned due to iterations, overlapping and casting.
+            /// This is only populated if <see cref="LowLevelPhysics2D.PhysicsQuery.WorldMoverInput.collisionResults"/> is true.
+            /// </summary>
+            public NativeArray<PhysicsShape.MoverCollision> collisionResults => m_CollisionResults.ToNativeArray<PhysicsShape.MoverCollision>();
+
+            /// <summary>
+            /// Dispose of any allocated memory for the collision results.
+            /// </summary>
+            public void Dispose() => collisionResults.Dispose();
+
             #region Internal
 
             readonly PhysicsTransform m_Transform;
             readonly Vector2 m_Velocity;
+            readonly PhysicsBuffer m_CollisionResults;
 
             #endregion
         }

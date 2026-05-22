@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements.Experimental
             public string name;
             public string fileName;
             public int lineNumber;
+            public bool removable;
         }
 
         // Global registry
@@ -48,7 +49,14 @@ namespace UnityEngine.UIElements.Experimental
             }
         }
 
-        public static void RegisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback, TrickleDown useTrickleDown)
+        public static void UnregisterAllListeners(CallbackEventHandler ceh)
+        {
+            if (!IsEventDebuggerConnected)
+                return;
+            s_Listeners.Remove(ceh);
+        }
+
+        public static void RegisterListeners<TEventType>(CallbackEventHandler ceh, Delegate callback, CallbackOptions callbackOptions)
         {
             if (!IsEventDebuggerConnected || typeof(TEventType) == typeof(GeometryChangedEvent))
                 return;
@@ -61,6 +69,7 @@ namespace UnityEngine.UIElements.Experimental
 
             var declType = callback.Method.DeclaringType?.Name ?? string.Empty;
             string objectName = (callback.Target as VisualElement).GetDisplayName();
+            var useTrickleDown = (callbackOptions & CallbackOptions.TrickleDown) != 0 ? TrickleDown.TrickleDown : TrickleDown.NoTrickleDown;
             string itemName = declType + "." + callback.Method.Name + " > " + useTrickleDown + " [" + objectName + "]";
 
             List<ListenerRecord> callbackRecords;
@@ -76,7 +85,8 @@ namespace UnityEngine.UIElements.Experimental
                 hashCode = callback.GetHashCode(),
                 name = itemName,
                 fileName = callStack.GetFileName(),
-                lineNumber = callStack.GetFileLineNumber()
+                lineNumber = callStack.GetFileLineNumber(),
+                removable = (callbackOptions & CallbackOptions.Removable) != 0
             });
         }
 
@@ -105,6 +115,39 @@ namespace UnityEngine.UIElements.Experimental
             }
 
             s_Listeners.Remove(ceh);
+        }
+
+        private static readonly List<Type> k_TypesToRemove = new();
+        public static void UnregisterAllRemovableListeners(CallbackEventHandler ceh)
+        {
+            if (!IsEventDebuggerConnected)
+                return;
+            if (!s_Listeners.TryGetValue(ceh, out var dict))
+                return;
+
+            foreach (var kv in dict)
+            {
+                var callbackRecords = kv.Value;
+                for (var i = callbackRecords.Count - 1; i >= 0; i--)
+                {
+                    var callbackRecord = callbackRecords[i];
+                    if (callbackRecord.removable)
+                    {
+                        callbackRecords.RemoveAt(i);
+                    }
+                }
+                if (callbackRecords.Count == 0)
+                    k_TypesToRemove.Add(kv.Key);
+            }
+
+            if (k_TypesToRemove.Count > 0)
+            {
+                foreach (var type in k_TypesToRemove)
+                    dict.Remove(type);
+                k_TypesToRemove.Clear();
+                if (dict.Count == 0)
+                    s_Listeners.Remove(ceh);
+            }
         }
     }
 }

@@ -253,11 +253,24 @@ namespace Unity.GraphToolkit.Editor
                     Debug.LogError($"Error while saving new asset: {filePath}. {e.Message}");
                     return;
                 }
-                AssetDatabase.ImportAsset(filePath);
-                var guid = AssetDatabase.GUIDFromAssetPath(filePath);
-                GraphObjectFactory.RegisterNewGraphObject(this, guid);
-                AfterLoadForeignAsset(guid);
-                Dirty = false;
+
+                // Grouping these statements in an AssetEditingScope allows them to be run in a batch without interruption.
+                // This is important because importing the asset can trigger postprocessors (in particular the WindowAssetPostprocessingWatcher)
+                // which in turn might load and register another instance of this graph object. This will cause the below call to GraphObjectFactory.RegisterNewGraphObject()
+                // to log a warning because it (rightfully) expects that a graph object at this given file path should not have already been registered.
+                using (new AssetDatabase.AssetEditingScope())
+                {
+                    AssetDatabase.ImportAsset(filePath);
+                    var guid = AssetDatabase.GUIDFromAssetPath(filePath);
+
+                    if (guid != default)
+                    {
+                        GraphObjectFactory.RegisterNewGraphObject(this, guid);
+                        AfterLoadForeignAsset(guid);
+                    }
+
+                    Dirty = false;
+                }
             }
         }
 

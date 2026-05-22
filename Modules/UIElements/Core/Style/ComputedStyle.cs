@@ -34,6 +34,12 @@ namespace UnityEngine.UIElements
 
         private bool ApplyGlobalKeyword(StylePropertyReader reader, ref ComputedStyle parentStyle)
         {
+            if (reader.valueCount == 0)
+            {
+                ApplyInitialValue(reader);
+                return true;
+            }
+
             var handle = reader.GetValue(0).handle;
             if (handle.valueType == StyleValueType.Keyword)
             {

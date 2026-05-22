@@ -125,6 +125,8 @@ namespace Unity.GraphToolkit.Editor
 
         TypeHandle m_CurrentTypeHandle;
 
+        bool m_HasContextualMenuBeenBuilt; // for testing purposes
+
         /// <summary>
         /// The default port color.
         /// </summary>
@@ -599,11 +601,39 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
+            // Don't handle the contextual menu if the click is on the title of a capsule node.
+            // The title of a capsule node is part of the port container but shouldn't open the port's contextual menu.
+            if (IsMouseOnCapsuleNodeTitle(evt.mousePosition))
+            {
+                m_HasContextualMenuBeenBuilt = false;
+                return;
+            }
+
             // Build the contextual menu for the port in the Port class, not in GraphView. Ports cannot be selected, so we don't want to use the GraphView's contextual menu.
             var menuActionMap = new Dictionary<string, Action>();
             PopulateMenuActionMap(menuActionMap, evt);
             ViewSelection.BuildContextualMenu(ContextualMenuHelpers.CategorizeMenuItems(PortModel.ContextualMenuItems), evt, menuActionMap);
+            m_HasContextualMenuBeenBuilt = true;
             evt.StopPropagation();
+        }
+
+        bool IsMouseOnCapsuleNodeTitle(Vector2 mousePosition)
+        {
+            var isCapsuleNode = PortModel.NodeModel is ISingleInputPortNodeModel || PortModel.NodeModel is ISingleOutputPortNodeModel;
+            if (!isCapsuleNode)
+                return false;
+
+            if (PartList.GetPart(connectorPartName) is not PortConnectorPart portConnectorPart)
+                return false;
+
+            // The hit box limit element is either the root of the node title part or the constant editor part. We check if it is the node title part.
+            var hitBoxElement = portConnectorPart.HitBoxLimitElement;
+            if (hitBoxElement == null || hitBoxElement.name != CollapsibleInOutNodeView.titleIconContainerPartName)
+                return false;
+
+            // Transform mouse position to local space and check if it is within the element
+            Vector2 localPos = hitBoxElement.WorldToLocal(mousePosition);
+            return hitBoxElement.ContainsPoint(localPos);
         }
 
         void PopulateMenuActionMap(Dictionary<string, Action> menuActionMap, ContextualMenuPopulateEvent evt)
@@ -958,6 +988,19 @@ namespace Unity.GraphToolkit.Editor
         public virtual void ClearCulling()
         {
             m_CullingReference = null;
+        }
+
+        internal class TestAccess
+        {
+            readonly Port m_Port;
+
+            public TestAccess(Port port)
+            {
+                m_Port = port;
+            }
+
+            public bool HasContextualMenuBeenBuilt => m_Port.m_HasContextualMenuBeenBuilt;
+            public void CallBuildContextualMenu(ContextualMenuPopulateEvent e) => m_Port.BuildContextualMenu(e);
         }
     }
 }

@@ -53,8 +53,9 @@ namespace Unity.UI.Builder
 
             if (newFilterList == null || newFilterList.Count == 0)
             {
-                // Remove the property entirely if the filter list is empty
-                styleSheet.RemoveProperty(currentRule, styleProperty);
+                // Set to 'none' rather than removing the property, so the inline value
+                // can override any filter coming from a selector.
+                styleProperty.SetKeyword(styleSheet, StyleKeyword.None);
             }
             else
             {
