@@ -71,6 +71,7 @@ namespace UnityEditor
         ColorSpace m_ColorSpace;
 
         private bool m_DoubleClickDetected;
+        private bool m_PendingEndGesture;
 
         // Fixed steps are only used if numSteps > 1
         public void Init(Gradient gradient, int numSteps, bool hdr, ColorSpace colorSpace)
@@ -110,6 +111,10 @@ namespace UnityEditor
                     selectedSwatch = 0;
                 m_SelectedSwatch = swatches[selectedSwatch];
             }
+
+            // Sync an open ColorPicker with the refreshed selection to avoid stale values on Undo/Redo. (UUM-142114)
+            if (ColorPicker.visible && m_SelectedSwatch != null && !m_SelectedSwatch.m_IsAlpha)
+                ColorPicker.SetColorWithoutNotify(m_SelectedSwatch.m_Value);
         }
 
         public Gradient target
@@ -187,6 +192,8 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
+            UpdateDeferredUndoGroups();
+
             float modeHeight = 24f;
             float swatchHeight = 16f;
             float editSectionHeight = 26f;
@@ -195,7 +202,10 @@ namespace UnityEditor
             position.height = modeHeight;
             m_GradientMode = (GradientMode)EditorGUI.IntPopup(position, s_Styles.modeText, (int)m_GradientMode, s_Styles.modeTexts, s_Styles.modeValues);
             if (m_GradientMode != m_Gradient.mode)
+            {
                 AssignBack();
+                EndGradientGesture();
+            }
 
             position.y += modeHeight;
             position.height = swatchHeight;
@@ -241,6 +251,12 @@ namespace UnityEditor
                         sliderValue = Mathf.Clamp01(sliderValue);
                         m_SelectedSwatch.m_Value.r = m_SelectedSwatch.m_Value.g = m_SelectedSwatch.m_Value.b = sliderValue;
                         AssignBack();
+                        // Defer the gesture boundary until the slider is released; otherwise every drag
+                        // frame becomes its own undo entry.
+                        if (GUIUtility.hotControl == 0)
+                            EndGradientGesture();
+                        else
+                            m_PendingEndGesture = true;
                         HandleUtility.Repaint();
                     }
                 }
@@ -251,6 +267,7 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                     {
                         AssignBack();
+                        //EndGradientGesture();
                         HandleUtility.Repaint();
                     }
                 }
@@ -269,6 +286,12 @@ namespace UnityEditor
                 {
                     m_SelectedSwatch.m_Time = Mathf.Clamp(newLocation, 0f, 1f);
                     AssignBack();
+                    // Same defer pattern as the alpha slider: label-drag fires EndChangeCheck every
+                    // frame, so wait for the drag to end before pushing a gesture boundary.
+                    if (GUIUtility.hotControl == 0)
+                        EndGradientGesture();
+                    else
+                        m_PendingEndGesture = true;
                 }
 
                 EditorGUI.kFloatFieldFormatString = orgFormatString;
@@ -317,6 +340,7 @@ namespace UnityEditor
                     {
                         GUIUtility.hotControl = id;
                         evt.Use();
+                        EndGradientGesture();
 
                         // Make sure selected is topmost for the click
                         if (swatches.Contains(m_SelectedSwatch) && !m_SelectedSwatch.m_IsAlpha && CalcSwatchRect(position, m_SelectedSwatch).Contains(evt.mousePosition))
@@ -398,6 +422,7 @@ namespace UnityEditor
 
                         // Remove duplicate keys on mouse up so that we do not kill any keys during the drag
                         RemoveDuplicateOverlappingSwatches();
+                        EndGradientGesture();
                     }
                     else if (m_DoubleClickDetected)
                     {
@@ -423,6 +448,7 @@ namespace UnityEditor
                             {
                                 listToDeleteFrom.Remove(m_SelectedSwatch);
                                 AssignBack();
+                                EndGradientGesture();
                                 HandleUtility.Repaint();
                             }
                         }
@@ -449,6 +475,7 @@ namespace UnityEditor
                         {
                             swatches.Remove(m_SelectedSwatch);
                             AssignBack();
+                            EndGradientGesture();
                             HandleUtility.Repaint();
                         }
                     }
@@ -509,6 +536,24 @@ namespace UnityEditor
             m_Gradient.colorSpace = m_ColorSpace;
 
             GUI.changed = true;
+        }
+
+        // The binding's FieldValueChange collapses every gradient commit into the entry undo group;
+        // without an increment between gestures the entry never advances and they merge.
+        static void EndGradientGesture()
+        {
+            Undo.SetCurrentGroupName("Modify Gradient");
+            Undo.IncrementCurrentGroup();
+        }
+
+        // Fire a deferred gesture boundary once the held slider has been released.
+        void UpdateDeferredUndoGroups()
+        {
+            if (m_PendingEndGesture && GUIUtility.hotControl == 0)
+            {
+                EndGradientGesture();
+                m_PendingEndGesture = false;
+            }
         }
 
         // Kill any swatches that are at the same time (For example as the result of dragging a swatch on top of another)

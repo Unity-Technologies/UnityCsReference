@@ -207,11 +207,14 @@ namespace UnityEditor
 
         private static void ShowShaderProperties(Shader s)
         {
+            int n = s.GetPropertyCount();
+            if (n == 0)
+                return;
+
             GUILayout.Space(kSpace);
             s_PropertiesUnfolded = EditorGUILayout.Foldout(s_PropertiesUnfolded, "Properties", true);
             if (s_PropertiesUnfolded)
             {
-                int n = s.GetPropertyCount();
                 for (int i = 0; i < n; ++i)
                 {
                     string pname = s.GetPropertyName(i);
@@ -247,7 +250,7 @@ namespace UnityEditor
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUISkin.current.box, GUILayout.MinHeight(height));
 
             EditorGUIUtility.SetIconSize(new Vector2(16.0f, 16.0f));
-            float lineHeight = Styles.messageStyle.CalcHeight(EditorGUIUtility.TempContent(Styles.errorIcon), 100);
+            float lineHeight = Styles.messageStyle.CalcHeight(EditorGUIUtility.TempContent("ShaderName", Styles.errorIcon), 100);
 
             Event e = Event.current;
 

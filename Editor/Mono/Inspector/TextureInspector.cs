@@ -335,16 +335,12 @@ namespace UnityEditor
             serializedObject.Update();
             EditorGUI.BeginChangeCheck();
 
-            if (IsCubemapArray())
-            {
-                DoFilterModePopup();
-            }
-            else
+            if (!IsCubemapArray())
             {
                 DoWrapModePopup();
-                DoFilterModePopup();
-                DoAnisoLevelSlider();
             }
+            DoFilterModePopup();
+            DoAnisoLevelSlider();
 
             serializedObject.ApplyModifiedProperties();
 

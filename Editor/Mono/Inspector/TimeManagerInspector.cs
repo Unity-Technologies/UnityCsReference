@@ -65,8 +65,10 @@ namespace UnityEditor
                 var roundedTime = Math.Round(maxFixedTime, 4, MidpointRounding.AwayFromZero);
                 fixedTime = EditorGUILayout.FloatField(Content.fixedTimestepLabel, (float)roundedTime);
 
-                if (c.changed)
+                if (c.changed && !float.IsNaN(fixedTime) && !float.IsInfinity(fixedTime))
                 {
+                    // Clamp to minimum so the stored value matches the displayed clamping above
+                    fixedTime = MathF.Max(fixedTime, MinFixedTimeStep);
                     var newCount = RationalTime
                         .FromDouble(fixedTime, m_FixedTimeTicksPerSecond)
                         .Count; // convert it back to a count to store in the property

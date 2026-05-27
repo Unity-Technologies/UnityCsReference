@@ -759,13 +759,13 @@ namespace UnityEngine
         }
 
 
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static T FindObjectOfType<T>() where T : Object
         {
             return (T)FindObjectOfType(typeof(T), false);
         }
 
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static T FindObjectOfType<T>(bool includeInactive) where T : Object
         {
             return (T)FindObjectOfType(typeof(T), includeInactive);
@@ -821,7 +821,7 @@ namespace UnityEngine
 
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static Object FindObjectOfType(System.Type type)
         {
             Object[] objects = FindObjectsOfType(type, false);
@@ -846,7 +846,7 @@ namespace UnityEngine
 
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static Object FindObjectOfType(System.Type type, bool includeInactive)
         {
             Object[] objects = FindObjectsOfType(type, includeInactive);

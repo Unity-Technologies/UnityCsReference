@@ -43,6 +43,8 @@ namespace UnityEditor.UIElements
         // The GradientPicker will change the values in the arrays directly and will send commands to keep everything
         // in sync. Here, we're using this flag to force the value to be set when it is technically the same.
         private bool m_ForceSendEvent = false;
+        private int m_PickerUndoGroup;
+        private bool m_PickerHasChanges;
 
         /// <summary>
         /// The <see cref="Gradient"/> currently being exposed by the field.
@@ -104,6 +106,7 @@ namespace UnityEditor.UIElements
             gradientCopy.colorKeys = other.colorKeys;
             gradientCopy.alphaKeys = other.alphaKeys;
             gradientCopy.mode = other.mode;
+            gradientCopy.colorSpace = other.colorSpace;
             return gradientCopy;
         }
 
@@ -235,8 +238,34 @@ namespace UnityEditor.UIElements
 
         void ShowGradientPicker()
         {
-            GradientPicker.Show(rawValue, hdr, colorSpace, OnGradientChanged);
+            // Re-clicking the field while the picker is already shown for it must NOT advance the
+            // undo group or reset our bookkeeping. GradientPicker.Show() suppresses the previous
+            // OnPickerClosed in that case, so overwriting m_PickerUndoGroup here would leave the
+            // earlier in-session entries permanently un-collapsed on the eventual close.
+            if (!isShowingGradientPicker)
+            {
+                Undo.IncrementCurrentGroup();
+                m_PickerUndoGroup = Undo.GetCurrentGroup();
+                m_PickerHasChanges = false;
+            }
+            GradientPicker.Show(rawValue, hdr, colorSpace, OnGradientChanged, OnPickerClosed);
         }
+
+        void OnPickerClosed()
+        {
+            // Increment and name a new group before collapsing so that any redo entries created
+            // by mid-session undos are truncated from the stack. (UUM-142114)
+            if (m_PickerHasChanges)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.SetCurrentGroupName("Modify Gradient");
+            }
+            Undo.CollapseUndoOperations(m_PickerUndoGroup);
+        }
+
+        // We dont want Undo operations to be combined when the picker is still open so we will handle the collapsing. (UUM-142114)
+        internal override void RegisterEditingCallbacks() {}
+        internal override void UnregisterEditingCallbacks() {}
 
         internal override void OnViewDataReady()
         {
@@ -261,6 +290,7 @@ namespace UnityEditor.UIElements
 
         void OnGradientChanged(Gradient newValue)
         {
+            m_PickerHasChanges = true;
             m_ForceSendEvent = true;
             try
             {
@@ -283,12 +313,14 @@ namespace UnityEditor.UIElements
                 rawValue.colorKeys = newValue.colorKeys;
                 rawValue.alphaKeys = newValue.alphaKeys;
                 rawValue.mode = newValue.mode;
+                rawValue.colorSpace = newValue.colorSpace;
             }
             else // restore the internal gradient to the default state.
             {
                 rawValue.colorKeys = new[] { k_WhiteKeyBegin, k_WhiteKeyEnd };
                 rawValue.alphaKeys = new[] { k_AlphaKeyBegin, k_AlphaKeyEnd };
                 rawValue.mode = GradientMode.Blend;
+                rawValue.colorSpace = ColorSpace.Uninitialized;
             }
             UpdateGradientTexture();
 
@@ -333,7 +365,7 @@ namespace UnityEditor.UIElements
             {
                 var current = rawValue.colorKeys[i];
                 var next = v.colorKeys[i];
-                if (current.color != next.color || !Mathf.Approximately(next.time, next.time))
+                if (current.color != next.color || !Mathf.Approximately(current.time, next.time))
                     return false;
             }
 
@@ -341,11 +373,11 @@ namespace UnityEditor.UIElements
             {
                 var current = rawValue.alphaKeys[i];
                 var next = v.alphaKeys[i];
-                if (!Mathf.Approximately(current.alpha, next.alpha) || !Mathf.Approximately(next.time, next.time))
+                if (!Mathf.Approximately(current.alpha, next.alpha) || !Mathf.Approximately(current.time, next.time))
                     return false;
             }
 
-            return true;
+            return rawValue.colorSpace == v.colorSpace;
         }
     }
 }

@@ -664,7 +664,7 @@ namespace UnityEditor.Connect
 
                 m_CoppaManager = new CoppaManager(scrollContainer)
                 {
-                    saveButtonCallback = compliance =>
+                    changeCallback = _ =>
                     {
                         stateMachine.ProcessEvent(Event.Initializing);
                     },

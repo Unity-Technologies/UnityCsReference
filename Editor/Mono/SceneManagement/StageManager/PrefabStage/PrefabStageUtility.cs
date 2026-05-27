@@ -243,7 +243,9 @@ namespace UnityEditor.SceneManagement
                     string.Format(
                         L10n.Tr("The following scripts on the Prefab open in Prefab Mode use the [ExecuteInEditMode] attribute which means they may accidentally affect or be affected by Play Mode:\n\n{0}\n\nSee the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode."),
                         blockingNames),
-                    L10n.Tr("Exit Prefab Mode"), L10n.Tr("Ignore"));
+                    L10n.Tr("Exit Prefab Mode"), L10n.Tr("Ignore"),
+                    DialogOptOutDecisionType.ForThisMachine,
+                    "PrefabStageUtility.ExecuteInEditModeRisk");
             }
             return false;
         }

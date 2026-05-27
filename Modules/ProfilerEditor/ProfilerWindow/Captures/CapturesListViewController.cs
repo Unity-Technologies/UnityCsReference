@@ -37,6 +37,7 @@ namespace Unity.Profiling.Editor.UI
         readonly ProfilerWindow m_ProfilerWindow;
         readonly CaptureDataService m_CaptureDataService;
         readonly ScreenshotsManager m_ScreenshotsManager;
+        readonly Label m_CaptureRenameWarningLabel;
 
         string m_CurrentSearchText;
 
@@ -62,11 +63,12 @@ namespace Unity.Profiling.Editor.UI
         }
 
         public CapturesListViewController(ProfilerWindow profilerWindow,
-            CaptureDataService captureDataService, ScreenshotsManager screenshotsManager)
+            CaptureDataService captureDataService, ScreenshotsManager screenshotsManager, Label captureRenameWarningLabel)
         {
             m_ProfilerWindow = profilerWindow;
             m_CaptureDataService = captureDataService;
             m_ScreenshotsManager = screenshotsManager;
+            m_CaptureRenameWarningLabel = captureRenameWarningLabel;
 
             m_TreeViewControllers = new Dictionary<int, CaptureFileTreeItemViewController>();
 
@@ -283,7 +285,7 @@ namespace Unity.Profiling.Editor.UI
                 var itemId = m_CapturesCollection.GetIdForIndex(index);
 
                 if (!m_TreeViewControllers.TryGetValue(itemId, out var viewController))
-                    viewController = new CaptureFileTreeItemViewController(itemData.FileData, m_CaptureDataService, m_ScreenshotsManager, m_ProfilerWindow);
+                    viewController = new CaptureFileTreeItemViewController(itemData.FileData, m_CaptureDataService, m_ScreenshotsManager, m_ProfilerWindow, m_CaptureRenameWarningLabel);
 
                 viewController.IsLoaded = m_ProfilerWindow.CaptureFileIsOpen(itemData.FileData.FullPath);
 

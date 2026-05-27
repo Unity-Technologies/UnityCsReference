@@ -48,9 +48,15 @@ namespace UnityEditor.UIElements
                     DragAndDropVisualMode.None => DragVisualMode.None,
                     DragAndDropVisualMode.Move => DragVisualMode.Move,
                     DragAndDropVisualMode.Rejected => DragVisualMode.Rejected,
-                    _ => throw new ArgumentException($"Visual mode {DragAndDrop.visualMode} is not supported", nameof(visualMode), null)
+                    _ => LogUnsupportedVisualMode(DragAndDrop.visualMode)
                 };
             }
+        }
+
+        DragVisualMode LogUnsupportedVisualMode(DragAndDropVisualMode mode)
+        {
+            Debug.LogWarning($"Visual mode {mode} is not supported");
+            return DragVisualMode.None; // return default value
         }
 
         public override object GetGenericData(string key)

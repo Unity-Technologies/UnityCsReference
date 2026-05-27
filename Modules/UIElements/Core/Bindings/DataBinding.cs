@@ -41,6 +41,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     ///  Binding type that enables data synchronization between a property of a data source and a property of a <see cref="VisualElement"/>.
     /// </summary>
+    [Serializable]
     public partial class DataBinding : Binding, IDataSourceProvider
     {
         private static MethodInfo s_UpdateUIMethodInfo;

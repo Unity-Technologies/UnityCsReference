@@ -477,7 +477,7 @@ namespace UnityEngine.Rendering
 
         public bool isTransparent => (data & 1) != 0;
         public bool isMotionVectorsPassEnabled => (data & 1 << 1) != 0;
-        public bool isIndirectSupported => (data & 1 << 2) != 0;
+        public bool hasTessellation => (data & 1 << 2) != 0;
         public bool supportsCrossFade => (data & 1 << 3) != 0;
 
         public GPUDrivenPackedMaterialData()
@@ -485,11 +485,11 @@ namespace UnityEngine.Rendering
             data = 0;
         }
 
-        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool isIndirectSupported, bool supportsCrossFade)
+        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool hasTessellation, bool supportsCrossFade)
         {
             data = isTransparent ? 1u : 0u;
             data |= isMotionVectorsPassEnabled ? 1u << 1 : 0u;
-            data |= isIndirectSupported ? 1u << 2 : 0u;
+            data |= hasTessellation ? 1u << 2 : 0u;
             data |= supportsCrossFade ? 1u << 3 : 0u;
         }
 

@@ -63,8 +63,8 @@ namespace UnityEngine.Tilemaps
             get;
         }
 
-        public Vector3 GetCellCenterLocal(Vector3Int position) { return CellToLocalInterpolated(position) + CellToLocalInterpolated(tileAnchor); }
-        public Vector3 GetCellCenterWorld(Vector3Int position) { return LocalToWorld(CellToLocalInterpolated(position) + CellToLocalInterpolated(tileAnchor)); }
+        public Vector3 GetCellCenterLocal(Vector3Int position) { return CellToLocalInterpolated(position) + CellToLocalInterpolated(tileAnchorRatio); }
+        public Vector3 GetCellCenterWorld(Vector3Int position) { return LocalToWorld(GetCellCenterLocal(position)); }
 
         public BoundsInt cellBounds
         {
@@ -114,6 +114,12 @@ namespace UnityEngine.Tilemaps
         {
             get;
             set;
+        }
+
+        [NativeProperty(Name = "TileAnchorRatioScripting")]
+        internal extern Vector3 tileAnchorRatio
+        {
+            get;
         }
 
         public extern Orientation orientation

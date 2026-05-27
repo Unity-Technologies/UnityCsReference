@@ -111,8 +111,6 @@ namespace UnityEditor
         private static readonly List<PropertyEditor> m_AllPropertyEditors = new List<PropertyEditor>();
         private Object m_InspectedObject;
         private static PropertyEditor s_LastPropertyEditor;
-        private DropdownField m_PreviewDropdown;
-
         protected EntityId m_LastInitialEditorEntityId;
         protected Component[] m_ComponentsInPrefabSource;
         protected HashSet<Component> m_RemovedComponents;
@@ -207,8 +205,6 @@ namespace UnityEditor
 
         internal Rect scrollViewportRect => m_ScrollView.contentViewport.rect;
 
-        internal static bool s_StylesInit = false;
-
         protected static class Styles
         {
             public static readonly GUIStyle preToolbar = "preToolbar";
@@ -263,7 +259,6 @@ namespace UnityEditor
             {
                 vcsRevertStyle.padding.right = 15;
                 vcsBarStyleTwoRows.fixedHeight *= 2;
-                s_StylesInit = true;
             }
         }
 
@@ -1163,6 +1158,7 @@ namespace UnityEditor
         internal virtual void RebuildContentsContainers()
         {
             ClearPreviewables();
+            m_SelectedPreview = null;
             m_TypeSelectionList = null;
             m_FirstInitialize = false;
             editorsWithImportedObjectLabel.Clear();
@@ -1273,11 +1269,7 @@ namespace UnityEditor
                         previewItem = m_cachedPreviewEditor.CreatePreview(m_PreviewRootElement);
                         var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
 
-                        using var _pool = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-                        GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
-                        bool hasMixedPreviews = editorsWithPreviews.Count > 1;
-
-                        if (previewItem != null || hasMixedPreviews)
+                        if (previewItem != null)
                         {
                             // Temporary naming while in transition to UITK
                             InitUITKPreview();
@@ -1362,14 +1354,11 @@ namespace UnityEditor
         {
             // Toolbar
             PrepareToolbar();
-
-            UpdatePreviewHeader(m_PreviewRootElement);
+            UpdateLabel(m_PreviewRootElement);
 
             // Dragline
             m_SplitView.AddToClassList(PreviewRootElement.Styles.ussClassName);
             var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-            if (draglineAnchor != null)
-                draglineAnchor.style.marginLeft = 0;
             var dragline = draglineAnchor.Q(s_dragline);
             dragline.style.height = m_PreviewMinHeight;
             dragline.RegisterCallback<GeometryChangedEvent>(e =>
@@ -1427,7 +1416,7 @@ namespace UnityEditor
             if (previewEditor != null && previewEditor.HasPreviewGUI())
             {
                 string userDefinedTitle = previewEditor.GetPreviewTitle().text;
-                label = !String.IsNullOrEmpty(userDefinedTitle) ? userDefinedTitle : Styles.preTitle.text;
+                label = !String.IsNullOrEmpty(userDefinedTitle)? userDefinedTitle :  Styles.preTitle.text;
             }
             else
             {
@@ -1435,171 +1424,9 @@ namespace UnityEditor
             }
 
             var header = toolbar?.Q(PreviewRootElement.Styles.headerName);
-            if (header == null) return;
-
-            var dropdown = header.Q<DropdownField>("preview-selector-dropdown");
-            var titleLabel = header.Q(PreviewRootElement.Styles.titleName);
-
-            if (dropdown != null && dropdown.style.display != DisplayStyle.None)
+            if (header?.Q(PreviewRootElement.Styles.titleName) is Label labelElement)
             {
-                if (titleLabel != null)
-                    titleLabel.style.display = DisplayStyle.None;
-            }
-            else
-            {
-                if (dropdown != null)
-                    dropdown.style.display = DisplayStyle.None;
-                if (titleLabel is Label labelElement)
-                {
-                    labelElement.style.display = DisplayStyle.Flex;
-                    labelElement.text = label;
-                    var draglineAnchor = m_SplitView?.Q(s_draglineAnchor);
-                    if (draglineAnchor != null)
-                        draglineAnchor.style.marginLeft = 0;
-                }
-            }
-        }
-
-        void UpdatePreviewHeader(PreviewRootElement toolbar)
-        {
-            CreatePreviewables();
-
-            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-            GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
-            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
-
-            var header = toolbar?.Q(PreviewRootElement.Styles.headerName);
-            if (header == null) return;
-
-            // If we have more than one preview, show a dropdown.
-            if (editorsWithPreviews.Count > 1)
-            {
-                SetupPreviewDropdown(header, editorsWithPreviews, previewEditor);
-            }
-            else
-            {
-                HidePreviewDropdown(header);
-                UpdateLabel(toolbar);
-            }
-        }
-
-        void SetupPreviewDropdown(VisualElement header, List<IPreviewable> editorsWithPreviews, IPreviewable currentPreview)
-        {
-            // Ensure styles are correctly initialized before doing the setup of the preview dropdown
-            // This can be called before Styles are initialized on domain reload. This function will
-            // be called multiple times in that context, the first call only might sometimes be invalid.
-            if(!s_StylesInit)
-                return;
-
-            // Build the choices list with formatted titles.
-            var choices = new List<string>();
-            int selectedIndex = 0;
-
-            for (int i = 0; i < editorsWithPreviews.Count; i++)
-            {
-                IPreviewable editor = editorsWithPreviews[i];
-                GUIContent previewTitle = editor.GetPreviewTitle() ?? Styles.preTitle;
-
-                string fullTitle;
-                if (previewTitle == Styles.preTitle)
-                {
-                    string componentTitle = ObjectNames.GetTypeName(editor.target);
-                    if (NativeClassExtensionUtilities.ExtendsANativeType(editor.target))
-                    {
-                        componentTitle = MonoScript.FromScriptedObject(editor.target).GetClass().Name;
-                    }
-                    fullTitle = previewTitle.text + " - " + componentTitle;
-                }
-                else
-                {
-                    fullTitle = previewTitle.text;
-                }
-
-                choices.Add(fullTitle);
-
-                if (editor == currentPreview)
-                {
-                    selectedIndex = i;
-                }
-            }
-
-            var titleElement = header.Q(PreviewRootElement.Styles.titleName);
-            m_PreviewDropdown = header.Q<DropdownField>("preview-selector-dropdown");
-
-            if (m_PreviewDropdown != null)
-            {
-                titleElement.style.display = DisplayStyle.None;
-
-                m_PreviewDropdown.choices = choices;
-                m_PreviewDropdown.index = selectedIndex;
-                m_PreviewDropdown.focusable = false;
-
-                m_PreviewDropdown.UnregisterValueChangedCallback(OnPreviewDropdownChanged);
-                m_PreviewDropdown.RegisterValueChangedCallback(OnPreviewDropdownChanged);
-
-                m_PreviewDropdown.UnregisterCallback<GeometryChangedEvent>(OnTitleGeometryChanged);
-                m_PreviewDropdown.RegisterCallback<GeometryChangedEvent>(OnTitleGeometryChanged);
-            }
-        }
-
-        void OnTitleGeometryChanged(GeometryChangedEvent evt)
-        {
-            if (evt.newRect.width > 0)
-            {
-                var draglineAnchor = m_SplitView?.Q(s_draglineAnchor);
-                if (draglineAnchor != null)
-                {
-                    // When dropdown is visible, add a margin to the dragline so that it doesn't overlap with the dropdown.
-                    // Due to the dragline hierarchy complexity this is a simpler solution than trying to change the dragline position.
-                    draglineAnchor.style.marginLeft = evt.newRect.width;
-                }
-            }
-        }
-
-        void OnPreviewDropdownChanged(ChangeEvent<string> evt)
-        {
-            if (m_PreviewDropdown == null) return;
-
-            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-            GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
-
-            int selectedIndex = m_PreviewDropdown.index;
-            if (selectedIndex >= 0 && selectedIndex < editorsWithPreviews.Count)
-            {
-                m_SelectedPreview = editorsWithPreviews[selectedIndex];
-                m_cachedPreviewEditor = m_SelectedPreview;
-
-                var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-                draglineAnchor.style.marginLeft = m_PreviewDropdown.resolvedStyle.width;
-
-                var previewPane = m_PreviewRootElement.GetPreviewPane();
-                previewPane.Clear();
-
-                var previewItem = m_cachedPreviewEditor.CreatePreview(m_PreviewRootElement);
-                if (previewItem == null)
-                {
-                    // IMGUI fallback — same pattern as InitUITKPreview
-                    var imguiContainer = CreateIMGUIContainer(() => DrawPreview(m_cachedPreviewEditor), "preview");
-                    previewPane.Add(imguiContainer);
-                }
-
-                Repaint();
-            }
-        }
-
-        void HidePreviewDropdown(VisualElement header)
-        {
-            // Always query in case m_PreviewDropdown hasn't been set yet.
-            var dropdown = header.Q<DropdownField>("preview-selector-dropdown");
-            if (dropdown != null)
-            {
-                dropdown.style.display = DisplayStyle.None;
-            }
-
-            var titleLabel = header.Q(PreviewRootElement.Styles.titleName);
-            if (titleLabel != null)
-            {
-                titleLabel.style.display = DisplayStyle.Flex;
+                labelElement.text = label;
             }
         }
 
@@ -1732,10 +1559,7 @@ namespace UnityEditor
 
             if (m_SelectedPreview != null)
             {
-                if (!editors.Contains(m_SelectedPreview))
-                    m_SelectedPreview = null;
-                else
-                    return m_SelectedPreview;
+                return m_SelectedPreview;
             }
 
             // Find last interacted editor, if not found check if we had an editor of similar type,
@@ -1824,24 +1648,9 @@ namespace UnityEditor
 
             foreach (var previewable in m_Previews)
             {
-                if (previewable != null && previewable.HasPreviewGUI())
+                if (previewable.HasPreviewGUI())
                     outEditorsWithPreview.Add(previewable);
             }
-
-            outEditorsWithPreview.Sort((a, b) =>
-            {
-                // Created a simple VE rather than a PreviewRootElement here for the sorting
-                var temp = new VisualElement();
-                bool aIsUITK = a.CreatePreview(temp) != null;
-                bool bIsUITK = b.CreatePreview(temp) != null;
-
-                if (aIsUITK != bIsUITK)
-                    return bIsUITK.CompareTo(aIsUITK);
-
-                var labelA = a.GetPreviewTitle().text;
-                var labelB = b.GetPreviewTitle().text;
-                return labelA.CompareTo(labelB);
-            });
         }
 
         internal virtual Object GetInspectedObject()
@@ -1941,26 +1750,76 @@ namespace UnityEditor
                 dragIconRect.width = dragRect.width - dragPadding * 2;
                 dragIconRect.height = Styles.dragHandle.fixedHeight;
 
-                float maxLabelWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
-                float labelWidth = Mathf.Min(maxLabelWidth, Styles.preToolbar2.CalcSize(title).x);
-                Rect labelRect = new Rect(dragRect.x, dragRect.y, labelWidth, dragRect.height);
+                //If we have more than one component with Previews, show a DropDown menu.
+                if (editorsWithPreviews.Count > 1)
+                {
+                    Vector2 foldoutSize = Styles.preDropDown.CalcSize(title);
+                    float maxFoldoutWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
+                    float foldoutWidth = Mathf.Min(maxFoldoutWidth, foldoutSize.x);
+                    Rect foldoutRect = new Rect(dragRect.x, dragRect.y, foldoutWidth, foldoutSize.y);
+                    dragRect.xMin += foldoutWidth;
+                    dragIconRect.xMin += foldoutWidth;
 
-                dragIconRect.xMin = labelRect.xMax + dragPadding;
+                    GUIContent[] panelOptions = new GUIContent[editorsWithPreviews.Count];
+                    int selectedPreview = -1;
+                    for (int index = 0; index < editorsWithPreviews.Count; index++)
+                    {
+                        IPreviewable currentEditor = editorsWithPreviews[index];
+                        GUIContent previewTitle = currentEditor.GetPreviewTitle() ?? Styles.preTitle;
 
-                GUI.Label(labelRect, title, Styles.preToolbarLabel);
+                        string fullTitle;
+                        if (previewTitle == Styles.preTitle)
+                        {
+                            string componentTitle = ObjectNames.GetTypeName(currentEditor.target);
+                            if (NativeClassExtensionUtilities.ExtendsANativeType(currentEditor.target))
+                            {
+                                componentTitle = MonoScript.FromScriptedObject(currentEditor.target).GetClass()
+                                    .Name;
+                            }
+
+                            fullTitle = previewTitle.text + " - " + componentTitle;
+                        }
+                        else
+                        {
+                            fullTitle = previewTitle.text;
+                        }
+
+                        panelOptions[index] = new GUIContent(fullTitle);
+                        if (editorsWithPreviews[index] == previewEditor)
+                        {
+                            selectedPreview = index;
+                        }
+                    }
+
+                    if (GUI.Button(foldoutRect, title, Styles.preDropDown))
+                    {
+                        EditorUtility.DisplayCustomMenu(foldoutRect, panelOptions, selectedPreview,
+                            OnPreviewSelected, editorsWithPreviews.ToArray());
+                    }
+                }
+                else
+                {
+                    float maxLabelWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
+                    float labelWidth = Mathf.Min(maxLabelWidth, Styles.preToolbar2.CalcSize(title).x);
+                    Rect labelRect = new Rect(dragRect.x, dragRect.y, labelWidth, dragRect.height);
+
+                    dragIconRect.xMin = labelRect.xMax + dragPadding;
+
+                    GUI.Label(labelRect, title, Styles.preToolbarLabel);
+                }
+
+                if (m_HasPreview && Event.current.type == EventType.Repaint)
+                {
+                    // workaround: To properly center the image because it already has a 1px bottom padding
+                    dragIconRect.y += 1;
+                    Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
+                }
+
+                if (m_HasPreview && m_PreviewResizer.GetExpandedBeforeDragging())
+                    previewEditor.OnPreviewSettings();
+
+                EndDrawPreviewAndLabels(evt, rect, dragRect);
             }
-
-            if (m_HasPreview && Event.current.type == EventType.Repaint)
-            {
-                // workaround: To properly center the image because it already has a 1px bottom padding
-                dragIconRect.y += 1;
-                Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
-            }
-
-            if (m_HasPreview && m_PreviewResizer.GetExpandedBeforeDragging())
-                previewEditor.OnPreviewSettings();
-
-            EndDrawPreviewAndLabels(evt, rect, dragRect);
             EditorGUILayout.EndHorizontal();
 
             // Logic for resizing and collapsing
@@ -2052,6 +1911,12 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndVertical();
+        }
+
+        private void OnPreviewSelected(object userData, string[] options, int selected)
+        {
+            var availablePreviews = (IPreviewable[])userData;
+            m_SelectedPreview = availablePreviews[selected];
         }
 
         internal static void VersionControlBar(Editor assetEditor) => VersionControlBar(new[] { assetEditor });

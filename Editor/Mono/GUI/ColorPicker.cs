@@ -1220,12 +1220,32 @@ namespace UnityEditor
             Close();
         }
 
-        private void SetColor(Color c)
+        internal static void SetColorWithoutNotify(Color c)
         {
+            if (s_Instance == null)
+                return;
+
+            if (s_Instance.TryUpdateColor(c))
+                s_Instance.Repaint();
+        }
+
+        private bool TryUpdateColor(Color c)
+        {
+            if (m_Color.exposureAdjustedColor == c)
+                return false;
+
             m_Color.SetColorChannelHdr(RgbaChannel.R, c.r);
             m_Color.SetColorChannelHdr(RgbaChannel.G, c.g);
             m_Color.SetColorChannelHdr(RgbaChannel.B, c.b);
             m_Color.SetColorChannelHdr(RgbaChannel.A, c.a);
+            return true;
+        }
+
+        private void SetColor(Color c)
+        {
+            // Avoid echoing a ColorPickerChanged command if the color hasn't changed (e.g. on undo). (UUM-142114)
+            if (!TryUpdateColor(c))
+                return;
 
             OnColorChanged();
             Repaint();

@@ -118,6 +118,7 @@ namespace UnityEngine
         extern public bool drawInstanced { get; set; }
 
         extern public bool enableHeightmapRayTracing { get; set; }
+        extern public bool enableHeightmapLODFrustumCulling { get; set; }
 
         extern public RenderTexture normalmapTexture { [NativeMethod("TryGetNormalMapTexture")] get; }
 

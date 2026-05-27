@@ -16,19 +16,14 @@ namespace UnityEditor.Connect
         VisualElement m_VisualElement;
 
         /// <summary>
-        /// The default constructor for the COPPA UI drawer that subscribes to the callback events
-        /// for the Cancel and Save buttons.
+        /// The default constructor for the COPPA UI drawer that subscribes to the COPPA compliance change callback.
         /// </summary>
         public CoppaDrawer()
         {
             m_VisualElement = new VisualElement();
             var coppaManager = new CoppaManager(m_VisualElement)
             {
-                cancelButtonCallback = _ =>
-                {
-                    OnProjectStateChanged();
-                },
-                saveButtonCallback = _ =>
+                changeCallback = _ =>
                 {
                     OnProjectStateChanged();
                 },

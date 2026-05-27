@@ -17,12 +17,14 @@ namespace UnityEditor.Shaders
         private SerializedObject m_SettingsDataStore = null;
         private SerializedProperty m_SettingsProperty = null;
         private bool m_IsTargetingBuildProfile = false;
-
-        //private bool m_StateChanged = false;
+        private bool m_HasUnsavedChanges = false;
 
         private ListView m_ListView;
         private Button m_ApplyButton;
         private Button m_RevertButton;
+
+        public bool HasUnsavedChanges => m_HasUnsavedChanges;
+
 
         public void Initialize(VisualElement root, SerializedObject settingsDataStore, bool isTargetingBuildProfile)
         {
@@ -94,14 +96,16 @@ namespace UnityEditor.Shaders
         {
             m_ApplyButton.SetEnabled(true);
             m_RevertButton.SetEnabled(true);
-            //m_StateChanged = true;
+            m_HasUnsavedChanges = true;
         }
 
         private void ClearSettingsChangedState()
         {
+            m_HasUnsavedChanges = false;
+            if (m_ApplyButton == null)
+                return;
             m_ApplyButton.SetEnabled(false);
             m_RevertButton.SetEnabled(false);
-            //m_StateChanged = false;
         }
 
         private void OnItemsAdded(IEnumerable<int> items)
@@ -114,7 +118,36 @@ namespace UnityEditor.Shaders
             SettingsChanged();
         }
 
-        private void OnApplyClicked(ClickEvent evt)
+        private void OnItemIndexChanged(int oldIndex, int newIndex)
+        {
+            SettingsChanged();
+        }
+
+        public void HandleUnsavedChangesDialog(string buildProfileName = null)
+        {
+            if (!m_HasUnsavedChanges)
+                return;
+
+            string message = string.IsNullOrEmpty(buildProfileName)
+                ? L10n.Tr("Shader Build Settings have been modified.\nDo you want to apply changes?")
+                : string.Format(L10n.Tr("Shader Build Settings have been modified in build profile \"{0}\".\nDo you want to apply changes?"), buildProfileName);
+
+            if (EditorUtility.DisplayDialog(
+                L10n.Tr("Unapplied Changes"),
+                message,
+                L10n.Tr("Apply"),
+                L10n.Tr("Revert")))
+            {
+                ApplySettings();
+            }
+            else
+            {
+                LoadSettingsData();
+                ClearSettingsChangedState();
+            }
+        }
+
+        private void ApplySettings()
         {
             string msg;
             if (ShaderBuildSettings.ValidateKeywordDeclarationOverrides(m_KeywordDeclarationOverrides.ToArray(), out msg))
@@ -126,6 +159,11 @@ namespace UnityEditor.Shaders
             {
                 Debug.LogError(msg);
             }
+        }
+
+        private void OnApplyClicked(ClickEvent evt)
+        {
+            ApplySettings();
         }
 
         private void OnRevertClicked(ClickEvent evt)
