@@ -88,6 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
+            public static readonly GUIContent showAIButton = EditorGUIUtility.TrTextContent("Show AI Button", "Shows the AI button in the main editor toolbar. This will not disable AI features if you have enabled them, it will only hide the toolbar button.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
 By default, Windows will combine these under a single taskbar item.");
@@ -624,6 +625,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
+            DrawShowAIButton();
             EditorGUILayout.Space();
 
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
@@ -774,6 +776,35 @@ By default, Windows will combine these under a single taskbar item.");
                 // Transfer native
                 EditorApplication.UpdateTooltipsInPlayModeSettings();
             }
+        }
+
+        void DrawShowAIButton()
+        {
+            // Key shared with Modules/EditorToolbar/ToolbarElements/AIDropdown.cs (k_ShowAIButtonPrefKey)
+            // and the com.unity.ai.assistant package's AIToolbarButtonLegacy. Keep all three in sync.
+            const string key = "Unity.AI.ShowAIButton";
+            var value = EditorPrefs.GetBool(key, true);
+
+            EditorGUI.BeginChangeCheck();
+            value = EditorGUILayout.Toggle(GeneralProperties.showAIButton, value);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(key, value);
+                ApplyAIButtonVisibility(value);
+            }
+        }
+
+        // Both the engine button (AIDropdown) and the package button (injected by AIToolbarButtonLegacy in
+        // com.unity.ai.assistant) carry the same USS class, so a single query handles whichever one is present.
+        // Class string mirrored from Modules/EditorToolbar/ToolbarElements/AIDropdown.cs (k_AIButtonClassName).
+        const string k_AIButtonClassName = "ai-toolbar-button-legacy";
+
+        static void ApplyAIButtonVisibility(bool visible)
+        {
+            var toolbar = (VisualElement)Toolbar.get?.windowBackend?.visualTree;
+            var button = toolbar?.Q(className: k_AIButtonClassName);
+            if (button != null)
+                button.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public void ApplyChangesToPrefs(bool force = false)

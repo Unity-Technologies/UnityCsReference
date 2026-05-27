@@ -21,6 +21,8 @@ namespace UnityEditor
                 //Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Editor Utility/Store";
                 yield return "Package Management/Package Manager";
+                //Modules/EditorToolbar/ToolbarElements/AIDropdown.cs
+                yield return "Services/AI";
                 //Editor/Mono/GUI/Toolbars/MainToolbarImguiContainer.cs
                 yield return "Editor Utility/Imgui Subtoolbars";
             }

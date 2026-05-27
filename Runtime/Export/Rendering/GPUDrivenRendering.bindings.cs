@@ -443,18 +443,18 @@ namespace UnityEngine.Rendering
 
         public bool isTransparent => (data & 1) != 0;
         public bool isMotionVectorsPassEnabled => (data & 1 << 1) != 0;
-        public bool isIndirectSupported => (data & 1 << 2) != 0;
+        public bool hasTessellation => (data & 1 << 2) != 0;
 
         public GPUDrivenPackedMaterialData()
         {
             data = 0;
         }
 
-        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool isIndirectSupported)
+        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool hasTessellation)
         {
             data = isTransparent ? 1u : 0u;
             data |= isMotionVectorsPassEnabled ? 1u << 1 : 0u;
-            data |= isIndirectSupported ? 1u << 2 : 0u;
+            data |= hasTessellation ? 1u << 2 : 0u;
         }
 
         public bool Equals(GPUDrivenPackedMaterialData other)

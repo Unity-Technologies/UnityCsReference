@@ -32,6 +32,9 @@ namespace UnityEditor
             public static readonly string linearLabel = L10n.Tr("Linear");
 
             public static readonly string readableLabel = L10n.Tr("Readable");
+
+            public static readonly string filterModeLabel = L10n.Tr("Filter Mode");
+            public static readonly string anisoLevelLabel = L10n.Tr("Aniso Level");
         }
 
         private Texture2D[] m_Images;
@@ -123,6 +126,8 @@ namespace UnityEditor
 
             HandleLinearSamplingGUI(c);
             HandleReadableGUI(c);
+            HandleFilterModeGUI(c);
+            HandleAnisoLevelGUI(c);
         }
 
         private void DisplayInspectorForCompressedCubemap(Cubemap c)
@@ -135,6 +140,8 @@ namespace UnityEditor
                 HandleStreamingMipmapGUI(c);
             }
             HandleReadableGUI(c);
+            HandleFilterModeGUI(c);
+            HandleAnisoLevelGUI(c);
         }
 
         private void HandleFaceSelectionGUI()
@@ -237,6 +244,39 @@ namespace UnityEditor
                 }
 
                 return readable;
+            }
+        }
+
+        private FilterMode HandleFilterModeGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                FilterMode filterMode = c.filterMode;
+                filterMode = (FilterMode)EditorGUILayout.EnumPopup(Styles.filterModeLabel, filterMode);
+
+                if (changed.changed)
+                {
+                    c.filterMode = filterMode;
+                }
+
+                return filterMode;
+            }
+        }
+
+        private int HandleAnisoLevelGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                int anisoLevel = c.anisoLevel;
+                anisoLevel = EditorGUILayout.IntSlider(Styles.anisoLevelLabel, anisoLevel, 0, 16);
+
+                if (changed.changed)
+                {
+                    c.anisoLevel = anisoLevel;
+                }
+                DoAnisoGlobalSettingNote(anisoLevel);
+
+                return anisoLevel;
             }
         }
 

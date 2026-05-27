@@ -1103,51 +1103,56 @@ namespace UnityEditor
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
-            // Add ellipsis truncation for labels
+            // Add ellipsis truncation for labels. We have to restore the original clipping in a
+            // finally block because sub-methods may throw an exception, which would otherwise leak
+            // the mutated shared style to the rest of the editor.
             var previousTextClipping = EditorStyles.label.clipping;
             EditorStyles.label.clipping = TextClipping.Ellipsis;
-
-            int sectionIndex = 0;
-
-            if (serializedObjectUpdated)
+            try
             {
-                m_IconsEditor.SerializedObjectUpdated();
-                foreach (var settingsExtension in m_SettingsExtensions)
+                int sectionIndex = 0;
+
+                if (serializedObjectUpdated)
                 {
-                    settingsExtension?.SerializedObjectUpdated();
+                    m_IconsEditor.SerializedObjectUpdated();
+                    foreach (var settingsExtension in m_SettingsExtensions)
+                    {
+                        settingsExtension?.SerializedObjectUpdated();
+                    }
+                }
+
+                m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
+
+                ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+
+                PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
+
+                EditorGUILayout.EndPlatformGrouping();
+
+                serializedObject.ApplyModifiedProperties();
+
+                if (hasPresetWindowClosed)
+                {
+                    // We recompile after the window is closed just to make sure all the values are set/shown correctly.
+                    // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
+                    // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
+                    SetReason(RecompileReason.presetChanged);
+
+                    OnPresetSelectorClosed();
+                }
+                else if (HasReasonToCompile())
+                {
+                    RecompileScripts();
                 }
             }
-
-            m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
-
-            ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-
-            PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
-
-            EditorGUILayout.EndPlatformGrouping();
-
-            serializedObject.ApplyModifiedProperties();
-
-            if (hasPresetWindowClosed)
+            finally
             {
-                // We recompile after the window is closed just to make sure all the values are set/shown correctly.
-                // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
-                // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
-                SetReason(RecompileReason.presetChanged);
-
-                OnPresetSelectorClosed();
+                EditorStyles.label.clipping = previousTextClipping;
             }
-            else if (HasReasonToCompile())
-            {
-                RecompileScripts();
-            }
-
-            // Resetting truncation of labels back 
-            EditorStyles.label.clipping = previousTextClipping;
         }
 
         void DisplayBuildProfileHelpBoxIfNeeded()
