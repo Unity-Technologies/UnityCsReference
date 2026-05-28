@@ -2641,21 +2641,41 @@ namespace UnityEditor
             value.success = UINumericFieldsUtils.TryConvertStringToLong(str, out value.longVal, out value.expression);
         }
 
+        // Past this size, ResizeArray and ReorderableList cache allocation can freeze the Editor for minutes
+        // and consume gigabytes of memory; confirm with the user before applying.
+        internal const int kArraySizeConfirmationThreshold = 1000;
+
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_ArraySizeFieldHash, FocusType.Keyboard, position);
 
+            bool wasChanged = GUI.changed;
             BeginChangeCheck();
             string str = DelayedTextFieldInternal(position, id, label, value.ToString(kIntFieldFormatString), "0123456789-", style);
             if (EndChangeCheck())
             {
-                try
+                if (!int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out int newValue))
                 {
-                    value = int.Parse(str, CultureInfo.InvariantCulture.NumberFormat);
+                    EditorUtility.DisplayDialog(
+                        L10n.Tr("Invalid array size"),
+                        string.Format(L10n.Tr("\"{0}\" is not a valid array size. Allowed values are between 0 and {1:N0}."), str, int.MaxValue),
+                        L10n.Tr("OK"));
+                    GUI.changed = wasChanged;
+                    return value;
                 }
-                catch (FormatException)
+                if (newValue > kArraySizeConfirmationThreshold && newValue > value)
                 {
+                    if (!EditorUtility.DisplayDialog(
+                        L10n.Tr("Resize array"),
+                        string.Format(L10n.Tr("You are about to resize this array to {0:N0} elements. This may take a long time and use a lot of memory. Are you sure?"), newValue),
+                        L10n.Tr("Resize"),
+                        L10n.Tr("Cancel")))
+                    {
+                        GUI.changed = wasChanged;
+                        return value;
+                    }
                 }
+                value = newValue;
             }
             return value;
         }

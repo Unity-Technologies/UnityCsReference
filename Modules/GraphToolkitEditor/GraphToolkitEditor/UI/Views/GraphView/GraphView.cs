@@ -4018,11 +4018,14 @@ namespace Unity.GraphToolkit.Editor
             ComputeAndUpdateBounds();
 
             // Elements to repartition
-            using var pooledToRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var elementsToRepartitionByContainer);
+            using var pooledToRepartition = DictionaryPool<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var elementsToRepartitionByContainer);
 
-            using var pooledToPlacematByLayoutRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematUsingLayoutByContainer);
-            using var pooledToPlacematByBoundingBoxRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematUsingBoundingBoxByContainer);
+            using var pooledToPlacematByLayoutRepartition = DictionaryPool<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematUsingLayoutByContainer);
+            using var pooledToPlacematByBoundingBoxRepartition = DictionaryPool<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematUsingBoundingBoxByContainer);
 
+            using var pooledToRemove = DictionaryPool<VisualElement, List<GraphElementSpacePartitioningKey>>.Get(out var elementsToRemoveByContainer);
+            List<GraphElementSpacePartitioningKey> elementsToRemoveFromAllContainer = null;
+            try
             {
                 using var updater = GraphViewModel.GraphViewCullingState.UpdateScope;
                 foreach (var graphElementSpacePartitioningKey in changeset.ElementsToPartition)
@@ -4047,8 +4050,6 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 // Elements to remove from partitioning
-                using var pooledToRemove = DictionaryPool<VisualElement, List<GraphElementSpacePartitioningKey>>.Get(out var elementsToRemoveByContainer);
-                List<GraphElementSpacePartitioningKey> elementsToRemoveFromAllContainer = null;
                 foreach (var (container, graphElementSpacePartitioningKey) in changeset.ElementsToRemoveFromPartitioning)
                 {
                     // Elements that are removed from space partitioning should no longer be culled.
@@ -4145,19 +4146,21 @@ namespace Unity.GraphToolkit.Editor
                         kvp.Value.RemoveElements(elementsToRemoveFromAllContainer);
                 }
 
-
+            }
+            finally
+            {
                 // Release inner pooled collections.
                 foreach (var elementList in elementsToRepartitionByContainer.Values)
                 {
-                    ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+                    HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
                 }
                 foreach (var elementList in placematUsingLayoutByContainer.Values)
                 {
-                    ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+                    HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
                 }
                 foreach (var elementList in placematUsingBoundingBoxByContainer.Values)
                 {
-                    ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+                    HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
                 }
 
                 foreach (var keyList in elementsToRemoveByContainer.Values)
@@ -4167,7 +4170,6 @@ namespace Unity.GraphToolkit.Editor
 
                 if (elementsToRemoveFromAllContainer != null)
                     ListPool<GraphElementSpacePartitioningKey>.Release(elementsToRemoveFromAllContainer);
-
             }
             // Update GraphElements in view
             UpdateGraphElementsInView();
@@ -4244,10 +4246,11 @@ namespace Unity.GraphToolkit.Editor
             if (allViews.Count == 0)
                 return;
 
-            using var pooledToRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var elementsToRepartitionByContainer);
-            using var pooledPlacematUsingBoundingBoxToRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematsByBoundingBoxToRepartitionByContainer);
-            using var pooledPlacematUsingLayoutToRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematsByLayoutToRepartitionByContainer);
+            using var pooledToRepartition = DictionaryPool<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var elementsToRepartitionByContainer);
+            using var pooledPlacematUsingBoundingBoxToRepartition = DictionaryPool<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematsByBoundingBoxToRepartitionByContainer);
+            using var pooledPlacematUsingLayoutToRepartition = DictionaryPool<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var placematsByLayoutToRepartitionByContainer);
 
+            try
             {
                 using var updater = GraphViewModel.GraphViewCullingState.UpdateScope;
                 foreach (var childView in allViews)
@@ -4295,20 +4298,23 @@ namespace Unity.GraphToolkit.Editor
                     spacePartitioning?.AddOrUpdateElements(elementsToRepartition);
                 }
 
+            }
+            finally
+            {
                 // Release inner pooled collections.
                 foreach (var elementList in elementsToRepartitionByContainer.Values)
                 {
-                    ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+                    HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
                 }
 
                 foreach (var elementList in placematsByLayoutToRepartitionByContainer.Values)
                 {
-                    ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+                    HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
                 }
 
                 foreach (var elementList in placematsByBoundingBoxToRepartitionByContainer.Values)
                 {
-                    ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+                    HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
                 }
             }
 
@@ -4351,7 +4357,7 @@ namespace Unity.GraphToolkit.Editor
             m_GraphElementsInView.Clear();
         }
 
-        static void AddViewToSpacePartitioningByContainer(GraphElement view, VisualElement container, Dictionary<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>> elementsToRepartitionByContainer, bool useLayout = false)
+        static void AddViewToSpacePartitioningByContainer(GraphElement view, VisualElement container, Dictionary<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>> elementsToRepartitionByContainer, bool useLayout = false)
         {
             if (view == null || !view.CanBePartitioned())
                 return;
@@ -4363,13 +4369,11 @@ namespace Unity.GraphToolkit.Editor
 
                 if (!elementsToRepartitionByContainer.TryGetValue(container, out var elementsToRepartition))
                 {
-                    elementsToRepartition = ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get();
+                    elementsToRepartition = HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get();
                     elementsToRepartitionByContainer[container] = elementsToRepartition;
                 }
 
-                // Add the element if not already present.
-                if (!elementsToRepartition.Contains(elementToRepartition))
-                    elementsToRepartition.Add(elementToRepartition);
+                elementsToRepartition.Add(elementToRepartition);
             }
         }
 
@@ -4455,7 +4459,7 @@ namespace Unity.GraphToolkit.Editor
             using var pooledChildViewList = ListPool<ChildView>.Get(out var childViewList);
             GraphModel.GetGraphElementModels().GetAllViews(this, modelView => modelView is GraphElement ge && ge.parent == container, childViewList);
 
-            using var pooledList = ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get(out var elementsToPartition);
+            using var pooledList = HashSetPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get(out var elementsToPartition);
             foreach (var modelView in childViewList)
             {
                 if (modelView is not GraphElement ge || !ge.CanBePartitioned())

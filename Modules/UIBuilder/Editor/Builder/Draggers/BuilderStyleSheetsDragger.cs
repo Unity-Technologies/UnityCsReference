@@ -155,25 +155,31 @@ namespace Unity.UI.Builder
             {
                 var toReparent = elementToReparent.element;
 
+                // Drop on self
                 if (newParent == toReparent)
                     return false;
 
+                // Either is parent selector
                 if (element.IsParentSelector() || toReparent.IsParentSelector())
                     return false;
 
+                // Drop non-selector onto selector
                 if (element.IsSelector() && !toReparent.IsSelector())
                     return false;
 
-                if (element.IsStyleSheet() && toReparent.IsSelector())
+                // Drop selector onto non-selector (UUM-140859)
+                if (toReparent.IsSelector() && !element.IsSelector())
                     return false;
 
                 // Check if USS is part of active document.
                 if (element.IsStyleSheet() && toReparent.IsStyleSheet() && !string.IsNullOrEmpty(element.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
                     return false;
 
+                // Destination is a real UXML element
                 if (element.IsPartOfCurrentDocument())
                     return false;
 
+                // Destination is in hierarchy panel UI
                 if (element.HasAncestor(builderHierarchyRoot))
                     return false;
             }

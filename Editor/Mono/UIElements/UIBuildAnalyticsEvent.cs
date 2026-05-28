@@ -11,10 +11,19 @@ using UnityEngine.Analytics;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.Audio.Analytics;
+namespace UnityEditor.UIElements.Analytics;
 
-class UIBuildAnalyticsEvent : IPostprocessBuildWithReport
+internal class UIBuildAnalyticsEvent : IPostprocessBuildWithReport
 {
+    internal static readonly GUID[] ExcludedAssets =
+    {
+        // Assets from Packages/com.unity.render-pipelines.core/Runtime/Debugging/Runtime UI Resources/
+        new GUID("fa69697be3070b04a893666f5947f18c"), // RuntimeDebugWindow_PanelSettings.asset
+        new GUID("0ff99fd36f66f1a41bcc1d3c90e0922a"), // DebugWindowCommon.uss
+        new GUID("76404632120e0ae4885fc7be8197097c"), // RuntimeDebugWindow.tss
+        new GUID("3a8aa4d508da46d4dace18b280f064aa"), // RuntimeDebugWindow.uss
+        new GUID("b647ceb1e15264943b9b439971e71110") // RuntimeDebugWindow.uxml
+    };
 
     [AnalyticInfo("uiBuild", "unity.ui", 2, 60)]
     internal class UIBuildEvent : IAnalytic
@@ -94,6 +103,9 @@ class UIBuildAnalyticsEvent : IPostprocessBuildWithReport
 
                 // Skip any default/builtin resource
                 if (info.sourceAssetGUID == default)
+                    continue;
+
+                if (Array.IndexOf(ExcludedAssets, info.sourceAssetGUID) != -1)
                     continue;
 
                 if (info.type == typeof(MonoBehaviour))

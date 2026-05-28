@@ -29,6 +29,7 @@ namespace UnityEditor.Rendering
 
             root.Add(new HelpBox(Strings.k_WarningEditionMessage, HelpBoxMessageType.Warning));
             var button = new Button() { text = Strings.k_OpenGraphicsSettingsPanel };
+            button.style.whiteSpace = WhiteSpace.Normal;
             button.clicked += () => SettingsService.OpenProjectSettings(GraphicsSettingsProvider.s_GraphicsSettingsProviderPath);
             root.Add(button);
 

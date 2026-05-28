@@ -128,7 +128,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Cosntructs a new <see cref="HierarchyViewModel"/>.
+        /// Constructs a new <see cref="HierarchyViewModel"/> from a flattened hierarchy.
         /// </summary>
         /// <param name="hierarchyFlattened">The flattened hierarchy that serves as the hierarchy model.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>

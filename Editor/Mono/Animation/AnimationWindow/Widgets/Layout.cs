@@ -320,7 +320,14 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_AnimationClipFrameRateField = m_AnimationClipFrameRate.Q<IntegerField>();
             m_AnimationClipFrameRateField.RegisterValueChangedCallback(changeEvent =>
             {
-                state.frameRate = changeEvent.newValue;
+                if (changeEvent.newValue != 0)
+                {
+                    state.frameRate = Math.Abs(changeEvent.newValue);
+                }
+
+                // Force back current frameRate if it wasn't changed.
+                m_AnimationClipFrameRateField.SetValueWithoutNotify((int)state.frameRate);
+
             });
 
             m_FilterBySelectionToggle = this.Q<ToolbarToggle>(className: k_AnimationFilterBySelectionToggle);

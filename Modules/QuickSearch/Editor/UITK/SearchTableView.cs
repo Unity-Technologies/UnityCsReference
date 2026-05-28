@@ -782,6 +782,7 @@ namespace UnityEditor.Search
             if (flags.HasAny(RefreshFlags.DisplayModeChanged))
             {
                 UpdateColumns();
+                SetSelectionWithoutNotify(m_ViewModel.selection);
             }
         }
 

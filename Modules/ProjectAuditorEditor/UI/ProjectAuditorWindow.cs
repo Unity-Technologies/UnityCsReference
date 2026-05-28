@@ -1874,33 +1874,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                     else if (GUILayout.Button(Contents.DiscardButton, EditorStyles.toolbarButton, GUILayout.Width(discardButtonWidth)))
                     {
-                        DialogResult response = DialogResult.DefaultAction;
-                        if (m_Report.NeedsSaving)
-                        {
-                            if (m_AnalysisState == AnalysisState.Valid)
-                                response = EditorDialog.DisplayComplexDecisionDialog(k_Discard, k_DiscardQuestion, "Discard", "Save", "Cancel");
-                            else
-                                response = EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;
-                        }
-
-                        if (response == DialogResult.AlternateAction)
-                            SaveReport(out var _);
-
-                        if (response != DialogResult.Cancel)
-                        {
-                            m_ActiveTabIndex = 0;
-                            m_AnalysisState = AnalysisState.Initialized;
-                            // Reset the auditor so that the module analysers can be reinitialised for a new analysis.
-                            // The list of Descriptors in DescriptorLibrary gets overwritten when loading in a saved
-                            // analysis; not a problem for the loaded analysis, but new analyses will be generated with data
-                            // missing, since not all of the DescriptorLibrary is written out to json (DescriptorJsonConverter).
-                            // Plus, we might update its content in future versions and we don't want to mix that with
-                            // data from an old capture. COPT-3262
-                            // TODO: Does DescriptorLibrary need to get written out at all? Seems like all the relevant info is stored in the issues list...
-                            m_ProjectAuditor = null;
-
-                            DeleteAutosave();
-                        }
+                        // Defer native dialogs past the current IMGUI frame: on macOS they drive the Cocoa event loop,
+                        // causing a re-entrant IMGUI frame that corrupts the layout group stack (UUM-139712).
+                        EditorApplication.delayCall += StartNewAnalysisWithConfirmation;
+                        GUIUtility.ExitGUI();
                     }
                 }
 
@@ -1909,7 +1886,9 @@ namespace Unity.ProjectAuditor.Editor.UI
                     var loadContent = ProjectAuditorRulesPackage.IsInstalled ? Contents.LoadButton : Contents.LoadButtonDisabled;
                     if (GUILayout.Button(loadContent, EditorStyles.toolbarButton, GUILayout.Width(loadSaveButtonWidth)))
                     {
-                        LoadReport();
+                        // See comment above on DiscardButton for why delayCall + ExitGUI are used here (UUM-139712).
+                        EditorApplication.delayCall += LoadReport;
+                        GUIUtility.ExitGUI();
                     }
                 }
 
@@ -1918,12 +1897,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     if (GUILayout.Button(Contents.SaveButton, EditorStyles.toolbarButton,
                         GUILayout.Width(loadSaveButtonWidth)))
                     {
-                        if (SaveReport(out var path))
-                        {
-                            EditorUtility.RevealInFinder(path);
-                            AnalyticsReporter.SendEvent(AnalyticsReporter.UIButton.Save, AnalyticsReporter.BeginAnalytic());
-                        }
-
+                        // See comment above on DiscardButton for why delayCall + ExitGUI are used here (UUM-139712).
+                        EditorApplication.delayCall += SaveCurrentReport;
                         GUIUtility.ExitGUI();
                     }
                 }
@@ -1960,6 +1935,49 @@ namespace Unity.ProjectAuditor.Editor.UI
             return false;
         }
 
+        void StartNewAnalysisWithConfirmation()
+        {
+            DialogResult response = DialogResult.DefaultAction;
+            if (m_Report.NeedsSaving)
+            {
+                if (m_AnalysisState == AnalysisState.Valid)
+                    response = EditorDialog.DisplayComplexDecisionDialog(k_Discard, k_DiscardQuestion, "Discard", "Save", "Cancel");
+                else
+                    response = EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;
+            }
+
+            if (response == DialogResult.AlternateAction)
+            {
+                if (!SaveReport(out var _))
+                    return;
+            }
+
+            if (response != DialogResult.Cancel)
+            {
+                m_ActiveTabIndex = 0;
+                m_AnalysisState = AnalysisState.Initialized;
+                // Reset the auditor so that the module analysers can be reinitialised for a new analysis.
+                // The list of Descriptors in DescriptorLibrary gets overwritten when loading in a saved
+                // analysis; not a problem for the loaded analysis, but new analyses will be generated with data
+                // missing, since not all of the DescriptorLibrary is written out to json (DescriptorJsonConverter).
+                // Plus, we might update its content in future versions and we don't want to mix that with
+                // data from an old capture. COPT-3262
+                // TODO: Does DescriptorLibrary need to get written out at all? Seems like all the relevant info is stored in the issues list...
+                m_ProjectAuditor = null;
+
+                DeleteAutosave();
+            }
+        }
+
+        void SaveCurrentReport()
+        {
+            if (SaveReport(out var path))
+            {
+                EditorUtility.RevealInFinder(path);
+                AnalyticsReporter.SendEvent(AnalyticsReporter.UIButton.Save, AnalyticsReporter.BeginAnalytic());
+            }
+        }
+
         void LoadReport()
         {
             var path = EditorUtility.OpenFilePanel(k_LoadFromFile, UserPreferences.LoadSavePath, "projectauditor");
@@ -1967,8 +1985,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 LoadReportFromFile(path);
             }
-
-            GUIUtility.ExitGUI();
         }
 
         void LoadReportFromFile(string path)

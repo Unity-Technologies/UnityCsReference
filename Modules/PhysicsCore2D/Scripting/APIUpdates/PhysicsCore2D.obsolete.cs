@@ -171,7 +171,7 @@ namespace Unity.U2D.Physics
 
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("ChainGeometry.ChainGeometry(ReadOnlySpan<Vector2> vertices) is obsolete as it can lead to invalid vertices when used with managed arrays. Please use PhysicsChain.Create(PhysicsBody body, ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition) instead.", false)]
+        [Obsolete("ChainGeometry.ChainGeometry(ReadOnlySpan<Vector2> vertices) is deprcated as it can lead to invalid vertices when used with managed arrays. Please use PhysicsChain.Create(PhysicsBody body, ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition) instead.", false)]
         public unsafe ChainGeometry(ReadOnlySpan<Vector2> vertices)
         {
             // Validate.

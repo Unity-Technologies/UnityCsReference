@@ -92,6 +92,16 @@ namespace Unity.U2D.Physics
         public readonly bool Destroy(int ownerKey = 0) => PhysicsChain_Destroy(this, ownerKey);
 
         /// <summary>
+        /// Update the existing ChainSegment shapes with the provided vertices.
+        /// Modifying the vertices will cause contacts to be recalculated however it may cause overlaps and/or collision tunnelling if not used carefully.
+        /// The number of vertices provided and looping option should be the same as was used when the Chain was originally created.
+        /// Any mismatch between the two will result in a warning.
+        /// </summary>
+        /// <param name="vertices">The vertices used to update the existing ChainSegment shapes.</param>
+        /// <param name="isLoop">Indicates a closed chain formed by connecting the first and last vertices specified. This should match what was originally specified in <see cref="PhysicsChainDefinition.isLoop"/>.</param>
+        public readonly void UpdateVertices(ReadOnlySpan<Vector2> vertices, bool isLoop) => PhysicsChain_UpdateVertices(this, vertices, isLoop);
+
+        /// <summary>
         /// Check if the shape is valid.
         /// </summary>
         public readonly bool isValid => PhysicsChain_IsValid(this);

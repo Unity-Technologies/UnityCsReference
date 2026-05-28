@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/CustomBinding_CurrentTime.cs"/>
     /// </example>
     [UxmlObject]
+    [System.Serializable]
     public abstract partial class CustomBinding : Binding
     {
         /// <summary>

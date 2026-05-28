@@ -134,53 +134,66 @@ namespace UnityEngine.UIElements
             return validDimensionCount >= 2;
         }
 
-        public static void DrawGizmoBounds(IPanelComponent panelComponent, Vector2 pivotOffset, float pixelsPerUnit)
+        public static void DrawGizmoBounds(IPanelComponent panelComponent, float pixelsPerUnit)
         {
+            if (!TryCalculateGizmoBounds(panelComponent, pixelsPerUnit, out var gameObjectPanelComp, out var bb))
+                return;
+
+            var matrixBackup = Gizmos.matrix;
+            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+            Gizmos.matrix = gameObjectPanelComp.gameObject.transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(bb.center, bb.size);
+            Gizmos.matrix = matrixBackup;
+        }
+
+        internal static bool TryCalculateGizmoBounds(IPanelComponent panelComponent, float pixelsPerUnit, out IPanelComponent gameObjectPanelComp, out Bounds bounds)
+        {
+            bounds = default;
+            gameObjectPanelComp = null;
+
             var root = panelComponent?.GetRootVisualElement();
             if (root == null)
-                return;
+                return false;
 
             var panelSettings = panelComponent.panelSettings;
             if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
-                return;
+                return false;
 
-            // Find the first PanelRenderer that's controlled by a GameObject
-            var gameObjectPanelComp = panelComponent;
-            while (gameObjectPanelComp != null && !(PanelComponentUtils.IsTransformControlledByGameObject(gameObjectPanelComp)))
+            // Find the first ancestor panel component that's controlled by a GameObject transform
+            gameObjectPanelComp = panelComponent;
+            while (gameObjectPanelComp != null && !IsTransformControlledByGameObject(gameObjectPanelComp))
                 gameObjectPanelComp = gameObjectPanelComp.parentUI;
 
             if (gameObjectPanelComp == null)
-                return;
+                return false;
 
-            Bounds bb;
-            if (PanelComponentUtils.IsTransformControlledByGameObject(panelComponent))
+            if (IsTransformControlledByGameObject(panelComponent))
             {
-                bb = PanelComponentUtils.LocalBoundsFromPivotSource(root, panelComponent.pivotReferenceSize);
+                bounds = LocalBoundsFromPivotSource(root, panelComponent.pivotReferenceSize);
             }
             else
             {
                 // Relative mode gizmos are drawn relative to the next ancestor that's
                 // controlled by a GameObject transform
                 var bbox = root.boundingBoxWithoutNested;
-                bbox = root.ChangeCoordinatesTo(root, bbox);
-                bb = new Bounds(bbox.center, bbox.size);
+                bbox = root.ChangeCoordinatesTo(gameObjectPanelComp.GetRootVisualElement(), bbox);
+                bounds = new Bounds(bbox.center, bbox.size);
             }
 
-            if (!PanelComponentUtils.IsValidBounds(bb))
-                return;
+            if (!IsValidBounds(bounds))
+                return false;
 
-            var toGameObject = PanelComponentUtils.TransformToGameObjectMatrix(pivotOffset, pixelsPerUnit);
-            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
+            var pivotOffset = GetPivotOffSet(gameObjectPanelComp);
+            var toGameObject = TransformToGameObjectMatrix(pivotOffset, pixelsPerUnit);
+            VisualElement.TransformAlignedBounds(ref toGameObject, ref bounds);
+            return true;
+        }
 
-            var matrixBackup = Gizmos.matrix;
-
-            Vector3 center = bb.center;
-            Vector3 size = bb.size;
-            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
-            Gizmos.matrix = gameObjectPanelComp.gameObject.transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(center, size);
-
-            Gizmos.matrix = matrixBackup;
+        static Vector2 GetPivotOffSet(IPanelComponent panelComponent)
+        {
+            if (panelComponent is UIDocument uiDoc)
+                return uiDoc.PivotOffset();
+            return ((PanelRenderer)panelComponent).PivotOffset();
         }
 
         static internal Vector3 GetPanelPosition(GameObject gameObject, IEventHandler pickedElement, Ray worldRay)

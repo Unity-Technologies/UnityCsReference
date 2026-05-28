@@ -20,7 +20,7 @@ namespace Unity.GraphToolkit.Editor
         /// Struct representing an partitioned element.
         /// </summary>
         [UnityRestricted]
-        internal readonly struct BoundingBoxElement
+        internal readonly struct BoundingBoxElement : IEquatable<BoundingBoxElement>
         {
             /// <summary>
             /// The unique key identifying the partitioned element.
@@ -56,6 +56,9 @@ namespace Unity.GraphToolkit.Editor
             {
                 return Key.GetHashCode();
             }
+
+            /// <inheritdoc />
+            public bool Equals(BoundingBoxElement other) => Key.Equals(other.Key);
         }
 
         /// <summary>

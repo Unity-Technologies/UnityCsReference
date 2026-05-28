@@ -668,6 +668,20 @@ namespace Unity.U2D.Physics
         public struct ShapeArray
         {
             /// <summary>
+            /// Construct with the specified vertices.
+            /// </summary>
+            /// <param name="vertices">The vertices to set.</param>
+            /// <exception cref="ArgumentOutOfRangeException">Thrown if the number of vertices provided is out of range.</exception>
+            public ShapeArray(ReadOnlySpan<Vector2> vertices)
+            {
+                if (vertices.Length < 3 || vertices.Length > PhysicsConstants.MaxPolygonVertices)
+                    throw new ArgumentOutOfRangeException(nameof(vertices), $"Vertex count is out of range, expected 3 to {PhysicsConstants.MaxPolygonVertices}.");
+
+                // Copy the vertices.
+                vertices.CopyTo(AsSpan(vertices.Length));
+            }
+
+            /// <summary>
             /// Vertex #0.
             /// </summary>
             public Vector2 vertex0 { readonly get => m_Vertex0; set => m_Vertex0 = value; }
@@ -1603,10 +1617,12 @@ namespace Unity.U2D.Physics
         public readonly SegmentGeometry segmentGeometry { get => PhysicsShape_GetSegmentGeometry(this); set => PhysicsShape_SetSegmentGeometry(this, value); }
 
         /// <summary>
-        /// Get the Chain Segment Geometry associated with this shape.
+        /// Get/Set the Chain Segment associated with this shape.
         /// When getting the shape geometry, the shape type must match the geometry type otherwise a warning will be produced and invalid geometry will be returned.
+        /// Setting the geometry will change the type of shape represented even if the shape type was different before.
+        /// Setting the geometry will also result in waking the body the shape is attached to.
         /// </summary>
-        public readonly ChainSegmentGeometry chainSegmentGeometry { get => PhysicsShape_GetChainSegmentGeometry(this); }
+        public readonly ChainSegmentGeometry chainSegmentGeometry { get => PhysicsShape_GetChainSegmentGeometry(this); set => PhysicsShape_SetChainSegmentGeometry(this, value); }
 
         /// <summary>
         /// Check if the shape is a Chain type. A Chain type is owned by a chain.

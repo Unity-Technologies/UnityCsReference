@@ -247,7 +247,7 @@ namespace UnityEditor
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUISkin.current.box, GUILayout.MinHeight(height));
 
             EditorGUIUtility.SetIconSize(new Vector2(16.0f, 16.0f));
-            float lineHeight = Styles.messageStyle.CalcHeight(EditorGUIUtility.TempContent(Styles.errorIcon), 100);
+            float lineHeight = Styles.messageStyle.CalcHeight(EditorGUIUtility.TempContent("ShaderName", Styles.errorIcon), 100);
 
             Event e = Event.current;
 

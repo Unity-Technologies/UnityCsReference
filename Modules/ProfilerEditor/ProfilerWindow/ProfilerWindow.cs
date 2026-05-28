@@ -106,6 +106,7 @@ namespace UnityEditor
         const string k_UxmlIdentifier_ToolbarViewContainer = "profiler-view__toolbar-view-container";
         const string k_UxmlIdentifier_BottlenecksViewContainer = "profiler-view__bottlenecks-view-container";
         const string k_UxmlIdentifier_CapturesListViewContainer = "profiler-view__captures-list-view-container";
+        const string k_UxmlIdentifier_CaptureRenameWarning = "profiler-view__capture-rename-warning";
         const string k_UxmlIdentifier_SplitView = "profiler-view__split-view";
         const string k_UxmlIdentifier_ChartsViewContainer = "profiler-view__charts-view-container";
         const string k_UxmlIdentifier_DetailsViewContainer = "profiler-view__details-view-container";
@@ -676,7 +677,8 @@ namespace UnityEditor
 
             m_CaptureDataService = new CaptureDataService(this);
             m_ScreenshotsManager = new ScreenshotsManager();
-            m_CapturesListViewController = new CapturesListViewController(this, m_CaptureDataService, m_ScreenshotsManager);
+            var captureRenameWarningLabel = rootVisualElement.Q<Label>(k_UxmlIdentifier_CaptureRenameWarning);
+            m_CapturesListViewController = new CapturesListViewController(this, m_CaptureDataService, m_ScreenshotsManager, captureRenameWarningLabel);
             m_CapturesListViewContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_CapturesListViewContainer);
             m_CapturesListSplitView = (TwoPaneSplitView)m_CapturesListViewContainer.parent;
             // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.

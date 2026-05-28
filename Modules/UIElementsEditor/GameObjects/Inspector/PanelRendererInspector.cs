@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements.Inspector
             if (panelRenderer == null || panelRenderer.rootVisualElement == null)
                 return;
 
-            PanelComponentUtils.DrawGizmoBounds(panelRenderer, panelRenderer.PivotOffset(), panelRenderer.pixelsPerUnit);
+            PanelComponentUtils.DrawGizmoBounds(panelRenderer, panelRenderer.pixelsPerUnit);
         }
     }
 }

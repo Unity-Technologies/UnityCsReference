@@ -29,6 +29,7 @@ namespace UnityEngine.Rendering
             if (renderPipeline == null)
             {
                 Debug.LogError($"The {nameof(SupportedOnRenderPipelineAttribute)} parameters cannot be null.");
+                renderPipelineTypes = Array.Empty<Type>();
                 return;
             }
 
@@ -37,7 +38,8 @@ namespace UnityEngine.Rendering
                 var r = renderPipeline[i];
                 if (r != null && typeof(RenderPipelineAsset).IsAssignableFrom(r)) continue;
                 Debug.LogError(
-                    $"The {nameof(SupportedOnRenderPipelineAttribute)} Attribute targets an invalid {nameof(RenderPipelineAsset)}. One of the types cannot be assigned from {nameof(RenderPipelineAsset)}: [{renderPipeline.SerializedView(t => t.Name)}].");
+                    $"The {nameof(SupportedOnRenderPipelineAttribute)} Attribute targets an invalid {nameof(RenderPipelineAsset)}. One of the types cannot be assigned from {nameof(RenderPipelineAsset)}: [{renderPipeline.SerializedView(t => t?.Name ?? "null")}].");
+                renderPipelineTypes = Array.Empty<Type>();
                 return;
             }
 
@@ -50,9 +52,6 @@ namespace UnityEngine.Rendering
 
         internal static SupportedMode GetSupportedMode(Type[] renderPipelineTypes, Type renderPipelineAssetType)
         {
-            if (renderPipelineTypes == null)
-                throw new ArgumentNullException($"Parameter {nameof(renderPipelineTypes)} cannot be null.");
-
             if (renderPipelineAssetType == null)
                 return SupportedMode.Unsupported;
 

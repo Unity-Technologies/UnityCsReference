@@ -1154,6 +1154,10 @@ namespace UnityEditor.Build.Profile
                     {
                         PlayerSettings.SyncVirtualTexturingState(nextPlayerSettings);
                     }
+                    if (ContainsPlayerSetting(settingsRequiringRestart, PlayerSettingsRequiringRestart.GraphicsAPI))
+                    {
+                        PlayerSettings.SyncSettingsAndCleanSettings();
+                    }
 
                     EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                     return true;
@@ -1255,6 +1259,7 @@ namespace UnityEditor.Build.Profile
                     PlayerSettingsRequiringRestart.ActiveInputHandling => "Active Input Handling",
                     PlayerSettingsRequiringRestart.GraphicsJobs => "Graphics Jobs",
                     PlayerSettingsRequiringRestart.VirtualTexturing => "Virtual Texturing",
+                    PlayerSettingsRequiringRestart.GraphicsAPI => "Graphics API",
                     _ => string.Empty
                 };
                 settingsText.AppendLine(settingPromptText);

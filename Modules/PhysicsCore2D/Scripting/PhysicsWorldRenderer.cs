@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -46,7 +47,7 @@ namespace Unity.U2D.Physics
             if (s_UsingBIRP)
                 Camera.onPostRender += RenderWorlds_BIRP;
             else
-                RenderPipelineManager.endCameraRendering += RenderWorlds_SRP;
+                RenderPipelineManager.endContextRendering += RenderWorlds_SRP;
 
             // Flag as initialized.
             s_IsInitialized = true;
@@ -64,7 +65,7 @@ namespace Unity.U2D.Physics
             if (s_UsingBIRP)
                 Camera.onPostRender -= RenderWorlds_BIRP;
             else
-                RenderPipelineManager.endCameraRendering -= RenderWorlds_SRP;
+                RenderPipelineManager.endContextRendering -= RenderWorlds_SRP;
 
             // Dispose of the drawer groups.
             if (s_DrawerGroups != null)
@@ -180,13 +181,18 @@ namespace Unity.U2D.Physics
         }
 
         /// <undoc/>
-        static void RenderWorlds_SRP(ScriptableRenderContext context, Camera camera)
+        static void RenderWorlds_SRP(ScriptableRenderContext context, List<Camera> cameras)
         {
+            // Not sure if this can happen but protect against it regardless.
+            if (cameras.Count == 0)
+                return;
+
+            // Fetch the base camera.
+            var camera = cameras[0];
+
             // Ensure the camera type is valid.
             if (!IsCameraTypeValid(camera))
                 return;
-
-            Profiler.BeginSample("PhysicsCore2D.DrawWorlds.Camera");
 
             // Finish if rendering is not allowed and we're not always drawing worlds.
             var isRenderingAllowed = PhysicsWorld.isRenderingAllowed;
@@ -194,25 +200,29 @@ namespace Unity.U2D.Physics
             if (!isRenderingAllowed && !alwaysDrawWorlds)
                 return;
 
-            // Draw all the worlds.
-            PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
-
-            // Render if allowed.
-            if (isRenderingAllowed && s_RendererCommandBuffer != null)
             {
-                Profiler.BeginSample("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (SRP)");
+                Profiler.BeginSample("PhysicsCore2D.DrawWorlds");
 
-                // Render the final command buffer.
-                context.ExecuteCommandBuffer(s_RendererCommandBuffer);
-                context.Submit();
+                // Draw all the worlds.
+                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
 
-                // Clear the render command buffer.
-                s_RendererCommandBuffer.Clear();
+                // Render if allowed.
+                if (isRenderingAllowed && s_RendererCommandBuffer != null)
+                {
+                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (SRP)");
+
+                    // Render the final command buffer.
+                    context.ExecuteCommandBuffer(s_RendererCommandBuffer);
+                    context.Submit();
+
+                    // Clear the render command buffer.
+                    s_RendererCommandBuffer.Clear();
+
+                    Profiler.EndSample();
+                }
 
                 Profiler.EndSample();
             }
-
-            Profiler.EndSample();
         }
 
         /// <undoc/>

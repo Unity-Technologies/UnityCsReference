@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 using static Unity.U2D.Physics.Scripting2D;
@@ -29,7 +30,7 @@ namespace Unity.U2D.Physics
             m_Segment = new SegmentGeometry();
             m_Ghost1 = m_Segment.point1 * 2f;
             m_Ghost2 = m_Segment.point2 * 2f;
-            m_ChainId = default;
+            m_ChainId = -1;
         }
 
         /// <summary>
@@ -43,8 +44,19 @@ namespace Unity.U2D.Physics
             m_Segment = segmentGeometry;
             m_Ghost1 = ghost1;
             m_Ghost2 = ghost2;
-            m_ChainId = default;
+            m_ChainId = -1;
         }
+
+        /// <summary>
+        /// Create multiple <see cref="ChainSegmentGeometry"/> from a set of vertices.
+        /// The rules for interpreting the specified vertices when creating segments is described in <see cref="PhysicsChain"/>.
+        /// </summary>
+        /// <param name="vertices">The vertices to create the ChainSegmentGeometry from.</param>
+        /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
+        /// <param name="isLoop">Indicates a closed chain formed by connecting the first and last vertices specified. This changes how the vertices are interpreted.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>The created ChainSegment geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public static NativeArray<ChainSegmentGeometry> CreateSegments(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, bool isLoop, Unity.Collections.Allocator allocator = Unity.Collections.Allocator.Temp) => ChainSegmentGeometry_CreateSegments(vertices, transform, isLoop, allocator).ToNativeArray<ChainSegmentGeometry>();
 
         /// <summary>
         /// Get the default Chain Segment.
@@ -54,7 +66,8 @@ namespace Unity.U2D.Physics
             // Segment is direction left so contact is from above.
             segment = SegmentGeometry.defaultGeometry,
             ghost1 = SegmentGeometry.defaultGeometry.point1 * 2f,
-            ghost2 = SegmentGeometry.defaultGeometry.point2 * 2f
+            ghost2 = SegmentGeometry.defaultGeometry.point2 * 2f,
+            m_ChainId = -1
         };
 
         /// <summary>
@@ -193,7 +206,7 @@ namespace Unity.U2D.Physics
         [SerializeField] SegmentGeometry m_Segment;
         [SerializeField] Vector2 m_Ghost1;
         [SerializeField] Vector2 m_Ghost2;
-        readonly int m_ChainId;
+        int m_ChainId;
 
         #endregion
     };

@@ -696,7 +696,7 @@ namespace UnityEngine.UIElements
 
         float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
-        Vector2 PivotOffset()
+        internal Vector2 PivotOffset()
         {
             var pivotPercent = PanelComponentUtils.GetPivotAsPercent(m_Pivot);
             var localBounds = PanelComponentUtils.LocalBoundsFromPivotSource(rootVisualElement, pivotReferenceSize);
@@ -1210,7 +1210,7 @@ namespace UnityEngine.UIElements
             if (rootVisualElement == null)
                 return;
 
-            PanelComponentUtils.DrawGizmoBounds(this, PivotOffset(), pixelsPerUnit);
+            PanelComponentUtils.DrawGizmoBounds(this, pixelsPerUnit);
         }
 
     }

@@ -24,6 +24,20 @@ namespace UnityEditor.Build.Profile
 
         ShaderBuildSettingsUI m_ShaderBuildSettingsUI = new();
 
+        void OnDisable()
+        {
+            if (!m_ShaderBuildSettingsUI.HasUnsavedChanges)
+                return;
+
+            string profileName = null;
+            var assetPath = AssetDatabase.GetAssetPath(target);
+            var parentProfile = AssetDatabase.LoadMainAssetAtPath(assetPath) as BuildProfile;
+            if (parentProfile != null)
+                profileName = parentProfile.name;
+
+            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(profileName);
+        }
+
         public override VisualElement CreateInspectorGUI()
         {
             var root = new VisualElement();

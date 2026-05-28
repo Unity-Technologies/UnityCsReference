@@ -86,10 +86,10 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(m_Sprite, Styles.spriteLabel);
-            using (new EditorGUI.DisabledScope(m_Sprite.objectReferenceValue == null))
+            using (new EditorGUI.DisabledScope(m_Sprite.objectReferenceValue == null || m_Sprite.hasMultipleDifferentValues))
             {
                 if(SpriteUtilityWindow.DoOpenSpriteEditorWindowUI())
-                    SpriteUtilityWindow.ShowSpriteEditorWindow(m_Sprite.objectReferenceValue);
+                    SpriteUtilityWindow.ShowSpriteEditorWindow(target);
             }
             GUILayout.Space(5);
 

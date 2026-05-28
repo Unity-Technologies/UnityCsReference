@@ -35,6 +35,12 @@ namespace UnityEditor.Search
             return value;
         }
 
+        [SearchSelector("eid", priority: 1)]
+        static object GetSearchItemEntityId(SearchItem item)
+        {
+            return item.GetEntityId();
+        }
+
         internal static SerializedProperty GetSerializedProperty(SearchItem item, SearchColumn column, out SerializedObject so)
         {
             foreach (var m in SelectorManager.Match(column.selector, item.provider?.type))
