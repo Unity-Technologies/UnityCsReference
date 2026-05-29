@@ -437,6 +437,30 @@ namespace UnityEngine
             return (uint)value;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static short ClampToShort(long value)
+        {
+            if (value < short.MinValue)
+                return short.MinValue;
+
+            if (value > short.MaxValue)
+                return short.MaxValue;
+
+            return (short)value;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static ushort ClampToUShort(long value)
+        {
+            if (value < ushort.MinValue)
+                return ushort.MinValue;
+
+            if (value > ushort.MaxValue)
+                return ushort.MaxValue;
+
+            return (ushort)value;
+        }
+
         internal static float RoundToMultipleOf(float value, float roundingValue)
         {
             if (roundingValue == 0)

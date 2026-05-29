@@ -104,6 +104,8 @@ namespace UnityEngine.UIElements.UIR
                     case EntryType.PushDefaultMaterial:
                     case EntryType.PopDefaultMaterial:
                     case EntryType.CutRenderChain:
+                    case EntryType.BeginPanelComponent:
+                    case EntryType.EndPanelComponent:
                     case EntryType.DedicatedPlaceholder:
                         break; // Keep this to differentiate from unhandled cases
                     default:

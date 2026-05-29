@@ -35,13 +35,68 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onActionTriggered?.Invoke();
         }
 
+        public ActionState GetActionState(SingleType item, out string text, out string tooltip)
+        {
+            if (!IsVisible(item))
+            {
+                text = string.Empty;
+                tooltip = string.Empty;
+
+                if (IsHiddenWhenInProgress(item) && IsInProgress(item))
+                    return ActionState.InProgress;
+                return ActionState.None;
+            }
+
+            var isInProgress = IsInProgress(item);
+            text = GetText(item, isInProgress);
+            if (isInProgress)
+            {
+                tooltip = GetTooltip(item, true);
+                return ActionState.Visible | ActionState.DisabledForItem | ActionState.InProgress;
+            }
+            var disableCondition = GetActiveDisableCondition(item);
+            if (disableCondition != null)
+            {
+                tooltip = disableCondition.tooltip;
+                return ActionState.Visible | ActionState.DisabledForItem;
+            }
+
+            var temporaryDisableCondition = GetActiveTemporaryDisableCondition();
+            if (temporaryDisableCondition != null)
+            {
+                tooltip = temporaryDisableCondition.tooltip;
+                return ActionState.Visible | ActionState.DisabledTemporarily;
+            }
+
+            tooltip = GetTooltip(item, false);
+            return ActionState.Visible;
+        }
+
         protected abstract bool TriggerActionImplementation(SingleType item);
         // By default, bulk actions are not supported
         protected virtual bool TriggerActionImplementation(IReadOnlyCollection<BulkType> items) => false;
         public abstract string GetText(SingleType item, bool isInProgress);
         public abstract string GetTooltip(SingleType item,  bool isInProgress);
-        public abstract ActionState GetActionState(SingleType item, out string text, out string tooltip);
+        public virtual bool IsInProgress(SingleType item) => false;
+        protected virtual bool IsHiddenWhenInProgress(SingleType item) => false;
+        public virtual bool IsVisible(SingleType item) => true;
+
         public abstract ToolbarButtonBase<SingleType, BulkType> CreateToolbarButton();
+
+        // Temporary disable conditions refer to conditions that are temporary and not related to the state of a package
+        // For example, when the network is lost or when there are scripting compiling
+        protected virtual IEnumerable<DisableCondition> GetAllTemporaryDisableConditions() => Array.Empty<DisableCondition>();
+        public virtual DisableCondition GetActiveTemporaryDisableCondition()
+        {
+            return GetAllTemporaryDisableConditions().FirstMatch(condition => condition.active);
+        }
+
+        protected virtual IEnumerable<DisableCondition> GetAllDisableConditions(SingleType item) => Array.Empty<DisableCondition>();
+
+        public virtual DisableCondition GetActiveDisableCondition(SingleType item)
+        {
+            return GetAllDisableConditions(item).FirstMatch(condition => condition.active);
+        }
     }
 
     internal abstract class ActionBase<T> : ActionBase<T, T>

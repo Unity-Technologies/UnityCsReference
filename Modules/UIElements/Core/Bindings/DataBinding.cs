@@ -42,6 +42,7 @@ namespace UnityEngine.UIElements
     ///  Binding type that enables data synchronization between a property of a data source and a property of a <see cref="VisualElement"/>.
     /// </summary>
     [UxmlObject]
+    [Serializable]
     public partial class DataBinding : Binding, IDataSourceProvider
     {
         internal const string k_DataSourceTooltip = "A data source is a collection of information. By default, a binding will inherit the existing data source from the hierarchy. " +

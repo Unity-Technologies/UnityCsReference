@@ -259,13 +259,13 @@ namespace UnityEditor.IMGUI.Controls
                     return;
                 }
 
-                if (m_TreeView.data.rowCount == 0)
+                var rowCount = m_TreeView.data.rowCount;
+                if (rowCount == 0 || Mathf.Approximately(m_TreeView.visibleRect.height, 0.0f))
                 {
                     firstRowVisible = lastRowVisible = -1;
                     return;
                 }
 
-                var rowCount = m_TreeView.data.rowCount;
                 if (rowCount != m_RowRects.Count)
                 {
                     var errorMessage = string.Format(
@@ -276,7 +276,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
 
                 float topPixel = m_TreeView.state.scrollPos.y;
-                float heightInPixels = m_TreeView.GetTotalRect().height;
+                float heightInPixels = m_TreeView.visibleRect.height;
 
                 int firstVisible = -1;
                 int lastVisible = -1;

@@ -55,12 +55,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         readonly IssueLayout m_Layout;
         readonly List<TreeViewItem> m_Rows = new List<TreeViewItem>(100);
 
-        private Dictionary<string, IssueTableItem>
-            m_TreeViewItemGroupsLookup = new Dictionary<string, IssueTableItem>();
+        Dictionary<string, IssueTableItem> m_TreeViewItemGroupsLookup = new Dictionary<string, IssueTableItem>();
         Dictionary<int, IssueTableItem> m_TreeViewItemIssues;
         List<IssueTableItem> m_SelectedIssues = new List<IssueTableItem>();
+        List<IssueTableItem> m_SelectedGroupIssues = new List<IssueTableItem>();
         ReportItem[] m_SelectedReportItems;
         bool m_SelectionChanged = true;
+        bool m_SelectionGroupChanged = true;
         bool m_SelectionChangedReportItems = true;
         int m_NextId;
         int m_NumMatchingIssues;
@@ -186,6 +187,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
         {
             m_Rows.Clear();
+
+            m_SelectionChanged = true;
+            m_SelectionGroupChanged = true;
+            m_SelectionChangedReportItems = true;
 
             // find all issues matching the filters and make an array out of them
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -611,45 +616,81 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_SelectionChangedReportItems = false;
 
             var selectedItems = GetSelectedItems();
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_SelectedReportItems = selectedItems.Where(item => item.parent != null).Select(i => i.ReportItem).ToArray();
-#pragma warning restore UA2001
+            var selectedGroupItems = GetSelectedGroupItems();
 
+            var uniqueItems = new HashSet<IssueTableItem>(selectedItems);
+            uniqueItems.UnionWith(selectedGroupItems);
+
+            var reportItems = new List<ReportItem>(uniqueItems.Count);
+            foreach (var item in uniqueItems)
+            {
+                if (item.parent != null)
+                    reportItems.Add(item.ReportItem);
+            }
+
+            m_SelectedReportItems = reportItems.ToArray();
             return m_SelectedReportItems;
         }
 
         public List<IssueTableItem> GetSelectedItems()
         {
             if (!m_SelectionChanged)
-            {
                 return m_SelectedIssues;
-            }
 
             m_SelectionChanged = false;
-
-            var ids = GetSelection();
-
             m_SelectedIssues.Clear();
 
-            var count = ids.Count;
-            if (count > 0)
-            {
-                for (int i = 0; i < count; ++i)
-                {
-                    // Skip group rows that are not in the dictionary
-                    if (m_TreeViewItemIssues.TryGetValue(ids[i], out var item))
-                        m_SelectedIssues.Add(item);
-                }
-
+            var ids = GetSelection();
+            if (ids.Count == 0)
                 return m_SelectedIssues;
+
+            for (int i = 0; i < ids.Count; ++i)
+            {
+                // Skip group rows that are not in the dictionary
+                if (m_TreeViewItemIssues.TryGetValue(ids[i], out var item))
+                    m_SelectedIssues.Add(item);
             }
 
             return m_SelectedIssues;
         }
 
+        public List<IssueTableItem> GetSelectedGroupItems()
+        {
+            if (!m_SelectionGroupChanged)
+                return m_SelectedGroupIssues;
+
+            m_SelectionGroupChanged = false;
+            m_SelectedGroupIssues.Clear();
+
+            var selection = GetSelection();
+            if (selection.Count == 0)
+                return m_SelectedGroupIssues;
+
+            var ids = new HashSet<int>(selection);
+
+            foreach (var item in m_TreeViewItemGroupsLookup.Values)
+            {
+                if (ids.Contains(item.id))
+                {
+                    var children = item.children;
+                    if (children != null)
+                    {
+                        foreach (var child in children)
+                        {
+                            if (child is IssueTableItem issue)
+                                m_SelectedGroupIssues.Add(issue);
+                        }
+                    }
+                }
+            }
+
+            return m_SelectedGroupIssues;
+        }
+
         protected override void SelectionChanged(IList<int> selectedIds)
         {
             m_SelectionChanged = true;
+            m_SelectionGroupChanged = true;
             m_SelectionChangedReportItems = true;
         }
 
@@ -778,6 +819,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             state.selectedIDs.Clear();
 
             m_SelectionChanged = true;
+            m_SelectionGroupChanged = true;
             m_SelectionChangedReportItems = true;
         }
 

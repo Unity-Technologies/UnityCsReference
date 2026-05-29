@@ -106,6 +106,7 @@ namespace UnityEditor
         SerializedProperty m_BounceScale;
         SerializedProperty m_ExportTrainingData;
         SerializedProperty m_EnableWorkerProcessBaking;
+        SerializedProperty m_EnableHeightfieldRayTracing;
         SerializedProperty m_TrainingDataDestination;
         SerializedProperty m_ForceWhiteAlbedo;
         SerializedProperty m_ForceUpdates;
@@ -139,7 +140,7 @@ namespace UnityEditor
                 (int)LightingSettings.Lightmapper.ProgressiveGPU
             };
             static readonly int[] k_BakeBackendValuesWithUnityComputeGPU =
-                k_BakeBackendValues.ConcatValue(3); // Cannot make LightingSettings.Lightmapper.UnityComputeGPU public just yet
+                k_BakeBackendValues.ConcatValue((int)LightingSettings.Lightmapper.UnityComputeGPU);
             public static int[] bakeBackendValues => (UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker) ? k_BakeBackendValuesWithUnityComputeGPU : k_BakeBackendValues;
 
             public static readonly GUIContent[] k_BakeBackendStrings =
@@ -284,6 +285,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
             public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
             public static readonly GUIContent enableWorkerProcessBaking = EditorGUIUtility.TrTextContent("Enable worker process baking", "Leaving this unchecked will force bakes that would otherwise be run in a worker process to be run in-process and blocking.");
+            public static readonly GUIContent enableHeightfieldRayTracing = EditorGUIUtility.TrTextContent("Enable heightfield ray tracing", "When enabled, terrains are added to the ray tracing acceleration structure as procedural heightfield instances using DDA ray marching, instead of being converted to triangle meshes.");
             public static readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Whether lightmap textures use the Global Mipmap limit defined in Quality Settings. Disable this to ensure lightmaps are available at the full mipmap resolution.");
             public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
@@ -427,6 +429,7 @@ namespace UnityEditor
             //dev debug properties
             m_ExportTrainingData = lightingSettingsObject.FindProperty("m_ExportTrainingData");
             m_EnableWorkerProcessBaking = lightingSettingsObject.FindProperty("m_EnableWorkerProcessBaking");
+            m_EnableHeightfieldRayTracing = lightingSettingsObject.FindProperty("m_EnableHeightfieldRayTracing");
             m_TrainingDataDestination = lightingSettingsObject.FindProperty("m_TrainingDataDestination");
             m_ForceWhiteAlbedo = lightingSettingsObject.FindProperty("m_ForceWhiteAlbedo");
             m_ForceUpdates = lightingSettingsObject.FindProperty("m_ForceUpdates");
@@ -863,6 +866,8 @@ namespace UnityEditor
                 }
 
                 EditorGUILayout.PropertyField(m_EnableWorkerProcessBaking, Styles.enableWorkerProcessBaking);
+                if (usingComputeLightBaker)
+                    EditorGUILayout.PropertyField(m_EnableHeightfieldRayTracing, Styles.enableHeightfieldRayTracing);
 
                 if (!usingComputeLightBaker)
                 {

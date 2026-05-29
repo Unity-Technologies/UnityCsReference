@@ -782,6 +782,10 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         [HideInInspector]
+        private Shader m_RuntimeDropShadowComposite;
+
+        [SerializeField]
+        [HideInInspector]
         private Shader m_SDFShader;
 
         [SerializeField]
@@ -969,6 +973,10 @@ namespace UnityEngine.UIElements
             if (m_RuntimeColorEffectShader == null)
             {
                 m_RuntimeColorEffectShader = Shader.Find(UIR.Shaders.k_RuntimeColorEffect);
+            }
+            if (m_RuntimeDropShadowComposite == null)
+            {
+                m_RuntimeDropShadowComposite = Shader.Find(UIR.Shaders.k_RuntimeDropShadowComposite);
             }
             if (m_SDFShader == null)
             {

@@ -14,7 +14,7 @@ namespace UnityEditorInternal.Profiling
     [ProfilerModuleMetadata("Realtime GI", typeof(LocalizationResource), IconPath = "Profiler.GlobalIllumination")]
     internal class GlobalIlluminationProfilerModule : ProfilerModuleBase
     {
-        const int k_DefaultOrderIndex = 12;
+        const int k_DefaultOrderIndex = 14;
         static readonly string k_RealtimeGINotSupported = LocalizationDatabase.GetLocalizedString("Realtime GI was not supported.");
         static readonly string k_RealtimeGINotEnabled = LocalizationDatabase.GetLocalizedString("Realtime GI was not enabled.");
 

@@ -411,6 +411,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         {
             stage.ContentOverflowMode(enabled ? Overflow.Hidden : Overflow.Visible);
             stage.RequestRefresh();
+            m_PanelElement.EnableAnimationSystem(enabled);
         }
 
         m_DocumentRoot.EventMode = enabled ? CanvasEventMode.Forward : CanvasEventMode.Pick;
@@ -439,6 +440,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.RenderTexture);
         m_DocumentRoot.PanelElement = panelElement;
         m_DocumentRoot.EventMode = m_PreviewMode ? CanvasEventMode.Forward : CanvasEventMode.Pick;
+        panelElement.EnableAnimationSystem(m_PreviewMode);
         ApplySettings();
         Panel.beforeTickingAnyScheduledPanel += ForceRuntimePanelUpdate;
     }

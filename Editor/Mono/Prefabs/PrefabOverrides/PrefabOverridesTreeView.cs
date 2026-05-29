@@ -244,7 +244,7 @@ namespace UnityEditor
                 var noOverridesItemId = SessionState.GetEntityId("NoOverridesItemId", EntityId.None);
                 if (noOverridesItemId == EntityId.None)
                 {
-                    noOverridesItemId = EntityId.AllocateNextEntityId();
+                    noOverridesItemId = EntityId.AllocateEntityId();
                     SessionState.SetEntityId("NoOverridesItemId", noOverridesItemId);
                 }
                 hiddenRoot.AddChild(new TreeViewItem { id = noOverridesItemId, depth = 0, displayName = "No Overrides" });

@@ -17,6 +17,9 @@ namespace UnityEditor.Scripting
         public static readonly NPath DotNetRuntimePath = EditorApplication.applicationScriptingPath + "/DotNetSdk";
         public static readonly NPath DotNetMuxerPath = DotNetRuntimePath.Combine(Application.platform == RuntimePlatform.WindowsEditor ? "dotnet.exe" : "dotnet");
 
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        internal static string GetDotNetMuxerPath() => DotNetMuxerPath.ToString();
+
         public NetCoreProgram(string executable, string arguments, Action<ProcessStartInfo> setupStartInfo)
         {
             _process.StartInfo = new ProcessStartInfo

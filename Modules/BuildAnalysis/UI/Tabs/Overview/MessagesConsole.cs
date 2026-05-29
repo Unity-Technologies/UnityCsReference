@@ -12,15 +12,15 @@ namespace UnityEditor.Build.Analysis
 {
     internal class MessagesConsole : VisualElement
     {
-        private struct MessageEntry
-        {
-            public BuildAnalysisMessage Msg;
-            public int Count; // 0 means uncollapsed (count not tracked)
-            public string StepName;
-        }
-
         private const string k_AllSteps = "All Steps";
         private const string k_UxmlPath = "BuildAnalysis/UXML/MessagesConsole.uxml";
+        private const int k_NoStepFilter = -1;
+
+        // Severity int IDs are stable so sort/filter can compare ints rather than parsing strings each time.
+        private const int k_SeverityError = 0;
+        private const int k_SeverityWarning = 1;
+        private const int k_SeverityInfo = 2;
+        private const int k_SeverityOther = 3;
 
         private readonly DropdownField m_StepDropdown;
         private readonly ToolbarSearchField m_SearchField;
@@ -32,27 +32,38 @@ namespace UnityEditor.Build.Analysis
         private readonly Label m_InfoToggleCount;
         private readonly Toggle m_CollapseToggle;
         private readonly MultiColumnListView m_ListView;
+        private readonly ZebraEmptyBody m_EmptyBody;
         private readonly Label m_DetailText;
         private readonly Label m_FooterCountLabel;
 
-        // Step name cache: StepId → display name, built once per Bind()
-        private readonly Dictionary<int, string> m_StepNameCache = new Dictionary<int, string>();
-        private readonly Dictionary<(string, string), int> m_CollapseSeen = new Dictionary<(string, string), int>();
+        private BuildAnalysisMessage[] m_Messages;
+        private int[] m_SeverityIds = Array.Empty<int>();
+        private int[] m_StepNameIds = Array.Empty<int>();
 
-        private readonly List<BuildAnalysisMessage> m_AllMessages = new List<BuildAnalysisMessage>();
-        private readonly List<MessageEntry> m_FilteredMessages = new List<MessageEntry>();
+        // Index into a pool of unique (severityId, text) keys; used as the collapse-grouping key.
+        // Built lazily on first transition to collapsed mode — avoids a multi-MB scratch dict on every
+        // Bind when the user never collapses.
+        private int[] m_CollapseKeyIds = Array.Empty<int>();
+        private bool m_CollapseKeysBuilt;
+        // Step name pool, sorted alphabetically; used directly as dropdown choices (after the "All Steps" prefix).
+        private string[] m_StepNamePool = Array.Empty<string>();
+
+        private readonly List<int> m_FilteredIndices = new List<int>();
+        // collapseKeyId → total count of matching messages in the current filter (only populated when collapsed).
+        private readonly Dictionary<int, int> m_CollapseCountByKey = new Dictionary<int, int>();
+
         private IVisualElementScheduledItem m_SearchDebounce;
         private bool m_ShowErrors = true;
         private bool m_ShowWarnings = true;
         private bool m_ShowInfo = true;
         private bool m_Collapsed;
-        private string m_StepFilter = k_AllSteps;
+        // k_NoStepFilter means "All Steps" (no filter); otherwise an index into m_StepNamePool.
+        private int m_StepFilterId = k_NoStepFilter;
         private string m_SearchText = string.Empty;
 
         public MessagesConsole()
         {
             AddToClassList("overview-section");
-            AddToClassList("messages-section");
 
             var template = EditorGUIUtility.LoadRequired(k_UxmlPath) as VisualTreeAsset;
             template.CloneTree(this);
@@ -74,30 +85,33 @@ namespace UnityEditor.Build.Analysis
             m_CollapseToggle = this.Q<ToolbarToggle>("collapse-toggle");
 
             m_ListView = this.Q<MultiColumnListView>("messages-list-view");
-            m_ListView.itemsSource = m_FilteredMessages;
-            m_ListView.makeNoneElement = () => new VisualElement();
-            m_ListView.columns["type"].makeCell = MakeTypeCell;
-            m_ListView.columns["type"].bindCell = BindTypeCell;
-            m_ListView.columns["step"].makeCell = MakeStepCell;
-            m_ListView.columns["step"].bindCell = BindStepCell;
-            m_ListView.columns["log"].makeCell = MakeLogCell;
-            m_ListView.columns["log"].bindCell = BindLogCell;
+            m_ListView.itemsSource = m_FilteredIndices;
 
-            m_StepDropdown.RegisterValueChangedCallback(evt =>
-            {
-                m_StepFilter = evt.newValue ?? k_AllSteps;
-                ApplyFilters();
-            });
+            // Host inside content-area (the TwoPaneSplitView's parent) rather than the splitter
+            // itself, so the absolute overlay never competes with the splitter's pane children.
+            m_EmptyBody = new ZebraEmptyBody(m_ListView);
+            this.Q<VisualElement>("content-area").Add(m_EmptyBody);
+            m_ListView.makeNoneElement = () => new VisualElement();
+            m_ListView.columns["column-type"].makeCell = MakeTypeCell;
+            m_ListView.columns["column-type"].bindCell = BindTypeCell;
+            m_ListView.columns["column-step"].makeCell = MakeStepCell;
+            m_ListView.columns["column-step"].bindCell = BindStepCell;
+            m_ListView.columns["column-log"].makeCell = MakeLogCell;
+            m_ListView.columns["column-log"].bindCell = BindLogCell;
+
+            m_StepDropdown.RegisterValueChangedCallback(evt => SetStepFilter(evt.newValue));
             m_CollapseToggle.RegisterValueChangedCallback(evt =>
             {
                 m_Collapsed = evt.newValue;
+                if (!m_Collapsed)
+                    m_CollapseCountByKey.Clear();
                 ApplyFilters();
             });
             m_SearchField.RegisterValueChangedCallback(evt =>
             {
-                m_SearchText = evt.newValue ?? string.Empty;
+                var newText = evt.newValue ?? string.Empty;
                 m_SearchDebounce?.Pause();
-                m_SearchDebounce = schedule.Execute(ApplyFilters).StartingIn(200);
+                m_SearchDebounce = schedule.Execute(() => SetSearchText(newText)).StartingIn(200);
             });
             m_ErrorToggle.RegisterValueChangedCallback(evt =>
             {
@@ -124,47 +138,122 @@ namespace UnityEditor.Build.Analysis
 
         public void Bind(BuildAnalysis analysis)
         {
-            if (analysis == null)
-            {
-                m_StepNameCache.Clear();
-                m_AllMessages.Clear();
-                ResetFilterState();
-                m_ErrorToggleCount.text = "0";
-                m_WarnToggleCount.text = "0";
-                m_InfoToggleCount.text = "0";
-                m_StepDropdown.choices = new List<string> { k_AllSteps };
-                m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
-                ShowNoDetail();
-                ApplyFilters();
-                return;
-            }
+            m_Messages = analysis.Messages;
+            var n = m_Messages.Length;
 
-            m_StepNameCache.Clear();
-            foreach (var step in analysis.Tables.Steps)
-                m_StepNameCache[step.Id] = step.Name ?? "Unknown";
+            // Reuse parallel arrays across binds when possible; only grow when capacity is exceeded.
+            // m_CollapseKeyIds is grown lazily by EnsureCollapseKeysBuilt.
+            if (m_SeverityIds.Length < n)
+                m_SeverityIds = new int[n];
+            if (m_StepNameIds.Length < n)
+                m_StepNameIds = new int[n];
+            m_CollapseKeysBuilt = false;
 
-            m_AllMessages.Clear();
-            m_AllMessages.AddRange(analysis.Messages);
-
-            ResetFilterState();
+            BuildSeverityIds(n);
+            BuildStepNamePoolAndIds(analysis.Tables.Steps, n);
+            BuildStepDropdownChoices();
 
             var counts = analysis.Computed.Counts;
-            m_ErrorToggleCount.text = FormatUtils.FormatCount(counts.ErrorMessageCount);
-            m_WarnToggleCount.text = FormatUtils.FormatCount(counts.WarningMessageCount);
-            m_InfoToggleCount.text = FormatUtils.FormatCount(counts.InfoMessageCount);
+            m_ErrorToggleCount.text = FormatUtility.FormatCount(counts.ErrorMessageCount);
+            m_WarnToggleCount.text = FormatUtility.FormatCount(counts.WarningMessageCount);
+            m_InfoToggleCount.text = FormatUtility.FormatCount(counts.InfoMessageCount);
 
-            var stepNames = new List<string> { k_AllSteps };
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var msg in m_AllMessages)
-            {
-                var stepName = ResolveStepName(msg.StepId);
-                if (seen.Add(stepName))
-                    stepNames.Add(stepName);
-            }
-            m_StepDropdown.choices = stepNames;
-            m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
-
+            ResetFilterState();
             ShowNoDetail();
+            ApplyFilters();
+        }
+
+        private void BuildSeverityIds(int n)
+        {
+            for (int i = 0; i < n; i++)
+                m_SeverityIds[i] = SeverityToId(m_Messages[i].Severity);
+        }
+
+        private void BuildStepNamePoolAndIds(BuildAnalysisStep[] steps, int n)
+        {
+            var stepIdToName = new Dictionary<int, string>(steps.Length);
+            foreach (var step in steps)
+                stepIdToName[step.Id] = step.Name ?? "Unknown";
+
+            var insertionMap = new Dictionary<string, int>(StringComparer.Ordinal);
+            var insertionPool = new List<string>();
+
+            for (int i = 0; i < n; i++)
+            {
+                var stepName = stepIdToName.TryGetValue(m_Messages[i].StepId, out var resolved) ? resolved : "Unknown";
+                if (!insertionMap.TryGetValue(stepName, out var id))
+                {
+                    id = insertionPool.Count;
+                    insertionPool.Add(stepName);
+                    insertionMap[stepName] = id;
+                }
+                m_StepNameIds[i] = id;
+            }
+
+            // Sort the pool alphabetically and remap insertion-id → sorted-id, so id order == display order
+            var sortedPool = new List<string>(insertionPool);
+            sortedPool.Sort(StringComparer.OrdinalIgnoreCase);
+            var remap = new int[insertionPool.Count];
+            for (int sortedId = 0; sortedId < sortedPool.Count; sortedId++)
+                remap[insertionMap[sortedPool[sortedId]]] = sortedId;
+
+            for (int i = 0; i < n; i++)
+                m_StepNameIds[i] = remap[m_StepNameIds[i]];
+
+            m_StepNamePool = sortedPool.ToArray();
+        }
+
+        private void EnsureCollapseKeysBuilt()
+        {
+            if (m_CollapseKeysBuilt)
+                return;
+
+            var n = m_Messages.Length;
+            if (m_CollapseKeyIds.Length < n)
+                m_CollapseKeyIds = new int[n];
+
+            var keyMap = new Dictionary<(int sevId, string text), int>();
+            for (int i = 0; i < n; i++)
+            {
+                var key = (m_SeverityIds[i], m_Messages[i].Text ?? string.Empty);
+                if (!keyMap.TryGetValue(key, out var id))
+                {
+                    id = keyMap.Count;
+                    keyMap[key] = id;
+                }
+                m_CollapseKeyIds[i] = id;
+            }
+            m_CollapseKeysBuilt = true;
+        }
+
+        private void BuildStepDropdownChoices()
+        {
+            var choices = new List<string>(m_StepNamePool.Length + 1) { k_AllSteps };
+            choices.AddRange(m_StepNamePool);
+            m_StepDropdown.choices = choices;
+            m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
+        }
+
+        private void SetStepFilter(string value)
+        {
+            var newId = string.IsNullOrEmpty(value) || string.Equals(value, k_AllSteps, StringComparison.Ordinal)
+                ? k_NoStepFilter
+                : Array.IndexOf(m_StepNamePool, value);
+
+            if (newId == m_StepFilterId)
+                return;
+
+            m_StepFilterId = newId;
+            m_StepDropdown.SetValueWithoutNotify(newId == k_NoStepFilter ? k_AllSteps : m_StepNamePool[newId]);
+            ApplyFilters();
+        }
+
+        private void SetSearchText(string value)
+        {
+            var newText = value ?? string.Empty;
+            if (string.Equals(newText, m_SearchText, StringComparison.Ordinal))
+                return;
+            m_SearchText = newText;
             ApplyFilters();
         }
 
@@ -174,94 +263,152 @@ namespace UnityEditor.Build.Analysis
             m_ShowWarnings = true;
             m_ShowInfo = true;
             m_Collapsed = false;
-            m_StepFilter = k_AllSteps;
+            m_CollapseCountByKey.Clear();
+            m_StepFilterId = k_NoStepFilter;
             m_SearchText = string.Empty;
             m_ErrorToggle.SetValueWithoutNotify(true);
             m_WarnToggle.SetValueWithoutNotify(true);
             m_InfoToggle.SetValueWithoutNotify(true);
             m_CollapseToggle.SetValueWithoutNotify(false);
             m_SearchField.SetValueWithoutNotify(string.Empty);
+            m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
         }
 
         private void ApplyFilters()
         {
-            m_FilteredMessages.Clear();
+            m_FilteredIndices.Clear();
+            if (m_FilteredIndices.Capacity < m_Messages.Length)
+                m_FilteredIndices.Capacity = m_Messages.Length;
+
+            bool hasStepFilter = m_StepFilterId != k_NoStepFilter;
+            bool hasSearch = !string.IsNullOrEmpty(m_SearchText);
+
             if (m_Collapsed)
             {
-                // Filter first, then collapse, so a message that occurs in multiple
-                // steps is still counted under whichever step the user filtered to.
-                // Collapsing on (Severity, Text) up-front would discard step context
-                // for all but the first occurrence.
-                m_CollapseSeen.Clear();
-                foreach (var msg in m_AllMessages)
+                EnsureCollapseKeysBuilt();
+
+                // Filter first, then collapse, so a message that occurs in multiple steps is still
+                // counted under whichever step the user filtered to. Collapsing on (Severity, Text)
+                // up-front would discard step context for all but the first occurrence.
+                m_CollapseCountByKey.Clear();
+                for (int i = 0; i < m_Messages.Length; i++)
                 {
-                    if (!PassesFilter(msg))
-                        continue;
-                    var key = (msg.Severity, msg.Text);
-                    if (m_CollapseSeen.TryGetValue(key, out var idx))
+                    if (!IsSeverityVisible(m_SeverityIds[i])) continue;
+                    if (hasStepFilter && m_StepNameIds[i] != m_StepFilterId) continue;
+                    if (hasSearch)
                     {
-                        var existing = m_FilteredMessages[idx];
-                        existing.Count++;
-                        m_FilteredMessages[idx] = existing;
+                        var text = m_Messages[i].Text;
+                        if (text == null || text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+                    }
+
+                    var key = m_CollapseKeyIds[i];
+                    if (m_CollapseCountByKey.TryGetValue(key, out var c))
+                    {
+                        m_CollapseCountByKey[key] = c + 1;
                     }
                     else
                     {
-                        m_CollapseSeen[key] = m_FilteredMessages.Count;
-                        m_FilteredMessages.Add(new MessageEntry { Msg = msg, Count = 1, StepName = ResolveStepName(msg.StepId) });
+                        m_CollapseCountByKey[key] = 1;
+                        m_FilteredIndices.Add(i);
                     }
                 }
             }
             else
             {
-                foreach (var msg in m_AllMessages)
+                for (int i = 0; i < m_Messages.Length; i++)
                 {
-                    if (PassesFilter(msg))
-                        m_FilteredMessages.Add(new MessageEntry { Msg = msg, Count = 0, StepName = ResolveStepName(msg.StepId) });
+                    if (!IsSeverityVisible(m_SeverityIds[i])) continue;
+                    if (hasStepFilter && m_StepNameIds[i] != m_StepFilterId) continue;
+                    if (hasSearch)
+                    {
+                        var text = m_Messages[i].Text;
+                        if (text == null || text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+                    }
+                    m_FilteredIndices.Add(i);
                 }
             }
 
             ApplySort();
 
-            // Clear selection when filters change
+            // Clear selection when filters change so a stale highlight doesn't survive.
             m_ListView.selectedIndex = -1;
             ShowNoDetail();
 
-            RefreshListView();
-        }
-
-        private void RefreshListView()
-        {
             m_ListView.RefreshItems();
             UpdateFooter();
+            m_EmptyBody.Refresh();
         }
 
         private void UpdateFooter()
         {
-            m_FooterCountLabel.text = $"Showing {m_FilteredMessages.Count}/{m_AllMessages.Count}";
+            m_FooterCountLabel.text = $"Showing {m_FilteredIndices.Count}/{m_Messages.Length}";
         }
 
-        private bool PassesFilter(BuildAnalysisMessage msg)
+        private bool IsSeverityVisible(int severityId) => severityId switch
         {
-            if (!IsSeverityVisible(msg.Severity))
-                return false;
-            if (!string.Equals(m_StepFilter, k_AllSteps, StringComparison.Ordinal))
-            {
-                if (!string.Equals(ResolveStepName(msg.StepId), m_StepFilter, StringComparison.Ordinal))
-                    return false;
-            }
-            if (!string.IsNullOrEmpty(m_SearchText) &&
-                msg.Text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase) < 0)
-                return false;
-            return true;
-        }
-
-        private bool IsSeverityVisible(string severity) => severity switch
-        {
-            BuildMessageSeverity.Error   => m_ShowErrors,
-            BuildMessageSeverity.Warning => m_ShowWarnings,
-            BuildMessageSeverity.Info    => m_ShowInfo,
-            _                            => true
+            k_SeverityError   => m_ShowErrors,
+            k_SeverityWarning => m_ShowWarnings,
+            k_SeverityInfo    => m_ShowInfo,
+            _                 => true
         };
+
+        private static int SeverityToId(string severity) => severity switch
+        {
+            BuildMessageSeverity.Error   => k_SeverityError,
+            BuildMessageSeverity.Warning => k_SeverityWarning,
+            BuildMessageSeverity.Info    => k_SeverityInfo,
+            _                            => k_SeverityOther
+        };
+
+        private void ApplySort()
+        {
+            using var enumerator = m_ListView.sortedColumns.GetEnumerator();
+            if (!enumerator.MoveNext())
+                return;
+
+            var sort = enumerator.Current;
+            var ascending = sort.direction == SortDirection.Ascending;
+            SortFiltered(sort.columnName, ascending);
+        }
+
+        private void SortFiltered(string columnName, bool ascending)
+        {
+            Comparison<int> cmp = columnName switch
+            {
+                "column-type" => CompareByType,
+                "column-step" => CompareByStep,
+                "column-log"  => CompareByLog,
+                _             => null
+            };
+            if (cmp == null) return;
+            m_FilteredIndices.Sort(ascending ? cmp : (a, b) => -cmp(a, b));
+        }
+
+        private int CompareByType(int a, int b) => m_SeverityIds[a].CompareTo(m_SeverityIds[b]);
+
+        // Pool is alphabetically sorted, so id order == display order.
+        private int CompareByStep(int a, int b) => m_StepNameIds[a].CompareTo(m_StepNameIds[b]);
+
+        private int CompareByLog(int a, int b) =>
+            string.Compare(m_Messages[a].Text, m_Messages[b].Text, StringComparison.OrdinalIgnoreCase);
+
+        private void OnListSelectionChanged()
+        {
+            var idx = m_ListView.selectedIndex;
+            if (idx < 0 || idx >= m_FilteredIndices.Count)
+            {
+                ShowNoDetail();
+                return;
+            }
+            m_DetailText.text = m_Messages[m_FilteredIndices[idx]].Text;
+        }
+
+        private void ShowNoDetail()
+        {
+            m_DetailText.text = string.Empty;
+        }
 
         private static VisualElement MakeTypeCell()
         {
@@ -273,14 +420,14 @@ namespace UnityEditor.Build.Analysis
             return container;
         }
 
-        private void BindTypeCell(VisualElement ve, int index)
+        private void BindTypeCell(VisualElement ve, int row)
         {
-            var severity = m_FilteredMessages[index].Msg.Severity;
-            var ussClass = severity switch
+            var sevId = m_SeverityIds[m_FilteredIndices[row]];
+            var ussClass = sevId switch
             {
-                BuildMessageSeverity.Error   => "error-icon-small",
-                BuildMessageSeverity.Warning => "warn-icon-small",
-                _                            => "info-icon-small"
+                k_SeverityError   => "error-icon-small",
+                k_SeverityWarning => "warn-icon-small",
+                _                 => "info-icon-small"
             };
 
             var icon = ve.ElementAt(0);
@@ -298,9 +445,9 @@ namespace UnityEditor.Build.Analysis
             return label;
         }
 
-        private void BindStepCell(VisualElement ve, int index)
+        private void BindStepCell(VisualElement ve, int row)
         {
-            ((Label)ve).text = m_FilteredMessages[index].StepName;
+            ((Label)ve).text = m_StepNamePool[m_StepNameIds[m_FilteredIndices[row]]];
         }
 
         private static VisualElement MakeLogCell()
@@ -317,68 +464,17 @@ namespace UnityEditor.Build.Analysis
             return container;
         }
 
-        private void BindLogCell(VisualElement ve, int index)
+        private void BindLogCell(VisualElement ve, int row)
         {
-            var entry = m_FilteredMessages[index];
+            var msgIdx = m_FilteredIndices[row];
             var label = (Label)ve.ElementAt(0);
             var countLabel = (Label)ve.ElementAt(1);
 
-            label.text = entry.Msg.Text;
+            label.text = m_Messages[msgIdx].Text;
 
             countLabel.style.display = m_Collapsed ? DisplayStyle.Flex : DisplayStyle.None;
             if (m_Collapsed)
-                countLabel.text = FormatUtils.FormatCount(entry.Count);
+                countLabel.text = FormatUtility.FormatCount(m_CollapseCountByKey[m_CollapseKeyIds[msgIdx]]);
         }
-
-        private void OnListSelectionChanged()
-        {
-            var idx = m_ListView.selectedIndex;
-            if (idx < 0 || idx >= m_FilteredMessages.Count)
-            {
-                ShowNoDetail();
-                return;
-            }
-
-            var entry = m_FilteredMessages[idx];
-            m_DetailText.text = entry.Msg.Text;
-        }
-
-        private void ShowNoDetail()
-        {
-            m_DetailText.text = string.Empty;
-        }
-
-        private void ApplySort()
-        {
-            using var enumerator = m_ListView.sortedColumns.GetEnumerator();
-            if (!enumerator.MoveNext())
-                return;
-
-            var sort = enumerator.Current;
-            var ascending = sort.direction == SortDirection.Ascending;
-
-            m_FilteredMessages.Sort((a, b) =>
-            {
-                int cmp = sort.columnName switch
-                {
-                    "type" => SeverityOrder(a.Msg.Severity).CompareTo(SeverityOrder(b.Msg.Severity)),
-                    "step" => string.Compare(a.StepName, b.StepName, StringComparison.OrdinalIgnoreCase),
-                    "log"  => string.Compare(a.Msg.Text, b.Msg.Text, StringComparison.OrdinalIgnoreCase),
-                    _      => 0
-                };
-                return ascending ? cmp : -cmp;
-            });
-        }
-
-        private static int SeverityOrder(string severity) => severity switch
-        {
-            BuildMessageSeverity.Error   => 0,
-            BuildMessageSeverity.Warning => 1,
-            _                            => 2
-        };
-
-        private string ResolveStepName(int stepId) =>
-            m_StepNameCache.TryGetValue(stepId, out var name) ? name : "Unknown";
-
     }
 }

@@ -102,6 +102,33 @@ namespace UnityEditor.Build
             return false;
         }
 
+        // Sorted by end time (BuildStartedAt + TotalTimeMs) rather than start time so that
+        // nested builds report correctly: the inner build starts later but finishes first.
+        internal bool TryGetLatestCompletedBuild(out GUID buildSessionGuid)
+        {
+            EnsureCacheLoaded();
+
+            DateTime bestEndTime = DateTime.MinValue;
+            buildSessionGuid = default;
+            bool found = false;
+
+            foreach (var entry in m_Builds.Values)
+            {
+                if (entry.Summary.BuildResult == BuildResult.Pending)
+                    continue;
+
+                DateTime endTime = entry.BuildStartTime.AddMilliseconds(entry.Summary.TotalTimeMs);
+                if (!found || endTime > bestEndTime)
+                {
+                    bestEndTime = endTime;
+                    buildSessionGuid = entry.Summary.BuildSessionGUID;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
         // Gets the build summary for a specific build.
         public BuildReportSummary GetBuildSummary(GUID buildSessionGuid)
         {
@@ -285,6 +312,13 @@ namespace UnityEditor.Build
                 return 0;
             }
 
+            return DeleteHistoryUnchecked(buildSessionGuids);
+        }
+
+        // ApplyRetentionPolicy runs while BuildPipeline.isBuildingPlayer is true; it must bypass
+        // the public DeleteHistory's guard against deletion-during-build.
+        private int DeleteHistoryUnchecked(GUID[] buildSessionGuids)
+        {
             var successfullyDeleted = new List<GUID>();
 
             foreach (var buildGUID in buildSessionGuids)
@@ -312,6 +346,25 @@ namespace UnityEditor.Build
                 RemoveBuilds(successfullyDeleted.ToArray());
 
             return successfullyDeleted.Count;
+        }
+
+        public int ApplyRetentionPolicy(int limit)
+        {
+            if (limit <= 0)
+                return 0;
+
+            EnsureCacheLoaded();
+
+            if (m_BuildOrder.Count <= limit)
+                return 0;
+
+            // m_BuildOrder is sorted most-recent-first.
+            int removeCount = m_BuildOrder.Count - limit;
+            var toDelete = new GUID[removeCount];
+            for (int i = 0; i < removeCount; i++)
+                toDelete[i] = m_BuildOrder[limit + i];
+
+            return DeleteHistoryUnchecked(toDelete);
         }
 
         // Deletes all build history from disk and clears the cache.
@@ -351,20 +404,6 @@ namespace UnityEditor.Build
                     {
                         Debug.LogWarning($"Failed to delete build metadata directory {dir}: {e.Message}");
                     }
-                }
-            }
-
-            // Delete the LatestBuild.link file if it exists (not counted as a build)
-            string latestLinkPath = Path.Combine(rootPath, "LatestBuild.link");
-            if (File.Exists(latestLinkPath))
-            {
-                try
-                {
-                    File.Delete(latestLinkPath);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"Failed to delete LatestBuild.link: {e.Message}");
                 }
             }
 

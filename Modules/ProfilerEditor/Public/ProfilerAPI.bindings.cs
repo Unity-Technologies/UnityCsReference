@@ -587,8 +587,7 @@ namespace UnityEditorInternal
 
         static public extern uint objectCount
         {
-            [StaticAccessor("Object", StaticAccessorType.DoubleColon)]
-            [NativeMethod("GetLoadedObjectCount")]
+            [FreeFunction("CalculateLoadedEntityCount")]
             get;
         }
 

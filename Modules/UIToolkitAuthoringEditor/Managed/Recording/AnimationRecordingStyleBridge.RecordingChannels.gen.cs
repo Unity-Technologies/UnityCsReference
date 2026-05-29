@@ -30,6 +30,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.Ratio1;
                 case StylePropertyId.BackgroundColor:
                     return StylePropertyRecordingChannel.Color4;
+                case StylePropertyId.BackgroundImage:
+                    return StylePropertyRecordingChannel.Object1;
                 case StylePropertyId.BackgroundPositionX:
                     return StylePropertyRecordingChannel.BackgroundPosition3;
                 case StylePropertyId.BackgroundPositionY:
@@ -66,6 +68,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.Length1;
                 case StylePropertyId.Color:
                     return StylePropertyRecordingChannel.Color4;
+                case StylePropertyId.Filter:
+                    return StylePropertyRecordingChannel.Filter;
                 case StylePropertyId.FlexBasis:
                     return StylePropertyRecordingChannel.Length1;
                 case StylePropertyId.FlexDirection:
@@ -124,14 +128,24 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.Scale3;
                 case StylePropertyId.TextOverflow:
                     return StylePropertyRecordingChannel.EnumInt;
+                case StylePropertyId.TextShadow:
+                    return StylePropertyRecordingChannel.TextShadow7;
                 case StylePropertyId.Top:
                     return StylePropertyRecordingChannel.Length1;
+                case StylePropertyId.TransformOrigin:
+                    return StylePropertyRecordingChannel.TransformOrigin4;
                 case StylePropertyId.Translate:
-                    return StylePropertyRecordingChannel.Translate3;
+                    return StylePropertyRecordingChannel.Translate5;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return StylePropertyRecordingChannel.Color4;
+                case StylePropertyId.UnityFont:
+                    return StylePropertyRecordingChannel.Object1;
+                case StylePropertyId.UnityFontDefinition:
+                    return StylePropertyRecordingChannel.Object1;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return StylePropertyRecordingChannel.EnumInt;
+                case StylePropertyId.UnityMaterial:
+                    return StylePropertyRecordingChannel.Object1;
                 case StylePropertyId.UnityOverflowClipBox:
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.UnityParagraphSpacing:

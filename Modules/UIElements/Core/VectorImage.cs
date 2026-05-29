@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using UnityEngine.Serialization;
 
 namespace UnityEngine.UIElements
 {
@@ -54,8 +55,14 @@ namespace UnityEngine.UIElements
         public Color32 tint;
         public Vector2 uv;
         public UInt32 settingIndex;
-        public Color32 flags;
         public Vector4 circle;
+        public VertexFlags vertexFlags;
+
+#pragma warning disable CS0649
+        [SerializeField]
+        [FormerlySerializedAs("flags")]
+        internal Color32 oldFlags;
+#pragma warning restore CS0649
     }
 
     [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
@@ -78,10 +85,10 @@ namespace UnityEngine.UIElements
     /// </remarks>
     [HelpURL("ui-systems/work-with-vector-graphics")]
     [Serializable]
-    public sealed class VectorImage : ScriptableObject
+    public sealed class VectorImage : ScriptableObject, ISerializationCallbackReceiver
     {
         [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
-        [SerializeField] internal int version = 0; // For future upgrades using ISerializationCallbackReceiver
+        [SerializeField] internal int version = 0;
 
         [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
         [SerializeField] internal Texture2D atlas = null;
@@ -103,6 +110,40 @@ namespace UnityEngine.UIElements
 
         /// <summary>The height of the vector image.</summary>
         public float height => size.y;
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            version = 1;
+        }
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            if (version != 0)
+                return;
+
+            if (vertices != null && vertices.Length > 0)
+            {
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    ref VectorImageVertex v = ref vertices[i];
+                    v.vertexFlags = DecodeLegacyFlags(v.oldFlags);
+                }
+            }
+
+            version = 1;
+        }
+
+        static VertexFlags DecodeLegacyFlags(Color32 oldFlags)
+        {
+            // Legacy v0 packed flags: .b = isArc (0/1), .a = dynamicColorMode (0/1/2).
+            VertexFlags result = (oldFlags.b != 0) ? VertexFlags.IsArc : VertexFlags.None;
+            switch (oldFlags.a)
+            {
+                case 1: result |= VertexFlags.DynamicColorEnabled; break;
+                case 2: result |= VertexFlags.DynamicColorEnabledText; break;
+            }
+            return result;
+        }
 
         private void OnDestroy()
         {

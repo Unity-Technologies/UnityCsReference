@@ -22,6 +22,8 @@ namespace UnityEngine
         }
 
         internal static NativeTextGenerationSettings nativeSettingsIMGUI = new NativeTextGenerationSettings();
+        static string s_IMGUICurrentText;
+        static NativeTextBuffer s_IMGUITextBuffer = NativeTextBuffer.CreateDomainScoped();
 
         internal NativeTextInfo nativeTextInfo;
 
@@ -40,8 +42,11 @@ namespace UnityEngine
         }
 
         private static List<(int, TagType, string)> m_TempLinks = new();
-        internal static void ConvertGUIStyleToNativeTextGenerationSettings(ref NativeTextGenerationSettings nativeSettings, GUIStyle style, Color textColor, string text, Rect rect)
+        internal static void ConvertGUIStyleToNativeTextGenerationSettings(ref NativeTextGenerationSettings nativeSettings, GUIStyle style, Color textColor, Rect rect, IntPtr textBufferPtr, int textBufferLength)
         {
+            nativeSettings.textBufferPtr = textBufferPtr;
+            nativeSettings.textBufferLength = textBufferLength;
+
             var items = GetTextSettingsFontAssetAndFontSize(style);
             var textSettings = items.Item1;
             var fontAsset = items.Item2;
@@ -57,7 +62,6 @@ namespace UnityEngine
             var scale = GUIUtility.pixelsPerPoint;
 
             nativeSettings.preProcessFlags = PreProcessFlags.None;
-            nativeSettings.text = text;
 
             nativeSettings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
             nativeSettings.fontStyle = nativeSettings.fontStyle & ~FontStyles.Bold;
@@ -141,11 +145,20 @@ namespace UnityEngine
 
         private static void ParseRichText(ref NativeTextGenerationSettings nativeSettings)
         {
-            if (nativeSettings.richTextEnabled && RichTextTagParser.MayNeedParsing(nativeSettings.text))
+            if (!nativeSettings.richTextEnabled)
+            {
+                nativeSettings.textSpans = null;
+                return;
+            }
+
+            string text = s_IMGUICurrentText;
+            if (RichTextTagParser.MayNeedParsing(text))
             {
                 TextSettings textSettings = s_EditorTextSettings;
 
-                CreateTextGenerationSettingsArray(ref nativeSettings, m_TempLinks, GUIUtility.pixelsPerPoint, textSettings, k_UnderlineAllLinksFlag);
+                CreateTextGenerationSettingsArray(ref nativeSettings, ref text, m_TempLinks, GUIUtility.pixelsPerPoint, textSettings, k_UnderlineAllLinksFlag);
+                s_IMGUITextBuffer.CopyFrom(text);
+                nativeSettings.SetTextBuffer(s_IMGUITextBuffer.buffer, s_IMGUITextBuffer.length);
             }
             else
                 nativeSettings.textSpans = null;
@@ -196,17 +209,35 @@ namespace UnityEngine
            return (textSettings, fontAsset, roundedFontSize);
         }
 
-        internal static IMGUITextHandle GetATGTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, bool update)
+        internal static unsafe IMGUITextHandle GetATGTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, bool update)
         {
             bool isCached = false;
-            ConvertGUIStyleToNativeTextGenerationSettings(ref nativeSettingsIMGUI, style, textColor, content, position);
-            return GetATGTextHandle(nativeSettingsIMGUI, false, ref isCached, update);
+            s_IMGUICurrentText = content;
+            fixed (char* textPtr = content)
+            {
+                ConvertGUIStyleToNativeTextGenerationSettings(ref nativeSettingsIMGUI, style, textColor, position, (IntPtr)textPtr, content?.Length ?? 0);
+
+                if (!update)
+                {
+                    // When update is false, UpdateNative() runs after the fixed block ends
+                    // (via AddToPermanentCacheAndGenerateMesh). Copy into a stable native
+                    // buffer so nativeSettingsIMGUI.textBufferPtr remains valid.
+                    s_IMGUITextBuffer.CopyFrom(content);
+                    nativeSettingsIMGUI.SetTextBuffer(s_IMGUITextBuffer.buffer, s_IMGUITextBuffer.length);
+                }
+
+                return GetATGTextHandle(nativeSettingsIMGUI, false, ref isCached, update);
+            }
         }
 
-        internal static IMGUITextHandle GetATGTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, ref bool isCached)
+        internal static unsafe IMGUITextHandle GetATGTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, ref bool isCached)
         {
-            ConvertGUIStyleToNativeTextGenerationSettings(ref nativeSettingsIMGUI, style, textColor, content, position);
-            return GetATGTextHandle(nativeSettingsIMGUI, true, ref isCached, true);
+            s_IMGUICurrentText = content;
+            fixed (char* textPtr = content)
+            {
+                ConvertGUIStyleToNativeTextGenerationSettings(ref nativeSettingsIMGUI, style, textColor, position, (IntPtr)textPtr, content?.Length ?? 0);
+                return GetATGTextHandle(nativeSettingsIMGUI, true, ref isCached, true);
+            }
         }
 
         private static IMGUITextHandle GetATGTextHandle(NativeTextGenerationSettings nativeSettings, bool isCalledFromNative, ref bool isCached, bool update)

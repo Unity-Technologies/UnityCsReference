@@ -90,11 +90,13 @@ namespace UnityEngine.AdaptivePerformance
         /// Whether dynamic batching should be used when rendering multiple objects that share the same material.
         /// Useful on hardware that does not support instancing.
         /// </summary>
+        [System.Obsolete("SkipDynamicBatching is obsolete.", true)]
         public static bool SkipDynamicBatching
         {
-            get;
-            set;
+            get => false;
+            set { }
         }
+
         /// <summary>
         /// Whether depth-based sorting should be enabled.
         /// When enabled, there is a higher load on the CPU but less rendering overdraw.

@@ -45,7 +45,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
 
     internal static readonly PropertyName serializedPropertyKey = new PropertyName("--unity-visual-element-reference-field-serialized-property");
 
-    static readonly string k_PickerHeading = L10n.Tr("{0} Element Reference");
+    static readonly string k_PickerHeading = L10n.Tr("{0} Reference");
 
     /// <summary>
     /// The type that can be assigned, must be a <see cref="VisualElement"/> or derive from it.
@@ -257,6 +257,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
 
             string label;
             Texture2D icon = null;
+            bool isNone = false;
 
             if (resolvedVisualElementAsset == null)
             {
@@ -267,6 +268,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
                 else
                 {
                     label = string.Format(k_NoneLabel, m_Field.elementType.Name);
+                    isNone = true;
                 }
             }
             else
@@ -294,7 +296,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
             }
 
             m_ObjectLabel.text = label;
-            m_ObjectIcon.image = icon ?? UIResources.GetIconForType(m_Field.elementType, UIResources.RequestSize.Px16).texture;
+            m_ObjectIcon.image = isNone ? null : icon ?? UIResources.GetIconForType(m_Field.elementType, UIResources.RequestSize.Px16).texture;
             m_ObjectIcon.EnableInClassList(nullIconUssClassName, resolvedVisualElementAsset == null);
             m_ObjectLabel.EnableInClassList(nullLabelUssClassName, resolvedVisualElementAsset == null);
         }

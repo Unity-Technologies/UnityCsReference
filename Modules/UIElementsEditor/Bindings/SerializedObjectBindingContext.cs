@@ -461,6 +461,9 @@ internal class SerializedObjectBindingContext
             case SerializedPropertyType.LoadableObjectId:
                 DefaultBind(element, prop, SerializedPropertyHelper.GetLoadableObjectIdPropertyValue, SerializedPropertyHelper.SetLoadableObjectIdPropertyValue, SerializedPropertyHelper.ValueEquals);
                 break;
+            case SerializedPropertyType.LoadableSceneId:
+                DefaultBind(element, prop, SerializedPropertyHelper.GetLoadableSceneIdPropertyValue, SerializedPropertyHelper.SetLoadableSceneIdPropertyValue, SerializedPropertyHelper.ValueEquals);
+                break;
             case SerializedPropertyType.ExposedReference:
                 // nothing to bind here
                 break;

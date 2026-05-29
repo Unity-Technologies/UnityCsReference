@@ -31,7 +31,7 @@ namespace UnityEditorInternal.Profiling
 
         public FileIOProfilerModule() : base(ProfilerModuleChartType.Line) {}
 
-        private protected override int defaultOrderIndex => 14;
+        private protected override int defaultOrderIndex => 16;
 
         internal override void OnEnable()
         {

@@ -129,6 +129,11 @@ namespace UnityEngine.UIElements
 
         VisualElement m_DeferredScrollToElement;
         IVisualElementScheduledItem m_DeferredScrollTo;
+        Vector2 m_LastDeferredScrollOffset;
+        int m_DeferredScrollToAttempts;
+
+        // Safety cap when the ScrollView never lays out (e.g. display: none).
+        const int k_MaxDeferredScrollToAttempts = 60;
 
         // ScrollViews can take more than 3 passes to stabilize. This can be the case when a scrollview contains elements with height bound to their width (e.g label with wrapped text).
         // Beyond 5 passes, we assume that the layout may never be stabilized then we stop updating the visibility of the scrollers.
@@ -669,6 +674,12 @@ namespace UnityEngine.UIElements
             else
                 StopDeferredScrollTo();
 
+            ApplyScrollTo(child);
+            m_LastDeferredScrollOffset = scrollOffset;
+        }
+
+        void ApplyScrollTo(VisualElement child)
+        {
             m_Velocity = Vector2.zero;
             float yDeltaOffset = 0, xDeltaOffset = 0;
 
@@ -691,19 +702,16 @@ namespace UnityEngine.UIElements
 
         bool ShouldDeferScrollTo() => contentContainer.panel.isDirty;
 
-        bool ShouldStopDeferredScrollTo() => !ShouldDeferScrollTo();
-
         void StartDeferredScrollTo(VisualElement target)
         {
+            if (m_DeferredScrollToElement != target)
+                m_DeferredScrollToAttempts = 0;
             m_DeferredScrollToElement = target;
+
             if (m_DeferredScrollTo == null)
-            {
-                m_DeferredScrollTo = schedule.Execute(PerformDeferredScrollTo).Until(ShouldStopDeferredScrollTo);
-            }
+                m_DeferredScrollTo = schedule.Execute(PerformDeferredScrollTo).Every(0);
             else if (!m_DeferredScrollTo.isActive)
-            {
                 m_DeferredScrollTo.Resume();
-            }
         }
 
         void StopDeferredScrollTo()
@@ -718,22 +726,36 @@ namespace UnityEngine.UIElements
 
         void PerformDeferredScrollTo()
         {
-            if (m_DeferredScrollToElement != null)
-            {
-                if (!contentContainer.Contains(m_DeferredScrollToElement))
-                {
-                    // The element has been removed from the contentContainer, so we can't scroll to it.
-                    StopDeferredScrollTo();
-                }
-                else
-                {
-                    ScrollTo(m_DeferredScrollToElement);
-                }
-            }
-            else
+            if (m_DeferredScrollToElement == null)
             {
                 StopDeferredScrollTo();
+                return;
             }
+
+            if (!contentContainer.Contains(m_DeferredScrollToElement))
+            {
+                StopDeferredScrollTo();
+                return;
+            }
+
+            // External scroll input — stop instead of reverting it. (UUM-142486)
+            if (scrollOffset != m_LastDeferredScrollOffset)
+            {
+                StopDeferredScrollTo();
+                return;
+            }
+
+            if (++m_DeferredScrollToAttempts > k_MaxDeferredScrollToAttempts)
+            {
+                StopDeferredScrollTo();
+                return;
+            }
+
+            ApplyScrollTo(m_DeferredScrollToElement);
+            m_LastDeferredScrollOffset = scrollOffset;
+
+            if (!ShouldDeferScrollTo())
+                StopDeferredScrollTo();
         }
 
         private float GetXDeltaOffset(VisualElement child)
@@ -1487,9 +1509,7 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse)
                 return;
 
-            var isXRPointer = evt.pointerType == PointerType.tracked;
-
-            if (!evt.isPrimary && !isXRPointer)
+            if (!evt.isPrimary)
                 return;
 
             if (evt.pointerId != PointerId.invalidPointerId)
@@ -1523,9 +1543,7 @@ namespace UnityEngine.UIElements
             if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 
-            var isXRPointer = evt.pointerType == PointerType.tracked;
-
-            if (!evt.isPrimary && !isXRPointer)
+            if (!evt.isPrimary)
                 return;
 
             if (evt.isHandledByDraggable)
@@ -1540,7 +1558,7 @@ namespace UnityEngine.UIElements
             var delta = position - m_PointerStartPosition;
 
             // Apply XR-specific transformations.
-            if (isXRPointer)
+            if (evt.pointerType == PointerType.tracked)
             {
                 // Handle large, unreasonable deltas caused by coordinate system jumps (e.g., UI layer exit/re-entry).
                 const float maxReasonableDelta = 10f; // Maximum allowed delta in meters per frame.

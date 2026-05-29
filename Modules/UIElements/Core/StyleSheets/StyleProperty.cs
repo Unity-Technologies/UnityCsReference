@@ -1798,6 +1798,7 @@ namespace UnityEngine.UIElements
                 case StyleValueFunction.FilterBlur:      return FilterFunctionType.Blur;
                 case StyleValueFunction.FilterContrast:  return FilterFunctionType.Contrast;
                 case StyleValueFunction.FilterHueRotate: return FilterFunctionType.HueRotate;
+                case StyleValueFunction.FilterDropShadow: return FilterFunctionType.DropShadow;
                 default:
                     return FilterFunctionType.None;
             }
@@ -1817,6 +1818,7 @@ namespace UnityEngine.UIElements
                 case FilterFunctionType.Blur:      return StyleValueFunction.FilterBlur;
                 case FilterFunctionType.Contrast:  return StyleValueFunction.FilterContrast;
                 case FilterFunctionType.HueRotate: return StyleValueFunction.FilterHueRotate;
+                case FilterFunctionType.DropShadow: return StyleValueFunction.FilterDropShadow;
                 default:
                     return StyleValueFunction.CustomFilter;
             }

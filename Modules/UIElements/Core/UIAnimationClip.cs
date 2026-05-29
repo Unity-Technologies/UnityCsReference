@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements
         [FreeFunction("UIAnimationClipBindings::Internal_Create")]
         extern private static void Internal_Create([Writable] UIAnimationClip self);
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
         internal extern AnimationClip animationClip
         {
             [NativeMethod("GetAnimationClip")]

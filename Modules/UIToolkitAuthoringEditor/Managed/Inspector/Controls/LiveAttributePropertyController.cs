@@ -205,7 +205,7 @@ class LiveAttributePropertyController
                         var item = valueList[i];
                         var uxmlItem = uxmlList != null && i < uxmlList.Count ? uxmlList[i] as UxmlSerializedData : null;
                         var elementProperty = property.GetArrayElementAtIndex(i);
-                        var isArrayElementBound = resolvedBindingLookup.Contains(elementProperty.GetBindingPath());
+                        var isArrayElementBound = resolvedBindingLookup.Contains(elementProperty.GetFullBindingPath());
 
                         // Handle null items
                         if (item == null)

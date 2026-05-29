@@ -77,14 +77,6 @@ readonly unsafe struct LayoutDataAccess
         => LayoutManager.GetManager(m_Manager).SetMeasureFunction(handle, value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public VisualElement GetOwner(UnmanagedDataHandle handle)
-    => LayoutManager.GetManager(m_Manager).GetOwner(handle);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetOwner(UnmanagedDataHandle handle, VisualElement value)
-        => LayoutManager.GetManager(m_Manager).SetOwner(handle, value);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutBaselineFunction GetBaselineFunction(UnmanagedDataHandle handle)
         => LayoutManager.GetManager(m_Manager).GetBaselineFunction(handle);
 

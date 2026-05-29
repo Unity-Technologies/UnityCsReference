@@ -255,7 +255,6 @@ namespace UnityEditor.Modules
         bool SupportsOrientation();
 
         bool SupportsStaticBatching();
-        bool SupportsDynamicBatching();
         bool SupportsHighDynamicRangeDisplays();
         bool SupportsGfxJobModes();
         GraphicsJobMode AdjustGfxJobMode(GraphicsJobMode graphicsJobMode);

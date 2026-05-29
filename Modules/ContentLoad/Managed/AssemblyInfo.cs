@@ -5,3 +5,4 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ContentBuildLoadPreview")]
+[assembly: InternalsVisibleTo("Unity.Addressables")]

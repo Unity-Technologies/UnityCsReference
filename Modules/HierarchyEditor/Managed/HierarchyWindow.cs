@@ -292,8 +292,8 @@ namespace Unity.Hierarchy.Editor
         public static event BindViewItemEventHandler BindViewItem;
 
         /// <summary>
-        /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>. Use this event to cleanup the view item.
-        /// Note that hierarchy view item are recycled by handler, so unbinding doesn't mean destruction. For performance reasons, the recommended best practice is
+        /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>. Use this event to clean up the view item.
+        /// Note that hierarchy view items are recycled by handler, so unbinding doesn't mean destruction. For performance reasons, the recommended best practice is
         /// to not undo styles or modifications done during binding in this unbind event.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
@@ -623,13 +623,7 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        void OnBindView(HierarchyView view)
-        {
-            BindView?.Invoke(this, view);
-#pragma warning disable CS0618
-            InitializingView?.Invoke(view);
-#pragma warning restore CS0618
-        }
+        void OnBindView(HierarchyView view) => BindView?.Invoke(this, view);
 
         void OnBindViewItem(HierarchyView view, HierarchyViewItem item) => BindViewItem?.Invoke(this, view, item);
 
@@ -1107,9 +1101,10 @@ namespace Unity.Hierarchy.Editor
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).SetViewState(state=...)");
 
             // Restore view model state synchronously, to ensure all nodes are properly updated before restoring the rest of the view state.
-            if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ViewModelState) &&
+            var hasViewModelState = viewState.ValidContent.HasFlag(HierarchyViewState.Content.ViewModelState) &&
                 viewState.ViewModelState != null &&
-                viewState.ViewModelState.Length > 0)
+                viewState.ViewModelState.Length > 0;
+            if (hasViewModelState)
             {
                 // Update first to ensure all nodes exist before restoring view model state
                 m_HierarchyView.UpdateData();
@@ -1136,9 +1131,10 @@ namespace Unity.Hierarchy.Editor
             {
                 m_HierarchyView.EnqueuePostUpdateAction(() =>
                 {
-                    if (StageUtility.GetCurrentStage() is PrefabStage)
+                    // Only force-expand prefab-stage root nodes when no saved state exists (first open
+                    // or old format). When a state was restored, those flags are already correct.
+                    if (!hasViewModelState && StageUtility.GetCurrentStage() is PrefabStage)
                     {
-                        // The top level object of a prefab is *most of the time* an object without a proper FID/PID. Always expand it:
                         using var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyView.ViewModel);
 
                         var rootChildrenCount = m_Hierarchy.GetChildrenCount(in Hierarchy.Root);
@@ -1510,15 +1506,17 @@ namespace Unity.Hierarchy.Editor
             public event Action<ExecuteCommandEvent> ExecuteCommand;
         }
 
-        #region Marked as obsolete warning in 6.5
+        #region Marked as obsolete error in 6.6
         /// <summary>
         /// Raised when the <see cref="HierarchyView"/> is initializing, typically
-        /// allowing to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
+        /// allowing callers to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("InitializingView is deprecated. Use BindView instead, which provides direct access to the HierarchyView and has a symmetric UnbindView event.", false)]
+        [Obsolete("InitializingView is deprecated. Use BindView instead, which provides direct access to the HierarchyView and has a symmetric UnbindView event.", true)]
+#pragma warning disable CS0067
         public static event Action<VisualElement> InitializingView;
+#pragma warning restore CS0067
         #endregion
     }
 }

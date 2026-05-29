@@ -187,16 +187,19 @@ namespace UnityEngine.UIElements
 
         public StyleVariableContext variableContext;
         public VisualElement currentElement;
-        public Action<VisualElement, MatchResultInfo> processResult;
+        // When true, MatchRightToLeft writes triggerPseudoMask/dependencyPseudoMask back onto
+        // the visited elements. The cold-path callers (inspector, debugger) pass false to leave
+        // element state untouched.
+        public readonly bool applyPseudoMasks;
         public AncestorFilter ancestorFilter = new AncestorFilter();
 
-        public StyleMatchingContext(Action<VisualElement, MatchResultInfo> processResult)
+        public StyleMatchingContext(bool applyPseudoMasks)
         {
             m_StyleSheetStack = new List<StyleSheet>();
             m_CacheEntryStack = new List<SelectorAccelerationCacheEntry>();
             variableContext = StyleVariableContext.none;
             currentElement = null;
-            this.processResult = processResult;
+            this.applyPseudoMasks = applyPseudoMasks;
         }
 
         public void AddStyleSheet(StyleSheet sheet)
@@ -235,7 +238,7 @@ namespace UnityEngine.UIElements
     {
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
 
-        private List<SelectorMatchRecord> m_TempMatchResults = new List<SelectorMatchRecord>();
+        private List<StyleSelectorMatch> m_TempMatchResults = new List<StyleSelectorMatch>();
 
         private List<VisualElement> m_CustomStyleResolvedElements;
 
@@ -244,7 +247,7 @@ namespace UnityEngine.UIElements
         private bool m_IsApplyingStyles;
         private List<VisualElement> m_ApplyStyleUpdateList = new List<VisualElement>();
 
-        StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(OnProcessMatchResult);
+        StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(applyPseudoMasks: true);
         StylePropertyReader m_StylePropertyReader = new StylePropertyReader();
 
         private BaseVisualElementPanel currentPanel { get; set; }
@@ -342,12 +345,6 @@ namespace UnityEngine.UIElements
                 parent.stylesAncestorOfDirty = true;
                 parent = parent.hierarchy.parent;
             }
-        }
-
-        static void OnProcessMatchResult(VisualElement current, MatchResultInfo info)
-        {
-            current.triggerPseudoMask |= info.triggerPseudoMask;
-            current.dependencyPseudoMask |= info.dependencyPseudoMask;
         }
 
         public override void TraverseRecursive(VisualElement element, int depth)
@@ -509,9 +506,9 @@ namespace UnityEngine.UIElements
             m_AnimatedProperties.Clear();
         }
 
-        ComputedStyle ProcessMatchedRules(VisualElement element, List<SelectorMatchRecord> matchingSelectors)
+        ComputedStyle ProcessMatchedRules(VisualElement element, List<StyleSelectorMatch> matchingSelectors)
         {
-            matchingSelectors.Sort((a, b) => SelectorMatchRecord.Compare(a, b));
+            matchingSelectors.Sort(StyleSelectorMatch.Comparison);
 
             Int64 matchingRulesHash = element.fullTypeName.GetHashCode();
             // Let current DPI contribute to the hash so cache is invalidated when this changes
@@ -520,9 +517,9 @@ namespace UnityEngine.UIElements
             int oldVariablesHash = m_StyleMatchingContext.variableContext.GetVariableHash();
             int customPropertiesCount = 0;
 
-            foreach (var record in matchingSelectors)
+            foreach (var match in matchingSelectors)
             {
-                customPropertiesCount += record.complexSelector.rule.customPropertiesCount;
+                customPropertiesCount += match.complexSelector.rule.customPropertiesCount;
             }
 
             if (customPropertiesCount > 0)
@@ -531,24 +528,24 @@ namespace UnityEngine.UIElements
                 m_ProcessVarContext.AddInitialRange(m_StyleMatchingContext.variableContext);
             }
 
-            foreach (var record in matchingSelectors)
+            foreach (var match in matchingSelectors)
             {
                 // UUM-87950 Don't use rule.GetHashCode() as it isn't defined on the class and
                 // falls back on the base Object.GetHashCode() which have been seen to return the
                 // same value for different rules across scene changes. The rule index is a good
                 // alternate unique identifier for the rule.
 
-                var sheet = record.sheet;
-                var ruleIndex = record.complexSelector.ruleIndex;
-                var specificity = record.complexSelector.specificity;
+                var sheet = match.sheet;
+                var ruleIndex = match.complexSelector.ruleIndex;
+                var specificity = match.complexSelector.specificity;
                 matchingRulesHash = (matchingRulesHash * 397) ^ sheet.contentHash;
                 matchingRulesHash = (matchingRulesHash * 397) ^ ruleIndex;
                 matchingRulesHash = (matchingRulesHash * 397) ^ specificity;
 
-                var rule = record.complexSelector.rule;
+                var rule = match.complexSelector.rule;
                 if (rule.customPropertiesCount > 0)
                 {
-                    ProcessMatchedVariables(record.sheet, rule);
+                    ProcessMatchedVariables(match.sheet, rule);
                 }
             }
 
@@ -584,9 +581,9 @@ namespace UnityEngine.UIElements
                 resolvedStyles.matchingRulesHash = matchingRulesHash;
 
                 float dpiScaling = element.scaledPixelsPerPoint;
-                foreach (var record in matchingSelectors)
+                foreach (var match in matchingSelectors)
                 {
-                    m_StylePropertyReader.SetContext(record.sheet, record.complexSelector, m_StyleMatchingContext.variableContext, dpiScaling);
+                    m_StylePropertyReader.SetContext(match.sheet, match.complexSelector, m_StyleMatchingContext.variableContext, dpiScaling);
                     resolvedStyles.ApplyProperties(m_StylePropertyReader, ref parentStyle);
                 }
 

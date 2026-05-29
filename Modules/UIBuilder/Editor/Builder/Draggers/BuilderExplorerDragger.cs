@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
             public int oldIndex;
         }
 
-        static protected readonly string s_DraggableStyleClassPillClassName = "unity-builder-class-pill--draggable";
+        static protected readonly string s_DraggableStyleClassPillClassName = "unity-class-pill--draggable";
 
         protected VisualElement m_DragPreviewLastParent;
         protected int m_DragPreviewLastIndex;

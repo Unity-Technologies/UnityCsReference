@@ -11,7 +11,7 @@ namespace UnityEditor.Profiling
     /// <summary>
     /// Provides marker information for profiler and assistant packages
     /// </summary>
-    internal static class MarkersInformationProvider
+    internal static partial class MarkersInformationProvider
     {
         private static readonly Dictionary<string, string> k_MarkersInfo = new Dictionary<string, string>
         {
@@ -52,11 +52,21 @@ namespace UnityEditor.Profiling
         /// </summary>
         public static string GetMarkerInfo(string markerName)
         {
-            var markersInfo = k_MarkersInfo;
-            if (markersInfo != null && k_MarkersInfo.TryGetValue(markerName, out var info))
-            {
+            var info = GetMarkerInfoRaw(markerName);
+            if (info != null)
                 return info;
-            }
+
+            // ProfilingScope in SRP and URP/HDRP generates "inline" (main thread)
+            // markers with "Inl_" prefix, so we check for those as well if the exact marker name is not found.
+            return GetMarkerInfoRaw("Inl_" + markerName);
+        }
+
+        static string GetMarkerInfoRaw(string markerName)
+        {
+            if (k_MarkersInfo.TryGetValue(markerName, out var info))
+                return info;
+            if (k_GeneratedMarkersInfo.TryGetValue(markerName, out info))
+                return info;
 
             return null;
         }

@@ -33,6 +33,18 @@ namespace UnityEngine.Networking
             InternalCreateAudioClip(uri.AbsoluteUri, audioType);
         }
 
+        public DownloadHandlerAudioClip(string url, AudioType audioType, bool ambisonic)
+        {
+            InternalCreateAudioClip(url, audioType);
+            this.ambisonic = ambisonic;
+        }
+
+        public DownloadHandlerAudioClip(Uri uri, AudioType audioType, bool ambisonic)
+        {
+            InternalCreateAudioClip(uri.AbsoluteUri, audioType);
+            this.ambisonic = ambisonic;
+        }
+
         protected override NativeArray<byte> GetNativeData()
         {
             return InternalGetNativeArray(this, ref m_NativeData);
@@ -55,6 +67,8 @@ namespace UnityEngine.Networking
         public extern bool streamAudio { get; set; }
 
         public extern bool compressed { get; set; }
+
+        public extern bool ambisonic { get; set; }
 
         public static AudioClip GetContent(UnityWebRequest www)
         {

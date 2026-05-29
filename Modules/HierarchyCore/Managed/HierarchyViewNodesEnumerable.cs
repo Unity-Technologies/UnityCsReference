@@ -8,11 +8,11 @@ using System.Runtime.CompilerServices;
 
 namespace Unity.Hierarchy
 {
-    #region Marked as obsolete warning in 6.3
+    #region Marked as obsolete error in 6.6
     /// <summary>
     /// Represent an enumerable of <see cref="HierarchyNode"/> with specific <see cref="HierarchyNodeFlags"/>.
     /// </summary>
-    [Obsolete("HierarchyViewNodesEnumerable is obsolete, it has been renamed to HierarchyViewModelNodesEnumerable.", false)]
+    [Obsolete("HierarchyViewNodesEnumerable is obsolete, it has been renamed to HierarchyViewModelNodesEnumerable.", true)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public readonly struct HierarchyViewNodesEnumerable
     {

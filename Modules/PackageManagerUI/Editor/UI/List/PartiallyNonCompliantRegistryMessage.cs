@@ -26,7 +26,7 @@ internal partial class PartiallyNonCompliantRegistryMessage : VisualElement
         m_HelpBox = new ExtendedHelpBox(applicationProxy)
         {
             customIcon = Icon.RegistryErrorLarge,
-            analyticsId = "partially-non-compliant-registry-help-box"
+            readMoreAnalyticsId = "partially-non-compliant-registry-help-box"
         };
         Add(m_HelpBox);
 

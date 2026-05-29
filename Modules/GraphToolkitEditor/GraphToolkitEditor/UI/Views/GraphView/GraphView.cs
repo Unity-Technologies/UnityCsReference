@@ -1865,7 +1865,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (wires.Count > 0)
             {
-                var wireData = Wire.GetPortalsWireData(wires, this);
+                var wireData = WireView.GetPortalsWireData(wires, this);
                 evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertWireToPortalEvent>(GraphTool, L10n.Tr("Convert to Portals"), _ =>
                 {
                     Dispatch(new ConvertWiresToPortalsCommand(wireData, this));
@@ -2390,7 +2390,7 @@ namespace Unity.GraphToolkit.Editor
                     break;
 
                 case GraphViewDisplayMode.Interactive:
-                    if (graphElement is NodeView || graphElement is Wire)
+                    if (graphElement is NodeView || graphElement is WireView)
                     {
                         graphElement.RegisterCallback<MouseOverEvent>(OnMouseOver);
                     }
@@ -2442,7 +2442,7 @@ namespace Unity.GraphToolkit.Editor
                     break;
             }
 
-            if (graphElement is NodeView || graphElement is Wire)
+            if (graphElement is NodeView || graphElement is WireView)
                 graphElement.UnregisterCallback<MouseOverEvent>(OnMouseOver);
 
             if (GraphViewModel != null)
@@ -2709,7 +2709,7 @@ namespace Unity.GraphToolkit.Editor
             if (wires.Count == 0)
                 return;
 
-            var wireData = Wire.GetPortalsWireData(wires, this);
+            var wireData = WireView.GetPortalsWireData(wires, this);
             Dispatch(new ConvertWiresToPortalsCommand(wireData, this));
             e.StopPropagation();
         }
@@ -3327,7 +3327,7 @@ namespace Unity.GraphToolkit.Editor
 
         void HideAutoPlacedElements()
         {
-            if (m_UpdateObserver == null || GraphViewModel == null)
+            if (m_UpdateObserver == null || GraphViewModel == null || GraphModel == null)
                 return;
 
             // Models that need repositioning are hidden until they are moved by the observer next frame.
@@ -3336,6 +3336,46 @@ namespace Unity.GraphToolkit.Editor
                 var autoPlacementChangeset = GraphViewModel.AutoPlacementState.GetAggregatedChangeset(autoPlacementObservation.LastObservedVersion);
                 if (autoPlacementChangeset != null && autoPlacementChangeset.ModelsToHideDuringAutoPlacement.Count != 0)
                 {
+                    // We hide elements only if there is a live node pending auto-placement.
+                    // When undoing the creation of a node, the node no longer exists in the graph.
+                    // No need to hide it and the wire it was connected to (this would cause the wire to become invisible after undo).
+                    var hasLiveAutoPlacementNode = false;
+                    foreach (var modelToReposition in autoPlacementChangeset.ModelsToRepositionAtCreation)
+                    {
+                        if (GraphModel.GetModel(modelToReposition.Model) != null)
+                        {
+                            hasLiveAutoPlacementNode = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasLiveAutoPlacementNode)
+                    {
+                        foreach (var modelGuid in autoPlacementChangeset.ModelsToAutoAlign)
+                        {
+                            if (GraphModel.GetModel(modelGuid) != null)
+                            {
+                                hasLiveAutoPlacementNode = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasLiveAutoPlacementNode)
+                    {
+                        foreach (var modelGuid in autoPlacementChangeset.ModelsToReverseAutoAlign)
+                        {
+                            if (GraphModel.GetModel(modelGuid) != null)
+                            {
+                                hasLiveAutoPlacementNode = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasLiveAutoPlacementNode)
+                        return;
+
                     foreach (var elementToHide in autoPlacementChangeset.ModelsToHideDuringAutoPlacement)
                     {
                         var childView = elementToHide.GetView(this);
@@ -4369,7 +4409,7 @@ namespace Unity.GraphToolkit.Editor
 
         static void AddViewToSpacePartitioningByContainer(GraphElement view, VisualElement container, Dictionary<VisualElement, HashSet<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>> elementsToRepartitionByContainer, bool useLayout = false)
         {
-            if (view == null || !view.CanBePartitioned())
+            if (view == null || !view.CanBePartitioned() || container == null)
                 return;
 
             var graphElementBoundingBox = useLayout ? view.layout : view.GetBoundingBox();

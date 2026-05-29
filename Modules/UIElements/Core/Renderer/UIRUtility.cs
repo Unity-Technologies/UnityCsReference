@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
+using UnityEngine.Profiling;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -16,6 +17,9 @@ namespace UnityEngine.UIElements
 
         public static readonly string k_DefaultShaderName = UIR.Shaders.k_Default;
 
+        // Cached once so the JIT can hoist profiler-gated branches out of hot loops.
+        public static readonly bool k_ProfilerSupported = Profiler.supported;
+
         // We provide our own epsilon to avoid issues such as case 1335430. Some native plugin
         // disable float-denormalization, which can lead to the wrong Mathf.Epsilon being used.
         public const float k_Epsilon = 1.0E-30f;
@@ -25,11 +29,6 @@ namespace UnityEngine.UIElements
         public const float k_MaskPosZ = 1.0f; // The correct z value to push/pop a mask
         public const int k_MaxMaskDepth = 7; // Requires 3 bits in the stencil
         public const float k_RenderTextureMargin = 1;
-
-        // Keep in sync with UIRVertexUtility.h
-        public const byte k_DynamicColorDisabled = 0;
-        public const byte k_DynamicColorEnabled = 1;
-        public const byte k_DynamicColorEnabledText = 2;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool ShapeWindingIsClockwise(int maskDepth, int stencilRef)

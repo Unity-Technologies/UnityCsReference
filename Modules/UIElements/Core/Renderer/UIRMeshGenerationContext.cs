@@ -14,6 +14,22 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
+    enum VertexFlags : ushort
+    {
+        None                     = 0,
+        RenderTypeSolid            = 0,
+        RenderTypeText             = 1,
+        RenderTypeTexture          = 2,
+        RenderTypeDynamicTexture   = 3,
+        RenderTypeSvgGradient      = 4,
+        RenderTypeMask             = 0x7,
+        IsArc                    = 1 << 3,
+        DynamicColorDisabled     = 0 << 4,
+        DynamicColorEnabled      = 1 << 4,
+        DynamicColorEnabledText  = 2 << 4,
+        DynamicColorMask         = DynamicColorEnabled | DynamicColorEnabledText,
+    }
+
     /// <summary>
     /// Represents a vertex of geometry for drawing content of <see cref="VisualElement"/>.
     /// </summary>
@@ -47,13 +63,15 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Vector2 uv;
         internal Vector2 layoutUV; // Layout UV of Visual Element
-        internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
-        internal Color32 ids; //XYZW (xform,clip,opacity,color/textcore)
-        internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (is-dynamic-color)
-        internal Color32 opacityColorPages; //XY (opacity) ZW (color/textcore page)
-        internal Color32 settingIndex; // XY (SVG setting) ZW (unused)
-        internal Vector4 circle; // XY (outer) ZW (inner)
-        internal float textureId;
+        internal ushort clipRectId;
+        internal ushort transformId;
+        internal ushort dynamicColorOrTextCoreId;
+        internal ushort opacityId;
+        internal VertexFlags flags;
+        internal ushort textureId;
+        internal ushort svgGradientIndex;
+        internal ushort _reserved;
+        internal Vector4 circle; // XY (outer) ZW (inner) | X (Text Extra Dilate)
 
         // Winding order of vertices matters. CCW is for clipped meshes.
     }
@@ -249,25 +267,25 @@ namespace UnityEngine.UIElements
         internal int currentVertex;
     }
 
-    internal struct ColorPage
+    internal struct ColorId
     {
         public bool isValid;
-        public Color32 pageAndID;
+        public ushort id;
 
-        public static ColorPage Init(RenderTreeManager renderTreeManager, BMPAlloc alloc)
+        public static ColorId Init(RenderTreeManager renderTreeManager, BMPAlloc alloc)
         {
             bool isValid = alloc.IsValid();
-            return new ColorPage() {
+            return new ColorId() {
                 isValid = isValid,
-                pageAndID = isValid ? renderTreeManager.shaderInfoAllocator.ColorAllocToVertexData(alloc) : new Color32()
+                id = isValid ? ShaderInfoAllocator.BMPAllocToId(alloc) : (ushort)0
             };
         }
 
-        public MeshBuilderNative.NativeColorPage ToNativeColorPage()
+        public MeshBuilderNative.NativeColorId ToNativeColorId()
         {
-            return new MeshBuilderNative.NativeColorPage() {
+            return new MeshBuilderNative.NativeColorId() {
                 isValid = isValid ? 1 : 0,
-                pageAndID = pageAndID
+                id = id
             };
         }
     }

@@ -272,7 +272,7 @@ namespace Unity.GraphToolkit.Editor
             for (var i = 0; i < selection.Count; i++)
             {
                 var view = selection[i].GetView(m_GraphView);
-                if (view is GraphElement ge and not Wire && ge.IsMovable())
+                if (view is GraphElement ge and not WireView && ge.IsMovable())
                     m_ElementsToMove.Add(ge);
             }
 

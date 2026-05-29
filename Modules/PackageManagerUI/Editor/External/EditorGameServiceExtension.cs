@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null)
                 return null;
             var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
-            var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, 0, version.isInstalled, version.versionString);
+            var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             return GetEditorGameServiceField(packageInfo);
         }
 

@@ -12,32 +12,16 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    // Result of a single match between a selector and visual element.
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal struct MatchResultInfo
-    {
-        public readonly bool success;
-        public readonly PseudoStates triggerPseudoMask; // what pseudo states contributes to matching this selector
-        public readonly PseudoStates dependencyPseudoMask; // what pseudo states if set, would have given a different result
-
-        public MatchResultInfo(bool success, PseudoStates triggerPseudoMask, PseudoStates dependencyPseudoMask)
-        {
-            this.success = success;
-            this.triggerPseudoMask = triggerPseudoMask;
-            this.dependencyPseudoMask = dependencyPseudoMask;
-        }
-    }
-
-    // Each struct represents on match for a visual element against a complex
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal struct SelectorMatchRecord : IEquatable<SelectorMatchRecord>
+    // Hot-path representation of a matched selector. Lives only inside the style traversal
+    // (sorting + ProcessMatchedRules); SelectorMatchRecord is the form used everywhere else.
+    internal readonly struct StyleSelectorMatch
     {
         public readonly StyleSheet sheet;
         public readonly int styleSheetIndexInStack;
         public readonly int importedStyleSheetIndex;
         public readonly StyleComplexSelector complexSelector;
 
-        public SelectorMatchRecord(StyleSheet sheet, int styleSheetIndexInStack, int importedStyleSheetIndex, StyleComplexSelector complexSelector)
+        public StyleSelectorMatch(StyleSheet sheet, int styleSheetIndexInStack, int importedStyleSheetIndex, StyleComplexSelector complexSelector)
         {
             this.sheet = sheet;
             this.styleSheetIndexInStack = styleSheetIndexInStack;
@@ -45,7 +29,12 @@ namespace UnityEngine.UIElements.StyleSheets
             this.complexSelector = complexSelector;
         }
 
-        public static int Compare(SelectorMatchRecord a, SelectorMatchRecord b)
+        // Cached comparison delegate. This is the only allocation-free way to sort a
+        // List<StyleSelectorMatch> on Unity's Mono runtime: Sort() via Comparer<T>.Default
+        // and Sort(inline lambda) both allocate per call.
+        public static readonly Comparison<StyleSelectorMatch> Comparison = (a, b) => Compare(in a, in b);
+
+        static int Compare(in StyleSelectorMatch a, in StyleSelectorMatch b)
         {
             // First compare absolute priority (Unity style sheets are always lower priority)
             if (a.sheet.isDefaultStyleSheet != b.sheet.isDefaultStyleSheet)
@@ -56,38 +45,17 @@ namespace UnityEngine.UIElements.StyleSheets
 
             // If they are same, use the order into which stylesheets were added to the element or its parents (later wins)
             if (res == 0)
-            {
                 res = a.styleSheetIndexInStack.CompareTo(b.styleSheetIndexInStack);
-            }
 
             // If they are the same, use the index in the imported style sheets of the owner style sheets (later wins)
             if (res == 0)
-            {
                 res = a.importedStyleSheetIndex.CompareTo(b.importedStyleSheetIndex);
-            }
 
             // All else being equal, use the order in the style sheet itself
             if (res == 0)
-            {
                 res = a.complexSelector.orderInStyleSheet.CompareTo(b.complexSelector.orderInStyleSheet);
-            }
 
             return res;
-        }
-
-        public bool Equals(SelectorMatchRecord other)
-        {
-            return Equals(sheet, other.sheet) && styleSheetIndexInStack == other.styleSheetIndexInStack && Equals(complexSelector, other.complexSelector);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is SelectorMatchRecord other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(sheet, styleSheetIndexInStack, complexSelector);
         }
     }
 
@@ -103,7 +71,7 @@ namespace UnityEngine.UIElements.StyleSheets
         internal static bool s_VerifyBloomIntegrity = false;
 
         // Reverse lookup: Get StyleComplexSelector from descriptor
-        static StyleComplexSelector GetComplexSelector(SelectorRangeDescriptor descriptor, SelectorAccelerationCacheEntry cacheEntry)
+        static StyleComplexSelector GetComplexSelector(in SelectorRangeDescriptor descriptor, in SelectorAccelerationCacheEntry cacheEntry)
         {
             var styleSheet = descriptor.importedStyleSheetIndex == -1
                 ? cacheEntry.ownerStyleSheet
@@ -123,10 +91,12 @@ namespace UnityEngine.UIElements.StyleSheets
 
         // Match element against flattened selector (StyleSheet selectors only, no predicates)
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        static MatchResultInfo MatchesSelectorFlat(
+        static bool MatchesSelectorFlat(
             VisualElement element,
-            FlattenedSelector flatSelector,
-            ReadOnlySpan<FlattenedSelectorPart> selectorParts)
+            in FlattenedSelector flatSelector,
+            ReadOnlySpan<FlattenedSelectorPart> selectorParts,
+            out PseudoStates triggerPseudoMask,
+            out PseudoStates dependencyPseudoMask)
         {
             bool match = true;
 
@@ -182,7 +152,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             int triggerPseudoStateMask = 0;
-            int dependencyPseudoMask = 0;
+            int dependencyPseudoStateMask = 0;
             bool saveMatch = match;
 
             if (saveMatch && flatSelector.pseudoStateMask != 0)
@@ -191,7 +161,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 if (match)
                 {
-                    dependencyPseudoMask = flatSelector.pseudoStateMask;
+                    dependencyPseudoStateMask = flatSelector.pseudoStateMask;
                 }
                 else
                 {
@@ -209,19 +179,21 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
                 else
                 {
-                    dependencyPseudoMask |= flatSelector.negatedPseudoStateMask;
+                    dependencyPseudoStateMask |= flatSelector.negatedPseudoStateMask;
                 }
             }
 
-            return new MatchResultInfo(match, (PseudoStates)triggerPseudoStateMask, (PseudoStates)dependencyPseudoMask);
+            triggerPseudoMask = (PseudoStates)triggerPseudoStateMask;
+            dependencyPseudoMask = (PseudoStates)dependencyPseudoStateMask;
+            return match;
         }
 
         // Match right-to-left using flattened data (StyleSheet selectors only)
         static bool MatchRightToLeftFlat(
             VisualElement element,
+            in SelectorAccelerationCacheEntry cacheEntry,
             ReadOnlySpan<FlattenedSelector> descriptorSelectors,
-            ReadOnlySpan<FlattenedSelectorPart> allParts,
-            Action<VisualElement, MatchResultInfo> processResult)
+            bool applyPseudoMasks)
         {
             var current = element;
             int nextIndex = descriptorSelectors.Length - 1;
@@ -233,14 +205,17 @@ namespace UnityEngine.UIElements.StyleSheets
                 if (current == null)
                     break;
 
-                var flatSelector = descriptorSelectors[nextIndex];
+                ref readonly var flatSelector = ref descriptorSelectors[nextIndex];
 
-                // Slice the parts array for this specific selector
-                var selectorParts = allParts.Slice(flatSelector.startPartIndex, flatSelector.partCount);
-                MatchResultInfo matchInfo = MatchesSelectorFlat(current, flatSelector, selectorParts);
-                processResult(current, matchInfo);
+                bool success = MatchesSelectorFlat(current, flatSelector, cacheEntry.PartsFor(flatSelector),
+                    out var triggerPseudoMask, out var dependencyPseudoMask);
+                if (applyPseudoMasks)
+                {
+                    current.triggerPseudoMask |= triggerPseudoMask;
+                    current.dependencyPseudoMask |= dependencyPseudoMask;
+                }
 
-                if (!matchInfo.success)
+                if (!success)
                 {
                     // if we have a descendant relationship, keep trying on the parent
                     // i.e., "div span", div failed on this element, try on the parent
@@ -287,10 +262,8 @@ namespace UnityEngine.UIElements.StyleSheets
         // Test range of descriptors in sorted allDescriptors array
         static void TestSelectorListFlat(
             ReadOnlySpan<SelectorRangeDescriptor> descriptors,
-            ReadOnlySpan<FlattenedSelector> allSelectors,
-            ReadOnlySpan<FlattenedSelectorPart> allParts,
-            SelectorAccelerationCacheEntry cacheEntry,
-            List<SelectorMatchRecord> matchedSelectors,
+            in SelectorAccelerationCacheEntry cacheEntry,
+            List<StyleSelectorMatch> matchedSelectors,
             StyleMatchingContext context,
             int currentStyleSheetIndexInStack)
         {
@@ -298,7 +271,8 @@ namespace UnityEngine.UIElements.StyleSheets
 
             for (int i = 0; i < descriptors.Length; i++)
             {
-                var descriptor = descriptors[i];
+                // ref readonly avoids copying the 52B descriptor per iteration on the matcher hot path.
+                ref readonly var descriptor = ref descriptors[i];
                 StyleComplexSelector currentComplexSelector = default;
 
                 // For profiling, we need the actual StyleComplexSelector
@@ -308,20 +282,20 @@ namespace UnityEngine.UIElements.StyleSheets
                 bool isCandidate = true;
                 bool isMatchRightToLeft = false;
 
-                if (!descriptor.isSimple)
+                // Bloom prefilter only matters for complex selectors (with ancestor relationships).
+                // Single-selector descriptors are equivalent to the legacy isSimple == true case.
+                if (descriptor.selectorCount > 1)
                 {
                     isCandidate = IsDescriptorCandidate(descriptor, context.ancestorFilter);
                 }
 
                 if (isCandidate || s_VerifyBloomIntegrity)
                 {
-                    // Slice the selectors array for this specific descriptor
-                    var descriptorSelectors = allSelectors.Slice(descriptor.startSelectorIndex, descriptor.selectorCount);
                     isMatchRightToLeft = MatchRightToLeftFlat(
                         context.currentElement,
-                        descriptorSelectors,
-                        allParts,
-                        context.processResult);
+                        in cacheEntry,
+                        cacheEntry.SelectorsFor(descriptor),
+                        context.applyPseudoMasks);
                 }
 
                 if (s_VerifyBloomIntegrity)
@@ -341,7 +315,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         Debug.Assert(sheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex] == currentComplexSelector.rule.styleSheet,
                             "StyleRangeDescriptor is not consistent");
                     }
-                    matchedSelectors.Add(new SelectorMatchRecord(
+                    matchedSelectors.Add(new StyleSelectorMatch(
                         currentComplexSelector.rule.styleSheet,
                         currentStyleSheetIndexInStack,
                         descriptor.importedStyleSheetIndex,
@@ -355,22 +329,18 @@ namespace UnityEngine.UIElements.StyleSheets
 
         // Fast lookup using int key in range-based table
         static void FastLookupFlat(
-            Dictionary<int, (int startIndex, int count)> table,
-            SelectorAccelerationCacheEntry cacheEntry,
-            List<SelectorMatchRecord> matchedSelectors,
+            Dictionary<int, DescriptorRange> table,
+            in SelectorAccelerationCacheEntry cacheEntry,
+            List<StyleSelectorMatch> matchedSelectors,
             StyleMatchingContext context,
             int uniqueStringId,
             int currentStyleSheetIndexInStack)
         {
             if (table != null && table.TryGetValue(uniqueStringId, out var range))
             {
-                // Slice the descriptors array for this range
-                var descriptors = ((ReadOnlySpan<SelectorRangeDescriptor>)cacheEntry.allDescriptors).Slice(range.startIndex, range.count);
                 TestSelectorListFlat(
-                    descriptors,
-                    cacheEntry.allSelectors,
-                    cacheEntry.allParts,
-                    cacheEntry,
+                    cacheEntry.DescriptorsFor(range),
+                    in cacheEntry,
                     matchedSelectors,
                     context,
                     currentStyleSheetIndexInStack);
@@ -378,7 +348,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
 
         // Helper to get the appropriate table by type
-        static Dictionary<int, (int startIndex, int count)> GetFlatTableByType(SelectorAccelerationCacheEntry cacheEntry, SelectorAccelerationTableType type)
+        static Dictionary<int, DescriptorRange> GetFlatTableByType(in SelectorAccelerationCacheEntry cacheEntry, SelectorAccelerationTableType type)
         {
             return type switch
             {
@@ -389,7 +359,7 @@ namespace UnityEngine.UIElements.StyleSheets
             };
         }
 
-        public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors)
+        public static void FindMatches(StyleMatchingContext context, List<StyleSelectorMatch> matchedSelectors)
         {
             // To support having the root pseudo states set for style sheets added onto an element
             // we need to find which sheets belongs to the element itself.
@@ -424,7 +394,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
-        public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors, int parentSheetIndex)
+        public static void FindMatches(StyleMatchingContext context, List<StyleSelectorMatch> matchedSelectors, int parentSheetIndex)
         {
             Debug.Assert(matchedSelectors.Count == 0);
             Debug.Assert(context.currentElement != null, "context.currentElement != null");
@@ -495,20 +465,16 @@ namespace UnityEngine.UIElements.StyleSheets
                         if ((accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)item.type)) == 0)
                             continue;
 
-                        var table = GetFlatTableByType(accelerationCacheEntry, item.type);
-                        FastLookupFlat(table, accelerationCacheEntry, matchedSelectors, context, item.uniqueStringId, i);
+                        var table = GetFlatTableByType(in accelerationCacheEntry, item.type);
+                        FastLookupFlat(table, in accelerationCacheEntry, matchedSelectors, context, item.uniqueStringId, i);
                     }
 
                     // Handle :root selectors
                     if (toggleRoot && accelerationCacheEntry.rootSelectorRange.count > 0)
                     {
-                        var rootDescriptors = ((ReadOnlySpan<SelectorRangeDescriptor>)accelerationCacheEntry.allDescriptors)
-                            .Slice(accelerationCacheEntry.rootSelectorRange.startIndex, accelerationCacheEntry.rootSelectorRange.count);
                         TestSelectorListFlat(
-                            rootDescriptors,
-                            accelerationCacheEntry.allSelectors,
-                            accelerationCacheEntry.allParts,
-                            accelerationCacheEntry,
+                            accelerationCacheEntry.DescriptorsFor(accelerationCacheEntry.rootSelectorRange),
+                            in accelerationCacheEntry,
                             matchedSelectors,
                             context,
                             i);
@@ -517,13 +483,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     // Handle wildcard selectors
                     if (accelerationCacheEntry.wildCardSelectorRange.count > 0)
                     {
-                        var wildcardDescriptors = ((ReadOnlySpan<SelectorRangeDescriptor>)accelerationCacheEntry.allDescriptors)
-                            .Slice(accelerationCacheEntry.wildCardSelectorRange.startIndex, accelerationCacheEntry.wildCardSelectorRange.count);
                         TestSelectorListFlat(
-                            wildcardDescriptors,
-                            accelerationCacheEntry.allSelectors,
-                            accelerationCacheEntry.allParts,
-                            accelerationCacheEntry,
+                            accelerationCacheEntry.DescriptorsFor(accelerationCacheEntry.wildCardSelectorRange),
+                            in accelerationCacheEntry,
                             matchedSelectors,
                             context,
                             i);

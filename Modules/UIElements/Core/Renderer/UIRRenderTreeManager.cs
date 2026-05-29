@@ -52,7 +52,12 @@ namespace UnityEngine.UIElements.UIR
         Material m_DefaultMat;
         bool m_BlockDirtyRegistration;
         ChainBuilderStats m_Stats;
-        uint m_StatsElementsAdded, m_StatsElementsRemoved;
+        uint m_StatsElementsRemoved;
+        int m_TotalVisualElements;
+
+        // Running count of visual elements in this panel, maintained from per-frame
+        // ChainBuilderStats elementsAdded/elementsRemoved deltas in ProcessChanges.
+        internal int totalVisualElements => m_TotalVisualElements;
 
         TextureRegistry m_TextureRegistry = TextureRegistry.instance;
 
@@ -141,7 +146,7 @@ namespace UnityEngine.UIElements.UIR
 
             Shaders.Acquire();
 
-            shaderInfoAllocator = new UIRVEShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
+            shaderInfoAllocator = new ShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
         }
 
         #region Dispose Pattern
@@ -259,21 +264,30 @@ namespace UnityEngine.UIElements.UIR
             k_MarkerProcess.Begin();
 
             m_Stats = new ChainBuilderStats();
-            m_Stats.elementsAdded += m_StatsElementsAdded;
-            m_Stats.elementsRemoved += m_StatsElementsRemoved;
-            m_StatsElementsAdded = m_StatsElementsRemoved = 0;
 
-            // Process pending additions
-            for (int i = 0; i < m_InsertionList.Count; ++i)
+            // Process pending additions before updating totals. Removes were already counted
+            // synchronously into m_StatsElementsRemoved by UIEOnChildRemoving; adds are deferred
+            // and only happen in this loop. Folding both into m_TotalVisualElements after the
+            // loop keeps adds and removes from the same frame in lockstep.
+            uint addedThisFrame = 0;
+            int insertionCount = m_InsertionList.Count;
+            for (int i = 0; i < insertionCount; ++i)
             {
                 var data = m_InsertionList[i];
                 if (!data.canceled)
                 {
                     data.element.insertionIndex = -1;
-                    ProcessChildAdded(data.element);
+                    addedThisFrame += ProcessChildAdded(data.element);
                 }
             }
-            m_InsertionList.Clear();
+            if (insertionCount > 0)
+                m_InsertionList.Clear();
+
+            uint removedThisFrame = m_StatsElementsRemoved;
+            m_StatsElementsRemoved = 0;
+            m_Stats.elementsAdded = addedThisFrame;
+            m_Stats.elementsRemoved = removedThisFrame;
+            m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
 
             m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
             m_Compositor.Update(m_RootRenderTree);
@@ -323,17 +337,17 @@ namespace UnityEngine.UIElements.UIR
 
             m_BlockDirtyRegistration = true;
             device.EvaluateChain(
-                panel.ownerObject != null ? panel.ownerObject.GetEntityId() : EntityId.None,
                 m_RootRenderTree.firstCommand,
                 m_DefaultMat,
                 vectorImageManager?.atlas,
-                shaderInfoAllocator.atlas,
+                shaderInfoAllocator,
                 null,
                 panel.scaledPixelsPerPoint,
                 true,
                 textureSlotCount,
                 false,
-                ref immediateException);
+                ref immediateException,
+                panel);
             m_BlockDirtyRegistration = false;
 
             Debug.Assert(immediateException == null); // Not supported for cameras
@@ -417,17 +431,17 @@ namespace UnityEngine.UIElements.UIR
             //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
             m_BlockDirtyRegistration = drawInCameras; // For now, we only enable it for drawInCameras
             device.EvaluateChain(
-                panel.ownerObject != null ? panel.ownerObject.GetEntityId() : EntityId.None,
                 renderTree.firstCommand,
                 m_DefaultMat,
                 vectorImageManager?.atlas,
-                shaderInfoAllocator.atlas,
+                shaderInfoAllocator,
                 scissor,
                 pixelsPerPoint,
                 false,
                 textureSlotCount,
                 (nestedTreeRT != null),
-                ref immediateException);
+                ref immediateException,
+                panel);
             m_BlockDirtyRegistration = false;
 
             Utility.DisableScissor();
@@ -477,15 +491,16 @@ namespace UnityEngine.UIElements.UIR
             m_InsertionList.Add(new ElementInsertionData() { element = ve, canceled = false });
         }
 
-        void ProcessChildAdded(VisualElement ve)
+        uint ProcessChildAdded(VisualElement ve)
         {
-            VisualElement parent = ve.hierarchy.parent;
-            int index = parent != null ? parent.hierarchy.IndexOf(ve) : 0;
-
             if (m_BlockDirtyRegistration)
                 throw new InvalidOperationException("VisualElements cannot be added to an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
+
+            VisualElement parent = ve.hierarchy.parent;
             if (parent != null && parent.renderData == null)
-                return; // Ignore it until its parent gets ultimately added
+                return 0; // Ignore it until its parent gets ultimately added
+
+            int index = parent != null ? parent.hierarchy.IndexOf(ve) : 0;
 
             uint addedCount = RenderEvents.DepthFirstOnChildAdded(this, parent, ve, index);
             Debug.Assert(ve.renderData != null);
@@ -496,7 +511,7 @@ namespace UnityEngine.UIElements.UIR
             UIEOnVisualsChanged(ve, true);
             ve.MarkRenderHintsClean();
 
-            m_StatsElementsAdded += addedCount;
+            return addedCount;
         }
 
         public void UIEOnChildrenReordered(VisualElement ve)
@@ -622,7 +637,7 @@ namespace UnityEngine.UIElements.UIR
         public MeshGenerationDeferrer meshGenerationDeferrer => m_MeshGenerationDeferrer;
         public MeshGenerationNodeManager meshGenerationNodeManager { get; private set; }
         internal JobManager jobManager { get; private set; }
-        internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
+        internal ShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal bool drawStats { get; set; }
         internal bool drawInCameras { get; }
         internal bool isFlat { get; }

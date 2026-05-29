@@ -50,6 +50,7 @@ struct UnmanagedMaterialPropertyValue : IEquatable<UnmanagedMaterialPropertyValu
 // Forcing size to 16 bytes to synchronize with the size of the equivalent struct in native.
 // See "Modules/UIElements/Core/Native/Style/InheritedTypes.h"
 [StructLayout(LayoutKind.Sequential, Size = 16)]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 struct UnmanagedMaterialDefinition : IEquatable<UnmanagedMaterialDefinition>
 {
     public static readonly UnmanagedMaterialDefinition Empty = new();

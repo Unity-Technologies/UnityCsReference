@@ -181,7 +181,7 @@ namespace Unity.GraphToolkit.Editor
 
         bool IsIgnoredElement(GraphElement selectedElement, GraphElement element, Rect rectToFit)
         {
-            if (selectedElement is Placemat placemat && element.layout.Overlaps(placemat.layout) || element is Wire || !element.visible
+            if (selectedElement is Placemat placemat && element.layout.Overlaps(placemat.layout) || element is WireView || !element.visible
                 || element.IsSelected() || element.layout.Overlaps(selectedElement.layout))
             {
                 return true;

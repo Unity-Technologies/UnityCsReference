@@ -68,8 +68,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 m_PlayerTagsData.PlayerTags = tags;
                 var json = JsonConvert.SerializeObject(m_PlayerTagsData, Formatting.Indented);
                 // MTTB-566
-                UnityEditor.AssetDatabase.MakeEditable(m_Path);
-                File.WriteAllBytes(m_Path, Encoding.UTF8.GetBytes(json));
+                if (!File.Exists(m_Path) || AssetDatabase.MakeEditable(m_Path))
+                {
+                    File.WriteAllBytes(m_Path, Encoding.UTF8.GetBytes(json));
+                }
+                else
+                {
+                    Debug.LogError($"Failed to check out {m_Path}. Version migration could not be saved.");
+                }
             }
         }
 
@@ -197,6 +203,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal void WritePlayerTags(List<string> playerTags)
         {
+            if (File.Exists(m_Path) && !AssetDatabase.MakeEditable(m_Path))
+            {
+                Debug.LogError($"Failed to make {m_Path} editable. Player tags could not be saved.");
+                return;
+            }
             m_PlayerTagsData.PlayerTags = playerTags;
             var json = JsonConvert.SerializeObject(m_PlayerTagsData, Formatting.Indented);
             File.WriteAllBytes(m_Path, Encoding.UTF8.GetBytes(json));

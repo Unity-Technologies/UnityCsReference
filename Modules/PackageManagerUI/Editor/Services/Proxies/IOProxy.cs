@@ -17,14 +17,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         ulong DirectorySizeInBytes(string path);
         void RemovePathAndMeta(string path, bool removeEmptyParent = false);
 
-        string CurrentDirectory { get; }
-
         bool IsDirectoryEmpty(string directoryPath);
         bool DirectoryExists(string directoryPath);
         string[] GetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
         void CreateDirectory(string directoryPath);
         void DeleteDirectory(string directoryPath);
         string GetProjectDirectory();
+        string GetProjectRelativePath(string absolutePath, SlashMode slashMode = SlashMode.Native);
         bool IsSamePackageDirectory(string a, string b);
         void MakeFileWritable(string filePath, bool writable);
         void CopyFile(string sourceFileName, string destFileName, bool overwrite);
@@ -105,8 +104,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public string CurrentDirectory => NPath.CurrentDirectory.ToString(SlashMode.Native);
-
         public bool IsDirectoryEmpty(string directoryPath) => new NPath(directoryPath).Contents().Length == 0;
 
         public bool DirectoryExists(string directoryPath) => new NPath(directoryPath).DirectoryExists();
@@ -129,6 +126,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // The virtual keyword is needed for unit tests
         public virtual string GetProjectDirectory() => IOUtils.GetParentDirectory(Application.dataPath);
+        public string GetProjectRelativePath(string absolutePath, SlashMode slashMode = SlashMode.Native)
+        {
+            return new NPath(absolutePath).RelativeTo(new NPath(Application.dataPath).Parent).ToString(slashMode);
+        }
 
         public bool IsSamePackageDirectory(string a, string b) => GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
 

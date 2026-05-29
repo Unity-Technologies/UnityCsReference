@@ -191,7 +191,7 @@ namespace Unity.GraphToolkit.Editor
         {
             Debug.Assert(GraphModel != null, $"{nameof(GraphModel)} needs to be set before calling {nameof(CreateInitializationValue)}.");
 
-            if (GraphModel?.GetConstantType(DataType) != null)
+            if (GraphModel?.GetConstantType(DataType) != null && !DataType.IsCustomTypeHandle())
             {
                 InitializationModel = GraphModel.CreateConstantValue(DataType);
                 GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);

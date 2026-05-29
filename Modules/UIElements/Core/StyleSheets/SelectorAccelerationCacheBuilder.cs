@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -34,10 +36,11 @@ namespace UnityEngine.UIElements
         private const int MaxTotalParts = ushort.MaxValue;
         private const int MaxTotalSelectors = ushort.MaxValue;
 
-        // Static comparer instance to avoid allocations
-        private static readonly DescriptorComparer s_DescriptorComparer = new DescriptorComparer();
+        // Cached delegate so the per-build sort doesn't allocate one.
+        private static readonly RefComparison<SelectorRangeDescriptor> s_DescriptorRefComparison = CompareDescriptors;
+
         // Public API
-        public static void BuildFlattenedCache(ref SelectorAccelerationCacheEntry entry, StyleSheet styleSheet)
+        public static unsafe void BuildFlattenedCache(ref SelectorAccelerationCacheEntry entry, StyleSheet styleSheet)
         {
             // Count total parts, selectors, and complex selectors (including imported sheets)
             int totalParts = 0;
@@ -46,10 +49,6 @@ namespace UnityEngine.UIElements
 
             if (!CountSelectorsInStyleSheet(styleSheet, ref totalParts, ref totalSelectors, ref totalComplexSelectors))
             {
-                // Limits exceeded, allocate empty arrays
-                entry.allParts = Array.Empty<FlattenedSelectorPart>();
-                entry.allSelectors = Array.Empty<FlattenedSelector>();
-                entry.allDescriptors = Array.Empty<SelectorRangeDescriptor>();
                 entry.ownerStyleSheet = styleSheet;
                 return;
             }
@@ -61,44 +60,59 @@ namespace UnityEngine.UIElements
                     if (sheet == null) continue;
                     if (!CountSelectorsInStyleSheet(sheet, ref totalParts, ref totalSelectors, ref totalComplexSelectors))
                     {
-                        // Limits exceeded, allocate empty arrays
-                        entry.allParts = Array.Empty<FlattenedSelectorPart>();
-                        entry.allSelectors = Array.Empty<FlattenedSelector>();
-                        entry.allDescriptors = Array.Empty<SelectorRangeDescriptor>();
                         entry.ownerStyleSheet = styleSheet;
                         return;
                     }
                 }
             }
 
-            // Allocate arrays
-            entry.allParts = new FlattenedSelectorPart[totalParts];
-            entry.allSelectors = new FlattenedSelector[totalSelectors];
-            entry.allDescriptors = new SelectorRangeDescriptor[totalComplexSelectors];
-            entry.ownerStyleSheet = styleSheet;
-
-            // Flatten data
-            int partIdx = 0;
-            int selectorIdx = 0;
-            int descriptorIdx = 0;
-
-            FlattenStyleSheet(ref entry, styleSheet, -1, ref partIdx, ref selectorIdx, ref descriptorIdx);
-
-            if (styleSheet.flattenedRecursiveImports != null)
+            // Nothing to allocate - leave m_BackingBuffer null and all pointer/count fields zero.
+            if (totalParts == 0 && totalSelectors == 0 && totalComplexSelectors == 0)
             {
-                for (int i = 0; i < styleSheet.flattenedRecursiveImports.Count; i++)
-                {
-                    var sheet = styleSheet.flattenedRecursiveImports[i];
-                    if (sheet == null) continue;
-                    FlattenStyleSheet(ref entry, sheet, i, ref partIdx, ref selectorIdx, ref descriptorIdx);
-                }
+                entry.ownerStyleSheet = styleSheet;
+                return;
             }
 
-            // Sort descriptors by (tableType, tableKey, orderInStyleSheet)
-            Array.Sort(entry.allDescriptors, s_DescriptorComparer);
+            entry = SelectorAccelerationCacheEntry.Allocate(totalParts, totalSelectors, totalComplexSelectors);
+            entry.ownerStyleSheet = styleSheet;
 
-            // Build range tables from sorted descriptors
-            BuildRangeTables(ref entry);
+            // The entry isn't published to the cache yet, so a throw past this point would
+            // leak the tracked allocation if we didn't free it ourselves.
+            try
+            {
+                var allParts       = entry.allPartsWritable;
+                var allSelectors   = entry.allSelectorsWritable;
+                var allDescriptors = entry.allDescriptorsWritable;
+
+                int partIdx = 0;
+                int selectorIdx = 0;
+                int descriptorIdx = 0;
+
+                FlattenStyleSheet(allParts, allSelectors, allDescriptors, styleSheet, -1, ref partIdx, ref selectorIdx, ref descriptorIdx);
+
+                if (styleSheet.flattenedRecursiveImports != null)
+                {
+                    for (int i = 0; i < styleSheet.flattenedRecursiveImports.Count; i++)
+                    {
+                        var sheet = styleSheet.flattenedRecursiveImports[i];
+                        if (sheet == null) continue;
+                        FlattenStyleSheet(allParts, allSelectors, allDescriptors, sheet, i, ref partIdx, ref selectorIdx, ref descriptorIdx);
+                    }
+                }
+
+                // Sort descriptors by (tableType, tableKey, orderInStyleSheet) in place over the
+                // backing buffer - SpanSort takes a ref-comparison so the descriptor (a large
+                // struct) is not copied per comparison.
+                if (totalComplexSelectors > 1)
+                    SpanSort.Sort(allDescriptors, s_DescriptorRefComparison);
+
+                BuildRangeTables(ref entry, allDescriptors);
+            }
+            catch (Exception)
+            {
+                entry.Free();
+                throw;
+            }
         }
 
         // Count selectors in a stylesheet and validate limits
@@ -138,9 +152,11 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        // Flatten a stylesheet into the arrays
+        // Flatten a stylesheet into the writable region spans.
         private static unsafe void FlattenStyleSheet(
-            ref SelectorAccelerationCacheEntry entry,
+            Span<FlattenedSelectorPart> allParts,
+            Span<FlattenedSelector> allSelectors,
+            Span<SelectorRangeDescriptor> allDescriptors,
             StyleSheet styleSheet,
             int importedStyleSheetIndex,
             ref int partIdx,
@@ -165,19 +181,19 @@ namespace UnityEngine.UIElements
                         // Flatten all parts in this selector
                         foreach (var part in selector.parts)
                         {
-                            entry.allParts[partIdx] = FlattenPart(part);
+                            allParts[partIdx] = FlattenPart(part);
                             partIdx++;
                         }
 
                         int partCount = partIdx - startPartIndex;
 
-                        // Create flattened selector
-                        entry.allSelectors[selectorIdx] = new FlattenedSelector
+                        // Create flattened selector with an index range into the parts buffer.
+                        allSelectors[selectorIdx] = new FlattenedSelector
                         {
                             pseudoStateMask = selector.pseudoStateMask,
                             negatedPseudoStateMask = selector.negatedPseudoStateMask,
                             previousRelationship = selector.previousRelationship,
-                            startPartIndex = (ushort)startPartIndex,
+                            partsStart = startPartIndex,
                             partCount = (ushort)partCount
                         };
                         selectorIdx++;
@@ -185,27 +201,21 @@ namespace UnityEngine.UIElements
 
                     int selectorCount = selectorIdx - startSelectorIndex;
 
-                    // Skip this complex selector if it has no valid selectors
-                    if (selectorCount == 0)
-                        continue;
+                    Debug.Assert(selectorCount > 0, "Complex selector with empty selectors[] reached the cache builder");
 
-                    // Create range descriptor
-                    ref var descriptor = ref entry.allDescriptors[descriptorIdx];
-                    descriptor.startSelectorIndex = (ushort)startSelectorIndex;
-                    descriptor.selectorCount = (ushort)selectorCount;
-                    descriptor.ruleIndex = ruleIdx;
-                    descriptor.selectorIndexInRule = selIdx;
-                    descriptor.orderInStyleSheet = complexSelector.orderInStyleSheet;
-                    descriptor.importedStyleSheetIndex = importedStyleSheetIndex;
-                    descriptor.specificity = complexSelector.specificity;
-                    descriptor.isSimple = complexSelector.isSimple;
+                    // Write the range descriptor by ref to avoid copying the 52B struct.
+                    ref var pDesc = ref allDescriptors[descriptorIdx];
+                    pDesc.selectorsStart = startSelectorIndex;
+                    pDesc.selectorCount = (ushort)selectorCount;
+                    pDesc.ruleIndex = ruleIdx;
+                    pDesc.selectorIndexInRule = selIdx;
+                    pDesc.orderInStyleSheet = complexSelector.orderInStyleSheet;
+                    pDesc.importedStyleSheetIndex = importedStyleSheetIndex;
+                    pDesc.specificity = complexSelector.specificity;
 
                     // Copy ancestor hashes
-                    fixed (SelectorRangeDescriptor* pDesc = &descriptor)
-                    {
-                        for (int i = 0; i < 4; i++)
-                            pDesc->ancestorHashes[i] = complexSelector.ancestorHashes.hashes[i];
-                    }
+                    for (int i = 0; i < 4; i++)
+                        pDesc.ancestorHashes[i] = complexSelector.ancestorHashes.hashes[i];
 
                     // Set tableType and tableKey based on last part
                     var lastSelector = complexSelector.selectors[^1];
@@ -214,24 +224,24 @@ namespace UnityEngine.UIElements
                     switch (lastPart.type)
                     {
                         case StyleSelectorType.Class:
-                            descriptor.tableType = SelectorAccelerationTableType.Class;
-                            descriptor.tableKey = lastPart.cachedUniqueStyleStringId;
+                            pDesc.tableType = SelectorAccelerationTableType.Class;
+                            pDesc.tableKey = lastPart.cachedUniqueStyleStringId;
                             break;
                         case StyleSelectorType.ID:
-                            descriptor.tableType = SelectorAccelerationTableType.Name;
-                            descriptor.tableKey = lastPart.cachedUniqueStyleStringId;
+                            pDesc.tableType = SelectorAccelerationTableType.Name;
+                            pDesc.tableKey = lastPart.cachedUniqueStyleStringId;
                             break;
                         case StyleSelectorType.Type:
-                            descriptor.tableType = SelectorAccelerationTableType.Type;
-                            descriptor.tableKey = lastPart.cachedUniqueStyleStringId;
+                            pDesc.tableType = SelectorAccelerationTableType.Type;
+                            pDesc.tableKey = lastPart.cachedUniqueStyleStringId;
                             break;
                         case StyleSelectorType.Wildcard:
-                            descriptor.tableType = SelectorAccelerationTableType.None;
-                            descriptor.tableKey = 1; // 1 for wildcard
+                            pDesc.tableType = SelectorAccelerationTableType.None;
+                            pDesc.tableKey = 1; // 1 for wildcard
                             break;
                         case StyleSelectorType.PseudoClass:
-                            descriptor.tableType = SelectorAccelerationTableType.None;
-                            descriptor.tableKey = ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0) ? 0 : 1;
+                            pDesc.tableType = SelectorAccelerationTableType.None;
+                            pDesc.tableKey = ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0) ? 0 : 1;
                             break;
                     }
 
@@ -266,13 +276,15 @@ namespace UnityEngine.UIElements
         }
 
         // Build range tables from sorted descriptors
-        private static void BuildRangeTables(ref SelectorAccelerationCacheEntry entry)
+        private static void BuildRangeTables(ref SelectorAccelerationCacheEntry entry, Span<SelectorRangeDescriptor> allDescriptors)
         {
             // Initialize to null - only allocate if needed
             entry.nameTable = null;
             entry.typeTable = null;
             entry.classTable = null;
             entry.nonEmptyTablesMask = 0;
+
+            int descriptorCount = allDescriptors.Length;
 
             // Count unique keys per table type from sorted descriptors
             // Since descriptors are sorted by (tableType, tableKey, orderInStyleSheet),
@@ -284,9 +296,10 @@ namespace UnityEngine.UIElements
             SelectorAccelerationTableType lastTableType = (SelectorAccelerationTableType)(-2);
             int lastTableKey = -1;
 
-            for (int i = 0; i < entry.allDescriptors.Length; i++)
+            for (int i = 0; i < descriptorCount; i++)
             {
-                var descriptor = entry.allDescriptors[i];
+                // ref readonly avoids copying the 56B descriptor per iteration.
+                ref readonly var descriptor = ref allDescriptors[i];
 
                 // Check if this is a new unique (tableType, tableKey) pair
                 if (descriptor.tableType != lastTableType || descriptor.tableKey != lastTableKey)
@@ -309,38 +322,40 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            int rootStart = -1, rootCount = 0;
-            int wildcardStart = -1, wildcardCount = 0;
+            int rootStart = -1;
+            int rootCount = 0;
+            int wildcardStart = -1;
+            int wildcardCount = 0;
 
-            for (int i = 0; i < entry.allDescriptors.Length; i++)
+            for (int i = 0; i < descriptorCount; i++)
             {
-                var descriptor = entry.allDescriptors[i];
+                ref readonly var descriptor = ref allDescriptors[i];
 
                 if (descriptor.tableType == SelectorAccelerationTableType.None)
                 {
                     // Check if it's a :root selector or wildcard
-                    var lastSelector = entry.allSelectors[descriptor.startSelectorIndex + descriptor.selectorCount - 1];
+                    var lastSelector = entry.allSelectors[descriptor.selectorsStart + descriptor.selectorCount - 1];
                     if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
                     {
-                        if (rootStart == -1) rootStart = i;
+                        if (rootStart < 0) rootStart = i;
                         rootCount++;
                     }
                     else
                     {
-                        if (wildcardStart == -1) wildcardStart = i;
+                        if (wildcardStart < 0) wildcardStart = i;
                         wildcardCount++;
                     }
                 }
                 else
                 {
                     // Lazily allocate table on first use and set mask bit
-                    Dictionary<int, (int startIndex, int count)> table;
+                    Dictionary<int, DescriptorRange> table;
                     switch (descriptor.tableType)
                     {
                         case SelectorAccelerationTableType.Name:
                             if (entry.nameTable == null)
                             {
-                                entry.nameTable = new Dictionary<int, (int startIndex, int count)>(uniqueNameCount);
+                                entry.nameTable = new Dictionary<int, DescriptorRange>(uniqueNameCount);
                                 entry.nonEmptyTablesMask |= (1 << (int)SelectorAccelerationTableType.Name);
                             }
                             table = entry.nameTable;
@@ -348,7 +363,7 @@ namespace UnityEngine.UIElements
                         case SelectorAccelerationTableType.Type:
                             if (entry.typeTable == null)
                             {
-                                entry.typeTable = new Dictionary<int, (int startIndex, int count)>(uniqueTypeCount);
+                                entry.typeTable = new Dictionary<int, DescriptorRange>(uniqueTypeCount);
                                 entry.nonEmptyTablesMask |= (1 << (int)SelectorAccelerationTableType.Type);
                             }
                             table = entry.typeTable;
@@ -356,7 +371,7 @@ namespace UnityEngine.UIElements
                         case SelectorAccelerationTableType.Class:
                             if (entry.classTable == null)
                             {
-                                entry.classTable = new Dictionary<int, (int startIndex, int count)>(uniqueClassCount);
+                                entry.classTable = new Dictionary<int, DescriptorRange>(uniqueClassCount);
                                 entry.nonEmptyTablesMask |= (1 << (int)SelectorAccelerationTableType.Class);
                             }
                             table = entry.classTable;
@@ -368,35 +383,32 @@ namespace UnityEngine.UIElements
                     if (!table.TryGetValue(descriptor.tableKey, out var range))
                     {
                         // New key, start new range
-                        table[descriptor.tableKey] = (i, 1);
+                        table[descriptor.tableKey] = new DescriptorRange { start = i, count = 1 };
                     }
                     else
                     {
                         // Extend existing range
-                        table[descriptor.tableKey] = (range.startIndex, range.count + 1);
+                        range.count++;
+                        table[descriptor.tableKey] = range;
                     }
                 }
             }
 
-            entry.rootSelectorRange = rootStart >= 0 ? (rootStart, rootCount) : (0, 0);
-            entry.wildCardSelectorRange = wildcardStart >= 0 ? (wildcardStart, wildcardCount) : (0, 0);
+            entry.rootSelectorRange = new DescriptorRange { start = rootStart < 0 ? 0 : rootStart, count = rootCount };
+            entry.wildCardSelectorRange = new DescriptorRange { start = wildcardStart < 0 ? 0 : wildcardStart, count = wildcardCount };
         }
 
-        // Comparer for sorting descriptors
-        private class DescriptorComparer : IComparer<SelectorRangeDescriptor>
+        // Sort by: tableType, then tableKey, then orderInStyleSheet. Subtraction is safe here
+        // because all three fields fit in int and never approach overflow ranges.
+        private static int CompareDescriptors(ref SelectorRangeDescriptor a, ref SelectorRangeDescriptor b)
         {
-            public int Compare(SelectorRangeDescriptor a, SelectorRangeDescriptor b)
-            {
-                // Sort by: tableType, then tableKey, then orderInStyleSheet
-                // Use basic int comparison instead of CompareTo to avoid allocations
-                int result = (int)a.tableType - (int)b.tableType;
-                if (result != 0) return result;
+            int result = (int)a.tableType - (int)b.tableType;
+            if (result != 0) return result;
 
-                result = a.tableKey - b.tableKey;
-                if (result != 0) return result;
+            result = a.tableKey - b.tableKey;
+            if (result != 0) return result;
 
-                return a.orderInStyleSheet - b.orderInStyleSheet;
-            }
+            return a.orderInStyleSheet - b.orderInStyleSheet;
         }
     }
 }

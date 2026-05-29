@@ -1002,7 +1002,7 @@ namespace UnityEngine.UIElements
                         position = new Vector3(p.x, p.y, Vertex.nearZ),
                         tint = v.tint,
                         uv = v.uv,
-                        flags = v.flags,
+                        vertexFlags = v.flags,
                         settingIndex = hasGradient ? (UInt32)(textureAllocations.Count - 1) : 0,
                         circle = v.circle
                     };
@@ -1015,7 +1015,6 @@ namespace UnityEngine.UIElements
                 baseVertex += verts.Length;
             }
 
-            vectorImage.version = 0;
             vectorImage.vertices = allVerts;
             vectorImage.indices = allInds;
             vectorImage.size = hasRect ? viewport.size : bbox.size;

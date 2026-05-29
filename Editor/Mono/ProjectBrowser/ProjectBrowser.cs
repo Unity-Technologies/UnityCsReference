@@ -26,8 +26,8 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Project", icon = "Project")]
     internal class ProjectBrowser : EditorWindow, IHasCustomMenu, ISearchableContainer, IFramableContainer
     {
-        public static readonly EntityId kPackagesFolderInstanceId = EntityId.FromULong(int.MaxValue|0x7E25105ul<<32);
-        public static readonly EntityId kAssetCreationInstanceID_ForNonExistingAssets = EntityId.FromULong(((ulong)int.MaxValue-1)|0x7E25105ul<<32);
+        public static readonly EntityId kPackagesFolderInstanceId = EntityId.FromULong(int.MaxValue|1ul<<32);
+        public static readonly EntityId kAssetCreationInstanceID_ForNonExistingAssets = EntityId.FromULong(((ulong)int.MaxValue-1)|1ul<<32);
 
         internal static readonly SavedBool k_ShowFoldersFirst = new SavedBool("ShowFoldersFirst", Application.platform != RuntimePlatform.OSXEditor);
 

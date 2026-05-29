@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEditor;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using RectangleToolFlags = UnityEditor.CurveEditorSettings.RectangleToolFlags;
 namespace UnityEditor
 {
     // External selection interface
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface ISelectionBinding
     {
         bool isReadOnly { get; }

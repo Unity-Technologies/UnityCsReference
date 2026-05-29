@@ -200,6 +200,10 @@ namespace UnityEditor
 
         // Sprites are normally copied to all bundles that reference them. This flag prevents that behavior if the sprite is not in an atlas.
         ///<summary>Use to prevent duplicating a texture when it is referenced in multiple bundles. This would primarily happen with particle systems. The new behavior does not duplicate the texture if the sprite does not belong to an atlas. Using this flag is the desired behavior, but is not set by default for backwards compatability reasons.</summary>
-        StripUnatlasedSpriteCopies = 262144 // 1 << 18
+        StripUnatlasedSpriteCopies = 262144, // 1 << 18
+
+        ///<summary>Suppress the error reported when a LoadableObjectId or LoadableSceneId is encountered during an AssetBundle build.</summary>
+        ///<remarks>Use this when migrating between build pipeline backends when assets legitimately have Loadable references, but the same content is also built into AssetBundles. The references still resolve to null in the resulting bundle; this flag only silences the error log to keep the build usable.</remarks>
+        SuppressLoadableErrors = 1048576 // 1 << 20
     }
 }

@@ -29,6 +29,8 @@ internal sealed partial class VisualElementInspector : UIInspector
     public const string AssetPathFieldUssClass = UssClass + "__asset-path-field";
     public const string AssetActionsViewUssClass = UssClass + "__asset-actions-view";
     public const string BindingsSectionViewClass = UssClass + "__bindings-section";
+    public const string ClassListClass = UssClass + "__class-list";
+    public const string MatchingSelectorsClass = UssClass + "__matching-selectors";
     public const string StyleInspectorClass = UssClass + "__style-inspector";
     public const string AttributesInspectorClass = UssClass + "__attributes-inspector";
     public const string ReadonlyAttributesInspectorClass = AttributesInspectorClass + "--readonly";
@@ -51,6 +53,8 @@ internal sealed partial class VisualElementInspector : UIInspector
     private readonly VisualElement m_AssetNotEditableHelpBox;
     private readonly VisualElementBindingsInspectorElement m_BindingsInspector;
     private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
+    private readonly ClassListElement m_ClassListElement;
+    private readonly MatchingSelectorsElement m_MatchingSelectorsElement;
     private readonly StyleInspectorElement m_StyleInspector;
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
     private VariablesInspector m_VariablesSection;
@@ -89,6 +93,8 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_AssetActionsView.VisualTreeAsset = null;
                 m_AssetActionsView.PanelSettings = null;
                 m_AssetActionsView.SubDocumentPath = null;
+                m_ClassListElement.Target = null;
+                m_MatchingSelectorsElement.Target = null;
                 m_StyleInspector.Target = new StyleInspectorTarget(null);
                 m_AttributesInspector.Target = null;
                 m_VariablesSection?.Refresh(null);
@@ -118,6 +124,8 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_AssetActionsView.SubDocumentPath = templateAssetPath.ToArray();
                 m_AssetActionsView.PanelSettings = m_Element.GetPanelSettings();
 
+                m_ClassListElement.Target = m_Element;
+                m_MatchingSelectorsElement.Target = m_Element;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.Target = m_Element;
                 m_VariablesSection?.Refresh(GetInlineStyleRule());
@@ -171,6 +179,10 @@ internal sealed partial class VisualElementInspector : UIInspector
         m_Header.AttributesView.ShareContext(m_AttributesInspector.AttributesView);
         m_BindingsInspector.AttributesView.ShareContext(m_AttributesInspector.AttributesView);
 
+        // StyleSheet
+        m_ClassListElement = this.Q<ClassListElement>(className: ClassListClass);
+        m_MatchingSelectorsElement = this.Q<MatchingSelectorsElement>(className:MatchingSelectorsClass);
+
         // Styles
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
         EnsureRecordingBanner();
@@ -200,6 +212,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
+                m_ClassListElement.IsReadOnly = true;
                 m_StyleInspector.IsReadOnly = true;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = false;
@@ -209,6 +222,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
+                m_ClassListElement.IsReadOnly = true;
                 m_StyleInspector.IsReadOnly = true;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = false;
@@ -218,6 +232,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
+                m_ClassListElement.IsReadOnly = false;
                 m_StyleInspector.IsReadOnly = false;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = true;
@@ -227,6 +242,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_Header.SetEnabled(true);
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
+                m_ClassListElement.IsReadOnly = false;
                 m_StyleInspector.IsReadOnly = false;
                 if (m_VariablesSection != null)
                     m_VariablesSection.enabledSelf = true;
@@ -350,6 +366,7 @@ internal sealed partial class VisualElementInspector : UIInspector
         if (m_StyleInspectorDefaultContent.Q(StyleRuleInspector.AnimationFoldoutName) != null)
         {
             UpdateAnimationSectionVisibility(m_StyleInspectorDefaultContent);
+            AnimationClipNewButtonController.ConnectButton(m_StyleInspectorDefaultContent, GetAnimationClipDialogSubject);
             return;
         }
 
@@ -360,13 +377,24 @@ internal sealed partial class VisualElementInspector : UIInspector
     {
         content.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
         UpdateAnimationSectionVisibility(content);
+        AnimationClipNewButtonController.ConnectButton(content, GetAnimationClipDialogSubject);
+    }
+
+    string GetAnimationClipDialogSubject()
+    {
+        if (m_Element == null)
+            return null;
+        // Use the element name when available; fall back to the type for unnamed elements.
+        return string.IsNullOrEmpty(m_Element.name) ? m_Element.GetType().Name : m_Element.name;
     }
 
     static void UpdateAnimationSectionVisibility(VisualElement content)
     {
         var animationSection = content.Q(StyleRuleInspector.AnimationFoldoutName);
         if (animationSection != null)
-            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? DisplayStyle.Flex : DisplayStyle.None;
+            // Use StyleKeyword.Null (not DisplayStyle.Flex) to avoid setting an inline style when enabling.
+            // It breaks the behavior of inspector search otherwise.
+            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     StyleRule GetInlineStyleRule()
@@ -399,5 +427,6 @@ internal sealed partial class VisualElementInspector : UIInspector
     {
         base.Dispose();
         m_AttributesInspector.AttributesView.Context.Dispose();
+        m_MatchingSelectorsElement.Target = null;
     }
 }

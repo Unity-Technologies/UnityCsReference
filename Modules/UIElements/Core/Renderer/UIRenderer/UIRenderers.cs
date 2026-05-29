@@ -8,26 +8,31 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    enum VertexFlags
-    {
-        // Vertex Type
-        // These values are like enum values, they are mutually exclusive. Only one may be specified on a vertex.
-        IsSolid = 0,
-        IsText = 1,
-        IsTextured = 2,
-        IsDynamic = 3,
-        IsSvgGradients = 4, // Gradient/Texture-less SVG do NOT use this flag
-    }
-
+    [Flags]
     enum CommandType
     {
-        Draw,
-        ImmediateCull, Immediate,
-        PushView, PopView,
-        PushScissor, PopScissor,
-        PushDefaultMaterial, PopDefaultMaterial,
-        BeginDisable, EndDisable,
-        CutRenderChain
+        Draw                = 1 << 0,
+        Immediate           = 1 << 1,
+        ImmediateCull       = 1 << 2,
+        PushView            = 1 << 3,
+        PopView             = 1 << 4,
+        PushScissor         = 1 << 5,
+        PopScissor          = 1 << 6,
+        PushDefaultMaterial = 1 << 7,
+        PopDefaultMaterial  = 1 << 8,
+        BeginDisable        = 1 << 9,
+        EndDisable          = 1 << 10,
+        CutRenderChain      = 1 << 11,
+        BeginPanelComponent = 1 << 12,  // Profiler-only marker
+        EndPanelComponent   = 1 << 13,  // Profiler-only marker
+
+        // Pair masks for hot-path "is any variant of X" checks.
+        AnyImmediate        = Immediate | ImmediateCull,
+        AnyView             = PushView | PopView,
+        AnyScissor          = PushScissor | PopScissor,
+        AnyDefaultMaterial  = PushDefaultMaterial | PopDefaultMaterial,
+        AnyDisable          = BeginDisable | EndDisable,
+        AnyPanelComponent   = BeginPanelComponent | EndPanelComponent,
     }
 
     [Flags]
@@ -45,7 +50,7 @@ namespace UnityEngine.UIElements.UIR
         ForceRenderTypeSvgGradient = 4 << ForceRenderTypeBitOffset,
         ForceRenderTypeBits = 7 << ForceRenderTypeBitOffset,
 
-        ForceSingleTextureSlot = 1 << 4
+        ForceSingleTextureSlot = 1 << 4,
     }
 
     class DrawParams
@@ -85,6 +90,8 @@ namespace UnityEngine.UIElements.UIR
         public int indexOffset; // Offset within the mesh (remember: there might be multiple commands per mesh e.g. one sub-range for background, another for border, etc)
         public int indexCount;
         public Action callback; // Immediate render command only
+        // Set on BeginPanelComponent commands only.
+        public EntityId panelComponentId;
 
         static ProfilerMarker s_ImmediateOverheadMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ImmediateOverhead");
 
@@ -108,6 +115,7 @@ namespace UnityEngine.UIElements.UIR
             mesh = null;
             indexOffset = indexCount = 0;
             callback = null;
+            panelComponentId = EntityId.None;
         }
 
         public void ExecuteNonDrawMesh(DrawParams drawParams, float pixelsPerPoint, ref Exception immediateException)

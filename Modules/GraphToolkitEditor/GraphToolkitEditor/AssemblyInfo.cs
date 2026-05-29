@@ -31,6 +31,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.ShaderGraph2.Tests")]
 
 // Test Samples
+[assembly: InternalsVisibleTo("Unity.GraphToolkit.Samples.Shared")]
 [assembly: InternalsVisibleTo("Unity.GraphToolkit.Samples.BlackboardSample")]
 [assembly: InternalsVisibleTo("Unity.GraphToolkit.Samples.ContextSample")]
 [assembly: InternalsVisibleTo("Unity.GraphToolkit.Samples.ImportedGraphEditor")]

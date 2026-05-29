@@ -41,10 +41,10 @@ namespace UnityEditor.Modules
             EditorGUIUtility.TrTextContent("LZ4HC"),
         };
         static readonly GUIContent k_InstallInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
-        SerializedProperty m_Development = null;
+        protected SerializedProperty m_Development = null;
         SerializedProperty m_ConnectProfiler = null;
         SerializedProperty m_BuildWithDeepProfilingSupport = null;
-        SerializedProperty m_BuildWithCodeCoverage = null;
+        protected SerializedProperty m_BuildWithCodeCoverage = null;
         SerializedProperty m_AllowDebugging = null;
         SerializedProperty m_WaitForManagedDebugger = null;
         SerializedProperty m_ManagedDebuggerFixedPort = null;
@@ -59,7 +59,7 @@ namespace UnityEditor.Modules
         NamedBuildTarget m_NamedBuildTarget;
         protected bool m_IsClassicProfile = false;
         protected SharedPlatformSettings m_SharedSettings;
-        BuildProfile m_BuildProfile;
+        protected BuildProfile m_BuildProfile;
 
         // The properties can be unresponsive on multiple clicks due to the
         // complex layout calculations which can slow down GUI rendering.
@@ -96,10 +96,7 @@ namespace UnityEditor.Modules
             return BuildTargetDiscovery.TryGetBuildTarget(m_BuildTarget, out var buildTarget) && buildTarget.BuildPlatformProperties?.SupportLinkTimeOptimization == true;
         }
 
-        public virtual bool ShouldDrawCodeCoverageCheckbox()
-        {
-            return BuildProfileModuleUtil.IsCoverageSupported(m_BuildTarget);
-        }
+        public virtual bool ShouldDrawCodeCoverageCheckbox() => false;
         public virtual bool ShouldDrawProfilerCheckbox() => true;
         public virtual bool ShouldDrawScriptDebuggingCheckbox() => true;
         // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
@@ -384,6 +381,7 @@ namespace UnityEditor.Modules
         public virtual void ShowCodeCoverageCheckbox()
         {
             var buildWithCodeCoverageLabel = m_Development.boolValue ? k_BuildWithCodeCoverage : k_BuildWithCodeCoverageDisabled;
+
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_BuildWithCodeCoverage, buildWithCodeCoverageLabel);
             if (EditorGUI.EndChangeCheck() && m_IsClassicProfile)

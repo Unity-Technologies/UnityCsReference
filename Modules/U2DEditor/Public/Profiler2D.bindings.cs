@@ -35,6 +35,17 @@ namespace UnityEditor.U2D
         public float spriteTextureSizeRatio;
     }
 
+    [System.Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TilemapChunkInfo
+    {
+        public EntityId tilemapEntityId;
+        public int chunkIdX;
+        public int chunkIdY;
+        public int meshCount;
+    }
+
     internal static partial class Profiler2D
     {
         /// <summary>
@@ -62,6 +73,17 @@ namespace UnityEditor.U2D
                 return data;
             }
             return new NativeArray<SpriteAtlasUsageProfilerInfo>(0, Allocator.Temp);
+        }
+
+        // Extract from Raw Data View
+        internal static NativeArray<TilemapChunkInfo> GetTilemapChunkInfo(RawFrameDataView frameData)
+        {
+            if (frameData != null)
+            {
+                var data = frameData.GetFrameMetaData<TilemapChunkInfo>(kProfilerU2D, 3);
+                return data;
+            }
+            return new NativeArray<TilemapChunkInfo>(0, Allocator.Temp);
         }
 
         // Extract from Raw Data View

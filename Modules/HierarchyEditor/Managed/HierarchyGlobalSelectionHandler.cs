@@ -138,6 +138,9 @@ namespace Unity.Hierarchy.Editor
         {
             public static bool IsSkipNextGlobalSelectionEvent(HierarchyGlobalSelectionHandler handler) =>
                 handler.m_SkipNextGlobalSelectionEvent;
+
+            public static void ResetSkipNextGlobalSelectionEvent(HierarchyGlobalSelectionHandler handler) =>
+                handler.m_SkipNextGlobalSelectionEvent = false;
         }
     }
 }

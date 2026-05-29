@@ -201,11 +201,11 @@ namespace UnityEditor.Build.Analysis
                 throw new InvalidDataException($"Build analysis file is empty: '{analysisPath}'.");
 
             var analysis = JsonUtility.FromJson<BuildAnalysis>(json);
-            NormalizeBuildAnalysis(analysis, analysisPath);
+            ValidateBuildAnalysis(analysis, analysisPath);
             return analysis;
         }
 
-        private static void NormalizeBuildAnalysis(BuildAnalysis analysis, string path)
+        private static void ValidateBuildAnalysis(BuildAnalysis analysis, string path)
         {
             if (analysis == null)
                 throw new InvalidDataException($"Build analysis could not be parsed: '{path}'.");
@@ -213,17 +213,6 @@ namespace UnityEditor.Build.Analysis
                 throw new InvalidDataException($"Build analysis summary is missing: '{path}'.");
             if (analysis.Version <= 0)
                 throw new InvalidDataException($"Build analysis has invalid Version '{analysis.Version}' in '{path}'.");
-
-            if (analysis.Tables == null)
-                analysis.Tables = new BuildAnalysisTables();
-            analysis.Tables.Steps ??= Array.Empty<BuildAnalysisStep>();
-
-            analysis.Messages ??= Array.Empty<BuildAnalysisMessage>();
-            analysis.Summary.BuildOptions ??= Array.Empty<string>();
-            analysis.Summary.BuildContentOptions ??= Array.Empty<string>();
-
-            if (analysis.Computed == null)
-                analysis.Computed = new BuildAnalysisComputed();
         }
     }
 

@@ -329,7 +329,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 if (s_EnableAdaptivePerformance)
                 {
                     EditorUtilities.CheckEnableFrameTimingState();
-                    EditorUtilities.CheckEnableThermalState();
+                    EditorUtilities.CheckEnableThermalStateForIOS();
                 }
                 EditorUtilities.EnableAPModule(s_EnableAdaptivePerformance);
                 SettingsService.NotifySettingsProviderChanged();

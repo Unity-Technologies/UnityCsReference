@@ -671,25 +671,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         // Variable rate shading (VRS)
         private void DrawShadingRateImage()
         {
-            if (m_CachedEventData.m_ShadingRateImageTexture != null)
+            if (!string.IsNullOrEmpty(m_CachedEventData.m_ShadingRateImageName))
             {
-                // Blit to the copy first
-                if (m_ShadingRateImageTextureCopy == null)
-                {
-                    int renderTargetWidthInt = m_CachedEventData.m_ShadingRateImageTexture.width * ShadingRateInfo.imageTileSize.x;
-                    int renderTargetHeightInt = m_CachedEventData.m_ShadingRateImageTexture.height * ShadingRateInfo.imageTileSize.y;
-                    m_ShadingRateImageTextureCopy = RenderTexture.GetTemporary(renderTargetWidthInt, renderTargetHeightInt);
-
-                    // Convert from the unviewable SRI texture to a visualized color version using Blit
-                    FrameDebuggerHelper.ConvertShadingRateImage(
-                        ref m_CachedEventData.m_ShadingRateImageTexture,
-                        ref m_ShadingRateImageTextureCopy,
-                        m_CachedEventData.m_ShadingRateImageTexture.width,
-                        m_CachedEventData.m_ShadingRateImageTexture.height,
-                        FrameDebuggerWindow.shadingRateLut
-                    );
-                }
-
                 GUIStyle style = FrameDebuggerStyles.EventDetails.s_MonoLabelStyle;
 
                 EditorGUILayout.BeginHorizontal();
@@ -705,39 +688,62 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 Rect labelRect = new Rect(lineRect.x + indentOffset, lineRect.y, labelWidth, lineRect.height);
                 GUI.Label(labelRect, FrameDebuggerStyles.EventDetails.s_ShadingRateImageText, style);
 
-                // Second column: Thumbnail + Name
-                const int thumbnailSize = 10;
-                const int thumbnailSpacing = 5; // Spacing between label and thumbnail
-                const int nameSpacing = 5; // Spacing between thumbnail and name
+                const int nameSpacing = 5; // Spacing before the texture name
+                float textureNameX = lineRect.x + indentOffset + labelWidth + nameSpacing;
 
-                // Thumbnail rect - centered vertically
-                Rect thumbnailRect = new Rect(
-                    lineRect.x + indentOffset + labelWidth + thumbnailSpacing,
-                    lineRect.y + (lineRect.height - thumbnailSize) * 0.5f,
-                    thumbnailSize,
-                    thumbnailSize
-                );
-
-                GUI.DrawTexture(thumbnailRect, m_ShadingRateImageTextureCopy, ScaleMode.StretchToFill, false);
-
-                if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(thumbnailRect))
+                if (m_CachedEventData.m_ShadingRateImageTexture != null)
                 {
-                    PopupWindowWithoutFocus.Show(
-                        thumbnailRect,
-                        new ObjectPreviewPopup(m_ShadingRateImageTextureCopy),
-                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
+                    // Blit to the copy first
+                    if (m_ShadingRateImageTextureCopy == null)
+                    {
+                        int renderTargetWidthInt = m_CachedEventData.m_ShadingRateImageTexture.width * ShadingRateInfo.imageTileSize.x;
+                        int renderTargetHeightInt = m_CachedEventData.m_ShadingRateImageTexture.height * ShadingRateInfo.imageTileSize.y;
+                        m_ShadingRateImageTextureCopy = RenderTexture.GetTemporary(renderTargetWidthInt, renderTargetHeightInt);
+
+                        // Convert from the unviewable SRI texture to a visualized color version using Blit
+                        FrameDebuggerHelper.ConvertShadingRateImage(
+                            ref m_CachedEventData.m_ShadingRateImageTexture,
+                            ref m_ShadingRateImageTextureCopy,
+                            m_CachedEventData.m_ShadingRateImageTexture.width,
+                            m_CachedEventData.m_ShadingRateImageTexture.height,
+                            FrameDebuggerWindow.shadingRateLut
+                        );
+                    }
+
+                    // Second column: Thumbnail + Name
+                    const int thumbnailSize = 10;
+                    const int thumbnailSpacing = 5; // Spacing between label and thumbnail
+
+                    // Thumbnail rect - centered vertically
+                    Rect thumbnailRect = new Rect(
+                        lineRect.x + indentOffset + labelWidth + thumbnailSpacing,
+                        lineRect.y + (lineRect.height - thumbnailSize) * 0.5f,
+                        thumbnailSize,
+                        thumbnailSize
                     );
+
+                    GUI.DrawTexture(thumbnailRect, m_ShadingRateImageTextureCopy, ScaleMode.StretchToFill, false);
+
+                    if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(thumbnailRect))
+                    {
+                        PopupWindowWithoutFocus.Show(
+                            thumbnailRect,
+                            new ObjectPreviewPopup(m_ShadingRateImageTextureCopy),
+                            new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
+                        );
+                    }
+
+                    textureNameX = thumbnailRect.xMax + nameSpacing;
                 }
 
                 // Texture name rect
-                float nameX = thumbnailRect.xMax + nameSpacing;
                 Rect nameRect = new Rect(
-                    nameX,
+                    textureNameX,
                     lineRect.y,
-                    lineRect.width - (nameX - lineRect.x - indentOffset),
+                    lineRect.width - (textureNameX - lineRect.x - indentOffset),
                     lineRect.height
                 );
-                GUI.Label(nameRect, m_CachedEventData.m_ShadingRateImageTexture.name, style);
+                GUI.Label(nameRect, m_CachedEventData.m_ShadingRateImageName, style);
 
                 EditorGUILayout.EndHorizontal();
             }

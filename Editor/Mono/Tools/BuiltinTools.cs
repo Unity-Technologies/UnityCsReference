@@ -10,6 +10,7 @@ using UnityEditor.SceneManagement;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
 using UnityEngine.UIElements;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
@@ -572,16 +573,18 @@ namespace UnityEditor
                         }
                         else if (rectTransformPivot)
                         {
-                            Transform tr = Selection.activeTransform;
-                            Undo.RecordObject(rectTransform, "Move Rectangle Pivot");
-                            Transform space = Tools.rectBlueprintMode && UnityEditorInternal.InternalEditorUtility.SupportsRectLayout(tr) ? tr.parent : tr;
+                            Transform space = Tools.rectBlueprintMode && UnityEditorInternal.InternalEditorUtility.SupportsRectLayout(rectTransform) ? rectTransform.parent : rectTransform;
                             Vector2 offset = space.InverseTransformVector(newPivot - oldPivot);
-                            offset.x /= rectTransform.rect.width;
-                            offset.y /= rectTransform.rect.height;
-                            Vector2 pivot = rectTransform.pivot + offset;
 
-                            RectTransformEditor.SetPivotSmart(rectTransform, pivot.x, 0, true, space != rectTransform.transform);
-                            RectTransformEditor.SetPivotSmart(rectTransform, pivot.y, 1, true, space != rectTransform.transform);
+                            Rect rectTransformRect = rectTransform.rect;
+                            offset.x /= rectTransformRect.width;
+                            offset.y /= rectTransformRect.height;
+
+                            if (offset.sqrMagnitude > 0f)
+                            {
+                                Vector2 pivot = rectTransform.pivot + offset;
+                                RectTransformEditor.SetPivotWithCounterAdjust(rectTransform, pivot, true, "Move Rectangle Pivot");
+                            }
                         }
                     }
                 }

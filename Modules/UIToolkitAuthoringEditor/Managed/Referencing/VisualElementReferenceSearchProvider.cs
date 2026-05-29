@@ -18,19 +18,21 @@ class VisualElementReferenceSearchProvider : SearchProvider
     public struct Data
     {
         public PanelRenderer panelRenderer;
-
-        // The full path including all ancestors, excluding the target element.
-        // Used for generating the tree view hierarchy.
         public VisualElementAsset[] hierarchyPath;
-
-        // The path of TemplateAssets forming the authoring path through UXML files,
-        // plus the final target element. Each TemplateAsset represents a UXML file boundary.
         public VisualElementAsset[] authoringPath;
-
         public VisualElementAsset visualElementAsset;
         public string name;
         public string label;
         public string pathLabel;
+
+        // Unique item ID: pathLabel + '#' + assetId, preventing deduplication
+        // of siblings with identical type and name.
+        public string itemId;
+
+        // The parent's itemId. For VisualElement parents includes '#assetId',
+        // for virtual GameObject ancestor nodes it is just the plain path label.
+        // Null if this item has no parent.
+        public string parentItemId;
 
         public Data(PanelRenderer pr, VisualElementAsset[] hierarchyPath, VisualElementAsset[] authoringPath, VisualElementAsset vea)
         {
@@ -41,6 +43,8 @@ class VisualElementReferenceSearchProvider : SearchProvider
             name = VisualElementReferenceTools.GenerateVisualElementAssetLabel(visualElementAsset, false);
             label = VisualElementReferenceTools.GenerateVisualElementAssetLabel(visualElementAsset);
             pathLabel = GeneratePathLabel();
+            itemId = $"{pathLabel}#{vea.id}";
+            parentItemId = GenerateParentItemId();
         }
 
         public AuthoringIdPath GenerateHierarchyPath()
@@ -62,6 +66,21 @@ class VisualElementReferenceSearchProvider : SearchProvider
                 generatedPath[i] = authoringPath[i].id;
             }
             return new AuthoringIdPath(generatedPath);
+        }
+
+        string GenerateParentItemId()
+        {
+            var lastSlash = pathLabel.LastIndexOf('/');
+            if (lastSlash <= 0)
+                return null;
+
+            var parentPathLabel = pathLabel.Substring(0, lastSlash);
+
+            // If the immediate parent is a VisualElement, append its asset id
+            // to match the itemId format. Otherwise it is a virtual GameObject node.
+            return hierarchyPath.Length > 0
+                ? $"{parentPathLabel}#{hierarchyPath[^1].id}"
+                : parentPathLabel;
         }
 
         string GeneratePathLabel()
@@ -133,9 +152,8 @@ class VisualElementReferenceSearchProvider : SearchProvider
         var query = m_QueryEngine.ParseQuery(context.searchQuery);
         if (!query.valid)
             yield break;
-        var filteredObjects = query.Apply(GetSearchData());
 
-        foreach (var data in filteredObjects)
+        foreach (var data in query.Apply(GetSearchData()))
         {
             if (data.panelRenderer == null)
                 continue;
@@ -143,15 +161,13 @@ class VisualElementReferenceSearchProvider : SearchProvider
             var serializedData = data.visualElementAsset.serializedData;
             var type = serializedData != null ? serializedData.GetType().DeclaringType : typeof(VisualElement);
             var icon = UIResources.GetIconForType(type, UIResources.RequestSize.Px64).texture;
-            yield return provider.CreateItem(context, data.pathLabel, data.label, data.pathLabel, icon, data);
+            yield return provider.CreateItem(context, data.itemId, data.label, data.pathLabel, icon, data);
         }
     }
 
     IEnumerable<SearchProposition> FetchPropositions(SearchContext context, SearchPropositionOptions options)
     {
         yield return new SearchProposition(null, "Name", $"{k_NameToken}:", "Filter by element name.");
-
-
 
         foreach (var sdt in UxmlSerializedDataRegistry.SerializedDataTypes)
         {
@@ -180,6 +196,8 @@ class VisualElementReferenceSearchProvider : SearchProvider
                 authoringStack.Clear();
             }
 
+            // Push root onto hierarchyStack so its children appear nested under it
+            hierarchyStack.Add(root);
             for (var i = 0; i < root.childCount; i++)
             {
                 if (root[i] is VisualElementAsset child)
@@ -188,6 +206,7 @@ class VisualElementReferenceSearchProvider : SearchProvider
                         yield return v;
                 }
             }
+            hierarchyStack.RemoveAt(hierarchyStack.Count - 1);
         }
     }
 
@@ -260,16 +279,10 @@ class VisualElementReferenceSearchProvider : SearchProvider
 
     static SearchItemParentDescriptor FetchParentDescriptor(SearchItem item, SearchContext context)
     {
-        if (item.data is not Data data)
+        if (item.data is not Data data || data.parentItemId == null)
             return default;
 
-        var pathLabel = data.pathLabel;
-        var lastSlash = pathLabel.LastIndexOf('/');
-        if (lastSlash <= 0)
-            return default;
-
-        var parentId = pathLabel.Substring(0, lastSlash);
-        return new SearchItemParentDescriptor(parentId, SearchItemParentType.TokenSeparatedId);
+        return new SearchItemParentDescriptor(data.parentItemId, SearchItemParentType.TokenSeparatedId);
     }
 
     static void FetchParentsTokenSeparatedIds(SearchItem item, SearchContext context, List<StringView> idsSubstrings)

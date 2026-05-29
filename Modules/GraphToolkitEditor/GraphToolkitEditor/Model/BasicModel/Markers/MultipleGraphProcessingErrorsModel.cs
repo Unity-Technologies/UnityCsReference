@@ -24,6 +24,13 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string ErrorMessage { get; }
 
+
+        /// <inheritdoc />
+        public override object UserData => null;
+
+        /// <inheritdoc />
+        public override GraphLogAction Action => null;
+
         /// <summary>
         /// The errors associated with the parent model.
         /// </summary>

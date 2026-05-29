@@ -13,21 +13,19 @@ namespace Unity.GraphToolkit.Editor
     /// </summary>
     /// <remarks>
     /// <c>Graph</c> serves as the central entry point for:
-    /// <list type="bullet">
-    /// <item><description>Lifecycle management (via <see cref="OnEnable"/>, <see cref="OnDisable"/>)</description></item>
-    /// <item><description>Change tracking (via <see cref="OnGraphChanged"/>)</description></item>
-    /// <item><description>Access to nodes and variables</description></item>
-    /// </list>
+    ///
+    ///- Lifecycle management (via <see cref="OnEnable"/>, <see cref="OnDisable"/>)
+    ///- Change tracking (via <see cref="OnGraphChanged"/>)
+    ///- Access to nodes and variables
+    ///
     /// To register a graph type and associate it with a custom file extension and configuration options,
     /// apply the <see cref="GraphAttribute"/> to your custom <c>Graph</c> class.
-    /// <br/>
-    /// <br/>
+    ///
     /// You can further control the graph's behavior using the
     /// <see cref="GraphOptions"/> enum, which defines traits such as support for subgraphs.
     /// If your graph supports subgraphs (via <see cref="GraphOptions.SupportsSubgraphs"/>), you can declare valid subgraph types
     /// using the <see cref="SubgraphAttribute"/>.
-    /// <br/>
-    /// <br/>
+    ///
     /// Use the <see cref="GraphDatabase"/> utility class to create, load, and save graph assets in the Unity Editor.
     /// Graphs are serialized assets. You can create them through the editor UI with
     /// <see cref="GraphDatabase.PromptInProjectBrowserToCreateNewAsset{T}"/> or load them from disk with
@@ -81,6 +79,24 @@ namespace Unity.GraphToolkit.Editor
             {
                 CheckImplementation();
                 return m_Implementation.Guid;
+            }
+        }
+
+        /// <summary>
+        /// The `GUID` of the asset file associated with this graph.
+        /// </summary>
+        /// <remarks>
+        /// The default value of <see cref="GUID"/> for local subgraphs, because they are not stored as separate asset files. 
+        /// For graphs that are persistent assets, this property contains the valid unique identifier of the asset file on disk.
+        /// </remarks>
+        public GUID AssetGuid
+        {
+            get
+            {
+                CheckImplementation();
+                // Rely on GraphReference instead of GraphObject as local subgraph asset GUID must be default(GUID)
+                // and not the asset GUID of the root graph.
+                return m_Implementation.GetGraphReference(true).AssetGuid;
             }
         }
 
@@ -179,10 +195,10 @@ namespace Unity.GraphToolkit.Editor
         /// Use this method to enumerate all <see cref="IVariable"/>s declared in the graph.
         /// This list does not include variable nodes that reference variables.
         /// The collection reflects the variables ordered using the provided <see cref="SortMethod"/>.
-        /// <list>
-        /// <item> The <see cref="SortMethod.Creation"/> option returns variables in their order of creation. </item>
-        /// <item> The <see cref="SortMethod.Display"/> option returns variables in the order they are displayed in the blackboard. </item>
-        /// </list>
+        ///
+        ///- The <see cref="SortMethod.Creation"/> option returns variables in their order of creation.
+        ///- The <see cref="SortMethod.Display"/> option returns variables in the order they are displayed in the blackboard.
+        ///
         /// </remarks>
         public IEnumerable<IVariable> GetVariables(SortMethod sort)
         {
@@ -362,6 +378,23 @@ namespace Unity.GraphToolkit.Editor
             return m_Implementation.DeleteWiresBetween(output, input);
         }
 
+        /// <summary>
+        /// Returns the logical wire between an output port and an input port, if such a connection exists.
+        /// </summary>
+        /// <param name="output">The output port at the start of the connection.</param>
+        /// <param name="input">The input port at the end of the connection.</param>
+        /// <returns>
+        /// A <see cref="Wire"/> when the ports are connected (including through portals); otherwise <c>null</c>.
+        /// </returns>
+        /// <remarks>
+        /// When multiple portal-backed paths could match the same port pair, the first match from the graph's
+        /// virtual wire resolution is returned.
+        /// </remarks>
+        public Wire GetWire(IPort output, IPort input)
+        {
+            CheckImplementation();
+            return m_Implementation.GetWire(output, input);
+        }
 
         /// <summary>
         /// Retrieves a node defined in the graph by its index.
@@ -370,15 +403,15 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The <see cref="INode"/> at the specified index.</returns>
         /// <remarks>
         /// Use this method to access a node based on its creation order in the graph. The index is zero-based and must be within range (see: <see cref="NodeCount"/>).
-        /// <br/>
+        ///
         /// The list includes:
-        /// <list type="bullet">
-        /// <item><description>Your own <see cref="Node"/>s</description></item>
-        /// <item><description><see cref="ContextNode"/>s</description></item>
-        /// <item><description><see cref="IVariableNode"/>s</description></item>
-        /// <item><description><see cref="IConstantNode"/>s</description></item>
-        /// <item><description><see cref="ISubgraphNode"/>s</description></item>
-        /// </list>
+        ///
+        ///- Your own <see cref="Node"/>s
+        ///- <see cref="ContextNode"/>s
+        ///- <see cref="IVariableNode"/>s
+        ///- <see cref="IConstantNode"/>s
+        ///- <see cref="ISubgraphNode"/>s
+        ///
         /// It excludes <see cref="BlockNode"/>s, which are only accessible through their parent <see cref="ContextNode"/>.
         /// </remarks>
         public INode GetNode(int index)
@@ -393,15 +426,15 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>An <c>IEnumerable</c> of all <see cref="INode"/>s in the graph.</returns>
         /// <remarks>
         /// Use this method to access every node in the graph. Nodes are returned in the order they were created.
-        /// <br/>
+        ///
         /// The list includes:
-        /// <list type="bullet">
-        /// <item><description>Your own <see cref="Node"/>s</description></item>
-        /// <item><description><see cref="ContextNode"/>s</description></item>
-        /// <item><description><see cref="IVariableNode"/>s</description></item>
-        /// <item><description><see cref="IConstantNode"/>s</description></item>
-        /// <item><description><see cref="ISubgraphNode"/>s</description></item>
-        /// </list>
+        ///
+        ///- Your own <see cref="Node"/>s
+        ///- <see cref="ContextNode"/>s
+        ///- <see cref="IVariableNode"/>s
+        ///- <see cref="IConstantNode"/>s
+        ///- <see cref="ISubgraphNode"/>s
+        ///
         /// It excludes <see cref="BlockNode"/>s, which are only accessible through their parent <see cref="ContextNode"/>.
         /// </remarks>
         public IEnumerable<INode> GetNodes()
@@ -452,6 +485,8 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>
         /// Call this before you trigger a sequence of graph modification methods to record those operations to the undo stack.
         /// Call <see cref="UndoEndRecordGraph"/> after the sequence to signal that the operation is complete.
+        ///
+        /// Throws <c>InvalidOperationException</c> if there is no undo operation currently registered to the Graph.
         /// </remarks>
         public void UndoBeginRecordGraph(string actionName)
         {
@@ -464,11 +499,13 @@ namespace Unity.GraphToolkit.Editor
         /// with the changes made.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if the there is no undo operation currently registered to the Graph.
+        /// Thrown if there is no undo operation currently registered to the Graph.
         /// </exception>
-        /// /// <remarks>
+        /// <remarks>
         /// Call this after you trigger a sequence of graph modification methods to finalize recording the operations to the
         /// undo stack. Call <see cref="UndoBeginRecordGraph"/> before the sequence to signal the operations to be recorded.
+        ///
+        /// Throws <c>InvalidOperationException</c> if there is no undo operation currently registered to the Graph.
         /// </remarks>
         public void UndoEndRecordGraph()
         {
@@ -486,17 +523,19 @@ namespace Unity.GraphToolkit.Editor
         /// This method is only applicable to graphs that can act as subgraphs. If the graph is not a subgraph, this method has no effect. To qualify as a subgraph, the graph must be marked with <see cref="SubgraphAttribute"/>.
         /// </remarks>
         /// <example>
-        /// <code>
+        /// <code lang="cs">
+        /// <![CDATA[
         /// protected override void OnDefineSubgraphNodeOptions(Node.IOptionDefinitionContext context)
         /// {
-        ///     context.AddOption&lt;int&gt;("ID")
+        ///     context.AddOption<int>("ID")
         ///         .WithTooltip("The ID of the subgraph.")
         ///         .Delayed();
         ///
-        ///     context.AddOption&lt;string&gt;("Description")
+        ///     context.AddOption<string>("Description")
         ///         .WithDefaultValue("What is the purpose of this subgraph?")
         ///         .Delayed();
         /// }
+        /// ]]>
         /// </code>
         /// </example>
         protected virtual void OnDefineSubgraphNodeOptions(Node.IOptionDefinitionContext context) { }

@@ -17,10 +17,6 @@ sealed partial class OrchestratedScenario : PlayModeScenario, ISerializationCall
     [SerializeField] private List<VirtualEditorInstanceDescription> m_EditorInstances = null;
     [SerializeField] private List<LocalInstanceDescription> m_LocalInstances = null;
 
-    // The following section is for upgrading from 1.0.0-pre.2 to 1.0.0-pre.3.
-    // Because m_MainEditorInstance was serialized as reference we need to manually copy the old values to the new instance.
-    [SerializeReference, FormerlySerializedAs("m_MainEditorInstance")] private MainEditorInstanceDescription m_MainEditorInstanceObsolete;
-
     // For test use only, if needed to be exposed publicly, consider adding a property to the settings instead.
     internal bool EnableEditors
     {
@@ -30,13 +26,6 @@ sealed partial class OrchestratedScenario : PlayModeScenario, ISerializationCall
 
     public void UpgradeSerialization()
     {
-        if (m_MainEditorInstanceObsolete != null)
-        {
-            var serialized = JsonUtility.ToJson(m_MainEditorInstanceObsolete);
-            JsonUtility.FromJsonOverwrite(serialized, m_MainEditorInstance);
-            m_MainEditorInstanceObsolete = null;
-        }
-
         UpgradeMainEditor();
         UpgradeCloneEditors();
         UpgradeLocalInstances();

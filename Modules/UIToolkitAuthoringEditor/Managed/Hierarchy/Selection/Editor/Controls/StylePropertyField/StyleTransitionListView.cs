@@ -104,7 +104,7 @@ internal partial class StyleTransitionListView : VisualElement
             Add(m_PropertyField);
             m_PropertyOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_PropertyField };
             m_PropertyField.RegisterCallback<ChangeEvent<string>, FoldoutTransitionField>(OnPropertyChanged, this);
-            m_PropertyField.tooltip = "USS property: transition-property\n\nProperties to which a transition effect should be applied.";
+            m_PropertyField.tooltip = "<b>USS property: transition-property</b>\nProperties to which a transition effect should be applied.";
 
             m_DurationField = new TimeValueField("Duration");
             m_DurationField.AddToClassList(durationUssClassName);
@@ -112,7 +112,7 @@ internal partial class StyleTransitionListView : VisualElement
             Add(m_DurationField);
             m_DurationOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_DurationField };
             m_DurationField.RegisterCallback<ChangeEvent<TimeValue>, FoldoutTransitionField>(OnDurationChanged, this);
-            m_DurationField.tooltip = "USS property: transition-duration\n\nTime a transition animation should take to complete.";
+            m_DurationField.tooltip = "<b>USS property: transition-duration</b>\nTime a transition animation should take to complete.";
 
             m_TimingFunctionField = new EnumField("Easing", EasingMode.Ease);
             m_TimingFunctionField.AddToClassList(timingFunctionUssClassName);
@@ -120,7 +120,7 @@ internal partial class StyleTransitionListView : VisualElement
             Add(m_TimingFunctionField);
             m_TimingFunctionOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_TimingFunctionField };
             m_TimingFunctionField.RegisterCallback<ChangeEvent<Enum>, FoldoutTransitionField>(OnTimingFunctionChanged, this);
-            m_TimingFunctionField.tooltip = "USS property: transition-timing-function\n\nDetermines how intermediate values are calculated for properties modified by a transition effect.";
+            m_TimingFunctionField.tooltip = "<b>USS property: transition-timing-function</b>\nDetermines how intermediate values are calculated for properties modified by a transition effect.";
 
             m_DelayField = new TimeValueField("Delay");
             m_DelayField.AddToClassList(delayUssClassName);
@@ -128,7 +128,7 @@ internal partial class StyleTransitionListView : VisualElement
             Add(m_DelayField);
             m_DelayOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_DelayField };
             m_DelayField.RegisterCallback<ChangeEvent<TimeValue>, FoldoutTransitionField>(OnDelayChanged, this);
-            m_DelayField.tooltip = "USS property: transition-delay\n\nDuration to wait before starting a property's transition effect when its value changes.";
+            m_DelayField.tooltip = "<b>USS property: transition-delay</b>\nDuration to wait before starting a property's transition effect when its value changes.";
 
             // Needed to support search by "Easing" rather than "Timing function"
             AddTrackedProperty("Easing");

@@ -288,6 +288,7 @@ namespace UnityEditor.LightBaking
         public AngularFalloffType angularFalloff;
         public bool castsShadows;
         public int shadowMaskChannel;
+        public float indirectMultiplier;
     }
 
     internal struct SampleCount
@@ -308,6 +309,7 @@ namespace UnityEditor.LightBaking
         public bool aoEnabled;
         public float aoDistance;
         public bool useHardwareRayTracing;
+        public bool enableHeightfieldRayTracing;
 
         public LightSamplingMode directLightSamplingMode;
         public uint directRISCandidateCount;

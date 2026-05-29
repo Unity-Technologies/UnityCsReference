@@ -413,7 +413,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var packageName = package.name;
             var packageUniqueId = package.uniqueId;
-            if (!string.IsNullOrEmpty(packageName))
+            if (!string.IsNullOrEmpty(packageName) && m_TechnicalNameToUniqueIdMap.TryGetValue(packageName, out var value) && value == packageUniqueId)
                 m_TechnicalNameToUniqueIdMap.Remove(packageName);
             m_Packages.Remove(packageUniqueId);
             m_Features.Remove(packageUniqueId);

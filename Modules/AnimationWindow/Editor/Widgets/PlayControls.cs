@@ -74,7 +74,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             if (playToggle.value != m_State.playing)
                 playToggle.SetValueWithoutNotify(m_State.playing);
 
-            var time = new DiscreteTime((double)m_State.currentFrame / m_State.frameRate);
+            var time = (m_State.playing)
+                ? new DiscreteTime(m_State.currentTime)
+                : new DiscreteTime((double)m_State.currentFrame / m_State.frameRate);
 
             if (time != PlayTimeField.Time)
                 PlayTimeField.SetValueWithoutNotify(time);

@@ -14,12 +14,14 @@ namespace UnityEngine.UIElements
     [Serializable]
     public partial struct Background : IEquatable<Background>
     {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Background From(in EntityId entityId)
         {
             var obj = Resources.EntityIdToObject(entityId);
             return FromObject(obj);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void To(in Background background, out EntityId entityId)
         {
             var obj = background.GetSelectedImage();

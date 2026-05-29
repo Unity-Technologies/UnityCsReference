@@ -62,6 +62,17 @@ namespace UnityEngine.UIElements.UIR
             if (ve.isWorldSpaceRootPanelComponent)
                 mgc.entryRecorder.CutRenderChain(mgc.parentEntry);
 
+            bool emittedPanelComponent = false;
+            if (UIRUtility.k_ProfilerSupported)
+            {
+                EntityId panelComponentId = EntityId.None;
+                if (ve is IPanelComponentRootElement || renderData.isNestedRenderTreeRoot)
+                    panelComponentId = (ve.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent as Object)?.GetEntityId() ?? EntityId.None;
+                emittedPanelComponent = panelComponentId != EntityId.None;
+                if (emittedPanelComponent)
+                    mgc.entryRecorder.BeginPanelComponent(mgc.parentEntry, panelComponentId);
+            }
+
             bool isGroupTransform = renderData.isGroupTransform;
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
@@ -118,6 +129,9 @@ namespace UnityEngine.UIElements.UIR
 
             if (isGroupTransform)
                 mgc.entryRecorder.PopGroupMatrix(mgc.parentEntry);
+
+            if (emittedPanelComponent)
+                mgc.entryRecorder.EndPanelComponent(mgc.parentEntry);
         }
 
         protected abstract void DrawVisualElementBackground(MeshGenerationContext mgc);
@@ -206,7 +220,7 @@ namespace UnityEngine.UIElements.UIR
                     rect = veRect,
                     uv = new Rect(0, 0, 1, 1),
                     color = backgroundColor,
-                    colorPage = ColorPage.Init(m_RenderTreeManager, renderData.backgroundColorID),
+                    colorId = ColorId.Init(m_RenderTreeManager, renderData.backgroundColorID),
 #pragma warning disable UAL0018 // Capture is safe
                     playmodeTintColor = ve.playModeTintColor
 #pragma warning restore UAL0018
@@ -354,7 +368,7 @@ namespace UnityEngine.UIElements.UIR
 
 
                 rectParams.color = style.unityBackgroundImageTintColor;
-                rectParams.colorPage = ColorPage.Init(m_RenderTreeManager, ve.renderData.tintColorID);
+                rectParams.colorId = ColorId.Init(m_RenderTreeManager, ve.renderData.tintColorID);
 
                 MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
 
@@ -392,10 +406,10 @@ namespace UnityEngine.UIElements.UIR
                         topWidth = style.borderTopWidth,
                         rightWidth = style.borderRightWidth,
                         bottomWidth = style.borderBottomWidth,
-                        leftColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderLeftColorID),
-                        topColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderTopColorID),
-                        rightColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderRightColorID),
-                        bottomColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderBottomColorID),
+                        leftColorId = ColorId.Init(m_RenderTreeManager, renderData.borderLeftColorID),
+                        topColorId = ColorId.Init(m_RenderTreeManager, renderData.borderTopColorID),
+                        rightColorId = ColorId.Init(m_RenderTreeManager, renderData.borderRightColorID),
+                        bottomColorId = ColorId.Init(m_RenderTreeManager, renderData.borderBottomColorID),
 #pragma warning disable UAL0018 // Capture is safe
                         playmodeTintColor = ve.playModeTintColor
 #pragma warning restore UAL0018

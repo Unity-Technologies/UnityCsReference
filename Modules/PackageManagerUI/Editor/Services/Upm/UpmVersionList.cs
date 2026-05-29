@@ -87,20 +87,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             sortedVersions.Add(versionToAdd);
         }
 
-        public UpmVersionList(IUpmPackageData packageData, PackageTag tagsToExclude)
+        public UpmVersionList(IUpmPackageData packageData, PackageTag tagsToExclude, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError)
         {
             var allSortedVersions = new List<UpmPackageVersion>(packageData.availableVersions.compatible.Length + 1);
             foreach (var versionString in packageData.availableVersions.compatible)
             {
                 var packageInfo = packageData.GetSearchInfo(versionString);
-                var version = packageInfo != null ? UpmPackageVersion.CreateWithCompleteInfo(packageData, packageInfo, false) : UpmPackageVersion.CreateWithIncompleteInfo(packageData, versionString);
+                var version = packageInfo != null ? UpmPackageVersion.CreateWithCompleteInfo(packageData, packageInfo, false, ioProxy, applicationProxy, processLoadingError) : UpmPackageVersion.CreateWithIncompleteInfo(packageData, versionString);
                 allSortedVersions.Add(version);
             }
 
             UpmPackageVersion installedVersion = null;
             if (packageData.installedInfo != null)
             {
-                installedVersion = UpmPackageVersion.CreateWithCompleteInfo(packageData, packageData.installedInfo, true);
+                installedVersion = UpmPackageVersion.CreateWithCompleteInfo(packageData, packageData.installedInfo, true, ioProxy, applicationProxy, processLoadingError);
                 AddToSortedVersions(allSortedVersions, installedVersion);
                 if (installedVersion.HasTag(PackageTag.Experimental))
                     tagsToExclude &= ~(PackageTag.Experimental | PackageTag.PreRelease);

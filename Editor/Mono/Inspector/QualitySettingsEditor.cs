@@ -2,22 +2,27 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
 using UnityEditor.Modules;
+using UnityEditor.UIElements;
+using UnityEditor.UIElements.ProjectSettings;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Rendering;
-using Unity.Collections;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(QualitySettings))]
     internal class QualitySettingsEditor : ProjectSettingsBaseEditor
     {
-        private class Content
+        internal class Content
         {
             public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
             public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
@@ -105,7 +110,7 @@ namespace UnityEditor
             public static readonly string buildProfileQualitySettingsInformationPlural = L10n.Tr("Renaming and deleting Quality levels will impact {0} build profiles. To edit Quality levels included in build profiles, go to Build Profiles...");
         }
 
-        private class Styles
+        internal class Styles
         {
             public static readonly GUIStyle kToggle = "OL Toggle";
             public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
@@ -116,6 +121,7 @@ namespace UnityEditor
 
             public static readonly GUIStyle kTextureMipmapLimitGroupsOptionsButton = new GUIStyle(EditorStyles.miniButton) { padding = new RectOffset() };
             public static readonly GUIStyle kTextureMipmapLimitGroupNameLabel = new GUIStyle(EditorStyles.label) { clipping = TextClipping.Ellipsis };
+            public static readonly GUIStyle kLevelLabelStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 };
 
             public const int kMinToggleWidth = 15;
             public const int kMaxToggleWidth = 20;
@@ -155,13 +161,50 @@ namespace UnityEditor
         IAdaptiveVsyncSetting[] m_AdaptiveVsyncSettings;
         bool m_AdaptiveVSyncVisible;
 
-        bool m_QualityLevelRenameJustStarted = true;
-        bool m_QualityLevelNeedsRenameInAllProfiles = false;
-        string m_OriginalQualityLevelName = string.Empty;
-        string m_NewQualityLevelName = string.Empty;
-
         private SerializedProperty m_CurrentQualityProperty;
         private bool m_IsEditingQualitySettings; // true if editing actual QualitySettings, false if preset
+
+        // UITK fields
+        private VisualElement m_CurrentRoot;
+        private VisualElement m_QualityTableContainer;
+        private ListView m_QualityLevelsListView;
+        private IMGUIContainer m_QualityDetailsContainer;
+        private VisualElement m_HeaderElement;
+        private Label m_LevelsLabel;
+        private VisualElement m_QualityLevelHeader;
+        private Label m_QualityLevelNameLabel;
+        private Label m_QualityLevelCurrentTag;
+        private UnityEngine.UIElements.Button m_SetCurrentButton;
+
+        // Cache for platform defaults (platform name -> quality index)
+        private Dictionary<string, int> m_CachedPlatformDefaults = new Dictionary<string, int>();
+
+        // Inspected quality level (separate from current active level)
+        private int? m_InspectedQualityLevelField;
+        private const string kInspectedQualityLevelPrefKey = "QualitySettingsEditor.selectedLevel";
+
+        private int selectedLevel
+        {
+            get
+            {
+                if (m_InspectedQualityLevelField == null)
+                {
+                    var stored = EditorPrefs.GetInt(GetInspectedLevelPrefKey(), GetCurrentTargetQualityLevel());
+                    m_InspectedQualityLevelField =
+                        Mathf.Clamp(stored, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
+                }
+
+                return m_InspectedQualityLevelField.Value;
+            }
+            set
+            {
+                if (m_InspectedQualityLevelField != value)
+                {
+                    m_InspectedQualityLevelField = Mathf.Clamp(value, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
+                    EditorPrefs.SetInt(GetInspectedLevelPrefKey(), m_InspectedQualityLevelField.Value);
+                }
+            }
+        }
 
         private int GetCurrentTargetQualityLevel()
         {
@@ -202,6 +245,9 @@ namespace UnityEditor
             // Cache whether we're editing the actual QualitySettings or a preset
             m_IsEditingQualitySettings = (m_QualitySettings.targetObject == QualitySettings.GetQualitySettings());
 
+            // Initialize cached platform defaults
+            RebuildPlatformDefaultsCache();
+
             m_TextureMipmapLimitGroupNamesProperty = m_QualitySettings.FindProperty("m_TextureMipmapLimitGroupNames");
             m_TextureMipmapLimitGroupsList = new ReorderableList(m_QualitySettings, m_TextureMipmapLimitGroupNamesProperty, false, true, true, true);
             // The ReorderableList uses the GroupNames property as an indicator for how many groups really do exist.
@@ -220,13 +266,41 @@ namespace UnityEditor
                 m_AdaptiveVsyncSettings[i] = ModuleManager.GetAdaptiveSettingEditorExtension(module);
             }
 
-            ResetQualityLevelRenameTracking();
-            UpdateCachedProperties(GetCurrentTargetQualityLevel());
+            // Update cached properties for the inspected level
+            UpdateCachedProperties(selectedLevel);
+
+            // Subscribe to quality level changes to refresh the UI
+            QualitySettings.activeQualityLevelChanged += OnActiveQualityLevelChanged;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
+        }
+
+        public void OnDisable()
+        {
+            // Unsubscribe from quality level changes
+            QualitySettings.activeQualityLevelChanged -= OnActiveQualityLevelChanged;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+        }
+
+        private void OnUndoRedoPerformed(in UndoRedoInfo info)
+        {
+            // Rebuild cache after undo/redo
+            RebuildPlatformDefaultsCache();
+
+            RefreshQualityUI();
+        }
+
+        private string GetInspectedLevelPrefKey()
+        {
+            // Create a unique key per project to persist the inspected quality level
+            string projectName = Application.productName;
+            return $"{kInspectedQualityLevelPrefKey}.{projectName}";
         }
 
         public void OnDestroy()
         {
-            ResolvePendingQualityLevelRename();
+            // Unsubscribe from button click event
+            if (m_SetCurrentButton != null)
+                m_SetCurrentButton.clicked -= OnSetCurrentButtonClicked;
 
             // Clear cached property references for current quality level
             m_CurrentQualityProperty = null;
@@ -281,218 +355,86 @@ namespace UnityEditor
             m_StreamingMipmapsMaxFileIORequestsProperty = null;
         }
 
+        public override VisualElement CreateInspectorGUI()
+        {
+            var root = new ScrollView(ScrollViewMode.Vertical)
+            {
+                name = "MainScrollView"
+            };
+
+            root.AddToClassList("quality-settings__scroll-view");
+
+            // Load USS
+            var uss = EditorGUIUtility.Load("StyleSheets/ProjectSettings/QualitySettings.uss") as StyleSheet;
+            if (uss != null)
+                root.styleSheets.Add(uss);
+
+            var styleSheet = EditorGUIUtility.Load("StyleSheets/ProjectSettings/ProjectSettingsCommon.uss") as StyleSheet;
+            if (styleSheet != null)
+                root.styleSheets.Add(styleSheet);
+
+            m_CurrentRoot = root;
+
+            // Bind to SerializedObject once when the panel is attached
+            m_CurrentRoot.RegisterCallback<AttachToPanelEvent>(evt =>
+            {
+                m_CurrentRoot.Bind(m_QualitySettings);
+            });
+
+            var titleBar = new ProjectSettingsTitleBar("Quality");
+            titleBar.Initialize(serializedObject);
+
+            m_CurrentRoot.Add(titleBar);
+
+            // Add current build target label
+            var currentBuildTargetLabel = new Label();
+            currentBuildTargetLabel.name = "CurrentBuildTargetLabel";
+            currentBuildTargetLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            currentBuildTargetLabel.style.marginTop = 10;
+            currentBuildTargetLabel.style.marginBottom = 5;
+            currentBuildTargetLabel.style.marginLeft = 0;
+
+            // Update the label text with current build target
+            string buildTargetText = "Current Build Target: " +
+                Modules.ModuleManager.GetTargetStringFromBuildTarget(EditorUserBuildSettings.activeBuildTarget);
+            currentBuildTargetLabel.text = buildTargetText;
+
+            m_CurrentRoot.Add(currentBuildTargetLabel);
+
+            // Build quality level table
+            BuildQualityLevelTable();
+
+            // Build quality level header (level name + current tag + set current button)
+            BuildQualityLevelHeader();
+
+            // Add IMGUIContainer for quality level detail properties
+            BuildQualityLevelDetailsIMGUI();
+
+            return root;
+        }
+
+        internal void Dispose()
+        {
+            m_CurrentRoot?.Clear();
+            m_CurrentRoot = null;
+        }
+
+        private void OnActiveQualityLevelChanged(int previousLevel, int currentLevel)
+        {
+            if (!m_IsEditingQualitySettings)
+                return;
+
+            // Refresh the table to update the "Current" tag visibility when quality level changes externally
+            // Note: We don't change the inspected level here - the user's selection is preserved
+            m_QualitySettings.Update();
+            RefreshQualityUI();
+        }
+
         private struct QualitySetting
         {
             public string m_Name;
             public string m_PropertyPath;
             public List<string> m_ExcludedPlatforms;
-        }
-
-        private readonly int m_QualityElementHash = "QualityElementHash".GetHashCode();
-        private class Dragging
-        {
-            public int m_StartPosition;
-            public int m_Position;
-        }
-
-        private Dragging m_Dragging;
-        private bool m_ShouldAddNewLevel;
-        private int m_DeleteLevel = -1;
-        private int DoQualityLevelSelection(int currentQualitylevel, IList<QualitySetting> qualitySettings, Dictionary<string, int> platformDefaultQualitySettings)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-            var selectedLevel = currentQualitylevel;
-
-            //calculate maximum height
-            var max_height = 0.0f;
-            var min_height = float.MaxValue;
-            foreach (var platform in m_ValidPlatforms)
-            {
-                var icon = platform.compoundSmallIconForQualitySettings;
-                max_height = System.Math.Max(icon.height/icon.pixelsPerPoint + 2, max_height);
-                min_height = System.Math.Min(icon.height/icon.pixelsPerPoint + 2, min_height);
-            }
-
-            //Header row
-            GUILayout.BeginHorizontal();
-            {
-                var followingStyle = EditorStyles.label;
-                var labelStyle = EditorStyles.boldLabel;
-                float p = followingStyle.margin.left;
-                var label = EditorGUIUtility.TempContent("Levels");
-                Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth - p, EditorGUI.kSingleLineHeight, followingStyle, GUILayout.ExpandWidth(false));
-                var delta = max_height - min_height;
-                r.yMax += delta;
-                r.yMin += delta;
-                r.xMin += EditorGUI.indent;
-                EditorGUI.HandlePrefixLabel(r, r, label, 0, labelStyle);
-            }
-
-            //Header row icons
-            foreach (var platform in m_ValidPlatforms)
-            {
-                var icon = platform.compoundSmallIconForQualitySettings;
-                var iconRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth), GUILayout.Height(icon.height/icon.pixelsPerPoint + 2));
-                var delta = max_height - icon.height/icon.pixelsPerPoint-2;
-                iconRect.yMax += delta;
-                iconRect.yMin += delta;
-                var temp = EditorGUIUtility.TempContent(icon);
-                temp.tooltip = platform.title.text;
-                GUI.Label(iconRect, temp);
-                temp.tooltip = "";
-            }
-
-            //Extra column for deleting setting button
-            GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth), GUILayout.Height(Styles.kHeaderRowHeight));
-
-            GUILayout.EndHorizontal();
-
-            //Draw the row for each quality setting
-            var currentEvent = Event.current;
-            for (var i = 0; i < qualitySettings.Count; i++)
-            {
-                GUILayout.BeginHorizontal();
-                var bgStyle = i % 2 == 0 ? Styles.kListEvenBg : Styles.kListOddBg;
-                bool selected = (selectedLevel == i);
-
-                //Draw the selected icon if required
-                const int kExtraIndent = 4;
-                Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth - Styles.kToggle.margin.left, EditorGUI.kSingleLineHeight, Styles.kToggle, GUILayout.ExpandWidth(false));
-                r.x += EditorGUI.indent + kExtraIndent;
-
-                switch (currentEvent.type)
-                {
-                    case EventType.Repaint:
-                        bgStyle.Draw(r, GUIContent.none, false, false, selected, false);
-                        GUI.Label(r, EditorGUIUtility.TempContent(qualitySettings[i].m_Name));
-                        break;
-                    case EventType.MouseDown:
-                        if (r.Contains(currentEvent.mousePosition))
-                        {
-                            selectedLevel = i;
-                            GUIUtility.keyboardControl = 0;
-                            GUIUtility.hotControl = m_QualityElementHash;
-                            GUI.changed = true;
-                            m_Dragging = new Dragging {m_StartPosition = i, m_Position = i};
-                            currentEvent.Use();
-                        }
-                        break;
-                    case EventType.MouseDrag:
-                        if (GUIUtility.hotControl == m_QualityElementHash)
-                        {
-                            if (r.Contains(currentEvent.mousePosition))
-                            {
-                                m_Dragging.m_Position = i;
-                                currentEvent.Use();
-                            }
-                        }
-                        break;
-                    case EventType.MouseUp:
-                        if (GUIUtility.hotControl == m_QualityElementHash)
-                        {
-                            GUIUtility.hotControl = 0;
-                            currentEvent.Use();
-                        }
-                        break;
-                    case EventType.KeyDown:
-                        if (currentEvent.keyCode == KeyCode.UpArrow || currentEvent.keyCode == KeyCode.DownArrow)
-                        {
-                            selectedLevel += currentEvent.keyCode == KeyCode.UpArrow ? -1 : 1;
-                            selectedLevel = Mathf.Clamp(selectedLevel, 0, qualitySettings.Count - 1);
-                            GUIUtility.keyboardControl = 0;
-                            GUI.changed = true;
-                            currentEvent.Use();
-                        }
-                        break;
-                }
-
-                //Build a list of the current platform selection and draw it.
-                foreach (var platform in m_ValidPlatforms)
-                {
-                    bool isDefaultQuality = platformDefaultQualitySettings.ContainsKey(platform.name) &&  platformDefaultQualitySettings[platform.name] == i;
-
-                    var toggleRect = GUILayoutUtility.GetRect(Content.kPlatformTooltip, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
-                    toggleRect.x += EditorGUI.indent + kExtraIndent;
-
-                    if (Event.current.type == EventType.Repaint)
-                    {
-                        bgStyle.Draw(toggleRect, GUIContent.none, false, false, selected, false);
-                    }
-
-                    var color = GUI.backgroundColor;
-                    if (isDefaultQuality && !EditorApplication.isPlayingOrWillChangePlaymode)
-                        GUI.backgroundColor = Color.green;
-
-                    var supported = !qualitySettings[i].m_ExcludedPlatforms.Contains(platform.name);
-                    var newSupported = GUI.Toggle(toggleRect, supported, Content.kPlatformTooltip, isDefaultQuality ? Styles.kDefaultToggle : Styles.kToggle);
-                    if (supported != newSupported)
-                    {
-                        if (newSupported)
-                            qualitySettings[i].m_ExcludedPlatforms.Remove(platform.name);
-                        else
-                            qualitySettings[i].m_ExcludedPlatforms.Add(platform.name);
-                    }
-
-                    GUI.backgroundColor = color;
-                }
-
-                //Extra column for deleting quality button
-                var deleteButton = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
-                if (Event.current.type == EventType.Repaint)
-                    bgStyle.Draw(deleteButton, GUIContent.none, false, false, selected, false);
-                if (GUI.Button(deleteButton, Content.kIconTrash, GUIStyle.none))
-                {
-                    m_DeleteLevel = i;
-                }
-
-                GUILayout.EndHorizontal();
-            }
-
-            //Add a spacer line to separate the levels from the defaults
-            GUILayout.BeginHorizontal();
-            DrawHorizontalDivider();
-            GUILayout.EndHorizontal();
-
-            //Default platform selection dropdowns
-            GUILayout.BeginHorizontal();
-
-            EditorGUILayout.PrefixLabel("Default", EditorStyles.label, EditorStyles.boldLabel);
-
-            // Draw default dropdown arrows
-            foreach (var platform in m_ValidPlatforms)
-            {
-                var iconRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle,
-                    GUILayout.MinWidth(Styles.kMinToggleWidth),
-                    GUILayout.MaxWidth(Styles.kMaxToggleWidth),
-                    GUILayout.Height(Styles.kHeaderRowHeight));
-
-                int position;
-                if (!platformDefaultQualitySettings.TryGetValue(platform.name, out position))
-                    platformDefaultQualitySettings.Add(platform.name, 0);
-
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                position = EditorGUI.Popup(iconRect, position, qualitySettings.Select(x => x.m_Name).ToArray(), Styles.kDefaultDropdown);
-#pragma warning restore UA2001
-                platformDefaultQualitySettings[platform.name] = position;
-            }
-
-            //Extra column for deleting setting button
-            GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth), GUILayout.Height(Styles.kHeaderRowHeight));
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(10);
-
-            //Add an extra row for 'Add' button
-            if (GUILayout.Button(Content.kAddQualityLevel))
-                m_ShouldAddNewLevel = true;
-
-            GUILayout.EndVertical();
-
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            return selectedLevel;
         }
 
         private List<QualitySetting> GetQualitySettings()
@@ -508,8 +450,6 @@ namespace UnityEditor
                     m_PropertyPath = prop.propertyPath
                 };
 
-                qs.m_PropertyPath = prop.propertyPath;
-
                 var platforms = new List<string>();
                 var platformsProp = prop.FindPropertyRelative("excludedTargetPlatforms");
                 foreach (SerializedProperty platformProp in platformsProp)
@@ -521,73 +461,10 @@ namespace UnityEditor
             return qualitySettings;
         }
 
-        private void SetQualitySettings(IEnumerable<QualitySetting> settings)
-        {
-            foreach (var setting in settings)
-            {
-                var property = m_QualitySettings.FindProperty(setting.m_PropertyPath);
-                if (property == null)
-                    continue;
-
-                var platformsProp = property.FindPropertyRelative("excludedTargetPlatforms");
-                if (platformsProp.arraySize != setting.m_ExcludedPlatforms.Count)
-                    platformsProp.arraySize = setting.m_ExcludedPlatforms.Count;
-
-                var count = 0;
-                foreach (SerializedProperty platform in platformsProp)
-                {
-                    if (platform.stringValue != setting.m_ExcludedPlatforms[count])
-                        platform.stringValue = setting.m_ExcludedPlatforms[count];
-                    count++;
-                }
-            }
-        }
-
-        private void HandleAddRemoveQualitySetting(ref int selectedLevel, Dictionary<string, int> platformDefaults)
-        {
-            if (m_DeleteLevel >= 0)
-            {
-                if (m_DeleteLevel < selectedLevel || m_DeleteLevel == m_QualitySettingsProperty.arraySize - 1)
-                {
-                    selectedLevel = Mathf.Max(0, selectedLevel - 1);
-                    QualitySettings.SetQualityLevel(selectedLevel);
-                }
-
-                //Always ensure there is one quality setting
-                if (m_QualitySettingsProperty.arraySize > 1 && m_DeleteLevel >= 0 && m_DeleteLevel < m_QualitySettingsProperty.arraySize)
-                {
-                    var deleteLevelName = m_QualitySettingsProperty.GetArrayElementAtIndex(m_DeleteLevel).FindPropertyRelative("name")?.stringValue;
-                    m_QualitySettingsProperty.DeleteArrayElementAtIndex(m_DeleteLevel);
-                    BuildProfileModuleUtil.RemoveQualityLevelFromAllProfiles(deleteLevelName);
-
-                    // Fix defaults offset
-                    List<string> keys = new List<string>(platformDefaults.Keys);
-                    foreach (var key in keys)
-                    {
-                        int value = platformDefaults[key];
-                        if (value != 0 && value >= m_DeleteLevel)
-                            platformDefaults[key]--;
-                    }
-                }
-
-                m_DeleteLevel = -1;
-            }
-
-            if (m_ShouldAddNewLevel)
-            {
-                m_QualitySettingsProperty.arraySize++;
-                var addedSetting = m_QualitySettingsProperty.GetArrayElementAtIndex(m_QualitySettingsProperty.arraySize - 1);
-                var nameProperty = addedSetting.FindPropertyRelative("name");
-                nameProperty.stringValue = "Level " + (m_QualitySettingsProperty.arraySize - 1);
-
-                m_ShouldAddNewLevel = false;
-            }
-
-            SetQualitySettings(GetQualitySettings());
-        }
-
         private Dictionary<string, int> GetDefaultQualityForPlatforms()
         {
+            m_QualitySettings.Update();
+
             var defaultPlatformQualities = new Dictionary<string, int>();
 
             foreach (SerializedProperty prop in m_PerPlatformDefaultQualityProperty)
@@ -618,430 +495,784 @@ namespace UnityEditor
             }
         }
 
-        private static void DrawHorizontalDivider()
+        private void RebuildPlatformDefaultsCache()
         {
-            var spacerLine = GUILayoutUtility.GetRect(GUIContent.none,
-                GUIStyle.none,
-                GUILayout.ExpandWidth(true),
-                GUILayout.Height(1));
-            var oldBgColor = GUI.backgroundColor;
-            if (EditorGUIUtility.isProSkin)
-                GUI.backgroundColor = oldBgColor * 0.7058f;
-            else
-                GUI.backgroundColor = Color.black;
+            m_QualitySettings.Update();
 
-            if (Event.current.type == EventType.Repaint)
-                EditorGUIUtility.whiteTextureStyle.Draw(spacerLine, GUIContent.none, false, false, false, false);
+            m_CachedPlatformDefaults.Clear();
 
-            GUI.backgroundColor = oldBgColor;
-        }
-
-        void SoftParticlesHintGUI()
-        {
-            var mainCamera = Camera.main;
-            if (mainCamera == null)
-                return;
-
-            RenderingPath renderPath = mainCamera.actualRenderingPath;
-            if (renderPath == RenderingPath.DeferredShading)
-                return; // using deferred, all is good
-
-            if ((mainCamera.depthTextureMode & DepthTextureMode.Depth) != 0)
-                return; // already produces depth texture, all is good
-
-            EditorGUILayout.HelpBox(Content.kSoftParticlesHint.text, MessageType.Warning, false);
-        }
-
-        void MipStrippingHintGUI()
-        {
-            if (PlayerSettings.mipStripping)
-                return;
-
-            EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info);
-        }
-
-        /**
-         * Internal function that takes the shadow cascade splits property field, and dispatches a call to render the GUI.
-         * It also transfers the result back
-         */
-
-        private void DrawCascadeSplitGUI<T>(ref SerializedProperty shadowCascadeSplit)
-        {
-            float[] cascadePartitionSizes = null;
-
-            System.Type type = typeof(T);
-            if (type == typeof(float))
-                cascadePartitionSizes = new float[] { shadowCascadeSplit.floatValue };
-            else if (type == typeof(Vector3))
+            foreach (SerializedProperty prop in m_PerPlatformDefaultQualityProperty)
             {
-                Vector3 splits = shadowCascadeSplit.vector3Value;
-                cascadePartitionSizes = new float[]
+                m_CachedPlatformDefaults.Add(prop.FindPropertyRelative("first").stringValue, prop.FindPropertyRelative("second").intValue);
+            }
+        }
+
+        // UITK Table Building Methods
+        private void BuildQualityLevelTable()
+        {
+            m_QualityTableContainer = new VisualElement();
+            m_QualityTableContainer.name = "QualityLevelTable";
+            m_QualityTableContainer.AddToClassList("quality-table");
+
+            // Build header
+            var header = BuildHeaderRow();
+            m_QualityTableContainer.Add(header);
+
+            // Build quality levels ListView
+            m_QualityLevelsListView = new ListView
+            {
+                name = "QualityLevelsListView",
+                showBoundCollectionSize = false,
+                showFoldoutHeader = false,
+                reorderable = true,
+                showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
+                reorderMode = ListViewReorderMode.Animated,
+                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
+                selectionType = SelectionType.Single,
+                showAddRemoveFooter = true,
+
+                // Set up makeItem callback
+                makeItem = MakeQualityLevelItem,
+
+                // Set up bindItem callback
+                bindItem = BindQualityLevelItem,
+
+                // Set up unbindItem callback
+                unbindItem = UnbindQualityLevelItem
+            };
+
+            m_QualityLevelsListView.itemIndexChanged += OnQualityLevelItemIndexChanged;
+
+            // Handle selection changes
+            m_QualityLevelsListView.selectionChanged += OnQualityLevelSelectionChanged;
+
+            // Handle add/remove
+            m_QualityLevelsListView.onAdd += OnAddQualityLevel;
+            m_QualityLevelsListView.onRemove += OnRemoveQualityLevel;
+
+            m_QualityTableContainer.Add(m_QualityLevelsListView);
+
+            // Align levels label when the table is attached to panel
+            m_QualityTableContainer.RegisterCallback<GeometryChangedEvent>(evt => AlignLevelsLabelWidth());
+
+            m_QualityLevelsListView.RegisterCallback<AttachToPanelEvent>(evt =>
+            {
+                m_QualityLevelsListView.BindProperty(m_QualitySettingsProperty);
+                UpdateInspectedLevelSelection();
+            });
+
+            m_QualityLevelsListView.TrackPropertyValue(m_QualitySettingsProperty, OnQualityLevelSelectionChanged);
+
+            m_CurrentRoot.Add(m_QualityTableContainer);
+        }
+
+        private int AdjustIndexAfterReorder(int currentIndex, int oldIndex, int newIndex)
+        {
+            if (currentIndex == oldIndex)
+            {
+                // The item itself was moved
+                return newIndex;
+            }
+            else if (oldIndex < newIndex)
+            {
+                // Moving down: shift index if it's in between
+                if (currentIndex > oldIndex && currentIndex <= newIndex)
                 {
-                    Mathf.Clamp(splits[0], 0.0f, 1.0f),
-                    Mathf.Clamp(splits[1] - splits[0], 0.0f, 1.0f),
-                    Mathf.Clamp(splits[2] - splits[1], 0.0f, 1.0f)
-                };
+                    return currentIndex - 1;
+                }
+            }
+            else
+            {
+                // Moving up: shift index if it's in between
+                if (currentIndex >= newIndex && currentIndex < oldIndex)
+                {
+                    return currentIndex + 1;
+                }
             }
 
-            if (cascadePartitionSizes != null)
+            return currentIndex;
+        }
+
+        private int AdjustIndexAfterDeletion(int currentIndex, int deletedIndex)
+        {
+            if (currentIndex == deletedIndex)
             {
-                EditorGUI.BeginChangeCheck();
-                ShadowCascadeSplitGUI.HandleCascadeSliderGUI(ref cascadePartitionSizes);
-                if (EditorGUI.EndChangeCheck())
+                // The current index was deleted, move to previous or 0
+                return Mathf.Max(0, deletedIndex - 1);
+            }
+            else if (currentIndex > deletedIndex)
+            {
+                // Current index is after the deleted item, shift down by 1
+                return currentIndex - 1;
+            }
+
+            return currentIndex;
+        }
+
+        private void UpdateInspectedLevelSelection()
+        {
+            m_QualityLevelsListView.SetSelectionWithoutNotify(new List<int> { selectedLevel });
+            UpdateCachedProperties(selectedLevel);
+            UpdateQualityLevelHeader();
+        }
+
+        private void OnQualityLevelItemIndexChanged(int oldIndex, int newIndex)
+        {
+            // Update cached platform defaults to reflect the reorder
+            // When a quality level moves, we need to adjust all default indices
+            var platformKeys = new List<string>(m_CachedPlatformDefaults.Keys);
+            foreach (var key in platformKeys)
+            {
+                int value = m_CachedPlatformDefaults[key];
+                m_CachedPlatformDefaults[key] = AdjustIndexAfterReorder(value, oldIndex, newIndex);
+            }
+
+            // Write back to serialized property
+            SetDefaultQualityForPlatforms(m_CachedPlatformDefaults);
+            m_QualitySettings.ApplyModifiedProperties();
+
+            // Update the current active quality level if it was moved
+            var currentActiveLevel = GetCurrentTargetQualityLevel();
+            int newActiveLevel = AdjustIndexAfterReorder(currentActiveLevel, oldIndex, newIndex);
+
+            // Apply the new active level if it changed
+            if (newActiveLevel != currentActiveLevel)
+            {
+                SetCurrentTargetQualityLevel(newActiveLevel);
+            }
+
+            // Update the inspected level to follow the reordered item
+            selectedLevel = AdjustIndexAfterReorder(selectedLevel, oldIndex, newIndex);
+
+            // Update selection
+            UpdateInspectedLevelSelection();
+
+            // Refresh UI to show updated defaults and current tag
+            m_QualityLevelsListView?.RefreshItems();
+        }
+
+        private void OnQualityLevelSelectionChanged(SerializedProperty property)
+        {
+            // Rebuild cache when serialized property changes externally (e.g., reset, undo/redo)
+            RebuildPlatformDefaultsCache();
+
+            RefreshQualityUI();
+            QualitySettings.OnActiveQualityLevelChanged(-1, GetCurrentTargetQualityLevel());
+        }
+
+        private VisualElement BuildHeaderRow()
+        {
+            m_HeaderElement = new VisualElement();
+            m_HeaderElement.name = "QualityLevelTableHeader";
+            m_HeaderElement.AddToClassList("quality-table__header");
+
+            // "Levels" label
+            m_LevelsLabel = new Label("Levels");
+            m_LevelsLabel.AddToClassList("quality-table__levels-label");
+            m_HeaderElement.Add(m_LevelsLabel);
+
+            // Register callbacks to align levels label width with first checkbox in rows
+            m_HeaderElement.RegisterCallback<AttachToPanelEvent>(evt => AlignLevelsLabelWidth());
+            m_HeaderElement.RegisterCallback<GeometryChangedEvent>(evt => AlignLevelsLabelWidth());
+
+            var arrowIcon = EditorGUIUtility.isProSkin ? EditorGUIUtility.LoadIcon("d_dropdown") : EditorGUIUtility.LoadIcon("dropdown");
+            var currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+            var currentNamedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+
+            // Platform columns (icon + default button)
+            foreach (var platform in m_ValidPlatforms)
+            {
+                var platformColumn = new VisualElement();
+                platformColumn.name = $"PlatformColumn_{platform.name}";
+                platformColumn.AddToClassList("quality-table__platform-column");
+
+                // Platform icon
+                var icon = platform.compoundSmallIconForQualitySettings;
+                var iconContainer = new VisualElement();
+                iconContainer.AddToClassList("quality-table__platform-icon");
+                iconContainer.tooltip = platform.title.text;
+                iconContainer.style.backgroundImage = new StyleBackground(icon);
+
+                // Highlight the current active build target platform
+                // Compare using both BuildTarget and NamedBuildTarget for more accurate matching
+                bool isCurrentPlatform = (platform.defaultTarget == currentBuildTarget) ||
+                                        (platform.namedBuildTarget == currentNamedBuildTarget);
+                if (isCurrentPlatform)
                 {
-                    if (type == typeof(float))
-                        shadowCascadeSplit.floatValue = cascadePartitionSizes[0];
-                    else
+                    iconContainer.AddToClassList("quality-table__platform-icon--selected");
+                }
+
+                platformColumn.Add(iconContainer);
+
+                var button = new UnityEngine.UIElements.Button();
+                button.name = $"DefaultButton_{platform.name}";
+                button.AddToClassList("quality-table__default-dropdown");
+
+                // Set the arrow icon as background
+                if (arrowIcon != null)
+                {
+                    button.style.backgroundImage = new StyleBackground(arrowIcon);
+                }
+
+                // Capture variables for closure
+                string capturedPlatformName = platform.name;
+                button.clicked += () =>
+                {
+                    var menu = new GenericMenu();
+                    var currentSettings = GetQualitySettings();
+                    var currentDefaults = GetDefaultQualityForPlatforms();
+                    int currentDefault = currentDefaults.ContainsKey(capturedPlatformName) ? currentDefaults[capturedPlatformName] : 0;
+
+                    for (int i = 0; i < currentSettings.Count; i++)
                     {
-                        Vector3 updatedValue = new Vector3();
-                        updatedValue[0] = cascadePartitionSizes[0];
-                        updatedValue[1] = updatedValue[0] + cascadePartitionSizes[1];
-                        updatedValue[2] = updatedValue[1] + cascadePartitionSizes[2];
-                        shadowCascadeSplit.vector3Value = updatedValue;
+                        int qualityIndex = i;
+                        string qualityName = currentSettings[i].m_Name;
+                        bool isSelected = (i == currentDefault);
+
+                        menu.AddItem(new GUIContent(qualityName), isSelected, () =>
+                        {
+                            var defs = GetDefaultQualityForPlatforms();
+                            defs[capturedPlatformName] = qualityIndex;
+                            SetDefaultQualityForPlatforms(defs);
+                            m_QualitySettings.ApplyModifiedProperties();
+
+                            // Rebuild cache after modifying defaults
+                            RebuildPlatformDefaultsCache();
+
+                            // Update the visual state of the toggles to show new default (green styling)
+                            m_QualityLevelsListView?.RefreshItems();
+                        });
+                    }
+
+                    menu.ShowAsContext();
+                };
+
+                platformColumn.Add(button);
+                m_HeaderElement.Add(platformColumn);
+            }
+
+            return m_HeaderElement;
+        }
+
+        private void AlignLevelsLabelWidth()
+        {
+            // Use cached references to avoid repeated Q lookups
+            if (m_HeaderElement == null || m_LevelsLabel == null)
+                return;
+
+            // Find the first row in the ListView to get the first toggle position
+            var firstRow = m_QualityLevelsListView?.Q<VisualElement>(null, "quality-table__row");
+            if (firstRow != null)
+            {
+                // Get the first toggle in the row
+                var firstToggle = firstRow.Q<Toggle>(null, "quality-table__platform-toggle");
+                if (firstToggle != null)
+                {
+                    // Calculate the x position of the first toggle relative to the header
+                    // Subtract half the toggle width to center the platform column over the checkbox
+                    float toggleX = firstToggle.worldBound.x - (m_HeaderElement.worldBound.x + firstToggle.worldBound.width * 0.5f);
+
+                    // Set the levels label width to align with where the first toggle center is
+                    if (toggleX > 0)
+                    {
+                        m_LevelsLabel.style.width = toggleX;
                     }
                 }
             }
         }
 
-        private bool DrawOverrideToggle(ref SerializedProperty overrideProperty, TerrainQualityOverrides overrideFlag, GUIContent overrideStyle)
+        private VisualElement MakeQualityLevelItem()
         {
-            var overrideFlagsPropertyValue = (TerrainQualityOverrides)overrideProperty.enumValueFlag;
-            bool overrideActive = overrideFlagsPropertyValue.HasFlag(overrideFlag);
+            var row = new VisualElement();
+            row.name = "QualityLevelRow";
+            row.AddToClassList("quality-table__row");
 
-            var overrideRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toggle, GUILayout.Height(EditorGUIUtility.singleLineHeight), GUILayout.ExpandWidth(false));
-            overrideActive = GUI.Toggle(overrideRect, overrideActive, overrideStyle);
-            overrideProperty.enumValueFlag = overrideActive
-                ? (int)(overrideFlagsPropertyValue | overrideFlag)
-                : (int)(overrideFlagsPropertyValue & ~overrideFlag);
-
-            return overrideActive;
-        }
-
-        static List<string> s_PlatformsWithDifferentRPAssets = new();
-
-        void CheckSameRenderPipelineAssetForOverridenQualityLevels()
-        {
-            s_PlatformsWithDifferentRPAssets.Clear();
-
-            foreach (var platform in m_ValidPlatforms)
+            var nameField = new TextField
             {
-                var buildTarget = BuildPipeline.GetBuildTargetByName(platform.namedBuildTarget.TargetName);
-                var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(buildTarget);
+                name = "QualityName"
+            };
+            nameField.AddToClassList("quality-table__quality-name");
+            nameField.isDelayed = true; // Only trigger callback on focus lost or Enter, not every keystroke
 
-                if (!QualitySettings.SamePipelineAssetsForPlatform(buildTargetGroupName))
-                    s_PlatformsWithDifferentRPAssets.Add(platform.title.ToString());
+            nameField.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.target is TextField field && field.userData is int index)
+                {
+                    OnQualityNameChanged(index, evt.previousValue, evt.newValue);
+                }
+            });
+
+            row.Add(nameField);
+
+            // Add "Current" tag label after the name field
+            var currentTag = new Label("Current");
+            currentTag.name = "CurrentQualityLevelTag";
+            currentTag.AddToClassList("quality-level-current-tag");
+            currentTag.tooltip = "This is the current active quality level";
+            currentTag.style.display = DisplayStyle.None; // Hidden by default, shown in BindQualityLevelItem
+            row.Add(currentTag);
+
+            // Add spacer element to maintain alignment when "Current" tag is not visible
+            var spacer = new VisualElement();
+            spacer.name = "CurrentQualityLevelSpacer";
+            spacer.style.width = 56; // 50px (tag width) + 6px (margin) = 56px
+            spacer.style.flexShrink = 0;
+            spacer.style.display = DisplayStyle.Flex; // Visible by default
+            row.Add(spacer);
+
+            for (int i = 0; i < m_ValidPlatforms.Count; i++)
+            {
+                var toggle = new Toggle();
+                toggle.name = $"PlatformToggle_{i}";
+                toggle.AddToClassList("quality-table__platform-toggle");
+                int platformIndex = i; // Capture for closure
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.target is Toggle t && t.userData is int qualityIndex)
+                    {
+                        var platformName = m_ValidPlatforms[platformIndex].name;
+                        OnPlatformToggleChanged(qualityIndex, platformName, evt.newValue);
+                    }
+                });
+                row.Add(toggle);
             }
 
-            if (s_PlatformsWithDifferentRPAssets.Count > 0)
-            {
-                EditorGUILayout.HelpBox($"The following platforms have assets in its associated Quality levels that belong to different render pipelines: {string.Join(", ", s_PlatformsWithDifferentRPAssets)}", MessageType.Error);
-            }
+            return row;
         }
 
-        void CheckBiRPDeprecationInfoBox(bool usingSRP)
+        private void BindQualityLevelItem(VisualElement element, int index)
         {
-            if (usingSRP)
+            if (index < 0 || index >= m_QualitySettingsProperty.arraySize)
                 return;
 
-            bool installedSRP = false;
-            foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
+            var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(index);
+            var defaults = m_CachedPlatformDefaults;
+            var currentLevel = GetCurrentTargetQualityLevel();
+            bool isCurrentLevel = (index == currentLevel);
+
+            // Show/hide the "Current" tag based on whether this is the current active level
+            // and we're editing the actual QualitySettings (not a preset)
+            var currentTag = element.Q<Label>("CurrentQualityLevelTag");
+            var spacer = element.Q<VisualElement>("CurrentQualityLevelSpacer");
+            var nameField = element.Q<TextField>("QualityName");
+            bool showTag = m_IsEditingQualitySettings && isCurrentLevel;
+
+            // Toggle between showing the "Current" tag or the spacer
+            if (currentTag != null)
             {
-                if (!type.IsAbstract)
+                currentTag.style.display = showTag ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (spacer != null)
+            {
+                spacer.style.display = showTag ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+
+            if (nameField != null)
+            {
+                var nameProperty = qualityProperty.FindPropertyRelative("name");
+                nameField.BindProperty(nameProperty);
+                nameField.userData = index;
+            }
+
+            // Set selection to the inspected level (not necessarily the current level)
+            if (index == selectedLevel && m_QualityLevelsListView.selectedIndex != index)
+                m_QualityLevelsListView.SetSelectionWithoutNotify(new List<int> { index });
+
+            var platforms = new List<string>();
+            var platformsProp = qualityProperty.FindPropertyRelative("excludedTargetPlatforms");
+            foreach (SerializedProperty platformProp in platformsProp)
+                platforms.Add(platformProp.stringValue);
+
+            // Bind platform toggles
+            for (int i = 0; i < m_ValidPlatforms.Count; i++)
+            {
+                var platform = m_ValidPlatforms[i];
+                var toggle = element.Q<Toggle>($"PlatformToggle_{i}");
+                if (toggle != null)
                 {
-                    installedSRP = true;
+                    bool isDefault = defaults.TryGetValue(platform.name, out var defaultIndex) ? defaultIndex == index : index == 0;
+                    bool isEnabled = !platforms.Contains(platform.name);
+
+                    toggle.SetValueWithoutNotify(isEnabled);
+                    toggle.EnableInClassList("quality-table__platform-toggle--default", isDefault);
+                    // Update userData with current index (callback registered once in MakeQualityLevelItem)
+                    toggle.userData = index;
+                }
+            }
+        }
+
+        private void UnbindQualityLevelItem(VisualElement element, int index)
+        {
+            // Clear userData (callbacks are registered once in MakeQualityLevelItem and don't need unregistering)
+            var nameField = element.Q<TextField>("QualityName");
+            if (nameField != null)
+            {
+                nameField.userData = null;
+                nameField.Unbind();
+            }
+
+            for (int i = 0; i < m_ValidPlatforms.Count; i++)
+            {
+                var toggle = element.Q<Toggle>($"PlatformToggle_{i}");
+                if (toggle != null)
+                    toggle.userData = null;
+            }
+        }
+
+
+        // Event Handlers
+        private void OnQualityLevelSelectionChanged(IEnumerable<object> selectedItems)
+        {
+            if (m_QualityLevelsListView == null)
+                return;
+
+            int selectedIndex = m_QualityLevelsListView.selectedIndex;
+            if (selectedIndex >= 0)
+            {
+                // Update the inspected quality level (not the current active level)
+                selectedLevel = selectedIndex;
+
+                // Update the cached properties and refresh the UI to show the selected level's properties
+                UpdateCachedProperties(selectedIndex);
+                RefreshQualityUI();
+            }
+        }
+
+        private void OnPlatformToggleChanged(int qualityIndex, string platformName, bool enabled)
+        {
+            // Validate index
+            if (qualityIndex < 0 || qualityIndex >= m_QualitySettingsProperty.arraySize)
+                return;
+
+            // Get the quality setting at the specified index
+            var qualitySettingProp = m_QualitySettingsProperty.GetArrayElementAtIndex(qualityIndex);
+            var platformsProp = qualitySettingProp.FindPropertyRelative("excludedTargetPlatforms");
+
+            if (platformsProp == null)
+                return;
+
+            if (enabled)
+            {
+                // Remove platform from excluded list (enabled means NOT excluded)
+                RemovePlatformFromArray(platformsProp, platformName);
+            }
+            else
+            {
+                // Add platform to excluded list (disabled means excluded)
+                AddPlatformToArray(platformsProp, platformName);
+            }
+        }
+
+        private void AddPlatformToArray(SerializedProperty arrayProp, string platformName)
+        {
+            // Check if platform already exists
+            for (int i = 0; i < arrayProp.arraySize; i++)
+            {
+                if (arrayProp.GetArrayElementAtIndex(i).stringValue == platformName)
+                    return; // Already exists
+            }
+
+            // Add new element
+            arrayProp.InsertArrayElementAtIndex(arrayProp.arraySize);
+            arrayProp.GetArrayElementAtIndex(arrayProp.arraySize - 1).stringValue = platformName;
+            m_QualitySettings.ApplyModifiedProperties();
+        }
+
+        private void RemovePlatformFromArray(SerializedProperty arrayProp, string platformName)
+        {
+            // Find and remove the platform
+            for (int i = arrayProp.arraySize - 1; i >= 0; i--)
+            {
+                if (arrayProp.GetArrayElementAtIndex(i).stringValue == platformName)
+                {
+                    arrayProp.DeleteArrayElementAtIndex(i);
                     break;
                 }
             }
+            m_QualitySettings.ApplyModifiedProperties();
+        }
 
-            // Workaround, as there is a bug in the documentation forwarder that causes links containing a / to be broken:
-            string linkHref = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
+        private void OnQualityNameChanged(int qualityIndex, string previousName, string newName)
+        {
+            if (qualityIndex < 0 || qualityIndex >= m_QualitySettingsProperty.arraySize)
+                return;
 
-            // Use this once the documentation forwarder has been fixed
-            // Slack thread: https://unity.slack.com/archives/CTD5B2N7J/p1765805896918059
-            // Ticket: https://jira.unity3d.com/browse/WEBDOCS-2894
-            //   linkHref = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
-
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(qualityIndex);
+            var nameProperty = qualityProperty.FindPropertyRelative("name");
+            if (nameProperty != null)
             {
-                var message = installedSRP ? "If you don't use a render pipeline asset, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead." :
-                                             "The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.";
-                var messageType = installedSRP ? MessageType.Warning : MessageType.Info;
-                // Copied from LabelField called by HelpBox - using so that label and button link are in the same helpbox
-                var infoLabel = EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(messageType));
-                Rect r = GUILayoutUtility.GetRect(infoLabel, EditorStyles.wordWrappedLabel);
-                int oldIndent = EditorGUI.indentLevel;
-                EditorGUI.indentLevel = 0;
-                EditorGUI.LabelField(r, infoLabel, EditorStyles.wordWrappedLabel);
-                EditorGUI.indentLevel = oldIndent;
+                // Handle empty names
+                if (string.IsNullOrEmpty(newName))
+                    newName = "Level " + qualityIndex;
 
-                // Right align the Link
-                using (new EditorGUILayout.HorizontalScope())
+                // Update the property and track the new name for pending rename
+                nameProperty.stringValue = newName;
+                m_QualitySettings.ApplyModifiedProperties();
+
+                if (m_IsEditingQualitySettings)
                 {
-                    GUILayout.FlexibleSpace();
-                    EditorGUI.indentLevel = 2;
-                    if (EditorGUILayout.LinkButton("Learn more..."))
-                    {
-                        Help.BrowseURL(linkHref);
-                    }
+                    BuildProfileModuleUtil.RenameQualityLevelInAllProfiles(previousName, newName);
+                    QualitySettings.OnActiveQualityLevelRenamed(previousName, newName);
                 }
-                EditorGUI.indentLevel = oldIndent;
-                GUILayout.Space(3);
+
+                // Update the header if the renamed level is currently inspected
+                if (qualityIndex == selectedLevel)
+                    UpdateQualityLevelHeader();
             }
         }
 
-        private void ResetQualityLevelRenameTracking()
+        private void OnAddQualityLevel(BaseListView listView)
         {
-            m_QualityLevelRenameJustStarted = true;
-            m_QualityLevelNeedsRenameInAllProfiles = false;
-            m_OriginalQualityLevelName = string.Empty;
-            m_NewQualityLevelName = string.Empty;
+            int index = m_QualitySettingsProperty.arraySize;
+
+            m_QualitySettingsProperty.InsertArrayElementAtIndex(index);
+
+            var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(index);
+            var nameProperty = qualityProperty.FindPropertyRelative("name");
+            if (nameProperty != null)
+                nameProperty.stringValue = "Level " + (index + 1);
+
+            m_QualitySettings.ApplyModifiedProperties();
+
+            // Update inspected level to point to the new item
+            selectedLevel = index + 1;
+
+            // Select the newly added level
+            UpdateInspectedLevelSelection();
+
+            // Rebuild cache after adding
+            RebuildPlatformDefaultsCache();
         }
 
-        // We defer the actual renaming in all build profiles because renaming them with every keystroke is
-        // prohibitively slow. As a result, we perform the rename when the quality level selection changes,
-        // when the user selects a different control, and when the inspector window is closed or loses focus.
-        private void ResolvePendingQualityLevelRename()
+        private void OnRemoveQualityLevel(BaseListView listView)
         {
-            if (m_QualityLevelNeedsRenameInAllProfiles)
-            {
-                if (m_OriginalQualityLevelName != m_NewQualityLevelName)
-                {
-                    BuildProfileModuleUtil.RenameQualityLevelInAllProfiles(m_OriginalQualityLevelName, m_NewQualityLevelName);
-                    QualitySettings.OnActiveQualityLevelRenamed(m_OriginalQualityLevelName, m_NewQualityLevelName);
-                }
-            }
-            ResetQualityLevelRenameTracking();
-        }
-
-        private void ShowAffectedBuildProfileInformation()
-        {
-            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
-
-            if (profilesWithQualityLevelOverrides > 0)
-            {
-                if (profilesWithQualityLevelOverrides == 1)
-                    EditorGUILayout.HelpBox(string.Format(Content.buildProfileQualitySettingsInformationSingular), MessageType.Info);
-                else
-                    EditorGUILayout.HelpBox(string.Format(Content.buildProfileQualitySettingsInformationPlural, profilesWithQualityLevelOverrides), MessageType.Info);
-            }
-        }
-
-        private int m_CachedSelectedLevel = -1;
-        private int m_CachedQualityLevelCount = -1;
-
-        // Cached SerializedProperty references for current quality level
-        private SerializedProperty m_CurrentSettings;
-        private SerializedProperty m_NameProperty;
-        private SerializedProperty m_PixelLightCountProperty;
-        private SerializedProperty m_ShadowsProperty;
-        private SerializedProperty m_ShadowResolutionProperty;
-        private SerializedProperty m_ShadowProjectionProperty;
-        private SerializedProperty m_ShadowCascadesProperty;
-        private SerializedProperty m_ShadowDistanceProperty;
-        private SerializedProperty m_ShadowNearPlaneOffsetProperty;
-        private SerializedProperty m_ShadowCascade2SplitProperty;
-        private SerializedProperty m_ShadowCascade4SplitProperty;
-        private SerializedProperty m_ShadowMaskUsageProperty;
-        private SerializedProperty m_SkinWeightsProperty;
-        private SerializedProperty m_GlobalTextureMipmapLimitProperty;
-        private SerializedProperty m_AnisotropicTexturesProperty;
-        private SerializedProperty m_AntiAliasingProperty;
-        private SerializedProperty m_SoftParticlesProperty;
-        private SerializedProperty m_RealtimeReflectionProbesProperty;
-        private SerializedProperty m_BillboardsFaceCameraPositionProperty;
-        private SerializedProperty m_UseLegacyDetailsDistributionProperty;
-        private SerializedProperty m_TerrainQualityOverridesProperty;
-        private SerializedProperty m_TerrainPixelErrorProperty;
-        private SerializedProperty m_TerrainDetailDensityScaleProperty;
-        private SerializedProperty m_TerrainBasemapDistanceProperty;
-        private SerializedProperty m_TerrainDetailDistanceProperty;
-        private SerializedProperty m_TerrainTreeDistanceProperty;
-        private SerializedProperty m_TerrainBillboardStartProperty;
-        private SerializedProperty m_TerrainFadeLengthProperty;
-        private SerializedProperty m_TerrainMaxTreesProperty;
-        private SerializedProperty m_VSyncCountProperty;
-        private SerializedProperty m_RealtimeGICPUUsageProperty;
-        private SerializedProperty m_AdaptiveVsyncProperty;
-        private SerializedProperty m_LodBiasProperty;
-        private SerializedProperty m_MeshLodThresholdProperty;
-        private SerializedProperty m_MaximumLODLevelProperty;
-        private SerializedProperty m_EnableLODCrossFadeProperty;
-        private SerializedProperty m_ParticleRaycastBudgetProperty;
-        private SerializedProperty m_AsyncUploadTimeSliceProperty;
-        private SerializedProperty m_AsyncUploadBufferSizeProperty;
-        private SerializedProperty m_AsyncUploadPersistentBufferProperty;
-        private SerializedProperty m_ResolutionScalingFixedDPIFactorProperty;
-        private SerializedProperty m_CustomRenderPipelineProperty;
-
-        private SerializedProperty m_StreamingMipmapsActiveProperty;
-        private SerializedProperty m_StreamingMipmapsAddAllCamerasProperty;
-        private SerializedProperty m_StreamingMipmapsBudgetProperty;
-        private SerializedProperty m_StreamingMipmapsRenderersPerFrameProperty;
-        private SerializedProperty m_StreamingMipmapsMaxLevelReductionProperty;
-        private SerializedProperty m_StreamingMipmapsMaxFileIORequestsProperty;
-
-        private void UpdateCachedProperties(int selectedLevel)
-        {
-            // Ensure selectedLevel is within bounds
-            selectedLevel = Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1);
-
-            m_CurrentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
-
-            m_NameProperty = m_CurrentSettings.FindPropertyRelative("name");
-            m_PixelLightCountProperty = m_CurrentSettings.FindPropertyRelative("pixelLightCount");
-            m_ShadowsProperty = m_CurrentSettings.FindPropertyRelative("shadows");
-            m_ShadowResolutionProperty = m_CurrentSettings.FindPropertyRelative("shadowResolution");
-            m_ShadowProjectionProperty = m_CurrentSettings.FindPropertyRelative("shadowProjection");
-            m_ShadowCascadesProperty = m_CurrentSettings.FindPropertyRelative("shadowCascades");
-            m_ShadowDistanceProperty = m_CurrentSettings.FindPropertyRelative("shadowDistance");
-            m_ShadowNearPlaneOffsetProperty = m_CurrentSettings.FindPropertyRelative("shadowNearPlaneOffset");
-            m_ShadowCascade2SplitProperty = m_CurrentSettings.FindPropertyRelative("shadowCascade2Split");
-            m_ShadowCascade4SplitProperty = m_CurrentSettings.FindPropertyRelative("shadowCascade4Split");
-            m_ShadowMaskUsageProperty = m_CurrentSettings.FindPropertyRelative("shadowmaskMode");
-            m_SkinWeightsProperty = m_CurrentSettings.FindPropertyRelative("skinWeights");
-            m_GlobalTextureMipmapLimitProperty = m_CurrentSettings.FindPropertyRelative("globalTextureMipmapLimit");
-            m_TextureMipmapLimitGroupSettingsProperty = m_CurrentSettings.FindPropertyRelative("textureMipmapLimitSettings");
-            m_AnisotropicTexturesProperty = m_CurrentSettings.FindPropertyRelative("anisotropicTextures");
-            m_AntiAliasingProperty = m_CurrentSettings.FindPropertyRelative("antiAliasing");
-            m_SoftParticlesProperty = m_CurrentSettings.FindPropertyRelative("softParticles");
-            m_RealtimeReflectionProbesProperty = m_CurrentSettings.FindPropertyRelative("realtimeReflectionProbes");
-            m_BillboardsFaceCameraPositionProperty = m_CurrentSettings.FindPropertyRelative("billboardsFaceCameraPosition");
-            m_UseLegacyDetailsDistributionProperty = m_CurrentSettings.FindPropertyRelative("useLegacyDetailDistribution");
-            m_TerrainQualityOverridesProperty = m_CurrentSettings.FindPropertyRelative("terrainQualityOverrides");
-            m_TerrainPixelErrorProperty = m_CurrentSettings.FindPropertyRelative("terrainPixelError");
-            m_TerrainDetailDensityScaleProperty = m_CurrentSettings.FindPropertyRelative("terrainDetailDensityScale");
-            m_TerrainBasemapDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainBasemapDistance");
-            m_TerrainDetailDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainDetailDistance");
-            m_TerrainTreeDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainTreeDistance");
-            m_TerrainBillboardStartProperty = m_CurrentSettings.FindPropertyRelative("terrainBillboardStart");
-            m_TerrainFadeLengthProperty = m_CurrentSettings.FindPropertyRelative("terrainFadeLength");
-            m_TerrainMaxTreesProperty = m_CurrentSettings.FindPropertyRelative("terrainMaxTrees");
-            m_VSyncCountProperty = m_CurrentSettings.FindPropertyRelative("vSyncCount");
-            m_RealtimeGICPUUsageProperty = m_CurrentSettings.FindPropertyRelative("realtimeGICPUUsage");
-            m_AdaptiveVsyncProperty = m_CurrentSettings.FindPropertyRelative("adaptiveVsync");
-            m_LodBiasProperty = m_CurrentSettings.FindPropertyRelative("lodBias");
-            m_MeshLodThresholdProperty = m_CurrentSettings.FindPropertyRelative("meshLodThreshold");
-            m_MaximumLODLevelProperty = m_CurrentSettings.FindPropertyRelative("maximumLODLevel");
-            m_EnableLODCrossFadeProperty = m_CurrentSettings.FindPropertyRelative("enableLODCrossFade");
-            m_ParticleRaycastBudgetProperty = m_CurrentSettings.FindPropertyRelative("particleRaycastBudget");
-            m_AsyncUploadTimeSliceProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadTimeSlice");
-            m_AsyncUploadBufferSizeProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadBufferSize");
-            m_AsyncUploadPersistentBufferProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadPersistentBuffer");
-            m_ResolutionScalingFixedDPIFactorProperty = m_CurrentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
-            m_CustomRenderPipelineProperty = m_CurrentSettings.FindPropertyRelative("customRenderPipeline");
-
-            m_StreamingMipmapsActiveProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsActive");
-            m_StreamingMipmapsAddAllCamerasProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsAddAllCameras");
-            m_StreamingMipmapsBudgetProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMemoryBudget");
-            m_StreamingMipmapsRenderersPerFrameProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsRenderersPerFrame");
-            m_StreamingMipmapsMaxLevelReductionProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMaxLevelReduction");
-            m_StreamingMipmapsMaxFileIORequestsProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMaxFileIORequests");
-
-            m_CachedSelectedLevel = selectedLevel;
-            m_CachedQualityLevelCount = m_QualitySettingsProperty.arraySize;
-        }
-
-        void RefreshCacheIfNeeded(int selectedLevel)
-        {
-            int currentLevelCount = m_QualitySettingsProperty.arraySize;
-            int currentPlatformCount = m_ValidPlatforms.Count;
-            if (m_CachedSelectedLevel != selectedLevel || m_CachedQualityLevelCount != currentLevelCount || selectedLevel >= currentLevelCount)
-            {
-                UpdateCachedProperties(selectedLevel);
-            }
-        }
-
-        public override void OnInspectorGUI()
-        {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                EditorGUILayout.HelpBox("Changes made in play mode will not be saved.", MessageType.Warning, true);
-            }
-
             m_QualitySettings.Update();
 
-            var settings = GetQualitySettings();
+            if (m_QualitySettingsProperty.arraySize <= 1)
+                return;
+
+            int index = selectedLevel;
+
+            // Store quality level name for profile removal
+            var deleteLevelName = m_QualitySettingsProperty.GetArrayElementAtIndex(index).FindPropertyRelative("name")?.stringValue;
+
+            // Adjust platform defaults BEFORE deletion
             var defaults = GetDefaultQualityForPlatforms();
-            var selectedLevel = GetCurrentTargetQualityLevel();
-            if (selectedLevel >= m_QualitySettingsProperty.arraySize)
+            using (ListPool<string>.Get(out var keys))
             {
-                selectedLevel = m_QualitySettingsProperty.arraySize - 1;
+                keys.AddRange(defaults.Keys);
+                foreach (var key in keys)
+                {
+                    int value = defaults[key];
+                    if (value == index)
+                    {
+                        // Platform was pointing to deleted level, set to previous level or 0
+                        defaults[key] = Mathf.Max(0, index - 1);
+                    }
+                    else if (value > index)
+                    {
+                        // Platform was pointing to a level after the deleted one, shift down
+                        defaults[key] = value - 1;
+                    }
+                }
+            }
+            
+            // Remove from array
+            m_QualitySettingsProperty.DeleteArrayElementAtIndex(index);
+            m_QualitySettings.ApplyModifiedProperties();
+
+            // Set adjusted defaults
+            SetDefaultQualityForPlatforms(defaults);
+            m_QualitySettings.ApplyModifiedProperties();
+
+            BuildProfileModuleUtil.RemoveQualityLevelFromAllProfiles(deleteLevelName);
+
+            // Rebuild cache after removing
+            RebuildPlatformDefaultsCache();
+
+            // Adjust the inspected level after deletion
+            selectedLevel = AdjustIndexAfterDeletion(selectedLevel, index);
+
+            // Update selection and cached properties
+            UpdateInspectedLevelSelection();
+
+            // Adjust the current active quality level
+            if (m_IsEditingQualitySettings)
+            {
+                var currentActive = GetCurrentTargetQualityLevel();
+                int newActiveIndex = AdjustIndexAfterDeletion(currentActive, index);
+
+                // Apply the adjustment if needed
+                if (newActiveIndex != currentActive)
+                {
+                    SetCurrentTargetQualityLevel(newActiveIndex);
+                    QualitySettings.OnActiveQualityLevelChanged(index, newActiveIndex);
+                }
             }
 
-            EditorGUI.BeginChangeCheck();
-            selectedLevel = DoQualityLevelSelection(selectedLevel, settings, defaults);
-            if (EditorGUI.EndChangeCheck())
-                SetCurrentTargetQualityLevel(selectedLevel);
+            // Refresh UI to update the "Current" tag
+            RefreshQualityUI();
+        }
 
-            SetQualitySettings(settings);
-            HandleAddRemoveQualitySetting(ref selectedLevel, defaults);
-            SetDefaultQualityForPlatforms(defaults);
+        private void BuildQualityLevelHeader()
+        {
+            m_QualityLevelHeader = new VisualElement
+            {
+                name = "QualityLevelHeader",
+                style = {
+                    marginTop = 10,
+                    marginBottom = 10,
+                    alignItems = Align.Center,
+                    flexDirection = FlexDirection.Row
+                }
+            };
+            
+            // Level name label
+            m_QualityLevelNameLabel = new Label
+            {
+                name = "QualityLevelNameLabel",
+                style = {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 18
+                }
+            };
+            m_QualityLevelHeader.Add(m_QualityLevelNameLabel);
 
-            GUILayout.Space(10.0f);
-            ShowAffectedBuildProfileInformation();
+            // Flexible space to push button to the right
+            var spacer = new VisualElement();
+            spacer.style.flexGrow = 1;
+            m_QualityLevelHeader.Add(spacer);
 
-            DrawHorizontalDivider();
-            GUILayout.Space(10.0f);
+            // "Current" tag (same style as in the list)
+            m_QualityLevelCurrentTag = new Label("Current")
+            {
+                name = "QualityLevelHeaderCurrentTag",
+                tooltip = "This is the current active quality level",
+                style =
+                {
+                    marginLeft = 10,
+                    display = DisplayStyle.None
+                }
+            };
+            m_QualityLevelCurrentTag.AddToClassList("quality-level-current-tag");
+            m_QualityLevelHeader.Add(m_QualityLevelCurrentTag);
 
-            // Check if we need to refresh cached properties and quality level cache
+            // "Set Current Active Quality" button
+            m_SetCurrentButton = new UnityEngine.UIElements.Button
+            {
+                name = "SetCurrentButton",
+                text = "Set Current Active Quality",
+                style =
+                {
+                    display = DisplayStyle.None
+                }
+            };
+            m_SetCurrentButton.clicked += OnSetCurrentButtonClicked;
+            m_QualityLevelHeader.Add(m_SetCurrentButton);
+
+            m_CurrentRoot.Add(m_QualityLevelHeader);
+        }
+
+        private void UpdateQualityLevelHeader()
+        {
+            if (m_QualityLevelNameLabel == null ||
+                m_QualityLevelCurrentTag == null ||
+                m_SetCurrentButton == null ||
+                selectedLevel < 0)
+                return;
+
+            // Get the inspected level name
+            if (selectedLevel >= 0 && selectedLevel < m_QualitySettingsProperty.arraySize)
+            {
+                var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
+                var nameProperty = qualityProperty.FindPropertyRelative("name");
+                var levelName = nameProperty.stringValue;
+
+                if (string.IsNullOrEmpty(levelName))
+                    levelName = "Level " + selectedLevel;
+
+                m_QualityLevelNameLabel.text = levelName;
+
+                // Show/hide "Current" tag and button based on whether we're editing QualitySettings
+                // and whether this is the current active level
+                if (m_IsEditingQualitySettings)
+                {
+                    var currentActiveLevel = GetCurrentTargetQualityLevel();
+                    bool isCurrentLevel = (selectedLevel == currentActiveLevel);
+
+                    m_QualityLevelCurrentTag.style.display = isCurrentLevel ? DisplayStyle.Flex : DisplayStyle.None;
+                    m_SetCurrentButton.style.display = isCurrentLevel ? DisplayStyle.None : DisplayStyle.Flex;
+                }
+                else
+                {
+                    // For presets, hide both tag and button
+                    m_QualityLevelCurrentTag.style.display = DisplayStyle.None;
+                    m_SetCurrentButton.style.display = DisplayStyle.None;
+                }
+            }
+        }
+
+        private void OnSetCurrentButtonClicked()
+        {
+            SetCurrentTargetQualityLevel(selectedLevel);
+            RefreshQualityUI();
+            UpdateQualityLevelHeader();
+        }
+
+        private void BuildQualityLevelDetailsIMGUI()
+        {
+            m_QualityDetailsContainer = new IMGUIContainer(DrawQualityLevelDetailsIMGUI)
+            {
+                name = "QualityLevelDetails"
+            };
+            m_QualityDetailsContainer.AddToClassList("quality-details__imgui-container");
+            m_CurrentRoot.Add(m_QualityDetailsContainer);
+        }
+
+        private void DrawQualityLevelDetailsIMGUI()
+        {
+            m_QualitySettings.Update();
+
+            // Use the inspected quality level (not necessarily the current active level)
+            selectedLevel = Mathf.Clamp(selectedLevel, 0, Mathf.Max(0, m_QualitySettingsProperty.arraySize - 1));
             RefreshCacheIfNeeded(selectedLevel);
 
+            ShowAffectedBuildProfileInformation();
             CheckSameRenderPipelineAssetForOverridenQualityLevels();
 
-            bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
-
-            if (string.IsNullOrEmpty(m_NameProperty.stringValue))
-                m_NameProperty.stringValue = "Level " + selectedLevel;
-
-            GUILayout.Label(EditorGUIUtility.TempContent("Current Build Target: " + Modules.ModuleManager.GetTargetStringFromBuildTarget(EditorUserBuildSettings.activeBuildTarget)), EditorStyles.boldLabel);
             if (BuildProfileContext.ActiveProfileHasQualitySettings())
-            {
                 EditorGUILayout.HelpBox(Content.buildProfileQualitySettingsOverrideWarning, MessageType.Warning, true);
-            }
+
             if (m_AdaptiveVSyncVisible)
                 EditorGUILayout.HelpBox("There are settings below that are only applicable to the current Build Target such as Adaptive Vsync. To change the Build Target, go to the Build Settings", MessageType.Info);
-            GUILayout.Label(EditorGUIUtility.TempContent("Current Active Quality Level"), EditorStyles.boldLabel);
 
-            const string QualityLevelNamePropertyControlName = "QualityLevelNamePropertyControl";
-            var previousName = m_NameProperty.stringValue;
-            EditorGUI.BeginChangeCheck();
-            GUI.SetNextControlName(QualityLevelNamePropertyControlName);
-            EditorGUILayout.PropertyField(m_NameProperty);
-            var qualityLevelNameControlChanged = EditorGUI.EndChangeCheck();
-            var qualityLevelNameControlIsFocused = GUI.GetNameOfFocusedControl() == QualityLevelNamePropertyControlName;
-            var inspectorIsFocused = EditorWindow.focusedWindow is ProjectSettingsWindow;
-            if (qualityLevelNameControlChanged)
-            {
-                if (m_QualityLevelRenameJustStarted)
-                {
-                    m_OriginalQualityLevelName = previousName;
-                    m_QualityLevelRenameJustStarted = false;
-                }
+            // Render all quality level property fields
+            DrawQualityLevelPropertiesIMGUI(selectedLevel);
 
-                m_QualityLevelNeedsRenameInAllProfiles = true;
+            // Apply modified properties at the end
+            m_QualitySettings.ApplyModifiedProperties();
+        }
 
-                if (string.IsNullOrEmpty(m_NameProperty.stringValue))
-                    m_NameProperty.stringValue = "Level " + selectedLevel;
+        private void RefreshQualityUI()
+        {
+            UpdateQualityLevelHeader();
+            m_QualityLevelsListView?.RefreshItems();
+            m_QualityDetailsContainer?.MarkDirtyRepaint();
+        }
 
-                m_NewQualityLevelName = m_NameProperty.stringValue;
-            }
-            if (m_QualityLevelNeedsRenameInAllProfiles && !(qualityLevelNameControlIsFocused && inspectorIsFocused))
-            {
-                ResolvePendingQualityLevelRename();
-            }
+        private void DrawQualityLevelPropertiesIMGUI(int selectedLevel)
+        {
+            float restoreLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 220;
 
-            if (usingSRP)
-                EditorGUILayout.HelpBox("A Scriptable Render Pipeline is in use, some settings will not be used and are hidden", MessageType.Info);
-            GUILayout.Space(10);
-
+            // This contains the bulk of property rendering from OnInspectorGUI
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
             EditorGUI.RenderPipelineAssetField(Content.kRenderPipelineObject, m_QualitySettings, m_CustomRenderPipelineProperty);
-            if (!usingSRP && m_CustomRenderPipelineProperty.objectReferenceValue != null)
-                EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
 
-            // Add Info Box for Built-In deprecation
-            CheckBiRPDeprecationInfoBox(usingSRP);
+            // Show unified render pipeline status message
+            ShowRenderPipelineStatusMessage(out bool usingSRP);
 
             if (!usingSRP)
                 EditorGUILayout.PropertyField(m_PixelLightCountProperty);
@@ -1269,17 +1500,364 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Meshes"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(m_SkinWeightsProperty);
 
-            if (m_Dragging != null && m_Dragging.m_Position != m_Dragging.m_StartPosition)
-            {
-                m_QualitySettingsProperty.MoveArrayElement(m_Dragging.m_StartPosition, m_Dragging.m_Position);
-                m_Dragging.m_StartPosition = m_Dragging.m_Position;
-                selectedLevel = m_Dragging.m_Position;
+            EditorGUIUtility.labelWidth = restoreLabelWidth;
+        }
 
-                m_QualitySettings.ApplyModifiedProperties();
-                SetCurrentTargetQualityLevel(Mathf.Clamp(selectedLevel, 0, m_QualitySettingsProperty.arraySize - 1));
+        private static void DrawHorizontalDivider()
+        {
+            var spacerLine = GUILayoutUtility.GetRect(GUIContent.none,
+                GUIStyle.none,
+                GUILayout.ExpandWidth(true),
+                GUILayout.Height(1));
+            var oldBgColor = GUI.backgroundColor;
+            if (EditorGUIUtility.isProSkin)
+                GUI.backgroundColor = oldBgColor * 0.7058f;
+            else
+                GUI.backgroundColor = Color.black;
+
+            if (Event.current.type == EventType.Repaint)
+                EditorGUIUtility.whiteTextureStyle.Draw(spacerLine, GUIContent.none, false, false, false, false);
+
+            GUI.backgroundColor = oldBgColor;
+        }
+
+        void SoftParticlesHintGUI()
+        {
+            var mainCamera = Camera.main;
+            if (mainCamera == null)
+                return;
+
+            RenderingPath renderPath = mainCamera.actualRenderingPath;
+            if (renderPath == RenderingPath.DeferredShading)
+                return; // using deferred, all is good
+
+            if ((mainCamera.depthTextureMode & DepthTextureMode.Depth) != 0)
+                return; // already produces depth texture, all is good
+
+            EditorGUILayout.HelpBox(Content.kSoftParticlesHint.text, MessageType.Warning, false);
+        }
+
+        void MipStrippingHintGUI()
+        {
+            if (PlayerSettings.mipStripping)
+                return;
+
+            EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info);
+        }
+
+        /**
+         * Internal function that takes the shadow cascade splits property field, and dispatches a call to render the GUI.
+         * It also transfers the result back
+         */
+
+        private void DrawCascadeSplitGUI<T>(ref SerializedProperty shadowCascadeSplit)
+        {
+            float[] cascadePartitionSizes = null;
+
+            System.Type type = typeof(T);
+            if (type == typeof(float))
+                cascadePartitionSizes = new float[] { shadowCascadeSplit.floatValue };
+            else if (type == typeof(Vector3))
+            {
+                Vector3 splits = shadowCascadeSplit.vector3Value;
+                cascadePartitionSizes = new float[]
+                {
+                    Mathf.Clamp(splits[0], 0.0f, 1.0f),
+                    Mathf.Clamp(splits[1] - splits[0], 0.0f, 1.0f),
+                    Mathf.Clamp(splits[2] - splits[1], 0.0f, 1.0f)
+                };
             }
 
-            m_QualitySettings.ApplyModifiedProperties();
+            if (cascadePartitionSizes != null)
+            {
+                EditorGUI.BeginChangeCheck();
+                ShadowCascadeSplitGUI.HandleCascadeSliderGUI(ref cascadePartitionSizes);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (type == typeof(float))
+                        shadowCascadeSplit.floatValue = cascadePartitionSizes[0];
+                    else
+                    {
+                        Vector3 updatedValue = new Vector3();
+                        updatedValue[0] = cascadePartitionSizes[0];
+                        updatedValue[1] = updatedValue[0] + cascadePartitionSizes[1];
+                        updatedValue[2] = updatedValue[1] + cascadePartitionSizes[2];
+                        shadowCascadeSplit.vector3Value = updatedValue;
+                    }
+                }
+            }
+        }
+
+        private bool DrawOverrideToggle(ref SerializedProperty overrideProperty, TerrainQualityOverrides overrideFlag, GUIContent overrideStyle)
+        {
+            var overrideFlagsPropertyValue = (TerrainQualityOverrides)overrideProperty.enumValueFlag;
+            bool overrideActive = overrideFlagsPropertyValue.HasFlag(overrideFlag);
+
+            var overrideRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toggle, GUILayout.Height(EditorGUIUtility.singleLineHeight), GUILayout.ExpandWidth(false));
+            overrideActive = GUI.Toggle(overrideRect, overrideActive, overrideStyle);
+            overrideProperty.enumValueFlag = overrideActive
+                ? (int)(overrideFlagsPropertyValue | overrideFlag)
+                : (int)(overrideFlagsPropertyValue & ~overrideFlag);
+
+            return overrideActive;
+        }
+
+        static List<string> s_PlatformsWithDifferentRPAssets = new();
+
+        void CheckSameRenderPipelineAssetForOverridenQualityLevels()
+        {
+            s_PlatformsWithDifferentRPAssets.Clear();
+
+            foreach (var platform in m_ValidPlatforms)
+            {
+                var buildTarget = BuildPipeline.GetBuildTargetByName(platform.namedBuildTarget.TargetName);
+                var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(buildTarget);
+
+                if (!QualitySettings.SamePipelineAssetsForPlatform(buildTargetGroupName))
+                    s_PlatformsWithDifferentRPAssets.Add(platform.title.ToString());
+            }
+
+            if (s_PlatformsWithDifferentRPAssets.Count > 0)
+            {
+                EditorGUILayout.HelpBox($"The following platforms have assets in its associated Quality levels that belong to different render pipelines: {string.Join(", ", s_PlatformsWithDifferentRPAssets)}", MessageType.Error);
+            }
+        }
+
+        private static System.Text.StringBuilder s_MessageBuilder = new System.Text.StringBuilder();
+        void ShowRenderPipelineStatusMessage(out bool usingSRP)
+        {
+            s_MessageBuilder.Clear();
+            MessageType messageType = MessageType.Info;
+            bool showLearnMoreLink = false;
+            usingSRP = false;
+
+            // Check the render pipeline configuration
+            if (GraphicsSettings.defaultRenderPipeline != null)
+            {
+                usingSRP = true;
+                s_MessageBuilder.Append("A Scriptable Render Pipeline is in use");
+
+                if (m_CustomRenderPipelineProperty.objectReferenceValue == null)
+                {
+                    s_MessageBuilder.AppendLine(" because a Default Render Pipeline Asset is set in Graphics.");
+                    s_MessageBuilder.Append("You can assign a Render Pipeline Asset in this quality level to override the one used in Graphics");
+                }
+
+                s_MessageBuilder.Append(". Some settings will not be used and are hidden.");
+            }
+            else if (m_CustomRenderPipelineProperty.objectReferenceValue != null)
+            {
+                usingSRP = true;
+                s_MessageBuilder.Append("A Scriptable Render Pipeline is in use. But a Default Render Pipeline Asset in Graphics is missing.");
+                s_MessageBuilder.Append(" Some settings will not be used and are hidden.");
+            }
+            else
+            {
+                // Built-in Render Pipeline (deprecated)
+                bool installedSRP = false;
+                foreach (var type in TypeCache.GetTypesDerivedFrom<RenderPipelineAsset>())
+                {
+                    if (!type.IsAbstract)
+                    {
+                        installedSRP = true;
+                        break;
+                    }
+                }
+
+                if (installedSRP)
+                {
+                    s_MessageBuilder.Append("If you don't use a render pipeline asset, Unity uses the Built-In Render Pipeline which is deprecated. ");
+                    s_MessageBuilder.Append("Migrate your project to the Universal Render Pipeline instead.");
+                    messageType = MessageType.Warning;
+                }
+                else
+                {
+                    s_MessageBuilder.Append("The Built-In Render Pipeline is deprecated. ");
+                    s_MessageBuilder.Append("Migrate your project to the Universal Render Pipeline instead.");
+                    messageType = MessageType.Info;
+                }
+
+                showLearnMoreLink = true;
+            }
+
+            // Show the unified message
+            if (s_MessageBuilder.Length > 0)
+            {
+                if (showLearnMoreLink)
+                {
+                    // Show with "Learn more" link for Built-in deprecation
+                    // Workaround, as there is a bug in the documentation forwarder that causes links containing a / to be broken:
+                    string linkHref = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/urp/upgrading-from-birp.html";
+
+                    // Use this once the documentation forwarder has been fixed
+                    // Slack thread: https://unity.slack.com/archives/CTD5B2N7J/p1765805896918059
+                    // Ticket: https://jira.unity3d.com/browse/WEBDOCS-2894
+                    //   linkHref = System.IO.Path.Combine(Help.baseDocumentationUrl, "urp", "upgrading-from-birp");
+
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        var infoLabel = EditorGUIUtility.TempContent(s_MessageBuilder.ToString(), EditorGUIUtility.GetHelpIcon(messageType));
+                        Rect r = GUILayoutUtility.GetRect(infoLabel, EditorStyles.wordWrappedLabel);
+                        int oldIndent = EditorGUI.indentLevel;
+                        EditorGUI.indentLevel = 0;
+                        EditorGUI.LabelField(r, infoLabel, EditorStyles.wordWrappedLabel);
+                        EditorGUI.indentLevel = oldIndent;
+
+                        // Right align the Link
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUILayout.FlexibleSpace();
+                            EditorGUI.indentLevel = 2;
+                            if (EditorGUILayout.LinkButton("Learn more..."))
+                            {
+                                Help.BrowseURL(linkHref);
+                            }
+                        }
+                        EditorGUI.indentLevel = oldIndent;
+                        GUILayout.Space(3);
+                    }
+                }
+                else
+                {
+                    // Standard help box for SRP messages
+                    EditorGUILayout.HelpBox(s_MessageBuilder.ToString(), messageType);
+                }
+            }
+        }
+
+        private void ShowAffectedBuildProfileInformation()
+        {
+            var profilesWithQualityLevelOverrides = BuildProfileQualitySettingsEditor.GetBuildProfilesWithSettingsOverrideCount();
+
+            if (profilesWithQualityLevelOverrides > 0)
+            {
+                if (profilesWithQualityLevelOverrides == 1)
+                    EditorGUILayout.HelpBox(string.Format(Content.buildProfileQualitySettingsInformationSingular), MessageType.Info);
+                else
+                    EditorGUILayout.HelpBox(string.Format(Content.buildProfileQualitySettingsInformationPlural, profilesWithQualityLevelOverrides), MessageType.Info);
+            }
+        }
+
+        private int m_CachedSelectedLevel = -1;
+        private int m_CachedQualityLevelCount = -1;
+
+        // Cached SerializedProperty references for current quality level
+        private SerializedProperty m_CurrentSettings;
+        private SerializedProperty m_NameProperty;
+        private SerializedProperty m_PixelLightCountProperty;
+        private SerializedProperty m_ShadowsProperty;
+        private SerializedProperty m_ShadowResolutionProperty;
+        private SerializedProperty m_ShadowProjectionProperty;
+        private SerializedProperty m_ShadowCascadesProperty;
+        private SerializedProperty m_ShadowDistanceProperty;
+        private SerializedProperty m_ShadowNearPlaneOffsetProperty;
+        private SerializedProperty m_ShadowCascade2SplitProperty;
+        private SerializedProperty m_ShadowCascade4SplitProperty;
+        private SerializedProperty m_ShadowMaskUsageProperty;
+        private SerializedProperty m_SkinWeightsProperty;
+        private SerializedProperty m_GlobalTextureMipmapLimitProperty;
+        private SerializedProperty m_AnisotropicTexturesProperty;
+        private SerializedProperty m_AntiAliasingProperty;
+        private SerializedProperty m_SoftParticlesProperty;
+        private SerializedProperty m_RealtimeReflectionProbesProperty;
+        private SerializedProperty m_BillboardsFaceCameraPositionProperty;
+        private SerializedProperty m_UseLegacyDetailsDistributionProperty;
+        private SerializedProperty m_TerrainQualityOverridesProperty;
+        private SerializedProperty m_TerrainPixelErrorProperty;
+        private SerializedProperty m_TerrainDetailDensityScaleProperty;
+        private SerializedProperty m_TerrainBasemapDistanceProperty;
+        private SerializedProperty m_TerrainDetailDistanceProperty;
+        private SerializedProperty m_TerrainTreeDistanceProperty;
+        private SerializedProperty m_TerrainBillboardStartProperty;
+        private SerializedProperty m_TerrainFadeLengthProperty;
+        private SerializedProperty m_TerrainMaxTreesProperty;
+        private SerializedProperty m_VSyncCountProperty;
+        private SerializedProperty m_RealtimeGICPUUsageProperty;
+        private SerializedProperty m_AdaptiveVsyncProperty;
+        private SerializedProperty m_LodBiasProperty;
+        private SerializedProperty m_MeshLodThresholdProperty;
+        private SerializedProperty m_MaximumLODLevelProperty;
+        private SerializedProperty m_EnableLODCrossFadeProperty;
+        private SerializedProperty m_ParticleRaycastBudgetProperty;
+        private SerializedProperty m_AsyncUploadTimeSliceProperty;
+        private SerializedProperty m_AsyncUploadBufferSizeProperty;
+        private SerializedProperty m_AsyncUploadPersistentBufferProperty;
+        private SerializedProperty m_ResolutionScalingFixedDPIFactorProperty;
+        private SerializedProperty m_CustomRenderPipelineProperty;
+
+        private SerializedProperty m_StreamingMipmapsActiveProperty;
+        private SerializedProperty m_StreamingMipmapsAddAllCamerasProperty;
+        private SerializedProperty m_StreamingMipmapsBudgetProperty;
+        private SerializedProperty m_StreamingMipmapsRenderersPerFrameProperty;
+        private SerializedProperty m_StreamingMipmapsMaxLevelReductionProperty;
+        private SerializedProperty m_StreamingMipmapsMaxFileIORequestsProperty;
+
+        private void UpdateCachedProperties(int selectedLevel)
+        {
+            m_CurrentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
+
+            m_NameProperty = m_CurrentSettings.FindPropertyRelative("name");
+            m_PixelLightCountProperty = m_CurrentSettings.FindPropertyRelative("pixelLightCount");
+            m_ShadowsProperty = m_CurrentSettings.FindPropertyRelative("shadows");
+            m_ShadowResolutionProperty = m_CurrentSettings.FindPropertyRelative("shadowResolution");
+            m_ShadowProjectionProperty = m_CurrentSettings.FindPropertyRelative("shadowProjection");
+            m_ShadowCascadesProperty = m_CurrentSettings.FindPropertyRelative("shadowCascades");
+            m_ShadowDistanceProperty = m_CurrentSettings.FindPropertyRelative("shadowDistance");
+            m_ShadowNearPlaneOffsetProperty = m_CurrentSettings.FindPropertyRelative("shadowNearPlaneOffset");
+            m_ShadowCascade2SplitProperty = m_CurrentSettings.FindPropertyRelative("shadowCascade2Split");
+            m_ShadowCascade4SplitProperty = m_CurrentSettings.FindPropertyRelative("shadowCascade4Split");
+            m_ShadowMaskUsageProperty = m_CurrentSettings.FindPropertyRelative("shadowmaskMode");
+            m_SkinWeightsProperty = m_CurrentSettings.FindPropertyRelative("skinWeights");
+            m_GlobalTextureMipmapLimitProperty = m_CurrentSettings.FindPropertyRelative("globalTextureMipmapLimit");
+            m_TextureMipmapLimitGroupSettingsProperty = m_CurrentSettings.FindPropertyRelative("textureMipmapLimitSettings");
+            m_AnisotropicTexturesProperty = m_CurrentSettings.FindPropertyRelative("anisotropicTextures");
+            m_AntiAliasingProperty = m_CurrentSettings.FindPropertyRelative("antiAliasing");
+            m_SoftParticlesProperty = m_CurrentSettings.FindPropertyRelative("softParticles");
+            m_RealtimeReflectionProbesProperty = m_CurrentSettings.FindPropertyRelative("realtimeReflectionProbes");
+            m_BillboardsFaceCameraPositionProperty = m_CurrentSettings.FindPropertyRelative("billboardsFaceCameraPosition");
+            m_UseLegacyDetailsDistributionProperty = m_CurrentSettings.FindPropertyRelative("useLegacyDetailDistribution");
+            m_TerrainQualityOverridesProperty = m_CurrentSettings.FindPropertyRelative("terrainQualityOverrides");
+            m_TerrainPixelErrorProperty = m_CurrentSettings.FindPropertyRelative("terrainPixelError");
+            m_TerrainDetailDensityScaleProperty = m_CurrentSettings.FindPropertyRelative("terrainDetailDensityScale");
+            m_TerrainBasemapDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainBasemapDistance");
+            m_TerrainDetailDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainDetailDistance");
+            m_TerrainTreeDistanceProperty = m_CurrentSettings.FindPropertyRelative("terrainTreeDistance");
+            m_TerrainBillboardStartProperty = m_CurrentSettings.FindPropertyRelative("terrainBillboardStart");
+            m_TerrainFadeLengthProperty = m_CurrentSettings.FindPropertyRelative("terrainFadeLength");
+            m_TerrainMaxTreesProperty = m_CurrentSettings.FindPropertyRelative("terrainMaxTrees");
+            m_VSyncCountProperty = m_CurrentSettings.FindPropertyRelative("vSyncCount");
+            m_RealtimeGICPUUsageProperty = m_CurrentSettings.FindPropertyRelative("realtimeGICPUUsage");
+            m_AdaptiveVsyncProperty = m_CurrentSettings.FindPropertyRelative("adaptiveVsync");
+            m_LodBiasProperty = m_CurrentSettings.FindPropertyRelative("lodBias");
+            m_MeshLodThresholdProperty = m_CurrentSettings.FindPropertyRelative("meshLodThreshold");
+            m_MaximumLODLevelProperty = m_CurrentSettings.FindPropertyRelative("maximumLODLevel");
+            m_EnableLODCrossFadeProperty = m_CurrentSettings.FindPropertyRelative("enableLODCrossFade");
+            m_ParticleRaycastBudgetProperty = m_CurrentSettings.FindPropertyRelative("particleRaycastBudget");
+            m_AsyncUploadTimeSliceProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadTimeSlice");
+            m_AsyncUploadBufferSizeProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadBufferSize");
+            m_AsyncUploadPersistentBufferProperty = m_CurrentSettings.FindPropertyRelative("asyncUploadPersistentBuffer");
+            m_ResolutionScalingFixedDPIFactorProperty = m_CurrentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
+            m_CustomRenderPipelineProperty = m_CurrentSettings.FindPropertyRelative("customRenderPipeline");
+
+            m_StreamingMipmapsActiveProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsActive");
+            m_StreamingMipmapsAddAllCamerasProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsAddAllCameras");
+            m_StreamingMipmapsBudgetProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMemoryBudget");
+            m_StreamingMipmapsRenderersPerFrameProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsRenderersPerFrame");
+            m_StreamingMipmapsMaxLevelReductionProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMaxLevelReduction");
+            m_StreamingMipmapsMaxFileIORequestsProperty = m_CurrentSettings.FindPropertyRelative("streamingMipmapsMaxFileIORequests");
+
+            m_CachedSelectedLevel = selectedLevel;
+            m_CachedQualityLevelCount = m_QualitySettingsProperty.arraySize;
+        }
+
+        void RefreshCacheIfNeeded(int selectedLevel)
+        {
+            int currentLevelCount = m_QualitySettingsProperty.arraySize;
+            int currentPlatformCount = m_ValidPlatforms.Count;
+            if (m_CachedSelectedLevel != selectedLevel || m_CachedQualityLevelCount != currentLevelCount || selectedLevel >= currentLevelCount)
+            {
+                UpdateCachedProperties(selectedLevel);
+            }
         }
 
         void DrawTextureMipmapLimitGroupsHeader(Rect rect)
@@ -1612,7 +2190,7 @@ namespace UnityEditor
         {
             // If we operate on importers while they are selected, the user will still be prompted to confirm changes
             // that they already agreed to. To avoid this: reset the selection, and restore it after we're done.
-            Object[] originalSelection = Selection.objects;
+            UnityEngine.Object[] originalSelection = Selection.objects;
 
             try
             {
@@ -1687,7 +2265,7 @@ namespace UnityEditor
 
         void IdentifyAssetsUsingTextureMipmapLimitGroup(string groupNameToIdentify)
         {
-            List<Object> newSelection = new List<Object>();
+            List<UnityEngine.Object> newSelection = new List<UnityEngine.Object>();
             string[] guids = AssetDatabase.FindAssets("t:texture");
 
             for (int i = 0; i < guids.Length; ++i)
@@ -1695,7 +2273,7 @@ namespace UnityEditor
                 TextureImporter importer = AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guids[i])) as TextureImporter;
                 if (importer is not null && (importer.textureShape == TextureImporterShape.Texture2D || importer.textureShape == TextureImporterShape.Texture2DArray) && importer.mipmapLimitGroupName == groupNameToIdentify)
                 {
-                    newSelection.Add(AssetDatabase.LoadAssetAtPath<Object>(importer.assetPath));
+                    newSelection.Add(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(importer.assetPath));
                 }
             }
 
@@ -1827,17 +2405,60 @@ namespace UnityEditor
             return groupName;
         }
 
-        [SettingsProvider]
-        internal static SettingsProvider CreateProjectSettingsProvider()
+        internal class QualitySettingsProvider : SettingsProvider
         {
-            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
-                "Project/Quality", "ProjectSettings/QualitySettings.asset",
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>()
-#pragma warning restore UA2001
-                    .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>())
-                    .Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/QualitySettings.asset")));
-            return provider;
+            internal static readonly string s_QualitySettingsProviderPath = "Project/Quality";
+            internal QualitySettingsEditor inspector;
+
+            [SettingsProvider]
+            public static SettingsProvider CreateProjectSettingsProvider()
+            {
+                var qualitySettingsProvider = new QualitySettingsProvider(s_QualitySettingsProviderPath, SettingsScope.Project)
+                {
+                    icon = EditorGUIUtility.FindTexture("QualitySettings Icon")
+                };
+                return qualitySettingsProvider;
+            }
+
+            internal QualitySettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
+                : base(path, scopes, keywords)
+            {
+                UpdateKeywords();
+                activateHandler = (_, root) =>
+                {
+                    var qualitySettings = QualitySettings.GetQualitySettings();
+                    if (qualitySettings != null)
+                    {
+                        inspector = Editor.CreateEditor(qualitySettings) as QualitySettingsEditor;
+                        var inspectorGUI = inspector.CreateInspectorGUI();
+                        if (inspectorGUI != null)
+                        {
+                            root.Add(inspectorGUI);
+                        }
+                    }
+                };
+                deactivateHandler = (() =>
+                {
+                    if (inspector != null)
+                    {
+                        UnityEngine.Object.DestroyImmediate(inspector);
+                        inspector = null;
+                    }
+                });
+            }
+
+            void UpdateKeywords()
+            {
+                var keywordsList = new List<string>();
+                keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<QualitySettingsEditor.Styles>());
+                keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<QualitySettingsEditor.Content>());
+
+                var qualitySettings = QualitySettings.GetQualitySettings();
+                var qualitySettingsSO = new SerializedObject(qualitySettings);
+                keywordsList.AddRange(GetSearchKeywordsFromSerializedObject(qualitySettingsSO));
+
+                keywords = keywordsList;
+            }
         }
     }
 }

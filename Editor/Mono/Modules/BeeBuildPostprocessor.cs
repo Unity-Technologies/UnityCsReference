@@ -384,6 +384,12 @@ namespace UnityEditor.Modules
             var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
             var allowDebugging = GetAllowDebugging(args);
+            var profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
+                PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target, scriptingBackend);
+            string bclDistributionPath = null;
+            // Profile is null when BCL should be used
+            if (profile == null)
+                bclDistributionPath = IL2CPPUtils.GetIl2CppBclDistributionDirectory(args.target, args.options);
 
             NPath extraTypesFile = null;
             if (PlayerBuildInterface.ExtraTypesProvider != null)
@@ -406,7 +412,7 @@ namespace UnityEditor.Modules
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
-                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target, scriptingBackend),
+                Profile = profile,
                 IDEProjectDefines = IL2CPPUtils.GetBuilderDefinedDefines(args.target, apiCompatibilityLevel, allowDebugging),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
@@ -432,6 +438,7 @@ namespace UnityEditor.Modules
                 SysRootPath = sysrootPath,
                 ToolChainPath = toolchainPath,
                 RelativeDataPath = relativeDataPath,
+                BclDistributionPath = bclDistributionPath,
                 ExtraTypes = extraTypesFile?.ToString(),
                 GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(namedBuildTarget) == Il2CppStacktraceInformation.MethodFileLineNumber,
                 UsymtoolPath = GetUsymtoolPath(),

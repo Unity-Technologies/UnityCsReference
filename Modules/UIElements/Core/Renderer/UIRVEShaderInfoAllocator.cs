@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements.UIR
 
     // The BitmapAllocator32 always scans for allocations from the first page and upwards.
     // Thus if a returned allocation is at a certain location, it is guaranteed that all preceding
-    // locations are occupied. This property is relied on in UIRVEShaderInfoAllocator below to report
+    // locations are occupied. This property is relied on in ShaderInfoAllocator below to report
     // OOM when the allocation returned exceeds the allowed constant buffer size but fits in a BMPAlloc page.
     // This allocator is not multi-threading safe.
     internal struct BitmapAllocator32
@@ -113,6 +113,7 @@ namespace UnityEngine.UIElements.UIR
 
         public int entryWidth { get { return m_EntryWidth; } }
         public int entryHeight { get { return m_EntryHeight; } }
+        public int pageCount { get { return m_Pages.Count; } }
 
         internal void GetAllocPageAtlasLocation(int page, out UInt16 x, out UInt16 y) { var p = m_Pages[page]; x = p.x; y = p.y; }
 
@@ -151,12 +152,39 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    class UIRVEShaderInfoAllocator
+    class ShaderInfoAllocator
     {
         BaseShaderInfoStorage m_Storage;
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_ColorAllocator, m_TextSettingsAllocator; // All allocators take pages from the same storage
         bool m_StorageReallyCreated;
         ColorSpace m_ColorSpace;
+
+        // Per-allocator-type page-position tables. Each entry is the atlas (x,y) of the page's
+        // top-left corner. .zw are padding
+        public const int kMaxPages = 32;
+        readonly Vector4[] m_XformPagePos = new Vector4[kMaxPages];
+        readonly Vector4[] m_ClipPagePos = new Vector4[kMaxPages];
+        readonly Vector4[] m_OpacityPagePos = new Vector4[kMaxPages];
+        readonly Vector4[] m_ColorPagePos = new Vector4[kMaxPages];
+        readonly Vector4[] m_TextCorePagePos = new Vector4[kMaxPages];
+        bool m_TransformPagesErrored, m_ClipRectPagesErrored, m_OpacityPagesErrored, m_ColorPagesErrored, m_TextCorePagesErrored;
+
+        internal Vector4[] transformPagePositions { get { return m_XformPagePos; } }
+        internal Vector4[] clipRectPagePositions { get { return m_ClipPagePos; } }
+        internal Vector4[] opacityPagePositions { get { return m_OpacityPagePos; } }
+        internal Vector4[] colorPagePositions { get { return m_ColorPagePos; } }
+        internal Vector4[] textCorePagePositions { get { return m_TextCorePagePos; } }
+
+        // Returns the underlying allocator by value. BitmapAllocator32 holds a List<Page>,
+        // so the copy shares storage with the original — safe for read-only inspection.
+        public static class Testing
+        {
+            public static BitmapAllocator32 GetTransformAllocator(ShaderInfoAllocator a) => a.m_TransformAllocator;
+            public static BitmapAllocator32 GetClipRectAllocator(ShaderInfoAllocator a) => a.m_ClipRectAllocator;
+            public static BitmapAllocator32 GetOpacityAllocator(ShaderInfoAllocator a) => a.m_OpacityAllocator;
+            public static BitmapAllocator32 GetColorAllocator(ShaderInfoAllocator a) => a.m_ColorAllocator;
+            public static BitmapAllocator32 GetTextSettingsAllocator(ShaderInfoAllocator a) => a.m_TextSettingsAllocator;
+        }
 
         static int pageWidth { get { return BitmapAllocator32.kPageWidth; } }
         static int pageHeight { get { return 8; } } // 32*8 = 256, can be stored in a byte
@@ -251,7 +279,7 @@ namespace UnityEngine.UIElements.UIR
         }
         public bool internalAtlasCreated { get { return m_StorageReallyCreated; } } // For diagnostics really
 
-        public UIRVEShaderInfoAllocator(ColorSpace colorSpace)
+        public ShaderInfoAllocator(ColorSpace colorSpace)
         {
             m_ColorSpace = colorSpace;
 
@@ -270,7 +298,38 @@ namespace UnityEngine.UIElements.UIR
             m_TextSettingsAllocator.Construct(pageHeight, 1, 4);
             m_TextSettingsAllocator.ForceFirstAlloc((ushort)defaultTextCoreSettingsTexel.x, (ushort)defaultTextCoreSettingsTexel.y);
 
+            // Seed page 0 of every allocator with sensible defaults
+            m_XformPagePos[0]    = new Vector4(identityTransformTexel.x,        identityTransformTexel.y,        0, 0);
+            m_ClipPagePos[0]     = new Vector4(infiniteClipRectTexel.x,         infiniteClipRectTexel.y,         0, 0);
+            m_OpacityPagePos[0]  = new Vector4(fullOpacityTexel.x,              fullOpacityTexel.y,              0, 0);
+            m_ColorPagePos[0]    = new Vector4(clearColorTexel.x,               clearColorTexel.y,               0, 0);
+            m_TextCorePagePos[0] = new Vector4(defaultTextCoreSettingsTexel.x,  defaultTextCoreSettingsTexel.y,  0, 0);
+
             AcquireDefaultShaderInfoTexture();
+        }
+
+        BMPAlloc AllocateAndRecordPage(ref BitmapAllocator32 allocator, Vector4[] pageTable, ref bool errored, string allocName)
+        {
+            int prevPageCount = allocator.pageCount;
+
+            // If we can't allocate new pages, try allocating into existing pages only
+            BMPAlloc bmp = (prevPageCount >= kMaxPages) ? allocator.Allocate(null) : allocator.Allocate(m_Storage);
+            if (bmp.IsValid())
+            {
+                if (allocator.pageCount > prevPageCount)
+                {
+                    Debug.Assert(allocator.pageCount <= kMaxPages, "page count exceeds kMaxPages cap");
+                    allocator.GetAllocPageAtlasLocation(bmp.page, out ushort x, out ushort y);
+                    pageTable[bmp.page] = new Vector4(x, y, 0, 0);
+                }
+            }
+            else if (!errored)
+            {
+                errored = true;
+                int slotsPerPage = BitmapAllocator32.kPageWidth * pageHeight;
+                Debug.LogError($"UIE shader-info {allocName} allocator exhausted at {kMaxPages} pages × {slotsPerPage} slots = {kMaxPages * slotsPerPage} entries. Subsequent allocations will fall back to defaults.");
+            }
+            return bmp;
         }
 
         void ReallyCreateStorage()
@@ -329,7 +388,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            return m_TransformAllocator.Allocate(m_Storage);
+            return AllocateAndRecordPage(ref m_TransformAllocator, m_XformPagePos, ref m_TransformPagesErrored, "Transform");
         }
 
         public BMPAlloc AllocClipRect()
@@ -337,7 +396,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            return m_ClipRectAllocator.Allocate(m_Storage);
+            return AllocateAndRecordPage(ref m_ClipRectAllocator, m_ClipPagePos, ref m_ClipRectPagesErrored, "ClipRect");
         }
 
         public BMPAlloc AllocOpacity()
@@ -345,7 +404,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            return m_OpacityAllocator.Allocate(m_Storage);
+            return AllocateAndRecordPage(ref m_OpacityAllocator, m_OpacityPagePos, ref m_OpacityPagesErrored, "Opacity");
         }
 
         public BMPAlloc AllocColor()
@@ -353,7 +412,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            return m_ColorAllocator.Allocate(m_Storage);
+            return AllocateAndRecordPage(ref m_ColorAllocator, m_ColorPagePos, ref m_ColorPagesErrored, "Color");
         }
 
         public BMPAlloc AllocTextCoreSettings(TextCoreSettings settings)
@@ -361,7 +420,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            return m_TextSettingsAllocator.Allocate(m_Storage);
+            return AllocateAndRecordPage(ref m_TextSettingsAllocator, m_TextCorePagePos, ref m_TextCorePagesErrored, "TextCore");
         }
 
         public void SetTransformValue(BMPAlloc alloc, Matrix4x4 xform)
@@ -452,44 +511,15 @@ namespace UnityEngine.UIElements.UIR
             m_TextSettingsAllocator.Free(alloc);
         }
 
-        public Color32 TransformAllocToVertexData(BMPAlloc alloc)
+        // Encodes a BMPAlloc into the 16-bit ID layout
+        // [reserved:3][pageIdx:5][bitInPage:8]
+        public static ushort BMPAllocToId(BMPAlloc alloc)
         {
-            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
-            UInt16 x = 0, y = 0;
-            m_TransformAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
-            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
-        }
-
-        public Color32 ClipRectAllocToVertexData(BMPAlloc alloc)
-        {
-            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
-            UInt16 x = 0, y = 0;
-            m_ClipRectAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
-            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
-        }
-
-        public Color32 OpacityAllocToVertexData(BMPAlloc alloc)
-        {
-            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
-            UInt16 x, y;
-            m_OpacityAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
-            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
-        }
-
-        public Color32 ColorAllocToVertexData(BMPAlloc alloc)
-        {
-            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
-            UInt16 x, y;
-            m_ColorAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
-            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
-        }
-
-        public Color32 TextCoreSettingsToVertexData(BMPAlloc alloc)
-        {
-            Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
-            UInt16 x, y;
-            m_TextSettingsAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
-            return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
+            if (!alloc.IsValid())
+                return 0;
+            Debug.Assert(alloc.page < kMaxPages, "page index exceeds kMaxPages cap");
+            uint bitInPage = (uint)(alloc.pageLine * BitmapAllocator32.kPageWidth + alloc.bitIndex);
+            return (ushort)(((uint)alloc.page << 8) | bitInPage);
         }
     }
 }

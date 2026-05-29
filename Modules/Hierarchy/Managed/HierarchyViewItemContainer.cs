@@ -16,7 +16,7 @@ namespace Unity.Hierarchy
     {
         // The pool for the typeless nodes. This is used when there isn't a node type handler.
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
-        static readonly HierarchyViewItemPool s_ViewItemPool = new (() => new HierarchyViewItem(), defaultCapacity: 0, maxSize: 512);
+        static readonly HierarchyViewItemPool s_ViewItemPool = new (() => new HierarchyViewItem(), defaultCapacity: 256, maxSize: 512);
 
         HierarchyView m_View;
         HierarchyViewItem m_ViewItem;

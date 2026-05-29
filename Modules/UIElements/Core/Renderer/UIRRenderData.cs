@@ -137,9 +137,9 @@ namespace UnityEngine.UIElements.UIR
             headMesh = null;
             tailMesh = null;
             verticesSpace = Matrix4x4.identity;
-            transformID = UIRVEShaderInfoAllocator.identityTransform;
-            clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
-            opacityID = UIRVEShaderInfoAllocator.fullOpacity;
+            transformID = ShaderInfoAllocator.identityTransform;
+            clipRectID = ShaderInfoAllocator.infiniteClipRect;
+            opacityID = ShaderInfoAllocator.fullOpacity;
             colorID = BMPAlloc.Invalid;
             backgroundColorID = BMPAlloc.Invalid;
             borderLeftColorID = BMPAlloc.Invalid;
@@ -147,7 +147,7 @@ namespace UnityEngine.UIElements.UIR
             borderRightColorID = BMPAlloc.Invalid;
             borderBottomColorID = BMPAlloc.Invalid;
             tintColorID = BMPAlloc.Invalid;
-            textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+            textCoreSettingsID = ShaderInfoAllocator.defaultTextCoreSettings;
             compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
             backgroundAlpha = 0.0f;
             graphicEntries = null;

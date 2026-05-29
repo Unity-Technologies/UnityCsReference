@@ -1126,6 +1126,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyTraversalDirection.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyTraversalDirection.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs">
+      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs</Link>
     </Compile>
@@ -1798,6 +1801,24 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsWorld.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsWorld.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\CapsuleGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\CapsuleGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\ChainGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\ChainGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\ChainSegmentGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\ChainSegmentGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\CircleGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\CircleGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\PolygonGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\PolygonGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Geometry\SegmentGeometry.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Geometry\SegmentGeometry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJoint.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Joints\PhysicsDistanceJoint.cs</Link>
     </Compile>
@@ -1893,9 +1914,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs">
       <Link>Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsGeometry.cs">
-      <Link>Modules\PhysicsCore2D\Scripting\PhysicsGeometry.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsMath.cs">
       <Link>Modules\PhysicsCore2D\Scripting\PhysicsMath.cs</Link>
@@ -2520,6 +2538,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextBuffer.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs</Link>
@@ -3397,6 +3418,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\ColumnFreezeState.cs">
       <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\ColumnFreezeState.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\MultiColumn\StickyRowController.cs">
+      <Link>Modules\UIElements\Core\Controls\CollectionView\MultiColumn\StickyRowController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\CollectionView\RecycledItem.cs">
       <Link>Modules\UIElements\Core\Controls\CollectionView\RecycledItem.cs</Link>
     </Compile>
@@ -3958,9 +3982,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutLayoutEdge.cs">
       <Link>Modules\UIElements\Core\Layout\Model\LayoutLayoutEdge.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutList.cs">
-      <Link>Modules\UIElements\Core\Layout\Model\LayoutList.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Model\LayoutLogLevel.cs">
       <Link>Modules\UIElements\Core\Layout\Model\LayoutLogLevel.cs</Link>
     </Compile>
@@ -4258,6 +4279,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRDataSet.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRDataSet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRRenderDeviceProfiler.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRRenderDeviceProfiler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDevice.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRenderDevice.cs</Link>
     </Compile>
@@ -4318,8 +4342,14 @@
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorAccelerationCacheBuilder.cs">
       <Link>Modules\UIElements\Core\StyleSheets\SelectorAccelerationCacheBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorMatchRecord.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\SelectorMatchRecord.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SelectorUtility.cs">
       <Link>Modules\UIElements\Core\StyleSheets\SelectorUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\SpanSort.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\SpanSort.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Specificity.cs">
       <Link>Modules\UIElements\Core\StyleSheets\Specificity.cs</Link>
@@ -6016,6 +6046,9 @@
     <Compile Include="..\..\Runtime\Export\Properties\DrivenPropertyManager.bindings.cs">
       <Link>Runtime\Export\Properties\DrivenPropertyManager.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\PropertyDrawer\DictionaryHeaderAttribute.cs">
+      <Link>Runtime\Export\PropertyDrawer\DictionaryHeaderAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\PropertyDrawer\MathematicsPropertyAttributes.cs">
       <Link>Runtime\Export\PropertyDrawer\MathematicsPropertyAttributes.cs</Link>
     </Compile>
@@ -6415,11 +6448,17 @@
     <Compile Include="..\..\Runtime\Export\Security\SecurityPublic.cs">
       <Link>Runtime\Export\Security\SecurityPublic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\DictionarySerialization.cs">
+      <Link>Runtime\Export\Serialization\DictionarySerialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\FileIdentifier.bindings.cs">
       <Link>Runtime\Export\Serialization\FileIdentifier.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs">
       <Link>Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\IDuplicateEntriesForDictionaries.cs">
+      <Link>Runtime\Export\Serialization\IDuplicateEntriesForDictionaries.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\ManagedReferenceUtility.bindings.cs">
       <Link>Runtime\Export\Serialization\ManagedReferenceUtility.bindings.cs</Link>
@@ -6838,7 +6877,7 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\Linux_x64_Clang_15_0_glibc_2_35_dev_m_d_nolump\ManagedMonolithic\BoundToNative\UnityEngine.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\Debug\ManagedMonolithic\BoundToNative\UnityEngine.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>

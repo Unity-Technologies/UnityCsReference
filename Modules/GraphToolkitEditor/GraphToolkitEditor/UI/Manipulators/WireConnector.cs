@@ -134,7 +134,7 @@ namespace Unity.GraphToolkit.Editor
             try
             {
                 if (CanPerformConnection(e.localMousePosition))
-                    WireDragHelper.HandleMouseUp(e, true, Array.Empty<Wire>(), Array.Empty<PortModel>());
+                    WireDragHelper.HandleMouseUp(e, true, Array.Empty<WireView>(), Array.Empty<PortModel>());
                 else
                     Abort();
             }

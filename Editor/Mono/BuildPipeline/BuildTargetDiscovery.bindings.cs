@@ -31,7 +31,7 @@ namespace UnityEditor
             IsConsole                       = (1 << 2),
             IsX64                           = (1 << 3),
             IsStandalonePlatform            = (1 << 4),
-            DynamicBatchingDisabled         = (1 << 5),
+            // removed: DynamicBatchingDisabled = (1 << 5),
             CompressedGPUSkinningDisabled   = (1 << 6),
             UseForsythOptimizedMeshData     = (1 << 7),
             DisableEnlighten                = (1 << 8),

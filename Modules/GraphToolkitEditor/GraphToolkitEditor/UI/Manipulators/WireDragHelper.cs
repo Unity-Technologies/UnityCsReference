@@ -306,7 +306,7 @@ namespace Unity.GraphToolkit.Editor
 
         void Pan(TimerState timerState)
         {
-            WireCandidateModel.GetView<Wire>(GraphView)?.DoCompleteUpdate();
+            WireCandidateModel.GetView<WireView>(GraphView)?.DoCompleteUpdate();
         }
 
         /// <summary>
@@ -365,7 +365,7 @@ namespace Unity.GraphToolkit.Editor
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     ? Enumerable.Repeat(OriginalWire, 1)
 #pragma warning restore UA2001
-                    : Array.Empty<Wire>())
+                    : Array.Empty<WireView>())
                         .Concat(otherWires);
 
                 if (endPort != null)

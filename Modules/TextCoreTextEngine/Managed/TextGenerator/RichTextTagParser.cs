@@ -1687,22 +1687,22 @@ namespace UnityEngine.TextCore
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
-        internal static void CreateTextGenerationSettingsArray(ref NativeTextGenerationSettings tgs, List<(int, TagType, string)> links, float pixelsPerPoint, TextSettings textSettings, int hoveredTag = -1)
+        internal static void CreateTextGenerationSettingsArray(ref NativeTextGenerationSettings tgs, ref string text, List<(int, TagType, string)> links, float pixelsPerPoint, TextSettings textSettings, int hoveredTag = -1)
         {
             links.Clear();
 
-            var tags = FindTags(ref tgs.text, textSettings);
-            var segments = GenerateSegments(tgs.text, tags);
-            ApplyStateToSegment(tgs.text, tags, segments);
+            var tags = FindTags(ref text, textSettings);
+            var segments = GenerateSegments(text, tags);
+            ApplyStateToSegment(text, tags, segments);
 
-            var parsedTextBuilder = new StringBuilder(tgs.text.Length);
+            var parsedTextBuilder = new StringBuilder(text.Length);
             tgs.textSpans = new TextSpan[segments.Length];
             int parsedIndex = 0;
 
             for (int i = 0; i < segments.Length; i++)
             {
                 var segment = segments[i];
-                string segmentText = tgs.text.Substring(segment.start, segment.end + 1 - segment.start);
+                string segmentText = text.Substring(segment.start, segment.end + 1 - segment.start);
 
                 var textSpan = CreateTextSpan(segment, ref tgs, links, pixelsPerPoint, hoveredTag);
                 textSpan.startIndex = parsedIndex;
@@ -1712,7 +1712,7 @@ namespace UnityEngine.TextCore
                 parsedIndex += segmentText.Length;
             }
 
-            tgs.text = parsedTextBuilder.ToString();
+            text = parsedTextBuilder.ToString();
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]

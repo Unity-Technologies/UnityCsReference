@@ -601,7 +601,7 @@ namespace UnityEngine.Audio
         {
             internal RealtimeContext* Context;
             internal float* AudioBuffer;
-            internal Unity.Audio.Handle Self;
+            internal DualThreadHandle Self;
             /// <summary>
             /// The total size of <see cref="AudioBuffer"/> is <see cref="FrameCount"/> times the amount of channels this generator has declared (<see cref="GeneratorInstance.Configuration.setup.channelCount"/>).
             /// </summary>

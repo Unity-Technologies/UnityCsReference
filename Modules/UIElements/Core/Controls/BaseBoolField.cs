@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
         // Needed by the UIBuilder for authoring in the viewport
         internal Label boolFieldLabelElement
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_Label;
         }
 
@@ -42,7 +42,7 @@ namespace UnityEngine.UIElements
         public bool toggleOnLabelClick { get; set; } = true;
 
         // Used by foldout
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool toggleOnTextClick { get; set; } = true;
 
         /// <summary>

@@ -188,6 +188,8 @@ internal sealed partial class StyleRuleInspector : UIInspector
         if (m_StyleInspectorDefaultContent.Q(AnimationFoldoutName) != null)
         {
             UpdateAnimationSectionVisibility(m_StyleInspectorDefaultContent);
+            // Style rules have no specific element to name; dialog uses its default subject.
+            AnimationClipNewButtonController.ConnectButton(m_StyleInspectorDefaultContent, getDialogSubject: null);
             return;
         }
 
@@ -198,13 +200,16 @@ internal sealed partial class StyleRuleInspector : UIInspector
     {
         content.contentWasGenerated -= OnContentGeneratedForAnimation;
         UpdateAnimationSectionVisibility(content);
+        AnimationClipNewButtonController.ConnectButton(content, getDialogSubject: null);
     }
 
     static void UpdateAnimationSectionVisibility(VisualElement content)
     {
         var animationSection = content.Q(AnimationFoldoutName);
         if (animationSection != null)
-            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? DisplayStyle.Flex : DisplayStyle.None;
+            // Use StyleKeyword.Null (not DisplayStyle.Flex) to avoid setting an inline style when enabling.
+            // It breaks the behavior of inspector search otherwise.
+            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     void SetSelectorElementInlineStyles()

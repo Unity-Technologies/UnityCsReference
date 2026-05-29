@@ -82,6 +82,7 @@ internal class StyleSheetsWindow : EditorWindow
     void OnEnable()
     {
         titleContent.text = "Style Sheets";
+        titleContent.image = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
 
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
 
@@ -166,9 +167,16 @@ internal class StyleSheetsWindow : EditorWindow
 
     void OnStageChanged(Stage newStage)
     {
+        UICommandQueue.UnregisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
+
+        if (m_ContainerElement == null || m_EmptyLabelElement == null)
+            return;
+
         if (newStage is not VisualElementEditingStage editingStage)
         {
             m_CurrentStage = null;
+
             RemoveAssetTrackers();
             foreach (var node in m_StyleSheetNodes.Values)
             {
@@ -201,6 +209,46 @@ internal class StyleSheetsWindow : EditorWindow
         m_StagingModeLabelElement.style.display = DisplayStyle.None;
 
         UpdateAssetTrackers();
+        UICommandQueue.RegisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
+        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
+    }
+
+    void OnSelectionRequested(in CommandContext context)
+    {
+        // Make sure we are up to date.
+        OnStyleSheetChanged();
+        var toSelect = EntityId.None;
+        switch (context.Command)
+        {
+            case RequestSelectionQuery<StyleSheet> styleSheetRequest:
+                if (m_Handler?.Mappings?.TryGetValue(styleSheetRequest.ToSelect, out var styleSheetNode) ?? false)
+                    m_Handler.Mappings.TryGetSelectionHandle(styleSheetNode, out toSelect);
+                break;
+            case RequestSelectionQuery<StyleRule> styleRuleRequest:
+                if (m_Handler?.Mappings?.TryGetValue(styleRuleRequest.ToSelect, out var ruleNode) ?? false)
+                    m_Handler.Mappings.TryGetSelectionHandle(ruleNode, out toSelect);
+                break;
+        }
+
+        if(toSelect != EntityId.None)
+            Selection.activeEntityId = toSelect;
+    }
+
+    void GetActiveStyleSheetRequest(in CommandContext context)
+    {
+        var styleSheet = ActiveStyleSheet;
+        // It is possible that the window has not yet processed a change, so in that case, we directly check on the
+        // tracked VTA to see it it contains any style sheet.
+        if (styleSheet == null)
+        {
+            var styleSheets = m_TrackedVTA?.GetAllReferencedStyleSheets();
+            if (styleSheets is { Count: > 0 })
+                styleSheet = styleSheets[0];
+        }
+
+        using var command =
+            GetActiveStyleSheetQuery.QueryPayload.GetPooled(CommandSources.StyleSheets, styleSheet);
+        UICommandQueue.EnqueueCommand(command);
     }
 
     void Update()
@@ -217,11 +265,27 @@ internal class StyleSheetsWindow : EditorWindow
         if (m_HierarchyView == null || m_NoResultsLabelElement == null)
             return;
 
-        var isFiltering = m_HierarchyView.Filtering;
-        var hasNoResults = isFiltering && m_HierarchyView.ViewModel.Count == 0;
+        if (m_HierarchyView.UpdateNeeded)
+        {
+            rootVisualElement.schedule.Execute(UpdateSearchResultsDisplay);
+            return;
+        }
 
-        m_NoResultsLabelElement.style.display = hasNoResults ? DisplayStyle.Flex : DisplayStyle.None;
-        m_HierarchyView.style.display = hasNoResults ? DisplayStyle.None : DisplayStyle.Flex;
+        var noStyleSheets = m_StyleSheetNodes.Count == 0;
+        var noNodesDisplayed = m_HierarchyView.ViewModel.Count == 0;
+
+        if (m_HierarchyView.Filtering)
+        {
+            m_NoResultsLabelElement.style.display= noNodesDisplayed ? DisplayStyle.Flex : DisplayStyle.None;
+            m_HierarchyView.style.display = noNodesDisplayed ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+        else
+        {
+            m_NoResultsLabelElement.style.display = DisplayStyle.None;
+            m_HierarchyView.style.display = noStyleSheets ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        m_EmptyLabelElement.style.display = noStyleSheets && !m_HierarchyView.Filtering ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     void PrepareUI()
@@ -378,19 +442,43 @@ internal class StyleSheetsWindow : EditorWindow
 
     void OnCreateNewSelector(NewSelectorSubmitEvent evt)
     {
-        if (m_ActiveStyleSheet == null)
-        {
-            throw new ArgumentException("StyleSheet cannot be null.");
-        }
-
         if (!StyleSheetExtensions.ValidateSelector(evt.selectorStr, out var error))
         {
             Debug.LogError($"Invalid selector string '{evt.selectorStr}': {error}.");
             return;
         }
 
-        new AddStyleRuleCommand(m_ActiveStyleSheet, evt.selectorStr).Execute();
+        if (!TryEnsureActiveStyleSheetBeforeNewRule())
+            return;
+
+        using var addRuleCommand = AddStyleRuleCommand.GetPooled(CommandSources.StyleSheets, m_ActiveStyleSheet, evt.selectorStr);
+        UICommandQueue.EnqueueCommand(addRuleCommand);
         SelectAndScrollTo([m_ActiveStyleSheet.rules[^1]]);
+    }
+
+    /// <summary>
+    /// When adding a rule but the document has no USS yet, prompts for a save path and creates one
+    /// (same idea as the Builder Style Sheets UX for new files).
+    /// </summary>
+    bool TryEnsureActiveStyleSheetBeforeNewRule()
+    {
+        if (m_TrackedVTA == null)
+            return false;
+
+        using var _ = ListPool<StyleSheet>.Get(out var sheets);
+        m_TrackedVTA.GetAllReferencedStyleSheets(sheets);
+
+        if (m_ActiveStyleSheet != null && sheets.Contains(m_ActiveStyleSheet))
+            return true;
+
+        if (sheets.Count > 0)
+        {
+            m_ActiveStyleSheet = sheets[0];
+            m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = m_ActiveStyleSheet;
+            return true;
+        }
+
+        return TryCreateStyleSheet() && m_ActiveStyleSheet != null;
     }
 
     void OnVisualTreeAssetChanged()
@@ -594,12 +682,7 @@ internal class StyleSheetsWindow : EditorWindow
 
     public void CreateStyleSheet()
     {
-        var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
-        if (string.IsNullOrEmpty(ussPath))
-            return;
-
-        new CreateStyleSheetCommand(m_TrackedVTA, ussPath).Execute();
-        RefreshStyleSheetList();
+        TryCreateStyleSheet();
     }
 
     public void AddStyleSheet()
@@ -668,6 +751,18 @@ internal class StyleSheetsWindow : EditorWindow
         m_HierarchyView.SetSelection(nodesToSelect.ToArray());
         m_HierarchyView.Frame(nodesToSelect[0]);
         m_GlobalSelectionHandler.SyncGlobalSelectionFromViewModel();
+    }
+
+    bool TryCreateStyleSheet()
+    {
+        var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
+        if (string.IsNullOrEmpty(ussPath))
+            return false;
+
+        using var command = CreateStyleSheetCommand.GetPooled(CommandSources.StyleSheets, m_TrackedVTA, ussPath);
+        UICommandQueue.EnqueueCommand(command);
+        RefreshStyleSheetList();
+        return true;
     }
 
     void OnHierarchyWindowMouseDown(PointerDownEvent evt)

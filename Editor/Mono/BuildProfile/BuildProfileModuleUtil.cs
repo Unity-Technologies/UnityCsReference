@@ -387,16 +387,19 @@ namespace UnityEditor.Build.Profile
         public static bool IsStandalonePlatform(BuildTarget buildTarget) =>
             BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform);
 
-        public static bool IsCoverageSupported(BuildTarget buildTarget)
+        /// <summary>
+        /// Returns true if the build target is supported by coverage
+        /// </summary>
+        public static bool IsBuildTargetSupportedByCoverage(BuildTarget buildTarget)
         {
             if (!IsStandalonePlatform(buildTarget))
                 return false;
 
-            var activeProfile = BuildProfile.GetActiveBuildProfile();
-            var settings = GetBuildProfileOrGlobalPlayerSettings(activeProfile);
-            var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(buildTarget);
+            if (buildTarget == BuildTarget.StandaloneWindows)
+                return false;
 
-            var scriptingBackend = PlayerSettings.GetScriptingBackend_Internal(settings, buildTargetGroupName);
+            var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
+            var scriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget);
 
             return scriptingBackend == ScriptingImplementation.Mono2x;
         }
@@ -509,7 +512,8 @@ namespace UnityEditor.Build.Profile
 
             if (EditorUserBuildSettings.buildWithDeepProfilingSupport && developmentBuild)
                 options |= BuildOptions.EnableDeepProfilingSupport;
-            if (EditorUserBuildSettings.buildWithCodeCoverage && developmentBuild && IsCoverageSupported(buildTarget))
+
+            if (EditorUserBuildSettings.buildWithCodeCoverage && developmentBuild && IsBuildTargetSupportedByCoverage(buildTarget))
                 options |= BuildOptions.EnableCodeCoverage;
             if (EditorUserBuildSettings.buildScriptsOnly)
                 options |= BuildOptions.BuildScriptsOnly;

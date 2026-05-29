@@ -15,12 +15,14 @@ namespace UnityEngine.UIElements.Unmanaged;
 struct UnmanagedComponentType
 {
     public int Size;
+    public int Align;
 
     public static UnmanagedComponentType Create<T>() where T : unmanaged
     {
         return new UnmanagedComponentType
         {
-            Size = UnsafeUtility.SizeOf<T>()
+            Size = UnsafeUtility.SizeOf<T>(),
+            Align = UnsafeUtility.AlignOf<T>()
         };
     }
 }
@@ -57,6 +59,11 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         public int Size;
 
         /// <summary>
+        /// The alignment of the component.
+        /// </summary>
+        public int Align;
+
+        /// <summary>
         /// The number of elements per chunk.
         /// </summary>
         public int ComponentCountPerChunk;
@@ -71,27 +78,37 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         /// </summary>
         [NativeDisableUnsafePtrRestriction] Chunk* m_Chunks;
 
-        public ComponentDataStore(int size, MemoryLabel allocLabel)
+        /// <summary>
+        /// The component data ptr.
+        /// </summary>
+        [NativeDisableUnsafePtrRestriction] public byte* InitialData;
+
+        public ComponentDataStore(int size, int align, MemoryLabel allocLabel, byte* initialData)
         {
             Size = size;
+            Align = align;
             ComponentCountPerChunk = k_ChunkSize / size;
             ChunkCount = 0;
             MemoryLabel = allocLabel;
             m_Chunks = null;
+            InitialData = (byte*)UnsafeUtility.Malloc(size, align, MemoryLabel);
+            UnsafeUtility.MemCpy(InitialData, initialData, size);
         }
 
         public void Dispose()
         {
-            if (null == m_Chunks)
-                return;
+            if (m_Chunks != null)
+            {
+                for (var i = 0; i < ChunkCount; i++)
+                    UnsafeUtility.Free(m_Chunks[i].Buffer, MemoryLabel);
 
-            for (var i = 0; i < ChunkCount; i++)
-                UnsafeUtility.Free(m_Chunks[i].Buffer, MemoryLabel);
+                UnsafeUtility.Free(m_Chunks, MemoryLabel);
+                ChunkCount = 0;
+                m_Chunks = null;
+            }
 
-            UnsafeUtility.Free(m_Chunks, MemoryLabel);
-
-            ChunkCount = 0;
-            m_Chunks = null;
+            UnsafeUtility.Free(InitialData, MemoryLabel);
+            InitialData = null;
         }
 
         public byte* GetComponentDataPtr(int index)
@@ -112,12 +129,14 @@ unsafe partial struct UnmanagedDataStore : IDisposable
                 m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
 
                 // Allocate new chunks.
-                for (var i = ChunkCount; i<newChunkCount; i++)
+                for (var i = ChunkCount; i < newChunkCount; i++)
                 {
                     m_Chunks[i] = new Chunk
                     {
-                        Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, 4, MemoryLabel)
+                        Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, Align, MemoryLabel)
                     };
+
+                    UnsafeUtility.MemCpyReplicate(m_Chunks[i].Buffer, InitialData, Size, ComponentCountPerChunk);
                 }
             }
             else if (newChunkCount < ChunkCount)
@@ -144,10 +163,9 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         public int ComponentCount;
 
         [NativeDisableUnsafePtrRestriction] public int* Versions;
+        [NativeDisableUnsafePtrRestriction] public int* FreeIndices;
         [NativeDisableUnsafePtrRestriction] public ComponentDataStore* Components;
     }
-
-
 
     readonly MemoryLabel m_MemoryLabel;
     [NativeDisableUnsafePtrRestriction] Data* m_Data;
@@ -156,7 +174,7 @@ unsafe partial struct UnmanagedDataStore : IDisposable
 
     public int Capacity => m_Data->Capacity;
 
-    public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, int initialCapacity, Allocator allocator)
+    public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, byte** initialData, int initialCapacity, Allocator allocator)
     {
         Assert.IsTrue(components.Length > 0, $"{nameof(UnmanagedDataStore)} requires at least one component size.");
         Assert.IsTrue(components[0].Size >= sizeof(int), $"{nameof(UnmanagedDataStore)} requires a minimum element size of {sizeof(int)} to alias");
@@ -170,7 +188,8 @@ unsafe partial struct UnmanagedDataStore : IDisposable
 
         for (var i = 0; i < components.Length; i++)
         {
-            m_Data->Components[i] = new ComponentDataStore(components[i].Size, labels[i]);
+            Debug.Assert(initialData[i] != null);
+            m_Data->Components[i] = new ComponentDataStore(components[i].Size, components[i].Align, labels[i], initialData[i]);
         }
 
         ResizeCapacity(initialCapacity);
@@ -184,6 +203,7 @@ unsafe partial struct UnmanagedDataStore : IDisposable
             m_Data->Components[i].Dispose();
 
         UnsafeUtility.Free(m_Data->Versions, m_MemoryLabel);
+        UnsafeUtility.Free(m_Data->FreeIndices, m_MemoryLabel);
         UnsafeUtility.Free(m_Data->Components, m_MemoryLabel);
         UnsafeUtility.Free(m_Data, m_MemoryLabel);
 
@@ -204,13 +224,20 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         return m_Data->Components[componentIndex].GetComponentDataPtr(index);
     }
 
-    UnmanagedDataHandle Allocate(byte** data, int count)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool IsFree(int index)
+    {
+        // Special value nextIndex == index indicates the node is not free.
+        return GetNextFreeIndex(index) != index;
+    }
+
+    public UnmanagedDataHandle Allocate()
     {
         // Fetch the next available index. This is the element we are about to initialize.
         var index = m_Data->NextFreeIndex;
 
         // Fetch the next element in the chain before we overwrite the node data.
-        var nextIndex = GetNextFreeIndex(m_Data->Components, index);
+        var nextIndex = GetNextFreeIndex(index);
 
         if (nextIndex == -1)
         {
@@ -218,21 +245,15 @@ unsafe partial struct UnmanagedDataStore : IDisposable
             IncreaseCapacity();
 
             // At this point we now have our next index ready. Retrieve it before we overwrite the node data.
-            nextIndex = GetNextFreeIndex(m_Data->Components, index);
+            nextIndex = GetNextFreeIndex(index);
         }
+
+        // Set a special nextIndex == index case to indicate the node is not free.
+        SetNextFreeIndex(index, index);
 
         var version = m_Data->Versions[index];
 
         m_Data->NextFreeIndex = nextIndex;
-
-        Debug.Assert(m_Data->ComponentCount == count, "All components must be initialized");
-        Debug.Assert(data != null);
-        for (var i = 0; i < count; i++)
-        {
-            Debug.Assert(data[i] != null);
-            var ptr = m_Data->Components[i].GetComponentDataPtr(index);
-            UnsafeUtility.MemCpy(ptr, data[i], m_Data->Components[i].Size);
-        }
 
         return new UnmanagedDataHandle(index, version);
     }
@@ -242,19 +263,28 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         if (!Exists(handle))
             throw new InvalidOperationException($"Failed to Free handle with Index={handle.Index} Version={handle.Version}");
 
-        m_Data->Versions[handle.Index]++;
-        SetNextFreeIndex(m_Data->Components, handle.Index, m_Data->NextFreeIndex);
-        m_Data->NextFreeIndex = handle.Index;
+        var index = handle.Index;
+        m_Data->Versions[index]++;
+        SetNextFreeIndex(index, m_Data->NextFreeIndex);
+        m_Data->NextFreeIndex = index;
+
+        for (var i = 0; i < m_Data->ComponentCount; i++)
+        {
+            var ptr = m_Data->Components[i].GetComponentDataPtr(index);
+            UnsafeUtility.MemCpy(ptr, m_Data->Components[i].InitialData, m_Data->Components[i].Size);
+        }
     }
 
-    static void SetNextFreeIndex(ComponentDataStore* ptr, int index, int value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void SetNextFreeIndex(int index, int value)
     {
-        *(int*)ptr->GetComponentDataPtr(index) = value;
+        m_Data->FreeIndices[index] = value;
     }
 
-    static int GetNextFreeIndex(ComponentDataStore* ptr, int index)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    int GetNextFreeIndex(int index)
     {
-        return *(int*)ptr->GetComponentDataPtr(index);
+        return m_Data->FreeIndices[index];
     }
 
     void IncreaseCapacity()
@@ -275,6 +305,7 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         Assert.IsTrue(capacity > 0);
 
         m_Data->Versions = (int*)ResizeArray(m_Data->Versions, m_Data->Capacity, capacity, sizeof(int), 4, m_MemoryLabel);
+        m_Data->FreeIndices = (int*)ResizeArray(m_Data->FreeIndices, m_Data->Capacity, capacity, sizeof(int), 4, m_MemoryLabel);
 
         for (var i=0; i<m_Data->ComponentCount; i++)
             m_Data->Components[i].ResizeCapacity(capacity);
@@ -286,185 +317,23 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         {
             m_Data->Versions[i] = 1;
 
-            // Create a linked list of free elements using the first 4 bytes of the data structure.
-            SetNextFreeIndex(m_Data->Components, i, i + 1);
+            // Create a linked list of free elements.
+            SetNextFreeIndex(i, i + 1);
         }
 
         // The last element receives a special index indicating we are at the end of the array and should resize.
-        SetNextFreeIndex(m_Data->Components, capacity - 1, -1);
+        SetNextFreeIndex(capacity - 1, -1);
         m_Data->Capacity = capacity;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static void* ResizeArray(void* fromPtr, long fromCount, long toCount, long size, int align, MemoryLabel label)
     {
         Assert.IsTrue(toCount > 0);
 
-        var toPtr = UnsafeUtility.Malloc(size * toCount, align, label);
+        var toPtr = UnsafeUtility.Realloc(fromPtr, size * toCount, align, label);
         Assert.IsTrue(toPtr != null);
 
-        if (fromCount <= 0)
-            return toPtr;
-
-        var countToCopy = toCount < fromCount ? toCount : fromCount;
-        var bytesToCopy = countToCopy * size;
-
-        UnsafeUtility.MemCpy(toPtr, fromPtr, bytesToCopy);
-        UnsafeUtility.Free(fromPtr, label);
-
         return toPtr;
-    }
-
-    public UnmanagedDataHandle Allocate<T0>(in T0 component0)
-        where T0 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        {
-            var data = stackalloc byte*[1];
-
-            data[0] = (byte*)ptr0;
-
-            return Allocate(data, 1);
-        }
-    }
-
-    public UnmanagedDataHandle Allocate<T0, T1>(in T0 component0, in T1 component1)
-        where T0 : unmanaged
-        where T1 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        fixed (T1* ptr1 = &component1)
-        {
-            var data = stackalloc byte*[2];
-
-            data[0] = (byte*)ptr0;
-            data[1] = (byte*)ptr1;
-
-            return Allocate(data, 2);
-        }
-    }
-
-    public UnmanagedDataHandle Allocate<T0, T1, T2>(in T0 component0, in T1 component1, in T2 component2)
-        where T0 : unmanaged
-        where T1 : unmanaged
-        where T2 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        fixed (T1* ptr1 = &component1)
-        fixed (T2* ptr2 = &component2)
-        {
-            var data = stackalloc byte*[3];
-
-            data[0] = (byte*)ptr0;
-            data[1] = (byte*)ptr1;
-            data[2] = (byte*)ptr2;
-
-            return Allocate(data, 3);
-        }
-    }
-
-    public UnmanagedDataHandle Allocate<T0, T1, T2, T3>(in T0 component0, in T1 component1, in T2 component2, in T3 component3)
-        where T0 : unmanaged
-        where T1 : unmanaged
-        where T2 : unmanaged
-        where T3 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        fixed (T1* ptr1 = &component1)
-        fixed (T2* ptr2 = &component2)
-        fixed (T3* ptr3 = &component3)
-        {
-            var data = stackalloc byte*[4];
-
-            data[0] = (byte*)ptr0;
-            data[1] = (byte*)ptr1;
-            data[2] = (byte*)ptr2;
-            data[3] = (byte*)ptr3;
-
-            return Allocate(data, 4);
-        }
-    }
-
-    public UnmanagedDataHandle Allocate<T0, T1, T2, T3, T4>(in T0 component0, in T1 component1, in T2 component2, in T3 component3, in T4 component4)
-        where T0 : unmanaged
-        where T1 : unmanaged
-        where T2 : unmanaged
-        where T3 : unmanaged
-        where T4 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        fixed (T1* ptr1 = &component1)
-        fixed (T2* ptr2 = &component2)
-        fixed (T3* ptr3 = &component3)
-        fixed (T4* ptr4 = &component4)
-        {
-            var data = stackalloc byte*[5];
-
-            data[0] = (byte*)ptr0;
-            data[1] = (byte*)ptr1;
-            data[2] = (byte*)ptr2;
-            data[3] = (byte*)ptr3;
-            data[4] = (byte*)ptr4;
-
-            return Allocate(data, 5);
-        }
-    }
-
-    public UnmanagedDataHandle Allocate<T0, T1, T2, T3, T4, T5>(in T0 component0, in T1 component1, in T2 component2, in T3 component3, in T4 component4, in T5 component5)
-        where T0 : unmanaged
-        where T1 : unmanaged
-        where T2 : unmanaged
-        where T3 : unmanaged
-        where T4 : unmanaged
-        where T5 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        fixed (T1* ptr1 = &component1)
-        fixed (T2* ptr2 = &component2)
-        fixed (T3* ptr3 = &component3)
-        fixed (T4* ptr4 = &component4)
-        fixed (T5* ptr5 = &component5)
-        {
-            var data = stackalloc byte*[6];
-
-            data[0] = (byte*)ptr0;
-            data[1] = (byte*)ptr1;
-            data[2] = (byte*)ptr2;
-            data[3] = (byte*)ptr3;
-            data[4] = (byte*)ptr4;
-            data[5] = (byte*)ptr5;
-
-            return Allocate(data, 6);
-        }
-    }
-
-    public UnmanagedDataHandle Allocate<T0, T1, T2, T3, T4, T5, T6>(in T0 component0, in T1 component1, in T2 component2, in T3 component3, in T4 component4, in T5 component5, in T6 component6)
-        where T0 : unmanaged
-        where T1 : unmanaged
-        where T2 : unmanaged
-        where T3 : unmanaged
-        where T4 : unmanaged
-        where T5 : unmanaged
-        where T6 : unmanaged
-    {
-        fixed (T0* ptr0 = &component0)
-        fixed (T1* ptr1 = &component1)
-        fixed (T2* ptr2 = &component2)
-        fixed (T3* ptr3 = &component3)
-        fixed (T4* ptr4 = &component4)
-        fixed (T5* ptr5 = &component5)
-        fixed (T6* ptr6 = &component6)
-        {
-            var data = stackalloc byte*[7];
-
-            data[0] = (byte*)ptr0;
-            data[1] = (byte*)ptr1;
-            data[2] = (byte*)ptr2;
-            data[3] = (byte*)ptr3;
-            data[4] = (byte*)ptr4;
-            data[5] = (byte*)ptr5;
-            data[6] = (byte*)ptr6;
-
-            return Allocate(data, 7);
-        }
     }
 }

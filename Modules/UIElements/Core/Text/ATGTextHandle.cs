@@ -16,14 +16,21 @@ namespace UnityEngine.UIElements
         internal ATGTextEventHandler m_ATGTextEventHandler;
         bool uvsAreGenerated = false;
 
+        // Buffer for processed text that differs from TextElement.textBuffer
+        // (rich-text-parsed, password-masked, placeholder, etc.).
+        NativeTextBuffer m_ProcessedTextBuffer;
+
         void ComputeNativeTextSize(in string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
         {
             if (!ConvertUssToNativeTextGenerationSettings(textToMeasure, fontsize))
                 return;
 
             // Insert zero width space to avoid TextField from collapsing when empty. UUM-90538
-            if (string.IsNullOrEmpty(nativeSettings.text) && m_TextElement.isInputField)
-                nativeSettings.text = "\u200B";
+            if (nativeSettings.textBufferLength == 0 && m_TextElement.isInputField)
+            {
+                m_ProcessedTextBuffer.CopyFrom("\u200B");
+                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
+            }
 
             if (widthMode == VisualElement.MeasureMode.Undefined || float.IsNaN(width) || float.IsNegative(width))
                 nativeSettings.screenWidth = TextLib.k_unconstrainedScreenSize;
@@ -152,6 +159,22 @@ namespace UnityEngine.UIElements
             }
             textSettings.UpdateNativeTextSettings();
             fa.EnsureNativeFontAssetIsCreated();
+
+            // Pre-allocate on the main thread; jobs cannot allocate Persistent memory.
+            // Account for placeholder text which may be longer than the text buffer.
+            int preAllocLength = m_TextElement.textBuffer.length;
+            if (m_TextElement.showPlaceholderText)
+                preAllocLength = Math.Max(preAllocLength, m_TextElement.edition.placeholder?.Length ?? 0);
+
+            // When the backing NativeArray is not created (element attached with empty
+            // text, or buffer disposed during a lifecycle transition) the direct-buffer
+            // path in ConvertUssToNativeTextGenerationSettings falls through and copies
+            // renderedTextString into m_ProcessedTextBuffer instead.  Pre-allocate
+            // enough for that text so the Job never triggers a Persistent allocation.
+            if (!m_TextElement.textBuffer.isCreated)
+                preAllocLength = Math.Max(preAllocLength, m_TextElement.renderedTextString?.Length ?? 0);
+
+            m_ProcessedTextBuffer.EnsureCapacity(preAllocLength);
         }
 
 #nullable enable
@@ -162,11 +185,17 @@ namespace UnityEngine.UIElements
             var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
 
             nativeSettings.preProcessFlags = PreProcessFlags.None;
-            nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedTextString;
-            if (textToMeasure != null)
-                nativeSettings.text = textToMeasure;
-            if (nativeSettings.text == null)
-                nativeSettings.text = "";
+
+            bool useDirectBuffer = textToMeasure == null
+                && !(m_TextElement.isElided && !TextLibraryCanElide())
+                && !m_TextElement.showPlaceholderText
+                && !m_TextElement.edition.isPassword;
+
+            string? text = useDirectBuffer
+                ? null
+                : (textToMeasure
+                    ?? (m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedTextString)
+                    ?? "");
 
             var effectiveFontSize = (fontsize ?? style.fontSize.value) * scale;
             nativeSettings.fontSize = (int)Math.Round(effectiveFontSize * 64.0f, MidpointRounding.AwayFromZero);
@@ -246,16 +275,43 @@ namespace UnityEngine.UIElements
             // TODO: We should expose this to user. Possibly disable it by default.
             nativeSettings.disableAdvancedFontFeatures = false;
 
-            if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
+            bool needsRichTextParsing = false;
+            if (m_TextElement.enableRichText)
+            {
+                if (useDirectBuffer)
+                {
+                    text = m_TextElement.renderedTextString ?? "";
+                    needsRichTextParsing = RichTextTagParser.MayNeedParsing(text);
+                    if (needsRichTextParsing)
+                        useDirectBuffer = false;
+                }
+                else
+                {
+                    needsRichTextParsing = RichTextTagParser.MayNeedParsing(text!);
+                }
+            }
+
+            if (needsRichTextParsing)
             {
                 // If we're not using richTextTags, we're doing this on the native side to avoid allocations.
-                TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags, TextUtilities.GetTextSettingsFrom(m_TextElement));
+                TextPreprocessor.PreProcessString(ref text!, nativeSettings.preProcessFlags, TextUtilities.GetTextSettingsFrom(m_TextElement));
                 nativeSettings.preProcessFlags = PreProcessFlags.None;
                 //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
-                CreateTextGenerationSettingsArray(ref nativeSettings, Links, GetPixelsPerPoint(), textSettings, m_HoveredTag);
+                CreateTextGenerationSettingsArray(ref nativeSettings, ref text, Links, GetPixelsPerPoint(), textSettings, m_HoveredTag);
+                m_ProcessedTextBuffer.CopyFrom(text!);
+                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
+            }
+            else if (useDirectBuffer && m_TextElement.textBuffer.isCreated)
+            {
+                nativeSettings.SetTextBuffer(m_TextElement.textBuffer.buffer, m_TextElement.textBuffer.length);
+                nativeSettings.textSpans = null;
             }
             else
+            {
+                m_ProcessedTextBuffer.CopyFrom(text ?? "");
+                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
                 nativeSettings.textSpans = null;
+            }
 
             return true;
         }
@@ -322,8 +378,8 @@ namespace UnityEngine.UIElements
             {
                 m_ATGTextEventHandler?.UnRegisterHyperlinkCallbacks();
             }
+            m_ProcessedTextBuffer.Dispose();
             base.RemoveFromPermanentCacheATG();
-           
         }
 
     }

@@ -153,6 +153,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             // shadow
             public float        penumbraWidthRadian;
 
@@ -177,6 +178,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             public float        range;
             public float        sphereRadius;
             public FalloffType  falloff;
@@ -199,6 +201,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             public float        range;
             public float        sphereRadius;
             public float        coneAngle;
@@ -224,6 +227,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             public float        range;
             public float        width;
             public float        height;
@@ -247,6 +251,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             public float        range;
             public float        radius;
             public FalloffType  falloff;
@@ -269,6 +274,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             public float        range;
             //box dimensions
             public float        width;
@@ -292,6 +298,7 @@ namespace UnityEngine
             public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
+            public float        indirectMultiplier;
             public float        range;
             // pyramid parameters
             public float        angle;
@@ -354,6 +361,8 @@ namespace UnityEngine
             public LightMode    mode;
             public byte         shadow;
             public FalloffType  falloff;
+            public float        indirectMultiplier;
+            private int         _padding;
 
             public void Init(ref DirectionalLight light, ref Cookie cookie)
             {
@@ -373,6 +382,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = FalloffType.Undefined;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref PointLight light, ref Cookie cookie)
@@ -393,6 +404,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = light.falloff;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref SpotLight light, ref Cookie cookie)
@@ -413,6 +426,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = light.falloff;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref RectangleLight light, ref Cookie cookie)
@@ -433,6 +448,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = light.falloff;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref DiscLight light, ref Cookie cookie)
@@ -453,6 +470,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = light.falloff;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref SpotLightBoxShape light, ref Cookie cookie)
@@ -473,6 +492,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = FalloffType.Undefined;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref SpotLightPyramidShape light, ref Cookie cookie)
@@ -493,6 +514,8 @@ namespace UnityEngine
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
                 falloff        = light.falloff;
+                indirectMultiplier = light.indirectMultiplier;
+                _padding = 0;
             }
 
             public void Init(ref DirectionalLight light)        { Cookie cookie = Cookie.Defaults(); Init(ref light, ref cookie); }
@@ -573,6 +596,7 @@ namespace UnityEngine
                 ApplyColorTemperature(cct, ref indirectColor);
                 dir.color = directColor;
                 dir.indirectColor = indirectColor;
+                dir.indirectMultiplier =  GraphicsSettings.lightsUseLinearIntensity ? l.bounceIntensity : Mathf.GammaToLinearSpace(l.bounceIntensity);
                 dir.penumbraWidthRadian = l.shadows == LightShadows.Soft ? (Mathf.Deg2Rad * l.shadowAngle) : 0.0f;
             }
 
@@ -591,6 +615,7 @@ namespace UnityEngine
                 ApplyColorTemperature(cct, ref indirectColor);
                 point.color         = directColor;
                 point.indirectColor = indirectColor;
+                point.indirectMultiplier = GraphicsSettings.lightsUseLinearIntensity ? l.bounceIntensity : Mathf.GammaToLinearSpace(l.bounceIntensity);
 
                 point.range         = l.range;
                 point.sphereRadius = l.shadows == LightShadows.Soft ? l.shapeRadius : 0.0f;
@@ -612,6 +637,7 @@ namespace UnityEngine
                 ApplyColorTemperature(cct, ref indirectColor);
                 spot.color = directColor;
                 spot.indirectColor = indirectColor;
+                spot.indirectMultiplier = GraphicsSettings.lightsUseLinearIntensity ? l.bounceIntensity : Mathf.GammaToLinearSpace(l.bounceIntensity);
 
                 spot.range         = l.range;
                 spot.sphereRadius  = l.shadows == LightShadows.Soft ? l.shapeRadius : 0.0f;
@@ -636,6 +662,7 @@ namespace UnityEngine
                 ApplyColorTemperature(cct, ref indirectColor);
                 rect.color = directColor;
                 rect.indirectColor = indirectColor;
+                rect.indirectMultiplier = GraphicsSettings.lightsUseLinearIntensity ? l.bounceIntensity : Mathf.GammaToLinearSpace(l.bounceIntensity);
 
                 rect.range          = l.dilatedRange;
                 rect.width          = l.areaSize.x;
@@ -658,6 +685,7 @@ namespace UnityEngine
                 ApplyColorTemperature(cct, ref indirectColor);
                 disc.color = directColor;
                 disc.indirectColor = indirectColor;
+                disc.indirectMultiplier = GraphicsSettings.lightsUseLinearIntensity ? l.bounceIntensity : Mathf.GammaToLinearSpace(l.bounceIntensity);
 
                 disc.range          = l.dilatedRange;
                 disc.radius         = l.areaSize.x;

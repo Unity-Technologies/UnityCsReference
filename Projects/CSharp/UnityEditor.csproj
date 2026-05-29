@@ -1357,6 +1357,18 @@
     <Compile Include="..\..\Editor\Mono\GUI\PreviewResizer.cs">
       <Link>Editor\Mono\GUI\PreviewResizer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryDrawerIMGUI.cs">
+      <Link>Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryDrawerIMGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryDrawerShared.cs">
+      <Link>Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryDrawerShared.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryDrawerUITK.cs">
+      <Link>Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryDrawerUITK.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryView.cs">
+      <Link>Editor\Mono\GUI\PropertyDrawers\Dictionary\DictionaryView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\RenameOverlay.cs">
       <Link>Editor\Mono\GUI\RenameOverlay.cs</Link>
     </Compile>
@@ -2248,6 +2260,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\MaterialEditor.cs">
       <Link>Editor\Mono\Inspector\MaterialEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\MaterialEditorForCanvasRendererUtility.cs">
+      <Link>Editor\Mono\Inspector\MaterialEditorForCanvasRendererUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\MaterialEditorGUIHelpers.cs">
       <Link>Editor\Mono\Inspector\MaterialEditorGUIHelpers.cs</Link>
     </Compile>
@@ -2289,6 +2304,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs">
       <Link>Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsBatchingWarning.cs">
+      <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsBatchingWarning.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs">
       <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs</Link>
@@ -3718,6 +3736,12 @@
     <Compile Include="..\..\Editor\Mono\SerializationDebug.bindings.cs">
       <Link>Editor\Mono\SerializationDebug.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Serialization\DictionarySerializationDuplicateEntriesCleanup.cs">
+      <Link>Editor\Mono\Serialization\DictionarySerializationDuplicateEntriesCleanup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Serialization\DuplicateEntriesForDictionaries.cs">
+      <Link>Editor\Mono\Serialization\DuplicateEntriesForDictionaries.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SerializedObject.bindings.cs">
       <Link>Editor\Mono\SerializedObject.bindings.cs</Link>
     </Compile>
@@ -5053,6 +5077,27 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs">
       <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\ZebraEmptyBody.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\ZebraEmptyBody.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\AssetActions.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\AssetActions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\AssetInspector.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\AssetInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\AssetRowContextMenu.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\AssetRowContextMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\AssetTable.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\AssetTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\Assets\AssetsTabView.cs">
+      <Link>Modules\BuildAnalysis\UI\Tabs\Assets\AssetsTabView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Tabs\IBuildAnalysisTabView.cs">
       <Link>Modules\BuildAnalysis\UI\Tabs\IBuildAnalysisTabView.cs</Link>
     </Compile>
@@ -5068,11 +5113,11 @@
     <Compile Include="..\..\Modules\BuildAnalysis\Utils\BuildAnalysisConstants.cs">
       <Link>Modules\BuildAnalysis\Utils\BuildAnalysisConstants.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\BuildAnalysis\Utils\FormatUtils.cs">
-      <Link>Modules\BuildAnalysis\Utils\FormatUtils.cs</Link>
+    <Compile Include="..\..\Modules\BuildAnalysis\Utils\FormatUtility.cs">
+      <Link>Modules\BuildAnalysis\Utils\FormatUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\BuildAnalysis\Utils\PlatformIconUtility.cs">
-      <Link>Modules\BuildAnalysis\Utils\PlatformIconUtility.cs</Link>
+    <Compile Include="..\..\Modules\BuildAnalysis\Utils\IconUtility.cs">
+      <Link>Modules\BuildAnalysis\Utils\IconUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\ActiveBuildProfilerListener.cs">
       <Link>Modules\BuildProfileEditor\ActiveBuildProfilerListener.cs</Link>
@@ -5224,6 +5269,9 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\Util.cs">
       <Link>Modules\BuildProfileEditor\Util.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\AssemblyInfo.cs">
+      <Link>Modules\BuildReportingEditor\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\BuildReportRestService.bindings.cs">
       <Link>Modules\BuildReportingEditor\BuildReportRestService.bindings.cs</Link>
     </Compile>
@@ -5262,6 +5310,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs">
       <Link>Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ContentLayout.cs">
+      <Link>Modules\BuildReportingEditor\Managed\ContentLayout.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\ContentSummary.bindings.cs">
       <Link>Modules\BuildReportingEditor\Managed\ContentSummary.bindings.cs</Link>
@@ -5325,6 +5376,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\BuildPipelineSettingsProvider.cs">
       <Link>Modules\ContentBuild\Editor\Managed\BuildPipelineSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\BuildPipelineUserSettings.cs">
+      <Link>Modules\ContentBuild\Editor\Managed\BuildPipelineUserSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\BuildPlayerDataGenerator.cs">
       <Link>Modules\ContentBuild\Editor\Managed\BuildPlayerDataGenerator.cs</Link>
@@ -5869,6 +5923,9 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\ErrorsAndWarningsResult.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\ErrorsAndWarningsResult.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\GraphLogAction.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\GraphLogAction.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\GraphProcessingError.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\GraphProcessingError.cs</Link>
     </Compile>
@@ -5880,9 +5937,6 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\GraphProcessorContainer.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\GraphProcessorContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\QuickFix.cs">
-      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\QuickFix.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\VariableNodeGraphProcessor.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\GraphProcessors\VariableNodeGraphProcessor.cs</Link>
@@ -6856,6 +6910,9 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\ErrorMarker.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\ErrorMarker.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\Extensions\ErrorMarkerModelExtensions.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\Extensions\ErrorMarkerModelExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\GraphElement.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\GraphElement.cs</Link>
     </Compile>
@@ -6901,8 +6958,8 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\VariableNodeView.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\VariableNodeView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\Wire.cs">
-      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\Wire.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\WireView.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\ModelView\WireView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\SubgraphAssetCustomPropertyField.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitEditor\UI\ModelView\GraphView\SubgraphAssetCustomPropertyField.cs</Link>
@@ -7578,6 +7635,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Graph\SubgraphAttribute.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Graph\SubgraphAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Graph\Wire.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Graph\Wire.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\IErrorsAndWarnings.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\IErrorsAndWarnings.cs</Link>
@@ -9544,6 +9604,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs</Link>
     </Compile>
@@ -9765,6 +9828,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\OperationType.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\OperationType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\PackageInfoDictionary.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\PackageInfoDictionary.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddAndRemoveOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddAndRemoveOperation.cs</Link>
@@ -9993,6 +10059,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Details\Tabs\SortedColumn.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Details\Tabs\SortedColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Details\Tabs\VersionsGroupHeader.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Details\Tabs\VersionsGroupHeader.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Details\VersionInfoIcon.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Details\VersionInfoIcon.cs</Link>
@@ -11028,6 +11097,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\IProfilerAssistantService.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\IProfilerAssistantService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.Generated.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.Generated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.cs</Link>
@@ -14284,20 +14356,50 @@
     <Compile Include="..\..\Modules\TreeEditor\TreeEditorHelper.cs">
       <Link>Modules\TreeEditor\TreeEditorHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\2DProfilerMakers.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\2DProfilerMakers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\CellLabelWithIcon\CellLabelWithIcon.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\CellLabelWithIcon\CellLabelWithIcon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\Profile2DModule.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\Profile2DModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\SpriteAtlasProfilerCellData.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\SpriteAtlasProfilerCellData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\SpriteAtlasProfilerView.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\SpriteAtlasProfilerView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\SpriteProfilerView.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\SpriteProfilerView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\SpriteStatisticProfilerView.cs">
+      <Link>Modules\U2DEditor\Managed\2DProfiler\SpriteStatisticProfilerView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\U2DEditor\Managed\Assembly.cs">
       <Link>Modules\U2DEditor\Managed\Assembly.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\U2DEditor\Managed\CellLabelWithIcon\CellLabelWithIcon.cs">
-      <Link>Modules\U2DEditor\Managed\CellLabelWithIcon\CellLabelWithIcon.cs</Link>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\TilemapProfilerController.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\TilemapProfilerController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\U2DEditor\Managed\Profile2DModule.cs">
-      <Link>Modules\U2DEditor\Managed\Profile2DModule.cs</Link>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\TilemapProfilerMarkers.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\TilemapProfilerMarkers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\U2DEditor\Managed\SpriteAtlasProfilerCellData.cs">
-      <Link>Modules\U2DEditor\Managed\SpriteAtlasProfilerCellData.cs</Link>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\TilemapProfilerModule.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\TilemapProfilerModule.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\U2DEditor\Managed\SpriteAtlasProfilerView.cs">
-      <Link>Modules\U2DEditor\Managed\SpriteAtlasProfilerView.cs</Link>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapHierarchyView\TilemapHierarchyNodeData.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapHierarchyView\TilemapHierarchyNodeData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapHierarchyView\TilemapHierarchyView.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapHierarchyView\TilemapHierarchyView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapProfilerStatisticView\TilemapStatisticView.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapProfilerStatisticView\TilemapStatisticView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapProfilerView\TilemapProfilerView.cs">
+      <Link>Modules\U2DEditor\Managed\TilemapProfiler\UI\TilemapProfilerView\TilemapProfilerView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\U2DEditor\Public\Profiler2D.bindings.cs">
       <Link>Modules\U2DEditor\Public\Profiler2D.bindings.cs</Link>
@@ -15139,11 +15241,23 @@
     <Compile Include="..\..\Modules\UIElementsEditor\Preferences\UIPrefColorSection.cs">
       <Link>Modules\UIElementsEditor\Preferences\UIPrefColorSection.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Profiler\PanelComponentsPaneController.cs">
+      <Link>Modules\UIElementsEditor\Profiler\PanelComponentsPaneController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitDetailsProfilerModule.cs">
+      <Link>Modules\UIElementsEditor\Profiler\UIToolkitDetailsProfilerModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitDetailsProfilerModuleDetailsView.cs">
+      <Link>Modules\UIElementsEditor\Profiler\UIToolkitDetailsProfilerModuleDetailsView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitProfilerModule.cs">
       <Link>Modules\UIElementsEditor\Profiler\UIToolkitProfilerModule.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitProfilerModuleDetailsView.cs">
       <Link>Modules\UIElementsEditor\Profiler\UIToolkitProfilerModuleDetailsView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\Profiler\UIToolkitProfilerToolbarHelpers.cs">
+      <Link>Modules\UIElementsEditor\Profiler\UIToolkitProfilerToolbarHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\ProjectSettingsThemeDropdown.cs">
       <Link>Modules\UIElementsEditor\ProjectSettingsThemeDropdown.cs</Link>
@@ -15174,6 +15288,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\TooltipManager.bindings.cs">
       <Link>Modules\UIElementsEditor\TooltipManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\UIAnimationBinder.bindings.cs">
+      <Link>Modules\UIElementsEditor\UIAnimationBinder.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\UIElementsEditorInitialization.cs">
       <Link>Modules\UIElementsEditor\UIElementsEditorInitialization.cs</Link>
@@ -15430,6 +15547,21 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\UIElementsSnippetAsset.cs">
       <Link>Modules\UIElementsSamplesEditor\UIElementsSnippetAsset.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\UIAnimationBinderEditorExtensions.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\UIAnimationBinderEditorExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationClipUtility.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationClipUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationSelectionItem.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationSelectionItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationWindowClip.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationWindowClip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationWindowController.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\AnimationWindow\VisualElementAnimationWindowController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\AssemblyInfo.cs</Link>
     </Compile>
@@ -15484,6 +15616,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\DuplicateStyleRulePropertyCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\DuplicateStyleRulePropertyCommand.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\ExtractInlineStylesToNewClassCommand.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\ExtractInlineStylesToNewClassCommand.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\PasteElementsCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\PasteElementsCommand.cs</Link>
     </Compile>
@@ -15492,6 +15627,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveBindingCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveBindingCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveClassFromElementCommand.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveClassFromElementCommand.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveElementsCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\RemoveElementsCommand.cs</Link>
@@ -15663,6 +15801,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\PositionFoldout.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\PositionFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\AnimationClipNewButtonController.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\AnimationClipNewButtonController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\BorderBoxModelField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\BorderBoxModelField.cs</Link>
@@ -15988,6 +16129,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Binding\ShowOnlyCompatibleResultsToggle.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Binding\ShowOnlyCompatibleResultsToggle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\ClassListElement.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\ClassListElement.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Drawers\BindingConvertersPropertyDrawer.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Drawers\BindingConvertersPropertyDrawer.cs</Link>
     </Compile>
@@ -16044,6 +16188,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\LiveAttributePropertyController.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\LiveAttributePropertyController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\MatchingSelectorsElement.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\MatchingSelectorsElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Popup.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Inspector\Controls\Popup.cs</Link>
@@ -16135,6 +16282,12 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Preferences\ColorPreferences.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Preferences\ColorPreferences.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Queries\GetActiveStyleSheetQuery.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Queries\GetActiveStyleSheetQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Queries\RequestSelectionQuery.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Queries\RequestSelectionQuery.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Recording\AnimationRecordingChannelDispatcher.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Recording\AnimationRecordingChannelDispatcher.cs</Link>
     </Compile>
@@ -16143,6 +16296,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Recording\AnimationRecordingStyleBridge.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Recording\AnimationRecordingStyleBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Recording\PerElementAnimationContext.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Recording\PerElementAnimationContext.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Recording\SceneVisualElementAnimationResponder.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Recording\SceneVisualElementAnimationResponder.cs</Link>
@@ -16272,6 +16428,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\UIResources.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\UIResources.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\UIAnimationClipFactory.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Utilities\VisualElementUtility.cs</Link>
@@ -16501,6 +16660,9 @@
     <Compile Include="..\..\Modules\VideoEditor\Editor\VideoPlayerEditor.cs">
       <Link>Modules\VideoEditor\Editor\VideoPlayerEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\VideoEditor\Editor\VideoTestBuildPostprocessor.cs">
+      <Link>Modules\VideoEditor\Editor\VideoTestBuildPostprocessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
       <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
     </Compile>
@@ -16531,11 +16693,11 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_f7f7/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_9c18/buildTools/UnityEditor.MSBuild.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_9c18/msbuild.host/Unity.BuildService.Host.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_9c18/buildTools/Unity.BuildService.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_9c18/asmDefToCSProj/AsmDefToCSProjLib.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_7ef3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools_812e/buildTools/UnityEditor.MSBuild.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools_812e/msbuild.host/Unity.BuildService.Host.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools_812e/buildTools/Unity.BuildService.dll" />
+    <Reference Include="../../artifacts/Stevedore/msbu-tools_812e/asmDefToCSProj/AsmDefToCSProjLib.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/netstandard2.0/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />
@@ -16564,7 +16726,7 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\Linux_x64_Clang_15_0_glibc_2_35_dev_m_d_nolump\ManagedMonolithic\BoundToNative\UnityEditor.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\Debug\ManagedMonolithic\BoundToNative\UnityEditor.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>

@@ -28,8 +28,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FeaturePackageNumberLabel = new Label { name = "featurePackageNumber" };
             m_LeftContainer.Add(m_FeaturePackageNumberLabel);
 
-            m_EntitlementLabel = new Label {name = "entitlementLabel"};
-            m_LeftContainer.Add(m_EntitlementLabel);
+            m_EnterpriseLabel = new Label {name = "entitlementLabel"};
+            m_LeftContainer.Add(m_EnterpriseLabel);
 
             m_VersionLabel = new Label {name = "versionLabel"}.WithClassList("version", "middle");
             Add(m_VersionLabel);
@@ -155,17 +155,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshEntitlement(IPackage package)
         {
-            var showEntitlement = package.hasEntitlements;
-            UIUtils.SetElementDisplay(m_EntitlementLabel, showEntitlement);
-            m_EntitlementLabel.text = showEntitlement ? "E" : string.Empty;
-            m_EntitlementLabel.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
+            var showEnterpriseLabel = package.isEnterprise;
+            UIUtils.SetElementDisplay(m_EnterpriseLabel, showEnterpriseLabel);
+
+            if (!showEnterpriseLabel)
+                return;
+            m_EnterpriseLabel.text = "E";
+            m_EnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.");
         }
 
         private readonly Label m_NameLabel;
         private readonly Label m_FeaturePackageNumberLabel;
         private readonly PackageDynamicTagLabel m_TagLabel;
         private readonly VisualElement m_StateIcon;
-        private readonly Label m_EntitlementLabel;
+        private readonly Label m_EnterpriseLabel;
         private readonly Label m_VersionLabel;
         private readonly VisualElement m_PackageTypeIcon;
         private readonly VisualElement m_LeftContainer;

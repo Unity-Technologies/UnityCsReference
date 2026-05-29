@@ -51,16 +51,16 @@ namespace UnityEditor.Build.Analysis
             }
 
             var cachedReusePercent = ComputeCachedReusePercent(buildReport);
-            var assetCount = ComputeAssetCount(buildReport);
+            var assets = ExtractAssets(buildReport);
 
             return new BuildReportData
             {
                 Steps = parsedSteps,
                 Messages = parsedMessages.ToArray(),
+                Assets = assets,
                 TotalDurationMs = (long)buildReport.summary.totalTime.TotalMilliseconds,
                 TotalErrors = buildReport.summary.totalErrors,
                 TotalWarnings = buildReport.summary.totalWarnings,
-                AssetCount = assetCount,
                 CachedReusePercent = cachedReusePercent,
             };
         }
@@ -89,17 +89,42 @@ namespace UnityEditor.Build.Analysis
             return percent;
         }
 
-        private static int ComputeAssetCount(BuildReport buildReport)
+        private static BuildReportAssetData[] ExtractAssets(BuildReport buildReport)
         {
             if (buildReport == null)
-                return 0;
+                return Array.Empty<BuildReportAssetData>();
 
             var contentSummary = buildReport.contentSummary;
             if (contentSummary == null)
-                return 0;
+                return Array.Empty<BuildReportAssetData>();
 
             var assetStats = contentSummary.assetStats;
-            return assetStats.Length;
+            if (assetStats.Length == 0)
+                return Array.Empty<BuildReportAssetData>();
+
+            var guids = new GUID[assetStats.Length];
+            for (var i = 0; i < assetStats.Length; i++)
+                guids[i] = assetStats[i].sourceAssetGUID;
+
+            var importerTypes = AssetDatabase.GetImporterTypes(guids);
+            Debug.Assert(importerTypes.Length == assetStats.Length);
+
+            var assets = new BuildReportAssetData[assetStats.Length];
+            for (var i = 0; i < assetStats.Length; i++)
+            {
+                var stats = assetStats[i];
+                assets[i] = new BuildReportAssetData
+                {
+                    Path = stats.sourceAssetPath ?? string.Empty,
+                    GUID = stats.sourceAssetGUID.ToString(),
+                    OutputSizeBytes = stats.size,
+                    ObjectCount = stats.objectCount,
+                    ResourceCount = stats.resourceCount,
+                    ImporterTypeName = importerTypes[i]?.Name,
+                };
+            }
+
+            return assets;
         }
 
         private static string ToSeverityString(LogType messageType)

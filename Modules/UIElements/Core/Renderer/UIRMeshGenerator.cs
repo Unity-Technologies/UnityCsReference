@@ -103,10 +103,10 @@ namespace UnityEngine.UIElements.UIR
             public Vector2 bottomLeftRadius;
 
             // The color allocations
-            internal ColorPage leftColorPage;
-            internal ColorPage topColorPage;
-            internal ColorPage rightColorPage;
-            internal ColorPage bottomColorPage;
+            internal ColorId leftColorId;
+            internal ColorId topColorId;
+            internal ColorId rightColorId;
+            internal ColorId bottomColorId;
 
             internal void ToNativeParams(out MeshBuilderNative.NativeBorderParams nativeBorderParams)
             {
@@ -124,10 +124,10 @@ namespace UnityEngine.UIElements.UIR
                     topRightRadius = topRightRadius,
                     bottomRightRadius = bottomRightRadius,
                     bottomLeftRadius = bottomLeftRadius,
-                    leftColorPage = leftColorPage.ToNativeColorPage(),
-                    topColorPage = topColorPage.ToNativeColorPage(),
-                    rightColorPage = rightColorPage.ToNativeColorPage(),
-                    bottomColorPage = bottomColorPage.ToNativeColorPage()
+                    leftColorId = leftColorId.ToNativeColorId(),
+                    topColorId = topColorId.ToNativeColorId(),
+                    rightColorId = rightColorId.ToNativeColorId(),
+                    bottomColorId = bottomColorId.ToNativeColorId()
                 };
             }
         }
@@ -183,7 +183,7 @@ namespace UnityEngine.UIElements.UIR
             public Vector4 rectInset;
 
             // The color allocation
-            internal ColorPage colorPage;
+            internal ColorId colorId;
 
             internal MeshGenerationContext.MeshFlags meshFlags;
 
@@ -566,7 +566,7 @@ namespace UnityEngine.UIElements.UIR
                     bottomSlice = bottomSlice,
                     sliceScale = sliceScale,
                     rectInset = rectInset,
-                    colorPage = colorPage.ToNativeColorPage(),
+                    colorId = colorId.ToNativeColorId(),
                     meshFlags = (int)meshFlags
                 };
             }
@@ -625,6 +625,7 @@ namespace UnityEngine.UIElements.UIR
         };
 
         NativeTextGenerationSettings m_NativeSettings;
+        NativeTextBuffer m_NativeTextBuffer;
 
         static TextLib s_TextLib;
 
@@ -714,7 +715,8 @@ namespace UnityEngine.UIElements.UIR
 
             textSettings.UpdateNativeTextSettings();
 
-            m_NativeSettings.text = text ?? "";
+            m_NativeTextBuffer.CopyFrom(text ?? "");
+            m_NativeSettings.SetTextBuffer(m_NativeTextBuffer.buffer, m_NativeTextBuffer.length);
             m_NativeSettings.fontAsset = font.nativeFontAsset;
             m_NativeSettings.textSettings = textSettings.nativeTextSettings;
             m_NativeSettings.fontSize = (int)Mathf.Round(fontSize) * 64;
@@ -978,14 +980,13 @@ namespace UnityEngine.UIElements.UIR
 
             // vertex.uv2.y can be between -3 and 3, but we want negative to be less impactful than positive.
             // -3 = -1, -1 = -0.33, 0 = 0, 1 = 1...
-            // We then encode it so it can be received as a byte on the shader side. (UnityUIE.cginc, extraDilate)
+            // Shader extraDilate expects a normalized 0..1 value (see UnityUIE.cginc).
             float dilate;
             if(isTextCore)
                 dilate = x < 0.0f ? 1.0f : 0.0f;
             else
                 dilate = x < 0.0f ? x / 3.0f : x;
-            float normalized = Mathf.Clamp01((dilate + 1.0f) / 4.0f);
-            byte encodedDilate = (byte)Mathf.RoundToInt(normalized * 255.0f);
+            float normalizedDilate = Mathf.Clamp01((dilate + 1.0f) / 4.0f);
 
             var tint = vertex.color;
             if (isColorGlyph)
@@ -998,8 +999,8 @@ namespace UnityEngine.UIElements.UIR
                 position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
                 tint = tint,
-                // TODO: Don't set the flags here. The mesh conversion should perform these changes
-                flags = new Color32(0, encodedDilate, 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
+                flags = isDynamicColor ? VertexFlags.DynamicColorEnabledText : VertexFlags.DynamicColorDisabled,
+                circle = new Vector4(normalizedDilate, 0, 0, 0)
             };
         }
 
@@ -1094,9 +1095,12 @@ namespace UnityEngine.UIElements.UIR
                 var v = vectorImage.vertices[i];
                 var p = matrix.MultiplyPoint3x4(v.position);
                 p.z = Vertex.nearZ;
-                var si = new Color32((byte)(v.settingIndex >> 8), (byte)v.settingIndex, 0, 0);
-
-                vertices[i] = new Vertex { position = p, tint = v.tint, uv = v.uv, settingIndex = si, flags = v.flags, circle = v.circle };
+                vertices[i] = new Vertex {
+                    position = p, tint = v.tint, uv = v.uv,
+                    svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
+                    flags = v.vertexFlags,
+                    circle = v.circle
+                };
             }
 
             if (!flipWinding)
@@ -1985,16 +1989,15 @@ namespace UnityEngine.UIElements.UIR
 
                 AdjustSpriteWinding(spriteVertices, spriteIndices, indices);
 
-                var colorPage = rectParams.colorPage;
-                var pageAndID = colorPage.pageAndID;
+                var colorId = rectParams.colorId;
 
                 // UUM-136987 Dynamic color is now applied as a multiplier tint, so we
                 // need to force the mesh color to white.
-                var color = (colorPage.isValid != 0) ? Color.white : rectParams.color;
+                var color = (colorId.isValid != 0) ? Color.white : rectParams.color;
 
-                var flags = new Color32(0, 0, 0, (colorPage.isValid != 0) ? (byte)1 : (byte)0);
-                var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
-                var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+                bool isDynamicColor = colorId.isValid != 0;
+                VertexFlags flags = isDynamicColor ? VertexFlags.DynamicColorEnabled : VertexFlags.DynamicColorDisabled;
+                ushort dynamicColorId = colorId.id;
 
                 for (int i = 0; i < vertexCount; ++i)
                 {
@@ -2010,9 +2013,8 @@ namespace UnityEngine.UIElements.UIR
                         position = new Vector3(v.x, v.y, Vertex.nearZ),
                         tint = color,
                         uv = spriteUV[i],
+                        dynamicColorOrTextCoreId = dynamicColorId,
                         flags = flags,
-                        opacityColorPages = page,
-                        ids = ids
                     };
                 }
 
@@ -2026,7 +2028,6 @@ namespace UnityEngine.UIElements.UIR
             {
                 bool isUsingGradients = (rectParams.meshFlags & (int)MeshGenerationContext.MeshFlags.IsUsingVectorImageGradients) != 0;
 
-                // Convert the VectorImage's serializable vertices to Vertex instances
                 int vertexCount = vi.vertices.Length;
                 var svgVertices = new Vertex[vertexCount];
                 for (int i = 0; i < vertexCount; ++i)
@@ -2036,8 +2037,8 @@ namespace UnityEngine.UIElements.UIR
                         position = v.position,
                         tint = v.tint,
                         uv = v.uv,
-                        settingIndex = new Color32((byte)(v.settingIndex >> 8), (byte)v.settingIndex, 0, 0),
-                        flags = v.flags,
+                        svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
+                        flags = v.vertexFlags,
                         circle = v.circle
                     };
                 }
@@ -2047,12 +2048,12 @@ namespace UnityEngine.UIElements.UIR
                     rectParams.rightSlice <= UIRUtility.k_Epsilon &&
                     rectParams.bottomSlice <= UIRUtility.k_Epsilon)
                 {
-                    meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorPage);
+                    meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorId);
                 }
                 else
                 {
                     var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
-                    meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorPage);
+                    meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorId);
                 }
 
                 NativeSlice<Vertex> nativeVertices;
@@ -2103,6 +2104,7 @@ namespace UnityEngine.UIElements.UIR
                 }
                 m_GCHandlePool.Dispose();
                 m_JobParameters.Dispose();
+                m_NativeTextBuffer.Dispose();
             }
 
             disposed = true;

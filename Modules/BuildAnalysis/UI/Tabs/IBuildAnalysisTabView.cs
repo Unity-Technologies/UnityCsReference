@@ -12,5 +12,6 @@ namespace UnityEditor.Build.Analysis
         void Initialize();
         void SetSelection(BuildEntry selection, BuildAnalysis analysis);
         void OnTabVisibilityChanged(bool isVisible);
+        void OnInspectorVisibilityChanged(bool isOpen);
     }
 }

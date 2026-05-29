@@ -31,7 +31,6 @@ enum LayoutConfigDataType
 }
 
 delegate void LayoutMeasureFunction(
-    VisualElement ve,
     ref LayoutNode node,
     float width,
     LayoutMeasureMode widthMode,
@@ -218,7 +217,6 @@ internal class LayoutManager : IDisposable
 
     readonly ManagedObjectStore<LayoutMeasureFunction> m_ManagedMeasureFunctions = new(k_CapacitySmall);
     readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new(k_CapacitySmall);
-    readonly ManagedObjectStore<GCHandle> m_ManagedOwners = new();
 
     readonly ProfilerMarker m_CollectMarker = new (ProfilerCategory.UIToolkit, "UIElements.CollectLayoutNodes");
 
@@ -228,44 +226,19 @@ internal class LayoutManager : IDisposable
     // Used in tests.
     public int NodeCapacity => m_Nodes.Capacity;
 
-    private ComputedStyle m_InitialStyle = InitialStyle.Get();
-
-    // Used in tests. Set to true for tests with nodes that don't have VisualElements driving them.
-    // Normally, computed styles use the InitialStyle as their starting value,
-    // but our tests that create layout nodes currently expect a "default" computed style instead.
-    internal bool OverrideInitialStyle
-    {
-        set => m_InitialStyle = value ? ComputedStyle.CreateInitial() : InitialStyle.Get();
-    }
-
     internal static LayoutManager GetManager(int index)
         => (uint) index < s_Managers.Count ? s_Managers[index] : null;
 
-    public LayoutManager(Allocator allocator) : this(allocator, DefaultCapacity) {}
+    public LayoutManager(Allocator allocator) : this(allocator, DefaultCapacity, InitialStyle.Get()) {}
 
-    public LayoutManager(Allocator allocator, int initialNodeCapacity)
+    public unsafe LayoutManager(Allocator allocator, int initialNodeCapacity, ComputedStyle initialStyle)
     {
         m_Index = s_Managers.Count;
         s_Managers.Add(this);
 
-        var nodeComponentTypes = new[]
-        {
-            UnmanagedComponentType.Create<LayoutNodeData>(),
-            UnmanagedComponentType.Create<LayoutComputedData>(),
-            UnmanagedComponentType.Create<LayoutCacheData>(),
-            UnmanagedComponentType.Create<ComputedStyle>(),
-            UnmanagedComponentType.Create<VisualElementTransformData>(),
-        };
-
         const string areaName = nameof(UIElements);
-        ReadOnlySpan<MemoryLabel> nodeComponentLabels = stackalloc MemoryLabel[]
-        {
-            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutNodeData)}>"),
-            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutComputedData)}>"),
-            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutCacheData)}>"),
-            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(ComputedStyle)}>"),
-            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(VisualElementTransformData)}>"),
-        };
+
+        // Configs
 
         var configComponentTypes = new[]
         {
@@ -278,11 +251,55 @@ internal class LayoutManager : IDisposable
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(PanelTransformData)}>"),
         };
 
-        m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, initialNodeCapacity, allocator);
-        m_Configs = new UnmanagedDataStore(configComponentTypes, configComponentLabels, k_InitialConfigCapacity, allocator);
+        var layoutConfigData = LayoutConfigData.Default;
+        var panelTransformData = PanelTransformData.Default;
+        byte** configComponentData = stackalloc byte*[]
+        {
+            (byte*)&layoutConfigData,
+            (byte*)&panelTransformData,
+        };
+        m_Configs = new UnmanagedDataStore(configComponentTypes, configComponentLabels, configComponentData,
+            k_InitialConfigCapacity, allocator);
 
         m_DefaultConfig = CreateConfig().Handle;
         LayoutNodeData.Default.Config = m_DefaultConfig;
+
+        // Nodes
+
+        var nodeComponentTypes = new[]
+        {
+            UnmanagedComponentType.Create<LayoutNodeData>(),
+            UnmanagedComponentType.Create<LayoutComputedData>(),
+            UnmanagedComponentType.Create<LayoutCacheData>(),
+            UnmanagedComponentType.Create<ComputedStyle>(),
+            UnmanagedComponentType.Create<VisualElementTransformData>(),
+        };
+
+        ReadOnlySpan<MemoryLabel> nodeComponentLabels = stackalloc MemoryLabel[]
+        {
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutNodeData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutComputedData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutCacheData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(ComputedStyle)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(VisualElementTransformData)}>"),
+        };
+
+        var layoutNodeData = LayoutNodeData.Default;
+        var layoutComputedData = LayoutComputedData.Default;
+        var layoutCacheData = LayoutCacheData.Default;
+        var visualElementTransformData = VisualElementTransformData.Default;
+
+        byte** nodeComponentData = stackalloc byte*[]
+        {
+            (byte*)&layoutNodeData,
+            (byte*)&layoutComputedData,
+            (byte*)&layoutCacheData,
+            (byte*)&initialStyle,
+            (byte*)&visualElementTransformData
+        };
+
+        m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, nodeComponentData,
+            initialNodeCapacity, allocator);
     }
 
     public void Dispose()
@@ -294,24 +311,15 @@ internal class LayoutManager : IDisposable
             // if m_HighMark == 0, then a single node was allocated and we need to dispose it
             for (var i = 0; i <= m_HighMark; i++)
             {
+                if (m_Nodes.IsFree(i))
+                    continue;
+
                 var cache = (LayoutCacheData*)m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.Cache);
                 cache->ClearCachedMeasurements();
-
-                var data = (LayoutNodeData*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.Node);
-
-                if (data->Children.IsCreated)
-                {
-                    data->Children.Dispose();
-                    data->Children = new();
-                }
 
                 var computedStyle = (ComputedStyle*) m_Nodes.GetComponentDataPtr(i, (int)LayoutNodeDataType.ComputedStyle);
                 // Safe-release is called because the ComputedStyle has already been released if this node was recycled through Collect()
                 computedStyle->SafeRelease();
-
-                var owner = m_ManagedOwners.GetValue(data->ManagedOwnerIndex);
-                if (owner.IsAllocated)
-                    owner.Free();
             }
         }
 
@@ -332,7 +340,7 @@ internal class LayoutManager : IDisposable
 
     public LayoutConfig CreateConfig()
     {
-        return new LayoutConfig(GetAccess(), m_Configs.Allocate(LayoutConfigData.Default, PanelTransformData.Default));
+        return new LayoutConfig(GetAccess(), m_Configs.Allocate());
     }
 
     public void DestroyConfig(ref LayoutConfig config)
@@ -341,46 +349,38 @@ internal class LayoutManager : IDisposable
         config = LayoutConfig.Undefined;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LayoutNode CreateNode()
     {
-        return CreateNodeInternal(m_DefaultConfig);
+        return CreateNodeInternal();
     }
 
     public LayoutNode CreateNode(LayoutConfig config)
     {
-        return CreateNodeInternal(config.Handle);
+        var node = CreateNodeInternal();
+        node.Config = config;
+        return node;
     }
 
     public LayoutNode CreateNode(LayoutNode source)
     {
-        var node = CreateNodeInternal(source.Config.Handle);
+        var node = CreateNodeInternal();
+        node.Config = source.Config;
         node.CopyStyle(source);
         return node;
     }
 
-    LayoutNode CreateNodeInternal(UnmanagedDataHandle configHandle)
+    LayoutNode CreateNodeInternal()
     {
         TryRecycleSingleNode();
 
-        var data = LayoutNodeData.Default;
-        data.Config = configHandle;
-
-        var computedStyle = m_InitialStyle.Acquire();
-
-        var handle = m_Nodes.Allocate(
-            data,
-            LayoutComputedData.Default,
-            LayoutCacheData.Default,
-            computedStyle,
-            VisualElementTransformData.Default
-        );
+        var handle = m_Nodes.Allocate();
 
         if (handle.Index > m_HighMark)
             m_HighMark = handle.Index;
 
         var node = new LayoutNode(GetAccess(), handle);
-
-        Debug.Assert(!GetAccess().GetNodeData(handle).Children.IsCreated, "memory is not initialized" );
+        node.ComputedStyle.Acquire();
         return node;
     }
 
@@ -421,30 +421,16 @@ internal class LayoutManager : IDisposable
     unsafe void FreeNode(UnmanagedDataHandle handle)
     {
         var access = GetAccess();
-        ref var data = ref access.GetNodeData(handle);
-        if (data.Children.IsCreated)
-        {
-            data.Children.Dispose();
-            data.Children = new();
-        }
 
         ref var cache = ref access.GetCacheData(handle);
         cache.ClearCachedMeasurements();
 
+        ref var data = ref access.GetNodeData(handle);
         data.UsesMeasure = false;
         data.UsesBaseline = false;
 
         ref var computedStyle = ref access.GetComputedStyle(handle);
         computedStyle.Release();
-
-        //This assumes an internal behavior of the managed object store... invalid could be -1 instead
-        if (data.ManagedOwnerIndex != 0)
-        {
-            GCHandle owner = m_ManagedOwners.GetValue(data.ManagedOwnerIndex);
-            if (owner.IsAllocated)
-                owner.Free();
-            m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, default);
-        }
 
         m_Nodes.Free(handle);
     }
@@ -453,37 +439,6 @@ internal class LayoutManager : IDisposable
     {
         using (m_CollectMarker.Auto())
             TryRecycleNodes();
-    }
-
-    public VisualElement GetOwner(UnmanagedDataHandle handle)
-    {
-        //This assumes an internal behavior of the managed object store... invalid could be -1 instead
-        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0)
-            return null;
-
-        // Will throw if the weak referenc is not in the list
-        return m_ManagedOwners.GetValue(GetAccess().GetNodeData(handle).ManagedOwnerIndex).Target as VisualElement;
-    }
-
-    public void SetOwner(UnmanagedDataHandle handle, VisualElement value)
-    {
-        if (value == null)
-        {
-            if (GetAccess().GetNodeData(handle).UsesMeasure) Debug.LogWarning("Node with no owner uses measure feature");
-            if (GetAccess().GetNodeData(handle).UsesBaseline) Debug.LogWarning("Node with no owner uses baseline feature");
-        }
-        ref var index = ref GetAccess().GetNodeData(handle).ManagedOwnerIndex;
-
-        GCHandle gcHandle = m_ManagedOwners.GetValue(index);
-        if (gcHandle.IsAllocated)
-            gcHandle.Free();
-
-        if (value == null)
-            gcHandle = default;
-        else
-            gcHandle = GCHandle.Alloc(value, GCHandleType.Weak);
-
-        m_ManagedOwners.UpdateValue(ref index, gcHandle);
     }
 
     public LayoutMeasureFunction GetMeasureFunction(UnmanagedDataHandle handle)

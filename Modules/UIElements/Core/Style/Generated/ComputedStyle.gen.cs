@@ -1557,19 +1557,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, TextShadow newValue)
-        {
-            switch (id)
-            {
-                case StylePropertyId.TextShadow:
-                    inheritedData.Write().textShadow = newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
-                    break;
-                default:
-                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
-            }
-        }
-
         public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, List<FilterFunction> newValue)
         {
             switch (id)
@@ -1580,6 +1567,19 @@ namespace UnityEngine.UIElements
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List<FilterFunction>' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, TextShadow newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.TextShadow:
+                    inheritedData.Write().textShadow = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TextShadow' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }
         }
 
@@ -1679,6 +1679,7 @@ namespace UnityEngine.UIElements
                     {
                         inheritedData.Write().unityFont = newValue;
                         ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                        (ve as TextElement)?.RefreshCachedFontAsset();
                     }
 
                     break;
@@ -1687,6 +1688,7 @@ namespace UnityEngine.UIElements
                     {
                         inheritedData.Write().unityFontDefinition = newValue;
                         ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                        (ve as TextElement)?.RefreshCachedFontAsset();
                     }
 
                     break;

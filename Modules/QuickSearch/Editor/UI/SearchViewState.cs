@@ -74,10 +74,12 @@ namespace UnityEditor.Search
         public string title;
 
         [Obsolete]
+        [NonSerialized]
         public float itemSize;
 
         [FormerlySerializedAs("itemSize")]
         [SerializeField] private float m_ItemIconSize;
+
         public float itemIconSize {
             get
             {

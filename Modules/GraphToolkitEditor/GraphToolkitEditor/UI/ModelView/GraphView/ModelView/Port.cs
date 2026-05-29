@@ -16,7 +16,7 @@ namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
     /// UI for a <see cref="PortModel"/>.
-    /// Allows connection of <see cref="Wire"/>s.
+    /// Allows connection of <see cref="WireView"/>s.
     /// Handles dropping of elements on top of them to create a wire.
     /// </summary>
     [UnityRestricted]

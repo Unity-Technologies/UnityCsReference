@@ -211,6 +211,50 @@ namespace UnityEngine.Jobs
             get => index;
             set => index = value;
         }
+
+        // Hierarchy traversal methods for TransformRef
+        internal int GetParentIndex()
+        {
+            if (!isValid)
+                return -1;
+            return TransformHierarchy.GetParentIndex(this);
+        }
+
+        internal ulong GetParentEntityReference()
+        {
+            if (!isValid)
+                return 0;
+            return TransformHierarchy.GetParentEntityReference(this);
+        }
+
+        internal int GetChildCount()
+        {
+            if (!isValid)
+                return 0;
+            return TransformHierarchy.GetChildCount(this);
+        }
+
+        internal int GetChildIndex(int childPosition)
+        {
+            if (!isValid)
+                return -1;
+            return TransformHierarchy.GetChildIndex(this, childPosition);
+        }
+
+        internal ulong GetEntityReferenceAtIndex(int idx)
+        {
+            if (!isValid)
+                return 0;
+            return TransformHierarchy.GetEntityReferenceAtIndex(this, idx);
+        }
+
+        // Batch function to get all child entities at once (more efficient than iterating)
+        internal unsafe int GetChildEntities(ulong* outChildEntities, int maxCount)
+        {
+            if (!isValid)
+                return 0;
+            return TransformHierarchy.GetChildEntities(this, outChildEntities, maxCount);
+        }
     }
 
     //@TODO: Static code analysis needs to prevent creation of TransformAccess

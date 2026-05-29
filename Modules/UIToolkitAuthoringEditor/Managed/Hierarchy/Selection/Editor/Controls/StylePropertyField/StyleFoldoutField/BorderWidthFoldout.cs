@@ -65,10 +65,10 @@ namespace Unity.UIToolkit.Editor
             leftRow.Add(leftField);
             Add(leftRow);
 
-            topField.tooltip = "USS property: border-top-width\n\nSpace reserved for the top edge of the border during the layout phase.";
-            rightField.tooltip = "USS property: border-right-width\n\nSpace reserved for the right edge of the border during the layout phase.";
-            bottomField.tooltip = "USS property: border-bottom-width\n\nSpace reserved for the bottom edge of the border during the layout phase.";
-            leftField.tooltip = "USS property: border-left-width\n\nSpace reserved for the left edge of the border during the layout phase.";
+            topField.tooltip = "<b>USS property: border-top-width</b>\nSpace reserved for the top edge of the border during the layout phase.";
+            rightField.tooltip = "<b>USS property: border-right-width</b>\nSpace reserved for the right edge of the border during the layout phase.";
+            bottomField.tooltip = "<b>USS property: border-bottom-width</b>\nSpace reserved for the bottom edge of the border during the layout phase.";
+            leftField.tooltip = "<b>USS property: border-left-width</b>\nSpace reserved for the left edge of the border during the layout phase.";
 
             topField.AddValidation(new Syntax("border-top-width"));
             rightField.AddValidation(new Syntax("border-right-width"));
@@ -137,11 +137,11 @@ namespace Unity.UIToolkit.Editor
             var allTheSame = true;
             var singleValue = "none";
             var cumulativeValue = string.Empty;
-            var shouldBeEnabled = true;
+            var shouldBeEnabled = false;
 
             for (var i = 0; i < fields.Count; ++i)
             {
-                shouldBeEnabled &= fields[i].enabledSelf;
+                shouldBeEnabled |= fields[i].enabledSelf;
                 var childValue = fields[i].value.ToString().ToLower();
                 if (childValue.Equals("0"))
                 {

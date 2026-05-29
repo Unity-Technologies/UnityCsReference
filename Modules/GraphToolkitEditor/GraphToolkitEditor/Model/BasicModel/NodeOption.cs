@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -61,6 +62,17 @@ namespace Unity.GraphToolkit.Editor
         bool INodeOption.TryGetValue<T>(out T value)
         {
             return PortModel.EmbeddedValue.TryGetValue(out value);
+        }
+
+        bool INodeOption.TrySetValue<T>(T value)
+        {
+            var graphModel = PortModel.GraphModel as GraphModelImp;
+            graphModel?.CheckModificationLock();
+
+            var result = PortModel.EmbeddedValue.TrySetValue(value);
+            PortModel.EmbeddedValue.SetterMethod?.Invoke(value);
+
+            return result;
         }
     }
 }

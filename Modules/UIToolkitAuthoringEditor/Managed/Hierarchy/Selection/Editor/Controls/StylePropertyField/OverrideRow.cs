@@ -246,7 +246,7 @@ namespace Unity.UIToolkit.Editor
 
             foreach (var property in trackedProperties)
             {
-                if (property.Contains(searchText, StringComparison.InvariantCultureIgnoreCase) &&
+                if (property.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
                     m_TrackedProviders.ContainsKey(property))
                     return true;
             }

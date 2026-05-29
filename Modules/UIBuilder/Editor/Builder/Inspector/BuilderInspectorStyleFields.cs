@@ -20,6 +20,7 @@ using UnityEngine.UIElements.StyleSheets;
 using Unity.Collections;
 using Unity.Properties;
 using Unity.UIToolkit.Editor;
+using Unity.UIToolkit.Editor.Utilities;
 using Button = UnityEngine.UIElements.Button;
 using Cursor = UnityEngine.UIElements.Cursor;
 
@@ -446,6 +447,15 @@ namespace Unity.UI.Builder
                 if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(objField.typeName + BuilderConstants.FieldTooltipDictionarySeparator, out var styleValueTooltip))
                     objField.visualInput.tooltip = styleValueTooltip;
                 objField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+
+                // Query the row (not objField.parent) so the wiring tolerates UXML layout tweaks.
+                var newButton = styleRow?.MandatoryQ<Button>(BuilderConstants.AnimationClipNewButtonName);
+                if (newButton != null)
+                {
+                    // Replace clickable (not `clicked +=`) so re-binding doesn't stack handlers.
+                    newButton.clickable = new Clickable(() => CreateAndAssignNewUIAnimationClipFromDialog(objField, styleName));
+                    AnimationClipNewButtonController.MirrorEnabledStateOntoButton(newButton, objField);
+                }
             }
             else if (IsComputedStyleCursor(val) && fieldElement is CursorStyleField)
             {
@@ -2808,6 +2818,30 @@ namespace Unity.UI.Builder
                 styleProperty.SetAssetReference(styleSheet, newValue);
 
             PostStyleFieldSteps(target as VisualElement, styleProperty, styleName, isNewValue);
+        }
+
+        // Split from the helper below so tests can drive asset creation without showing a dialog.
+        void CreateAndAssignNewUIAnimationClipFromDialog(ObjectField objField, string styleName)
+        {
+            var path = BuilderDialogsUtility.DisplaySaveFileDialog(
+                BuilderConstants.SaveDialogCreateUIAnimationClipTitle,
+                null,
+                BuilderConstants.SaveDialogCreateUIAnimationClipDefaultName,
+                "asset");
+            if (path == null)
+                return;
+            CreateAndAssignNewUIAnimationClip(objField, styleName, path);
+        }
+
+        // Assignment goes through OnFieldObjectValueChange so the StyleSheet write and Undo match a manual edit.
+        internal UIAnimationClip CreateAndAssignNewUIAnimationClip(ObjectField objField, string styleName, string path)
+        {
+            return UIAnimationClipFactory.CreateAssetAndAssignToField(path, loaded =>
+            {
+                var previousValue = objField.value;
+                objField.SetValueWithoutNotify(loaded);
+                OnFieldObjectValueChange(objField, loaded, previousValue, styleName);
+            });
         }
 
         void OnFieldValueChange(ChangeEvent<Cursor> e, string styleName)

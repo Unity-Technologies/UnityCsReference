@@ -567,6 +567,9 @@ namespace UnityEngine
 
         extern public bool ambisonic { get; }
 
+        [NativeMethod(Name = "AudioClipBindings::IsValidAmbisonicChannelCount", IsFreeFunction = true)]
+        internal static extern bool IsValidAmbisonicChannelCount(int channels);
+
         extern public bool loadInBackground { get; }
 
         extern public AudioDataLoadState loadState

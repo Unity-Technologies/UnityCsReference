@@ -249,6 +249,14 @@ namespace UnityEditor
                     throw new ArgumentException("Non-development build cannot allow auto-connecting the profiler. Either add the Development build option, or remove the ConnectWithProfiler build option.");
                 }
             }
+            else
+            {
+                if ((buildPlayerOptions.options & BuildOptions.EnableCodeCoverage) != 0)
+                {
+                    if (!BuildProfileModuleUtil.IsBuildTargetSupportedByCoverage(buildPlayerOptions.target))
+                        throw new ArgumentException("Code coverage is unavailable for the selected build target. Remove the EnableCodeCoverage build option.");
+                }
+            }
 
             try
             {
@@ -421,12 +429,15 @@ namespace UnityEditor
         /// Each entry in <see cref="BuildContentDirectoryParameters.rootAssetPaths"/> must be a <c>ScriptableObject</c>; the build includes those roots and
         /// everything they reference (including <see cref="Unity.Loading.LoadableObjectId"/>, <see cref="Unity.Loading.Loadable{T}"/>, and <see cref="Unity.Loading.LoadableSceneId"/>).
         /// Creates an <c>outputPath</c> if missing, normalizes path separators, and defaults <see cref="BuildContentDirectoryParameters.name"/> to the output folder name.
+        ///
+        /// The build uses <see cref="EditorUserBuildSettings.activeBuildTarget"/> and the active subtarget configured for that target in the build settings.
+        /// Select the intended platform in the **Build Profile** window or through [command line arguments](xref:um-command-line-arguments) so that the active target is set to the desired setting prior to calling this method.
         /// </remarks>
         ///<example>
         ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildContentDirectory.cs"/>
         ///</example>
-        /// <param name="buildParameters">Build settings (paths, roots, platform, options, compression).</param>
-        /// <returns>The <see cref="BuildReport"/> for this build.</returns>
+        /// <param name="buildParameters">The build settings to use for the build, such as paths, roots, options, and compression.</param>
+        /// <returns>The <see cref="BuildReport"/> that contains the results and details of the build.</returns>
         /// <exception cref="ArgumentException"><see cref="BuildContentDirectoryParameters.outputPath"/> is null or empty.</exception>
         /// <seealso cref="BuildContentDirectoryParameters"/>
         /// <seealso cref="Unity.Loading.ContentLoadManager"/>

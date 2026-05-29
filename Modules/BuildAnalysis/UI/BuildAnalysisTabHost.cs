@@ -60,6 +60,12 @@ namespace UnityEditor.Build.Analysis
             OnActiveTabChanged(null, m_TabView?.activeTab);
         }
 
+        public void SetInspectorOpen(bool isOpen)
+        {
+            foreach (var registration in m_TabRegistrations)
+                registration.TabView.OnInspectorVisibilityChanged(isOpen);
+        }
+
         private void OnActiveTabChanged(Tab previousTab, Tab newTab)
         {
             foreach (var registration in m_TabRegistrations)

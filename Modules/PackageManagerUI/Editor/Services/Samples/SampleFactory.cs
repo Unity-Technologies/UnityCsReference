@@ -83,7 +83,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var package = m_PackageDatabase.GetPackage(packageUniqueId);
                 var sampleInfoCollection = m_SampleCache.GetSampleInfoCollection(packageUniqueId);
-                var packageInfo = m_UpmCache.GetInstalledPackageInfoByUniqueId(packageUniqueId);
+                var packageName = package?.name ?? string.Empty;
+                var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
                 if (sampleInfoCollection == null || packageInfo == null || package == null)
                     removed.Add(packageUniqueId);
                 else

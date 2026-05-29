@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
+using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -224,7 +225,18 @@ internal sealed class CommandSystem
             foreach (var obj in m_ActiveGroupUndoObjects)
             {
                 if (obj != null)
+                {
                     EditorUtility.SetDirty(obj);
+                    switch (obj)
+                    {
+                        case VisualTreeAsset vta:
+                            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
+                            break;
+                        case StyleSheet ss:
+                            UIElementsUtility.MarkStyleSheetAsChanged(ss);
+                            break;
+                    }
+                }
             }
 
             m_ActiveGroupUndoObjects.Clear();

@@ -12,8 +12,9 @@ namespace Unity.U2D.Physics
     internal static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsChain::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsChainDefinition PhysicsChain_GetDefaultDefinition(bool useSettings);
-        [NativeMethod(Name = "PhysicsChain::Create", IsThreadSafe = true)] extern internal static PhysicsChain PhysicsChain_Create(PhysicsBody body, ChainGeometry geometry, PhysicsChainDefinition definition);
+        [NativeMethod(Name = "PhysicsChain::Create", IsThreadSafe = true)] extern internal static PhysicsChain PhysicsChain_Create(PhysicsBody body, ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition);
         [NativeMethod(Name = "PhysicsChain::Destroy", IsThreadSafe = true)] extern internal static bool PhysicsChain_Destroy(PhysicsChain chain, int ownerKey);
+        [NativeMethod(Name = "PhysicsChain::UpdateVertices", IsThreadSafe = true)] extern internal static void PhysicsChain_UpdateVertices(PhysicsChain chain, ReadOnlySpan<Vector2> vertices, bool isLoop);
         [NativeMethod(Name = "PhysicsChain::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsChain_IsValid(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::GetWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsChain_GetWorld(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::GetBody", IsThreadSafe = true)] extern internal static PhysicsBody PhysicsChain_GetBody(PhysicsChain chain);

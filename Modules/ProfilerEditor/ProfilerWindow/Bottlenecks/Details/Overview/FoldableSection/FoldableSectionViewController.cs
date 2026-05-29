@@ -57,7 +57,7 @@ namespace Unity.Profiling.Editor.UI
                 m_ContentContainer.Add(view);
                 AddChild(viewController);
 
-                const float k_SpacingPercentage = 2f;
+                const float k_SpacingPercentage = 2.5f;
                 view.style.maxWidth = new StyleLength(new Length(((1f / numberOfSections) * 100f) - k_SpacingPercentage, LengthUnit.Percent));
             }
         }

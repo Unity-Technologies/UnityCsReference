@@ -84,9 +84,12 @@ namespace UnityEditor
             private TextField vulkanApiVersionField;
             private TextField driverVersionField;
             private HelpBox errorBox;
+            private readonly Action<SerializedProperty> m_OnTrackedPropertyChanged;
 
             public DeviceFilterItemElement()
             {
+                m_OnTrackedPropertyChanged = _ => ValidateFields();
+
                 style.paddingTop = DeviceFilterUI.Styles.kItemPaddingTop;
                 style.paddingBottom = DeviceFilterUI.Styles.kItemPaddingBottom;
                 style.paddingLeft = DeviceFilterUI.Styles.kItemPaddingHorizontal;
@@ -118,7 +121,7 @@ namespace UnityEditor
             void BindAndTrack(TextField field, SerializedProperty prop)
             {
                 field.BindProperty(prop);
-                this.TrackPropertyValue(prop, _ => ValidateFields());
+                this.TrackPropertyValue(prop, m_OnTrackedPropertyChanged);
             }
 
             public virtual void Bind(SerializedProperty filterProp)
@@ -178,6 +181,8 @@ namespace UnityEditor
         class GfxJobsFilterItemElement : DeviceFilterItemElement
         {
             private EnumField preferredModeField;
+            private SerializedProperty m_ModeProp;
+            private readonly Action<SerializedProperty> m_OnModePropChanged;
 
             public GfxJobsFilterItemElement()
             {
@@ -186,13 +191,24 @@ namespace UnityEditor
                     tooltip = DeviceFilterUI.Styles.preferredGraphicsJobsMode.tooltip
                 };
                 preferredModeField.AddToClassList(BaseField<Enum>.alignedFieldUssClassName);
+                preferredModeField.RegisterValueChangedCallback(OnPreferredModeChanged);
                 Insert(0, preferredModeField);
+
+                m_OnModePropChanged = p => preferredModeField.SetValueWithoutNotify((GraphicsJobsFilterMode)p.intValue);
+            }
+
+            void OnPreferredModeChanged(ChangeEvent<Enum> evt)
+            {
+                if (m_ModeProp == null) return;
+                m_ModeProp.intValue = (int)(GraphicsJobsFilterMode)evt.newValue;
+                m_ModeProp.serializedObject.ApplyModifiedProperties();
             }
 
             public override void Bind(SerializedProperty filterProp)
             {
-                preferredModeField.BindProperty(
-                    filterProp.FindPropertyRelative(DeviceFilterUI.Styles.preferredGraphicsJobsModeText));
+                m_ModeProp = filterProp.FindPropertyRelative(DeviceFilterUI.Styles.preferredGraphicsJobsModeText);
+                preferredModeField.SetValueWithoutNotify((GraphicsJobsFilterMode)m_ModeProp.intValue);
+                preferredModeField.TrackPropertyValue(m_ModeProp, m_OnModePropChanged);
 
                 var innerFilterProp = filterProp.FindPropertyRelative(DeviceFilterUI.Styles.filterText);
                 base.Bind(innerFilterProp);
@@ -200,6 +216,7 @@ namespace UnityEditor
 
             public override void Unbind()
             {
+                m_ModeProp = null;
                 preferredModeField.Unbind();
                 base.Unbind();
             }
@@ -305,6 +322,7 @@ namespace UnityEditor
         void SetupFilterList(ListView listView, string propertyPath, bool isGfxJobs)
         {
             var arrayProp = serializedObject.FindProperty(propertyPath);
+            var knownSize = arrayProp.arraySize;
 
             listView.makeItem = isGfxJobs
                 ? () => new GfxJobsFilterItemElement()
@@ -332,7 +350,7 @@ namespace UnityEditor
             {
                 foreach (var idx in indices)
                 {
-                    if (idx >= arrayProp.arraySize)
+                    if (idx >= arrayProp.arraySize || idx < knownSize)
                         continue;
 
                     var elemProp = arrayProp.GetArrayElementAtIndex(idx);
@@ -349,9 +367,13 @@ namespace UnityEditor
                     }
                 }
 
+                knownSize = arrayProp.arraySize;
                 serializedObject.ApplyModifiedProperties();
+                serializedObject.Update();
                 listView.RefreshItems();
             };
+
+            listView.itemsRemoved += _ => knownSize = arrayProp.arraySize;
 
             listView.BindProperty(arrayProp);
         }

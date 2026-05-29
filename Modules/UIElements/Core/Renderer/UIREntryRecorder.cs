@@ -31,6 +31,9 @@ namespace UnityEngine.UIElements.UIR
         PushDefaultMaterial,
         PopDefaultMaterial,
         CutRenderChain,
+        // Profiler-only Begin/End markers.
+        BeginPanelComponent,
+        EndPanelComponent,
         DedicatedPlaceholder
     }
 
@@ -39,7 +42,7 @@ namespace UnityEngine.UIElements.UIR
     {
         UsesTextCoreSettings = 1 << 0,
         IsPremultiplied = 1 << 1,
-        SkipDynamicAtlas = 1 << 2
+        SkipDynamicAtlas = 1 << 2,
     }
 
     class Entry
@@ -59,6 +62,8 @@ namespace UnityEngine.UIElements.UIR
         public MaterialPropertyBlock userProps;
         public Action immediateCallback;
         public TextureId textureId;
+        // Set on BeginPanelComponent entries only.
+        public EntityId panelComponentId;
 
         public Entry nextSibling;
 
@@ -76,6 +81,7 @@ namespace UnityEngine.UIElements.UIR
             gradientsOwner = null;
             flags = 0;
             immediateCallback = null;
+            panelComponentId = EntityId.None;
         }
     }
 
@@ -286,6 +292,23 @@ namespace UnityEngine.UIElements.UIR
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.CutRenderChain;
+            Append(parentEntry, entry);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void BeginPanelComponent(Entry parentEntry, EntityId panelComponentId)
+        {
+            var entry = m_EntryPool.Get();
+            entry.type = EntryType.BeginPanelComponent;
+            entry.panelComponentId = panelComponentId;
+            Append(parentEntry, entry);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void EndPanelComponent(Entry parentEntry)
+        {
+            var entry = m_EntryPool.Get();
+            entry.type = EntryType.EndPanelComponent;
             Append(parentEntry, entry);
         }
 

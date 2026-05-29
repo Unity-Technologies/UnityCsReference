@@ -289,7 +289,13 @@ namespace UnityEngine.UIElements.HierarchyV2
 
                 dragPosition.dropPosition = DragAndDropPosition.OutsideItems;
                 if (pointerPosition.y <= targetScrollView.contentContainer.worldBound.yMin)
-                    dragPosition.insertAtIndex = 0;
+                {
+                    // When a sticky row is active, "above everything" means before the stuck item, not index 0
+                    if (targetView.hasActiveStickyRow)
+                        dragPosition.insertAtIndex = targetView.currentStickyRow.index;
+                    else
+                        dragPosition.insertAtIndex = 0;
+                }
                 else
                     dragPosition.insertAtIndex = targetView.itemsSource.Count;
 
@@ -299,17 +305,24 @@ namespace UnityEngine.UIElements.HierarchyV2
             // Below an item
             if (recycledItem.element.worldBound.yMax - pointerPosition.y < k_BetweenElementsAreaSize)
             {
-                dragPosition.insertAtIndex = recycledItem.index + 1;
                 dragPosition.dropPosition = DragAndDropPosition.BetweenItems;
+
+                if (targetView.hasActiveStickyRow && ReferenceEquals(recycledItem, targetView.currentStickyRow))
+                    dragPosition.insertAtIndex = (int)(targetView.scrollValue / targetView.fixedItemHeight);
+                else
+                    dragPosition.insertAtIndex = recycledItem.index + 1;
             }
             // Upon an item
             else if (pointerPosition.y - recycledItem.element.worldBound.yMin > k_BetweenElementsAreaSize)
             {
-                var scrollOffset = targetScrollView.containerOffset;
-                targetView.ScrollToItem(recycledItem.index);
-                if (!Mathf.Approximately(scrollOffset.x, targetScrollView.containerOffset.x) || !Mathf.Approximately(scrollOffset.y, targetScrollView.containerOffset.y))
+                if (!ReferenceEquals(recycledItem, targetView.currentStickyRow))
                 {
-                    return TryGetDragPosition(pointerPosition, ref dragPosition);
+                    var scrollOffset = targetScrollView.containerOffset;
+                    targetView.ScrollToItem(recycledItem.index);
+                    if (!Mathf.Approximately(scrollOffset.x, targetScrollView.containerOffset.x) || !Mathf.Approximately(scrollOffset.y, targetScrollView.containerOffset.y))
+                    {
+                        return TryGetDragPosition(pointerPosition, ref dragPosition);
+                    }
                 }
 
                 dragPosition.recycledItem = recycledItem;
@@ -353,6 +366,18 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void PlaceHoverBarAtElement(VisualElement item)
         {
+            // If this item is partially or fully behind the sticky row, clamp to the sticky row's bottom edge
+            if (targetView.hasActiveStickyRow)
+            {
+                var stickyBounds = targetScrollView.viewport.WorldToLocal(targetView.currentStickyRow.element.worldBound);
+                var itemBounds = targetScrollView.viewport.WorldToLocal(item.worldBound);
+                if (itemBounds.yMax <= stickyBounds.yMax)
+                {
+                    PlaceHoverBarAt(stickyBounds.yMax);
+                    return;
+                }
+            }
+
             PlaceHoverBarAt(GetHoverBarTopPosition(item));
         }
 
@@ -366,6 +391,9 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         RecycledItem GetRecycledItem(Vector3 pointerPosition)
         {
+            if (targetView.hasActiveStickyRow && targetView.currentStickyRow.element.worldBound.Contains(pointerPosition))
+                return targetView.currentStickyRow;
+
             foreach (var recycledItem in targetView.m_IndexToItemDictionary.Values)
             {
                 if (recycledItem.element.worldBound.Contains(pointerPosition))

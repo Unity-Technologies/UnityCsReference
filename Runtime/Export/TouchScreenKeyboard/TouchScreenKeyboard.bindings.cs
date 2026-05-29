@@ -48,6 +48,13 @@ namespace UnityEngine
             AlwaysHidden = 2
         }
 
+        public enum InPlaceEditingBehavior
+        {
+            Auto = 0,
+            AlwaysAllowed = 1,
+            AlwaysDisallowed = 2
+        }
+
         // We are matching the KeyboardOnScreen class here so we can directly
         // access it.
         [System.NonSerialized]
@@ -121,22 +128,26 @@ namespace UnityEngine
             }
         }
 
-        // Used by tests, we want touch screen keyboard to show up even if physical keyboard is connected.
-        // That's the case with Android devices on Katana, where NVIDIA shields have physical keyboards connected
-        // Meaning when clicking on input fields, touch screen keyboard won't show, since physical keyboard is present.
-        // Disabling in place editing, forces touch screen keyboard to show up.
-        internal static bool disableInPlaceEditing { get; set; }
+        // Controls whether in-place text editing is allowed. On Android, a connected physical keyboard (e.g. a
+        // game controller detected as a keyboard) can suppress the touch screen keyboard even when one is needed.
+        // Use AlwaysDisallowed to force the touch screen keyboard to show regardless of connected peripherals.
+        public static InPlaceEditingBehavior inPlaceEditingBehavior { get; set; } = InPlaceEditingBehavior.Auto;
 
         public static bool isInPlaceEditingAllowed
         {
             get
             {
-                if (disableInPlaceEditing)
-                    return false;
-
-                // Editing text in-place, i.e. selecting/modifying text within a given edit control, sometimes
-                // depends on the specific device the app is running on; query this value from the platform.
-                return IsInPlaceEditingAllowed();
+                switch (inPlaceEditingBehavior)
+                {
+                    case InPlaceEditingBehavior.AlwaysAllowed:
+                        return true;
+                    case InPlaceEditingBehavior.AlwaysDisallowed:
+                        return false;
+                    default:
+                        // Editing text in-place, i.e. selecting/modifying text within a given edit control, sometimes
+                        // depends on the specific device the app is running on; query this value from the platform.
+                        return IsInPlaceEditingAllowed();
+                }
             }
         }
 

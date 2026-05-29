@@ -227,7 +227,7 @@ namespace UnityEditor.Search
 
                 // Setup default values
                 populatedArtifactImportDataBatch.ImporterHashCodes[i] = importerHashCode;
-                populatedArtifactImportDataBatch.OnDemandStates[i] = OnDemandState.Unavailable;
+                populatedArtifactImportDataBatch.OutOfProcessImportStates[i] = OutOfProcessImportState.Unavailable;
                 populatedArtifactImportDataBatch.ImportResultIds[i] = default;
                 importerTypes[i] = SearchIndexArtifactImporter.GetIndexImporterType(importerHashCode);
             }

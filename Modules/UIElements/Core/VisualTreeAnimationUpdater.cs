@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements
             }
 
             var styleAnim = panel.styleAnimationSystem;
-            ForwardDirtyElementsToStyleAnimation(styleAnim);
+            ForwardDirtyElementsToStyleAnimation(styleAnim, now);
 
             using (stylePropertyAnimationProfilerMarker.Auto())
             {
@@ -168,20 +168,31 @@ namespace UnityEngine.UIElements
             m_DirtyElements.Add(ve);
         }
 
-        void ForwardDirtyElementsToStyleAnimation(IStylePropertyAnimationSystem styleAnim)
+        void ForwardDirtyElementsToStyleAnimation(IStylePropertyAnimationSystem styleAnim, double now)
         {
             if (m_DirtyElements == null || m_DirtyElements.Count == 0)
                 return;
 
             foreach (var ve in m_DirtyElements)
             {
+                if (ve.panel != panel)
+                    continue;
+
                 styleAnim.UpdateElementClipAnimation(
                     ve,
                     ve.resolvedStyle.unityAnimationClip,
-                    ve.resolvedStyle.animationPlayState);
+                    ve.resolvedStyle.animationPlayState,
+                    now);
             }
 
             m_DirtyElements.Clear();
+        }
+
+
+        internal void MarkElementClipDirty(VisualElement ve)
+        {
+            m_DirtyElements ??= new HashSet<VisualElement>();
+            m_DirtyElements.Add(ve);
         }
     }
 }

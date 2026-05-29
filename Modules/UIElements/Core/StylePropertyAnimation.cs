@@ -50,7 +50,8 @@ namespace UnityEngine.UIElements
         int IStylePropertyAnimations.runningAnimationCount { get; set; }
         int IStylePropertyAnimations.completedAnimationCount { get; set; }
 
-        private IStylePropertyAnimationSystem GetStylePropertyAnimationSystem()
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal IStylePropertyAnimationSystem GetStylePropertyAnimationSystem()
         {
             return elementPanel?.styleAnimationSystem;
         }

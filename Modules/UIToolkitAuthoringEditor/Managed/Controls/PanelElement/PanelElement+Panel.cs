@@ -53,6 +53,9 @@ sealed partial class PanelElement : VisualElement
         }
     }
 
+    static readonly EmptyStylePropertyAnimationSystem s_EmptyAnimationSystem = new EmptyStylePropertyAnimationSystem();
+
+    bool m_AnimationEnabled;
     PanelOwner m_PanelOwner;
     ContextType m_ContextType = ContextType.Player;
     EntityId m_PanelOwnerKey;
@@ -210,6 +213,7 @@ sealed partial class PanelElement : VisualElement
         Panel.afterRepaint += InvokeAfterRepaint;
 
         SubPanel.liveReloadSystem.enable = true;
+        ApplyAnimationSystem();
     }
 
     void CreateRuntimePanel()
@@ -262,5 +266,28 @@ sealed partial class PanelElement : VisualElement
         // Mark as DontSave so it doesn't get saved with scenes but persists through domain reload
         instance.hideFlags = HideFlags.DontSave | HideFlags.DontUnloadUnusedAsset;
         return instance;
+    }
+
+    public void EnableAnimationSystem(bool enable)
+    {
+        m_AnimationEnabled = enable;
+        ApplyAnimationSystem();
+    }
+
+    void ApplyAnimationSystem()
+    {
+        if (SubPanel == null)
+            return;
+
+        if (m_AnimationEnabled)
+        {
+            if (SubPanel.styleAnimationSystem is not StylePropertyAnimationSystem)
+                SubPanel.styleAnimationSystem = new StylePropertyAnimationSystem(SubPanel);
+        }
+        else
+        {
+            if (SubPanel.styleAnimationSystem != s_EmptyAnimationSystem)
+                SubPanel.styleAnimationSystem = s_EmptyAnimationSystem;
+        }
     }
 }

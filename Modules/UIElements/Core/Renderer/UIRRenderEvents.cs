@@ -145,7 +145,7 @@ namespace UnityEngine.UIElements.UIR
                 ve.nestedRenderData = nestedData;
                 nestedData.owner = ve;
                 nestedData.flags |= RenderDataFlags.IsNestedRenderTreeRoot;
-                nestedData.transformID = UIRVEShaderInfoAllocator.identityTransform; // This is defining a new coordinate space
+                nestedData.transformID = ShaderInfoAllocator.identityTransform; // This is defining a new coordinate space
 
                 nestedData.renderTree = renderTreeManager.GetPooledRenderTree(renderTreeManager, nestedData);
                 nestedData.renderTree.dirtyTracker.EnsureFits(nestedData.depthInRenderTree);
@@ -247,7 +247,7 @@ namespace UnityEngine.UIElements.UIR
                     renderData.transformID.ownedState = OwnedState.Inherited; // Mark this allocation as not owned by us (inherited)
                 }
                 else
-                    renderData.transformID = UIRVEShaderInfoAllocator.identityTransform;
+                    renderData.transformID = ShaderInfoAllocator.identityTransform;
             }
             else
                 renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, GetTransformIDTransformInfo(renderData));
@@ -285,6 +285,10 @@ namespace UnityEngine.UIElements.UIR
             {
                 DepthFirstRemoveRenderData(renderTreeManager, renderData);
                 Debug.Assert(ve.renderData == null);
+                // Count only elements that were actually in the tree, mirroring the +1 in
+                // DepthFirstOnChildAdded. Skipping cancelled-pending insertions here is
+                // what keeps totalVisualElements from going negative.
+                ++deepCount;
             }
 
             if (nestedRenderData != null)
@@ -293,7 +297,7 @@ namespace UnityEngine.UIElements.UIR
                 Debug.Assert(ve.nestedRenderData == null);
             }
 
-            return deepCount + 1;
+            return deepCount;
         }
 
         static void DepthFirstRemoveRenderData(RenderTreeManager renderTreeManager, RenderData renderData)
@@ -397,12 +401,12 @@ namespace UnityEngine.UIElements.UIR
             if (RenderData.AllocatesID(renderData.textCoreSettingsID))
             {
                 renderTreeManager.shaderInfoAllocator.FreeTextCoreSettings(renderData.textCoreSettingsID);
-                renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+                renderData.textCoreSettingsID = ShaderInfoAllocator.defaultTextCoreSettings;
             }
             if (RenderData.AllocatesID(renderData.opacityID))
             {
                 renderTreeManager.shaderInfoAllocator.FreeOpacity(renderData.opacityID);
-                renderData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
+                renderData.opacityID = ShaderInfoAllocator.fullOpacity;
             }
             if (RenderData.AllocatesID(renderData.colorID))
             {
@@ -442,12 +446,12 @@ namespace UnityEngine.UIElements.UIR
             if (RenderData.AllocatesID(renderData.clipRectID))
             {
                 renderTreeManager.shaderInfoAllocator.FreeClipRect(renderData.clipRectID);
-                renderData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+                renderData.clipRectID = ShaderInfoAllocator.infiniteClipRect;
             }
             if (RenderData.AllocatesID(renderData.transformID))
             {
                 renderTreeManager.shaderInfoAllocator.FreeTransform(renderData.transformID);
-                renderData.transformID = UIRVEShaderInfoAllocator.identityTransform;
+                renderData.transformID = ShaderInfoAllocator.identityTransform;
             }
             renderData.boneTransformAncestor = renderData.groupTransformAncestor = null;
             if (renderData.tailMesh != null)
@@ -521,7 +525,7 @@ namespace UnityEngine.UIElements.UIR
                             newClippingMethod = ClipMethod.Scissor; // Fallback to scissor since we couldn't allocate a clipRectID
                             // Both shader discard and scisorring work with world-clip rectangles, so no need
                             // to inherit any clipRectIDs for such elements, our own scissor rect clips up correctly
-                            newClipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+                            newClipRectID = ShaderInfoAllocator.infiniteClipRect;
                         }
                     }
                 }
@@ -535,7 +539,7 @@ namespace UnityEngine.UIElements.UIR
                     // they provide a new baseline with the _PixelClipRect instead.
                     if (!renderData.isGroupTransform)
                     {
-                        newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parentRenderData != null)) ? parentRenderData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
+                        newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parentRenderData != null)) ? parentRenderData.clipRectID : ShaderInfoAllocator.infiniteClipRect;
                         newClipRectID.ownedState = OwnedState.Inherited;
                     }
                 }
@@ -678,14 +682,21 @@ namespace UnityEngine.UIElements.UIR
 
             bool changedOpacityID = false;
             bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - meaningfullOpacityChange; //assume 0 <= opacity <= 1
-            if (hasDistinctOpacity)
+            if (hasDistinctOpacity && renderData.opacityID.ownedState == OwnedState.Inherited)
             {
-                if (renderData.opacityID.ownedState == OwnedState.Inherited)
+                var newAlloc = renderTreeManager.shaderInfoAllocator.AllocOpacity();
+                if (newAlloc.IsValid())
                 {
                     changedOpacityID = true;
-                    renderData.opacityID = renderTreeManager.shaderInfoAllocator.AllocOpacity();
+                    renderData.opacityID = newAlloc;
                 }
+                else
+                    // When allocation fails (per-allocator 32-page cap hit), use parent opacity.
+                    hasDistinctOpacity = false;
+            }
 
+            if (hasDistinctOpacity)
+            {
                 if ((changedOpacityID || compositeOpacityChanged) && renderData.opacityID.IsValid())
                     renderTreeManager.shaderInfoAllocator.SetOpacityValue(renderData.opacityID, newOpacity);
             }
@@ -876,7 +887,7 @@ namespace UnityEngine.UIElements.UIR
             if (useDefaultColor && !NeedsTextCoreSettings(te) && !allocatesID)
             {
                 // Use default TextCore settings
-                renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+                renderData.textCoreSettingsID = ShaderInfoAllocator.defaultTextCoreSettings;
                 return true;
             }
 

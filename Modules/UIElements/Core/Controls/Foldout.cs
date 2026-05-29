@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
 
         internal Toggle toggle
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_Toggle;
         }
 

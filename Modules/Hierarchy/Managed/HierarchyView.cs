@@ -102,7 +102,7 @@ namespace Unity.Hierarchy
         readonly ProfilerMarker m_SetSelectionMarker = new ProfilerMarker("HierarchyView.SetSelection");
 
         /// <summary>
-        /// Delegate type used to handle <see cref="SourceHierarchyChanging"/> event.
+        /// Delegate type used to handle the <see cref="SourceHierarchyChanging"/> event.
         /// </summary>
         /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
         /// <param name="oldHierarchy">The previous source <see cref="Hierarchy"/>.</param>
@@ -136,7 +136,7 @@ namespace Unity.Hierarchy
         public delegate void BindViewItemEventHandler(HierarchyView view, HierarchyViewItem item);
 
         /// <summary>
-        /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>, allowing customization of the view item.
+        /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>. Use this event to customize the view item.
         /// </summary>
         public event BindViewItemEventHandler BindViewItem;
 
@@ -148,7 +148,7 @@ namespace Unity.Hierarchy
         public delegate void UnbindViewItemEventHandler(HierarchyView view, HierarchyViewItem item);
 
         /// <summary>
-        /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>, allowing cleanup of the view item.
+        /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>. Use this event to clean up the view item.
         /// </summary>
         public event UnbindViewItemEventHandler UnbindViewItem;
 
@@ -160,15 +160,15 @@ namespace Unity.Hierarchy
         public delegate void FlagsChangedEventHandler(HierarchyView view, HierarchyNodeFlags flags);
 
         /// <summary>
-        /// Raised when flags on <see cref="HierarchyNode"/> instances are changed.
+        /// Raised when <see cref="HierarchyNode"/> flags change.
         /// </summary>
         public event FlagsChangedEventHandler FlagsChanged;
 
         /// <summary>
-        /// Delegate type used to handle <see cref="PopulateContextMenu"/> event.
+        /// Delegate type used to handle the <see cref="PopulateContextMenu"/> event.
         /// </summary>
         /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
-        /// <param name="item">The <see cref="HierarchyViewItem"/> the context is being created for. Can be null if the context menu is created from the background of the view.</param>
+        /// <param name="item">The <see cref="HierarchyViewItem"/> that the context menu targets. Null when the user opens the context menu over the background of the view.</param>
         /// <param name="menu">The <see cref="DropdownMenu"/> being populated.</param>
         public delegate void PopulateContextMenuEventHandler(HierarchyView view, HierarchyViewItem item, DropdownMenu menu);
 
@@ -177,7 +177,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <remarks>
         /// This callback receives the <see cref="HierarchyView"/> and the <see cref="HierarchyViewItem"/> to create the context menu for, and the <see cref="DropdownMenu"/> to populate.
-        /// If the user right clicks in empty space, the callback receives null for the view item.
+        /// If the user right-clicks in empty space, the callback receives null for the view item.
         /// </remarks>
         public event PopulateContextMenuEventHandler PopulateContextMenu;
 
@@ -186,8 +186,8 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="view">The <see cref="HierarchyView"/> that fired the event.</param>
         /// <param name="item">The <see cref="HierarchyViewItem"/> for which the tooltip is being requested.</param>
-        /// <param name="tooltip">A <see cref="StringBuilder"/> object to which the tooltip text should be appended.</param>
-        /// <param name="filtering">Whether the hierarchy is currently filtered.</param>
+        /// <param name="tooltip">A <see cref="StringBuilder"/> to append the tooltip text to.</param>
+        /// <param name="filtering">Whether the hierarchy is filtered.</param>
         public delegate void GetTooltipEventHandler(HierarchyView view, HierarchyViewItem item, StringBuilder tooltip, bool filtering);
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace Unity.Hierarchy
         internal event Action<HierarchyView> Bind; // Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
 
         /// <summary>
-        /// Gets the source hierarchy used to populate the <see cref="HierarchyView"/>.
+        /// The source <see cref="Hierarchy"/> used to populate this <see cref="HierarchyView"/>.
         /// Use <see cref="SetSourceHierarchy"/> to change it.
         /// </summary>
         /// <remarks>
@@ -216,12 +216,12 @@ namespace Unity.Hierarchy
         public Unity.Hierarchy.Hierarchy Source => m_Hierarchy;
 
         /// <summary>
-        /// Gets the underlying <see cref="HierarchyFlattened"/> of this <see cref="HierarchyView"/>.
+        /// The underlying <see cref="HierarchyFlattened"/> of this <see cref="HierarchyView"/>.
         /// </summary>
         public HierarchyFlattened Flattened => m_HierarchyFlattened;
 
         /// <summary>
-        /// Gets the underlying <see cref="HierarchyViewModel"/> of this <see cref="HierarchyView"/>.
+        /// The underlying <see cref="HierarchyViewModel"/> of this <see cref="HierarchyView"/>.
         /// </summary>
         public HierarchyViewModel ViewModel => m_HierarchyViewModel;
 
@@ -235,12 +235,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Gets the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
+        /// The container <see cref="VisualElement"/> for the styles and stylesheets of this <see cref="HierarchyView"/>.
         /// </summary>
         public VisualElement StyleContainer => m_StyleContainer;
 
         /// <summary>
-        /// Gets or sets the filter used to display the <see cref="Hierarchy"/>.
+        /// The filter applied when displaying the <see cref="Hierarchy"/>.
         /// </summary>
         public string Filter
         {
@@ -249,12 +249,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Whether the <see cref="HierarchyView"/> is currently filtering nodes.
+        /// Whether the <see cref="HierarchyView"/> is filtering nodes.
         /// </summary>
         public bool Filtering => m_HierarchyViewModel.Filtering;
 
         /// <summary>
-        /// Whether the <see cref="HierarchyView"/> is currently updating.
+        /// Whether the <see cref="HierarchyView"/> is updating.
         /// </summary>
         public bool Updating
         {
@@ -314,7 +314,7 @@ namespace Unity.Hierarchy
         internal HierarchyViewColumnNavigate NavigateColumn => m_NavigateColumn;
 
         /// <summary>
-        /// Creates a new instance of the <see cref="HierarchyView"/>.
+        /// Creates a new hierarchy view UI element.
         /// </summary>
         public HierarchyView()
         {
@@ -578,7 +578,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Sets the current selection to a single node, making all other nodes unselected.
+        /// Sets the current selection to a single node and deselects all other nodes.
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to set as the selection.</param>
         public void SetSelection(in HierarchyNode node)
@@ -592,7 +592,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Sets the current selection to the specified nodes, making all other nodes unselected.
+        /// Sets the current selection to the specified nodes and deselects all other nodes.
         /// </summary>
         /// <param name="nodes">The <see cref="HierarchyNode"/>s to set as the selection.</param>
         public void SetSelection(ReadOnlySpan<HierarchyNode> nodes)
@@ -982,7 +982,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Frames the specified node, expanding its ancestors and scrolling to it.
+        /// Frames the specified node. This expands the node's ancestors and scrolls to the node.
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to frame.</param>
         public void Frame(in HierarchyNode node)
@@ -997,7 +997,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Frames the specified nodes, expanding their ancestors and scrolling to the first node.
+        /// Frames the specified nodes. This expands each node's ancestors and scrolls to the first node.
         /// </summary>
         /// <param name="nodes">The <see cref="HierarchyNode"/>s to frame.</param>
         public void Frame(ReadOnlySpan<HierarchyNode> nodes)
@@ -1012,7 +1012,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Creates columns according to a list of columns specification and a potential <see cref="HierarchyViewState"/>.
+        /// Creates columns according to a list of column specifications and an optional <see cref="HierarchyViewState"/>.
         /// </summary>
         /// <param name="columns">The list of <see cref="HierarchyViewColumn"/> specifications.</param>
         /// <param name="state">Optional <see cref="HierarchyViewState"/> used to override the default properties of columns such as visibility, width, and order.</param>
@@ -1063,8 +1063,8 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Creates a set of columns from a list of columns and cell descriptors. If a <see cref="HierarchyViewState"/> is passed, all the
-        /// columns default order, width and visibility will be overridden by the viewState.
+        /// Creates a set of columns from a list of columns and cell descriptors. If you pass a <see cref="HierarchyViewState"/>, it overrides
+        /// the default order, width, and visibility of every column.
         /// </summary>
         /// <param name="columnDescriptors">The list of <see cref="HierarchyViewColumnDescriptor"/>s used to create the <see cref="HierarchyViewColumn"/>s.</param>
         /// <param name="cellDescriptors">The list of <see cref="HierarchyViewCellDescriptor"/>s used to create the <see cref="HierarchyViewCell"/>s within the <see cref="HierarchyViewColumn"/>s.</param>
@@ -1101,7 +1101,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Updates the <see cref="HierarchyView"/> with a new ViewState.
+        /// Updates the <see cref="HierarchyView"/> with a new <see cref="HierarchyViewState"/>.
         /// </summary>
         /// <param name="viewState">The <see cref="HierarchyViewState"/> to apply.</param>
         public void SetState(HierarchyViewState viewState)
@@ -1132,8 +1132,8 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Gets the current viewstate of the <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="content">Flags indicating what <see cref="HierarchyViewState"/> members you want to extract.</param>
-        /// <returns>Returns the current view state (columns configurations and such) of the <see cref="HierarchyView"/>.</returns>
+        /// <param name="content">Flags that specify which <see cref="HierarchyViewState"/> members to extract.</param>
+        /// <returns>The current view state of the <see cref="HierarchyView"/>, including column configurations.</returns>
         public HierarchyViewState GetState(HierarchyViewState.Content content = HierarchyViewState.Content.All)
         {
             var windowState = new HierarchyViewState(content);

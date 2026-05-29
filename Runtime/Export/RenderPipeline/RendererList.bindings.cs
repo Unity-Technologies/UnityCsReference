@@ -298,7 +298,6 @@ namespace UnityEngine.Rendering.RendererUtils
             var drawSettings = new DrawingSettings(s_EmptyName, sortingSettings)
             {
                 perObjectData = desc.rendererConfiguration,
-                //enableDynamicBatching
                 //enableInstancing
                 //mainLightIndex
             };

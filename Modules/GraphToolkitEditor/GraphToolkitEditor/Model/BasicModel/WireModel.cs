@@ -75,6 +75,10 @@ namespace Unity.GraphToolkit.Editor
         protected bool m_IsAnimating;
         protected float m_AnimationSpeed = 1f;
 
+        protected bool m_IsDashed;
+        protected float m_WidthOverride;
+        protected float m_Opacity = 1f;
+
         /// <inheritdoc />
         public bool IsAnimating
         {
@@ -101,6 +105,59 @@ namespace Unity.GraphToolkit.Editor
                 m_AnimationSpeed = value;
                 if (m_IsAnimating)
                     GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Animation);
+            }
+        }
+
+        /// <summary>
+        /// Whether the wire is drawn with a dashed pattern.
+        /// </summary>
+        public bool IsDashed
+        {
+            get => m_IsDashed;
+            set
+            {
+                if (m_IsDashed == value)
+                    return;
+
+                m_IsDashed = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        /// <summary>
+        /// The width of the wire.
+        /// </summary>
+        /// <remarks>
+        /// Setting the value to 0 will remove the width override on the wire.
+        /// </remarks>
+        public float WidthOverride
+        {
+            get => m_WidthOverride;
+            set
+            {
+                if (Mathf.Approximately(m_WidthOverride, value))
+                    return;
+
+                m_WidthOverride = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        /// <summary>
+        /// The opacity multiplier of the wire.
+        /// </summary>
+        /// <remarks>The opacity multiplier is clamped to the [0, 1] range</remarks>
+        public float Opacity
+        {
+            get => m_Opacity;
+            set
+            {
+                value = Mathf.Clamp01(value);
+                if (Mathf.Approximately(m_Opacity, value))
+                    return;
+
+                m_Opacity = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
 

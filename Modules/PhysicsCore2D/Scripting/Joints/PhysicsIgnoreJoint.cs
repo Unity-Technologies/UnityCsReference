@@ -212,7 +212,6 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        /// <returns>The owner key assigned.</returns>
         public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => m_Id.SetOwner(owner, ownerKey);
 
         /// <summary>

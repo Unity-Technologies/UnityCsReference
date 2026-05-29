@@ -73,7 +73,12 @@ namespace UnityEditor.UIElements.Debugger
 
         public void SetState(Dictionary<long, bool> state)
         {
-            m_State = state;
+            if (state == null) return;
+            foreach (var kvp in state)
+            {
+                if (m_State.ContainsKey(kvp.Key))
+                    m_State[kvp.Key] = kvp.Value;
+            }
             UpdateTextHint();
         }
 
@@ -439,6 +444,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_FilteredChoices = m_Choices.ToList();
 #pragma warning restore UA2001
                 m_ListView.itemsSource = m_FilteredChoices;
+                m_ListView.RefreshItems();
                 RefreshLayout();
                 SetValueWithoutNotify("");
             }
@@ -507,6 +513,7 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             m_ListView.itemsSource = m_FilteredChoices;
+            m_ListView.RefreshItems();
             RefreshLayout();
         }
 
@@ -543,11 +550,14 @@ namespace UnityEditor.UIElements.Debugger
             var root = panel.GetRootVisualElement();
             if (root != null && !float.IsNaN(m_OuterContainer.layout.width) && !float.IsNaN(m_OuterContainer.layout.height))
             {
-                m_OuterContainer.style.height = Mathf.Min(
-                    m_MenuContainer.layout.height - m_MenuContainer.layout.y - m_OuterContainer.layout.y,
-                    m_ListView.fixedItemHeight * m_ListView.itemsSource.Count +
-                    m_ListView.resolvedStyle.borderTopWidth + m_ListView.resolvedStyle.borderBottomWidth +
-                    m_OuterContainer.resolvedStyle.borderBottomWidth + m_OuterContainer.resolvedStyle.borderTopWidth);
+                var listViewPadding = m_ListView.resolvedStyle.paddingTop +
+                    m_ListView.resolvedStyle.paddingBottom +
+                    m_ListView.resolvedStyle.borderTopWidth + m_ListView.resolvedStyle.borderBottomWidth;
+                var availableHeight = m_MenuContainer.layout.height - m_MenuContainer.layout.y - m_OuterContainer.layout.y;
+                var contentHeight = m_ListView.fixedItemHeight * m_ListView.itemsSource.Count + listViewPadding
+                    + m_OuterContainer.resolvedStyle.borderTopWidth + m_OuterContainer.resolvedStyle.borderBottomWidth
+                    + m_OuterContainer.resolvedStyle.paddingTop + m_OuterContainer.resolvedStyle.paddingBottom;
+                m_OuterContainer.style.height = Mathf.Min(availableHeight, Mathf.Max(contentHeight, m_ListView.fixedItemHeight + listViewPadding));
 
                 if (resolvedStyle.width > m_OuterContainer.resolvedStyle.width)
                 {

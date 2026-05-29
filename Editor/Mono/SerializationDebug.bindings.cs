@@ -167,6 +167,10 @@ namespace UnityEditor
                     case SerializedPropertyType.LoadableObjectId:
                         propertyValue = $"{property.loadableObjectIdValue}";
                         break;
+
+                    case SerializedPropertyType.LoadableSceneId:
+                        propertyValue = $"{property.loadableSceneIdValue}";
+                        break;
                 }
 
                 if (property.prefabOverride)

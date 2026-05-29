@@ -159,6 +159,7 @@ namespace UnityEditor
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching", "Toggle Dynamic Batching. Note: Sprites are always dynamically batched.");
+            public static readonly GUIContent warningDynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching has been removed due to limited performance benefits on modern hardware. This option no longer has any effect. Use GPU Instancing instead.");
             public static readonly GUIContent spriteBatchingVertexThreshold = EditorGUIUtility.TrTextContent("Sprite Batching Threshold", "Maximum vertex threshold of a sprite to be batched. Any sprite with vertex count above this value is not batched.");
             public static readonly GUIContent spriteBatchingMaxVertexCount = EditorGUIUtility.TrTextContent("Sprite Batching Max Vertex Count", "Maximum vertex count per batch.");
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
@@ -2411,29 +2412,15 @@ namespace UnityEditor
                 {
                     int staticBatching, dynamicBatching;
                     bool staticBatchingSupported = true;
-                    bool dynamicBatchingSupported = true;
                     if (settingsExtension != null)
                     {
                         staticBatchingSupported = settingsExtension.SupportsStaticBatching();
-                        dynamicBatchingSupported = settingsExtension.SupportsDynamicBatching();
                     }
                     PlayerSettings.GetBatchingForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, out staticBatching, out dynamicBatching);
 
-                    bool reset = false;
                     if (staticBatchingSupported == false && staticBatching == 1)
                     {
                         staticBatching = 0;
-                        reset = true;
-                    }
-
-                    if (dynamicBatchingSupported == false && dynamicBatching == 1)
-                    {
-                        dynamicBatching = 0;
-                        reset = true;
-                    }
-
-                    if (reset)
-                    {
                         PlayerSettings.SetBatchingForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, staticBatching, dynamicBatching);
                         m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
                     }
@@ -2449,9 +2436,10 @@ namespace UnityEditor
 
                     if (GraphicsSettings.currentRenderPipeline == null)
                     {
-                        using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
+                        if (dynamicBatching == 1)
                         {
                             dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                            EditorGUILayout.HelpBox(SettingsContent.warningDynamicBatching.text, MessageType.Warning);
                         }
                     }
 

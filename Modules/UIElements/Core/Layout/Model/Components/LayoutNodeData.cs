@@ -51,16 +51,18 @@ unsafe struct LayoutNodeData
     }
 
     public FixedBuffer2<Length> ResolvedDimensions;
-    float TargetSize;
-    public int ManagedOwnerIndex;
-    public int LineIndex;
 
     public UnmanagedDataHandle Config;
     public UnmanagedDataHandle Parent;
-    public UnmanagedDataHandle NextChild;
+    public UnmanagedDataHandle FirstChild;
+    public UnmanagedDataHandle NextSibling; // Undefined after last child
+    public UnmanagedDataHandle PrevSiblingRing; // Loops around from first child to last child
 
-    public LayoutList<UnmanagedDataHandle> Children;
+    private UnmanagedDataHandle NextLayoutChild; // A private linked list used by the native layout algorithm
+
     private FlexStatus Status;
+    float TargetSize;
+    public int LineIndex;
 
     public bool HasNewLayout
     {

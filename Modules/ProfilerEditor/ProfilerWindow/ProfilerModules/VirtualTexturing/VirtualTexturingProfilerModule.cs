@@ -20,7 +20,7 @@ namespace UnityEditorInternal.Profiling
         [SerializeReference]
         VirtualTexturingProfilerView m_VTProfilerView;
 
-        const int k_DefaultOrderIndex = 13;
+        const int k_DefaultOrderIndex = 15;
         static readonly string k_VTCountersCategoryName = ProfilerCategory.VirtualTexturing.Name;
 
         static readonly string[] k_VirtualTexturingCounterNames =

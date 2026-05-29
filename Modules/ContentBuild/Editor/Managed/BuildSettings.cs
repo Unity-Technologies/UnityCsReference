@@ -29,6 +29,9 @@ namespace UnityEditor.Build.Content
         /// Build flag to indicate that TypeTree data is to be stripped from the serialized files and saved separately.  The file path of the extracted data is recorded in the UnityEditor.Build.Content.WriteResult in the field 'extractedTypeTreeDataPath'.
         /// </summary>
         ExtractTypeTree = 1 << 3,
+        ///<summary>Suppress the error reported when a LoadableObjectId or LoadableSceneId is encountered while writing content.</summary>
+        ///<remarks>Use this when migrating between build pipeline backends when assets legitimately have Loadable references, but the same content is also built through the legacy Player or AssetBundle pipelines. The references still resolve to null in the resulting content; this flag only silences the error log to keep the build usable.</remarks>
+        SuppressLoadableErrors = 1 << 4,
     }
 
     ///<summary>Struct containing information on how to build content.</summary>

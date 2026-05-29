@@ -61,6 +61,16 @@ internal class DisableIfVersionDeprecated : DisableCondition
     }
 }
 
+internal class DisableIfEnterpriseEntitlementsError : DisableCondition
+{
+    private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
+    public DisableIfEnterpriseEntitlementsError(IPackageVersion version)
+    {
+        active = version != null && version.package.hasEntitlementsError && version.package.isEnterprise;
+        tooltip = k_Tooltip;
+    }
+}
+
 internal class DisableIfEntitlementsError : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
@@ -68,6 +78,54 @@ internal class DisableIfEntitlementsError : DisableCondition
     {
         active = version != null && version.package.hasEntitlementsError;
         tooltip = k_Tooltip;
+    }
+
+    public DisableIfEntitlementsError(Sample sample)
+    {
+        active = !sample.isDefault && sample.package?.versions.primary.hasEntitlementsError == true;
+        tooltip = k_Tooltip;
+    }
+}
+
+internal class DisableIfPackageIsNotLoaded : DisableCondition
+{
+    public DisableIfPackageIsNotLoaded(IPackageVersion version)
+    {
+        active = PackageIsNotLoaded(version);
+        tooltip = L10n.Tr("This package isn't loaded in your project.");
+    }
+
+    public DisableIfPackageIsNotLoaded(Sample sample)
+    {
+        active = sample is { isDefault: false, package: not null }
+                 && PackageIsNotLoaded(sample.package.versions.primary);
+        tooltip = L10n.Tr("The package this sample belongs to isn't loaded in your project.");
+    }
+
+    private bool PackageIsNotLoaded(IPackageVersion version)
+    {
+        return version?.errors?.AnyMatches(i => i.errorCode == UIErrorCode.UpmError_PackageNotLoaded) == true;
+    }
+}
+
+internal class DisableIfPackageIsInInvalidLocation : DisableCondition
+{
+    public DisableIfPackageIsInInvalidLocation(IPackageVersion version)
+    {
+        active = PackageIsInInvalidLocation(version);
+        tooltip = L10n.Tr("This package is stored in an invalid location.");
+    }
+
+    public DisableIfPackageIsInInvalidLocation(Sample sample)
+    {
+        active = PackageIsInInvalidLocation(sample.package?.versions?.primary);
+        tooltip = L10n.Tr("The package this sample belongs to is stored in an invalid location.");
+    }
+
+    private bool PackageIsInInvalidLocation(IPackageVersion version)
+    {
+        var error = version?.errors?.FirstMatch(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
+        return error is { errorCode: UIErrorCode.UpmError_InvalidSourcePath };
     }
 }
 

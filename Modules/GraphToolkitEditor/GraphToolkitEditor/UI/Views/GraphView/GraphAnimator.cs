@@ -96,6 +96,9 @@ namespace Unity.GraphToolkit.Editor
                 return;
             }
 
+            if (m_GraphView.panel == null)
+                return;
+
             double now = EditorApplication.timeSinceStartup;
             double deltaTime = now - m_LastEditorTime;
             m_LastEditorTime = now;
@@ -103,9 +106,6 @@ namespace Unity.GraphToolkit.Editor
                 deltaTime = 0;
             if (deltaTime > k_MaxDeltaTimeSeconds)
                 deltaTime = k_MaxDeltaTimeSeconds;
-
-            if (m_GraphView.panel == null)
-                return;
 
             foreach (var animatable in m_Active)
             {

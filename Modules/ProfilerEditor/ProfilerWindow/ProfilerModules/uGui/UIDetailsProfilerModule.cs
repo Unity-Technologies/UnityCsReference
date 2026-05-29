@@ -14,7 +14,7 @@ namespace UnityEditorInternal.Profiling
     [ProfilerModuleMetadata("UI Details (Canvas)", typeof(LocalizationResource), IconPath = "Profiler.UICanvasDetails")]
     internal class UIDetailsProfilerModule : UIProfilerModule
     {
-        const int k_DefaultOrderIndex = 11;
+        const int k_DefaultOrderIndex = 13;
         const ProfilerModuleChartType k_ChartType = ProfilerModuleChartType.Line;
         UISystemProfilerModelBuilder m_UIModelBuilder;
         UISystemProfilerChartViewController m_UIChartView;

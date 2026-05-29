@@ -164,9 +164,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.isDirectMouseSelection)
                 currentView.ScrollToSelection();
 
-            var previousSingularSelection = args.selection.previousSelections.Count == 1 ? args.selection.previousSelections[0] : null;
-            if (!string.IsNullOrEmpty(previousSingularSelection))
-                m_UpmCache.SetLoadAllVersions(previousSingularSelection, false);
+            var lastSelectedPackage = args.selection.previousSelections.Count == 1 ? m_PackageDatabase.GetPackage(args.selection.previousSelections[0]) : null;
+            if (!string.IsNullOrEmpty(lastSelectedPackage?.name))
+                m_UpmCache.SetLoadAllVersions(lastSelectedPackage.name, false);
         }
 
         private void OnCheckUpdateProgress()

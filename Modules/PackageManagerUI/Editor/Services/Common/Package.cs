@@ -132,9 +132,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     yield return versionError;
         }
 
-        public bool hasEntitlements => versions.AnyMatches(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
-
         public bool hasEntitlementsError => versions.AnyMatches(v => v.hasEntitlementsError);
+        public bool isEnterprise => versions.AnyMatches(v => v.isEnterprise);
 
         [SerializeReference]
         private IVersionList m_VersionList;

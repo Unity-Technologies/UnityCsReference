@@ -33,16 +33,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 return;
 
             var activeProfile = BuildProfile.GetActiveBuildProfile();
-            bool enabled = EditorUtilities.CheckEnableFrameTimingState(activeProfile);
+            bool enabled = EditorUtilities.CheckEnableFrameTimingState(activeProfile, true);
             if (!enabled)
             {
                 Debug.Log("Frame timing stats is not enabled for adaptive performance");
-            }
-
-            enabled = EditorUtilities.CheckEnableThermalState(activeProfile);
-            if (!enabled)
-            {
-                Debug.Log("Adjust iOS FPS based on thermal state is enabled for adaptive performance");
             }
 
             Object[] preloadedAssets = PlayerSettings.GetPreloadedAssets();

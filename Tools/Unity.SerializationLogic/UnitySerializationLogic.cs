@@ -264,6 +264,8 @@ namespace Unity.SerializationLogic
                     return IsSupportedCollection(typeReference);
             }
 
+            if (CecilUtils.IsGenericDictionary(typeReference))
+                return HasSerializeFieldAttribute(fieldDefinition);
 
             if (!IsReferenceTypeSerializable(typeReference) && !HasSerializeReferenceAttribute(fieldDefinition))
                 return false;

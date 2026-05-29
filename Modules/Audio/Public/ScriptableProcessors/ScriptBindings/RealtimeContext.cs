@@ -29,10 +29,10 @@ namespace UnityEngine.Audio
         internal RealtimeAccess Access;
         internal UInt64 m_DSPClock;
 
-        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(Handle handle)
+        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(DualThreadHandle handle)
             => new(ScriptableProcessorBindings.GetAvailableDataForRealtime(Access, handle));
 
-        bool ProcessorInstance.IContext.SendData(Handle handle, void* data, int size, int align, long typehash)
+        bool ProcessorInstance.IContext.SendData(DualThreadHandle handle, void* data, int size, int align, long typehash)
         {
             ScriptableProcessorBindings.ReturnDataFromProcessor(Access, handle, data, size, align, typehash);
             return true;

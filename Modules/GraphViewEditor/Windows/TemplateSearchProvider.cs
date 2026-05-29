@@ -43,21 +43,8 @@ namespace UnityEditor.Experimental.GraphView
                 searchQuery = searchQuery.Replace("*adbonly*", "");
             }
 
-            // We can used asset provider only when the indexing is complete
-            var isIndexingComplete = true;
-            if (!adbOnlyQuery)
-            {
-                var sw = new System.Diagnostics.Stopwatch();
-                isIndexingComplete = IsIndexingComplete();
-                while (!isIndexingComplete && sw.Elapsed.TotalSeconds < 5)
-                {
-                    yield return null;
-                    isIndexingComplete = IsIndexingComplete();
-                }
-
-                sw.Stop();
-            }
-
+            // We can use asset provider only when the indexing is complete
+            var isIndexingComplete = !adbOnlyQuery && IsIndexingComplete();
             var canUseAssetProvider = !adbOnlyQuery && isIndexingComplete;
             var defaultQuery = $"t:{m_TemplateHelper.assetType.Name}";
 

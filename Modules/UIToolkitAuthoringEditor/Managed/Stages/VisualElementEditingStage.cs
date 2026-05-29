@@ -115,6 +115,20 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     internal override ulong GetSceneCullingMask() { return 0; }
 
+    internal override void SyncSceneViewToStage(SceneView sceneView)
+    {
+        // VisualElementEditingStage renders via UIViewportWindow, not the SceneView.
+        // Leave the SceneView state unchanged.
+    }
+
+    internal override Stage GetContextStage()
+    {
+        // Share camera state with the main stage so SceneView zoom/offset
+        // is not independently saved and restored when entering this stage.
+        var history = StageNavigationManager.instance.stageHistory;
+        return history.Count > 0 ? history[0] : this;
+    }
+
     private void CloneTree()
     {
         m_PanelElement.subRootVisualElement.Clear();
@@ -190,7 +204,10 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     void OnUndoRedoPerformed()
     {
         if (StageUtility.GetCurrentStage() == this)
+        {
+            UIElementsEditorUtility.ClearStyleCacheAfterUndoIfTracked(default);
             CloneTree();
+        }
     }
 
     protected override void OnCloseStage()

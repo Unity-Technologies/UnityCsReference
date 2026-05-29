@@ -26,10 +26,6 @@ internal sealed class StyleInspectorAnimationRecordingContext
     }
 
     /// <summary>
-    /// Builds context from the current editor recording state and hierarchy. Returns null when
-    /// animation recording is not active or the element is not under an animatable panel.
-    /// </summary>
-    /// <summary>
     /// Builds context from the current editor recording state and hierarchy.
     /// Returns null when animation recording is not active.
     /// Returns a context with an empty recordable set when the element is not animatable.
@@ -39,6 +35,9 @@ internal sealed class StyleInspectorAnimationRecordingContext
     {
         if (element == null || !AnimationMode.InAnimationRecording())
             return null;
+
+        if (TryCreatePerElementContext(element, out var perElementContext))
+            return perElementContext;
 
         var recordability = VisualElementRecordability.ProbeElement(element);
         if (!recordability.CanRecord)
@@ -50,6 +49,48 @@ internal sealed class StyleInspectorAnimationRecordingContext
 
         return new StyleInspectorAnimationRecordingContext(
             AnimationRecordingStyleBridge.GetRecordableStylePropertyIds(panelRoot.panelComponent.gameObject));
+    }
+
+    static bool TryCreatePerElementContext(VisualElement element, out StyleInspectorAnimationRecordingContext context)
+    {
+        context = null;
+
+        var clipOwner = VisualElementAnimationClipUtility.FindClipOwner(element);
+        if (clipOwner == null)
+            return false;
+
+        var concretePanel = clipOwner.panel as Panel;
+        var binder = concretePanel?.GetOrCreateElementBinder(clipOwner);
+        if (binder == null)
+            return false;
+
+        binder.UpdateElementNamesIfNeeded();
+        if (!binder.TryGetPathForElement(element, out _))
+            return false;
+
+        context = new StyleInspectorAnimationRecordingContext(GetPerElementRecordableSet());
+        return true;
+    }
+
+    static HashSet<StylePropertyId> s_PerElementRecordableSet;
+
+    static HashSet<StylePropertyId> GetPerElementRecordableSet()
+    {
+        if (s_PerElementRecordableSet != null)
+            return s_PerElementRecordableSet;
+
+        var set = new HashSet<StylePropertyId>();
+        int idCount = UIAnimationBinder.StylePropertyIdCount;
+        for (int idValue = 1; idValue < idCount; idValue++)
+        {
+            var id = (StylePropertyId)idValue;
+            if (StyleDebug.IsShorthandProperty(id))
+                continue;
+            if (UIAnimationBinder.GetChannelCount(id) > 0)
+                set.Add(id);
+        }
+        s_PerElementRecordableSet = set;
+        return set;
     }
 
     /// <summary>

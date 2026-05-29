@@ -14,7 +14,7 @@ namespace UnityEditorInternal.Profiling
     [ProfilerModuleMetadata("UI (Canvas)", typeof(LocalizationResource), IconPath = "Profiler.UICanvas")]
     internal class UIProfilerModule : ProfilerModuleBase
     {
-        const int k_DefaultOrderIndex = 10;
+        const int k_DefaultOrderIndex = 12;
         static readonly string k_UIProfilerAvailableOnlyInEditorMode = LocalizationDatabase.GetLocalizedString("Data is only available when profiling Play Mode in the Editor.");
 
         protected static WeakReference instance;

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -34,9 +35,10 @@ namespace UnityEditor.VFX
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXMapping")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXMapping
     {
+        [NativeName("nameId")]
         public string name;
         public int index;
 
@@ -48,7 +50,7 @@ namespace UnityEditor.VFX
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXMappingTemporary")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXMappingTemporary
     {
         public VFXMapping mapping;
@@ -125,7 +127,7 @@ namespace UnityEditor.VFX
         }
     }
 
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXCPUBufferDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXCPUBufferDesc
     {
         public VFXLayoutElementDesc[] layout;
@@ -135,7 +137,7 @@ namespace UnityEditor.VFX
         public VFXCPUBufferData initialData;
     }
 
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXShaderSourceDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXShaderSourceDesc
     {
         public bool compute;
@@ -144,14 +146,14 @@ namespace UnityEditor.VFX
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXEditorTaskDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXEditorTaskDesc
     {
         public VFXTaskType type;
         public VFXMapping[] buffers;
         public VFXMappingTemporary[] temporaryBuffers;
-        [NativeName("uniforms")]
         public VFXMapping[] values;
+        [NativeName("params")]
         public VFXMapping[] parameters;
         public UnityObject processor;
         public uint instanceSplitIndex;
@@ -161,14 +163,14 @@ namespace UnityEditor.VFX
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXInstanceSplitDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXInstanceSplitDesc
     {
         public uint[] values;
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXEditorSystemDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXEditorSystemDesc
     {
         public VFXSystemType type;
@@ -182,7 +184,7 @@ namespace UnityEditor.VFX
         public VFXInstanceSplitDesc[] instanceSplitDescs;
     }
 
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXEventDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXEventDesc
     {
         public string name;
@@ -207,11 +209,19 @@ namespace UnityEditor.VFX
         public EntityId entityId = EntityId.None;
     }
 
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXExpressionDesc")]
-    internal struct VFXExpressionDesc
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct VFXExpressionDesc
     {
         public VFXExpressionOperation op;
-        public int[] data;
+        public fixed int data[4];
+
+        public void SetData(int data0, int data1, int data2, int data3)
+        {
+            data[0] = data0;
+            data[1] = data1;
+            data[2] = data2;
+            data[3] = data3;
+        }
     }
 
     internal struct VFXLayoutOffset
@@ -222,7 +232,7 @@ namespace UnityEditor.VFX
     }
 
     [RequiredByNativeCode]
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXLayoutElementDesc")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct VFXLayoutElementDesc
     {
         public string name;
@@ -304,7 +314,6 @@ namespace UnityEditor.VFX
 
         public const string Extension = ".vfx";
         extern private static void CreateVisualEffectResource([Writable] VisualEffectResource resource);
-        extern public void ClearRuntimeData();
 
         //Must be kept in sync with C++
         public const int CurrentVersion = 1;
@@ -486,8 +495,6 @@ namespace UnityEditor.VFX
             return internalSheet;
         }
 
-        public extern VFXShaderSourceDesc[] shaderSources { get; set; }
-
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceCount", ThrowsException = true, HasExplicitThis = true)] public extern int GetShaderSourceCount();
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceName", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSourceName(int index);
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSource", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSource(int index);
@@ -496,44 +503,6 @@ namespace UnityEditor.VFX
 
         public const uint uncompiledVersion = 0;
         public const uint defaultVersion = 1;
-
-
-        public void SetRuntimeData(VFXExpressionSheet sheet,
-            VFXEditorSystemDesc[] systemDesc,
-            VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] gpuBufferDesc,
-            VFXCPUBufferDesc[] cpuBufferDesc,
-            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
-            VFXShaderSourceDesc[] shaderSourceDesc,
-            ShadowCastingMode shadowCastingMode,
-            MotionVectorGenerationMode motionVectorGenerationMode,
-            VFXInstancingDisabledReason instancingDisabledReason,
-            VFXCompilationMode compilationMode,
-            uint version = defaultVersion)
-        {
-            var internalSheet = new VFXExpressionSheetInternal();
-            internalSheet.expressions = sheet.expressions;
-            internalSheet.expressionsPerSpawnEventAttribute = sheet.expressionsPerSpawnEventAttribute;
-            internalSheet.exposed = sheet.exposed;
-            internalSheet.values = CreateValueSheet(sheet.values);
-
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, instancingDisabledReason, compilationMode, version);
-        }
-
-
-        [NativeMethod(ThrowsException = true)]
-        extern private void SetRuntimeData(VFXExpressionSheetInternal sheet,
-            VFXEditorSystemDesc[] systemDesc,
-            VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] gpuBufferDesc,
-            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
-            VFXCPUBufferDesc[] cpuBufferDesc,
-            VFXShaderSourceDesc[] shaderSourceDesc,
-            ShadowCastingMode shadowCastingMode,
-            MotionVectorGenerationMode motionVectorGenerationMode,
-            VFXInstancingDisabledReason instancingDisabledReason,
-            VFXCompilationMode compilationMode,
-            uint version);
 
         extern public VFXRendererSettings rendererSettings { get; set; }
         extern public VFXUpdateMode updateMode { get; set; }
@@ -549,13 +518,11 @@ namespace UnityEditor.VFX
         extern public VFXCullingFlags cullingFlags { get; set; }
         extern public VFXInstancingMode instancingMode { get; set; }
         extern public uint instancingCapacity { get; set; }
-
-        extern public void MarkRuntimeVersion();
-        extern public void ValidateAsset();
+        extern public string assetPathString { get; set; }
         extern public void WriteAsset();
-
         public static extern VisualEffectResource GetResourceAtPath(string path);
-        static extern public void DeleteAtPath(string path);
+        public static extern VisualEffectResource GetResourceAtPathAndForget(string path);
+        static extern public void ForgetAtPath(string path);
         public extern void SetAssetPath(string path);
 
         public extern UnityObject[] GetContents();
@@ -588,37 +555,49 @@ namespace UnityEditor.VFX
 
         extern public Material FindMaterial(ScriptableObject model);
 
-        extern public void ClearSourceDependencies();
-        extern public void AddSourceDependency(string dep);
-        extern public void ClearImportDependencies();
-        extern public void AddImportDependency(string dep);
-
         [UsedByNativeCode]
-        internal static string[] AddResourceDependencies(string assetPath)
+        internal static GUID[] FilterImportDependencies(GUID[] externalGuids, string[] externalPaths, bool sourceOnly)
         {
-            if (onAddResourceDependencies != null)
-                return onAddResourceDependencies(assetPath);
+            if (onFilterImportDependencies != null)
+                return onFilterImportDependencies(externalGuids, externalPaths, sourceOnly);
 
             return null;
         }
 
-        internal static Func<string, string[]> onAddResourceDependencies;
+        internal static Func<GUID[], string[], bool, GUID[]> onFilterImportDependencies;
 
         [UsedByNativeCode]
-        internal void CompileResource()
+        internal static bool EarlyGetAuthoringCompileData(AssetImportContext context, GUID sourceGUID, IntPtr outDesc)
+        {
+            if (onEarlyGetAuthoringCompileData != null)
+            {
+                VisualEffectAssetDesc desc;
+                if (onEarlyGetAuthoringCompileData(sourceGUID, context, out desc))
+                {
+                    var descInternal = VisualEffectAssetUtility.ConvertDescToInternal(desc);
+                    VisualEffectAssetUtility.CopyVisualEffectAssetDesc(outDesc, descInternal);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Use actual delegate declaration instead of Func to be able to have out parameter
+        internal delegate bool EarlyGetAuthoringCompileDataFunc(GUID id, AssetImportContext ctx, out VisualEffectAssetDesc outDesc);
+        internal static EarlyGetAuthoringCompileDataFunc onEarlyGetAuthoringCompileData;
+
+        [UsedByNativeCode]
+        internal void CompileResource(AssetImportContext context, IntPtr outDesc)
         {
             if (onCompileResource != null)
-                onCompileResource(this);
+            {
+                var visualEffectAssetDesc = onCompileResource(this, context);
+                var desc = VisualEffectAssetUtility.ConvertDescToInternal(visualEffectAssetDesc);
+                VisualEffectAssetUtility.CopyVisualEffectAssetDesc(outDesc, desc);
+            }
         }
 
-        [UsedByNativeCode]
-        internal void SetupMaterial(Material material, UnityObject model)
-        {
-            if (onSetupMaterial != null)
-                onSetupMaterial(this, material, model);
-        }
-
-        internal static Action<VisualEffectResource> onCompileResource;
-        internal static Action<VisualEffectResource, Material, UnityObject> onSetupMaterial;
+        internal static Func<VisualEffectResource, AssetImportContext, VisualEffectAssetDesc> onCompileResource;
     }
 }

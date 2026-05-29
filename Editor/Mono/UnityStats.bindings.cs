@@ -207,7 +207,7 @@ namespace UnityEditor
         {
             get
             {
-                return 0;
+                return (int)batchStats.usedTextureBytes;
             }
         }
 
@@ -215,7 +215,7 @@ namespace UnityEditor
         {
             get
             {
-                return 0;
+                return batchStats.usedTextureCount;
             }
         }
 

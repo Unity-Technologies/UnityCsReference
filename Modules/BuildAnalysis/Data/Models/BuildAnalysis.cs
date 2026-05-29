@@ -12,9 +12,9 @@ namespace UnityEditor.Build.Analysis
         public int Version;
         public string GeneratedAtUtc;
         public BuildAnalysisSummary Summary;
-        public BuildAnalysisTables Tables;
-        public BuildAnalysisMessage[] Messages;
-        public BuildAnalysisComputed Computed;
+        public BuildAnalysisTables Tables = new BuildAnalysisTables();
+        public BuildAnalysisMessage[] Messages = Array.Empty<BuildAnalysisMessage>();
+        public BuildAnalysisComputed Computed = new BuildAnalysisComputed();
     }
 
     [Serializable]
@@ -32,14 +32,16 @@ namespace UnityEditor.Build.Analysis
         public int TotalWarnings;
         public string BuildManifestHash;
         public string OutputPath;
-        public string[] BuildOptions;
-        public string[] BuildContentOptions;
+        public string[] BuildOptions = Array.Empty<string>();
+        public string[] BuildContentOptions = Array.Empty<string>();
     }
 
     [Serializable]
     internal class BuildAnalysisTables
     {
-        public BuildAnalysisStep[] Steps;
+        public BuildAnalysisStep[] Steps = Array.Empty<BuildAnalysisStep>();
+        public BuildAnalysisAsset[] Assets = Array.Empty<BuildAnalysisAsset>();
+        public BuildAnalysisImporterType[] ImporterTypes = Array.Empty<BuildAnalysisImporterType>();
     }
 
     [Serializable]
@@ -49,6 +51,25 @@ namespace UnityEditor.Build.Analysis
         public string Name;
         public int Depth;
         public long DurationMs;
+    }
+
+    [Serializable]
+    internal struct BuildAnalysisAsset
+    {
+        public int Id;
+        public string Path;
+        public string GUID;
+        public ulong OutputSizeBytes;
+        public int ObjectCount;
+        public int ResourceCount;
+        public int ImporterTypeId;
+    }
+
+    [Serializable]
+    internal struct BuildAnalysisImporterType
+    {
+        public int Id;
+        public string Name;
     }
 
     [Serializable]
@@ -70,6 +91,7 @@ namespace UnityEditor.Build.Analysis
     internal struct BuildAnalysisCounts
     {
         public int AssetCount;
+        public int SceneCount;
         public int ErrorMessageCount;
         public int WarningMessageCount;
         public int InfoMessageCount;

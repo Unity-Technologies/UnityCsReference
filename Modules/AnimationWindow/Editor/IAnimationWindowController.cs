@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     /// <summary>
     /// Use this interface to override the Animation window controls and to customize how animation is evaluated.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     interface IAnimationWindowController : IDisposable
     {
         void OnSelectionChanged();

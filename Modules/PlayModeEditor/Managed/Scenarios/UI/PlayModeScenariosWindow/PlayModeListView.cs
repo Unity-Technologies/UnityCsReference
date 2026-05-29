@@ -40,25 +40,12 @@ namespace Unity.PlayMode.Editor
             m_NewItemTextField.OnFinishEdit += s =>
             {
                 m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-                var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                var uniqueName = MakeUniqueScenarioName(s);
+                var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(uniqueName, m_NewItemTextField.userData as Type);
                 if (newConfig != null)
                 {
                     TrySelect(newConfig);
                 }
-            };
-
-            m_NewItemTextField.OnEdit += s =>
-            {
-                bool nameExists = false;
-                foreach (var c in PlayModeScenarioUtils.GetAllConfigs())
-                {
-                    if (c.name == s)
-                    {
-                        nameExists = true;
-                        break;
-                    }
-                }
-                m_NewItemTextField.InputIsValid = !nameExists;
             };
 
             m_NewItemTextField.OnCancel += () => m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
@@ -104,6 +91,9 @@ namespace Unity.PlayMode.Editor
 
         void RefreshList()
         {
+            var selectedItem = m_ListView.selectedItem as PlayModeScenario;
+            var currentConfig = selectedItem != null ? selectedItem : PlayModeScenarioManager.ActiveScenario;
+
             m_ListView.itemsSource = PlayModeScenarioUtils.GetAllConfigs();
             m_ListView.Rebuild();
             m_ListView.makeItem = () =>
@@ -160,9 +150,7 @@ namespace Unity.PlayMode.Editor
                 labelAndIcon.tooltip = config.Description;
             };
 
-            var currentConfig = PlayModeScenarioManager.ActiveScenario;
-
-            // Select the config that is currently selected if not available (because maybe it just got deleted) select first
+            // Restore selection; fall back to nothing if the scenario was deleted
             if (currentConfig != null)
                 m_ListView.selectedIndex = m_ListView.itemsSource.IndexOf(currentConfig);
 
@@ -202,29 +190,20 @@ namespace Unity.PlayMode.Editor
 
         internal void ShowAddTextField(Type type, string newItemName)
         {
-            var allConfigs = PlayModeScenarioUtils.GetAllConfigs();
-            var finalName = newItemName;
-            int counter = 1;
-            bool nameExists = true;
-            while (nameExists)
-            {
-                nameExists = false;
-                foreach (var c in allConfigs)
-                {
-                    if (c.name == finalName)
-                    {
-                        nameExists = true;
-                        finalName = newItemName + $"({counter})";
-                        counter++;
-                        break;
-                    }
-                }
-            }
-
-            m_NewItemTextField.Text = finalName;
+            m_NewItemTextField.Text = MakeUniqueScenarioName(newItemName);
             m_NewItemTextField.userData = type;
+            m_NewItemTextField.InputIsValid = true;
             m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
             m_NewItemTextField.EnableEditMode();
+        }
+
+        static string MakeUniqueScenarioName(string desiredName)
+        {
+            var allConfigs = PlayModeScenarioUtils.GetAllConfigs();
+            var existingNames = new string[allConfigs.Count];
+            for (int i = 0; i < allConfigs.Count; i++)
+                existingNames[i] = allConfigs[i].name;
+            return ObjectNames.GetUniqueName(existingNames, desiredName);
         }
     }
 }

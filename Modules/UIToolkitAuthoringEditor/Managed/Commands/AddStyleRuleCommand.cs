@@ -2,35 +2,47 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct AddStyleRuleCommand
+sealed class AddStyleRuleCommand : Command<AddStyleRuleCommand>
 {
-    const string CommandUndoName = "Add style rule";
-
-    readonly StyleSheet StyleSheet;
-    readonly string SelectorString;
-
-    public AddStyleRuleCommand(StyleSheet styleSheet, string selectorString)
+    public static AddStyleRuleCommand GetPooled(object source, StyleSheet styleSheet, string selectorString)
     {
-        StyleSheet = styleSheet;
-        SelectorString = selectorString;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.SelectorString = selectorString;
+        return cmd;
     }
 
-    public void Execute()
+    const string CommandUndoName = "Add style rule";
+
+    public StyleSheet StyleSheet { get; private set; }
+    public string SelectorString { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+
+    protected override void Init()
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(SelectorString);
+        base.Init();
+        StyleSheet = null;
+        SelectorString = null;
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public override bool Validate() => StyleSheet != null && !string.IsNullOrWhiteSpace(SelectorString);
 
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+
+    public override CommandExecutionStatus Execute()
+    {
         var styleRule = StyleSheet.AddRule();
         styleRule.AddSelector(SelectorString);
-
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

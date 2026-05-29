@@ -27,7 +27,7 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// <summary>
     /// Returns <see langword="true"/> if this is an invalid/undefined node.
     /// </summary>
-    public bool IsUndefined => m_Handle.Equals(UnmanagedDataHandle.Undefined);
+    public bool IsUndefined => m_Handle.IsUndefined;
 
     /// <summary>
     /// Returns the handle for this node.
@@ -94,19 +94,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     {
         get => m_Access.GetNodeData(m_Handle).UsesBaseline;
         set => m_Access.GetNodeData(m_Handle).UsesBaseline = value;
-    }
-
-    /// <summary>
-    /// Sets the owner of this node.
-    /// </summary>
-    public void SetOwner(VisualElement func)
-    {
-        m_Access.SetOwner(m_Handle, func);
-    }
-
-    public VisualElement GetOwner()
-    {
-       return m_Access.GetOwner(m_Handle);
     }
 
     /// <summary>
@@ -195,9 +182,9 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     {
         ref var data = ref m_Access.GetNodeData(m_Handle);
 
-        Assert.IsTrue(!data.Children.IsCreated || data.Children.Count == 0, "Cannot reset a node which still has children attached");
+        Assert.IsTrue(data.FirstChild.IsUndefined, "Cannot reset a node which still has children attached");
+        Assert.IsTrue(data.Parent.IsUndefined, "Cannot reset a node which is still attached to a parent");
 
-        data.Parent = default;
         data.HasNewLayout = true;
         data.ResolvedDimensions = new FixedBuffer2<Length>
         {
@@ -206,8 +193,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         };
         data.UsesMeasure = false;
         data.UsesBaseline = false;
-
-        SetOwner(null);
 
         Layout = LayoutComputedData.Default;
         Style = LayoutData.Default;

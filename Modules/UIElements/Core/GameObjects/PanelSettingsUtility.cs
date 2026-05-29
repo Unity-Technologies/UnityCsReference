@@ -72,15 +72,24 @@ internal static class PanelSettingsUtility
 
     public static void SetPanelSizeFromPanelSettings(IPanelSettings panelSettings, RenderTexture targetTexture, BaseRuntimePanel panel)
     {
+        // Always re-assign so mode transitions (Overlay <-> WorldSpace, Fixed <-> Dynamic) can't leave stale values.
+        panel.scale = panelSettings.resolvedScale == 0.0f ? 0.0f : 1.0f / panelSettings.resolvedScale;
+        panel.visualTree.style.left = 0;
+        panel.visualTree.style.top = 0;
+
         if (panelSettings.renderMode != PanelRenderMode.WorldSpace)
         {
-            panel.scale = panelSettings.resolvedScale == 0.0f ? 0.0f : 1.0f / panelSettings.resolvedScale;
-            panel.visualTree.style.left = 0;
-            panel.visualTree.style.top = 0;
             panel.visualTree.style.width = panelSettings.targetRect.width * panelSettings.resolvedScale;
             panel.visualTree.style.height = panelSettings.targetRect.height * panelSettings.resolvedScale;
 
             panel.panelRenderer.forceGammaRendering = targetTexture != null && panelSettings.forceGammaRendering;
+        }
+        else
+        {
+            // World-space components are positioned absolutely by SetupWorldSpaceSize; size the panel root
+            // to 0x0 (instead of leaving it auto) so it never acts as a containing block between documents.
+            panel.visualTree.style.width = 0;
+            panel.visualTree.style.height = 0;
         }
     }
 

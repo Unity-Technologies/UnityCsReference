@@ -44,9 +44,9 @@ namespace UnityEngine.UIElements.UIR
         // Vertex data, lazily computed
         bool m_VertexDataComputed;
         Matrix4x4 m_Transform;
-        Color32 m_TransformData;
-        Color32 m_OpacityData;
-        Color32 m_TextCoreSettingsPage;
+        ushort m_TransformId;
+        ushort m_OpacityId;
+        ushort m_TextCoreId;
 
         // Invariant within an alloc
         MeshHandle m_Mesh;              // The current destination mesh
@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements.UIR
         VertexFlags m_RenderType;
         bool m_RemapUVs;
         Rect m_AtlasRect;
-        int m_GradientSettingIndexOffset;
+        ushort m_GradientSettingIndexOffset;
         bool m_IsTail;
 
         // First command is always a dummy
@@ -109,13 +109,13 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_MaskDepthPopped = parent.childrenMaskDepth;
                 m_StencilRefPopped = parent.childrenStencilRef;
-                m_ClipRectIdPopped = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : parent.clipRectID;
+                m_ClipRectIdPopped = isGroupTransform ? ShaderInfoAllocator.infiniteClipRect : parent.clipRectID;
             }
             else
             {
                 m_MaskDepthPopped = 0;
                 m_StencilRefPopped = 0;
-                m_ClipRectIdPopped = UIRVEShaderInfoAllocator.infiniteClipRect;
+                m_ClipRectIdPopped = ShaderInfoAllocator.infiniteClipRect;
             }
 
             m_MaskDepthPushed = m_MaskDepthPopped + 1;
@@ -129,7 +129,7 @@ namespace UnityEngine.UIElements.UIR
             // Vertex data, lazily computed
             m_VertexDataComputed = false;
             m_Transform = Matrix4x4.identity;
-            m_TextCoreSettingsPage = new Color32(0, 0, 0, 0);
+            m_TextCoreId = 0;
 
             m_MaskMeshes.Clear();
             m_IsDrawingMask = false;
@@ -196,7 +196,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     case EntryType.DrawSolidMesh:
                     {
-                        m_RenderType = VertexFlags.IsSolid;
+                        m_RenderType = VertexFlags.RenderTypeSolid;
                         ProcessMeshEntry(entry, TextureId.invalid);
                         break;
                     }
@@ -210,20 +210,20 @@ namespace UnityEngine.UIElements.UIR
                             bool skipAtlas = (entry.flags & (EntryFlags.SkipDynamicAtlas | EntryFlags.IsPremultiplied)) != 0;
                             if (!skipAtlas && m_RenderTreeManager.atlas != null && m_RenderTreeManager.atlas.TryGetAtlas(m_CurrentRenderData.owner, texture as Texture2D, out textureId, out RectInt atlasRect))
                             {
-                                m_RenderType = VertexFlags.IsDynamic;
+                                m_RenderType = VertexFlags.RenderTypeDynamicTexture;
                                 m_AtlasRect = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
                                 m_RemapUVs = true;
                                 m_RenderTreeManager.InsertTexture(m_CurrentRenderData, texture, textureId, true);
                             }
                             else
                             {
-                                m_RenderType = VertexFlags.IsTextured;
+                                m_RenderType = VertexFlags.RenderTypeTexture;
                                 textureId = TextureRegistry.instance.Acquire(texture);
                                 m_RenderTreeManager.InsertTexture(m_CurrentRenderData, texture, textureId, false);
                             }
                         }
                         else
-                            m_RenderType = VertexFlags.IsSolid; // Fallback to solid rendering
+                            m_RenderType = VertexFlags.RenderTypeSolid; // Fallback to solid rendering
 
                         ProcessMeshEntry(entry, textureId);
                         m_RemapUVs = false;
@@ -231,13 +231,13 @@ namespace UnityEngine.UIElements.UIR
                     }
                     case EntryType.DrawDynamicTexturedMesh:
                     {
-                        m_RenderType = VertexFlags.IsTextured;
+                        m_RenderType = VertexFlags.RenderTypeTexture;
                         ProcessMeshEntry(entry, entry.textureId);
                         break;
                     }
                     case EntryType.DrawTextMesh:
                     {
-                        m_RenderType = VertexFlags.IsText;
+                        m_RenderType = VertexFlags.RenderTypeText;
                         TextureId textureId = TextureRegistry.instance.Acquire(entry.texture);
                         m_RenderTreeManager.InsertTexture(m_CurrentRenderData, entry.texture, textureId, false);
                         ProcessMeshEntry(entry, textureId);
@@ -245,14 +245,14 @@ namespace UnityEngine.UIElements.UIR
                     }
                     case EntryType.DrawGradients:
                     {
-                        m_RenderType = VertexFlags.IsSvgGradients;
+                        m_RenderType = VertexFlags.RenderTypeSvgGradient;
                         TextureId textureId;
 
                         // The vector image has embedded textures/gradients and we have a manager that can accept the settings.
                         // Register the settings and assume that it works.
                         m_RenderTreeManager.InsertVectorImage(m_CurrentRenderData, entry.gradientsOwner);
                         var gradientRemap = m_RenderTreeManager.vectorImageManager.AddUser(entry.gradientsOwner, m_CurrentRenderData.owner);
-                        m_GradientSettingIndexOffset = gradientRemap.destIndex;
+                        m_GradientSettingIndexOffset = (ushort)gradientRemap.destIndex;
                         if (gradientRemap.atlas != TextureId.invalid)
 
                             // The textures/gradients themselves have also been atlased
@@ -265,7 +265,9 @@ namespace UnityEngine.UIElements.UIR
                         }
 
                         ProcessMeshEntry(entry, textureId);
-                        m_GradientSettingIndexOffset = -1; // This effectively disables this conversion operation for the next entries
+                        // The convert job adds this unconditionally; reset so it doesn't
+                        // leak into subsequent non-SVG entries.
+                        m_GradientSettingIndexOffset = 0;
                         break;
                     }
                     case EntryType.DrawImmediate:
@@ -383,6 +385,23 @@ namespace UnityEngine.UIElements.UIR
                         AppendCommand(cmd);
                         break;
                     }
+                    case EntryType.BeginPanelComponent:
+                    {
+                        var cmd = m_RenderTreeManager.AllocCommand();
+                        cmd.owner = m_CurrentRenderData;
+                        cmd.type = CommandType.BeginPanelComponent;
+                        cmd.panelComponentId = entry.panelComponentId;
+                        AppendCommand(cmd);
+                        break;
+                    }
+                    case EntryType.EndPanelComponent:
+                    {
+                        var cmd = m_RenderTreeManager.AllocCommand();
+                        cmd.owner = m_CurrentRenderData;
+                        cmd.type = CommandType.EndPanelComponent;
+                        AppendCommand(cmd);
+                        break;
+                    }
                     default:
                         throw new NotImplementedException();
                 }
@@ -407,29 +426,20 @@ namespace UnityEngine.UIElements.UIR
                 {
                     UIRUtility.GetVerticesTransformInfo(m_CurrentRenderData, out m_Transform);
                     m_CurrentRenderData.verticesSpace = m_Transform; // This is the space for the generated vertices below
-                    m_TransformData = m_RenderTreeManager.shaderInfoAllocator.TransformAllocToVertexData(m_CurrentRenderData.transformID);
-                    m_OpacityData = m_RenderTreeManager.shaderInfoAllocator.OpacityAllocToVertexData(m_CurrentRenderData.opacityID);
+                    m_TransformId = ShaderInfoAllocator.BMPAllocToId(m_CurrentRenderData.transformID);
+                    m_OpacityId = ShaderInfoAllocator.BMPAllocToId(m_CurrentRenderData.opacityID);
                     m_VertexDataComputed = true;
                 }
 
-                Color32 opacityPage = new Color32(m_OpacityData.r, m_OpacityData.g, 0, 0);
-                Color32 clipRectData = m_RenderTreeManager.shaderInfoAllocator.ClipRectAllocToVertexData(m_ClipRectId);
-                Color32 ids = new Color32(m_TransformData.b, clipRectData.b, m_OpacityData.b, 0);
-                Color32 xformClipPages = new Color32(m_TransformData.r, m_TransformData.g, clipRectData.r, clipRectData.g);
-                Color32 addFlags = new Color32((byte)m_RenderType, 0, 0, 0);
-
-                if ((entry.flags & EntryFlags.UsesTextCoreSettings) != 0)
+                ushort clipRectId = ShaderInfoAllocator.BMPAllocToId(m_ClipRectId);
+                bool usesTextCoreSettings = (entry.flags & EntryFlags.UsesTextCoreSettings) != 0;
+                if (usesTextCoreSettings)
                 {
-                    // It's important to avoid writing these values when the vertices aren't for text,
-                    // as some of these settings are shared with the vector graphics gradients.
-                    // The same applies to the CopyTransformVertsPos* methods below.
-                    Color32 textCoreSettingsData = m_RenderTreeManager.shaderInfoAllocator.TextCoreSettingsToVertexData(m_CurrentRenderData.textCoreSettingsID);
-                    m_TextCoreSettingsPage.r = textCoreSettingsData.r;
-                    m_TextCoreSettingsPage.g = textCoreSettingsData.g;
-                    ids.a = textCoreSettingsData.b;
+                    // Avoid writing the textcore id when the vertices aren't for text:
+                    // the slot is shared with the vector graphics gradient index.
+                    m_TextCoreId = ShaderInfoAllocator.BMPAllocToId(m_CurrentRenderData.textCoreSettingsID);
                 }
 
-                // Copy vertices, transforming them as necessary
                 var targetVerticesSlice = m_Verts.Slice(m_VertsFilled, entryVertexCount);
 
                 int entryIndexOffset = m_VertsFilled + m_IndexOffset;
@@ -453,14 +463,14 @@ namespace UnityEngine.UIElements.UIR
                     vertDst = (IntPtr)targetVerticesSlice.GetUnsafePtr(),
                     vertCount = entryVertexCount,
                     transform = m_Transform,
-                    xformClipPages = xformClipPages,
-                    ids = ids,
-                    addFlags = addFlags,
-                    opacityPage = opacityPage,
-                    textCoreSettingsPage = m_TextCoreSettingsPage,
-                    usesTextCoreSettings = (entry.flags & EntryFlags.UsesTextCoreSettings) != 0 ? 1 : 0,
-                    textureId = textureId.ConvertToGpu(),
+                    clipRectId = clipRectId,
+                    transformId = m_TransformId,
+                    dynamicColorOrTextCoreId = m_TextCoreId,
+                    opacityId = m_OpacityId,
+                    flags = m_RenderType,
+                    textureId = (ushort)textureId.index,
                     gradientSettingsIndexOffset = m_GradientSettingIndexOffset,
+                    usesTextCoreSettings = usesTextCoreSettings ? 1 : 0,
 
                     indexSrc = (IntPtr)entry.indices.GetUnsafePtr(),
                     indexDst = (IntPtr)targetIndicesSlice.GetUnsafePtr(),
@@ -558,17 +568,17 @@ namespace UnityEngine.UIElements.UIR
             {
                 switch(m_RenderType)
                 {
-                    case VertexFlags.IsSolid:
+                    case VertexFlags.RenderTypeSolid:
                         cmd.flags |= CommandFlags.ForceRenderTypeSolid;
                         break;
-                    case VertexFlags.IsText:
+                    case VertexFlags.RenderTypeText:
                         cmd.flags |= CommandFlags.ForceRenderTypeText;
                         break;
-                    case VertexFlags.IsTextured:
-                    case VertexFlags.IsDynamic:
+                    case VertexFlags.RenderTypeTexture:
+                    case VertexFlags.RenderTypeDynamicTexture:
                         cmd.flags |= CommandFlags.ForceRenderTypeTextured;
                         break;
-                    case VertexFlags.IsSvgGradients:
+                    case VertexFlags.RenderTypeSvgGradient:
                         cmd.flags |= CommandFlags.ForceRenderTypeSvgGradient;
                         break;
                     default:

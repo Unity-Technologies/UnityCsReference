@@ -167,7 +167,7 @@ namespace Unity.GraphToolkit.Editor
             IPanel panel = (evt.target as VisualElement)?.panel;
             var capturingElement = panel.GetCapturingElement(PointerId.mousePointerId);
             if (capturingElement != null
-                && !(capturingElement is Wire)
+                && !(capturingElement is WireView)
                 && !(capturingElement is GraphView)
                 && !(capturingElement is VisualElement ve && ve.parent is Port))
                 return;

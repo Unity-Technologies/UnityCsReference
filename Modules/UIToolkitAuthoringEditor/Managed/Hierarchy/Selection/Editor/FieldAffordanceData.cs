@@ -54,7 +54,37 @@ namespace Unity.UIToolkit.Editor
         /// <summary>
         /// Indicates that the value of the underlying VisualElement property is resolved from a variable coming from a stylesheet
         /// </summary>
-        USSVariable
+        USSVariable,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement style property is currently driven by an animation
+        /// </summary>
+        AnimationAnimated,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement style property is being driven by an animation and recording it
+        /// </summary>
+        AnimationRecording,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement style property is being driven by an animation and
+        /// has a pending candidate edit.
+        /// </summary>
+        AnimationCandidate
+    }
+
+    internal static class FieldAffordanceSourceInfoTypeExtensions
+    {
+        public static bool IsAnimationDriven(this FieldAffordanceSourceInfoType type)
+        {
+            return type is FieldAffordanceSourceInfoType.AnimationAnimated
+                or FieldAffordanceSourceInfoType.AnimationRecording
+                or FieldAffordanceSourceInfoType.AnimationCandidate;
+        }
+
+        // Field-level disable rule. Recording routes edits through AnimationRecordingStyleBridge;
+        // Candidate routes through the candidate hook. Only Animated has no edit channel.
+        public static bool ShouldDisableInlineEdit(this FieldAffordanceSourceInfoType type)
+        {
+            return type == FieldAffordanceSourceInfoType.AnimationAnimated;
+        }
     }
 
     internal enum FieldAffordanceDataType

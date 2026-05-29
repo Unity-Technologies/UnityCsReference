@@ -67,6 +67,7 @@ namespace UnityEngine.VFX
 
         extern internal static uint batchEmptyLifetime { get; set; }
 
+        extern internal static ScriptableObject editorResources { get; }
         extern internal static void ResyncMaterials([NotNull] VisualEffectAsset asset);
         extern internal static bool renderInSceneView { get; set; }
         internal static bool activateVFX { get; set; }

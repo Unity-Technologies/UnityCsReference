@@ -249,7 +249,7 @@ namespace UnityEngine.Audio
         {
             internal RealtimeContext* Context;
             internal JobHandle InOut;
-            internal Unity.Audio.Handle Self;
+            internal DualThreadHandle Self;
 
             internal float* AudioBuffer;
             internal int OutputFrameCount;

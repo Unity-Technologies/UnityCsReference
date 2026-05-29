@@ -271,7 +271,8 @@ namespace UnityEngine.Rendering
         NeedsReflectionProbes = 1 << 3,
         Stereo = 1 << 4,
         DisablePerObjectCulling = 1 << 5,
-        ShadowCasters = 1 << 6
+        ShadowCasters = 1 << 6,
+        SkipTexturelessReflectionProbes = 1 << 7,
     }
 
     [UsedByNativeCode]

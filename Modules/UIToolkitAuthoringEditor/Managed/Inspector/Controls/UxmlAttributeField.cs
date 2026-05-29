@@ -181,6 +181,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     UxmlSerializedAttributeDescription m_BoundAttributeDescription;
     UxmlAttributesEditingContext m_Context;
     OverrideRow m_OverrideRow;
+    BindingId? m_CachedFullBindingPath;
     RefreshBinding m_RefreshBinding;
 
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
@@ -241,6 +242,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
             m_BoundProperty = value;
             m_BoundPropertyFlags = m_BoundProperty?.GetUxmlAttributeFlags();
+            m_CachedFullBindingPath = null;
 
             TrackPropertyValueChange();
             UpdateBoundAttribute();
@@ -284,7 +286,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
                 return;
             }
 
-            SendTrackPropertyEvent(this, m_BoundField, GetSerializedFieldPath(), PropertyTrackingType.Register);
+            if (boundProperty is { isValid: true })
+                SendTrackPropertyEvent(this, m_BoundField, boundProperty.propertyPath, PropertyTrackingType.Register);
             m_BoundField.RegisterCallback<DetachFromPanelEvent>(OnFieldDetachedFromPanel);
             ScheduleRefresh();
         }
@@ -345,7 +348,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
             var container = context.element;
 
-            var bindingPath = GetBindingPath();
+            var bindingPath = GetFullBindingPath();
             var isBindableProperty = PropertyContainer.IsPathValid(ref container, bindingPath);
 
             // Add a separator in case then menu is already filled with items (e.g: TextField's input)
@@ -434,7 +437,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             result.serializedData as UnityEngine.UIElements.UxmlSerializedData,
             boundAttributeDescription,
             context.element,
-            GetBindingPath(),
+            GetFullBindingPath(),
             context.isInTemplateInstance,
             true);
 
@@ -653,7 +656,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     internal void Refresh()
     {
         // Ensure that the boundProperty is not null and sync with its parent serializedObject (isValid will ensure that it is sync)
-        if (context == null || context.element == null || boundField == null || boundProperty is not { isValid: true } || boundAttributeDescription == null)
+        if (context?.element == null || boundField == null || boundProperty is not { isValid: true } || boundAttributeDescription == null)
             return;
 
         var isInline = IsAttributeOverridden(this);
@@ -662,12 +665,12 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         bool isBindingSuccessful = false;
         if (context is { element: not null })
         {
-            binding = context.element.GetBinding(GetBindingPath());
+            binding = context.element.GetBinding(GetFullBindingPath());
             if (binding != null)
             {
                 // Check if binding is actually successful
                 isBindingSuccessful = context.element.TryGetLastBindingToUIResult(
-                    GetBindingPath(),
+                    GetFullBindingPath(),
                     out var bindingResult) &&
                     bindingResult.status == BindingStatus.Success;
             }
@@ -676,12 +679,12 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         }
 
         var isOverridden = isInline || binding != null;
-        OnTrackedPropertyChanged?.Invoke(this, GetSerializedFieldPath(),
+        OnTrackedPropertyChanged?.Invoke(this, boundProperty.propertyPath,
             isOverridden ? TrackedPropertyType.MarkOverride : TrackedPropertyType.ClearOverride);
 
         EnableInClassList(s_InlineFieldUssClassName, isInline);
         EnableInClassList(s_BoundFieldUssClassName, binding != null);
-        OnTrackedPropertySourceChanged?.Invoke(this, GetSerializedFieldPath(), false, binding != null);
+        OnTrackedPropertySourceChanged?.Invoke(this, boundProperty.propertyPath, false, binding != null);
 
         if (m_ContentContainer.bindable is VisualElement bindableElement)
         {
@@ -689,15 +692,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         }
     }
 
-    public BindingId GetBindingPath() => boundAttributeDescription?.bindingPath;
-
-    public string GetSerializedFieldPath()
-    {
-        // Ensure that the boundProperty is not null and sync with its parent serializedObject (isValid will ensure that it is sync)
-        if (boundProperty is not { isValid: true })
-            return string.Empty;
-        return boundProperty.GetBindingPath();
-    }
+    public BindingId GetFullBindingPath() =>
+        m_CachedFullBindingPath ??= m_BoundProperty?.GetFullBindingPath() ?? string.Empty;
 
     void OnAttachedToPanel(AttachToPanelEvent evt)
     {
@@ -716,7 +712,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         // Ensure that the boundProperty is not null and sync with its parent serializedObject (isValid will ensure that it is sync)
         if (boundProperty is not { isValid: true })
             return;
-        OnTrackedPropertyChanged?.Invoke(this, GetSerializedFieldPath(), TrackedPropertyType.StopTracking);
+        OnTrackedPropertyChanged?.Invoke(this, boundProperty.propertyPath, TrackedPropertyType.StopTracking);
     }
 
     void TrackPropertyValueChange()

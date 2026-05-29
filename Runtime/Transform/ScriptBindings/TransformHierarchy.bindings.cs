@@ -42,5 +42,30 @@ namespace UnityEngine
         {
             return SetParent_Internal_WithHierarchy(entityComponentStore, parentTransformAccess, childTransformAccess);
         }
+
+        // Hierarchy traversal functions for TransformRef
+        // These are marked IsThreadSafe=true to allow calling from jobs. Thread safety is ensured by:
+        // 1. These functions only read from the hierarchy arrays (parentIndices, childIndices, mainThreadOnlyEntityReferences)
+        // 2. Structural changes (SetParent, DetachChildren) complete all pending jobs before modifying the hierarchy
+        // 3. The AtomicSafetyHandle on TransformTypeHandle prevents concurrent read/write access to the component data
+        // Note: these are _not_ safe to use with hierarchies containing GameObjects off the main thread yet (DOTS-10269).
+        [FreeFunction("TransformHierarchyBindings::GetParentIndex", HasExplicitThis = false, IsThreadSafe = true)]
+        internal static extern int GetParentIndex(UnsafeTransformAccess access);
+
+        [FreeFunction("TransformHierarchyBindings::GetParentEntityReference", HasExplicitThis = false, IsThreadSafe = true)]
+        internal static extern ulong GetParentEntityReference(UnsafeTransformAccess access);
+
+        [FreeFunction("TransformHierarchyBindings::GetChildCount", HasExplicitThis = false, IsThreadSafe = true)]
+        internal static extern int GetChildCount(UnsafeTransformAccess access);
+
+        [FreeFunction("TransformHierarchyBindings::GetChildIndex", HasExplicitThis = false, IsThreadSafe = true)]
+        internal static extern int GetChildIndex(UnsafeTransformAccess access, int childPosition);
+
+        [FreeFunction("TransformHierarchyBindings::GetEntityReferenceAtIndex", HasExplicitThis = false, IsThreadSafe = true)]
+        internal static extern ulong GetEntityReferenceAtIndex(UnsafeTransformAccess access, int index);
+
+        // Batch function to get all child entities at once (more efficient than iterating)
+        [FreeFunction("TransformHierarchyBindings::GetChildEntities", HasExplicitThis = false, IsThreadSafe = true)]
+        internal static extern unsafe int GetChildEntities(UnsafeTransformAccess access, ulong* outChildEntities, int maxCount);
     }
 }

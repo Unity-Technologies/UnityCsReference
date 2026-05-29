@@ -107,6 +107,27 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
             return false;
         }
 
+        public bool TryGetValue(StyleRule styleRule, out HierarchyNode node)
+        {
+            if (styleRule == null)
+            {
+                node = HierarchyNode.Null;
+                return false;
+            }
+
+            foreach (var kvp in m_HierarchyNodeToNode)
+            {
+                if (kvp.Value.Rule == styleRule)
+                {
+                    node = kvp.Key;
+                    return true;
+                }
+            }
+
+            node = HierarchyNode.Null;
+            return false;
+        }
+
         public bool TryGetValue(HierarchyNode hierarchyNode, out Node node)
         {
             if (hierarchyNode != HierarchyNode.Null)

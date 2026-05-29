@@ -67,6 +67,7 @@ namespace UnityEditor
         }
 
         extern public static bool IsPropertyAnimated(Object target, string propertyPath);
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         extern internal static bool IsPropertyCandidate(Object target, string propertyPath);
 
 
@@ -111,6 +112,7 @@ namespace UnityEditor
         }
 
         // Stops animation playback mode, as used by the animation editor.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void StopAnimationPlaybackMode()
         {
             s_InAnimationPlaybackMode = false;
@@ -119,18 +121,21 @@ namespace UnityEditor
         }
 
         // Returns true if the editor is currently in animation playback mode.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool InAnimationPlaybackMode()
         {
             return s_InAnimationPlaybackMode;
         }
 
         // Starts animation mode, as used by the animation editor playback mode.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void StartAnimationPlaybackMode()
         {
             s_InAnimationPlaybackMode = true;
             onAnimationPlaybackStart?.Invoke();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void StopAnimationRecording()
         {
             s_InAnimationRecordMode = false;
@@ -144,6 +149,7 @@ namespace UnityEditor
             return s_InAnimationRecordMode;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void StartAnimationRecording()
         {
             s_InAnimationRecordMode = true;
@@ -151,6 +157,7 @@ namespace UnityEditor
             onAnimationRecordingStart?.Invoke();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void StartCandidateRecording(AnimationModeDriver driver)
         {
             Internal_StartCandidateRecording(driver);
@@ -169,11 +176,13 @@ namespace UnityEditor
         }
 
         [NativeMethod(ThrowsException = true)]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         extern internal static void AddCandidate(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
         [NativeMethod(ThrowsException = true)]
         extern internal static void AddCandidates([NotNull] GameObject gameObject, [NotNull] AnimationClip clip);
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         extern internal static void StopCandidateRecording();
 
         extern internal static bool IsRecordingCandidates();

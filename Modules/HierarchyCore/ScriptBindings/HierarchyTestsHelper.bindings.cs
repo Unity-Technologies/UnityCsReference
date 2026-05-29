@@ -176,5 +176,8 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyViewModelVersion", IsThreadSafe = true)]
         static extern int GetHierarchyViewModelVersion(HierarchyViewModel hierarchyViewModel);
+
+        [FreeFunction("HierarchyTestsHelperBindings::FindNodeByNameRecursive", IsThreadSafe = true)]
+        internal static extern HierarchyNode FindNodeByNameRecursive(Hierarchy hierarchy, in HierarchyNode parent, string name);
     }
 }

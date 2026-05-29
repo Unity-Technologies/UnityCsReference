@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -37,18 +36,23 @@ namespace Unity.GraphToolkit.Editor
         public GraphReference SourceGraphReference { get; }
 
         /// <summary>
-        /// QuickFix to address the error.
+        /// GraphLogAction to address the error.
         /// </summary>
-        public QuickFix Fix { get; }
+        public GraphLogAction Fix { get; }
 
         /// <summary>
         /// The error type.
         /// </summary>
         public LogType ErrorType { get; }
 
+        /// <summary>
+        /// User-provided data associated with the error.
+        /// </summary>
+        public object UserData { get; }
+
         internal GraphProcessingError() { }
 
-        public GraphProcessingError(string description, Hash128 sourceModelGuid, LogType errorType, GraphReference sourceGraphReference, IReadOnlyList<GraphElementModel> context, QuickFix fix = null)
+        public GraphProcessingError(string description, Hash128 sourceModelGuid, LogType errorType, GraphReference sourceGraphReference, IReadOnlyList<GraphElementModel> context, GraphLogAction fix = null, object userData = null)
             : this()
         {
             Description = description;
@@ -57,6 +61,7 @@ namespace Unity.GraphToolkit.Editor
             SourceGraphReference = sourceGraphReference;
             Context = context;
             Fix = fix;
+            UserData = userData;
         }
 
         /// <summary>
@@ -79,7 +84,9 @@ namespace Unity.GraphToolkit.Editor
                 SourceGraphReference == other.SourceGraphReference &&
                 SourceModelGuid == other.SourceModelGuid &&
                 ErrorType == other.ErrorType &&
-                Equals(Context, other.Context);
+                Equals(Context, other.Context) &&
+                Fix == other.Fix &&
+                UserData == other.UserData;
 
             return isEquals;
         }
@@ -102,6 +109,10 @@ namespace Unity.GraphToolkit.Editor
                 hashCode = (hashCode * 397) ^ SourceGraphReference.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceModelGuid.GetHashCode();
                 hashCode = (hashCode * 397) ^ ErrorType.GetHashCode();
+                if (Fix != null)
+                    hashCode = (hashCode * 397) ^ Fix.GetHashCode();
+                if (UserData != null)
+                    hashCode = (hashCode * 397) ^ UserData.GetHashCode();
                 return hashCode;
             }
         }

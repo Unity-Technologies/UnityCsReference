@@ -33,7 +33,7 @@ namespace Unity.Hierarchy
         public HierarchyViewColumnName(HierarchyView view)
         {
             m_View = view;
-            m_ViewItemContainerPool = new(() => new HierarchyViewItemContainer(), defaultCapacity: 0, maxSize: 512);
+            m_ViewItemContainerPool = new(() => new HierarchyViewItemContainer(), defaultCapacity: 256, maxSize: 512);
 
             title = "Name";
             name = k_HierarchyNameColumnName;

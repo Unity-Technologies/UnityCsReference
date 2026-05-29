@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Serialization;
 using UnityEngine.Bindings;
 
 namespace UnityEditor
@@ -14,7 +13,7 @@ namespace UnityEditor
     /// *undocumented*
     [VisibleToOtherModules("UnityEditor.BurstModule")]
     [System.Serializable]
-    internal class SplitterState : ISerializationCallbackReceiver
+    internal class SplitterState
     {
         const int defaultSplitSize = 6;
 
@@ -34,26 +33,6 @@ namespace UnityEditor
 
         public float xOffset;
 
-        [SerializeField]
-        int m_Version;
-
-#pragma warning disable CS0649
-        [SerializeField]
-        [FormerlySerializedAs("realSizes")]
-        int[] oldRealSizes;
-
-        [SerializeField]
-        [FormerlySerializedAs("minSizes")]
-        int[] oldMinSizes;
-
-        [SerializeField]
-        [FormerlySerializedAs("maxSizes")]
-        int[] oldMaxSizes;
-
-        [SerializeField]
-        [FormerlySerializedAs("splitSize")]
-        int oldSplitSize;
-#pragma warning restore CS0649
 
         #region Old Constructors
 
@@ -356,30 +335,6 @@ namespace UnityEditor
             }
         }
 
-        public void OnBeforeSerialize()
-        {
-            m_Version = 1;
-        }
-
-        static void ConvertOldArray(int[] oldArray, ref float[] newArray)
-        {
-            if ((newArray == null || newArray.Length == 0) && oldArray != null && oldArray.Length > 0)
-                newArray = System.Array.ConvertAll(oldArray, s_ConverterDelegate);
-        }
-
-        public void OnAfterDeserialize()
-        {
-            if (m_Version == 0)
-            {
-                // Case 1241206: Convert int to float
-                ConvertOldArray(oldMaxSizes, ref maxSizes);
-                ConvertOldArray(oldMinSizes, ref minSizes);
-                ConvertOldArray(oldRealSizes, ref realSizes);
-                splitSize = oldSplitSize;
-            }
-
-            m_Version = 1;
-        }
     }
 
     [VisibleToOtherModules("UnityEditor.BurstModule")]

@@ -17,6 +17,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+[Icon("UIToolkit/Icons/UIViewportWindow.png")]
 partial class UIViewportWindow : EditorWindow
 {
     class ShortcutContext : IShortcutContext
@@ -109,6 +110,7 @@ partial class UIViewportWindow : EditorWindow
     void OnEnable()
     {
         titleContent.text = "UI Viewport";
+        titleContent.image = UIResources.GetIconForType(typeof(UIViewportWindow), UIResources.RequestSize.Px16, GetPixelsPerPoint(rootVisualElement)).texture;
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
         s_OpenWindows.Add(this);
     }
@@ -129,6 +131,8 @@ partial class UIViewportWindow : EditorWindow
     [UsedImplicitly]
     void CreateGUI()
     {
+        titleContent.image = UIResources.GetIconForType(typeof(UIViewportWindow), UIResources.RequestSize.Px16, GetPixelsPerPoint(rootVisualElement)).texture;
+
         var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
         if (vta)
             vta.CloneTree(rootVisualElement);
@@ -222,5 +226,11 @@ partial class UIViewportWindow : EditorWindow
 
         m_UxmlPreview.Asset = null;
         m_UssPreview.Asset = null;
+    }
+
+    static float GetPixelsPerPoint(VisualElement element)
+    {
+        return element?.panel == null
+            ? EditorGUIUtility.pixelsPerPoint : element.scaledPixelsPerPoint;
     }
 }

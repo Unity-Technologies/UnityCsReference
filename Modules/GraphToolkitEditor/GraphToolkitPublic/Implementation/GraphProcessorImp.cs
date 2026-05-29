@@ -12,26 +12,52 @@ namespace Unity.GraphToolkit.Editor.Implementation
             m_DefaultModel = defaultModel;
         }
 
-        AbstractNodeModel GetNodeModel(object context)
+        static Model GetModel(object context)
         {
+            AbstractNodeModel nodeModel;
             if (context is Node userNode)
-                return userNode.m_Implementation;
-            if (context is INode node)
-                return (AbstractNodeModel)node;
+                nodeModel = userNode.m_Implementation;
+            else
+            {
+                if (context is INode node)
+                    nodeModel = node as AbstractNodeModel;
+                else
+                {
+                    nodeModel = null;
+                }
+            }
+
+            if (nodeModel != null)
+                return nodeModel;
+            if (context is PortModel port)
+                return port;
             return null;
         }
 
         void IErrorsAndWarnings.LogError(object message, object context)
         {
-            AddError(message.ToString(), GetNodeModel(context) ?? m_DefaultModel);
+            AddError(message.ToString(), GetModel(context) ?? m_DefaultModel, userData: context);
         }
         void IErrorsAndWarnings.LogWarning(object message, object context)
         {
-            AddWarning(message.ToString(), GetNodeModel(context) ?? m_DefaultModel);
+            AddWarning(message.ToString(), GetModel(context) ?? m_DefaultModel, userData: context);
         }
         void IErrorsAndWarnings.Log(object message, object context)
         {
-            AddMessage(message.ToString(), GetNodeModel(context) ?? m_DefaultModel);
+            AddMessage(message.ToString(), GetModel(context) ?? m_DefaultModel, userData: context);
+        }
+
+        public void LogError(object message, object context, GraphLogAction graphLogAction)
+        {
+            AddError(message.ToString(), GetModel(context) ?? m_DefaultModel, graphLogAction, userData: context);
+        }
+        public void LogWarning(object message, object context, GraphLogAction graphLogAction)
+        {
+            AddWarning(message.ToString(), GetModel(context) ?? m_DefaultModel, graphLogAction, userData: context);
+        }
+        public void Log(object message, object context, GraphLogAction graphLogAction)
+        {
+            AddMessage(message.ToString(), GetModel(context) ?? m_DefaultModel, graphLogAction, userData: context);
         }
     }
 

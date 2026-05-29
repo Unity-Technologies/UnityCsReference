@@ -59,6 +59,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 };
                 SetCustomLinkButton(L10n.Tr("Learn More"), buttonAction, error.readMoreURL);
             }
+            else
+                SetCustomLinkButton(string.Empty, null, string.Empty);
         }
     }
 }

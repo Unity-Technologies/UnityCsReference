@@ -191,10 +191,12 @@ namespace UnityEditor
         DetectPresentationDisplay = 1 << 0
     }
 
-    // Gamepad support level for Android TV
+    // Gamepad support level
     public enum AndroidGamepadSupportLevel
     {
-        // Game is fully operational with a D-pad, no gamepad needed
+        None = 0,
+
+        [Obsolete("Please use None instead. (UnityUpgradable) -> None")]
         SupportsDPad = 0,
 
         // Works with a gamepad, but does not require it
@@ -580,8 +582,13 @@ namespace UnityEditor
             // Whether Android banner is added to the APK
             internal static extern bool androidBannerEnabled { get; set; }
 
-            // Gamepad support level for Android TV
-            internal static extern AndroidGamepadSupportLevel androidGamepadSupportLevel { get; set; }
+            public static extern AndroidGamepadSupportLevel gamepadSupportLevel
+            {
+                [NativeMethod("GetAndroidGamepadSupportLevel")]
+                get;
+                [NativeMethod("SetAndroidGamepadSupportLevel")]
+                set;
+            }
 
             [Obsolete("ChromeOS is no longer supported.")]
             public static bool chromeosInputEmulation { get; set; }

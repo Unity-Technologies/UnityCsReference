@@ -224,8 +224,8 @@ namespace UnityEngine.UIElements.UIR
                 int vertCount = (int)mesh.allocVerts.size;
                 NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
                 renderTreeManager.device.Update(mesh, (uint)vertCount, out NativeSlice<Vertex> newVerts);
-                Color32 opacityData = renderTreeManager.shaderInfoAllocator.OpacityAllocToVertexData(renderData.opacityID);
-                renderTreeManager.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityData, vertCount);
+                ushort opacityId = ShaderInfoAllocator.BMPAllocToId(renderData.opacityID);
+                renderTreeManager.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityId, vertCount);
             }
 
             #region Dispose Pattern

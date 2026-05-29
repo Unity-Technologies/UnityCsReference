@@ -204,6 +204,11 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     public static readonly UniqueStyleString k_VariableFieldUssClassName = new("style-property-field__variable");
     public static readonly UniqueStyleString k_BoundFieldUssClassName = new("style-property-field__bound");
 
+    public static readonly UniqueStyleString k_AnimationDrivenFieldUssClassName = new("style-property-field__animation-driven");
+    public static readonly UniqueStyleString k_AnimationAnimatedFieldUssClassName = new("style-property-field__animation-animated");
+    public static readonly UniqueStyleString k_AnimationRecordingFieldUssClassName = new("style-property-field__animation-recording");
+    public static readonly UniqueStyleString k_AnimationCandidateFieldUssClassName = new("style-property-field__animation-candidate");
+
     const string k_ContextualMenuManipulatorPropertyName = "__ContextMenuManipulator";
 
     private readonly Dictionary<BindingInfoKey, State> m_State = new ();
@@ -268,6 +273,12 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         SendTrackPropertyEvent(this, context.targetElement, styleProperty, PropertyTrackingType.Register);
         RegisterCallbacks(this, context.bindingId, stylePropertyId, context.targetElement);
 
+        // TrickleDown phase: must run before VisualElement.SetTooltip and BaseField.HandleEventBubbleUp
+        context.targetElement.RegisterCallback<TooltipEvent, CallbackContext>(
+            OnTooltipEvent,
+            new CallbackContext(this, context.targetElement, context.bindingId),
+            TrickleDown.TrickleDown);
+
         SetupVariableEditingHandler(context.targetElement);
     }
 
@@ -276,6 +287,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         base.OnDeactivated(in context);
         OnTrackedPropertyChanged?.Invoke(this, styleProperty, TrackedPropertyType.StopTracking);
         UnregisterCallbacks(this, stylePropertyId, context.targetElement);
+        context.targetElement.UnregisterCallback<TooltipEvent, CallbackContext>(OnTooltipEvent, TrickleDown.TrickleDown);
         m_State.Remove(new BindingInfoKey(context.targetElement, context.bindingId));
     }
 
@@ -339,6 +351,70 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                     "AnimationController must be null when context type is None.");
                 break;
         }
+    }
+
+    // Composes the field tooltip from up to three independent sections, joined by blank lines:
+    //   1. <b>{blocked reason}</b>  - recording is active and this property cannot be recorded here.
+    //   2. {affordance tooltip}     - echoes the affordance icon's current tooltip (Default Value,
+    //                                 Inline Value, Inherited, Animation-driven/Recording/Candidate,
+    //                                 binding/variable details, ...). Independent from section 1 -
+    //                                 a UXML-driven property that is also recording-blocked shows
+    //                                 both the bold status AND its affordance line.
+    //   3. UXML tooltip verbatim    - already carries its own bold "<b>USS property: name</b> ..."
+    //                                 header and inline description.
+    // rect is anchored to the field worldBound in every case so the tooltip pops above the field.
+    // StopImmediatePropagation is called only when we actually emit something, so a field with no
+    // UXML tooltip and no affordance state lets the default tooltip flow continue undisturbed.
+    static void OnTooltipEvent(TooltipEvent evt, CallbackContext ctx)
+    {
+        evt.rect = ctx.element.worldBound;
+
+        var sb = new System.Text.StringBuilder();
+
+        var controller = ctx.authoringContext?.AnimationController;
+        if (controller != null)
+        {
+            var blocked = ComputeBlockedReason(
+                ctx.authoringContext.StyleDiff.currentTarget,
+                ctx.binding.stylePropertyId,
+                controller);
+            if (blocked != null)
+                sb.Append("<b>").Append(blocked).Append("</b>");
+        }
+
+        var affordance = (ctx.element as IAffordanceField)?.affordanceElement?.GetTooltip();
+        if (!string.IsNullOrEmpty(affordance))
+        {
+            if (sb.Length > 0) sb.Append("\n\n");
+            sb.Append(affordance);
+        }
+
+        var baseTooltip = ctx.element.tooltip;
+        if (!string.IsNullOrEmpty(baseTooltip))
+        {
+            if (sb.Length > 0) sb.Append("\n\n");
+            sb.Append(baseTooltip);
+        }
+
+        if (sb.Length == 0)
+            return;
+
+        evt.tooltip = sb.ToString();
+        evt.StopImmediatePropagation();
+    }
+
+    static string ComputeBlockedReason(VisualElement inspected, StylePropertyId id, StyleInspectorAnimationRecordingContext controller)
+    {
+        if (controller.IsPropertyRecordable(id))
+            return null;
+
+        // Per-element clip in scope bypasses the panel-wide naming rule, so any block here can only
+        // be property-level (shorthand / unsupported channel). The panel-wide probe would falsely
+        // report "give this element a name" for an unnamed element that records fine via its clip.
+        if (VisualElementAnimationClipUtility.FindClipOwner(inspected) != null)
+            return VisualElementRecordability.k_PropertyNotRecordableMessage;
+
+        return VisualElementRecordability.Probe(inspected, id).GetBlockedMessage();
     }
 
     static void ProcessChange<T>(ChangeEvent<T> evt, CallbackContext ctx, Action<StyleProperty, StyleSheet, T> setter)
@@ -616,26 +692,29 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         var targetEnabled = true;
 
         var fieldAffordanceElement = (targetElement as IAffordanceField)?.affordanceElement;
+        var animationSubState = FieldAffordanceSourceInfoType.Default;
         if (fieldAffordanceElement != null)
         {
             FieldAffordanceController.UpdateFieldAffordanceData(fieldAffordanceElement.fieldAffordanceData,
                 authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentContextType, value);
             SetupContextMenu(targetElement, fieldAffordanceElement, authoringContext, value);
-            var hasResolvedBinding = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.ResolvedBinding;
-            var hasResolvedVariable = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable
+            var sourceType = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo;
+            var hasResolvedBinding = sourceType == FieldAffordanceSourceInfoType.ResolvedBinding;
+            var hasResolvedVariable = sourceType == FieldAffordanceSourceInfoType.USSVariable
                 && fieldAffordanceElement.fieldAffordanceData.variableSheet != null;
-            targetEnabled &= !hasResolvedBinding && !hasResolvedVariable;
+            if (sourceType.IsAnimationDriven())
+                animationSubState = sourceType;
+            targetEnabled &= !hasResolvedBinding && !hasResolvedVariable && !animationSubState.ShouldDisableInlineEdit();
         }
+        targetElement.EnableInClassList(k_AnimationDrivenFieldUssClassName, animationSubState.IsAnimationDriven());
+        targetElement.EnableInClassList(k_AnimationAnimatedFieldUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationAnimated);
+        targetElement.EnableInClassList(k_AnimationRecordingFieldUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationRecording);
+        targetElement.EnableInClassList(k_AnimationCandidateFieldUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationCandidate);
 
         var inRecording = authoringContext.AnimationController != null;
         Debug.Assert(inRecording == AnimationMode.InAnimationRecording(),
-            $"AnimationController presence ({inRecording}) must match AnimationMode.InAnimationRecording() ({AnimationMode.InAnimationRecording()}). " +
-            "Refresh must be called before the binding system re-evaluates.");
+            $"AnimationController presence ({inRecording}) must match AnimationMode.InAnimationRecording() ({AnimationMode.InAnimationRecording()}).");
         var propertyRecordable = !inRecording || authoringContext.AnimationController.IsPropertyRecordable(stylePropertyId);
-        if (inRecording && !propertyRecordable)
-            targetElement.tooltip = L10n.Tr("This property cannot be recorded in the Animation window.");
-        else
-            targetElement.tooltip = null;
         targetEnabled &= propertyRecordable;
         targetEnabled &= !authoringContext.IsReadOnly;
         targetElement.enabledSelf = targetEnabled;

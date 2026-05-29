@@ -587,23 +587,27 @@ namespace UnityEditor.AnimationWindowBuiltin
             {
                 // Draw body of tooltip
                 GUIStyle style = (GUIStyle)"AnimationEventTooltip";
+                GUIStyle arrowStyle = (GUIStyle)"AnimationEventTooltipArrow";
 
                 // TODO: Move to editor_resources
                 style.contentOffset = new Vector2(0f, 0f);
                 style.overflow = new RectOffset(10, 10, 0, 0);
 
-                Vector2 size = style.CalcSize(new GUIContent(m_InstantTooltipText));
-                Rect rect = new Rect(m_InstantTooltipPoint.x - size.x * .5f, m_InstantTooltipPoint.y + 24, size.x, size.y);
+                using (new SDFStyleScope(style))
+                {
+                    Vector2 size = style.CalcSize(new GUIContent(m_InstantTooltipText));
+                    Rect rect = new Rect(m_InstantTooltipPoint.x - size.x * .5f, m_InstantTooltipPoint.y + 24, size.x, size.y);
 
-                // Right align tooltip rect if it would otherwise exceed the bounds of the window
-                if (rect.xMax > position.width)
-                    rect.x = position.width - rect.width;
+                    // Right align tooltip rect if it would otherwise exceed the bounds of the window
+                    if (rect.xMax > position.width)
+                        rect.x = position.width - rect.width;
 
-                GUI.Label(rect, m_InstantTooltipText, style);
+                    GUI.Label(rect, m_InstantTooltipText, style);
 
-                // Draw arrow of tooltip
-                rect = new Rect(m_InstantTooltipPoint.x - 33, m_InstantTooltipPoint.y, 7, 25);
-                GUI.Label(rect, "", "AnimationEventTooltipArrow");
+                    // Draw arrow of tooltip
+                    rect = new Rect(m_InstantTooltipPoint.x - 33, m_InstantTooltipPoint.y, 7, 25);
+                    GUI.Label(rect, "", arrowStyle);
+                }
             }
         }
 

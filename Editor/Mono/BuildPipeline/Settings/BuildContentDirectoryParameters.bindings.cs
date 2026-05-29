@@ -20,11 +20,11 @@ namespace UnityEditor
     public struct BuildContentDirectoryParameters
     {
         /// <summary>
-        /// Output path for the build.
+        /// The output path for the content directory build.
         /// </summary>
         /// <remarks>
-        /// This can be an absolute path, or a path relative to the current project. If the path does not exist 
-        /// <see cref="BuildPipeline.BuildContentDirectory"/>  will attempt to create it.
+        /// The path can be an absolute path, or a path relative to the project folder. If the path doesn't exist,
+        /// <see cref="BuildPipeline.BuildContentDirectory"/> attempts to create it.
         /// </remarks>
         public string outputPath { get; set; }
 
@@ -46,44 +46,16 @@ namespace UnityEditor
         public BuildContentOptions options { get; set; }
 
         /// <summary>
-        /// Compression settings for the build. When not specified the value is <see cref="BuildCompression.Uncompressed"/>.
+        /// The compression settings for the build. Defaults to <see cref="BuildCompression.Uncompressed"/>.
         /// </summary>
         public BuildCompression compression { get; set; }
 
-        /// <summary>
-        /// The <see cref="BuildTarget"/> to build. (optional)
-        /// </summary>
-        /// <remarks>
-        /// The output of the build is only compatible with the specific platform that it was built for, so you must produce
-        /// different builds to use the assets on different platforms.
-        ///
-        /// If targetPlatform is not specified, e.g. it is 0, then the targetPlatform and subtarget fields will all be determined
-        /// from the current build settings.
-        /// 
-        /// It is strongly recommended to switch to the target platform prior to calling <see cref="BuildPipeline.BuildContentDirectory"/>,
-        /// to ensure that the Editor assemblies have been compiled to match the target platform and a domain reload has been performed.
-        /// BuildContentDirectory can build a different target platform than the one currently selected in the build settings, but it may not
-        /// work as expected because platform-specific conditional compilation will be applied and some build callbacks may not execute the expected code.
-        /// See the topic build-command-line in the Unity Manual for more details.
-        /// </remarks>
-        /// <seealso cref="EditorUserBuildSettings.activeBuildTarget"/>
-        public BuildTarget targetPlatform { get; set; }
+        // Internal: optional BuildTarget. When unset at default, native code takes both platform and subtarget from current Editor build settings.
+        // Output is platform-specific. Building a non-active target can diverge from Editor conditional compilation and callbacks; prefer switching active target first (see Manual: build-command-line).
+        internal BuildTarget targetPlatform { get; set; }
 
-        /// <summary>
-        /// The subtarget to build. (optional)
-        /// </summary>
-        /// <remarks>
-        /// For some BuildTargets the behaviour of a build can be influenced by using this field. The supported values are based on
-        /// target-specific enums, for example <see cref="MobileTextureSubtarget"/>, <see cref="XboxBuildSubtarget"/>.
-        ///
-        /// The subtarget can be assigned using the build settings UI. To build with the current build settings, the
-        /// <see cref="BuildContentDirectoryParameters.targetPlatform"/> field should be left unassigned (e.g. with the value 0).
-        /// </remarks>
-        /// <seealso cref="EditorUserBuildSettings.standaloneBuildSubtarget"/>
-        /// <seealso cref="EditorUserBuildSettings.androidBuildSubtarget"/>
-        /// <seealso cref="EditorUserBuildSettings.webGLBuildSubtarget"/>
-        /// <seealso cref="EditorUserBuildSettings.ps4BuildSubtarget"/>
-        public int subtarget { get; set; }
+        // Internal: optional subtarget for targets that support it (values from target-specific enums, e.g. MobileTextureSubtarget). Used with targetPlatform when that is explicitly set; otherwise follows active build settings (see EditorUserBuildSettings *BuildSubtarget).
+        internal int subtarget { get; set; }
 
         /// <summary>
         /// User-specified preprocessor defines used while compiling assemblies during the build. (optional)

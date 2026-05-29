@@ -138,6 +138,16 @@ namespace Unity.Collections.LowLevel.Unsafe
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe static extern void* Malloc(long size, int alignment, Allocator allocator, IntPtr label);
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static unsafe void* Realloc(void* memory, long size, int alignment, MemoryLabel label)
+        {
+            label.CheckArgument();
+            return Realloc(memory, size, alignment, label.allocator, label.pointer);
+        }
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        static extern unsafe void* Realloc(void* memory, long size, int alignment, Allocator allocator, IntPtr label);
+
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 

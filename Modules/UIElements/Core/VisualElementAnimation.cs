@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -70,13 +71,24 @@ namespace UnityEngine.UIElements
 
         private void RegisterRunningAnimations()
         {
-            if (m_RunningAnimations != null && m_RunningAnimations.Count > 0)
-            {
-                var sys = GetAnimationSystem();
+            var sys = GetAnimationSystem();
+            if (sys == null)
+                return;
 
-                if (sys != null)
-                    sys.RegisterAnimations(m_RunningAnimations);
-            }
+            if (m_RunningAnimations != null && m_RunningAnimations.Count > 0)
+                sys.RegisterAnimations(m_RunningAnimations);
+
+            // IncrementVersion is a no-op while elementPanel is null, so the dirty-element
+            // bookkeeping for unity-animation-clip would be missed when the element first
+            // attaches to a panel. Mark it dirty explicitly so the new clip starts playing.
+            if (computedStyle.unityAnimationClip != EntityId.None)
+                sys.MarkElementClipDirty(this);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void SetUIAnimationClipPreviewing(bool isPreviewing)
+        {
+            elementPanel?.styleAnimationSystem?.SetClipPreviewing(this, isPreviewing);
         }
 
         ValueAnimation<float> ITransitionAnimations.Start(float from, float to, int durationMs, Action<VisualElement, float> onValueChanged)

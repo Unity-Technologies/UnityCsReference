@@ -34,6 +34,12 @@ namespace UnityEditor.Build
     /// to run the Player, but can limit the ability to analyze or debug the results of the build. Incorporate the collection
     /// of the build history directory content into automated build pipelines.
     ///
+    /// Retention Policy
+    ///
+    /// To prevent unbounded growth of the build history folder, Unity applies a retention policy at the start of each Player and Content Directory build.
+    /// <see cref="BuildHistoryLimit"/> sets the maximum number of builds to retain; when a new build pushes the count over the limit, the oldest entries are deleted.
+    /// Set the limit to 0 to disable automatic deletion. You can also invoke the policy manually with <see cref="ApplyRetentionPolicy"/>.
+    ///
     /// Build Lifecycle
     ///
     /// For Player builds, <see cref="BuildPlayerProcessor.PrepareForBuild"/> runs before the Player build is added to the
@@ -77,28 +83,87 @@ namespace UnityEditor.Build
         /// </summary>
         /// <remarks>
         /// The default location is `Library/BuildHistory`.  When setting a custom path, folders beneath the `Assets`
-        /// and `Temp` folders are not allowed. The path can also be changed in the **Preferences** > **Build Pipeline** window.
+        /// and `Temp` folders are not allowed. The path can also be changed in **Project Settings** > **Analysis** > **Build Pipeline**.
         /// Changing this path doesn't move the existing build history and only affects where new builds are stored.
         /// </remarks>
         public static string BuildHistoryDirectory
         {
-            get { return GetRootDirectory(); }
+            get
+            {
+                var raw = BuildPipelineUserSettings.instance.BuildHistoryDirectoryRaw;
+                var resolved = string.IsNullOrEmpty(raw) ? DefaultRootDirectory : raw;
+                // Push to the C++ in-memory cache only when it changes — SetRootDirectory does
+                // path validation (PathToAbsolutePath x3 + starts_with x2) on every call, and
+                // this getter runs multiple times per IMGUI frame from the settings panel.
+                if (resolved != s_LastPushedDirectory)
+                {
+                    if (SetRootDirectory(resolved))
+                        s_LastPushedDirectory = resolved;
+                    // else: native rejected the path (e.g. someone wrote Assets/Foo to the
+                    //       singleton bypassing setter validation). Native keeps its previous
+                    //       value; we don't cache so the next read retries and the warning
+                    //       repeats until the user fixes their setting.
+                }
+                return resolved;
+            }
             set
             {
-                if (!SetRootDirectory(value))
+                // Resolve empty/null the same way the getter does, so the native cache never
+                // holds an unresolved "" while the C# raw value still means "use the default".
+                var resolved = string.IsNullOrEmpty(value) ? DefaultRootDirectory : value;
+                if (!SetRootDirectory(resolved))
                 {
                     throw new System.ArgumentException($"Invalid build history directory path: {value}. Path cannot be inside Assets or Temp folders.");
                 }
+                BuildPipelineUserSettings.instance.BuildHistoryDirectoryRaw = value;
+                s_LastPushedDirectory = resolved;
             }
         }
+
+        static string s_LastPushedDirectory;
 
         /// <summary>
         /// Returns the path in the build history created by the most recent build.
         /// </summary>
-        /// <returns>The path of the most recent build metadata directory</returns>
+        /// <returns>The path of the most recent build metadata directory, or an empty string if the build history is empty.</returns>
         public static string LatestBuildDirectory
         {
-            get { return GetDirectoryForLatestBuild(); }
+            get
+            {
+                if (TryGetLatestCompletedBuild(out GUID guid) &&
+                    TryGetMetadataPath(guid, out string metadataPath))
+                {
+                    return metadataPath;
+                }
+                return string.Empty;
+            }
+        }
+
+        // The most recent build that has finished (any non-Pending result). Distinct from
+        // TryGetLatestBuild, which includes the in-progress build during preprocess callbacks.
+        internal static bool TryGetLatestCompletedBuild(out GUID buildSessionGuid)
+        {
+            return BuildHistoryState.Instance.TryGetLatestCompletedBuild(out buildSessionGuid);
+        }
+
+        /// <summary>
+        /// Maximum number of builds to retain in the build history.
+        /// </summary>
+        /// <remarks>
+        /// When a new build pushes the count over this limit, the oldest entries are removed,
+        /// where "oldest" is determined by the build start time recorded in each entry's <see cref="BuildReportSummary"/>.
+        /// Build folders copied in from another machine are subject to the same policy.
+        ///
+        /// A value of 0 disables automatic deletion. Negative values are clamped to 0.
+        ///
+        /// Changes take effect on the next build. The existing history isn't pruned when this value is changed.
+        /// This setting is also exposed in **Project Settings** > **Analysis** > **Build Pipeline**.
+        /// </remarks>
+        /// <seealso cref="ApplyRetentionPolicy"/>
+        public static int BuildHistoryLimit
+        {
+            get => BuildPipelineUserSettings.instance.BuildHistoryLimit;
+            set => BuildPipelineUserSettings.instance.BuildHistoryLimit = value;
         }
 
         // ==================== Query API - Collection Operations ====================
@@ -243,6 +308,23 @@ namespace UnityEditor.Build
         }
 
         /// <summary>
+        /// Deletes the oldest builds in the build history so that no more than <see cref="BuildHistoryLimit"/> remain.
+        /// </summary>
+        /// <returns>The number of build metadata directories successfully deleted.</returns>
+        /// <remarks>
+        /// If <see cref="BuildHistoryLimit"/> is 0, or the current build count is at or below the limit,
+        /// no entries are removed and this method returns 0.
+        ///
+        /// If a folder cannot be deleted (for example, due to a file lock or a permissions issue),
+        /// a warning is logged and the operation continues with the remaining entries.
+        /// </remarks>
+        /// <seealso cref="BuildHistoryLimit"/>
+        public static int ApplyRetentionPolicy()
+        {
+            return BuildHistoryState.Instance.ApplyRetentionPolicy(BuildHistoryLimit);
+        }
+
+        /// <summary>
         /// Deletes all recorded build history.
         /// </summary>
         /// <returns>The number of build metadata directories successfully deleted.</returns>
@@ -350,8 +432,7 @@ namespace UnityEditor.Build
 
         /// <summary>
         /// Called when the build completes (success, failure, or cancellation).
-        /// Rewrites BuildReportSummary.json with the final state, writes the
-        /// LatestBuild.link file, and updates BuildHistoryState.
+        /// Rewrites BuildReportSummary.json with the final state and updates BuildHistoryState.
         /// </summary>
         [RequiredByNativeCode]
         internal static void FinalizeBuild(BuildReport report)
@@ -367,10 +448,6 @@ namespace UnityEditor.Build
                 // Rewrite BuildReportSummary.json with the final build state
                 BuildReportSummary.Save(report, metadataPath);
 
-                // Update the LatestBuild.link to point to this completed build
-                string latestLinkPath = System.IO.Path.Combine(BuildHistoryDirectory, "LatestBuild.link");
-                System.IO.File.WriteAllText(latestLinkPath, metadataPath);
-
                 // Update the cached state with the final summary
                 BuildHistoryState.Instance.AddOrUpdateBuild(metadataPath);
             }
@@ -380,11 +457,15 @@ namespace UnityEditor.Build
             }
         }
 
+        // Exceptions are intentionally allowed to propagate so the C++ caller can attach its
+        // contextLabel ("Player build" / "ContentDirectory build") to the warning.
+        [RequiredByNativeCode]
+        internal static int ApplyRetentionPolicyFromNative() => ApplyRetentionPolicy();
+
         // ==================== Native Bindings ====================
 
         extern private static string GetDefaultRootDirectory();
         extern private static string GetRootDirectory();
         extern private static bool SetRootDirectory(string buildHistoryPath);
-        extern private static string GetDirectoryForLatestBuild();
     }
 }

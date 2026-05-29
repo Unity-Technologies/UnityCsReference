@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements.UIR
         public static readonly string k_Default = "Hidden/Internal-UIRDefault";
         public static readonly string k_RuntimeGaussianBlur = "Hidden/UIR/GaussianBlur";
         public static readonly string k_RuntimeColorEffect = "Hidden/UIR/ColorEffect";
+        public static readonly string k_RuntimeDropShadowComposite= "Hidden/UIR/DropShadowComposite";
         public static readonly string k_ColorConversionBlit = "Hidden/Internal-UIE-ColorConversionBlit";
         public static readonly string k_ForceGammaKeyword = "_UIE_FORCE_GAMMA";
         public static readonly string k_TextureSlotCount1 = "_UIE_TEXTURE_SLOT_COUNT_1";

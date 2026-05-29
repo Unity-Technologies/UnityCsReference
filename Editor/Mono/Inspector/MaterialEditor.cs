@@ -3125,6 +3125,8 @@ namespace UnityEditor
                 HandleRenderer(go.GetComponent<Renderer>(), materialIndex, target as Material, evt.type, evt.alt);
             else if (go && go.GetComponent<Terrain>())
                 HandleTerrain(go.GetComponent<Terrain>(), target as Material, evt.type, evt.alt);
+            else if (go && go.TryGetComponent<CanvasRenderer>(out var canvasRenderer))
+                MaterialEditorForCanvasRendererUtility.HandleCanvasRenderer(canvasRenderer, target as Material, evt.type, evt.alt);
             else
                 ClearDragMaterialRendering();
         }
@@ -3160,6 +3162,8 @@ namespace UnityEditor
                 if (!hasRevert)
                     s_previousDraggedUponTerrain.materialTemplate = s_previousTerrainMaterialTemplate;
             }
+
+            MaterialEditorForCanvasRendererUtility.RevertCanvasRendererDragChanges();
         }
 
         private static void ClearDragMaterialRendering()

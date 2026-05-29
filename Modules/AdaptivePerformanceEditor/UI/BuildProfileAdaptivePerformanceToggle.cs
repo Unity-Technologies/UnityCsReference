@@ -88,6 +88,8 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
                 {
                     if (loader == null) continue;
                     AssetDatabase.RemoveObjectFromAsset(loader);
+                    ScriptableObject.DestroyImmediate(loader, true);
+
                 }
                 managerSetting.loaders.Clear();
                 ScriptableObject.DestroyImmediate(managerSetting, true);
@@ -106,17 +108,21 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
 
                     foreach (var scaler in providerSettings.AddedScalerViaScan)
                     {
+                        if (scaler == null) continue;
                         AssetDatabase.RemoveObjectFromAsset(scaler);
                         ScriptableObject.DestroyImmediate(scaler, true);
                     }
+                    providerSettings.AddedScalerViaScan.Clear();
 
                     foreach (var profiles in providerSettings.ScalerProfiles)
                     {
                         foreach (var addedScaler in profiles.AddedScalers)
                         {
+                            if (addedScaler == null) continue;
                             AssetDatabase.RemoveObjectFromAsset(addedScaler);
                             ScriptableObject.DestroyImmediate(addedScaler, true);
                         }
+                        profiles.AddedScalers.Clear();
                     }
                     AssetDatabase.RemoveObjectFromAsset(providerSettings);
                     ScriptableObject.DestroyImmediate(providerSettings, true);
@@ -147,7 +153,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
         public void InitializeSettingsAndUI()
         {
             EditorUtilities.CheckEnableFrameTimingState(m_BuildProfile);
-            EditorUtilities.CheckEnableThermalState(m_BuildProfile);
+            EditorUtilities.CheckEnableThermalStateForIOS(m_BuildProfile);
             AddAdaptivePerformanceGeneralSettingsObject(m_BuildProfile);
             m_AdaptivePerformanceProviderUI.CreateUI();
             m_AdaptivePerformanceProviderUI.SelectDefaultProvider();

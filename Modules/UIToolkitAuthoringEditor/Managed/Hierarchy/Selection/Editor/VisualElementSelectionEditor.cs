@@ -14,6 +14,11 @@ namespace Unity.UIToolkit.Editor;
 class VisualElementSelectionEditor : UnityEditor.Editor
 {
     VisualElementInspector m_Inspector;
+    // Tracks AnimationMode preview-mode transitions that do NOT go through the recording
+    // start/stop events (e.g. a controller flips previewing=true without recording=true).
+    // The animation-driven inspector tint must update on those transitions, otherwise the
+    // affordance and field-background class stay stale until the user clicks the field.
+    bool m_LastInAnimationMode;
 
     private VisualElementSelection Target => (VisualElementSelection)target;
 
@@ -21,6 +26,8 @@ class VisualElementSelectionEditor : UnityEditor.Editor
     {
         AnimationMode.onAnimationRecordingStart += OnRecordingStateChanged;
         AnimationMode.onAnimationRecordingStop += OnRecordingStateChanged;
+        m_LastInAnimationMode = AnimationMode.InAnimationMode();
+        EditorApplication.update += OnEditorUpdate;
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
     }
 
@@ -28,6 +35,7 @@ class VisualElementSelectionEditor : UnityEditor.Editor
     {
         AnimationMode.onAnimationRecordingStart -= OnRecordingStateChanged;
         AnimationMode.onAnimationRecordingStop -= OnRecordingStateChanged;
+        EditorApplication.update -= OnEditorUpdate;
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
         Target.propertyChanged -= OnTargetPropertyChanged;
     }
@@ -36,6 +44,18 @@ class VisualElementSelectionEditor : UnityEditor.Editor
 
     void OnRecordingStateChanged()
     {
+        ApplyState();
+    }
+
+    void OnEditorUpdate()
+    {
+        // Single bool comparison per editor tick; cheap. Re-runs ApplyState only on
+        // actual transitions so the inspector affordance pipeline does not churn on
+        // every preview frame (preview already redraws fields via the change processor).
+        var inMode = AnimationMode.InAnimationMode();
+        if (inMode == m_LastInAnimationMode)
+            return;
+        m_LastInAnimationMode = inMode;
         ApplyState();
     }
 
@@ -64,15 +84,12 @@ class VisualElementSelectionEditor : UnityEditor.Editor
             : null;
 
         bool inStagingMode = StageUtility.GetCurrentStage() is VisualElementEditingStage;
-        if (controller != null && !inStagingMode)
-        {
-            bool animatable = controller.HasRecordableProperties;
+        bool animatable = controller != null && controller.HasRecordableProperties;
+        bool overrideEditFlags = controller != null && (!inStagingMode || animatable);
+        if (overrideEditFlags)
             m_Inspector.EditFlags = animatable ? VisualElementEditFlags.Styles : VisualElementEditFlags.None;
-        }
         else
-        {
             m_Inspector.EditFlags = Target.EditFlags;
-        }
 
         m_Inspector.RefreshRecordingState(controller);
     }

@@ -1134,6 +1134,8 @@ namespace UnityEngine
         public static extern float TestInvokeFloat(float arg);
         public static extern double TestInvokeDouble(double arg);
         public static extern SomeEnum TestInvokeEnum(SomeEnum arg);
+        public static extern System.Object TestInvokeObject(System.Object arg);
+        public static extern System.Object TestInvokeObjectAsGcHandle(System.Object arg);
 
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static bool InvokeBool(bool arg) { return arg; }
@@ -1170,6 +1172,12 @@ namespace UnityEngine
         static double InvokeDouble(double arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static SomeEnum InvokeEnum(SomeEnum arg) { return arg; }
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static System.Object InvokeObject(System.Object obj)
+        {
+            Debug.Log($"InvokeObject called with argument: {obj}");
+            return obj;
+        }
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]

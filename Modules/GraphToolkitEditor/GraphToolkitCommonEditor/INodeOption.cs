@@ -51,5 +51,21 @@ namespace Unity.GraphToolkit.Editor
         /// value for type <typeparamref name="T"/>.
         /// </remarks>
         bool TryGetValue<T>(out T value);
+
+        /// <summary>
+        /// Sets a new value for the node option.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to set that matches the option's data type.</typeparam>
+        /// <param name="value">The value to assign to the option’s UI field.</param>
+        /// <returns><c>true</c> if the value was successfully set; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        /// This method allows for editor-time modification of a node option's value.
+        /// It performs a type check and conversion internally. If the value cannot be cast to <see cref="DataType"/>, the method returns <c>false</c>.
+        /// This method triggers the <see cref="Node.DefineNode"/> method to update the node visual.
+        /// </remarks>
+        bool TrySetValue<T>(T value)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

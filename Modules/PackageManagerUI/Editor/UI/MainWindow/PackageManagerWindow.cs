@@ -49,6 +49,12 @@ namespace UnityEditor.PackageManager.UI
         static PackageManagerWindow()
         {
             EditorApplication.delayCall += () => s_IsInitializationFrame = false;
+            Events.registeredPackages += OnRegisteredPackages;
+        }
+
+        private static void OnRegisteredPackages(PackageRegistrationEventArgs args)
+        {
+            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnRegisteredPackages(args);
         }
 
         public static PackageManagerWindow instance => s_EnabledInstances.Count > 0 ? s_EnabledInstances[0] : null;
@@ -85,14 +91,11 @@ namespace UnityEditor.PackageManager.UI
             titleContent = GetLocalizedTitleContent();
             minSize = new Vector2(280, 250);
             BuildGUI();
-            Events.registeredPackages += OnRegisteredPackages;
         }
 
         private void OnDisable()
         {
             s_EnabledInstances.Remove(this);
-
-            Events.registeredPackages -= OnRegisteredPackages;
         }
 
         private void OnDestroy()
@@ -245,11 +248,6 @@ namespace UnityEditor.PackageManager.UI
         public static void OnEditorFinishLoadingProject()
         {
             ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnEditorFinishLoadingProject();
-        }
-
-        private static void OnRegisteredPackages(PackageRegistrationEventArgs args)
-        {
-            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnRegisteredPackages(args);
         }
 
         private static void SelectPackageStatic(string packageToSelect = null, string pageId = null)

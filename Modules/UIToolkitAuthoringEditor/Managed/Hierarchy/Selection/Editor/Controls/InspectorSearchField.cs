@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -38,6 +39,9 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     private readonly Button m_ClearFilterButton;
     private VisualElement m_SearchContainer;
     private SearchFilter m_ActiveFilters = SearchFilter.All;
+
+    private static readonly SearchFilter[] k_AllFilters = (SearchFilter[])Enum.GetValues(typeof(SearchFilter));
+    private static readonly int k_EnumLength = k_AllFilters.Length;
 
     private static string s_PersistentSearch = string.Empty;
     private static SearchFilter s_PersistentFilter = SearchFilter.All;
@@ -74,10 +78,8 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         m_FilterTypeButtons.allowEmptySelection = false;
         m_FilterTypeButtons.RegisterValueChangedCallback(OnFilterTypeChanged);
 
-        var enumLength = Enum.GetValues(typeof(SearchFilter)).Length;
-
         // Add buttons for each enum value
-        foreach (SearchFilter filter in Enum.GetValues(typeof(SearchFilter)))
+        foreach (SearchFilter filter in k_AllFilters)
         {
             var button = new Button { text = filter.ToString() };
             // Support multi selection with shift
@@ -86,8 +88,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
                 if (evt.modifiers == EventModifiers.Shift)
                 {
                     m_ActiveFilters |= filter;
-                    m_FilterTypeButtons.SetValueWithoutNotify(new ToggleButtonGroupState((ulong)m_ActiveFilters,
-                        enumLength));
+                    m_FilterTypeButtons.SetValueWithoutNotify(ToggleButtonGroupState.FromEnumFlags(m_ActiveFilters, k_EnumLength));
                     s_PersistentFilter = m_ActiveFilters;
                 }
             });
@@ -95,7 +96,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         }
 
         // Set "All" as the default selection
-        m_FilterTypeButtons.SetValueWithoutNotify(new ToggleButtonGroupState(1, enumLength));
+        m_FilterTypeButtons.SetValueWithoutNotify(ToggleButtonGroupState.FromEnumFlags(SearchFilter.All, k_EnumLength));
 
         m_FilterContainer.Add(typeLabel);
         m_FilterContainer.Add(m_FilterTypeButtons);
@@ -111,14 +112,12 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         m_EmptyStateContainer.Add(m_EmptyStateLabel);
         m_EmptyStateContainer.Add(m_ClearFilterButton);
 
-        RegisterCallback<FocusInEvent>(e => ApplyCurrentFilter());
-
         // Restore persisted search state from previous selection
         if (!string.IsNullOrEmpty(s_PersistentSearch))
             m_SearchField.SetValueWithoutNotify(s_PersistentSearch);
         if (s_PersistentFilter != SearchFilter.All) {
             m_ActiveFilters = s_PersistentFilter;
-            m_FilterTypeButtons.SetValueWithoutNotify(new ToggleButtonGroupState((ulong)m_ActiveFilters, enumLength));
+            m_FilterTypeButtons.SetValueWithoutNotify(ToggleButtonGroupState.FromEnumFlags(m_ActiveFilters, k_EnumLength));
         }
 
         Add(m_SearchField);
@@ -143,6 +142,10 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
                 ShortcutIntegration.instance.contextManager.DeregisterToolContext(this);
                 break;
             }
+            case FocusInEvent:
+                if (!string.IsNullOrEmpty(m_SearchField.value) || !m_ActiveFilters.HasFlag(SearchFilter.All))
+                    ApplyCurrentFilter();
+                break;
         }
         base.HandleEventBubbleUp(evt);
     }
@@ -153,8 +156,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         s_PersistentFilter = SearchFilter.All;
         m_ActiveFilters = SearchFilter.All;
         m_SearchField.SetValueWithoutNotify(string.Empty);
-        var enumLength = Enum.GetValues(typeof(SearchFilter)).Length;
-        m_FilterTypeButtons.SetValueWithoutNotify(new ToggleButtonGroupState(1, enumLength));
+        m_FilterTypeButtons.SetValueWithoutNotify(ToggleButtonGroupState.FromEnumFlags(SearchFilter.All, k_EnumLength));
         ClearSearch();
     }
 
@@ -236,47 +238,53 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
 
         var rows = m_SearchContainer.Query<OverrideRow>().Build();
         int visibleCount = 0;
-        var expandedFoldouts = new HashSet<OverrideFoldout>();
-
-        foreach (var row in rows)
+        var expandedFoldouts = HashSetPool<OverrideFoldout>.Get();
+        try
         {
-            if (IsInHeader(row))
-                continue;
-
-            bool shouldShow;
-
-            if (!hasSearchText)
+            foreach (var row in rows)
             {
-                shouldShow = filterIsAll || RowMatchesActiveFilters(row);
-            }
-            else
-            {
-                bool matchesSearch = false;
-                foreach (var property in row.trackedProperties)
+                if (IsInHeader(row))
+                    continue;
+
+                bool shouldShow;
+
+                if (!hasSearchText)
                 {
-                    if (property.Contains(str, StringComparison.InvariantCultureIgnoreCase))
+                    shouldShow = filterIsAll || RowMatchesActiveFilters(row);
+                }
+                else
+                {
+                    bool matchesSearch = false;
+                    foreach (var property in row.trackedProperties)
                     {
-                        matchesSearch = true;
-                        break;
+                        if (property.Contains(str, StringComparison.OrdinalIgnoreCase))
+                        {
+                            matchesSearch = true;
+                            break;
+                        }
                     }
+
+                    // Overrides + search: the matching property name must be in the per-property override map.
+                    shouldShow = matchesSearch && (filterIsAll || RowMatchesActiveFiltersWithSearch(row, str));
                 }
 
-                // Overrides + search: the matching property name must be in the per-property override map.
-                shouldShow = matchesSearch && (filterIsAll || RowMatchesActiveFiltersWithSearch(row, str));
+                if (shouldShow)
+                {
+                    row.EnableInClassList(HiddenClass, false);
+                    if (row is OverrideFoldout foldout)
+                        foldout.value = true;
+                    ShowAllParentFoldouts(row, expandedFoldouts);
+                    visibleCount++;
+                }
+                else
+                {
+                    row.EnableInClassList(HiddenClass, true);
+                }
             }
-
-            if (shouldShow)
-            {
-                row.EnableInClassList(HiddenClass, false);
-                if (row is OverrideFoldout foldout)
-                    foldout.value = true;
-                ShowAllParentFoldouts(row, expandedFoldouts);
-                visibleCount++;
-            }
-            else
-            {
-                row.EnableInClassList(HiddenClass, true);
-            }
+        }
+        finally
+        {
+            HashSetPool<OverrideFoldout>.Release(expandedFoldouts);
         }
 
         // Show or hide empty state based on results
@@ -318,11 +326,18 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         }
         else
         {
-            var names = new List<string>(3);
-            if (m_ActiveFilters.HasFlag(SearchFilter.Overrides)) names.Add("overrides");
-            if (m_ActiveFilters.HasFlag(SearchFilter.Variable)) names.Add("variables");
-            if (m_ActiveFilters.HasFlag(SearchFilter.Binding)) names.Add("bindings");
-            filterDescription = string.Join(" and ", names);
+            filterDescription = (m_ActiveFilters.HasFlag(SearchFilter.Overrides),
+                                 m_ActiveFilters.HasFlag(SearchFilter.Variable),
+                                 m_ActiveFilters.HasFlag(SearchFilter.Binding)) switch
+            {
+                (true,  false, false) => "overrides",
+                (false, true,  false) => "variables",
+                (false, false, true)  => "bindings",
+                (true,  true,  false) => "overrides and variables",
+                (true,  false, true)  => "overrides and bindings",
+                (false, true,  true)  => "variables and bindings",
+                _                     => "overrides, variables, and bindings"
+            };
         }
 
         var displayText = !string.IsNullOrEmpty(searchTerm)
@@ -332,8 +347,12 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         m_EmptyStateLabel.text = $"{displayText}\n\nLooking for a custom property? It may need to be enabled for search.";
     }
 
-    private static bool RowHasVariable(OverrideRow row) => row is not OverrideFoldout &&
-        row.ClassListContains(StylePropertyBinding.k_VariableFieldUssClassName);
+    private static bool RowHasVariable(OverrideRow row)
+    {
+        if (row is OverrideFoldout foldout)
+            return foldout.name == StyleRuleInspector.VariablesFoldoutName;
+        return row.ClassListContains(StylePropertyBinding.k_VariableFieldUssClassName);
+    }
 
     private static bool RowHasBinding(OverrideRow row) => row is not OverrideFoldout &&
         row.ClassListContains(StylePropertyBinding.k_BoundFieldUssClassName) ||
@@ -342,8 +361,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     private void OnClearFilterClicked()
     {
         m_SearchField.value = string.Empty;
-        var enumLength = Enum.GetValues(typeof(SearchFilter)).Length;
-        m_FilterTypeButtons.SetValueWithoutNotify(new ToggleButtonGroupState(1, enumLength)); // Reset to "All"
+        m_FilterTypeButtons.SetValueWithoutNotify(ToggleButtonGroupState.FromEnumFlags(SearchFilter.All, k_EnumLength));
         m_ActiveFilters = SearchFilter.All;
 
         s_PersistentSearch = m_SearchField.value;

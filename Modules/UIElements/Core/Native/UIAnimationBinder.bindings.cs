@@ -27,7 +27,8 @@ namespace UnityEngine.UIElements
         public float currentValue;
         public EntityId currentObjectValue;
         private uint hash; // Do not use on the managed side
-        int currentValueUpToDate;
+        // 0 after InvalidateBoundValueCaches; 1 after the next sample.
+        internal int currentValueUpToDate;
     };
 
     [NativeHeader("Modules/UIElements/Core/Native/UIAnimationBinder.h")]
@@ -59,7 +60,41 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern void SampleClip(UIAnimationClip clip, float time);
 
+        /// <summary>
+        /// Editor-only post-sample notification. Fired after every <see cref="SampleClipForEditor"/>
+        /// call, exclusively from editor-side preview/seek paths (the runtime
+        /// <see cref="VisualTreeAnimationUpdater"/> playback path keeps using the bare
+        /// <see cref="SampleClip"/> extern, so players incur zero overhead).
+        /// <para>
+        /// Used by <c>VisualElementAnimationWindowController</c> to register every per-element
+        /// clip's bindings with <see cref="DrivenPropertyManager"/> on each sample and pairs
+        /// naturally with the idempotent <c>TryRegisterProperty</c>.
+        /// </para>
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static event Action<UIAnimationBinder, UIAnimationClip, float> editorPostSample;
+
+        /// <summary>
+        /// Wrapper around <see cref="SampleClip"/> for editor-only callers that want to
+        /// participate in the <see cref="editorPostSample"/> notification. Runtime callers
+        /// (e.g. <c>VisualTreeAnimationUpdater</c>) continue to call <see cref="SampleClip"/>
+        /// directly so the editor event has no effect outside the editor.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void SampleClipForEditor(UIAnimationClip clip, float time)
+        {
+            SampleClip(clip, time);
+            editorPostSample?.Invoke(this, clip, time);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal extern bool IsBound(string elementPath, int propertyId);
+
         internal extern void DeactivateAnimation();
+
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal extern void ClearBindings();
 
         VisualElement rootVisualElement { get; set; }
 
@@ -269,21 +304,27 @@ namespace UnityEngine.UIElements
         {
             var boundValues = new ReadOnlySpan<UIAnimationBoundProperty>(values.ToPointer(), count);
 
-            foreach (ref readonly var boundValue in boundValues)
+            // Batch filter writes: WriteFilter* mutate a per-(element, id) cached list, and we
+            // call ApplyPropertyAnimation once per pair in FlushPendingFilterWrites.
+            m_BatchingFilterWrites = true;
+            try
             {
-                StylePropertyId id = (StylePropertyId)boundValue.propertyId;
-
-                switch (id)
+                foreach (ref readonly var boundValue in boundValues)
                 {
-                    case StylePropertyId.BackgroundImage:
-                    case StylePropertyId.UnityFont:
-                    case StylePropertyId.UnityMaterial:
+                    // Skip stale entries; surviving curves re-flip the flag on the next sample.
+                    if (boundValue.currentValueUpToDate == 0)
+                        continue;
+
+                    if (GetChannelKind((StylePropertyId)boundValue.propertyId, boundValue.channel) == AnimationChannelKind.PPtr)
                         SetObjectValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel, boundValue.currentObjectValue);
-                        break;
-                    default:
+                    else
                         SetFloatValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel, boundValue.currentValue);
-                        break;
                 }
+            }
+            finally
+            {
+                m_BatchingFilterWrites = false;
+                FlushPendingFilterWrites();
             }
         }
 
@@ -295,21 +336,11 @@ namespace UnityEngine.UIElements
 
             foreach (ref var boundValue in boundValues)
             {
-                StylePropertyId id = (StylePropertyId)boundValue.propertyId;
-
-                switch (id)
-                {
-                    case StylePropertyId.BackgroundImage:
-                    case StylePropertyId.UnityFont:
-                    case StylePropertyId.UnityMaterial:
-                        boundValue.currentObjectValue = GetObjectValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel);
-                        break;
-                    default:
-                        boundValue.currentValue = GetFloatValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel);
-                        break;
-                }
+                if (GetChannelKind((StylePropertyId)boundValue.propertyId, boundValue.channel) == AnimationChannelKind.PPtr)
+                    boundValue.currentObjectValue = GetObjectValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel);
+                else
+                    boundValue.currentValue = GetFloatValue(boundValue.elementIndex, boundValue.propertyId, boundValue.channel);
             }
-
         }
 
         void IValueAnimationUpdate.Tick(long currentTimeMs)

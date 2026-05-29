@@ -336,22 +336,16 @@ namespace Unity.Hierarchy
         static IntPtr CreateCommandList(IntPtr nativePtr) => GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyCommandList(nativePtr)));
         #endregion
 
-        #region Marked as obsolete warning in 6.3
+        #region Marked as obsolete error in 6.6
         /// <summary>
         /// Sorts the child nodes of a hierarchy node by their sort index.
         /// </summary>
         /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
         /// <param name="recurse">Whether to sort the child nodes recursively.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [Obsolete("SortChildren(node, recurse) with a bool parameter is obsolete, please use SortChildren(node) or SortChildrenRecursive(node) instead.", false)]
+        [Obsolete("SortChildren(node, recurse) with a bool parameter is obsolete, please use SortChildren(node) or SortChildrenRecursive(node) instead.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public bool SortChildren(in HierarchyNode node, bool recurse)
-        {
-            if (recurse)
-                return SortChildrenRecursive(in node);
-            else
-                return SortChildren(in node);
-        }
+        public bool SortChildren(in HierarchyNode node, bool recurse) => throw null;
         #endregion
     }
 }

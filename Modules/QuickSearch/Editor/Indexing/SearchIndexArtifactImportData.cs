@@ -11,7 +11,7 @@ namespace UnityEditor.Search
     struct SearchIndexArtifactImportData
     {
         public int[] ImporterHashCodes;
-        public OnDemandState[] OnDemandStates;
+        public OutOfProcessImportState[] OutOfProcessImportStates;
         public ImportResultID[] ImportResultIds;
         public ArtifactKey[] ArtifactKeys;
 
@@ -20,7 +20,7 @@ namespace UnityEditor.Search
         public SearchIndexArtifactImportData(int count)
         {
             ImporterHashCodes = new int[count];
-            OnDemandStates = new OnDemandState[count];
+            OutOfProcessImportStates = new OutOfProcessImportState[count];
             ImportResultIds = new ImportResultID[count];
             ArtifactKeys = new ArtifactKey[count];
         }
@@ -29,7 +29,7 @@ namespace UnityEditor.Search
         {
             return new Batch(
                 importerHashCodes: ImporterHashCodes.AsSpan(),
-                onDemandStates: OnDemandStates.AsSpan(),
+                onDemandStates: OutOfProcessImportStates.AsSpan(),
                 importResultIds: ImportResultIds.AsSpan(),
                 artifactKeys: ArtifactKeys.AsSpan());
         }
@@ -38,7 +38,7 @@ namespace UnityEditor.Search
         {
             return new Batch(
                 importerHashCodes: ImporterHashCodes.AsSpan(start, length),
-                onDemandStates: OnDemandStates.AsSpan(start, length),
+                onDemandStates: OutOfProcessImportStates.AsSpan(start, length),
                 importResultIds: ImportResultIds.AsSpan(start, length),
                 artifactKeys: ArtifactKeys.AsSpan(start, length));
         }
@@ -46,17 +46,17 @@ namespace UnityEditor.Search
         public readonly ref struct Batch
         {
             public readonly Span<int> ImporterHashCodes;
-            public readonly Span<OnDemandState> OnDemandStates;
+            public readonly Span<OutOfProcessImportState> OutOfProcessImportStates;
             public readonly Span<ImportResultID> ImportResultIds;
             public readonly Span<ArtifactKey> ArtifactKeys;
 
             public int Length => ImporterHashCodes.Length;
 
-            internal Batch(Span<int> importerHashCodes, Span<OnDemandState> onDemandStates, Span<ImportResultID> importResultIds, Span<ArtifactKey> artifactKeys)
+            internal Batch(Span<int> importerHashCodes, Span<OutOfProcessImportState> onDemandStates, Span<ImportResultID> importResultIds, Span<ArtifactKey> artifactKeys)
             {
                 ImporterHashCodes = importerHashCodes;
                 ArtifactKeys = artifactKeys;
-                OnDemandStates = onDemandStates;
+                OutOfProcessImportStates = onDemandStates;
                 ImportResultIds = importResultIds;
             }
         }

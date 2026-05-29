@@ -552,11 +552,19 @@ namespace UnityEngine.UIElements
             // Assume handle is from a valid panel, otherwise throws ElementNotFoundException
             return PanelsByHandle[panelHandle];
         }
+        internal static bool TryGetPanelFromHandle(UnmanagedDataHandle panelHandle, out BaseVisualElementPanel panel)
+        {
+            return PanelsByHandle.TryGetValue(panelHandle, out panel);
+        }
 
         internal VisualElement GetMemberElementFromHandle(UnmanagedDataHandle elementHandle)
         {
             // Assume element is from this panel, otherwise throws ElementNotFoundException
             return MemberElementsByHandle[elementHandle];
+        }
+        internal bool TryGetMemberElementFromHandle(UnmanagedDataHandle elementHandle, out VisualElement element)
+        {
+            return MemberElementsByHandle.TryGetValue(elementHandle, out element);
         }
 
         // Returns an element from its handle but only if that element is inside a panel. Throws exception otherwise.
@@ -571,7 +579,7 @@ namespace UnityEngine.UIElements
         public abstract void Repaint();
         public abstract void ValidateLayout();
         public abstract void TickSchedulingUpdaters();
-        public abstract void UpdateForRepaint();
+        protected abstract void UpdateForRepaint();
 
 		// [Updater refactor] These 3 will be removed
         public abstract void UpdateAnimations();
@@ -601,13 +609,7 @@ namespace UnityEngine.UIElements
                 if (!Mathf.Approximately(m_Scale, value))
                 {
                     m_Scale = value;
-
-                    //we need to update the yoga config
-                    visualTree.IncrementVersion(VersionChangeType.Layout);
-                    layoutConfig.PointScaleFactor = scaledPixelsPerPoint;
-
-                    // if the surface DPI changes we need to invalidate styles
-                    visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+                    OnScaledPixelsPerPointChanged();
                 }
             }
         }
@@ -625,15 +627,21 @@ namespace UnityEngine.UIElements
                 if (!Mathf.Approximately(m_PixelsPerPoint, value))
                 {
                     m_PixelsPerPoint = value;
-
-                    //we need to update the yoga config
-                    visualTree.IncrementVersion(VersionChangeType.Layout);
-                    layoutConfig.PointScaleFactor = scaledPixelsPerPoint;
-
-                    // if the surface DPI changes we need to invalidate styles
-                    visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+                    OnScaledPixelsPerPointChanged();
                 }
             }
+        }
+
+        void OnScaledPixelsPerPointChanged()
+        {
+            layoutConfig.PointScaleFactor = scaledPixelsPerPoint;
+
+            //Force the layout to be recaclculated. the change in scaling should propagate to the children for rounding once initiated.
+            visualTree.layoutNode.MarkDirty();
+
+            // The VersionChangeType.Layout does nothing on the nodes because they don't have measure, but might be needed by something else.
+            // The stylesheet change force the stylesheet re-evaluation so that scaling-dependent values are resolved.
+            visualTree.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout); 
         }
 
         public float scaledPixelsPerPoint
@@ -719,10 +727,11 @@ namespace UnityEngine.UIElements
         }
 
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal abstract IStylePropertyAnimationSystem styleAnimationSystem
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set;
         }
         public abstract ContextType contextType { get; }
@@ -1002,6 +1011,12 @@ namespace UnityEngine.UIElements
         private uint m_NameVersion = 0;
         private uint m_LastTickedHierarchyVersion = 0;
 
+        // Profiler accumulators captured right before m_LastTickedHierarchyVersion / m_RepaintVersion are swapped.
+        // Capturing pre-swap is needed because callbacks during the update can change versions; the deltas accumulate
+        // across multiple swaps within a frame and are flushed by EmitProfilerPanelUpdateMetrics in Render.
+        private uint m_PendingHierarchyVersionChanges = 0;
+        private uint m_PendingRepaintVersionChanges = 0;
+
         ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
         ProfilerMarker m_MarkerValidateLayout;
@@ -1123,10 +1138,10 @@ namespace UnityEngine.UIElements
             get { return m_VisualTreeUpdater; }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal override IStylePropertyAnimationSystem styleAnimationSystem
         {
             get => m_StylePropertyAnimationSystem;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             set
             {
                 if (m_StylePropertyAnimationSystem == value)
@@ -1550,6 +1565,8 @@ namespace UnityEngine.UIElements
             UpdateBindings();
             UpdateDataBinding();
             UpdateAnimations();
+            if (ProfilerUIToolkit.ShouldCapturePanel(contextType == ContextType.Editor))
+                m_PendingHierarchyVersionChanges += m_HierarchyVersion - m_LastTickedHierarchyVersion;
             m_LastTickedHierarchyVersion = m_HierarchyVersion;
         }
 
@@ -1568,7 +1585,7 @@ namespace UnityEngine.UIElements
             m_VisualTreeUpdater.visualTreeEditorUpdater.UpdateVisualTreePhase(VisualTreeEditorUpdatePhase.AssetChange);
         }
 
-        public override void UpdateForRepaint()
+        protected override void UpdateForRepaint()
         {
             // Force the scheduling updaters to run if it wasn't run in the same frame as a hierarchy change.
             // This is necessary because when an element is added to the panel, it may use the scheduler, register
@@ -1621,9 +1638,18 @@ namespace UnityEngine.UIElements
 
             foreach (var element in root.Children())
             {
-                if (element.visualTreeAssetSource?.inlineSheet != null && element.inlineStyleAccess?.inlineRule.rule != null)
-                    element.UpdateInlineRule(element.visualTreeAssetSource.inlineSheet, element.inlineStyleAccess.inlineRule.rule);
-
+                var inlineSheet = element.visualTreeAssetSource?.inlineSheet;
+                if (inlineSheet != null && element.inlineStyleAccess?.inlineRule.rule != null)
+                {
+                    // Look up the rule via ruleIndex from the VisualElementAsset rather than using
+                    // the cached inlineRule.rule reference. The cached reference could be stale after undo
+                    // with out-of-bounds StyleValueHandle indices.
+                    var ruleIndex = element.visualElementAsset?.ruleIndex ?? -1;
+                    if (ruleIndex >= 0 && inlineSheet.rules != null && ruleIndex < inlineSheet.rules.Length)
+                        element.UpdateInlineRule(inlineSheet, inlineSheet.rules[ruleIndex]);
+                    else
+                        element.UpdateInlineRule(null, null);
+                }
                 UpdateInlineStylesRecursively(element);
             }
         }
@@ -1639,6 +1665,8 @@ namespace UnityEngine.UIElements
         public override void Repaint()
         {
             using var scope = new IMGUIContainer.UITKScope();
+            if (ProfilerUIToolkit.ShouldCapturePanel(contextType == ContextType.Editor))
+                m_PendingRepaintVersionChanges += version - m_RepaintVersion;
             m_RepaintVersion = version;
 
             InvokeBeforeUpdate();
@@ -1658,11 +1686,26 @@ namespace UnityEngine.UIElements
         public override void Render()
         {
             using var scope = new IMGUIContainer.UITKScope();
-            m_MarkerRender.Begin();
-            base.Render();
-            m_MarkerRender.End();
+            using (m_MarkerRender.Auto())
+            {
+                base.Render();
+            }
 
             (panelDebug?.debuggerOverlayPanel as Panel)?.Render();
+        }
+
+        // Read by ProfilerUIToolkitPanelMetadataCapture.RecordForCapture at frame end. Consumes
+        // (resets) the per-frame hierarchy/repaint deltas captured before each version swap, and
+        // returns the running visual-element count maintained by the renderer.
+        internal void ConsumePendingProfilerMetrics(out uint hierarchyVersionChanges, out uint repaintVersionChanges, out int visualElementCount)
+        {
+            hierarchyVersionChanges = m_PendingHierarchyVersionChanges;
+            repaintVersionChanges = m_PendingRepaintVersionChanges;
+            m_PendingHierarchyVersionChanges = 0;
+            m_PendingRepaintVersionChanges = 0;
+
+            var repaintUpdater = GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
+            visualElementCount = repaintUpdater?.renderTreeManager?.totalVisualElements ?? 0;
         }
 
         // Updaters can request an panel invalidation when some callbacks aren't coming from UIElements internally

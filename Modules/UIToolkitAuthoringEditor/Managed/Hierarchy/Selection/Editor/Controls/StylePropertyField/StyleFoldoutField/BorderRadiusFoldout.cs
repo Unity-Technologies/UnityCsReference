@@ -63,10 +63,10 @@ namespace Unity.UIToolkit.Editor
             bottomLeftRow.Add(bottomLeftField);
             Add(bottomLeftRow);
 
-            topLeftField.tooltip = "USS property: border-top-left-radius\n\nThe radius of the top-left corner when a rounded rectangle is drawn in the element's box.";
-            topRightField.tooltip = "USS property: border-top-right-radius\n\nThe radius of the top-right corner when a rounded rectangle is drawn in the element's box.";
-            bottomRightField.tooltip = "USS property: border-bottom-right-radius\n\nThe radius of the bottom-right corner when a rounded rectangle is drawn in the element's box.";
-            bottomLeftField.tooltip = "USS property: border-bottom-left-radius\n\nThe radius of the bottom-left corner when a rounded rectangle is drawn in the element's box.";
+            topLeftField.tooltip = "<b>USS property: border-top-left-radius</b>\nThe radius of the top-left corner when a rounded rectangle is drawn in the element's box.";
+            topRightField.tooltip = "<b>USS property: border-top-right-radius</b>\nThe radius of the top-right corner when a rounded rectangle is drawn in the element's box.";
+            bottomRightField.tooltip = "<b>USS property: border-bottom-right-radius</b>\nThe radius of the bottom-right corner when a rounded rectangle is drawn in the element's box.";
+            bottomLeftField.tooltip = "<b>USS property: border-bottom-left-radius</b>\nThe radius of the bottom-left corner when a rounded rectangle is drawn in the element's box.";
 
             topLeftField.RegisterCallback<PropertyChangedEvent>(e =>
             {
@@ -122,11 +122,11 @@ namespace Unity.UIToolkit.Editor
             var allTheSame = true;
             var singleValue = "none";
             var cumulativeValue = string.Empty;
-            var shouldBeEnabled = true;
+            var shouldBeEnabled = false;
 
             for (var i = 0; i < fields.Count; ++i)
             {
-                shouldBeEnabled &= fields[i].enabledSelf;
+                shouldBeEnabled |= fields[i].enabledSelf;
                 var childValue = fields[i].value.ToString().ToLower();
                 if (childValue.Equals("0"))
                 {

@@ -168,6 +168,11 @@ namespace Unity.U2D.Physics
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ChainGeometry.ClosestPoint(PhysicsTransform, point) is deprecated, please transform the point with PhysicsTransform.TransformPoint(point) and use ChainGeometry.ClosestPoint(point) instead.", false)]
         public readonly Vector2 ClosestPoint(PhysicsTransform transform, Vector2 point) => ClosestPoint(transform.TransformPoint(point));
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ChainGeometry.ChainGeometry(ReadOnlySpan<Vector2> vertices) is obsolete as it can lead to invalid vertices when used with managed arrays. Please use PhysicsChain.Create(PhysicsBody body, ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition) instead.", true)]
+        public ChainGeometry(ReadOnlySpan<Vector2> vertices) => throw new NotSupportedException();
     }
 
     public partial struct PhysicsRotate

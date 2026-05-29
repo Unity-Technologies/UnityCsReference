@@ -79,7 +79,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
-            if (!(m_Model is WireModel wireModel) || !(m_OwnerElement is Wire wire))
+            if (!(m_Model is WireModel wireModel) || !(m_OwnerElement is WireView wire))
                 return;
 
             if (wire.GraphView?.GraphViewModel != null && WireShouldShowLabel(wireModel, wire.GraphView.GraphViewModel.SelectionState))

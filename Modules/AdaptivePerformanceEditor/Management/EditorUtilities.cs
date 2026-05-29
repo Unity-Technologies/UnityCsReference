@@ -21,6 +21,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
         internal static readonly string[] s_DefaultLoaderPath = {"Adaptive Performance", "Provider"};
         internal static readonly string[] s_DefaultSettingsPath = {"Adaptive Performance", "Settings"};
 
+        // SessionState keys used to suppress repeated prompts within a single editor session.
+        // SessionState survives domain reloads but resets when the editor is restarted, so the
+        // user is asked at most once per session per dialog.
+        const string k_SessionKey_PromptedFrameTiming = "AdaptivePerformance.PromptedFrameTiming";
+        const string k_SessionKey_PromptedThermalState = "AdaptivePerformance.PromptedThermalState";
+
         internal static bool AssetDatabaseHasInstanceOfType(string type)
         {
             var assets = AssetDatabase.FindAssets(String.Format("t:{0}", type));
@@ -120,12 +126,32 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return null;
         }
 
-        internal static bool DiaglogForForFrameTiming(BuildProfile profile)
+        internal static bool DialogForFrameTiming(BuildProfile profile, bool forcePrompt = false)
         {
             if (!Application.isBatchMode)
             {
-                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Enable Framing Timing Stats "), L10n.Tr("Adaptive Performance requires Frame Timing Stats to be enabled. \"Ok\" to enable"),
-                    L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                // Suppress the prompt if we have already asked the user this editor session,
+                // regardless of whether they accepted or cancelled. Resets on editor restart.
+                // Build-time callers pass forcePrompt: true so they always re-check, since the
+                // build is the last opportunity to fix a misconfigured player setting.
+                if (!forcePrompt && SessionState.GetBool(k_SessionKey_PromptedFrameTiming, false))
+                    return false;
+
+                bool Ok = false;
+                bool prompted = false;
+                try
+                {
+                    Ok = EditorUtility.DisplayDialog(L10n.Tr("Enable Frame Timing Stats "), L10n.Tr("Adaptive Performance requires Frame Timing Stats to be enabled. \"Ok\" to enable"),
+                        L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                    prompted = true;
+                }
+                finally
+                {
+                    // Only mark the session bit when the dialog actually completed. If
+                    // DisplayDialog threw, the user never made a decision, so leave the bit
+                    // false so the next call re-prompts.
+                    SessionState.SetBool(k_SessionKey_PromptedFrameTiming, prompted);
+                }
 
                 if (Ok)
                 {
@@ -148,12 +174,32 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return false;
         }
 
-        internal static bool DiaglogForThermalStats(BuildProfile profile)
+        internal static bool DialogForThermalStats(BuildProfile profile, bool forcePrompt = false)
         {
             if (!Application.isBatchMode)
             {
-                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Disable adjust IOS FPS Using Thermal State"), L10n.Tr("\"Adjust iOS FPS based on thermal state\" should be disabled in the Player Settings to ensure thermal mitigation works properly in the Adaptive Performance Apple Provider. Ok to disable"),
-                    L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                // Suppress the prompt if we have already asked the user this editor session,
+                // regardless of whether they accepted or cancelled. Resets on editor restart.
+                // Build-time callers pass forcePrompt: true so they always re-check, since the
+                // build is the last opportunity to fix a misconfigured player setting.
+                if (!forcePrompt && SessionState.GetBool(k_SessionKey_PromptedThermalState, false))
+                    return true;
+
+                bool Ok = false;
+                bool prompted = false;
+                try
+                {
+                    Ok = EditorUtility.DisplayDialog(L10n.Tr("Disable adjust IOS FPS Using Thermal State"), L10n.Tr("\"Adjust iOS FPS based on thermal state\" should be disabled in the Player Settings to ensure thermal mitigation works properly in the Adaptive Performance Apple Provider. Ok to disable"),
+                        L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                    prompted = true;
+                }
+                finally
+                {
+                    // Only mark the session bit when the dialog actually completed. If
+                    // DisplayDialog threw, the user never made a decision, so leave the bit
+                    // false so the next call re-prompts.
+                    SessionState.SetBool(k_SessionKey_PromptedThermalState, prompted);
+                }
 
                 if (Ok)
                 {
@@ -176,35 +222,50 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return true;
         }
 
-        internal static bool CheckEnableFrameTimingState(BuildProfile profile = null)
+        internal static bool CheckEnableFrameTimingState(BuildProfile profile = null, bool forcePrompt = false)
         {
             if (profile != null && profile.playerSettings != null)
             {
                 if (profile.playerSettings.GetEnableFrameTimingStats_Internal() == false)
                 {
-                    return DiaglogForForFrameTiming(profile);
+                    return DialogForFrameTiming(profile, forcePrompt);
                 }
             }
             else if (PlayerSettings.enableFrameTimingStats == false)
             {
-                return DiaglogForForFrameTiming(null);
+                return DialogForFrameTiming(null, forcePrompt);
             }
 
             return true;
         }
 
-        internal static bool CheckEnableThermalState(BuildProfile profile = null)
+        internal static bool CheckEnableThermalStateForIOS(BuildProfile profile = null, bool forcePrompt = false)
         {
+            // The "Adjust iOS FPS based on thermal state" setting only has effect on Apple
+            // mobile platforms (iOS, tvOS, visionOS). Skip the check entirely on other targets
+            // so users do not see an iOS-specific dialog when configuring Adaptive Performance
+            // from the UI on a non-Apple-mobile build target or build profile.
+            BuildTargetGroup targetGroup = profile != null
+                ? BuildPipeline.GetBuildTargetGroup(profile.buildTarget)
+                : EditorUserBuildSettings.selectedBuildTargetGroup;
+
+            if (targetGroup != BuildTargetGroup.iOS &&
+                targetGroup != BuildTargetGroup.tvOS &&
+                targetGroup != BuildTargetGroup.VisionOS)
+            {
+                return false;
+            }
+
             if (profile != null && profile.playerSettings != null)
             {
                 if (profile.playerSettings.GetAdjustIOSFPSUsingThermalState_Internal() == true)
                 {
-                    return DiaglogForThermalStats(profile);
+                    return DialogForThermalStats(profile, forcePrompt);
                 }
             }
             else if (PlayerSettings.adjustIOSFPSUsingThermalState == true)
             {
-                return DiaglogForThermalStats(null);
+                return DialogForThermalStats(null, forcePrompt);
             }
 
             return false;

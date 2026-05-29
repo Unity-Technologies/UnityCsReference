@@ -32,7 +32,7 @@ namespace Unity.U2D.Physics
 
         // Polygon Geometry.
         [NativeMethod(Name = "PolygonGeometry::CreateBox", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_CreateBox(Vector2 size, float radius, PhysicsTransform transform, bool inscribe);
-        [NativeMethod(Name = "PolygonGeometry::CreatePolygons", IsThreadSafe = true)] extern internal static PhysicsBuffer PolygonGeometry_CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Vector2 vertexScale, Allocator allocator);
+        [NativeMethod(Name = "PolygonGeometry::CreatePolygons", IsThreadSafe = true)] extern internal static PhysicsBuffer PolygonGeometry_CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Vector2 vertexScale, float radius, bool useDelaunay, Allocator allocator);
         [NativeMethod(Name = "PolygonGeometry::Create_WithPhysicsTransform", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_Create_WithPhysicsTransform(ReadOnlySpan<Vector2> vertices, float radius, PhysicsTransform transform);
         [NativeMethod(Name = "PolygonGeometry::Create_WithMatrix", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_Create_WithMatrix(ReadOnlySpan<Vector2> vertices, float radius, Matrix4x4 transform);
         [NativeMethod(Name = "PolygonGeometry::Transform_WithPhysicsTransform", IsThreadSafe = true)] extern internal static PolygonGeometry PolygonGeometry_Transform_WithPhysicsTransform(PolygonGeometry geometry, PhysicsTransform transform);
@@ -56,6 +56,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "SegmentGeometry::CastShape", IsThreadSafe = true)] extern internal static PhysicsQuery.CastResult SegmentGeometry_CastShape(SegmentGeometry geometry, PhysicsQuery.CastShapeInput input);
 
         // Chain-Segment Geometry.
+        [NativeMethod(Name = "ChainSegmentGeometry::CreateSegments", IsThreadSafe = true)] extern internal static PhysicsBuffer ChainSegmentGeometry_CreateSegments(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, bool isLoop, Allocator allocator);
         [NativeMethod(Name = "ChainSegmentGeometry::IsValid", IsThreadSafe = true)] extern internal static bool ChainSegmentGeometry_IsValid(ChainSegmentGeometry geometry);
         [NativeMethod(Name = "ChainSegmentGeometry::CalculateAABB", IsThreadSafe = true)] extern internal static PhysicsAABB ChainSegmentGeometry_CalculateAABB(ChainSegmentGeometry geometry, PhysicsTransform transform);
         [NativeMethod(Name = "ChainSegmentGeometry::ClosestPoint", IsThreadSafe = true)] extern internal static Vector2 ChainSegmentGeometry_ClosestPoint(ChainSegmentGeometry geometry, Vector2 point);

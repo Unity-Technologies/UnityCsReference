@@ -31,26 +31,41 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageInfo installedInfo { get; }
         public RegistryType availableRegistryType { get; }
         public bool loadAllVersions { get; }
-        public string name => m_NewestInfo.name;
-        public string displayName => m_NewestInfo.displayName;
-        public VersionsInfo availableVersions => m_NewestInfo.versions;
+        public string name { get; }
+        public string displayName { get; }
+        public VersionsInfo availableVersions { get; }
         public bool isDiscoverable => mainSearchInfo != null;
-        public bool isDeprecated => m_NewestInfo.unityLifecycle?.isDeprecated ?? false;
-        public string deprecationMessage => isDeprecated ? m_NewestInfo.unityLifecycle.deprecationMessage : null;
-        public PackageCompliance compliance => m_NewestInfo.compliance;
+        public bool isDeprecated { get; }
+        public string deprecationMessage { get; }
+        public PackageCompliance compliance { get; }
 
         private readonly Dictionary<string, PackageInfo> m_ExtraSearchInfos;
-        private readonly PackageInfo m_NewestInfo;
 
         public UpmPackageData(PackageInfo installedInfo, long installedInfoTimestamp, PackageInfo mainSearchInfo, long searchInfoTimestamp, bool loadAllVersions, Dictionary<string, PackageInfo> extraInfos)
         {
+            if (installedInfo == null && mainSearchInfo == null)
+                throw new ArgumentException("InstalledInfo and mainSearchInfo cannot both be null.");
+
             this.installedInfo = installedInfo;
             this.mainSearchInfo = mainSearchInfo;
             this.loadAllVersions = loadAllVersions;
 
             m_ExtraSearchInfos = extraInfos;
-            m_NewestInfo = installedInfoTimestamp > searchInfoTimestamp ? installedInfo ?? mainSearchInfo : mainSearchInfo ?? installedInfo;
-            availableRegistryType = m_NewestInfo.GetAvailableRegistryType();
+
+            var searchInfoFirst = mainSearchInfo ?? installedInfo;
+            var installedInfoFirst = installedInfo ?? mainSearchInfo;
+
+            var newerInfo = installedInfoTimestamp > searchInfoTimestamp ? installedInfoFirst : searchInfoFirst;
+
+            name = newerInfo.name;
+            availableVersions = newerInfo.versions;
+            compliance = newerInfo.compliance;
+
+            availableRegistryType = searchInfoFirst.GetAvailableRegistryType();
+            isDeprecated = searchInfoFirst.isDeprecated;
+            deprecationMessage = searchInfoFirst.deprecationMessage;
+
+            displayName = installedInfoFirst.displayName;
         }
 
         public PackageInfo GetSearchInfo(string version)

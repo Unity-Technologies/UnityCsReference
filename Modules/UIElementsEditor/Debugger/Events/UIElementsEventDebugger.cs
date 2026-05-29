@@ -66,6 +66,10 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         const string k_RegisteredEventCallbacksPrefix = "Registered Event Callbacks for ";
 
+        const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsEventsDebugger.uss";
+        const string k_DefaultDarkStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsEventsDebuggerDark.uss";
+        const string k_DefaultLightStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsEventsDebuggerLight.uss";
+
         public enum HistogramDurationMode
         {
             // Average duration spent handling each event type
@@ -390,6 +394,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             }
 
             listView.itemsSource = m_RegisteredEventCallbacksDataSource;
+            listView.RefreshItems();
 
             var choiceCount = m_EventTypeFilter.GetSelectedCount();
             var choiceCountString = $"{choiceCount} event type{(choiceCount > 1 ? "s" : "")}";
@@ -447,7 +452,8 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
             base.Initialize(debuggerWindow);
 
-            rootVisualElement.AddStyleSheetPath("UIPackageResources/StyleSheets/UIElementsDebugger/UIElementsEventsDebugger.uss");
+            rootVisualElement.AddStyleSheetPath(k_DefaultStyleSheetPath);
+            rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? k_DefaultDarkStyleSheetPath : k_DefaultLightStyleSheetPath);
 
             var eventsDebugger = rootVisualElement.MandatoryQ("eventsDebugger");
             eventsDebugger.StretchToParentSize();
@@ -565,24 +571,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             m_EventRegistrationTitle = rootVisualElement.MandatoryQ<Label>("eventsRegistrationTitle");
 
             DoMaxLogLines();
-
-            var isProSkin = EditorGUIUtility.isProSkin;
-
-            var eventsTitle = rootVisualElement.MandatoryQ("eventsTitle");
-            var eventCallbacksTitle = rootVisualElement.MandatoryQ("eventCallbacksTitle");
-            var eventPropagationPathsTitle = rootVisualElement.MandatoryQ("eventPropagationPathsTitle");
-            var eventbaseInfoTitle = rootVisualElement.MandatoryQ("eventbaseInfoTitle");
-            var eventsRegistrationTitleContainer = rootVisualElement.MandatoryQ("eventsRegistrationTitleContainer");
-            var eventsRegistrationSearchContainer = rootVisualElement.MandatoryQ("eventsRegistrationSearchContainer");
-            var eventsHistogramTitleContainer = rootVisualElement.MandatoryQ("eventsHistogramTitleContainer");
-
-            eventsTitle.EnableInClassList("light", !isProSkin);
-            eventCallbacksTitle.EnableInClassList("light", !isProSkin);
-            eventPropagationPathsTitle.EnableInClassList("light", !isProSkin);
-            eventbaseInfoTitle.EnableInClassList("light", !isProSkin);
-            eventsRegistrationTitleContainer.EnableInClassList("light", !isProSkin);
-            eventsRegistrationSearchContainer.EnableInClassList("light", !isProSkin);
-            eventsHistogramTitleContainer.EnableInClassList("light", !isProSkin);
 
             GlobalCallbackRegistry.IsEventDebuggerConnected = true;
 
@@ -1074,9 +1062,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         void OnFilterChange(ChangeEvent<string> e)
         {
-            if (e.newValue != null)
-                return;
-
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             m_StateList = m_EventTypeFilter.State.Select(pair => new EventTypeFilterStateStruct {key = pair.Key, value = pair.Value}).ToList();
 #pragma warning restore UA2001
@@ -1130,10 +1115,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                     Label duration = new Label();
                     duration.AddToClassList("duration");
 
-                    var isProSkin = EditorGUIUtility.isProSkin;
-                    phase.EnableInClassList("light", !isProSkin);
-                    duration.EnableInClassList("light", !isProSkin);
-
                     timeStamp.AddToClassList("log-line-item");
                     handler.AddToClassList("log-line-item");
                     phaseDurationContainer.AddToClassList("log-line-item");
@@ -1178,10 +1159,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                 phase.AddToClassList("phase");
                 Label duration = new Label();
                 duration.AddToClassList("duration");
-
-                var isProSkin = EditorGUIUtility.isProSkin;
-                phase.EnableInClassList("light", !isProSkin);
-                duration.EnableInClassList("light", !isProSkin);
 
                 timeStamp.AddToClassList("log-line-item");
                 handler.AddToClassList("log-line-item");
@@ -1422,12 +1399,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
         void UpdatePlaybackButtons()
         {
-            var isProSkin = EditorGUIUtility.isProSkin;
-            m_DecreasePlaybackSpeedButton?.EnableInClassList("light", !isProSkin);
-            m_IncreasePlaybackSpeedButton?.EnableInClassList("light", !isProSkin);
-            m_SaveReplayButton?.EnableInClassList("light", !isProSkin);
-            m_LoadReplayButton?.EnableInClassList("light", !isProSkin);
-
             var anySelected = m_SelectedEvents?.Count > 0;
             m_TogglePlayback?.SetEnabled(m_Debugger.isReplaying);
             m_StopPlaybackButton?.SetEnabled(m_Debugger.isReplaying);

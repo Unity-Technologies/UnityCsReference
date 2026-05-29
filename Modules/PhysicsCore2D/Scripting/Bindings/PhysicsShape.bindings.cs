@@ -84,6 +84,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::SetCapsuleGeometry", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCapsuleGeometry(PhysicsShape shape, CapsuleGeometry geometry);
         [NativeMethod(Name = "PhysicsShape::SetPolygonGeometry", IsThreadSafe = true)] extern internal static void PhysicsShape_SetPolygonGeometry(PhysicsShape shape, PolygonGeometry geometry);
         [NativeMethod(Name = "PhysicsShape::SetSegmentGeometry", IsThreadSafe = true)] extern internal static void PhysicsShape_SetSegmentGeometry(PhysicsShape shape, SegmentGeometry geometry);
+        [NativeMethod(Name = "PhysicsShape::SetChainSegmentGeometry", IsThreadSafe = true)] extern internal static void PhysicsShape_SetChainSegmentGeometry(PhysicsShape shape, ChainSegmentGeometry geometry);
         [NativeMethod(Name = "PhysicsShape::IsChainSegmentShape", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsChainSegmentShape(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetChain", IsThreadSafe = true)] extern internal static PhysicsChain PhysicsShape_GetChain(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetContacts", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsShape_GetContacts(PhysicsShape shape, Allocator allocator);

@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
             1, // AlignItems
             1, // AlignSelf
             0, // All
-            1, // AnimationPlayState
+            0, // AnimationPlayState
             1, // AspectRatio
             4, // BackgroundColor
             1, // BackgroundImage
@@ -49,8 +49,8 @@ namespace UnityEngine.UIElements
             2, // Bottom
             4, // Color
             0, // Cursor
-            1, // Display
-            0, // Filter
+            0, // Display
+            72, // Filter
             0, // Flex
             2, // FlexBasis
             1, // FlexDirection
@@ -83,19 +83,19 @@ namespace UnityEngine.UIElements
             1, // Rotate
             3, // Scale
             1, // TextOverflow
-            0, // TextShadow
+            7, // TextShadow
             2, // Top
-            2, // TransformOrigin
+            4, // TransformOrigin
             0, // Transition
             0, // TransitionDelay
             0, // TransitionDuration
             0, // TransitionProperty
             0, // TransitionTimingFunction
-            3, // Translate
+            5, // Translate
             0, // UnityAnimationClip
             4, // UnityBackgroundImageTintColor
             0, // UnityBackgroundScaleMode
-            1, // UnityEditorTextRenderingMode
+            0, // UnityEditorTextRenderingMode
             1, // UnityFont
             1, // UnityFontDefinition
             1, // UnityFontStyleAndWeight
@@ -110,7 +110,7 @@ namespace UnityEngine.UIElements
             1, // UnitySliceType
             1, // UnityTextAlign
             0, // UnityTextAutoSize
-            1, // UnityTextGenerator
+            0, // UnityTextGenerator
             0, // UnityTextOutline
             4, // UnityTextOutlineColor
             1, // UnityTextOutlineWidth
@@ -155,7 +155,7 @@ namespace UnityEngine.UIElements
             PropertyType.Color,
             PropertyType.Cursor,
             PropertyType.Enum,
-            PropertyType.List,
+            PropertyType.Filter,
             PropertyType.Shorthand,
             PropertyType.Length,
             PropertyType.Enum,
@@ -311,7 +311,81 @@ namespace UnityEngine.UIElements
             {
                 ""
             }, // Background
-            System.Array.Empty<string>(), // Filter
+            new string[]
+            {
+                ".0.type",
+                ".0.customDefinition",
+                ".0.p0",
+                ".0.p1",
+                ".0.p2",
+                ".0.p3",
+                ".0.p4",
+                ".0.p5",
+                ".0.p6",
+                ".0.p7",
+                ".0.p8",
+                ".0.p9",
+                ".0.p10",
+                ".0.p11",
+                ".0.p12",
+                ".0.p13",
+                ".0.p14",
+                ".0.p15",
+                ".1.type",
+                ".1.customDefinition",
+                ".1.p0",
+                ".1.p1",
+                ".1.p2",
+                ".1.p3",
+                ".1.p4",
+                ".1.p5",
+                ".1.p6",
+                ".1.p7",
+                ".1.p8",
+                ".1.p9",
+                ".1.p10",
+                ".1.p11",
+                ".1.p12",
+                ".1.p13",
+                ".1.p14",
+                ".1.p15",
+                ".2.type",
+                ".2.customDefinition",
+                ".2.p0",
+                ".2.p1",
+                ".2.p2",
+                ".2.p3",
+                ".2.p4",
+                ".2.p5",
+                ".2.p6",
+                ".2.p7",
+                ".2.p8",
+                ".2.p9",
+                ".2.p10",
+                ".2.p11",
+                ".2.p12",
+                ".2.p13",
+                ".2.p14",
+                ".2.p15",
+                ".3.type",
+                ".3.customDefinition",
+                ".3.p0",
+                ".3.p1",
+                ".3.p2",
+                ".3.p3",
+                ".3.p4",
+                ".3.p5",
+                ".3.p6",
+                ".3.p7",
+                ".3.p8",
+                ".3.p9",
+                ".3.p10",
+                ".3.p11",
+                ".3.p12",
+                ".3.p13",
+                ".3.p14",
+                ".3.p15"
+            }, // Filter
             new string[]
             {
                 ""
@@ -321,19 +395,32 @@ namespace UnityEngine.UIElements
                 ""
             }, // FontDefinition
             System.Array.Empty<string>(), // Cursor
-            System.Array.Empty<string>(), // TextShadow
+            new string[]
+            {
+                ".color.r",
+                ".color.g",
+                ".color.b",
+                ".color.a",
+                ".offset.x",
+                ".offset.y",
+                ".blurRadius"
+            }, // TextShadow
             System.Array.Empty<string>(), // TextAutoSize
             System.Array.Empty<string>(), // List
             new string[]
             {
-                ".x",
-                ".y",
+                ".x.value",
+                ".x.unit",
+                ".y.value",
+                ".y.unit",
                 ".z"
             }, // Translate
             new string[]
             {
-                ".x",
-                ".y"
+                ".x.value",
+                ".x.unit",
+                ".y.value",
+                ".y.unit"
             }, // TransformOrigin
             System.Array.Empty<string>(), // Shorthand
             new string[]
@@ -406,7 +493,81 @@ namespace UnityEngine.UIElements
             {
                 AnimationChannelKind.PPtr
             }, // Background
-            System.Array.Empty<AnimationChannelKind>(), // Filter
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Int,
+                AnimationChannelKind.PPtr,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int,
+                AnimationChannelKind.PPtr,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int,
+                AnimationChannelKind.PPtr,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int,
+                AnimationChannelKind.PPtr,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // Filter
             new AnimationChannelKind[]
             {
                 AnimationChannelKind.PPtr
@@ -416,19 +577,32 @@ namespace UnityEngine.UIElements
                 AnimationChannelKind.PPtr
             }, // FontDefinition
             System.Array.Empty<AnimationChannelKind>(), // Cursor
-            System.Array.Empty<AnimationChannelKind>(), // TextShadow
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // TextShadow
             System.Array.Empty<AnimationChannelKind>(), // TextAutoSize
             System.Array.Empty<AnimationChannelKind>(), // List
             new AnimationChannelKind[]
             {
                 AnimationChannelKind.Float,
+                AnimationChannelKind.Int,
                 AnimationChannelKind.Float,
+                AnimationChannelKind.Int,
                 AnimationChannelKind.Float
             }, // Translate
             new AnimationChannelKind[]
             {
                 AnimationChannelKind.Float,
-                AnimationChannelKind.Float
+                AnimationChannelKind.Int,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Int
             }, // TransformOrigin
             System.Array.Empty<AnimationChannelKind>(), // Shorthand
             new AnimationChannelKind[]

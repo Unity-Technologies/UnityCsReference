@@ -324,5 +324,49 @@ namespace UnityEngine.UIElements
 
             return ussName;
         }
+
+        public static bool TryGetFirstRuleWithSimpleClassSelector(List<StyleSheet> sheets, string className, out StyleRule foundRule)
+        {
+            if (sheets == null || sheets.Count == 0 || string.IsNullOrEmpty(className))
+            {
+                foundRule = null;
+                return false;
+            }
+
+            foreach (var styleSheet in sheets)
+            {
+                if (styleSheet?.rules == null)
+                    continue;
+
+                foreach (var rule in styleSheet.rules)
+                {
+                    if (rule.complexSelectors == null || rule.complexSelectors.Length == 0)
+                        continue;
+
+                    foreach (var complexSelector in rule.complexSelectors)
+                    {
+                        if (!complexSelector.isSimple)
+                            continue;
+
+                        var selector = complexSelector.selectors[0];
+
+                        if (selector.parts == null)
+                            continue;
+
+                        if (selector.parts[0].type != StyleSelectorType.Class)
+                            continue;
+
+                        if (!string.Equals(selector.parts[0].value, className, StringComparison.Ordinal))
+                            continue;
+
+                        foundRule = rule;
+                        return true;
+                    }
+                }
+            }
+
+            foundRule = null;
+            return false;
+        }
     }
 }

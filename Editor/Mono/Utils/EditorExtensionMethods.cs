@@ -51,6 +51,19 @@ namespace UnityEditor
             return null;
         }
 
+        internal static bool IsDictionary(this Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+        }
+
+        internal static Type GetDictionaryElementType(this Type dictionaryType)
+        {
+            if (!dictionaryType.IsGenericType)
+                return null;
+            var args = dictionaryType.GetGenericArguments();
+            return typeof(KeyValuePair<,>).MakeGenericType(args);
+        }
+
         internal static List<Enum> EnumGetNonObsoleteValues(this Type type)
         {
             // each enum value has the same position in both values and names arrays

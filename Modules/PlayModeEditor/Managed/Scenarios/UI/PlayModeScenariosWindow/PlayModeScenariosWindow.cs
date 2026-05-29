@@ -23,6 +23,7 @@ namespace Unity.PlayMode.Editor
         DetailView m_DetailView;
         HelpBox m_DisableEditingHelpbox;
         PlayModeListView m_PlayModeListView;
+        [SerializeField] PlayModeScenario m_LastSelectedScenario;
 
         public static void ShowWindow()
         {
@@ -47,6 +48,9 @@ namespace Unity.PlayMode.Editor
 
             m_PlayModeListView = new PlayModeListView();
             m_PlayModeListView.OnConfigSelected += SelectConfig;
+
+            if (m_LastSelectedScenario != null)
+                m_PlayModeListView.TrySelect(m_LastSelectedScenario);
 
             m_DetailView.SetConfig(m_PlayModeListView.ConfigurationToEdit);
 
@@ -149,6 +153,7 @@ namespace Unity.PlayMode.Editor
 
         private void SelectConfig(PlayModeScenario config)
         {
+            m_LastSelectedScenario = config;
             m_DetailView.SetConfig(config);
         }
     }

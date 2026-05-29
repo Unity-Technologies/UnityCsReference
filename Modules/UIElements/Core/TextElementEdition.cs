@@ -599,17 +599,30 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (TextUtilities.IsAdvancedTextEnabledForElement(this))
+                {
+                    Debug.LogError("renderedText shouldn't be called while using Advanced Text");
+                    return new RenderedText(m_RenderedText);
+                }
+                    
                 if (showPlaceholderText)
                 {
-                    return TextUtilities.IsAdvancedTextEnabledForElement(this) ? new RenderedText(m_PlaceholderText) : new RenderedText(m_PlaceholderText, ZeroWidthSpace);
+                    return new RenderedText(m_PlaceholderText, ZeroWidthSpace);
                 }
 
                 if (effectiveMaskChar != char.MinValue) // Password
                 {
-                    return TextUtilities.IsAdvancedTextEnabledForElement(this) ? new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0) : new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0, ZeroWidthSpace);
+                    return new RenderedText(effectiveMaskChar, m_TextBuffer.length, ZeroWidthSpace);
                 }
 
-                if (!TextUtilities.IsAdvancedTextEnabledForElement(this) && (!isReadOnly || ((pseudoStates & PseudoStates.Disabled) != 0 && isSelectable))) // TextField
+                if (m_IsTextBufferDirty)
+                {
+                    m_Text = m_TextBuffer.Materialize();
+                    m_RenderedText = m_Text;
+                    m_IsTextBufferDirty = false;
+                }
+
+                if (!isReadOnly || ((pseudoStates & PseudoStates.Disabled) != 0 && isSelectable)) // TextField
                 {
                     return new RenderedText(m_RenderedText, ZeroWidthSpace);
                 }
@@ -625,19 +638,18 @@ namespace UnityEngine.UIElements
             get
             {
                 if (showPlaceholderText)
-                {
                     return m_PlaceholderText;
-                }
 
-                if (effectiveMaskChar != char.MinValue) // Password
-                {
-                    return "".PadLeft(m_RenderedText?.Length ?? 0, effectiveMaskChar);
-                }
+                if (effectiveMaskChar != char.MinValue)
+                    return "".PadLeft(m_TextBuffer.length, effectiveMaskChar);
 
-                else
+                if (m_IsTextBufferDirty)
                 {
-                    return m_RenderedText;
+                    m_Text = m_TextBuffer.Materialize();
+                    m_RenderedText = m_Text;
+                    m_IsTextBufferDirty = false;
                 }
+                return m_RenderedText;
             }
         }
 

@@ -16,10 +16,12 @@ namespace UnityEngine.UIElements
     {
         public const float kEpsilon = 0.001f;
 
-        public struct NativeColorPage
+        [StructLayout(LayoutKind.Sequential)]
+        public struct NativeColorId
         {
             public int isValid;
-            public Color32 pageAndID;
+            public ushort id;
+            ushort _pad;
         }
 
         public struct NativeBorderParams
@@ -41,10 +43,10 @@ namespace UnityEngine.UIElements
             public Vector2 bottomRightRadius;
             public Vector2 bottomLeftRadius;
 
-            internal NativeColorPage leftColorPage;
-            internal NativeColorPage topColorPage;
-            internal NativeColorPage rightColorPage;
-            internal NativeColorPage bottomColorPage;
+            internal NativeColorId leftColorId;
+            internal NativeColorId topColorId;
+            internal NativeColorId rightColorId;
+            internal NativeColorId bottomColorId;
         }
 
         public struct NativeRectParams
@@ -89,7 +91,7 @@ namespace UnityEngine.UIElements
 
             public Vector4 rectInset;
 
-            public NativeColorPage colorPage;
+            public NativeColorId colorId;
 
             public int meshFlags;
         }
@@ -97,7 +99,7 @@ namespace UnityEngine.UIElements
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeBorder(ref NativeBorderParams borderParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeSolidRect(ref NativeRectParams rectParams);
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeTexturedRect(ref NativeRectParams rectParams);
-        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorPage colorPage);
-        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorPage colorPage);
+        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorId colorId);
+        [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorId colorId);
     }
 }

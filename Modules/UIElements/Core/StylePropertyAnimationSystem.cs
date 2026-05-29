@@ -10,7 +10,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal interface IStylePropertyAnimationSystem
     {
         bool StartTransition(VisualElement owner, StylePropertyId prop, float startValue, float endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -38,17 +38,17 @@ namespace UnityEngine.UIElements
         void UpdateAnimation(VisualElement owner, StylePropertyId id);
         void GetAllAnimations(VisualElement owner, List<StylePropertyId> propertyIds);
 
-        // Clip-driven per-element animations (animation-name / animation-play-state / unity-animation-clip).
-        // Lives in the style animation system (and is therefore disabled when the panel runs the empty
-        // implementation, e.g. UI Builder authoring mode) so that clip playback follows the same
-        // play/pause semantics as CSS transitions.
-        void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState);
+        void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState, double currentTime);
         void CancelElementClipAnimation(VisualElement owner);
+
+        void SetClipPreviewing(VisualElement owner, bool isPreviewing);
+
+        bool TryGetActiveClipForOwner(VisualElement owner, out UIAnimationClip clip, out UIAnimationBinder binder);
 
         void Update(double updateTimeInSeconds);
     }
 
-    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
         [Flags]
@@ -1713,10 +1713,15 @@ namespace UnityEngine.UIElements
             public bool isLooping;
             public bool isPaused;
             public float pausedElapsed;
+            // Set only via SetClipPreviewing (also editor-only) - the Animation Window
+            // takes over sampling while previewing so the runtime ticker must yield.
+            public bool isPreviewing;
 
             public void Sample(double now)
             {
                 if (clip == null || binder == null || isPaused)
+                    return;
+                if (isPreviewing)
                     return;
 
                 float elapsed = (float)(now - startTime);
@@ -1902,11 +1907,9 @@ namespace UnityEngine.UIElements
             return m_CurrentTime;
         }
 
-        public void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState)
+        public void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState, double currentTime)
         {
-            // The panel must exist to host the per-element binder. Only Panel (not BaseVisualElementPanel)
-            // exposes GetOrCreateElementBinder/DestroyElementBinder; if we got passed something else,
-            // skip silently — the caller will see no animation, same as if the empty system was active.
+            // Only Panel (not BaseVisualElementPanel) exposes GetOrCreateElementBinder.
             if (m_Panel == null)
                 return;
 
@@ -1922,16 +1925,23 @@ namespace UnityEngine.UIElements
                     if (existing.isPaused)
                     {
                         existing.isPaused = false;
-                        existing.startTime = m_CurrentTime - existing.pausedElapsed;
+                        existing.startTime = currentTime - existing.pausedElapsed;
                         m_ElementClipAnimations[owner] = existing;
                     }
                     else if (existing.clip != clip)
                     {
+                        // Drop stale entries from the previous clip so binder.IsBound
+                        // (the inspector affordance signal) only reflects the new clip's
+                        // active curves. The next Sample call re-populates m_BoundValues.
+                        if (existing.binder != null)
+                            existing.binder.ClearBindings();
                         existing.clip = clip;
-                        existing.startTime = m_CurrentTime;
+                        existing.startTime = currentTime;
                         existing.clipLength = innerClip.length;
                         existing.isLooping = innerClip.isLooping;
                         m_ElementClipAnimations[owner] = existing;
+                        if (existing.binder != null)
+                            existing.binder.IncrementBoundElementsStyleVersion();
                     }
                 }
                 else
@@ -1941,7 +1951,7 @@ namespace UnityEngine.UIElements
                     {
                         clip = clip,
                         binder = binder,
-                        startTime = m_CurrentTime,
+                        startTime = currentTime,
                         clipLength = innerClip.length,
                         isLooping = innerClip.isLooping
                     };
@@ -1954,23 +1964,63 @@ namespace UnityEngine.UIElements
                     && !existing.isPaused)
                 {
                     existing.isPaused = true;
-                    existing.pausedElapsed = (float)(m_CurrentTime - existing.startTime);
+                    existing.pausedElapsed = (float)(currentTime - existing.startTime);
                     m_ElementClipAnimations[owner] = existing;
                 }
             }
             else
             {
-                if (m_ElementClipAnimations != null && m_ElementClipAnimations.Remove(owner))
+                if (m_ElementClipAnimations != null
+                    && m_ElementClipAnimations.TryGetValue(owner, out var existingToClear))
+                {
+                    m_ElementClipAnimations.Remove(owner);
+                    // Must run before DestroyElementBinder (clears the element registry).
+                    if (existingToClear.binder != null)
+                        existingToClear.binder.IncrementBoundElementsStyleVersion();
                     m_Panel.DestroyElementBinder(owner);
+                }
             }
         }
 
         public void CancelElementClipAnimation(VisualElement owner)
         {
-            if (m_ElementClipAnimations == null || !m_ElementClipAnimations.Remove(owner))
+            if (m_ElementClipAnimations == null
+                || !m_ElementClipAnimations.TryGetValue(owner, out var existing))
                 return;
 
+            m_ElementClipAnimations.Remove(owner);
+            // Must run before DestroyElementBinder (clears the element registry).
+            if (existing.binder != null)
+                existing.binder.IncrementBoundElementsStyleVersion();
             m_Panel?.DestroyElementBinder(owner);
+        }
+
+        public bool TryGetActiveClipForOwner(VisualElement owner, out UIAnimationClip clip, out UIAnimationBinder binder)
+        {
+            clip = null;
+            binder = null;
+            if (owner == null || m_ElementClipAnimations == null)
+                return false;
+            if (!m_ElementClipAnimations.TryGetValue(owner, out var existing))
+                return false;
+            if (existing.clip == null || existing.binder == null)
+                return false;
+            clip = existing.clip;
+            binder = existing.binder;
+            return true;
+        }
+
+        public void SetClipPreviewing(VisualElement owner, bool isPreviewing)
+        {
+            if (owner == null || m_ElementClipAnimations == null)
+                return;
+
+            if (m_ElementClipAnimations.TryGetValue(owner, out var existing)
+                && existing.isPreviewing != isPreviewing)
+            {
+                existing.isPreviewing = isPreviewing;
+                m_ElementClipAnimations[owner] = existing;
+            }
         }
 
         public void Update(double updateTime)
@@ -1990,7 +2040,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class EmptyStylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
         public bool StartTransition(VisualElement owner, StylePropertyId prop, float startValue, float endValue, int durationMs, int delayMs, Func<float, float> easingCurve)
@@ -2118,11 +2168,22 @@ namespace UnityEngine.UIElements
         {
         }
 
-        public void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState)
+        public void UpdateElementClipAnimation(VisualElement owner, UIAnimationClip clip, AnimationPlayState playState, double currentTime)
         {
         }
 
         public void CancelElementClipAnimation(VisualElement owner)
+        {
+        }
+
+        public bool TryGetActiveClipForOwner(VisualElement owner, out UIAnimationClip clip, out UIAnimationBinder binder)
+        {
+            clip = null;
+            binder = null;
+            return false;
+        }
+
+        public void SetClipPreviewing(VisualElement owner, bool isPreviewing)
         {
         }
 

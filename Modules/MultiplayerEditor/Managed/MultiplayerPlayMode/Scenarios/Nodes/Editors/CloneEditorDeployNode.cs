@@ -18,7 +18,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         [SerializeReference] public NodeInput<int> PlayerInstanceIndex;
         [SerializeReference] public NodeOutput<PlayerIdentifier> PlayerIdentifier; // Nodes needs to be public fields since they are serialized
+        #pragma warning disable UAC1001
         [SerializeReference] public NodeOutput<TypeDependentPlayerInfo> TypeDependentPlayerInfo; // Nodes needs to be public fields since they are serialized
+        #pragma warning restore UAC1001
 
         public bool IsRunning()
         {

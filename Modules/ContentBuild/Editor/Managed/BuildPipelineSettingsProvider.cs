@@ -10,14 +10,13 @@ namespace UnityEditor.Build
     {
         static readonly GUIContent k_ResetBuildHistoryFolderText = EditorGUIUtility.TrTextContent("Reset Build History folder Location");
         static readonly GUIContent k_ChangeBuildHistoryFolderLocationText = EditorGUIUtility.TrTextContent("Change Build History Folder Location", "Change the build history path to a new path on your device. Note that this does not move any existing history. ");
-        static readonly GUIContent k_CleanBuildHistoryFolderText = EditorGUIUtility.TrTextContent("Delete Build History", "Deletes all of the build history within the current build history folder.");
-        //static readonly GUIContent k_BuildHistoryFolderPathText = EditorGUIUtility.TrTextContent(buildHistoryFolderPath, "The Build History path.");
+        static readonly GUIContent k_BuildHistoryLimitText = EditorGUIUtility.TrTextContent(
+            "Build History Limit",
+            "Maximum number of builds to retain in Build History. 0 disables automatic deletion. Changes take effect on the next build.");
         private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder");
 
-        private static readonly string k_ChangeLocation = L10n.Tr("Change Location");
-        private static readonly string k_ResetToDefaultLocation = L10n.Tr("Reset to Default Location");
         private BuildPipelineSettingsProvider()
-            : base("Preferences/Analysis/Build Pipeline", SettingsScope.User)
+            : base("Project/Analysis/Build Pipeline", SettingsScope.Project)
         { }
 
         public static string buildHistoryFolderPath
@@ -32,6 +31,12 @@ namespace UnityEditor.Build
 
             EditorGUIUtility.labelWidth = 300;
 
+            DrawBuildHistoryFolderRow();
+            DrawBuildHistoryLimitRow();
+        }
+
+        private static void DrawBuildHistoryFolderRow()
+        {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Build History Folder Path", GUILayout.MaxWidth(175));
             GUI.enabled = false;
@@ -51,9 +56,21 @@ namespace UnityEditor.Build
                 {
                     menu.AddItem(k_ResetBuildHistoryFolderText, false, ResetFolderLocation);
                 }
-                menu.AddItem(k_CleanBuildHistoryFolderText, false, CleanBuildHistoryDirectories);
                 menu.ShowAsContext();
             }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private static void DrawBuildHistoryLimitRow()
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(k_BuildHistoryLimitText, GUILayout.MaxWidth(175));
+            EditorGUI.BeginChangeCheck();
+            // DelayedIntField commits on Enter / blur instead of every keystroke, so the
+            // ScriptableSingleton isn't re-saved to disk while the user is mid-typing.
+            int newLimit = EditorGUILayout.DelayedIntField(BuildHistory.BuildHistoryLimit);
+            if (EditorGUI.EndChangeCheck())
+                BuildHistory.BuildHistoryLimit = Mathf.Max(0, newLimit);
             EditorGUILayout.EndHorizontal();
         }
 
@@ -86,11 +103,6 @@ namespace UnityEditor.Build
         private static void ResetFolderLocation()
         {
             buildHistoryFolderPath = BuildHistory.DefaultRootDirectory;
-        }
-
-        private static void CleanBuildHistoryDirectories()
-        {
-            BuildHistory.DeleteHistory();
         }
 
         [SettingsProvider]

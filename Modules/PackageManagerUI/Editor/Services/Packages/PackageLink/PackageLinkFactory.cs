@@ -178,7 +178,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageLink CreateUpmDocumentationLink(IPackageVersion version)
         {
-            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString);
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
 
             return new PackageUpmDocumentationLink(version)
@@ -192,7 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageLink CreateUpmChangelogLink(IPackageVersion version)
         {
-            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString);
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
 
             return new PackageUpmChangelogLink(version)
@@ -206,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageLink CreateVersionHistoryChangelogLink(IPackageVersion version)
         {
-            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString);
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
 
             return new PackageUpmVersionHistoryChangelogLink(version)
@@ -220,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageLink CreateUpmLicenseLink(IPackageVersion version)
         {
-            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString);
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
             var isUnityPackage = version.HasTag(PackageTag.Unity);
 
             return new PackageUpmLicenseLink(version)
@@ -234,7 +234,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageLink CreateUpmQuickStartLink(IPackageVersion version)
         {
-            var packageInfo = version != null && version.HasTag(PackageTag.Feature) ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString) : null;
+            var packageInfo = version != null && version.HasTag(PackageTag.Feature) ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
 
             return new PackageLink(version)
             {

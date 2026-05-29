@@ -568,6 +568,35 @@ namespace Unity.GraphToolkit.Editor.Implementation
             return CreateWire(inputModel, outputModel) != null;
         }
 
+        public Wire GetWire(IPort output, IPort input)
+        {
+            if (output == null)
+                throw new ArgumentNullException(nameof(output));
+
+            if (input == null)
+                throw new ArgumentNullException(nameof(input));
+
+            if (output.Direction != PortDirection.Output)
+                throw new ArgumentException($"The 'output' parameter must be an Output port. It was {output.Direction}.", nameof(output));
+
+            if (input.Direction != PortDirection.Input)
+                throw new ArgumentException($"The 'input' parameter must be an Input port. It was {input.Direction}.", nameof(input));
+
+            if (output.GetNode().Graph != Graph)
+                throw new ArgumentException("The output port does not belong to this graph.", nameof(output));
+
+            if (input.GetNode().Graph != Graph)
+                throw new ArgumentException("The input port does not belong to this graph.", nameof(input));
+
+            var outputModel = (PortModel)output;
+            var inputModel = (PortModel)input;
+
+            if (VirtualWireBuilder.TryGetVirtualWire(outputModel, inputModel, out _))
+                return new Wire(output.Guid, input.Guid);
+
+            return null;
+        }
+
         public bool DeleteWiresBetween(IPort output, IPort input)
         {
             CheckModificationLock();

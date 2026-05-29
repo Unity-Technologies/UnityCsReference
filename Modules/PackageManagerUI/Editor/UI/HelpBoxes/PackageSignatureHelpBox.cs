@@ -21,19 +21,19 @@ internal class PackageSignatureHelpBox : PackageBaseHelpBox
         {
             case TrustAndSignature.LimitedTrust:
                 customIcon = Icon.PackageOptionLarge;
-                analyticsId = "limited-trust-package-help-box";
+                readMoreAnalyticsId = "limited-trust-package-help-box";
                 text = k_LimitedTrustMessage;
                 readMoreUrl =$"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
                 break;
             case TrustAndSignature.UntrustedNoSignature:
                 customIcon = Icon.PackageWarningLarge;
-                analyticsId = "unsigned-package-help-box";
+                readMoreAnalyticsId = "unsigned-package-help-box";
                 text = k_UnsignedMessage;
                 readMoreUrl =$"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
                 break;
             case TrustAndSignature.UntrustedInvalidSignature:
                 customIcon = Icon.PackageErrorLarge;
-                analyticsId = "invalid-signature-package-help-box";
+                readMoreAnalyticsId = "invalid-signature-package-help-box";
                 text = k_InvalidSignatureMessage;
                 readMoreUrl =$"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig";
                 break;

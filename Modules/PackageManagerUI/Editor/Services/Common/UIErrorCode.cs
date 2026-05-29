@@ -23,6 +23,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpmError_ServerNotRunning = 100,
         UpmError_UnsignedUnityPackage,
         UpmError_NotAcquired,
+        UpmError_PackageNotLoaded,
+        UpmError_InvalidSourcePath,
 
         AssetStoreAuthorizationError = 500,
         AssetStoreClientError,

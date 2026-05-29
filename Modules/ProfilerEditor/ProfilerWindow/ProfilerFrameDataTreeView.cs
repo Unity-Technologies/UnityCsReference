@@ -776,11 +776,37 @@ namespace UnityEditorInternal
             // EditorPrefs.GetBool("Hide0msSamples") is checked outside this call to prevent fetching every sample
             if (m_ProfilerSampleNameProvider is CPUOrGPUProfilerModule module)
             {
+                var gcColumn = module.GetGCAllocColumn();
+                if (gcColumn != -1)
+                {
+                    var gcAlloc = m_FrameDataView.GetItemColumnDataAsFloat(itemId, gcColumn);
+                    if (gcAlloc > 0)
+                        return false;
+                }
+
                 var threshold = module.GetZeroSampleThresholdMs();
                 var column = module.GetZeroSampleTimeColumn();
                 var timeMs = m_FrameDataView.GetItemColumnDataAsFloat(itemId, column);
                 return timeMs < threshold;
             }
+            return false;
+        }
+
+        static bool SubtreeHasGCAlloc(RawFrameDataView rawFrameDataView, int gcAllocMarkerId, int sampleIndex)
+        {
+            var lastSampleInSubtree = sampleIndex + rawFrameDataView.GetSampleChildrenCountRecursive(sampleIndex);
+            for (int i = sampleIndex + 1; i <= lastSampleInSubtree; i++)
+            {
+                if (rawFrameDataView.GetSampleMarkerId(i) != gcAllocMarkerId)
+                    continue;
+
+                if (rawFrameDataView.GetSampleMetadataCount(i) <= 0)
+                    continue;
+
+                if (rawFrameDataView.GetSampleMetadataAsInt(i, 0) > 0)
+                    return true;
+            }
+
             return false;
         }
 
@@ -813,6 +839,14 @@ namespace UnityEditorInternal
 
                 if (rawSampleIndex >= 0)
                 {
+                    if (module.GetGCAllocColumn() != -1)
+                    {
+                        var gcAllocMarkerId = rawFrameDataView.GetMarkerId("GC.Alloc");
+                        if (gcAllocMarkerId != FrameDataView.invalidMarkerId
+                            && SubtreeHasGCAlloc(rawFrameDataView, gcAllocMarkerId, rawSampleIndex))
+                            return false;
+                    }
+
                     var timeMs = rawFrameDataView.GetSampleTimeMs(rawSampleIndex);
                     return timeMs < threshold;
                 }

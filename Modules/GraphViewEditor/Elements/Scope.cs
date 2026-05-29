@@ -253,9 +253,9 @@ namespace UnityEditor.Experimental.GraphView
         {
             node.MarkLayoutSeen();
 
-            for (int i = 0; i < node.Count; i++)
+            for (var child = node.FirstChild; !child.IsUndefined; child = child.NextSibling)
             {
-                MarkLayoutNodeSeen(node[i]);
+                MarkLayoutNodeSeen(child);
             }
         }
 

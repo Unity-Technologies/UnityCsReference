@@ -101,6 +101,8 @@ namespace UnityEditor
 
         internal void Dispose()
         {
+            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog();
+
             UserSettings.ToConfig(m_CurrentRoot);
 
             m_Labels.Clear();
@@ -134,13 +136,11 @@ namespace UnityEditor
             BindEnumFieldToLightProbe(m_CurrentRoot);
             BindEnumFieldToDefaultLightBaker(m_CurrentRoot);
 
-            // Light Baker section is only visible in developer/internal mode
             var lightBakerSection = m_CurrentRoot.Q<VisualElement>("LightBakerSection");
             if (lightBakerSection != null)
             {
-                lightBakerSection.style.display = Unsupported.IsDeveloperMode()
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
+                lightBakerSection.style.display = DisplayStyle.Flex;
+                SetupUnityComputeLightBakerInfoBox(lightBakerSection);
             }
 
             GraphicsStateCollectionSettingsUI.BindGraphicsStateCollection(m_CurrentRoot, serializedObject);
@@ -407,6 +407,36 @@ namespace UnityEditor
             var transparencySortAxis = root.MandatoryQ<PropertyField>("TransparencySortAxis");
             transparencySortMode.RegisterValueChangeCallback(evt =>
                 UIElementsEditorUtility.SetVisibility(transparencySortAxis, (TransparencySortMode)evt.changedProperty.enumValueIndex == TransparencySortMode.CustomAxis));
+        }
+
+        internal const string k_UnityComputeLightBakerInfoBoxDismissedKey = "GraphicsSettingsInspector.UnityComputeLightBakerInfoBox.Dismissed";
+
+        void SetupUnityComputeLightBakerInfoBox(VisualElement lightBakerSection)
+        {
+            var infoBox = lightBakerSection.Q<HelpBox>("UnityComputeLightBakerInfoBox");
+            if (infoBox == null)
+                return;
+
+            var enumField = lightBakerSection.Q<EnumField>("DefaultLightBaker");
+
+            infoBox.buttonText = L10n.Tr("Don't show again");
+            infoBox.onButtonClicked += () =>
+            {
+                EditorPrefs.SetBool(k_UnityComputeLightBakerInfoBoxDismissedKey, true);
+                infoBox.style.display = DisplayStyle.None;
+            };
+
+            void UpdateVisibility()
+            {
+                bool isUnityCompute = enumField != null && (LightBaker)enumField.value == LightBaker.UnityComputeLightBaker;
+                bool dismissed = EditorPrefs.GetBool(k_UnityComputeLightBakerInfoBoxDismissedKey, false);
+                infoBox.style.display = isUnityCompute && !dismissed ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (enumField != null)
+                enumField.RegisterValueChangedCallback(_ => UpdateVisibility());
+
+            UpdateVisibility();
         }
 
         void UpdateBuildProfileGraphicsSettingsOverrideWarning()

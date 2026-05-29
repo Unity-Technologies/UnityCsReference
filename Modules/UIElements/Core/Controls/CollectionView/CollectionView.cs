@@ -24,6 +24,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         internal static readonly BindingId fixedItemHeightProperty = nameof(fixedItemHeight);
 
         VisualElement m_Container;
+        VisualElement m_ContainerClip;
+        VisualElement m_StickyRowContainer;
+        RecycledItem m_StickyRow;
         ScrollContainer m_ScrollView;
         CollectionViewScroller m_VerticalScroller;
         CollectionViewScroller m_HorizontalScroller;
@@ -34,8 +37,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         LinkedList<RecycledItem> m_RefreshList = new();
         KeyboardNavigationManipulator m_NavigationManipulator;
         IVisualElementScheduledItem m_RebuildScheduled;
+        IVisualElementScheduledItem m_RefreshScheduled;
         IVisualElementScheduledItem m_ScrollScheduledItem;
         ICollectionDragAndDropController CreateDragAndDropController() => new ReorderableDragAndDropController(this);
+        IStickyRowController m_StickyRowController;
         List<int> m_LastFocusedElementTreeChildIndexes = new();
 
         // The list of unused items - these items will be repurposed during the BindVisibleItems.
@@ -48,6 +53,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         double m_ScrollValue;
         float m_FixedItemHeight = k_DefaultItemHeight;
         float m_LastHeight = -1;
+        float m_StickyHeight;
         int m_FirstVisibleItemIndex;
         int m_LastFocusedElementIndex = -1;
         Vector3 m_TouchDownPosition;
@@ -68,6 +74,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         const float k_DefaultScrollSize = 10.0f;
         const float k_Buffer = 1f;
 
+        internal double scrollValue => m_ScrollValue;
+        internal VisualElement itemContainer => m_Container;
+        internal RecycledItem currentStickyRow => m_StickyRow;
+        internal bool hasActiveStickyRow => m_StickyRow != null && m_StickyRow.index != -1;
         internal CollectionViewDragger dragger => m_Dragger;
         internal event Action reorderModeChanged;
         // Holds the item position along with the item. It is currently purposed to retain a collection of visible items
@@ -144,6 +154,27 @@ namespace UnityEngine.UIElements.HierarchyV2
         }
 
         /// <summary>
+        /// Gets or sets the sticky row controller that manages which rows should stick to the top during scrolling.
+        /// </summary>
+        internal IStickyRowController stickyRowController
+        {
+            get => m_StickyRowController;
+            set
+            {
+                if (ReferenceEquals(m_StickyRowController, value))
+                    return;
+
+                if (m_StickyRowController != null)
+                    m_StickyRowController.onStickyStateChanged -= OnStickyRowStateChanged;
+
+                m_StickyRowController = value;
+
+                if (m_StickyRowController != null)
+                    m_StickyRowController.onStickyStateChanged += OnStickyRowStateChanged;
+            }
+        }
+
+        /// <summary>
         /// Set the <see cref="itemsSource"/> without performing a refresh.
         /// </summary>
         /// <param name="source">The new source.</param>
@@ -171,7 +202,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     Insert(0, MultiColumnLayout.CreateMultiColumnHeader());
                     scrollView.applyOffset = (offset) =>
                     {
-                        scrollView.contentContainer.style.translate = new Vector3(0, -offset.y, 0);
+                        m_Container.style.translate = new Vector3(0, -offset.y, 0);
                         MultiColumnLayout.ScrollHorizontally(offset.x);
                     };
                 }
@@ -336,6 +367,26 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
         }
 
+        RecycledItem GetOrCreateStickyRow()
+        {
+            if (m_StickyRow == null)
+            {
+                var itemElement = layoutConfiguration.makeCell?.Invoke();
+                m_StickyRow = RecycledItem.AllocateItem(itemElement, this);
+            }
+            return m_StickyRow;
+        }
+
+        /// <summary>
+        /// The USS class name of an item element that is marked as sticky.
+        /// </summary>
+        internal static readonly UniqueStyleString stickyUssClassName = new(BaseVerticalCollectionView.itemUssClassName + "--sticky");
+
+        /// <summary>
+        /// The USS class name of an item element that is marked as sticky and currently stuck at the top.
+        /// </summary>
+        internal static readonly UniqueStyleString stuckUssClassName = new(BaseVerticalCollectionView.itemUssClassName + "--stuck");
+
         /// <summary>
         /// Constructs a CollectionView.
         /// </summary>
@@ -350,11 +401,22 @@ namespace UnityEngine.UIElements.HierarchyV2
             AddToClassList(BaseVerticalCollectionView.ussClassNameUnique);
 
             m_ScrollView = new ScrollContainer { focusable = true };
-            m_Container = m_ScrollView.contentContainer;
+            m_Container = new VisualElement { name = "container", pickingMode = PickingMode.Ignore, style = { flexGrow = 1 } };
+            m_ContainerClip = new VisualElement { name = "container-clip", pickingMode = PickingMode.Ignore, style = { overflow = Overflow.Hidden, flexGrow = 1 } };
             m_VerticalScroller = m_ScrollView.verticalScroller;
             m_VerticalScroller.RegisterValueChangedCallback(OnVerticalScrollingChangeEvent);
             m_HorizontalScroller = m_ScrollView.horizontalScroller;
             m_HorizontalScroller.RegisterValueChangedCallback(OnHorizontalScrollerChangeEvent);
+
+            m_ContainerClip.Add(m_Container);
+            m_StickyRowContainer = new VisualElement
+            {
+                name = "sticky-row-container",
+                style = { position = Position.Absolute, top = 0, left = 0, right = 0 }
+            };
+            m_ScrollView.contentContainer.Add(m_ContainerClip);
+            m_ScrollView.contentContainer.Add(m_StickyRowContainer);
+            stickyRowController = new StickyRowController();
 
             Add(m_ScrollView);
 
@@ -400,6 +462,18 @@ namespace UnityEngine.UIElements.HierarchyV2
                 m_ScrollScheduledItem.Pause();
                 m_ScrollScheduledItem = null;
             }
+        }
+
+        void SetStickyHeight(float height)
+        {
+            m_StickyHeight = height;
+            m_StickyRowContainer.style.height = height;
+            m_Container.style.marginTop = height;
+        }
+
+        void OnStickyRowStateChanged(int index, bool enabled)
+        {
+            ScheduleRefreshItems();
         }
 
         void OnVerticalScrollingChangeEvent(ChangeEvent<double> evt)
@@ -481,6 +555,8 @@ namespace UnityEngine.UIElements.HierarchyV2
                 {
                     MultiColumnLayout.UpdateRowCellsWidth(displayItem.element);
                 }
+
+                UpdateStickyRowWidth();
             });
         }
 
@@ -530,9 +606,13 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void ContainerSizeChanged(float height, float width)
         {
-            if (!Mathf.Approximately(m_LastHeight, height))
+            var containerHeight = m_Container.resolvedStyle.height;
+            if (float.IsNaN(containerHeight))
+                containerHeight = height;
+
+            if (!Mathf.Approximately(m_LastHeight, containerHeight))
             {
-                m_LastHeight = height;
+                m_LastHeight = containerHeight;
                 RefreshItems();
             }
         }
@@ -545,7 +625,10 @@ namespace UnityEngine.UIElements.HierarchyV2
             var index = item.index;
             item.index = -1;
 
-            m_IndexToItemDictionary.Remove(index);
+            // Only remove from dictionary if this item is the one mapped to this index.
+            if (m_IndexToItemDictionary.TryGetValue(index, out var existing) && ReferenceEquals(existing, item))
+                m_IndexToItemDictionary.Remove(index);
+
             layoutConfiguration.unbindCell?.Invoke(item.element, index);
         }
 
@@ -568,7 +651,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             item.ClearHoverState();
             item.element.style.height = fixedItemHeight;
             item.index = index;
-            m_IndexToItemDictionary.Add(index, item);
+            item.SetSticky(stickyRowController != null && stickyRowController.IsSticky(index));
 
             if (index >= 0 && index < itemsSource.Count)
                 layoutConfiguration.bindCell?.Invoke(item.element, index);
@@ -597,6 +680,27 @@ namespace UnityEngine.UIElements.HierarchyV2
                 m_RebuildScheduled = schedule.Execute(Rebuild);
             else if (!m_RebuildScheduled.isActive)
                 m_RebuildScheduled.Resume();
+
+            m_RefreshScheduled?.Pause();
+        }
+
+        /// <summary>
+        /// Schedules a call to <see cref="RefreshItems"/>.
+        /// Good for when you want to make multiple changes that will each require a refresh.
+        /// Calling this method multiple times will only schedule one rebuild.
+        /// </summary>
+        public void ScheduleRefreshItems()
+        {
+            if (m_RebuildScheduled?.isActive == true)
+            {
+                // No need as we are doing a full rebuild.
+                return;
+            }
+
+            if (m_RefreshScheduled == null)
+                m_RefreshScheduled = schedule.Execute(RefreshItems);
+            else if (!m_RefreshScheduled.isActive)
+                m_RefreshScheduled.Resume();
         }
 
         /// <summary>
@@ -610,6 +714,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         public void RefreshItems()
         {
             BeforeRefreshingItems?.Invoke();
+            m_RefreshScheduled?.Pause();
 
             // Clean up all items if itemsSource is null or empty, or makeCell is null
             if (itemsSource == null || layoutConfiguration?.makeCell == null || itemsSource.Count == 0)
@@ -630,14 +735,14 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (float.IsNaN(height))
                 return;
 
-            m_LastHeight = height;
+            m_LastHeight = height + m_StickyHeight;
 
             var numberOfVisibleItems = (int)(m_Container.layoutSize.y / fixedItemHeight);
             if (itemsSource.Count - 1 < numberOfVisibleItems)
                 m_ScrollValue = 0;
 
             var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
-            var maxScrollRange = rangeEstimate > height ? Math.Abs(rangeEstimate - height) : 0;
+            var maxScrollRange = rangeEstimate > m_LastHeight ? Math.Abs(rangeEstimate - m_LastHeight) : 0;
             m_VerticalScroller.style.display = rangeEstimate > height - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
             SetScrollingParameters(m_ScrollValue, maxScrollRange);
             BindVisibleItems(true);
@@ -670,6 +775,13 @@ namespace UnityEngine.UIElements.HierarchyV2
             while (m_FreeList.Count > 0)
             {
                 ClearItem(m_FreeList.First);
+            }
+
+            if (m_StickyRow != null)
+            {
+                UnbindItem(m_StickyRow);
+                RecycledItem.Recycle(m_StickyRow);
+                m_StickyRow = null;
             }
 
             RecycledItem.ClearItemPool();
@@ -712,9 +824,9 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             m_LastFocusedElementTreeChildIndexes.Clear();
 
-            if (m_ScrollView.contentContainer.FindElementInTree(leafTarget, m_LastFocusedElementTreeChildIndexes))
+            if (m_Container.FindElementInTree(leafTarget, m_LastFocusedElementTreeChildIndexes))
             {
-                var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
+                var recycledElement = m_Container[m_LastFocusedElementTreeChildIndexes[0]];
                 foreach (var recycledItem in m_IndexToItemDictionary.Values)
                 {
                     if (recycledItem.element == recycledElement)
@@ -774,40 +886,25 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void UpdateVerticalScrollRange()
         {
-            var firstVisibleIndex = 0;
-            var lastVisibleIndex = -1;
+            if (m_DisplayedList.Count == 0 || itemsSource == null)
+                return;
 
-            if (m_DisplayedList.Count > 0)
-            {
-                firstVisibleIndex = m_DisplayedList.First.Value.index;
-                var current = m_DisplayedList.First;
+            m_VerticalScroller.scrollSize = k_DefaultScrollSize;
 
-                // We update the scrolling speed so we scroll down by 1/2 of a standard item per click
-                m_VerticalScroller.scrollSize = k_DefaultScrollSize * fixedItemHeight / fixedItemHeight;
-
-                var lastVisibleItem = m_DisplayedList.First;
-                var maxOffset = m_LastHeight - m_ScrollView.containerOffset.y;
-
-                while (current != null && current.Value.verticalOffset + fixedItemHeight < maxOffset)
-                {
-                    lastVisibleItem = current;
-                    current = current.Next;
-                }
-
-                if (lastVisibleItem != null)
-                    lastVisibleIndex = lastVisibleItem.Value.index;
-            }
+            var firstVisibleIndex = (int)(m_ScrollValue / fixedItemHeight);
+            var maxOffset = m_LastHeight - m_ScrollView.containerOffset.y;
+            var visibleCount = (int)Mathf.Ceil(maxOffset / fixedItemHeight);
+            var lastVisibleIndex = firstVisibleIndex + visibleCount - 1;
+            lastVisibleIndex = Mathf.Min(lastVisibleIndex, itemsSource.Count - 1);
 
             var visibleRange = lastVisibleIndex - firstVisibleIndex + 1;
-            if (visibleRange > 0 && itemsSource != null)
-            {
-                // This cast is required for the floating precision which causes the incorrect drag element's height
-                var ratio = (double)visibleRange / itemsSource.Count;
-                var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
-                // In the events that we go through this code path outside the refresh
-                m_VerticalScroller.style.display = rangeEstimate > m_Container.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
-                m_VerticalScroller.factor = (float) (Math.Abs(ratio - 1) < UIRUtility.k_Epsilon ? m_ScrollView.viewport.layout.height / m_Container.boundingBox.height : ratio);
-            }
+            if (visibleRange <= 0)
+                return;
+
+            var ratio = (double)visibleRange / itemsSource.Count;
+            var rangeEstimate = (double)fixedItemHeight * itemsSource.Count;
+            m_VerticalScroller.style.display = rangeEstimate > m_Container.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
+            m_VerticalScroller.factor = (float)(Math.Abs(ratio - 1) < UIRUtility.k_Epsilon ? m_ScrollView.viewport.layout.height / m_Container.boundingBox.height : ratio);
         }
 
         void UpdateHorizontalScrollRange()
@@ -836,11 +933,75 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_HorizontalScroller.factor = maxWidth > UIRUtility.k_Epsilon ? containerWidth / maxWidth : 1f;
         }
 
+        void BindStickyRow(int index, bool forceRebind = false)
+        {
+            var stickyRowItem = GetOrCreateStickyRow();
+            if (!forceRebind && stickyRowItem.index == index)
+                return;
+
+            if (stickyRowItem.index != -1)
+                UnbindItem(stickyRowItem);
+
+            if (stickyRowItem.element.parent == null)
+                m_StickyRowContainer.Add(stickyRowItem.element);
+
+            SetStickyHeight(fixedItemHeight);
+            BindItem(stickyRowItem, index);
+            stickyRowItem.SetSticky(false, true);
+        }
+
+        void UnbindStickyRow()
+        {
+            if (m_StickyRow == null || m_StickyRow.index == -1)
+                return;
+
+            UnbindItem(m_StickyRow);
+            m_StickyRow.element.RemoveFromHierarchy();
+            SetStickyHeight(0);
+        }
+
+        void UpdateStickyRowWidth()
+        {
+            if (!hasActiveStickyRow || MultiColumnLayout == null)
+                return;
+
+            var headerWidth = MultiColumnLayout.header.worldBoundingBox.width;
+            if (!Mathf.Approximately(m_StickyRow.element.resolvedStyle.width, headerWidth))
+                m_StickyRow.element.style.width = headerWidth;
+        }
+
         void BindVisibleItems(bool forceBindItem = false)
         {
             var height = m_LastHeight;
             var visibleCount = (int)Mathf.Ceil(height / fixedItemHeight) + 3;
+            var animatedStickyRow = -1;
+
             m_FirstVisibleItemIndex = (int)(m_ScrollValue / fixedItemHeight);
+
+            if (stickyRowController != null)
+            {
+                var currentStickyItem = stickyRowController.GetPreviousStickyIndex(m_FirstVisibleItemIndex);
+                var nextItemIsSticky = stickyRowController.IsSticky(m_FirstVisibleItemIndex + 1);
+                var stickyIsScrolledUnder = currentStickyItem != -1 && m_ScrollValue > currentStickyItem * fixedItemHeight;
+
+                if (stickyIsScrolledUnder && !nextItemIsSticky)
+                {
+                    BindStickyRow(currentStickyItem, forceBindItem);
+                }
+                else if (stickyIsScrolledUnder)
+                {
+                    UnbindStickyRow();
+                    animatedStickyRow = currentStickyItem;
+                    m_FirstVisibleItemIndex++;
+                    visibleCount--;
+                }
+                else
+                {
+                    UnbindStickyRow();
+                }
+
+                UpdateStickyRowWidth();
+            }
 
             // The items should be in the map, we swap the refresh and the displayed list
             (m_DisplayedList, m_RefreshList) = (m_RefreshList, m_DisplayedList);
@@ -874,6 +1035,20 @@ namespace UnityEngine.UIElements.HierarchyV2
                 }
             }
 
+            // Add the animated sticky item to the top
+            if (animatedStickyRow != -1)
+            {
+                AddElementFromIndex(animatedStickyRow);
+
+                // Switch to stuck class
+                if (m_IndexToItemDictionary.TryGetValue(animatedStickyRow, out var row))
+                {
+                    row.SetSticky(false, true);
+                    var offVertical = (float)(m_ScrollValue % fixedItemHeight);
+                    row.verticalOffset = -offVertical;
+                }
+            }
+
             AddElementsFromIndex(m_FirstVisibleItemIndex, visibleCount, forceBindItem);
 
             foreach (var item in m_FreeList)
@@ -892,40 +1067,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (index < 0 || index > itemsSource.Count - 1)
                     continue;
 
-                if (m_IndexToItemDictionary.TryGetValue(index, out var itemWrapper))
-                {
-                    // We already have this somewhere therefore we remove it from the Free/RefreshLists
-                    itemWrapper.node.List?.Remove(itemWrapper.node);
-                }
-                else
-                {
-                    if (m_FreeList.Count > 0)
-                    {
-                        itemWrapper = m_FreeList.First.Value;
-                        m_FreeList.RemoveFirst();
-                    }
-                    else
-                    {
-                        var itemElement = layoutConfiguration.makeCell?.Invoke();
-                        itemWrapper = RecycledItem.AllocateItem(itemElement, this);
-                        m_Container.Add(itemElement);
-                    }
-                }
-
-                if (forceBindItem || itemWrapper.index != index)
-                {
-                    BindItem(itemWrapper, index);
-                }
-                else
-                {
-                    // Item is reused for the same index - update width to match current column widths
-                    MultiColumnLayout?.UpdateRowCellsWidth(itemWrapper.element);
-                }
-
-                // Since we are hiding the reusable items instead of removing it, we need to make them visible again.
-                itemWrapper.element.style.display = DisplayStyle.Flex;
-
-                m_DisplayedList.AddLast(itemWrapper.node);
+                AddElementFromIndex(index, forceBindItem);
             }
 
             UpdateContainerOffset();
@@ -936,12 +1078,49 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
         }
 
+        void AddElementFromIndex(int index, bool forceBindItem = false)
+        {
+            if (m_IndexToItemDictionary.TryGetValue(index, out var itemWrapper))
+            {
+                // We already have this somewhere therefore we remove it from the Free/RefreshLists
+                itemWrapper.node.List?.Remove(itemWrapper.node);
+            }
+            else
+            {
+                if (m_FreeList.Count > 0)
+                {
+                    itemWrapper = m_FreeList.First.Value;
+                    m_FreeList.RemoveFirst();
+                }
+                else
+                {
+                    var itemElement = layoutConfiguration.makeCell?.Invoke();
+                    itemWrapper = RecycledItem.AllocateItem(itemElement, this);
+                    m_Container.Add(itemElement);
+                }
+            }
+
+            if (forceBindItem || itemWrapper.index != index)
+            {
+                BindItem(itemWrapper, index);
+                m_IndexToItemDictionary.Add(index, itemWrapper);
+            }
+            else
+            {
+                // Item is reused for the same index - update width to match current column widths
+                MultiColumnLayout?.UpdateRowCellsWidth(itemWrapper.element);
+            }
+
+            // Since we are hiding the reusable items instead of removing it, we need to make them visible again.
+            itemWrapper.element.style.display = DisplayStyle.Flex;
+
+            m_DisplayedList.AddLast(itemWrapper.node);
+        }
+
         void UpdateContainerOffset()
         {
             var offset = m_ScrollView.containerOffset;
-            var offVertical = (float)(m_ScrollValue % fixedItemHeight);
-            offset.y = offVertical;
-            // If there's a scrollable space, we retain the old offset, otherwise we reset to 0.
+            offset.y = m_StickyHeight;
             offset.x = m_HorizontalScroller.highValue > 0 ? offset.x : 0;
             m_ScrollView.containerOffset = offset;
         }
@@ -951,54 +1130,39 @@ namespace UnityEngine.UIElements.HierarchyV2
             UpdateHorizontalScrollRange();
 
             var item = m_DisplayedList.Last;
-            if (item != null)
+            if (item == null)
+                return;
+
+            var itemValue = item.Value;
+            var offset = -m_Container.resolvedStyle.translate.y - m_StickyHeight;
+            var bottom = itemValue.verticalOffset + fixedItemHeight;
+            var height = m_LastHeight;
+
+            if (itemValue.isLastItem)
             {
-                var itemValue = item.Value;
-                var offset = m_ScrollView.containerOffset.y;
-                var bottom = itemValue.verticalOffset + fixedItemHeight;
-                var height = m_Container.resolvedStyle.height;
-
-                if (itemValue.isLastItem)
-                {
-                    var firstItemCandidate = item;
-                    var currentSpace = height;
-                    var currentTop = currentSpace - fixedItemHeight;
-
-                    while (currentTop > 0 && firstItemCandidate.Previous != null)
-                    {
-                        firstItemCandidate = firstItemCandidate.Previous;
-                        currentTop -= fixedItemHeight;
-                    }
-
-                    if (currentTop <= 0)
-                    {
-                        // We get the ratio of the first visible item
-                        var ratio = -currentTop / fixedItemHeight;
-                        var firstID = firstItemCandidate.Value.index;
-                        var totalRange = (firstID + ratio) * fixedItemHeight;
-                        SetScrollingParameters(Math.Min(m_ScrollValue, totalRange), totalRange);
-                    }
-                }
-                else
-                {
-                    // Here we used to set the average item height but turns out we don't really need it
-                    // we make sure that there is no empty space left without content
-                    if (bottom + offset < (height - k_Buffer))
-                    {
-                        var emptySpace = height - (bottom - offset);
-                        var toAdd = Mathf.CeilToInt(emptySpace / fixedItemHeight);
-                        toAdd = Math.Clamp(toAdd, 0, itemsSource.Count - itemValue.index - 1);
-
-                        if (toAdd > 0)
-                        {
-                            AddElementsFromIndex(itemValue.index + 1, toAdd);
-                            return;
-                        }
-                    }
-                }
-
-                UpdateVerticalScrollRange();
+                var visibleHeight = m_ScrollView.viewport.layout.height;
+                var totalRange = Math.Max(0, itemsSource.Count * fixedItemHeight - visibleHeight);
+                SetScrollingParameters(Math.Min(m_ScrollValue, totalRange), totalRange);
             }
+            else
+            {
+                // Here we used to set the average item height but turns out we don't really need it
+                // we make sure that there is no empty space left without content
+                if (bottom + offset < (height - k_Buffer))
+                {
+                    var emptySpace = height - (bottom - offset);
+                    var toAdd = Mathf.CeilToInt(emptySpace / fixedItemHeight);
+                    toAdd = Math.Clamp(toAdd, 0, itemsSource.Count - itemValue.index - 1);
+
+                    if (toAdd > 0)
+                    {
+                        AddElementsFromIndex(itemValue.index + 1, toAdd);
+                        return;
+                    }
+                }
+            }
+
+            UpdateVerticalScrollRange();
         }
 
         /// <summary>
@@ -1009,6 +1173,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         public int GetIndexFromPosition(Vector2 position)
         {
             var itemHeight = AlignmentUtils.RoundToPixelGrid(fixedItemHeight, scaledPixelsPerPoint);
+
+            if (hasActiveStickyRow && position.y < itemHeight)
+                return m_StickyRow.index;
+
             var positionY = m_ScrollValue + position.y;
             return (int)(positionY / itemHeight);
         }
@@ -1030,11 +1198,25 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             if (m_FirstVisibleItemIndex >= index)
             {
+                if (hasActiveStickyRow && stickyRowController.GetPreviousStickyIndex(index - 1) != -1)
+                {
+                    // When scrolling the item to the top, it can appear behind the stuck row.
+                    // So scroll to the 1 before so the index item is visible.
+                    index = Mathf.Max(0, index - 1);
+                }
+
                 UpdateVerticalScrollValue(fixedItemHeight * index);
                 return;
             }
 
-            var containerHeight = m_Container.layoutSize.y;
+            // Initial frame-to-selection can fire before RefreshItems configures the scroller's high value.
+            if (m_LastHeight <= 0)
+            {
+                schedule.Execute(() => ScrollToItem(index));
+                return;
+            }
+
+            var containerHeight = m_Container.layoutSize.y + m_StickyHeight;
             var numberOfVisibleItems = (int)(containerHeight / fixedItemHeight);
             if (index < m_FirstVisibleItemIndex + numberOfVisibleItems)
                 return;
@@ -1051,6 +1233,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <returns>The item's root element.</returns>
         public VisualElement GetRootElementForIndex(int index)
         {
+            if (m_StickyRow != null && m_StickyRow.index == index)
+                return m_StickyRow.element;
+
             foreach (var item in m_DisplayedList)
             {
                 if (item.index == index)
@@ -1286,6 +1471,9 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_IndexToItemDictionary.TryGetValue(index, out var recycleItem))
                 recycleItem.SetSelected(false);
 
+            if (m_StickyRow != null && m_StickyRow.index == index)
+                m_StickyRow.SetSelected(false);
+
             m_Selection.Remove(index);
             NotifyOfSelectionChange();
             SaveViewData();
@@ -1373,10 +1561,14 @@ namespace UnityEngine.UIElements.HierarchyV2
             foreach (var (_, recycledItem) in m_IndexToItemDictionary)
                 recycledItem.SetSelected(false);
 
+            m_StickyRow?.SetSelected(false);
+
             foreach (var index in indices)
             {
                 if (m_IndexToItemDictionary.TryGetValue(index, out var recycleItem))
                     recycleItem.SetSelected(true);
+                if (m_StickyRow != null && m_StickyRow.index == index)
+                    m_StickyRow.SetSelected(true);
             }
 
             if (sendNotification)
@@ -1402,6 +1594,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             foreach (var (_, recycledItem) in m_IndexToItemDictionary)
                 recycledItem.SetSelected(false);
 
+            m_StickyRow?.SetSelected(false);
             m_Selection.Clear();
         }
 
@@ -1511,6 +1704,9 @@ namespace UnityEngine.UIElements.HierarchyV2
                 recycledItem.SetSelected(true);
             }
 
+            if (m_StickyRow != null && m_StickyRow.index >= 0)
+                m_StickyRow.SetSelected(true);
+
             NotifyOfSelectionChange();
             SaveViewData();
         }
@@ -1583,8 +1779,27 @@ namespace UnityEngine.UIElements.HierarchyV2
                     HandleSelectionAndScroll(0);
                     return true;
                 case KeyboardNavigationOperation.End:
-                    HandleSelectionAndScroll(itemsSource.Count - 1);
+                {
+                    var lastIndex = itemsSource.Count - 1;
+                    if (lastIndex < 0)
+                        return true;
+
+                    // Sync selection (listeners read it immediately); defer scroll so the sticky row can settle.
+                    if (selectionType == SelectionType.Multiple && shiftKey && m_Selection.indexCount != 0)
+                        DoRangeSelection(lastIndex);
+                    else
+                    {
+                        m_RangeSelectionDirection = RangeSelectionDirection.None;
+                        m_Selection.selectedIndex = lastIndex;
+                    }
+
+                    if (m_StickyRowController != null)
+                        schedule.Execute(() => ScrollToItem(lastIndex));
+                    else
+                        ScrollToItem(lastIndex);
+
                     return true;
+                }
                 case KeyboardNavigationOperation.PageDown:
                 {
                     if (m_DisplayedList.Count == 0)
@@ -1595,7 +1810,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
                     var selectionDown = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
                     var itemHeight = fixedItemHeight;
-                    var containerHeight = m_Container.layoutSize.y;
+                    var containerHeight = m_Container.layoutSize.y + m_StickyHeight;
                     var containerBottom = m_VerticalScroller.value + containerHeight;
                     var maxIndex = itemsSource.Count - 1;
                     var lastVisibleIndex = (int)(containerBottom / itemHeight);
@@ -1607,6 +1822,10 @@ namespace UnityEngine.UIElements.HierarchyV2
                     var targetIndex = (m_Selection.indexCount == 0 || selectionDown < lastVisibleIndex - 1) ? lastVisibleIndex : (selectionDown + pageSize > maxIndex ? maxIndex : selectionDown + pageSize);
 
                     HandleSelectionAndScroll(targetIndex);
+
+                    if (m_StickyRowController != null)
+                        schedule.Execute(() => ScrollToItem(targetIndex));
+
                     return true;
                 }
                 case KeyboardNavigationOperation.PageUp:
@@ -1620,7 +1839,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     var selectionUp = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
                     var scrollOffset = m_VerticalScroller.value;
                     var itemHeight = fixedItemHeight;
-                    var containerHeight = m_Container.layoutSize.y;
+                    var containerHeight = m_Container.layoutSize.y + m_StickyHeight;
                     var firstVisibleIndex = (int)(scrollOffset / itemHeight);
                     var pageSize = (int)(containerHeight / itemHeight);
 
@@ -1654,4 +1873,3 @@ namespace UnityEngine.UIElements.HierarchyV2
         }
     }
 }
-

@@ -472,12 +472,14 @@ namespace UnityEngine.UIElements
             requiresReinsertion = true;
         }
 
+        bool IsActiveAndEnabled() => enabled && gameObject.activeInHierarchy;
+
         internal void RefreshAssets()
         {
             if (panelSettings != previousPanelSettings)
                 previousPanelSettings?.DetachPanelComponent(this);
 
-            if (!enabled)
+            if (!IsActiveAndEnabled())
                 return;
 
             bool visualTreeAssetChanged = visualTreeAsset != previousVisualTreeAsset;
@@ -571,7 +573,7 @@ namespace UnityEngine.UIElements
 
         internal void AddRootVisualElementToTree()
         {
-            if (!enabled)
+            if (!IsActiveAndEnabled())
                 return;
 
             // If we do have a parent, it will add us.
@@ -608,7 +610,7 @@ namespace UnityEngine.UIElements
 
         internal void ReactToHierarchyChanges()
         {
-            if (!enabled)
+            if (!IsActiveAndEnabled())
                 return;
 
             if (requiresReinsertion)

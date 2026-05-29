@@ -192,6 +192,24 @@ namespace UnityEngine.UIElements
 
         /// <summary>The optional callback to compute the required write margins for the effect.</summary>
         public ComputeRequiredMarginsDelegate computeRequiredWriteMarginsCallback { get; set; }
+
+        [SerializeField]
+        private string m_OutputTextureName;
+
+        // Optional name for the texture this pass writes, a later pass in the same filter can set its requiredTextureInput to this
+        internal string outputTextureName {
+            get => m_OutputTextureName;
+            set => m_OutputTextureName = value;
+        }
+
+        [SerializeField]
+        private string m_RequiredInputTextureName;
+
+        // Name of a texture this pass needs bound. Must match the outputTextureName of an earlier pass
+        internal string requiredInputTextureName {
+            get => m_RequiredInputTextureName;
+            set => m_RequiredInputTextureName = value;
+        }
     }
 
     /// <summary>The context of the filter.</summary>

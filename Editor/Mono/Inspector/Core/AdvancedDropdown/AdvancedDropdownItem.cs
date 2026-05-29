@@ -79,6 +79,7 @@ namespace UnityEditor.IMGUI.Controls
 
         /// <summary>
         /// Adds a child item to this item. The child's Id will be computed based on the parent's ID and the child's name to ensure uniqueness.
+        /// If you wish to use a custom ID, assign <see cref="id"/> to the child after calling this method.
         /// </summary>
         /// <param name="child"></param>
         public void AddChild(AdvancedDropdownItem child)

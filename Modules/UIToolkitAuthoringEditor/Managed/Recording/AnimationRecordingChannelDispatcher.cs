@@ -86,7 +86,7 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
-                case StylePropertyRecordingChannel.Translate3:
+                case StylePropertyRecordingChannel.Translate5:
                     if (typeof(T) == typeof(StyleTranslate))
                     {
                         cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, StyleTranslate>(ref v).value);
@@ -108,6 +108,34 @@ namespace Unity.UIToolkit.Editor
                     {
                         var v3 = Unsafe.As<T, Vector3>(ref v);
                         cs.ApplyPropertyAnimation(element, id, new Translate(Length.Pixels(v3.x), Length.Pixels(v3.y), v3.z));
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.TransformOrigin4:
+                    // 4 channels: x.value, x.unit, y.value, y.unit. Z is preserved from the
+                    // current computed style because UIElements doesn't animate Z origin.
+                    if (typeof(T) == typeof(StyleTransformOrigin))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, StyleTransformOrigin>(ref v).value);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(TransformOrigin))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, TransformOrigin>(ref v));
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Vector2))
+                    {
+                        var v2 = Unsafe.As<T, Vector2>(ref v);
+                        var cur = cs.ReadPropertyAnimationTransformOrigin(id);
+                        cs.ApplyPropertyAnimation(element, id, new TransformOrigin(Length.Pixels(v2.x), Length.Pixels(v2.y), cur.z));
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Vector3))
+                    {
+                        var v3 = Unsafe.As<T, Vector3>(ref v);
+                        cs.ApplyPropertyAnimation(element, id, new TransformOrigin(Length.Pixels(v3.x), Length.Pixels(v3.y), v3.z));
                         return true;
                     }
                     return false;
@@ -208,6 +236,114 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
+                case StylePropertyRecordingChannel.Filter:
+                    // Filter recordings carry the whole list. ApplyPropertyAnimation copies it
+                    // into rareData via filter.CopyFrom, matching the per-channel sample path.
+                    if (typeof(T) == typeof(StyleList<FilterFunction>))
+                    {
+                        var sl = Unsafe.As<T, StyleList<FilterFunction>>(ref v);
+                        if (sl.keyword != StyleKeyword.Undefined)
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, sl.value);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(List<FilterFunction>))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, List<FilterFunction>>(ref v));
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.Object1:
+                    // PPtr style values flow through ComputedStyle as EntityId.
+                    if (typeof(T) == typeof(StyleBackground))
+                    {
+                        var sb = Unsafe.As<T, StyleBackground>(ref v);
+                        if (sb.keyword != StyleKeyword.Undefined)
+                            return false;
+                        Background.To(sb.value, out var sbId);
+                        cs.ApplyPropertyAnimation(element, id, sbId);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Background))
+                    {
+                        Background.To(Unsafe.As<T, Background>(ref v), out var bgId);
+                        cs.ApplyPropertyAnimation(element, id, bgId);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(StyleFont))
+                    {
+                        var sf = Unsafe.As<T, StyleFont>(ref v);
+                        if (sf.keyword != StyleKeyword.Undefined)
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, sf.value?.GetEntityId() ?? EntityId.None);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Font))
+                    {
+                        var font = Unsafe.As<T, Font>(ref v);
+                        cs.ApplyPropertyAnimation(element, id, font?.GetEntityId() ?? EntityId.None);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(StyleFontDefinition))
+                    {
+                        var sfd = Unsafe.As<T, StyleFontDefinition>(ref v);
+                        if (sfd.keyword != StyleKeyword.Undefined)
+                            return false;
+                        FontDefinition.To(sfd.value, out var sfdId);
+                        cs.ApplyPropertyAnimation(element, id, sfdId);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(FontDefinition))
+                    {
+                        FontDefinition.To(Unsafe.As<T, FontDefinition>(ref v), out var fdId);
+                        cs.ApplyPropertyAnimation(element, id, fdId);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(StyleMaterialDefinition))
+                    {
+                        var smd = Unsafe.As<T, StyleMaterialDefinition>(ref v);
+                        if (smd.keyword != StyleKeyword.Undefined)
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, smd.value);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(MaterialDefinition))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, MaterialDefinition>(ref v));
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Material))
+                    {
+                        // MaterialDefinition's EntityId-only path leaves UnmanagedMaterialDefinition's
+                        // property-value buffer empty; route through the typed overload so the
+                        // material's property block survives.
+                        cs.ApplyPropertyAnimation(element, id, new MaterialDefinition(Unsafe.As<T, Material>(ref v)));
+                        return true;
+                    }
+                    if (typeof(T) == typeof(EntityId))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, EntityId>(ref v));
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.TextShadow7:
+                    if (typeof(T) == typeof(StyleTextShadow))
+                    {
+                        var sts = Unsafe.As<T, StyleTextShadow>(ref v);
+                        if (sts.keyword != StyleKeyword.Undefined)
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, sts.value);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(TextShadow))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, TextShadow>(ref v));
+                        return true;
+                    }
+                    return false;
+
                 default:
                     return false;
             }
@@ -295,7 +431,7 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
-                case StylePropertyRecordingChannel.Translate3:
+                case StylePropertyRecordingChannel.Translate5:
                     if (typeof(T) == typeof(StyleTranslate))
                     {
                         var tmp = new StyleTranslate(cs.ReadPropertyAnimationTranslate(stylePropertyId));
@@ -306,6 +442,21 @@ namespace Unity.UIToolkit.Editor
                     {
                         var tmp = cs.ReadPropertyAnimationTranslate(stylePropertyId);
                         previousValue = Unsafe.As<Translate, T>(ref tmp);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.TransformOrigin4:
+                    if (typeof(T) == typeof(StyleTransformOrigin))
+                    {
+                        var tmp = new StyleTransformOrigin(cs.ReadPropertyAnimationTransformOrigin(stylePropertyId));
+                        previousValue = Unsafe.As<StyleTransformOrigin, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(TransformOrigin))
+                    {
+                        var tmp = cs.ReadPropertyAnimationTransformOrigin(stylePropertyId);
+                        previousValue = Unsafe.As<TransformOrigin, T>(ref tmp);
                         return true;
                     }
                     return false;
@@ -406,6 +557,108 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
+                case StylePropertyRecordingChannel.Filter:
+                    // Snapshot lives on UIAnimationBinder; the underlying RareData /
+                    // UnmanagedRefCountedList<UnmanagedFilterFunction> types are not visible here.
+                    if (typeof(T) == typeof(StyleList<FilterFunction>))
+                    {
+                        var snapshot = UIAnimationBinder.ReadFilterListSnapshot(element);
+                        var tmp = new StyleList<FilterFunction>(snapshot);
+                        previousValue = Unsafe.As<StyleList<FilterFunction>, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(List<FilterFunction>))
+                    {
+                        var snapshot = UIAnimationBinder.ReadFilterListSnapshot(element);
+                        previousValue = Unsafe.As<List<FilterFunction>, T>(ref snapshot);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.Object1:
+                    if (typeof(T) == typeof(StyleBackground))
+                    {
+                        var tmp = new StyleBackground(Background.From(cs.ReadPropertyAnimationEntityId(stylePropertyId)));
+                        previousValue = Unsafe.As<StyleBackground, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Background))
+                    {
+                        var tmp = Background.From(cs.ReadPropertyAnimationEntityId(stylePropertyId));
+                        previousValue = Unsafe.As<Background, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(StyleFont))
+                    {
+                        var tmp = new StyleFont((Font)Resources.EntityIdToObject(cs.ReadPropertyAnimationEntityId(stylePropertyId)));
+                        previousValue = Unsafe.As<StyleFont, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Font))
+                    {
+                        var tmp = (Font)Resources.EntityIdToObject(cs.ReadPropertyAnimationEntityId(stylePropertyId));
+                        previousValue = Unsafe.As<Font, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(StyleFontDefinition))
+                    {
+                        var tmp = new StyleFontDefinition(FontDefinition.From(cs.ReadPropertyAnimationEntityId(stylePropertyId)));
+                        previousValue = Unsafe.As<StyleFontDefinition, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(FontDefinition))
+                    {
+                        var tmp = FontDefinition.From(cs.ReadPropertyAnimationEntityId(stylePropertyId));
+                        previousValue = Unsafe.As<FontDefinition, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(StyleMaterialDefinition))
+                    {
+                        var tmp = new StyleMaterialDefinition(MaterialDefinition.From(cs.unityMaterial));
+                        previousValue = Unsafe.As<StyleMaterialDefinition, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(MaterialDefinition))
+                    {
+                        var tmp = MaterialDefinition.From(cs.unityMaterial);
+                        previousValue = Unsafe.As<MaterialDefinition, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Material))
+                    {
+                        var tmp = (Material)Resources.EntityIdToObject(cs.unityMaterial.material);
+                        previousValue = Unsafe.As<Material, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(EntityId))
+                    {
+                        // unity-material is the only MaterialDefinition-kind property today;
+                        // ReadPropertyAnimationEntityId throws for it because the channel value
+                        // is fetched from UnmanagedMaterialDefinition rather than a plain
+                        // EntityId field.
+                        var tmp = stylePropertyId == StylePropertyId.UnityMaterial
+                            ? cs.unityMaterial.material
+                            : cs.ReadPropertyAnimationEntityId(stylePropertyId);
+                        previousValue = Unsafe.As<EntityId, T>(ref tmp);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.TextShadow7:
+                    if (typeof(T) == typeof(StyleTextShadow))
+                    {
+                        var tmp = new StyleTextShadow(cs.ReadPropertyAnimationTextShadow(stylePropertyId));
+                        previousValue = Unsafe.As<StyleTextShadow, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(TextShadow))
+                    {
+                        var tmp = cs.ReadPropertyAnimationTextShadow(stylePropertyId);
+                        previousValue = Unsafe.As<TextShadow, T>(ref tmp);
+                        return true;
+                    }
+                    return false;
+
                 default:
                     return false;
             }
@@ -413,7 +666,7 @@ namespace Unity.UIToolkit.Editor
 
         internal static bool TryBuildModifications<T>(
             StylePropertyRecordingChannel channel,
-            PanelRenderer panelRenderer,
+            UnityEngine.Object target,
             string elementPath,
             StylePropertyId stylePropertyId,
             string propName,
@@ -429,12 +682,12 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyRecordingChannel.Float1:
                     if (typeof(T) == typeof(float))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Unsafe.As<T, float>(ref p), Unsafe.As<T, float>(ref c));
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Unsafe.As<T, float>(ref p), Unsafe.As<T, float>(ref c));
                         return true;
                     }
                     if (typeof(T) == typeof(StyleFloat))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Unsafe.As<T, StyleFloat>(ref p).value, Unsafe.As<T, StyleFloat>(ref c).value);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Unsafe.As<T, StyleFloat>(ref p).value, Unsafe.As<T, StyleFloat>(ref c).value);
                         return true;
                     }
                     return false;
@@ -444,36 +697,34 @@ namespace Unity.UIToolkit.Editor
                     {
                         var prevDeg = Unsafe.As<T, StyleRotate>(ref p).value.angle.ToDegrees();
                         var curDeg = Unsafe.As<T, StyleRotate>(ref c).value.angle.ToDegrees();
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, prevDeg, curDeg);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, prevDeg, curDeg);
                         return true;
                     }
                     if (typeof(T) == typeof(Rotate))
                     {
                         var prevDeg = Unsafe.As<T, Rotate>(ref p).angle.ToDegrees();
                         var curDeg = Unsafe.As<T, Rotate>(ref c).angle.ToDegrees();
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, prevDeg, curDeg);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, prevDeg, curDeg);
                         return true;
                     }
                     if (typeof(T) == typeof(float))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Unsafe.As<T, float>(ref p), Unsafe.As<T, float>(ref c));
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Unsafe.As<T, float>(ref p), Unsafe.As<T, float>(ref c));
                         return true;
                     }
                     return false;
 
                 case StylePropertyRecordingChannel.Length1:
-                    // Delegates to AddLengthSubMods so ".value" / ".unit" live in exactly
-                    // one place. containerSuffix is empty because Length1 is a top-level
-                    // Length (no ".offset" / ".x" wrapper).
+                    // Top-level Length (no container wrapper); funnel through AddLengthSubMods.
                     if (typeof(T) == typeof(StyleLength))
                     {
-                        AnimationRecordingStyleBridge.AddLengthSubMods(list, panelRenderer, elementPath, propName, "",
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, "",
                             Unsafe.As<T, StyleLength>(ref p).value, Unsafe.As<T, StyleLength>(ref c).value);
                         return true;
                     }
                     if (typeof(T) == typeof(Length))
                     {
-                        AnimationRecordingStyleBridge.AddLengthSubMods(list, panelRenderer, elementPath, propName, "",
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, "",
                             Unsafe.As<T, Length>(ref p), Unsafe.As<T, Length>(ref c));
                         return true;
                     }
@@ -482,12 +733,12 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyRecordingChannel.Color4:
                     if (typeof(T) == typeof(StyleColor))
                     {
-                        AnimationRecordingStyleBridge.AddColorMods(list, panelRenderer, elementPath, propName, Unsafe.As<T, StyleColor>(ref p).value, Unsafe.As<T, StyleColor>(ref c).value);
+                        AnimationRecordingStyleBridge.AddColorMods(list, target, elementPath, propName, Unsafe.As<T, StyleColor>(ref p).value, Unsafe.As<T, StyleColor>(ref c).value);
                         return true;
                     }
                     if (typeof(T) == typeof(Color))
                     {
-                        AnimationRecordingStyleBridge.AddColorMods(list, panelRenderer, elementPath, propName, Unsafe.As<T, Color>(ref p), Unsafe.As<T, Color>(ref c));
+                        AnimationRecordingStyleBridge.AddColorMods(list, target, elementPath, propName, Unsafe.As<T, Color>(ref p), Unsafe.As<T, Color>(ref c));
                         return true;
                     }
                     return false;
@@ -495,45 +746,85 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyRecordingChannel.Int1:
                     if (typeof(T) == typeof(StyleInt))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Unsafe.As<T, StyleInt>(ref p).value, Unsafe.As<T, StyleInt>(ref c).value);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Unsafe.As<T, StyleInt>(ref p).value, Unsafe.As<T, StyleInt>(ref c).value);
                         return true;
                     }
                     return false;
 
-                case StylePropertyRecordingChannel.Translate3:
+                case StylePropertyRecordingChannel.Translate5:
                     if (typeof(T) == typeof(StyleTranslate))
                     {
                         var tPrev = Unsafe.As<T, StyleTranslate>(ref p).value;
                         var tCur = Unsafe.As<T, StyleTranslate>(ref c).value;
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", tPrev.x.value, tCur.x.value);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", tPrev.y.value, tCur.y.value);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".z", tPrev.z, tCur.z);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", tPrev.x, tCur.x);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", tPrev.y, tCur.y);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".z", tPrev.z, tCur.z);
                         return true;
                     }
                     if (typeof(T) == typeof(Translate))
                     {
                         var tPrev = Unsafe.As<T, Translate>(ref p);
                         var tCur = Unsafe.As<T, Translate>(ref c);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", tPrev.x.value, tCur.x.value);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", tPrev.y.value, tCur.y.value);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".z", tPrev.z, tCur.z);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", tPrev.x, tCur.x);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", tPrev.y, tCur.y);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".z", tPrev.z, tCur.z);
                         return true;
                     }
+                    // Vector2 / Vector3 are the implicit-pixel shapes used when the inspector
+                    // forwards a numeric Translate without explicit units; pin .x.unit and
+                    // .y.unit to Pixel so the curves capture the unit alongside the values.
                     if (typeof(T) == typeof(Vector2))
                     {
                         var v2Prev = Unsafe.As<T, Vector2>(ref p);
                         var v2Cur = Unsafe.As<T, Vector2>(ref c);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", v2Prev.x, v2Cur.x);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", v2Prev.y, v2Cur.y);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", Length.Pixels(v2Prev.x), Length.Pixels(v2Cur.x));
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", Length.Pixels(v2Prev.y), Length.Pixels(v2Cur.y));
                         return true;
                     }
                     if (typeof(T) == typeof(Vector3))
                     {
                         var v3Prev = Unsafe.As<T, Vector3>(ref p);
                         var v3Cur = Unsafe.As<T, Vector3>(ref c);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", v3Prev.x, v3Cur.x);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", v3Prev.y, v3Cur.y);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".z", v3Prev.z, v3Cur.z);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", Length.Pixels(v3Prev.x), Length.Pixels(v3Cur.x));
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", Length.Pixels(v3Prev.y), Length.Pixels(v3Cur.y));
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".z", v3Prev.z, v3Cur.z);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.TransformOrigin4:
+                    // Mirror Translate5 minus the .z modification: TransformOrigin's z is not
+                    // animated, so only x/y length sub-channels are emitted.
+                    if (typeof(T) == typeof(StyleTransformOrigin))
+                    {
+                        var toPrev = Unsafe.As<T, StyleTransformOrigin>(ref p).value;
+                        var toCur = Unsafe.As<T, StyleTransformOrigin>(ref c).value;
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", toPrev.x, toCur.x);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", toPrev.y, toCur.y);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(TransformOrigin))
+                    {
+                        var toPrev = Unsafe.As<T, TransformOrigin>(ref p);
+                        var toCur = Unsafe.As<T, TransformOrigin>(ref c);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", toPrev.x, toCur.x);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", toPrev.y, toCur.y);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Vector2))
+                    {
+                        var v2Prev = Unsafe.As<T, Vector2>(ref p);
+                        var v2Cur = Unsafe.As<T, Vector2>(ref c);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", Length.Pixels(v2Prev.x), Length.Pixels(v2Cur.x));
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", Length.Pixels(v2Prev.y), Length.Pixels(v2Cur.y));
+                        return true;
+                    }
+                    if (typeof(T) == typeof(Vector3))
+                    {
+                        var v3Prev = Unsafe.As<T, Vector3>(ref p);
+                        var v3Cur = Unsafe.As<T, Vector3>(ref c);
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".x", Length.Pixels(v3Prev.x), Length.Pixels(v3Cur.x));
+                        AnimationRecordingStyleBridge.AddLengthSubMods(list, target, elementPath, propName, ".y", Length.Pixels(v3Prev.y), Length.Pixels(v3Cur.y));
                         return true;
                     }
                     return false;
@@ -543,27 +834,27 @@ namespace Unity.UIToolkit.Editor
                     {
                         var vPrev = Unsafe.As<T, StyleScale>(ref p).value.value;
                         var vCur = Unsafe.As<T, StyleScale>(ref c).value.value;
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", vPrev.x, vCur.x);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", vPrev.y, vCur.y);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".z", vPrev.z, vCur.z);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".x", vPrev.x, vCur.x);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".y", vPrev.y, vCur.y);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".z", vPrev.z, vCur.z);
                         return true;
                     }
                     if (typeof(T) == typeof(Scale))
                     {
                         var vPrev = Unsafe.As<T, Scale>(ref p).value;
                         var vCur = Unsafe.As<T, Scale>(ref c).value;
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", vPrev.x, vCur.x);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", vPrev.y, vCur.y);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".z", vPrev.z, vCur.z);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".x", vPrev.x, vCur.x);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".y", vPrev.y, vCur.y);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".z", vPrev.z, vCur.z);
                         return true;
                     }
                     if (typeof(T) == typeof(Vector3))
                     {
                         var v3Prev = Unsafe.As<T, Vector3>(ref p);
                         var v3Cur = Unsafe.As<T, Vector3>(ref c);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".x", v3Prev.x, v3Cur.x);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".y", v3Prev.y, v3Cur.y);
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, ".z", v3Prev.z, v3Cur.z);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".x", v3Prev.x, v3Cur.x);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".y", v3Prev.y, v3Cur.y);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".z", v3Prev.z, v3Cur.z);
                         return true;
                     }
                     return false;
@@ -571,12 +862,12 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyRecordingChannel.Ratio1:
                     if (typeof(T) == typeof(StyleRatio))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Unsafe.As<T, StyleRatio>(ref p).value.value, Unsafe.As<T, StyleRatio>(ref c).value.value);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Unsafe.As<T, StyleRatio>(ref p).value.value, Unsafe.As<T, StyleRatio>(ref c).value.value);
                         return true;
                     }
                     if (typeof(T) == typeof(Ratio))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Unsafe.As<T, Ratio>(ref p).value, Unsafe.As<T, Ratio>(ref c).value);
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Unsafe.As<T, Ratio>(ref p).value, Unsafe.As<T, Ratio>(ref c).value);
                         return true;
                     }
                     return false;
@@ -588,20 +879,21 @@ namespace Unity.UIToolkit.Editor
                         var seCur = Unsafe.As<T, StyleEnum<Visibility>>(ref c);
                         if (sePrev.keyword != StyleKeyword.Undefined || seCur.keyword != StyleKeyword.Undefined)
                             return false;
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Convert.ToInt32(sePrev.value), Convert.ToInt32(seCur.value));
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Convert.ToInt32(sePrev.value), Convert.ToInt32(seCur.value));
                         return true;
                     }
                     if (typeof(T) == typeof(Visibility))
                     {
-                        AnimationRecordingStyleBridge.AddModification(list, panelRenderer, elementPath, propName, null, Convert.ToInt32(Unsafe.As<T, Visibility>(ref p)), Convert.ToInt32(Unsafe.As<T, Visibility>(ref c)));
+                        AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, Convert.ToInt32(Unsafe.As<T, Visibility>(ref p)), Convert.ToInt32(Unsafe.As<T, Visibility>(ref c)));
                         return true;
                     }
-                    return AnimationRecordingStyleBridge.TryBuildModificationsForStyleEnumGeneric(panelRenderer.gameObject, elementPath, stylePropertyId, typeof(T), in previousValue, in currentValue, list);
+                    // StyleEnum<TGeneric> fallback. Targets the supplied UnityEngine.Object
+                    // directly (PanelRenderer for the panel-wide path, UIAnimationClip for the
+                    // per-element path), so both routings share the same builder.
+                    return AnimationRecordingStyleBridge.TryBuildModificationsForStyleEnumGeneric(target, elementPath, stylePropertyId, typeof(T), in previousValue, in currentValue, list);
 
                 case StylePropertyRecordingChannel.BackgroundPosition3:
                 {
-                    // All three channels (align, offset.value, offset.unit) are emitted by
-                    // AddBackgroundPositionMods so the bridge owns the composite layout.
                     BackgroundPosition prevBp;
                     BackgroundPosition curBp;
                     if (typeof(T) == typeof(StyleBackgroundPosition))
@@ -618,7 +910,7 @@ namespace Unity.UIToolkit.Editor
                     {
                         return false;
                     }
-                    AnimationRecordingStyleBridge.AddBackgroundPositionMods(list, panelRenderer, elementPath, propName, prevBp, curBp);
+                    AnimationRecordingStyleBridge.AddBackgroundPositionMods(list, target, elementPath, propName, prevBp, curBp);
                     return true;
                 }
 
@@ -640,15 +932,12 @@ namespace Unity.UIToolkit.Editor
                     {
                         return false;
                     }
-                    AnimationRecordingStyleBridge.AddBackgroundRepeatMods(list, panelRenderer, elementPath, propName, prevBr, curBr);
+                    AnimationRecordingStyleBridge.AddBackgroundRepeatMods(list, target, elementPath, propName, prevBr, curBr);
                     return true;
                 }
 
                 case StylePropertyRecordingChannel.BackgroundSize5:
                 {
-                    // All five channels (type, x.value, x.unit, y.value, y.unit) are emitted
-                    // by AddBackgroundSizeMods which itself goes through AddLengthSubMods for
-                    // the two Length sub-blocks.
                     BackgroundSize prevBs;
                     BackgroundSize curBs;
                     if (typeof(T) == typeof(StyleBackgroundSize))
@@ -665,7 +954,139 @@ namespace Unity.UIToolkit.Editor
                     {
                         return false;
                     }
-                    AnimationRecordingStyleBridge.AddBackgroundSizeMods(list, panelRenderer, elementPath, propName, prevBs, curBs);
+                    AnimationRecordingStyleBridge.AddBackgroundSizeMods(list, target, elementPath, propName, prevBs, curBs);
+                    return true;
+                }
+
+                case StylePropertyRecordingChannel.Object1:
+                {
+                    UnityEngine.Object prevObj;
+                    UnityEngine.Object curObj;
+                    if (typeof(T) == typeof(StyleBackground))
+                    {
+                        var prevSb = Unsafe.As<T, StyleBackground>(ref p);
+                        var curSb = Unsafe.As<T, StyleBackground>(ref c);
+                        if (prevSb.keyword != StyleKeyword.Undefined || curSb.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevObj = prevSb.value.GetSelectedImage();
+                        curObj = curSb.value.GetSelectedImage();
+                    }
+                    else if (typeof(T) == typeof(Background))
+                    {
+                        prevObj = Unsafe.As<T, Background>(ref p).GetSelectedImage();
+                        curObj = Unsafe.As<T, Background>(ref c).GetSelectedImage();
+                    }
+                    else if (typeof(T) == typeof(StyleFont))
+                    {
+                        var prevSf = Unsafe.As<T, StyleFont>(ref p);
+                        var curSf = Unsafe.As<T, StyleFont>(ref c);
+                        if (prevSf.keyword != StyleKeyword.Undefined || curSf.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevObj = prevSf.value;
+                        curObj = curSf.value;
+                    }
+                    else if (typeof(T) == typeof(Font))
+                    {
+                        prevObj = Unsafe.As<T, Font>(ref p);
+                        curObj = Unsafe.As<T, Font>(ref c);
+                    }
+                    else if (typeof(T) == typeof(StyleFontDefinition))
+                    {
+                        var prevSfd = Unsafe.As<T, StyleFontDefinition>(ref p);
+                        var curSfd = Unsafe.As<T, StyleFontDefinition>(ref c);
+                        if (prevSfd.keyword != StyleKeyword.Undefined || curSfd.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevObj = prevSfd.value.GetSelectedFont();
+                        curObj = curSfd.value.GetSelectedFont();
+                    }
+                    else if (typeof(T) == typeof(FontDefinition))
+                    {
+                        prevObj = Unsafe.As<T, FontDefinition>(ref p).GetSelectedFont();
+                        curObj = Unsafe.As<T, FontDefinition>(ref c).GetSelectedFont();
+                    }
+                    else if (typeof(T) == typeof(StyleMaterialDefinition))
+                    {
+                        var prevSmd = Unsafe.As<T, StyleMaterialDefinition>(ref p);
+                        var curSmd = Unsafe.As<T, StyleMaterialDefinition>(ref c);
+                        if (prevSmd.keyword != StyleKeyword.Undefined || curSmd.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevObj = prevSmd.value.material;
+                        curObj = curSmd.value.material;
+                    }
+                    else if (typeof(T) == typeof(MaterialDefinition))
+                    {
+                        prevObj = Unsafe.As<T, MaterialDefinition>(ref p).material;
+                        curObj = Unsafe.As<T, MaterialDefinition>(ref c).material;
+                    }
+                    else if (typeof(T) == typeof(Material))
+                    {
+                        prevObj = Unsafe.As<T, Material>(ref p);
+                        curObj = Unsafe.As<T, Material>(ref c);
+                    }
+                    else if (typeof(T) == typeof(EntityId))
+                    {
+                        prevObj = UnityEngine.Resources.EntityIdToObject(Unsafe.As<T, EntityId>(ref p));
+                        curObj = UnityEngine.Resources.EntityIdToObject(Unsafe.As<T, EntityId>(ref c));
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    AnimationRecordingStyleBridge.AddObjectModification(list, target, elementPath, propName, null, prevObj, curObj);
+                    return true;
+                }
+
+                case StylePropertyRecordingChannel.TextShadow7:
+                {
+                    // 7 channels via AddTextShadowMods: .color.r/.g/.b/.a + .offset.x/.y + .blurRadius.
+                    TextShadow prevTs;
+                    TextShadow curTs;
+                    if (typeof(T) == typeof(StyleTextShadow))
+                    {
+                        var stsPrev = Unsafe.As<T, StyleTextShadow>(ref p);
+                        var stsCur = Unsafe.As<T, StyleTextShadow>(ref c);
+                        if (stsPrev.keyword != StyleKeyword.Undefined || stsCur.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevTs = stsPrev.value;
+                        curTs = stsCur.value;
+                    }
+                    else if (typeof(T) == typeof(TextShadow))
+                    {
+                        prevTs = Unsafe.As<T, TextShadow>(ref p);
+                        curTs = Unsafe.As<T, TextShadow>(ref c);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    AnimationRecordingStyleBridge.AddTextShadowMods(list, target, elementPath, propName, prevTs, curTs);
+                    return true;
+                }
+
+                case StylePropertyRecordingChannel.Filter:
+                {
+                    // AddFilterMods owns the per-slot sub-channel layout (.p<n> / .type / .customDefinition).
+                    List<FilterFunction> prevFilters;
+                    List<FilterFunction> curFilters;
+                    if (typeof(T) == typeof(StyleList<FilterFunction>))
+                    {
+                        var slPrev = Unsafe.As<T, StyleList<FilterFunction>>(ref p);
+                        var slCur = Unsafe.As<T, StyleList<FilterFunction>>(ref c);
+                        if (slPrev.keyword != StyleKeyword.Undefined || slCur.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevFilters = slPrev.value;
+                        curFilters = slCur.value;
+                    }
+                    else if (typeof(T) == typeof(List<FilterFunction>))
+                    {
+                        prevFilters = Unsafe.As<T, List<FilterFunction>>(ref p);
+                        curFilters = Unsafe.As<T, List<FilterFunction>>(ref c);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    AnimationRecordingStyleBridge.AddFilterMods(list, target, elementPath, propName, prevFilters, curFilters);
                     return true;
                 }
 

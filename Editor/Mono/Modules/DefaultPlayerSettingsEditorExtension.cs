@@ -90,11 +90,6 @@ namespace UnityEditor.Modules
             return true;
         }
 
-        public virtual bool SupportsDynamicBatching()
-        {
-            return true;
-        }
-
         public virtual void ResolutionSectionGUI(float h, float midWidth, float maxWidth) {}
 
         public virtual bool HasBundleIdentifier()

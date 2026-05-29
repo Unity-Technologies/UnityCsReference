@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionHistoryItemChangeLogTitle, false);
             UIUtils.SetElementDisplay(versionHistoryItemChangeLogLabel, false);
 
-            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.package.product?.id ?? 0, m_Version.isInstalled, m_Version.versionString) : null;
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
             var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
             var changeLog = upmReserved?.GetString("changelog");
             var hasChangeLogInInfo = !string.IsNullOrEmpty(changeLog);

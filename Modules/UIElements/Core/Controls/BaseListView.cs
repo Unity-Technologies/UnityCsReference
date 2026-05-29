@@ -418,6 +418,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool autoSelectNewItemOnAdd { get; set; } = true;
+
         ListViewReorderMode m_ReorderMode;
         internal event Action reorderModeChanged;
 
@@ -758,8 +760,11 @@ namespace UnityEngine.UIElements
             if (itemsSource != null && itemsCountPreCallback != itemsSource.Count)
             {
                 OnItemsSourceSizeChanged();
-                SetSelection(itemsSource.Count - 1);
-                ScrollToItem(-1);
+                if (autoSelectNewItemOnAdd)
+                {
+                    SetSelection(itemsSource.Count - 1);
+                    ScrollToItem(-1);
+                }
             }
         }
 

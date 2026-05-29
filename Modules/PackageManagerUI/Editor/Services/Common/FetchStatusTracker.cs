@@ -10,114 +10,121 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IFetchStatusTracker : IService
     {
-        event Action<FetchStatus> onFetchStatusChanged;
+        event Action<long> onProductInfoFetchStatusChanged;
+        event Action<string> onSearchInfoFetchStatusChanged;
 
-        IEnumerable<FetchStatus> fetchStatuses { get; }
+        IEnumerable<long> trackedProductIds { get; }
 
-        FetchStatus GetOrCreateFetchStatus(long productId);
-        void SetFetchInProgress(long productId, FetchType fetchType);
-        void SetFetchSuccess(long productId, FetchType fetchType);
-        void SetFetchError(long productId, FetchType fetchType, UIError error);
-        void ClearCache();
-    }
+        void SetProductInfoFetchInProgress(long productId);
+        void SetProductInfoFetchSuccess(long productId);
+        void SetProductInfoFetchError(long productId, UIError error);
+        FetchStatus GetProductInfoFetchStatus(long productId);
 
-    [Flags]
-    internal enum FetchType
-    {
-        None                    = 0,
-        ProductInfo             = 1 << 0,
-        ProductSearchInfo       = 1 << 1,
+        void SetSearchInfoFetchInProgress(string packageName);
+        void SetSearchInfoFetchSuccess(string packageName);
+        void SetSearchInfoFetchError(string packageName, UIError error);
+        FetchStatus GetSearchInfoFetchStatus(string packageName);
+
+        void ClearProductInfoFetchStatuses();
+        void ClearSearchInfoFetchStatuses();
     }
 
     [Serializable]
-    internal class FetchError
+    internal struct FetchStatus
     {
-        public FetchType fetchType;
+        public bool inProgress;
         public UIError error;
-    }
-
-    [Serializable]
-    internal class FetchStatus
-    {
-        public long productId;
-
-        public FetchType fetchingInProgress;
-        public FetchType fetchingFinished;
-        public List<FetchError> errors;
-
-        public FetchStatus(long productId)
-        {
-            this.productId = productId;
-            fetchingInProgress  = FetchType.None;
-            fetchingFinished = FetchType.None;
-            errors = new List<FetchError>();
-        }
-
-        public bool IsFetchInProgress(FetchType fetchType) => (fetchingInProgress & fetchType) != 0;
-        public FetchError GetFetchError(FetchType fetchType) => errors.FirstMatch(error => (error.fetchType & fetchType) != 0);
     }
 
     [Serializable]
     internal class FetchStatusTracker : BaseService<IFetchStatusTracker>, IFetchStatusTracker, ISerializationCallbackReceiver
     {
-        private Dictionary<long, FetchStatus> m_FetchStatuses = new Dictionary<long, FetchStatus>();
-        public IEnumerable<FetchStatus> fetchStatuses => m_FetchStatuses.Values;
+        public event Action<long> onProductInfoFetchStatusChanged;
+        public event Action<string> onSearchInfoFetchStatusChanged;
 
-        public event Action<FetchStatus> onFetchStatusChanged;
+        public IEnumerable<long> trackedProductIds => m_ProductInfoFetchStatuses.Keys;
+
+        private readonly Dictionary<long, FetchStatus> m_ProductInfoFetchStatuses = new ();
+        private readonly Dictionary<string, FetchStatus> m_SearchInfoFetchStatuses = new ();
 
         [SerializeField]
-        private FetchStatus[] m_SerializedFetchStatuses = Array.Empty<FetchStatus>();
+        private long[] m_SerializedProductIds = Array.Empty<long>();
+        [SerializeField]
+        private FetchStatus[] m_SerializedProductInfoFetchStatuses = Array.Empty<FetchStatus>();
 
-        public FetchStatus GetOrCreateFetchStatus(long productId)
+        [SerializeField]
+        private string[] m_SerializedPackageNames = Array.Empty<string>();
+        [SerializeField]
+        private FetchStatus[] m_SerializedSearchInfoFetchStatuses = Array.Empty<FetchStatus>();
+
+        public void SetProductInfoFetchInProgress(long productId)
         {
-            var status = m_FetchStatuses.Get(productId);
-            if (status == null)
-            {
-                status = new FetchStatus(productId);
-                m_FetchStatuses[productId] = status;
-            }
-            return status;
+            var fetchStatus = m_ProductInfoFetchStatuses.GetValueOrDefault(productId);
+            fetchStatus.inProgress = true;
+            m_ProductInfoFetchStatuses[productId] = fetchStatus;
+            onProductInfoFetchStatusChanged?.Invoke(productId);
         }
 
-        public void SetFetchInProgress(long productId, FetchType fetchType)
+        public void SetProductInfoFetchSuccess(long productId)
         {
-            var status = GetOrCreateFetchStatus(productId);
-            status.fetchingInProgress |= fetchType;
-            onFetchStatusChanged?.Invoke(status);
+            m_ProductInfoFetchStatuses.Remove(productId);
+            onProductInfoFetchStatusChanged?.Invoke(productId);
         }
 
-        public void SetFetchSuccess(long productId, FetchType fetchType)
+        public void SetProductInfoFetchError(long productId, UIError error)
         {
-            var status = GetOrCreateFetchStatus(productId);
-            status.fetchingInProgress &= ~fetchType;
-            status.fetchingFinished |= fetchType;
-            status.errors.RemoveAll(e => e.fetchType == fetchType);
-            onFetchStatusChanged?.Invoke(status);
+            var fetchStatus = m_ProductInfoFetchStatuses.GetValueOrDefault(productId);
+            fetchStatus.inProgress = false;
+            fetchStatus.error = error;
+            m_ProductInfoFetchStatuses[productId] = fetchStatus;
+            onProductInfoFetchStatusChanged?.Invoke(productId);
         }
 
-        public void SetFetchError(long productId, FetchType fetchType, UIError error)
+        public FetchStatus GetProductInfoFetchStatus(long productId) => m_ProductInfoFetchStatuses.GetValueOrDefault(productId);
+
+        public void SetSearchInfoFetchInProgress(string packageName)
         {
-            var status = GetOrCreateFetchStatus(productId);
-            status.fetchingInProgress &= ~fetchType;
-            status.fetchingFinished |= fetchType;
-            status.errors.Add(new FetchError { fetchType = fetchType, error = error });
-            onFetchStatusChanged?.Invoke(status);
+            var fetchStatus = m_SearchInfoFetchStatuses.GetValueOrDefault(packageName);
+            fetchStatus.inProgress = true;
+            m_SearchInfoFetchStatuses[packageName] = fetchStatus;
+            onSearchInfoFetchStatusChanged?.Invoke(packageName);
         }
 
-        public void ClearCache()
+        public void SetSearchInfoFetchSuccess(string packageName)
         {
-            m_FetchStatuses.Clear();
+            m_SearchInfoFetchStatuses.Remove(packageName);
+            onSearchInfoFetchStatusChanged?.Invoke(packageName);
         }
+
+        public void SetSearchInfoFetchError(string packageName, UIError error)
+        {
+            var fetchStatus = m_SearchInfoFetchStatuses.GetValueOrDefault(packageName);
+            fetchStatus.inProgress = false;
+            fetchStatus.error = error;
+            m_SearchInfoFetchStatuses[packageName] = fetchStatus;
+            onSearchInfoFetchStatusChanged?.Invoke(packageName);
+        }
+
+        public FetchStatus GetSearchInfoFetchStatus(string packageName) => m_SearchInfoFetchStatuses.GetValueOrDefault(packageName);
+
+        public void ClearProductInfoFetchStatuses() => m_ProductInfoFetchStatuses.Clear();
+        public void ClearSearchInfoFetchStatuses() => m_SearchInfoFetchStatuses.Clear();
 
         public void OnBeforeSerialize()
         {
-            m_FetchStatuses.Values.ToArray(ref m_SerializedFetchStatuses);
+            m_ProductInfoFetchStatuses.Keys.ToArray(ref m_SerializedProductIds);
+            m_ProductInfoFetchStatuses.Values.ToArray(ref m_SerializedProductInfoFetchStatuses);
+
+            m_SearchInfoFetchStatuses.Keys.ToArray(ref m_SerializedPackageNames);
+            m_SearchInfoFetchStatuses.Values.ToArray(ref m_SerializedSearchInfoFetchStatuses);
         }
 
         public void OnAfterDeserialize()
         {
-            m_SerializedFetchStatuses.ToDictionary(status => status.productId, ref m_FetchStatuses);
+            for (var i = 0; i < m_SerializedProductIds.Length; i++)
+                m_ProductInfoFetchStatuses[m_SerializedProductIds[i]] = m_SerializedProductInfoFetchStatuses[i];
+            for (var i = 0; i < m_SerializedPackageNames.Length; i++)
+                m_SearchInfoFetchStatuses[m_SerializedPackageNames[i]] = m_SerializedSearchInfoFetchStatuses[i];
         }
-
     }
 }

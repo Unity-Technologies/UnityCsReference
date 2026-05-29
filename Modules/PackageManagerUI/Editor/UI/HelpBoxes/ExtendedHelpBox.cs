@@ -3,15 +3,18 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [UxmlElement]
     internal partial class ExtendedHelpBox : HelpBox
     {
-        private static readonly string k_WithLinksUssClass = "with-links";
+        private const string k_WithLinksUssClass = "with-links";
+        internal static string embeddedLinkColor => EditorGUIUtility.isProSkin ? "#4f80f8" : "#0808fc";
 
         protected readonly IApplicationProxy m_Application;
 
@@ -22,6 +25,58 @@ namespace UnityEditor.PackageManager.UI.Internal
         public ExtendedHelpBox(IApplicationProxy application)
         {
             m_Application = application;
+        }
+
+        private readonly Dictionary<string, string> m_LinkIdToUrlMap = new ();
+        private bool m_HasRegisteredLinkCallbacks = false;
+        public new string text
+        {
+            get => base.text;
+            set
+            {
+                if (value == base.text)
+                    return;
+
+                ReplaceLinkTagsAndRegisterEventsIfNeeded(value);
+            }
+        }
+
+        private void ReplaceLinkTagsAndRegisterEventsIfNeeded(string value)
+        {
+            const string linkTagPattern = @"<link\s+id=""(?<id>[^""]+)""\s+url=""(?<url>[^""]+)"">(?<text>.*?)</link>";
+
+            m_LinkIdToUrlMap.Clear();
+            // We remove the url from the original text and store it in a dictionary with the id as key, so that we can use it later when the link is clicked.
+            // Leaving it in the string will cause the link tag to be rendered as a normal text and the url will be visible to users.
+            // We also wrap the link text with a color to make it look like a link since we cannot have uss for link tags.
+            var finalText = Regex.Replace(value, linkTagPattern, match =>
+            {
+                var id = match.Groups["id"].Value;
+                var url = match.Groups["url"].Value;
+                var linkDisplayText = match.Groups["text"].Value;
+                m_LinkIdToUrlMap[id] = url;
+                return $"<link=\"{id}\"><color={embeddedLinkColor}>{linkDisplayText}</color></link>";
+            });
+
+            base.text = finalText;
+            if (m_LinkIdToUrlMap.Count == 0 || m_HasRegisteredLinkCallbacks)
+                return;
+
+            // There could be multiple labels in the helpBox, we do this to make sure we get the correct one
+            var mainLabel = this.Query<Label>().Where(i => i.text == text).First();
+            if (mainLabel == null)
+                return;
+
+            mainLabel.RegisterCallback<PointerUpLinkTagEvent>(evt =>
+            {
+                if (!m_LinkIdToUrlMap.TryGetValue(evt.linkID, out var url))
+                    return;
+                m_Application.OpenURL(url);
+                PackageManagerReadMoreClickedAnalytics.SendEvent(evt.linkID, url);
+            });
+            mainLabel.RegisterCallback<PointerOverLinkTagEvent>(_ => mainLabel.AddToClassList("link-hover"));
+            mainLabel.RegisterCallback<PointerOutLinkTagEvent>(_ => mainLabel.RemoveFromClassList("link-hover"));
+            m_HasRegisteredLinkCallbacks = true;
         }
 
         public new HelpBoxMessageType messageType
@@ -120,18 +175,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private string m_AnalyticsId;
+        private string m_ReadMoreAnalyticsId;
 
         [UxmlAttribute]
-        public string analyticsId
+        public string readMoreAnalyticsId
         {
-            get => m_AnalyticsId;
+            get => m_ReadMoreAnalyticsId;
             set
             {
                 var newValue = value ?? string.Empty;
-                if ((m_AnalyticsId ?? string.Empty) == newValue)
+                if ((m_ReadMoreAnalyticsId ?? string.Empty) == newValue)
                     return;
-                m_AnalyticsId = newValue;
+                m_ReadMoreAnalyticsId = newValue;
             }
         }
 
@@ -163,22 +218,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetCustomLinkButton(string linkButtonText, Action onClick, string linkButtonTooltip = "")
         {
+            RemoveLinkFromHierarchy(m_CustomLinkButton);
             var showLinkCustomButton = !string.IsNullOrEmpty(linkButtonText) && onClick != null;
-            if (showLinkCustomButton)
-            {
-                if (m_CustomLinkButton == null)
-                {
-                    m_CustomLinkButton = new Button { text = linkButtonText }.WithClassList("link");
-                    m_CustomLinkButton.clickable.clicked += onClick;
-                }
-
-                m_CustomLinkButton.tooltip = linkButtonTooltip;
-                if (m_CustomLinkButton.parent == null)
-                   AddLinkToHierarchy(m_CustomLinkButton);
-            }
-            else
-                RemoveLinkFromHierarchy(m_CustomLinkButton);
             EnableInClassList(k_WithLinksUssClass, showLinkCustomButton);
+            if (!showLinkCustomButton)
+                return;
+
+            m_CustomLinkButton = new Button { text = linkButtonText }.WithClassList("link");
+            m_CustomLinkButton.clickable.clicked += onClick;
+            m_CustomLinkButton.tooltip = linkButtonTooltip;
+            AddLinkToHierarchy(m_CustomLinkButton);
         }
 
         private void OnReadMoreClicked()
@@ -187,7 +236,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_Application.OpenURL(readMoreUrl);
-            PackageManagerReadMoreClickedAnalytics.SendEvent(analyticsId, readMoreUrl);
+            PackageManagerReadMoreClickedAnalytics.SendEvent(readMoreAnalyticsId, readMoreUrl);
         }
 
         private void AddLinkToHierarchy(Button linkButton)

@@ -119,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var sample in m_Samples.Filter(s => !string.IsNullOrEmpty(s.displayName)))
             {
-                var sampleItem = new PackageDetailsSampleItem(m_Version, sample, m_Application, m_IOProxy, m_SampleImporter);
+                var sampleItem = new PackageDetailsSampleItem(sample, m_Application, m_IOProxy, m_SampleImporter);
                 var sampleContainer = new VisualElement();
                 sampleContainer.AddToClassList("sampleContainer");
 
@@ -142,7 +142,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 sampleContainer.Add(actionButtonsContainer);
 
                 samplesContainer.Add(sampleContainer);
-                sampleItem.importButton.SetEnabled(m_Version.isInstalled);
             }
         }
 

@@ -36,10 +36,13 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string ErrorMessage { get; }
 
-        /// <summary>
-        /// The <see cref="QuickFix"/> for the error.
-        /// </summary>
-        public virtual QuickFix Fix { get; }
+
+        /// <inheritdoc />
+        public override GraphLogAction Action { get; }
+
+
+        /// <inheritdoc />
+        public override object UserData { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphProcessingErrorModel" /> class.
@@ -50,9 +53,10 @@ namespace Unity.GraphToolkit.Editor
             ParentModelGuid = error.SourceModelGuid;
             ErrorMessage = error.Description;
             ErrorType = error.ErrorType;
-            Fix = error.Fix;
+            Action = error.Fix;
             SourceGraphReference = error.SourceGraphReference;
             Context = error.Context;
+            UserData = error.UserData;
         }
 
         /// <inheritdoc />

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -105,11 +107,9 @@ internal unsafe struct ManagedCommandStringEntry  // 8 bytes
     public uint         fieldOffset;
 }
 
-// Mirrors ManagedCommandFixedBlockPrefix in SerializationCommands.h (4 bytes).
-// Emitted at the start of every fixed (DirectCopy) segment; carries the segment's
-// total payload size so the executor can size its output buffer up front and
-// pre-bump bytesInBuffer for the segment. Natural layout matches the native side
-// exactly (uint8 + uint8 + uint16 fits tightly with no holes).
+// Mirrors ManagedCommandFixedBlockPrefix in SerializationCommands.h. Brackets
+// every DC segment as `FBP(N) DCs FBP(0)`. See the native header for the full
+// dual-role description.
 internal struct ManagedCommandFixedBlockPrefix  // 4 bytes
 {
     public RttiDataType opCode;
@@ -117,14 +117,71 @@ internal struct ManagedCommandFixedBlockPrefix  // 4 bytes
     public ushort       payloadSize;
 }
 
+// Mirrors ManagedCommandValueReference in SerializationCommands.h. See the
+// native header for the wire / executor contract. Body of nestedByteCount
+// bytes immediately follows.
+internal struct ValueReferenceHeader  // 16 + 2*sizeof(IntPtr) bytes
+{
+    public RttiDataType opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         classDataSize;     // size of the inner class's data area (instance size - header)
+    public uint         nestedByteCount;   // bytes of FBP-bracketed body (DC + optional String entries) that follow
+    public IntPtr       runtimeTypeHandle; // Raw runtime type pointer (MonoType* / Il2CppType* / CoreCLR MethodTable*) for the inner class, populated uniformly across backends by the native build side (ResolveRuntimeTypeHandleForVrt, Common.cpp). ConsumeValueReference funnels it through SerializationBackendManagedCommands.UnmarshalSystemType, which reinterprets it as RuntimeTypeHandle on Mono / IL2CPP (single-IntPtr struct → zero-cost) and routes it through RuntimeTypeHandle.FromIntPtr on CoreCLR (resolved lazily via reflection since the netstandard2.1 reference assembly doesn't expose that .NET 5+ API).
+    public IntPtr       ctorFunctionPtr;   // Encoding picked by GetConstructorMethodFunctionPointer; zero means no parameterless ctor.
+}
+
+// Mirrors ManagedCommandLinearCollection in SerializationCommands.h. See the
+// native header for the wire / executor contract. Body of nestedByteCount
+// bytes immediately follows (empty when flags has bit 0 set).
+internal struct LinearCollectionHeader  // 24 + sizeof(IntPtr) bytes
+{
+    public RttiDataType opCode;            // = RttiDataType.Array or RttiDataType.List
+    public byte         kind;              // 0 = Array, 1 = List
+    public byte         flags;             // bit 0 = elementIsTriviallyCopyable, bit 1 = elementShufflePath
+    public byte         reserved;
+    public uint         fieldOffset;       // post-header offset of the collection reference on the parent
+    public uint         elementStride;     // bytes between elements in the managed array
+    public uint         elementWireSize;   // per-element wire bytes the recursion emits (0 in the trivial path)
+    public uint         nestedByteCount;   // bytes of FBP-bracketed body that follow (0 in the trivial path)
+    public uint         reserved2;         // pad to align elementTypeHandle on an 8-byte boundary
+    public IntPtr       elementTypeHandle; // RuntimeTypeHandle.Value of the element type; consumed by ConsumeLinearCollectionRead
+}
+
+internal static class LinearCollectionKind
+{
+    public const byte Array = 0;
+    public const byte List  = 1;
+}
+
+internal static class LinearCollectionFlags
+{
+    public const byte TriviallyCopyable = 1 << 0;
+    // Body is FBP-bracketed and contains only DC entries (no String / Array / VRT / etc.),
+    // and elementWireSize fits in a single segment. The C# consumer reserves
+    // count*elementWireSize bytes in one shot and walks the DC entries once per element
+    // with a fixed per-element destination, skipping the per-element FBP segment claim
+    // and ExecuteWriteCommands recursion. Wire output is byte-identical to the
+    // per-element recursion path. See ConsumeLinearCollectionShufflePath.
+    public const byte ShufflePath      = 1 << 1;
+}
+
 // Mirrors NativeBufferContext in SerializationCommands.h. Used by every
 // variable-sized managed-execution command (fixed-size DirectCopy segments,
 // strings, and any future variable-size payloads).
 //
-// Field layout must match the native struct exactly — `writer` is opaque to C#
-// (only the leading slot is reserved). `writerPtr` / `writerAvailable` are kept
-// in sync by flushBuffer: read them to decide where to write next, then commit
-// via flushBuffer (which updates them in place).
+// Contract for writerPtr / writerAvailable (see SerializationCommands.h's
+// FlushBufferFunc comment for the canonical description):
+//   - At entry to the C# executor and after every flushBuffer call, writerPtr
+//     points at a writable region of writerAvailable bytes, and writerAvailable
+//     is always >= kManagedBlockMaxPayloadSize. The region is either the cache
+//     writer's tail (when it has at least that much remaining; zero-copy fast
+//     path) or stackBuffer (sized kManagedBlockSpillBufferSize; native side
+//     memcpys it in on the next flush).
+//   - C# can therefore write up to writerAvailable bytes into writerPtr
+//     unconditionally, with no per-site stack-vs-writer branching.
 //
 // flushBuffer is stored as IntPtr rather than a typed function-pointer field.
 // UWP / .NET Native reference rewriting and netstandard2.0 player builds cannot
@@ -138,14 +195,49 @@ internal struct ManagedCommandFixedBlockPrefix  // 4 bytes
 internal unsafe struct NativeBufferContext
 {
     public void*  writer;            // native CachedWriter* — opaque to C#
-    public byte*  stackBuffer;       // stable for the lifetime of the call
-    public byte*  writerPtr;         // current writer write-position; updated by flushBuffer
-    public int    writerAvailable;   // bytes remaining in the writer's current block; updated by flushBuffer
+    public byte*  stackBuffer;       // native-side spill buffer (size = kManagedBlockSpillBufferSize); stable for the lifetime of the call
+    public byte*  writerPtr;         // current write destination — writer's tail or stackBuffer; updated by flushBuffer
+    public int    writerAvailable;   // bytes available at writerPtr; updated by flushBuffer; always >= kManagedBlockMaxPayloadSize after a flush / initial setup
     public IntPtr flushBuffer;       // unmanaged[Cdecl] void(NativeBufferContext*, byte*, int)
+}
+
+// Read-side mirror of NativeBufferContext. The C++ dispatcher
+// (Transfer_ManagedBlock_StreamedBinaryRead) populates this once per managed
+// block and hands it to SerializationBufferToObject; C# walks the entry stream
+// and pulls bytes through readerPtr/readerAvailable, refilling on demand via
+// ensureReadable (segment-sized requests) or readBytesDirect (bulk array bodies
+// that bypass the spill buffer).
+//
+// The struct layout must match SerializationCommands.h::NativeReadBufferContext
+// exactly. Field order matters: native code reads/writes by offset.
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct NativeReadBufferContext
+{
+    public void*  reader;            // native CachedReader* — opaque to C#
+    public byte*  stackBuffer;       // native-side spill buffer (size = stackBufferSize); stable for the lifetime of the call
+    public byte*  readerPtr;         // current read source — reader's cache or stackBuffer; updated by ensureReadable
+    public int    readerAvailable;   // bytes available at readerPtr; decremented by C# as it consumes; refilled by ensureReadable
+    public int    stackBufferSize;   // size of stackBuffer; cap on a single ensureReadable request
+    public IntPtr ensureReadable;    // unmanaged[Cdecl] void(NativeReadBufferContext*, int)
+    public IntPtr readBytesDirect;   // unmanaged[Cdecl] void(NativeReadBufferContext*, byte* dst, int n)
 }
 
 internal static unsafe class SerializationBackendManagedCommands
 {
+    // Must match the C++ constants in SerializationCommands.h.
+    //
+    // kManagedBlockMaxPayloadSize: cap on a single FBP-bracketed segment, and
+    //   the post-condition floor on ctx->writerAvailable after any flushBuffer
+    //   call. Any single segment / string chunk / array chunk that respects
+    //   this cap is guaranteed to fit at ctx->writerPtr without re-checking.
+    // kManagedBlockSpillBufferSize: size of the stack-allocated spill buffer
+    //   on the native side (NativeBufferContext.stackBuffer). FlushBuffer hands
+    //   this back as the writable region whenever the cache writer's tail has
+    //   < kManagedBlockMaxPayloadSize bytes remaining. Larger than the segment
+    //   cap so multiple segments can accumulate into it before the next memcpy.
+    private const int kManagedBlockMaxPayloadSize  = 256;
+    private const int kManagedBlockSpillBufferSize = 1024;
+
     // Cached UTF-8 encoder used by ConsumeString's chunked-flush path. Allocated
     // lazily per thread on first use and reused across calls via Reset(); this
     // keeps the hot path on managed serialization allocation-free for strings
@@ -195,6 +287,130 @@ internal static unsafe class SerializationBackendManagedCommands
         GetOrCreateFlushBufferDelegate(ctx->flushBuffer)((void*)ctx, bufferUsed, writtenBytes);
     }
 
+    [ThreadStatic]
+    private static IntPtr s_EnsureReadableFnPtr;
+    [ThreadStatic]
+    private static EnsureReadableDelegate s_EnsureReadableDel;
+    [ThreadStatic]
+    private static IntPtr s_ReadBytesDirectFnPtr;
+    [ThreadStatic]
+    private static ReadBytesDirectDelegate s_ReadBytesDirectDel;
+
+    // void*-typed first parameter for the same player-runtime marshal-thunk
+    // reasons as FlushBufferDelegate. Behaviour mirrors the write side.
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private unsafe delegate void EnsureReadableDelegate(void* ctx, int needed);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private unsafe delegate void ReadBytesDirectDelegate(void* ctx,
+        byte* dst, int n);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static EnsureReadableDelegate GetOrCreateEnsureReadableDelegate(IntPtr fnPtr)
+    {
+        if (s_EnsureReadableFnPtr != fnPtr || s_EnsureReadableDel == null)
+        {
+            s_EnsureReadableFnPtr = fnPtr;
+            s_EnsureReadableDel = Marshal.GetDelegateForFunctionPointer<EnsureReadableDelegate>(fnPtr);
+        }
+        return s_EnsureReadableDel;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ReadBytesDirectDelegate GetOrCreateReadBytesDirectDelegate(IntPtr fnPtr)
+    {
+        if (s_ReadBytesDirectFnPtr != fnPtr || s_ReadBytesDirectDel == null)
+        {
+            s_ReadBytesDirectFnPtr = fnPtr;
+            s_ReadBytesDirectDel = Marshal.GetDelegateForFunctionPointer<ReadBytesDirectDelegate>(fnPtr);
+        }
+        return s_ReadBytesDirectDel;
+    }
+
+    // Read-side mirror of InvokeFlushBuffer. Refills ctx->readerPtr /
+    // ctx->readerAvailable so at least `needed` bytes are addressable
+    // contiguously starting at the new readerPtr. Caller invariant: only
+    // call when ctx->readerAvailable < needed (the C++ side no-ops when
+    // capacity already covers the request, but skipping the call avoids the
+    // P/Invoke transition altogether).
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void InvokeEnsureReadable(NativeReadBufferContext* ctx, int needed)
+    {
+        GetOrCreateEnsureReadableDelegate(ctx->ensureReadable)((void*)ctx, needed);
+    }
+
+    // Bulk-stream `n` bytes into `dst` (typically a pinned managed array)
+    // bypassing the spill buffer. Used by linear-collection trivial bodies
+    // so an int[1_000_000] doesn't have to chunk through the spill buffer.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void InvokeReadBytesDirect(NativeReadBufferContext* ctx,
+        byte* dst, int n)
+    {
+        GetOrCreateReadBytesDirectDelegate(ctx->readBytesDirect)((void*)ctx, dst, n);
+    }
+
+    // Mirrors the layout of System.Collections.Generic.List<T>'s leading
+    // instance fields. List<T> uses LayoutKind.Auto, but the CLR (and Mono)
+    // place reference fields ahead of value-type fields, so _items (the
+    // backing T[] reference) lands at offset 0 of the instance data and
+    // _size (the count) lands at offset IntPtr.Size. We declare _items as
+    // byte[] so `fixed (byte* p = layout._items)` returns a pointer to the
+    // first array element regardless of T (the SZArray pinning helper is
+    // identical for every element type).
+    private sealed class ListLayout
+    {
+        // CS0649: fields are never assigned in C# — they take their values
+        // from the underlying List<T> instance via Unsafe.As reinterpret.
+#pragma warning disable 0649
+        public byte[] _items;
+        public int    _size;
+#pragma warning restore 0649
+    }
+
+    // Helper for VRT pinning: Unsafe.As<ObjectWrapper>(obj) reinterprets a
+    // child object so `fixed (byte* p = &wrapped.Data)` pins the first byte
+    // of its post-header data area (offset zero for the nested entries'
+    // fieldOffsets). Avoids a GCHandle.
+    private sealed class ObjectWrapper { public byte Data; }
+
+    // Local mirror of UnityEngine.Bindings.SystemReflectionMarshalling.UnmarshalSystemType.
+    // Inlined here because this file is also compiled as TestAttributes::
+    // ExternalCSharpResource into the native test fixture's auxiliary C#
+    // assembly (see ManagedSerializationTestsShared.h), which doesn't have
+    // the [VisibleToOtherModules] privilege to reach UnityEngine.Bindings
+    // internals. Behaviour matches the BCL helper exactly.
+    //
+    // The build side stamps the native MethodTable* (via
+    // scripting_class_get_type(klass).GetBackendPtr()) into the header's
+    // type-handle field. On CoreCLR RuntimeTypeHandle is { RuntimeType m_type; }
+    // — a managed reference, NOT a raw IntPtr — so an
+    // Unsafe.As<IntPtr, RuntimeTypeHandle> reinterpret produces a bogus handle
+    // that Type.GetTypeFromHandle decodes to garbage and crashes
+    // Array.CreateInstance / GetUninitializedObject. The supported BCL
+    // entry point is RuntimeTypeHandle.FromIntPtr (.NET 5+), but it's not
+    // exposed by the netstandard2.1 reference assembly this file builds
+    // against, so we resolve it via reflection on first call and cache the
+    // resulting delegate.
+    //
+    // Mono's RuntimeTypeHandle is a single-IntPtr struct, so the reinterpret
+    // is correct there with no BCL help.
+    //
+    // Lazy resolve (vs. static ctor) keeps this class beforefieldinit and
+    // sidesteps the need for [NoAutoStaticsCleanup] (also an
+    // UnityEngine.Bindings-adjacent attribute that the test resource compile
+    // may not see). If the cached delegate is cleared by an auto-cleanup pass,
+    // the next call falls through to ResolveRuntimeTypeHandleFromIntPtr and
+    // re-binds against the same BCL method — idempotent.
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type UnmarshalSystemType(IntPtr handlePtr)
+    {
+        if (handlePtr == IntPtr.Zero)
+            return null;
+        return Type.GetTypeFromHandle(
+            Unsafe.As<IntPtr, RuntimeTypeHandle>(ref handlePtr));
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static T* ConsumeDirectCopyGroup<T>(ref byte* pos, out T* end) where T : unmanaged
     {
@@ -219,23 +435,58 @@ internal static unsafe class SerializationBackendManagedCommands
         int    entryBufferSize,
         IntPtr bufferContext)
     {
-        // Managed object memory: accessed via ref so the GC can track it (the caller
-        // currently pins, but the contract is "managed memory"). Unmanaged buffers
-        // (output, command stream) stay as raw byte*.
+        var ctx = (NativeBufferContext*)bufferContext;
+
+        byte* output         = null;
+        int   dstSize        = 0;
+        // Bytes written directly into the writer's current block but not yet committed
+        // via InvokeFlushBuffer. Threaded by ref through ExecuteWriteCommands and any
+        // recursion (VRT bodies, per-element collection loops) so consecutive segments
+        // coalesce into a single flush, regardless of nesting depth. The build side
+        // brackets every fixed-size segment with FBP(N)..FBP(0); FBP(0) rolls dstSize
+        // into pendingAdvance, so by the time we return here pendingAdvance carries
+        // every closed-but-uncommitted segment from the entire stream.
+        int   pendingAdvance = 0;
+        ExecuteWriteCommands(ctx, pinnedBase, entriesPtr, entryBufferSize,
+            ref output, ref dstSize, ref pendingAdvance);
+
+        // Single trailing commit. pendingAdvance is the common case; dstSize > 0
+        // only fires if the build side ever omits the closing FBP(0) — keep the
+        // arm as a safety net.
+        if (pendingAdvance > 0)
+            InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+        if (dstSize > 0)
+            InvokeFlushBuffer(ctx, output, dstSize);
+
+        return 0;
+    }
+
+    // Walks the entries between [entriesPtr, entriesPtr + entryBufferSize),
+    // executing each opcode against the pinned managed object (source) and
+    // the buffer chain owned by ctx (destination). Buffer state (output /
+    // dstSize / pendingAdvance) is threaded by ref so the inline FBP /
+    // String / VRT cases can claim and commit per-segment destinations,
+    // and so recursive calls (per-element collection bodies, VRT bodies)
+    // accumulate writer-tail bytes across iterations instead of flushing
+    // on every return.
+    //
+    // pendingAdvance is owned by the outermost caller (ObjectToSerializationBuffer)
+    // which initializes it to 0 and issues the single final flush after this
+    // method returns. Inner recursive callers must not flush it on return —
+    // doing so would emit one P/Invoke per nested element/instance, which is
+    // exactly what threading by ref avoids.
+    private static unsafe void ExecuteWriteCommands(
+        NativeBufferContext* ctx,
+        IntPtr pinnedBase,
+        IntPtr entriesPtr,
+        int    entryBufferSize,
+        ref byte* output,
+        ref int   dstSize,
+        ref int   pendingAdvance)
+    {
         ref byte baseAddr = ref Unsafe.AsRef<byte>((void*)pinnedBase);
         byte* pos = (byte*)entriesPtr;
         byte* endPos = pos + entryBufferSize;
-
-        var ctx = (NativeBufferContext*)bufferContext;
-
-        // Per-segment destination chosen at each FixedBlockPrefix: the writer's
-        // current write pointer (zero-copy when ctx->writerAvailable >= segmentSize)
-        // or the stack buffer fallback. The DC entries that follow write to
-        // dst[entry->destOffset]; the pending segment is committed via
-        // InvokeFlushBuffer at the next non-DC opcode (String, the next prefix, or
-        // end-of-stream). dstSize == 0 means no segment is currently pending.
-        byte* output     = null;
-        int   dstSize = 0;
 
         while (pos < endPos)
         {
@@ -429,19 +680,33 @@ internal static unsafe class SerializationBackendManagedCommands
                     int segmentSize = prefix->payloadSize;
                     pos += sizeof(ManagedCommandFixedBlockPrefix);
 
-                    // Commit any pending segment from the previous prefix before we
-                    // pick a destination for this one. Defensive — under normal builder
-                    // output a String entry would have flushed first, so dstSize is 0.
+                    // Trailing FBP(0): close the prior segment by rolling its bytes
+                    // into pendingAdvance. We do NOT flush here — flushes happen only
+                    // when the next segment won't fit alongside what's been deferred,
+                    // when variable-sized data takes over, or at end of execution.
                     if (dstSize > 0)
                     {
-                        InvokeFlushBuffer(ctx, output, dstSize);
+                        pendingAdvance += dstSize;
                         dstSize = 0;
                     }
 
-                    // Pick the destination once: zero-copy into the writer's tail when
-                    // it has room for the entire segment, otherwise the stack buffer
-                    // (FlushBuffer will memcpy into the writer when the segment ends).
-                    output     = (ctx->writerAvailable >= segmentSize) ? ctx->writerPtr : ctx->stackBuffer;
+                    if (segmentSize == 0)
+                        break;
+
+                    // FBP(N>0): claim the next segment. Flush only when it doesn't fit
+                    // alongside the already-deferred bytes. After any flush the
+                    // FlushBuffer contract guarantees ctx->writerAvailable >=
+                    // kManagedBlockMaxPayloadSize >= segmentSize, so the segment is
+                    // always claimable at writerPtr (offset 0) afterward.
+                    if (ctx->writerAvailable - pendingAdvance < segmentSize)
+                    {
+                        if (pendingAdvance > 0)
+                        {
+                            InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                            pendingAdvance = 0;
+                        }
+                    }
+                    output  = ctx->writerPtr + pendingAdvance;
                     dstSize = segmentSize;
                     break;
                 }
@@ -457,7 +722,14 @@ internal static unsafe class SerializationBackendManagedCommands
                         + "the accumulator decomposes it into DirectCopy{4,8} entries.");
 
                 case RttiDataType.String:
-                    // Commit the pending fixed segment before the string takes over.
+                    // FBP(0) precedes every String, so dstSize == 0 and
+                    // pendingAdvance may be non-zero. Flush both before the string
+                    // takes over the writer.
+                    if (pendingAdvance > 0)
+                    {
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                        pendingAdvance = 0;
+                    }
                     if (dstSize > 0)
                     {
                         InvokeFlushBuffer(ctx, output, dstSize);
@@ -466,15 +738,40 @@ internal static unsafe class SerializationBackendManagedCommands
                     ConsumeString(ctx, ref baseAddr, ref pos);
                     break;
 
+                case RttiDataType.ValueReferenceType:
+                    // Build emits FBP(0) before every VRT header, so dstSize == 0
+                    // here. pendingAdvance is threaded into the inner body so
+                    // bytes already deferred at the writer's tail survive the
+                    // recursion — the inner FBP(N) handler opens its segment
+                    // at writerPtr + pendingAdvance and only flushes when the
+                    // combined region wouldn't fit. Net result: a class with
+                    // many small VRT children coalesces into a single flush.
+                    ConsumeValueReference(ctx, ref baseAddr, ref output, ref dstSize, ref pendingAdvance, ref pos);
+                    break;
+
                 case RttiDataType.Array:
                 case RttiDataType.List:
+                    // Build emits FBP(0) before every linear-collection header,
+                    // so dstSize == 0 here. The collection's own writes (the
+                    // SInt32 count, the trivially-copyable bulk body, the tail
+                    // pad) all land at writerPtr — so any deferred bytes there
+                    // would be clobbered. Flush before handing off; the per-
+                    // element recursion path then re-accumulates pendingAdvance
+                    // across elements via the same ref.
+                    if (pendingAdvance > 0)
+                    {
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                        pendingAdvance = 0;
+                    }
+                    ConsumeLinearCollection(ctx, ref baseAddr, ref output, ref dstSize, ref pendingAdvance, ref pos);
+                    break;
+
                 case RttiDataType.Reference:
                 case RttiDataType.UnityObject:
                 case RttiDataType.EntityId:
                 case RttiDataType.DynamicBuffer:
                 case RttiDataType.PropertyNameId:
                 case RttiDataType.SimpleNativeType:
-                case RttiDataType.ValueReferenceType:
                 case RttiDataType.Unknown:
                     throw new NotSupportedException(
                         $"OpCode {(RttiDataType)pos[0]} is not implemented for managed command blocks.");
@@ -483,33 +780,31 @@ internal static unsafe class SerializationBackendManagedCommands
             }
 
             // Re-align pos to a 4-byte offset relative to entriesPtr before reading the
-            // next header. Only compact groups with an odd entry count actually need this
-            // (2 bytes of skip); large groups are already a multiple of 4.
+            // next header. Only compact groups with an odd entry count need this
+            // (2-byte skip); large groups are already a multiple of 4.
             long entryOffset = pos - (byte*)entriesPtr;
             long aligned = (entryOffset + 3) & ~3L;
             pos = (byte*)entriesPtr + aligned;
         }
 
-        // Final commit of any pending fixed segment. Skip when no DC entries are
-        // pending — e.g., the last entry was a String and ConsumeString already
-        // issued its own trailing flush — to avoid an unnecessary P/Invoke.
-        if (dstSize > 0)
-            InvokeFlushBuffer(ctx, output, dstSize);
-
-        return 0;
+        // No trailing flush here. pendingAdvance is owned by the outermost caller
+        // (ObjectToSerializationBuffer), which commits it once after its top-level
+        // ExecuteWriteCommands returns. Inner recursive callers (ConsumeValueReference,
+        // ConsumeLinearCollection's per-element loop) intentionally inherit any
+        // accumulated bytes so consecutive elements / nested instances coalesce
+        // into the same flush.
     }
 
     // Writes a string (length prefix + UTF-8 body + 4-byte alignment pad) into the
-    // writer in one of two ways:
-    //   - Fast path: the entire framed payload fits in the writer's current tail.
-    //     One zero-copy direct write, one flush. No Encoder needed.
-    //   - Chunked path: stream into the writer's tail in chunks, falling back to the
-    //     stack buffer whenever the tail can't hold the next codepoint (worst case
-    //     a 4-byte UTF-8 sequence). Each chunk commits via flushBuffer, which either
-    //     advances the writer in place or memcpys the stack chunk into the writer
-    //     (and may span block boundaries internally) — that memcpy is also how we
-    //     implicitly get fresh writer space when the previous flush left
-    //     writerAvailable at 0.
+    // writable region. The flushBuffer contract guarantees writerAvailable is at
+    // least kManagedBlockMaxPayloadSize on entry and after each flush, so we always
+    // write into ctx->writerPtr — no per-site stack-vs-writer branching.
+    //
+    // Two paths:
+    //   - Fast path: the whole framed payload fits in the current writable region.
+    //     One direct write, one flush, no Encoder needed.
+    //   - Chunked path: stream codepoints into the region in chunks, flushing
+    //     when the encoder fills the available space.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void ConsumeString(
         NativeBufferContext* ctx, ref byte baseAddr, ref byte* pos)
@@ -526,8 +821,7 @@ internal static unsafe class SerializationBackendManagedCommands
         int padBytes = (4 - (totalByteCount & 3)) & 3;
         int totalFramedSize = 4 + totalByteCount + padBytes;
 
-        // Fast path: whole framed payload fits in the writer's tail. One direct write,
-        // one flush, no Encoder state machine.
+        // Fast path: whole framed payload fits in the current writable region.
         if (ctx->writerAvailable >= totalFramedSize)
         {
             byte* dst = ctx->writerPtr;
@@ -540,13 +834,13 @@ internal static unsafe class SerializationBackendManagedCommands
             return;
         }
 
-        // Chunked path. Length header first — uses the writer's tail when ≥ 4 bytes
-        // are available, otherwise spills 4 bytes through the stack buffer.
+        // Chunked path. Length header first.
         WriteFramedInt32(ctx, totalByteCount);
 
-        // Body: stream chunk by chunk. At each step pick writer (zero-copy) when the
-        // tail can hold a worst-case 4-byte codepoint, else stack. Encoder is reused
-        // from the [ThreadStatic] cache.
+        // Body: stream chunk by chunk into the current writable region. After each
+        // flush the contract guarantees a fresh region of at least
+        // kManagedBlockMaxPayloadSize bytes (≥ 4, so even a worst-case 4-byte UTF-8
+        // codepoint always fits).
         if (totalByteCount > 0)
         {
             // Pass flush: false while input remains so the encoder can hold a
@@ -561,15 +855,11 @@ internal static unsafe class SerializationBackendManagedCommands
 
             while (!remaining.IsEmpty)
             {
-                bool useWriter = ctx->writerAvailable >= 4;
-                byte* dst = useWriter ? ctx->writerPtr : ctx->stackBuffer;
-                int   cap = useWriter ? ctx->writerAvailable : kManagedBlockMaxPayloadSize;
-
-                encoder.Convert(remaining, new Span<byte>(dst, cap),
+                encoder.Convert(remaining, new Span<byte>(ctx->writerPtr, ctx->writerAvailable),
                                 flush: false,
                                 out int charsUsed, out int bytesUsed, out _);
                 if (bytesUsed > 0)
-                    InvokeFlushBuffer(ctx, dst, bytesUsed);
+                    InvokeFlushBuffer(ctx, ctx->writerPtr, bytesUsed);
                 remaining = remaining.Slice(charsUsed);
             }
 
@@ -577,77 +867,1145 @@ internal static unsafe class SerializationBackendManagedCommands
             // is a no-op; for an unpaired high surrogate it emits a 3-byte
             // replacement character (U+FFFD).
             {
-                bool useWriter = ctx->writerAvailable >= 4;
-                byte* dst = useWriter ? ctx->writerPtr : ctx->stackBuffer;
-                int   cap = useWriter ? ctx->writerAvailable : kManagedBlockMaxPayloadSize;
-                encoder.Convert(ReadOnlySpan<char>.Empty, new Span<byte>(dst, cap),
+                encoder.Convert(ReadOnlySpan<char>.Empty, new Span<byte>(ctx->writerPtr, ctx->writerAvailable),
                                 flush: true,
                                 out _, out int bytesUsed, out _);
                 if (bytesUsed > 0)
-                    InvokeFlushBuffer(ctx, dst, bytesUsed);
+                    InvokeFlushBuffer(ctx, ctx->writerPtr, bytesUsed);
             }
         }
 
-        // Alignment padding (0–3 zero bytes). When the writer's tail has room we
-        // zero those bytes directly into the writer; otherwise we pass a stack-local
-        // (already zero-initialized) to flushBuffer so it can memcpy them straight
-        // out — saves a write into the stack buffer in the rare spill case.
+        // Alignment padding (0–3 zero bytes). The contract guarantees
+        // writerAvailable >= kManagedBlockMaxPayloadSize >= 3 here, so the pad
+        // always fits in the current region.
         if (padBytes > 0)
         {
-            if (ctx->writerAvailable >= padBytes)
-            {
-                Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
-                InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
-            }
-            else
-            {
-                int zeroes = 0;  // up to 3 bytes of guaranteed-zero source
-                InvokeFlushBuffer(ctx, (byte*)&zeroes, padBytes);
-            }
+            Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
+            InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
         }
     }
 
-    // Writes a 4-byte int32 into the writer's tail when it fits, otherwise spills
-    // by passing the address of the local parameter directly to flushBuffer.
-    // Native FlushBuffer always memcpys from non-writer-pointer buffers via
-    // writer.Write(...), so &value works as a transient source and we avoid the
-    // extra write into the stack buffer.
+    // Writes a 4-byte int32 into the writable region. The flushBuffer contract
+    // guarantees writerAvailable >= kManagedBlockMaxPayloadSize >= 4 on entry
+    // here (every caller has just flushed or is at start-of-execution), so this
+    // is unconditionally a single direct write + flush — no spill arm needed.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void WriteFramedInt32(NativeBufferContext* ctx, int value)
     {
-        if (ctx->writerAvailable >= 4)
+        Unsafe.WriteUnaligned(ctx->writerPtr, value);
+        InvokeFlushBuffer(ctx, ctx->writerPtr, 4);
+    }
+
+    // UWP routes ctor invocation through a GCHandle'd Action<object> instead
+    // of the delegate*<object,void> calli used elsewhere: Tools/rrw's IL
+    // rewriter rejects the calli's standalone-signature operand at load time.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe object GetOrCreateVrtInstance(
+        ref byte baseAddr, ValueReferenceHeader* header)
+    {
+        ref object slot = ref Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+        object obj = slot;
+        if (obj != null)
+            return obj;
+
+        Type type = UnmarshalSystemType(header->runtimeTypeHandle);
+        obj = RuntimeHelpers.GetUninitializedObject(type);
+        if (header->ctorFunctionPtr != IntPtr.Zero)
         {
-            Unsafe.WriteUnaligned(ctx->writerPtr, value);
-            InvokeFlushBuffer(ctx, ctx->writerPtr, 4);
+            try
+            {
+                ((delegate*<object, void>)header->ctorFunctionPtr)(obj);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+        slot = obj;
+        return obj;
+    }
+
+    // Consumes a ValueReferenceType entry: resolves (or allocates) the
+    // inner instance, then recurses into ExecuteWriteCommands with that
+    // instance pinned as the source. The body's own FBP(N)..FBP(0)
+    // bracketing drives buffer claims and flushes.
+    private static unsafe void ConsumeValueReference(
+        NativeBufferContext* ctx, ref byte baseAddr,
+        ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
+    {
+        var header = (ValueReferenceHeader*)pos;
+        pos += sizeof(ValueReferenceHeader);
+        byte* nestedStart = pos;
+        int nestedBytes = (int)header->nestedByteCount;
+
+        if (nestedBytes == 0)
+        {
+            pos = nestedStart;
+            return;
+        }
+
+        object obj = GetOrCreateVrtInstance(ref baseAddr, header);
+
+        // ObjectWrapper.Data is the offset-zero reference for the nested
+        // entries' fieldOffsets.
+        fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+        {
+            ExecuteWriteCommands(ctx, (IntPtr)nestedBase,
+                (IntPtr)nestedStart, nestedBytes, ref output, ref dstSize, ref pendingAdvance);
+        }
+
+        pos = nestedStart + nestedBytes;
+    }
+
+
+    // Returns the encoding GetOrCreateVrtInstance decodes for ctorFunctionPtr:
+    // a GCHandle to a pinned Action<object> on UWP (Tools/rrw rejects the
+    // delegate*<object,void> calli used elsewhere — see GetOrCreateVrtInstance),
+    // or the JIT/AOT entry-point address on every other backend.
+    // TODO: replace the reinterpret with RuntimeMethodHandle.FromIntPtr
+    // (.NET 5+) once UnityEngine.dll's reference assembly moves past
+    // netstandard2.1.
+    [RequiredByNativeCode]
+    internal static IntPtr GetConstructorMethodFunctionPointer(IntPtr methodHandleValue)
+    {
+        var handle = Unsafe.As<IntPtr, RuntimeMethodHandle>(ref methodHandleValue);
+        RuntimeHelpers.PrepareMethod(handle);
+        return handle.GetFunctionPointer();
+    }
+
+    // Consumes one ManagedCommandLinearCollection entry. Three paths share
+    // the same header + length prefix, then diverge:
+    //   - Trivially-copyable: count*elementStride raw bytes streamed in
+    //     one or more chunks, plus a 0..3 byte tail pad. Wire format
+    //     matches the legacy native Transfer_Blittable_ArrayField.
+    //   - Shuffle path: per-element body is purely DC + FBP and fits in
+    //     a single segment. Reserves count*elementWireSize in batches
+    //     sized to the writable region, runs the DC entries once per
+    //     element against a fixed per-element destination — no per-element
+    //     ExecuteWriteCommands frame, no per-element FBP segment claim.
+    //     Wire output is byte-identical to the per-element recursion path.
+    //   - Per-element recursion (general fallback): nestedByteCount bytes
+    //     of FBP-bracketed body executed once per element via
+    //     ExecuteWriteCommands with an element-pinned base.
+    //
+    // Null array / null List → write a 0 length prefix and return; matches
+    // the legacy auto-empty-on-write behavior in TransferField_LinearCollection.
+    private static unsafe void ConsumeLinearCollection(
+        NativeBufferContext* ctx, ref byte baseAddr,
+        ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
+    {
+        var header = (LinearCollectionHeader*)pos;
+        pos += sizeof(LinearCollectionHeader);
+        byte* nestedStart = pos;
+        int   nestedBytes = (int)header->nestedByteCount;
+
+        // Resolve the underlying byte[] for pinning (any T[] is pinnable as
+        // byte[] — the SZArray pinning helper computes the same data offset
+        // regardless of element type) and the element count.
+        byte[] dataAsBytes;
+        int    count;
+        if (header->kind == LinearCollectionKind.Array)
+        {
+            // Field at (baseAddr + fieldOffset) holds a T[] reference.
+            Array arr = Unsafe.As<byte, Array>(
+                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+            if (arr == null)
+            {
+                WriteFramedInt32(ctx, 0);
+                pos = nestedStart + nestedBytes;
+                return;
+            }
+            dataAsBytes = Unsafe.As<Array, byte[]>(ref arr);
+            count       = arr.Length;
         }
         else
         {
-            InvokeFlushBuffer(ctx, (byte*)&value, 4);
+            // Field at (baseAddr + fieldOffset) holds a List<T> reference.
+            // Reinterpret as ListLayout to read _items + _size in one shot.
+            ListLayout list = Unsafe.As<byte, ListLayout>(
+                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+            if (list == null || list._items == null)
+            {
+                WriteFramedInt32(ctx, 0);
+                pos = nestedStart + nestedBytes;
+                return;
+            }
+            dataAsBytes = list._items;
+            count       = list._size;
+        }
+
+        if ((header->flags & LinearCollectionFlags.TriviallyCopyable) != 0)
+        {
+            long  totalBytesL = (long)count * (long)header->elementStride;
+            // The legacy reader walks an SInt32 length then count*elementStride
+            // raw bytes; element counts above int.MaxValue are not representable.
+            int   totalBytes  = checked((int)totalBytesL);
+            int   padBytes    = (4 - (totalBytes & 3)) & 3;
+
+            if (totalBytes == 0)
+            {
+                // Empty array: just write the count (0). No element data follows.
+                WriteFramedInt32(ctx, count);
+            }
+            else
+            {
+                fixed (byte* dataPtr = dataAsBytes)
+                {
+                    int needed = 4 + totalBytes;
+                    if (ctx->writerAvailable >= needed)
+                    {
+                        // Fast path: count + entire body fits in the current
+                        // writable region. One MemoryCopy + one flush; the flush
+                        // becomes an AdvanceWritePosition with no C++ memcpy.
+                        Unsafe.WriteUnaligned(ctx->writerPtr, count);
+                        Buffer.MemoryCopy(dataPtr, ctx->writerPtr + 4, totalBytes, totalBytes);
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, needed);
+                    }
+                    else
+                    {
+                        // Body doesn't fit alongside the count. Write the count,
+                        // then hand the pinned source pointer directly to
+                        // FlushBuffer — its spill arm runs writer.Write(source,
+                        // totalBytes) which fills the writer's tail, transitions
+                        // through any number of cache-writer blocks, and lands
+                        // partway into the final block, all in one call. One
+                        // P/Invoke for an array of any size.
+                        WriteFramedInt32(ctx, count);
+                        InvokeFlushBuffer(ctx, dataPtr, totalBytes);
+                    }
+                }
+            }
+
+            if (padBytes > 0)
+            {
+                // The contract guarantees writerAvailable >= kManagedBlockMaxPayloadSize
+                // >= 3 here, so the 0..3-byte pad always fits in the current region.
+                Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
+                InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
+            }
+
+            pos = nestedStart + nestedBytes;
+            return;
+        }
+
+        if ((header->flags & LinearCollectionFlags.ShufflePath) != 0)
+        {
+            ConsumeLinearCollectionShufflePath(
+                ctx, dataAsBytes, count,
+                (long)header->elementStride,
+                (int)header->elementWireSize,
+                nestedStart, nestedBytes);
+            pos = nestedStart + nestedBytes;
+            return;
+        }
+
+        // Per-element recursion path: write SInt32 length prefix, then loop
+        // count times calling ExecuteWriteCommands with each element pinned.
+        // The body is the element class's command stream (FBP-bracketed
+        // DC + String entries). Each iteration's trailing FBP(0) ensures
+        // dstSize == 0 between elements, matching the executor invariant.
+        WriteFramedInt32(ctx, count);
+
+        if (count > 0)
+        {
+            fixed (byte* dataPtr = dataAsBytes)
+            {
+                long stride = (long)header->elementStride;
+                for (int i = 0; i < count; ++i)
+                {
+                    byte* elementPtr = dataPtr + i * stride;
+                    // Threading pendingAdvance by ref is the whole point of the
+                    // per-element loop fix: each element's FBP(N) opens its
+                    // segment at writerPtr + pendingAdvance and only flushes
+                    // when the combined region wouldn't fit, so an N-element
+                    // array of small structs coalesces into ceil(N*body/cap)
+                    // flushes instead of N.
+                    ExecuteWriteCommands(ctx, (IntPtr)elementPtr,
+                        (IntPtr)nestedStart, nestedBytes, ref output, ref dstSize, ref pendingAdvance);
+                }
+            }
+        }
+
+        pos = nestedStart + nestedBytes;
+    }
+
+    // Shuffle-path consumer for linear collections of value-type elements
+    // whose per-element body is purely DC + FBP and fits in a single segment.
+    // The body bytes are identical to what the per-element recursion path
+    // would walk; we just walk them once per element with a fixed per-element
+    // destination and skip all the FBP segment-claim / pendingAdvance bookkeeping.
+    //
+    // Buffer accounting: the FlushBuffer contract guarantees writerAvailable >=
+    // kManagedBlockMaxPayloadSize after every flush, and the build side gates
+    // shuffle eligibility on elementWireSize <= kManagedBlockMaxPayloadSize, so
+    // the per-batch element count is always >= 1. Each batch fills the writer's
+    // current region in a single tight loop and commits with one InvokeFlushBuffer
+    // call — taking the per-element P/Invoke count from O(count) (one per element
+    // in the per-element recursion path) to O(ceil(count * elementWireSize / cap)).
+    private static unsafe void ConsumeLinearCollectionShufflePath(
+        NativeBufferContext* ctx,
+        byte[] dataAsBytes, int count,
+        long stride, int elementWireSize,
+        byte* body, int bodyLen)
+    {
+        WriteFramedInt32(ctx, count);
+        if (count == 0)
+            return;
+
+        fixed (byte* dataPtr = dataAsBytes)
+        {
+            byte* srcCur      = dataPtr;
+            int   elementsLeft = count;
+
+            while (elementsLeft > 0)
+            {
+                // Build-side gate (elementWireSize <= kManagedBlockMaxPayloadSize)
+                // combined with FlushBuffer's post-flush availability contract
+                // makes batch >= 1 unconditionally on entry.
+                int batch = ctx->writerAvailable / elementWireSize;
+                if (batch > elementsLeft)
+                    batch = elementsLeft;
+
+                byte* dst        = ctx->writerPtr;
+                int   batchBytes = batch * elementWireSize;
+
+                // Pre-zero the batch's wire window. The transposed walker uses
+                // width-correct stores (byte/ushort/int/long matching each DC
+                // opcode's wire-slot size); padding bytes between slots — which
+                // the prior int-store version implicitly zeroed via 4-byte
+                // spillover from DC1/DC2 stores — get their zeros from this
+                // memset instead. One memset per batch (<= writerAvailable,
+                // typically a single page) is negligible against the
+                // count*K -> K body-walk reduction below.
+                Unsafe.InitBlockUnaligned(dst, 0, (uint)batchBytes);
+
+                ExecuteShuffleBatch(srcCur, dst, batch, stride, elementWireSize, body, bodyLen);
+
+                InvokeFlushBuffer(ctx, ctx->writerPtr, batchBytes);
+                srcCur       += (long)batch * stride;
+                elementsLeft -= batch;
+            }
         }
     }
 
-    // kManagedBlockMaxPayloadSize must match the C++ constant in SerializationCommands.h.
-    private const int kManagedBlockMaxPayloadSize = 256;
+    // Transposed walker for shuffle-path bodies. Mirrors the DC opcode
+    // dispatch in ExecuteWriteCommands but flips the loop nesting from
+    //   for each element: walk body, dispatch every DC group
+    // to
+    //   walk body once: for each DC group, for each entry, copy across all
+    //   `batch` elements with strided pointer arithmetic
+    // so the switch dispatch + ConsumeDirectCopyGroup header read +
+    // (entryOffset + 3) & ~3L re-align run K times instead of K * batch
+    // times. The element loop becomes the innermost — predictable counted
+    // iteration over a strided memory copy with constant offsets, which
+    // also gives the JIT a fighting chance to vectorise even though stride
+    // and elementWireSize are runtime values.
+    //
+    // Width-correct stores. The per-element predecessor wrote 4 bytes for
+    // every DC1 / DC2 entry — only the low N bytes carried meaning, the
+    // upper 4-N spilled into adjacent slots and were either overwritten by
+    // subsequent entries within the same element, or by the first entries
+    // of the next element, or by the trailing FBP(0) marker. Per-element
+    // ordering kept that overlap-and-fixup pattern coherent. Transposing
+    // breaks it: an entry's spillover for element e now lands in element
+    // e+1 *after* element e+1's matching entry has already written its
+    // value, with no later write to fix it up. So the transposed walker
+    // stores exactly N bytes per DC<N> opcode (byte/ushort/int/long); the
+    // intra-element padding that the int-store spillover used to zero
+    // comes from the caller's one-shot InitBlockUnaligned of the batch's
+    // wire window. Net wire bytes are byte-for-byte identical; the
+    // intermediate buffer state along the way differs, but only in the
+    // padding bytes which both versions end up with as zero.
+    //
+    // FBP entries exist in the body for wire-format consistency with the
+    // per-element recursion path; we skip them. Any non-DC, non-FBP opcode
+    // indicates the build side incorrectly tagged a body as shuffle-
+    // eligible — fail fast.
+    private static unsafe void ExecuteShuffleBatch(
+        byte* srcBase, byte* dstBase,
+        int batch,
+        long srcStride, int dstStride,
+        byte* body, int bodyLen)
+    {
+        byte* pos    = body;
+        byte* endPos = body + bodyLen;
+
+        while (pos < endPos)
+        {
+            var opCode = (RttiDataType)pos[0];
+
+            switch (opCode)
+            {
+                case RttiDataType.FixedBlockPrefix:
+                    pos += sizeof(ManagedCommandFixedBlockPrefix);
+                    continue;
+
+                // ---- Compact aligned ----
+                case RttiDataType.DirectCopy1:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(d + (long)i * dstStride) = *(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy2:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        nint fieldOffset = (nint)entry->fieldOffset * 2;
+                        nint destOffset  = (nint)entry->destOffset  * 2;
+                        byte* s = srcBase + fieldOffset;
+                        byte* d = dstBase + destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(ushort*)(d + (long)i * dstStride) = *(ushort*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        nint fieldOffset = (nint)entry->fieldOffset * 4;
+                        nint destOffset  = (nint)entry->destOffset  * 4;
+                        byte* s = srcBase + fieldOffset;
+                        byte* d = dstBase + destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(int*)(d + (long)i * dstStride) = *(int*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        nint fieldOffset = (nint)entry->fieldOffset * 8;
+                        nint destOffset  = (nint)entry->destOffset  * 8;
+                        byte* s = srcBase + fieldOffset;
+                        byte* d = dstBase + destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(long*)(d + (long)i * dstStride) = *(long*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // ---- Compact unaligned ----
+                case RttiDataType.DirectCopy2_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<ushort>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<int>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<long>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // ---- Large aligned ----
+                case RttiDataType.DirectCopy1_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(d + (long)i * dstStride) = *(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy2_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        uint fieldOffset = entry->fieldOffset * 2;
+                        uint destOffset  = entry->destOffset  * 2;
+                        byte* s = srcBase + fieldOffset;
+                        byte* d = dstBase + destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(ushort*)(d + (long)i * dstStride) = *(ushort*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        uint fieldOffset = entry->fieldOffset * 4;
+                        uint destOffset  = entry->destOffset  * 4;
+                        byte* s = srcBase + fieldOffset;
+                        byte* d = dstBase + destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(int*)(d + (long)i * dstStride) = *(int*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        uint fieldOffset = entry->fieldOffset * 8;
+                        uint destOffset  = entry->destOffset  * 8;
+                        byte* s = srcBase + fieldOffset;
+                        byte* d = dstBase + destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            *(long*)(d + (long)i * dstStride) = *(long*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // ---- Large unaligned ----
+                case RttiDataType.DirectCopy2_L_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<ushort>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4_L_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<int>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8_L_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->fieldOffset;
+                        byte* d = dstBase + entry->destOffset;
+                        for (int i = 0; i < batch; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<long>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                default:
+                    throw new InvalidOperationException(
+                        $"Unexpected opcode {opCode} in shuffle-path body. The build side gates "
+                        + "shuffle eligibility on a DC-only body — anything else here is a bug.");
+            }
+
+            // Compact groups with an odd entry count leave pos 2 bytes short of
+            // a 4-byte boundary; re-align so the next header (FBP or DC group)
+            // lands at the alignment its uint fields need.
+            long entryOffset = pos - body;
+            long aligned     = (entryOffset + 3) & ~3L;
+            pos = body + aligned;
+        }
+    }
+
+    // Read-path mirror of ConsumeLinearCollection. Reads the count prefix, then
+    // routes on the same flag set the writer used:
+    //   - Trivially-copyable: bulk memcpy count*elementStride from input into
+    //     the freshly allocated array's backing store, then skip the 4-byte
+    //     tail pad.
+    //   - Shuffle path: input contains count * elementWireSize bytes laid out
+    //     as N concatenated per-element bodies; ExecuteReadShuffleBody walks
+    //     the FBP-bracketed body once per element with src=input slice and
+    //     dst=array element slot, dispatching DC opcodes inline.
+    //   - Per-element recursion (general fallback): the FBP-bracketed body is
+    //     consumed via ExecuteReadCommands once per element with a fresh
+    //     element-pinned baseAddr.
+    //
+    // The element Type is rebuilt via Type.GetTypeFromHandle from the
+    // RuntimeTypeHandle.Value the build side stamped into elementTypeHandle.
+    // For List<T> we additionally allocate an uninitialized List<T> and stamp
+    // its _items / _size via the same ListLayout reinterpret the write side
+    // uses to read them (the _version slot stays at zero — a valid initial
+    // state for an uninitialized List<T>). Wire format always emits the
+    // header regardless of null source, so a 0-length count leaves the
+    // parent's field untouched (default-null).
+    private static unsafe void ConsumeLinearCollectionRead(
+        NativeReadBufferContext* ctx,
+        ref byte baseAddr,
+        ref byte* pos)
+    {
+        var header = (LinearCollectionHeader*)pos;
+        pos += sizeof(LinearCollectionHeader);
+        byte* nestedStart = pos;
+        int   nestedBytes = (int)header->nestedByteCount;
+
+        // Count prefix: 4 bytes, sits between segments (no FBP bracketing) and
+        // is always present even for null/empty source collections.
+        if (ctx->readerAvailable < 4)
+            InvokeEnsureReadable(ctx, 4);
+        int count = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+        ctx->readerPtr      += 4;
+        ctx->readerAvailable -= 4;
+
+        // Always allocate and assign the collection, even when count == 0.
+        // The wire format collapses null and empty source collections to the
+        // same `count == 0` framing (see ConsumeLinearCollection on the write
+        // side: both `arr == null` and `arr.Length == 0` short-circuit to
+        // WriteFramedInt32(0) with no body). The legacy linear-collection
+        // readers (Transfer_Blittable_ArrayField via ResizeSTLStyleArray,
+        // ArrayOfManagedObjectsTransferer via scripting_array_new(..., 0))
+        // both materialize a non-null zero-length collection in that case,
+        // so user OnAfterDeserialize callbacks (e.g. UpmCache iterating
+        // `m_SerializedProductSearchPackageInfoProductIds.Length`) treat
+        // post-deserialize fields as guaranteed-non-null. Skipping the
+        // assignment here would leave the field at its CLR default (null)
+        // and silently break that contract — observed as a NullReferenceException
+        // in UpmCache.OnAfterDeserialize during code-reload backup restore.
+        //
+        // The build side stamped the native MethodTable* (via
+        // scripting_class_get_type(elementClass).GetBackendPtr()) into
+        // elementTypeHandle. UnmarshalSystemType (defined above) routes
+        // through RuntimeTypeHandle.FromIntPtr on CoreCLR and through an
+        // Unsafe.As reinterpret on Mono — see the helper's docs for why
+        // a direct reinterpret can't be used on CoreCLR (RuntimeTypeHandle
+        // is a managed-reference struct there, not a raw IntPtr).
+        Type elementType = UnmarshalSystemType(header->elementTypeHandle);
+        Array arr = Array.CreateInstance(elementType, count);
+        byte[] dataAsBytes = Unsafe.As<Array, byte[]>(ref arr);
+
+        if (count > 0)
+        {
+            if ((header->flags & LinearCollectionFlags.TriviallyCopyable) != 0)
+            {
+                long totalBytesL = (long)count * (long)header->elementStride;
+                int  totalBytes  = checked((int)totalBytesL);
+                int  padBytes    = (4 - (totalBytes & 3)) & 3;
+                if (totalBytes > 0)
+                {
+                    // Bulk-stream straight into the freshly-allocated array's
+                    // backing store, bypassing the spill buffer entirely. Drains
+                    // any prefix already in readerPtr/readerAvailable, then reads
+                    // the remainder directly from the CachedReader.
+                    fixed (byte* dataPtr = dataAsBytes)
+                    {
+                        InvokeReadBytesDirect(ctx, dataPtr, totalBytes);
+                    }
+                }
+                if (padBytes > 0)
+                {
+                    if (ctx->readerAvailable < padBytes)
+                        InvokeEnsureReadable(ctx, padBytes);
+                    ctx->readerPtr      += padBytes;
+                    ctx->readerAvailable -= padBytes;
+                }
+            }
+            else if ((header->flags & LinearCollectionFlags.ShufflePath) != 0)
+            {
+                int  elementWireSize = (int)header->elementWireSize;
+                long stride          = (long)header->elementStride;
+
+                // Process the wire payload in L1-sized batches: each batch
+                // reads its own wire bytes directly from the CachedReader into
+                // a stack scratch buffer, then runs the transposed walker
+                // against the matching slice of the managed array. Two wins
+                // over staging the whole payload in a pooled buffer:
+                //   1. Peak memory is just `scratch + managed array`, not
+                //      `wireBytes + managed array` — important for large
+                //      arrays where wire bytes can be many MB.
+                //   2. Both source (scratch, ~kReadShuffleScratchBytes) and
+                //      destination (batch slice of the managed array) stay
+                //      hot in L1 across all K DC entries of one batch. The
+                //      one-shot version strided the dest through the entire
+                //      managed array per DC entry, blowing the cache.
+                //
+                // P/Invoke cost: count / batchElements ReadBytesDirect calls
+                // per array. With kReadShuffleScratchBytes = 32 KB and a
+                // typical elementWireSize of 60–80 B, batchElements is in the
+                // 400–500 range — so a 100k-element array takes ~200–250
+                // callbacks. Versus ~8000 if we were chunking through the
+                // 1 KB EnsureReadable spill buffer; versus 1 for the prior
+                // pooled-buffer version. The middle ground retains the cache
+                // win without paying the per-element-EnsureReadable cost.
+                //
+                // Build-side gate (elementWireSize > 0 and
+                // elementWireSize <= kManagedBlockMaxPayloadSize = 256B)
+                // makes batchElements >= kReadShuffleScratchBytes / 256 = 128
+                // unconditionally on entry.
+                const int kReadShuffleScratchBytes = 1024;
+                byte* scratch = stackalloc byte[kReadShuffleScratchBytes];
+                int batchElements = kReadShuffleScratchBytes / elementWireSize;
+
+                fixed (byte* dataPtr = dataAsBytes)
+                {
+                    int batchStart   = 0;
+                    int elementsLeft = count;
+                    while (elementsLeft > 0)
+                    {
+                        int batch      = (elementsLeft < batchElements) ? elementsLeft : batchElements;
+                        int batchBytes = batch * elementWireSize;
+
+                        InvokeReadBytesDirect(ctx, scratch, batchBytes);
+
+                        ExecuteReadShuffleBatch(
+                            scratch, dataPtr + (long)batchStart * stride,
+                            batch,
+                            elementWireSize, stride,
+                            nestedStart, nestedBytes);
+
+                        batchStart   += batch;
+                        elementsLeft -= batch;
+                    }
+                }
+            }
+            else
+            {
+                // Per-element recursion: each element's FBP-bracketed body is
+                // walked by ExecuteReadCommands with the element pinned. The
+                // trailing FBP(0) on each iteration advances ctx->readerPtr by
+                // elementWireSize, stepping naturally to the next element.
+                fixed (byte* dataPtr = dataAsBytes)
+                {
+                    long stride = (long)header->elementStride;
+                    int  segSize = 0;
+                    for (int i = 0; i < count; ++i)
+                    {
+                        byte* elemBase = dataPtr + (long)i * stride;
+                        ExecuteReadCommands(
+                            ctx,
+                            ref Unsafe.AsRef<byte>(elemBase),
+                            nestedStart, nestedBytes,
+                            ref segSize);
+                    }
+                }
+            }
+        }
+
+        if (header->kind == LinearCollectionKind.Array)
+        {
+            Unsafe.As<byte, Array>(
+                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset)) = arr;
+        }
+        else
+        {
+            Type listType = typeof(List<>).MakeGenericType(elementType);
+            object listObj = RuntimeHelpers.GetUninitializedObject(listType);
+            ListLayout layout = Unsafe.As<ListLayout>(listObj);
+            layout._items = dataAsBytes;
+            layout._size  = count;
+            Unsafe.As<byte, ListLayout>(
+                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset)) = layout;
+        }
+
+        pos = nestedStart + nestedBytes;
+    }
+
+    // Read mirror of ExecuteShuffleBatch. Walks the FBP-bracketed DC-only
+    // body once, then for each DC entry runs an inner loop across all
+    // `count` elements with strided pointer arithmetic — moving the switch
+    // dispatch + ConsumeDirectCopyGroup header read + 4-byte re-align cost
+    // from O(K * count) down to O(K). Width-correct loads and stores
+    // throughout (read N from wire-side `srcBase + destOffset`, store N
+    // into managed-side `dstBase + fieldOffset`); the read direction
+    // already had no spillover, so the transposition is straight loop
+    // inversion with no semantic change. Caller pins the managed array
+    // with `fixed`, so raw pointer arithmetic against `dstBase` is safe
+    // for the duration of the call. FBP entries are skipped; any non-DC,
+    // non-FBP opcode trips the InvalidOperationException because the
+    // build side guarantees DC-only bodies for the shuffle flag.
+    private static unsafe void ExecuteReadShuffleBatch(
+        byte* srcBase, byte* dstBase,
+        int count,
+        int srcStride, long dstStride,
+        byte* body, int bodyLen)
+    {
+        byte* pos    = body;
+        byte* endPos = body + bodyLen;
+
+        while (pos < endPos)
+        {
+            var opCode = (RttiDataType)pos[0];
+
+            switch (opCode)
+            {
+                case RttiDataType.FixedBlockPrefix:
+                    pos += sizeof(ManagedCommandFixedBlockPrefix);
+                    continue;
+
+                // ---- Compact aligned ----
+                case RttiDataType.DirectCopy1:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(d + (long)i * dstStride) = *(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy2:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        nint fieldOffset = (nint)entry->fieldOffset * 2;
+                        nint destOffset  = (nint)entry->destOffset  * 2;
+                        byte* s = srcBase + destOffset;
+                        byte* d = dstBase + fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(ushort*)(d + (long)i * dstStride) = *(ushort*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        nint fieldOffset = (nint)entry->fieldOffset * 4;
+                        nint destOffset  = (nint)entry->destOffset  * 4;
+                        byte* s = srcBase + destOffset;
+                        byte* d = dstBase + fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(int*)(d + (long)i * dstStride) = *(int*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        nint fieldOffset = (nint)entry->fieldOffset * 8;
+                        nint destOffset  = (nint)entry->destOffset  * 8;
+                        byte* s = srcBase + destOffset;
+                        byte* d = dstBase + fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(long*)(d + (long)i * dstStride) = *(long*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // ---- Compact unaligned ----
+                case RttiDataType.DirectCopy2_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<ushort>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<int>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyCompactEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<long>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // ---- Large aligned ----
+                case RttiDataType.DirectCopy1_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(d + (long)i * dstStride) = *(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy2_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        uint fieldOffset = entry->fieldOffset * 2;
+                        uint destOffset  = entry->destOffset  * 2;
+                        byte* s = srcBase + destOffset;
+                        byte* d = dstBase + fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(ushort*)(d + (long)i * dstStride) = *(ushort*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        uint fieldOffset = entry->fieldOffset * 4;
+                        uint destOffset  = entry->destOffset  * 4;
+                        byte* s = srcBase + destOffset;
+                        byte* d = dstBase + fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(int*)(d + (long)i * dstStride) = *(int*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8_L:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        uint fieldOffset = entry->fieldOffset * 8;
+                        uint destOffset  = entry->destOffset  * 8;
+                        byte* s = srcBase + destOffset;
+                        byte* d = dstBase + fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            *(long*)(d + (long)i * dstStride) = *(long*)(s + (long)i * srcStride);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // ---- Large unaligned ----
+                case RttiDataType.DirectCopy2_L_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<ushort>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy4_L_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<int>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+                case RttiDataType.DirectCopy8_L_Unaligned:
+                {
+                    var entry = ConsumeDirectCopyGroup<DirectCopyLargeEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* s = srcBase + entry->destOffset;
+                        byte* d = dstBase + entry->fieldOffset;
+                        for (int i = 0; i < count; ++i)
+                            Unsafe.WriteUnaligned(d + (long)i * dstStride, Unsafe.ReadUnaligned<long>(s + (long)i * srcStride));
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                default:
+                    throw new InvalidOperationException(
+                        $"Unexpected opcode {opCode} in shuffle-path body. The build side gates "
+                        + "shuffle eligibility on a DC-only body — anything else here is a bug.");
+            }
+
+            long entryOffset = pos - body;
+            long aligned     = (entryOffset + 3) & ~3L;
+            pos = body + aligned;
+        }
+    }
+
+    // Read-path mirror of ConsumeValueReference. The inner body is its own
+    // self-contained FBP(N)..FBP(0) chain, so we hand ExecuteReadCommands a
+    // fresh innerSegmentSize=0.
+    private static unsafe void ConsumeValueReferenceRead(
+        NativeReadBufferContext* ctx, ref byte baseAddr, ref byte* pos)
+    {
+        var header = (ValueReferenceHeader*)pos;
+        pos += sizeof(ValueReferenceHeader);
+        byte* nestedStart = pos;
+        int nestedBytes = (int)header->nestedByteCount;
+
+        if (nestedBytes == 0)
+        {
+            pos = nestedStart;
+            return;
+        }
+
+        object obj = GetOrCreateVrtInstance(ref baseAddr, header);
+
+        // `fixed` pins the inner instance across the native ensureReadable
+        // / readBytesDirect P/Invokes inside the recursion.
+        fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+        {
+            int innerSegmentSize = 0;
+            ExecuteReadCommands(
+                ctx,
+                ref Unsafe.AsRef<byte>(nestedBase),
+                nestedStart, nestedBytes,
+                ref innerSegmentSize);
+        }
+
+        pos = nestedStart + nestedBytes;
+    }
 
     [RequiredByNativeCode]
     public static unsafe int SerializationBufferToObject(
         IntPtr pinnedBase,
         IntPtr entriesPtr,
         int entryBufferSize,
-        int inputBufferSize,
-        IntPtr inputBuffer)
+        IntPtr readContext)
     {
         // Managed object memory: accessed via ref so the GC can track it (the caller
         // currently pins, but the contract is "managed memory"). Unmanaged buffers
         // (input, command stream) stay as raw byte*.
         ref byte baseAddr = ref Unsafe.AsRef<byte>((void*)pinnedBase);
-        byte* input = (byte*)inputBuffer;
-        byte* pos = (byte*)entriesPtr;
-        byte* endPos = pos + entryBufferSize;
-        _ = inputBufferSize;
+        var ctx = (NativeReadBufferContext*)readContext;
+
+        int currentSegmentSize = 0;
+        ExecuteReadCommands(
+            ctx,
+            ref baseAddr,
+            (byte*)entriesPtr, entryBufferSize,
+            ref currentSegmentSize);
+        return 0;
+    }
+
+    // Inner loop shared by SerializationBufferToObject (top-level) and
+    // ConsumeLinearCollectionRead (per-element recursion). Each segment's DC
+    // destOffsets restart at 0; segments are laid out contiguously in the
+    // refill window we receive from EnsureReadable. We advance ctx->readerPtr
+    // past each completed segment when the trailing FBP(0) fires so the next
+    // segment's destOffsets land on the right slice.
+    //
+    // currentSegmentSize is threaded by ref so a recursion frame opened inside
+    // a segment (for nested per-element bodies) sees the parent's outstanding
+    // segment size and doesn't drop or double-advance the read cursor.
+    private static unsafe void ExecuteReadCommands(
+        NativeReadBufferContext* ctx,
+        ref byte baseAddr,
+        byte* entryBase, int entryBufSize,
+        ref int currentSegmentSize)
+    {
+        byte* pos    = entryBase;
+        byte* endPos = entryBase + entryBufSize;
 
         while (pos < endPos)
         {
+            // Refresh segment-local read cursor each iteration. ctx->readerPtr is
+            // stable within a segment (no ensureReadable calls between FBP(N>0)
+            // and FBP(0)), but FBP(0), variable-sized entries (LinearCollection,
+            // future String/VRT), and the leading FBP(N>0) of the next segment
+            // may all move it, so we re-snapshot before reading any DC entry.
+            byte* input = ctx->readerPtr;
             var opCode = (RttiDataType)pos[0];
 
             switch (opCode)
@@ -827,21 +2185,55 @@ internal static unsafe class SerializationBackendManagedCommands
                 }
 
                 case RttiDataType.FixedBlockPrefix:
-                    // Write-path metadata only; nothing to do on read. Just skip the prefix.
+                {
+                    var prefix = (ManagedCommandFixedBlockPrefix*)pos;
                     pos += sizeof(ManagedCommandFixedBlockPrefix);
+                    if (prefix->payloadSize > 0)
+                    {
+                        // Open-segment marker: ensure the next `payloadSize` bytes
+                        // are addressable contiguously at ctx->readerPtr. We don't
+                        // advance the cursor here — DC entries within the segment
+                        // index off ctx->readerPtr + entry->destOffset; the
+                        // matching FBP(0) advances past the segment.
+                        currentSegmentSize = prefix->payloadSize;
+                        if (ctx->readerAvailable < currentSegmentSize)
+                            InvokeEnsureReadable(ctx, currentSegmentSize);
+                    }
+                    else
+                    {
+                        // Close-segment marker: commit the segment we just read
+                        // by advancing the cursor past it. readerAvailable shrinks
+                        // by the same amount; if a subsequent ensureReadable
+                        // exceeds what's left, the spill path will refill from the
+                        // CachedReader.
+                        ctx->readerPtr      += currentSegmentSize;
+                        ctx->readerAvailable -= currentSegmentSize;
+                        currentSegmentSize = 0;
+                    }
                     break;
+                }
+
+                case RttiDataType.Array:
+                case RttiDataType.List:
+                {
+                    ConsumeLinearCollectionRead(ctx, ref baseAddr, ref pos);
+                    break;
+                }
+
+                case RttiDataType.ValueReferenceType:
+                {
+                    ConsumeValueReferenceRead(ctx, ref baseAddr, ref pos);
+                    break;
+                }
 
                 case RttiDataType.DirectCopyBlock:
                 case RttiDataType.String:
-                case RttiDataType.Array:
-                case RttiDataType.List:
                 case RttiDataType.Reference:
                 case RttiDataType.UnityObject:
                 case RttiDataType.EntityId:
                 case RttiDataType.DynamicBuffer:
                 case RttiDataType.PropertyNameId:
                 case RttiDataType.SimpleNativeType:
-                case RttiDataType.ValueReferenceType:
                 case RttiDataType.Unknown:
                     throw new NotSupportedException(
                         $"OpCode {opCode} is not implemented for managed command blocks.");
@@ -851,11 +2243,9 @@ internal static unsafe class SerializationBackendManagedCommands
 
             // Match the writer's 4-byte header alignment (see ObjectToSerializationBuffer
             // for details). Compact groups with an odd entry count leave pos 2 bytes short.
-            long entryOffset = pos - (byte*)entriesPtr;
+            long entryOffset = pos - entryBase;
             long aligned = (entryOffset + 3) & ~3L;
-            pos = (byte*)entriesPtr + aligned;
+            pos = entryBase + aligned;
         }
-
-        return 0;
     }
 }

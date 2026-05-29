@@ -94,17 +94,14 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void UpdatePosition()
         {
-            float pos = 0;
-
-            if (node.Previous != null)
-            {
+            float pos;
+            if (node.Previous == null)
+                pos = -(float)(m_CollectionView.scrollValue % m_CollectionView.fixedItemHeight);
+            else
                 pos = node.Previous.Value.verticalOffset + m_CollectionView.fixedItemHeight;
-            }
 
             if (!Mathf.Approximately(pos, verticalOffset))
-            {
                 verticalOffset = pos;
-            }
         }
 
         public void DetachElement()
@@ -146,6 +143,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             {
                 element.pseudoStates &= ~PseudoStates.Hover;
             }
+        }
+
+        public void SetSticky(bool sticky, bool stuck = false)
+        {
+            element.EnableInClassList(CollectionView.stickyUssClassName, sticky && !stuck);
+            element.EnableInClassList(CollectionView.stuckUssClassName, stuck);
         }
     }
 }

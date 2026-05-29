@@ -97,12 +97,23 @@ namespace UnityEditor.Build.Reporting
         ///<summary>The type of build.</summary>
         public BuildType buildType { get; }
 
-		// TODO: This should be deprecated, it was tracking use of Multi-process assetbundle building, removed in 6.4
-        ///<summary>Whether the multi-process option was enabled for the build.</summary>
+		//*undocumented* Deprecated: Multi-process AssetBundle building was removed in Unity 6.4.
+        [Obsolete("multiProcessEnabled is deprecated and will be removed in a future release. Multi-process AssetBundle building was removed in Unity 6.4.", false)]
         public bool multiProcessEnabled { get; }
 
         ///<summary>For ContentDirectory builds this returns the Hash128 of the build manifest. For other build types this returns a default Hash128.</summary>
         public Hash128 buildManifestHash { get; }
+
+        ///<summary>The Asset path of the <see cref="UnityEditor.Build.Profile.BuildProfile"/> that was active when the build started.</summary>
+        ///<remarks>An empty string when no user-created BuildProfile was active (the "classic platform" case),
+        /// or when the active profile's target/subtarget did not match the build's <see cref="platform"/>/subtarget.
+        /// Use <see cref="UnityEditor.Build.Profile.BuildProfile.GetActiveBuildProfile"/> to query the active profile during a build.</remarks>
+        public string buildProfilePath { get; }
+
+        ///<summary>The AssetDatabase GUID of the <see cref="UnityEditor.Build.Profile.BuildProfile"/> that was active when the build started.</summary>
+        ///<remarks>A default-valued <see cref="GUID"/> when no profile was recorded.  Otherwise it matches the AssetDatabase GUID of the
+        /// asset at <see cref="buildProfilePath"/>. Useful for tracking the profile across renames or moves.</remarks>
+        public GUID buildProfileGuid { get; }
 
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum
         {

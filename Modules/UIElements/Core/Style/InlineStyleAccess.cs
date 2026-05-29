@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -120,6 +121,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class InlineStyleAccess : StyleValueCollection
     {
         private static StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
@@ -154,6 +156,7 @@ namespace UnityEngine.UIElements
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal struct InlineRule
         {
             public StyleSheet sheet;

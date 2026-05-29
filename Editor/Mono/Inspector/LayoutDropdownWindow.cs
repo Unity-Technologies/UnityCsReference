@@ -88,11 +88,11 @@ namespace UnityEditor
             m_InitValues = new Vector2[targetObjects.Length, 4];
             for (int i = 0; i < targetObjects.Length; i++)
             {
-                RectTransform gui = targetObjects[i] as RectTransform;
-                m_InitValues[i, 0] = gui.anchorMin;
-                m_InitValues[i, 1] = gui.anchorMax;
-                m_InitValues[i, 2] = gui.anchoredPosition;
-                m_InitValues[i, 3] = gui.sizeDelta;
+                RectTransform rectTransform = targetObjects[i] as RectTransform;
+                m_InitValues[i, 0] = rectTransform.anchorMin;
+                m_InitValues[i, 1] = rectTransform.anchorMax;
+                m_InitValues[i, 2] = rectTransform.anchoredPosition;
+                m_InitValues[i, 3] = rectTransform.sizeDelta;
             }
         }
 
@@ -287,8 +287,9 @@ namespace UnityEditor
             var targetObjects = anchorMin.serializedObject.targetObjects;
             for (int i = 0; i < targetObjects.Length; i++)
             {
-                RectTransform gui = targetObjects[i] as RectTransform;
-                Undo.RecordObject(gui, "Change Rectangle Anchors");
+                RectTransform rectTransform = targetObjects[i] as RectTransform;
+                const string undoName = "Change Rectangle Anchors";
+                Undo.RecordObject(rectTransform, undoName);
 
                 if (doPosition)
                 {
@@ -296,71 +297,71 @@ namespace UnityEditor
                     {
                         Vector2 temp;
 
-                        temp = gui.anchorMin;
+                        temp = rectTransform.anchorMin;
                         temp[axis] = defaultValues[i, 0][axis];
-                        gui.anchorMin = temp;
+                        rectTransform.anchorMin = temp;
 
-                        temp = gui.anchorMax;
+                        temp = rectTransform.anchorMax;
                         temp[axis] = defaultValues[i, 1][axis];
-                        gui.anchorMax = temp;
+                        rectTransform.anchorMax = temp;
 
-                        temp = gui.anchoredPosition;
+                        temp = rectTransform.anchoredPosition;
                         temp[axis] = defaultValues[i, 2][axis];
-                        gui.anchoredPosition = temp;
+                        rectTransform.anchoredPosition = temp;
 
-                        temp = gui.sizeDelta;
+                        temp = rectTransform.sizeDelta;
                         temp[axis] = defaultValues[i, 3][axis];
-                        gui.sizeDelta = temp;
+                        rectTransform.sizeDelta = temp;
                     }
                 }
 
                 if (doPivot && layoutMode != LayoutMode.Undefined)
                 {
-                    RectTransformEditor.SetPivotSmart(gui, kPivotsForModes[(int)layoutMode], axis, true, true);
+                    RectTransformEditor.SetPivotForAxis(rectTransform, kPivotsForModes[(int)layoutMode], axis, true, true, undoName);
                 }
 
                 Vector2 refPosition = Vector2.zero;
                 switch (layoutMode)
                 {
                     case LayoutMode.Min:
-                        RectTransformEditor.SetAnchorSmart(gui, 0, axis, false, true, true);
-                        RectTransformEditor.SetAnchorSmart(gui, 0, axis, true, true, true);
-                        refPosition = gui.offsetMin;
-                        EditorUtility.SetDirty(gui);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 0, axis, false, true, true);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 0, axis, true, true, true);
+                        refPosition = rectTransform.offsetMin;
+                        EditorUtility.SetDirty(rectTransform);
                         break;
                     case LayoutMode.Middle:
-                        RectTransformEditor.SetAnchorSmart(gui, 0.5f, axis, false, true, true);
-                        RectTransformEditor.SetAnchorSmart(gui, 0.5f, axis, true, true, true);
-                        refPosition = (gui.offsetMin + gui.offsetMax) * 0.5f;
-                        EditorUtility.SetDirty(gui);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 0.5f, axis, false, true, true);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 0.5f, axis, true, true, true);
+                        refPosition = (rectTransform.offsetMin + rectTransform.offsetMax) * 0.5f;
+                        EditorUtility.SetDirty(rectTransform);
                         break;
                     case LayoutMode.Max:
-                        RectTransformEditor.SetAnchorSmart(gui, 1, axis, false, true, true);
-                        RectTransformEditor.SetAnchorSmart(gui, 1, axis, true, true, true);
-                        refPosition = gui.offsetMax;
-                        EditorUtility.SetDirty(gui);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 1, axis, false, true, true);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 1, axis, true, true, true);
+                        refPosition = rectTransform.offsetMax;
+                        EditorUtility.SetDirty(rectTransform);
                         break;
                     case LayoutMode.Stretch:
-                        RectTransformEditor.SetAnchorSmart(gui, 0, axis, false, true, true);
-                        RectTransformEditor.SetAnchorSmart(gui, 1, axis, true, true, true);
-                        refPosition = (gui.offsetMin + gui.offsetMax) * 0.5f;
-                        EditorUtility.SetDirty(gui);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 0, axis, false, true, true);
+                        RectTransformEditor.SetAnchorSmart(rectTransform, 1, axis, true, true, true);
+                        refPosition = (rectTransform.offsetMin + rectTransform.offsetMax) * 0.5f;
+                        EditorUtility.SetDirty(rectTransform);
                         break;
                 }
 
                 if (doPosition)
                 {
                     // Handle position
-                    Vector2 rectPosition = gui.anchoredPosition;
+                    Vector2 rectPosition = rectTransform.anchoredPosition;
                     rectPosition[axis] -= refPosition[axis];
-                    gui.anchoredPosition = rectPosition;
+                    rectTransform.anchoredPosition = rectPosition;
 
                     // Handle sizeDelta
                     if (layoutMode == LayoutMode.Stretch)
                     {
-                        Vector2 rectSizeDelta = gui.sizeDelta;
+                        Vector2 rectSizeDelta = rectTransform.sizeDelta;
                         rectSizeDelta[axis] = 0;
-                        gui.sizeDelta = rectSizeDelta;
+                        rectTransform.sizeDelta = rectSizeDelta;
                     }
                 }
             }

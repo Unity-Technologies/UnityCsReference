@@ -16,27 +16,34 @@ namespace Unity.UIToolkit.Editor
     internal partial class FieldAffordanceElement : VisualElement
     {
         // Tooltips
-        public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
-        public static readonly string FieldStatusIndicatorInlineTooltip = "Inline Value\n\nValue is set directly from the property field.";
-        public static readonly string FieldStatusIndicatorInheritedTooltip = "Inherited Value\n\nParent: {0} {1}";
-        public static readonly string FieldStatusIndicatorLocalTooltip = "Local Value\n\nValue is set directly from the property field.";
-        public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector Value\n\nSelector: {0}\nSheet: {1}";
-        public static readonly string FieldStatusIndicatorVariableTooltip = "Variable Value\n\nVariable: {0}\nSheet: {1}";
-        public static readonly string FieldStatusIndicatorUnresolvedVariableTooltip = "Unresolved variable\n\nVariable or Sheet is missing.";
-        public static readonly string FieldStatusIndicatorResolvedBindingTooltip = "Resolved Binding";
-        public static readonly string FieldStatusIndicatorUnresolvedBindingTooltip = "Unresolved Binding\nEdit Binding for more details.";
-        public static readonly string FieldStatusIndicatorUnhandledBindingTooltip = "Unhandled Binding (resolution pending)";
-        public static readonly string FieldTooltipDataDefinitionBindingFormatString = "{0}\n\nData Source: {1}\nData Source Path: {2}\nBinding Mode: {3}\nConverter(s) Used: {4}";
+        public static readonly string FieldStatusIndicatorDefaultTooltip = L10n.Tr("Default Value");
+        public static readonly string FieldStatusIndicatorInlineTooltip = L10n.Tr("Inline Value\n\nValue is set directly from the property field.");
+        public static readonly string FieldStatusIndicatorInheritedTooltip = L10n.Tr("Inherited Value\n\nParent: {0} {1}");
+        public static readonly string FieldStatusIndicatorLocalTooltip = L10n.Tr("Local Value\n\nValue is set directly from the property field.");
+        public static readonly string FieldStatusIndicatorFromSelectorTooltip = L10n.Tr("Selector Value\n\nSelector: {0}\nSheet: {1}");
+        public static readonly string FieldStatusIndicatorVariableTooltip = L10n.Tr("Variable Value\n\nVariable: {0}\nSheet: {1}");
+        public static readonly string FieldStatusIndicatorUnresolvedVariableTooltip = L10n.Tr("Unresolved variable\n\nVariable or Sheet is missing.");
+        public static readonly string FieldStatusIndicatorResolvedBindingTooltip = L10n.Tr("Resolved Binding");
+        public static readonly string FieldStatusIndicatorUnresolvedBindingTooltip = L10n.Tr("Unresolved Binding\nEdit Binding for more details.");
+        public static readonly string FieldStatusIndicatorUnhandledBindingTooltip = L10n.Tr("Unhandled Binding (resolution pending)");
+        public static readonly string FieldStatusIndicatorAnimationDrivenTooltip = L10n.Tr("Animation-driven\n\nValue is set by the active animation clip.");
+        public static readonly string FieldStatusIndicatorAnimationRecordingTooltip = L10n.Tr("Animation-driven\n\nRecording into the active animation clip.");
+        public static readonly string FieldStatusIndicatorAnimationCandidateTooltip = L10n.Tr("Animation-driven\n\nA candidate edit is pending. Confirm by adding a key, or it is dropped on preview exit.");
+        public static readonly string FieldTooltipDataDefinitionBindingFormatString = L10n.Tr("{0}\n\nData Source: {1}\nData Source Path: {2}\nBinding Mode: {3}\nConverter(s) Used: {4}");
 
         // Class names
-        public static readonly string InspectorLocalStyleBindingClassName = "unity-field-affordance-element__style--binding";
-        public static readonly string InspectorLocalStyleUnresolvedBindingClassName = "unity-field-affordance-element__style--unresolved-binding";
-        public static readonly string InspectorLocalStyleDefaultStatusClassName = "unity-field-affordance-element__style--default";
-        public static readonly string InspectorLocalStyleUnresolvedVariableClassName = "unity-field-affordance-element__style--unresolved-variable";
-        public static readonly string InspectorLocalStyleVariableClassName = "unity-field-affordance-element__style--variable";
-        public static readonly string InspectorLocalStyleInheritedClassName = "unity-field-affordance-element__style--inherited";
-        public static readonly string InspectorLocalStyleSelectorClassName = "unity-field-affordance-element__style--uss-selector";
-        public static readonly string InspectorLocalStyleSelectorElementClassName = "unity-field-affordance-element__style--selector-element";
+        public static readonly UniqueStyleString InspectorLocalStyleBindingClassName = new("unity-field-affordance-element__style--binding");
+        public static readonly UniqueStyleString InspectorLocalStyleUnresolvedBindingClassName = new("unity-field-affordance-element__style--unresolved-binding");
+        public static readonly UniqueStyleString InspectorLocalStyleDefaultStatusClassName = new("unity-field-affordance-element__style--default");
+        public static readonly UniqueStyleString InspectorLocalStyleUnresolvedVariableClassName = new("unity-field-affordance-element__style--unresolved-variable");
+        public static readonly UniqueStyleString InspectorLocalStyleVariableClassName = new("unity-field-affordance-element__style--variable");
+        public static readonly UniqueStyleString InspectorLocalStyleInheritedClassName = new("unity-field-affordance-element__style--inherited");
+        public static readonly UniqueStyleString InspectorLocalStyleSelectorClassName = new("unity-field-affordance-element__style--uss-selector");
+        public static readonly UniqueStyleString InspectorLocalStyleSelectorElementClassName = new("unity-field-affordance-element__style--selector-element");
+        public static readonly UniqueStyleString InspectorLocalStyleAnimationDrivenClassName = new("unity-field-affordance-element__style--animation-driven");
+        public static readonly UniqueStyleString InspectorLocalStyleAnimationAnimatedClassName = new("unity-field-affordance-element__style--animation-animated");
+        public static readonly UniqueStyleString InspectorLocalStyleAnimationRecordingClassName = new("unity-field-affordance-element__style--animation-recording");
+        public static readonly UniqueStyleString InspectorLocalStyleAnimationCandidateClassName = new("unity-field-affordance-element__style--animation-candidate");
 
         internal const string BindingNotDefinedAttributeString = "Not Defined";
         internal static string NotDefinedString = L10n.Tr(BindingNotDefinedAttributeString);
@@ -168,13 +175,18 @@ namespace Unity.UIToolkit.Editor
 
         void RefreshStyling()
         {
-            EnableInClassList(InspectorLocalStyleBindingClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.ResolvedBinding);
-            EnableInClassList(InspectorLocalStyleUnresolvedBindingClassName, fieldAffordanceData.sourceTypeInfo is FieldAffordanceSourceInfoType.UnhandledBinding or FieldAffordanceSourceInfoType.UnresolvedBinding);
-            EnableInClassList(InspectorLocalStyleVariableClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable);
-            EnableInClassList(InspectorLocalStyleUnresolvedVariableClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.USSVariable && fieldAffordanceData.variableSheet == null);
-            EnableInClassList(InspectorLocalStyleSelectorClassName, fieldAffordanceData.sourceTypeInfo is FieldAffordanceSourceInfoType.LocalUSSSelector or FieldAffordanceSourceInfoType.MatchingUSSSelector);
-            EnableInClassList(InspectorLocalStyleInheritedClassName, fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.Inherited);
-            EnableInClassList(InspectorLocalStyleDefaultStatusClassName, fieldAffordanceData.sourceTypeInfo is FieldAffordanceSourceInfoType.Default or FieldAffordanceSourceInfoType.Inline);
+            var sourceType = fieldAffordanceData.sourceTypeInfo;
+            EnableInClassList(InspectorLocalStyleBindingClassName, sourceType == FieldAffordanceSourceInfoType.ResolvedBinding);
+            EnableInClassList(InspectorLocalStyleUnresolvedBindingClassName, sourceType is FieldAffordanceSourceInfoType.UnhandledBinding or FieldAffordanceSourceInfoType.UnresolvedBinding);
+            EnableInClassList(InspectorLocalStyleVariableClassName, sourceType == FieldAffordanceSourceInfoType.USSVariable);
+            EnableInClassList(InspectorLocalStyleUnresolvedVariableClassName, sourceType == FieldAffordanceSourceInfoType.USSVariable && fieldAffordanceData.variableSheet == null);
+            EnableInClassList(InspectorLocalStyleSelectorClassName, sourceType is FieldAffordanceSourceInfoType.LocalUSSSelector or FieldAffordanceSourceInfoType.MatchingUSSSelector);
+            EnableInClassList(InspectorLocalStyleInheritedClassName, sourceType == FieldAffordanceSourceInfoType.Inherited);
+            EnableInClassList(InspectorLocalStyleAnimationDrivenClassName, sourceType.IsAnimationDriven());
+            EnableInClassList(InspectorLocalStyleAnimationAnimatedClassName, sourceType == FieldAffordanceSourceInfoType.AnimationAnimated);
+            EnableInClassList(InspectorLocalStyleAnimationRecordingClassName, sourceType == FieldAffordanceSourceInfoType.AnimationRecording);
+            EnableInClassList(InspectorLocalStyleAnimationCandidateClassName, sourceType == FieldAffordanceSourceInfoType.AnimationCandidate);
+            EnableInClassList(InspectorLocalStyleDefaultStatusClassName, sourceType is FieldAffordanceSourceInfoType.Default or FieldAffordanceSourceInfoType.Inline);
         }
 
         internal string BuildTooltip()
@@ -238,6 +250,12 @@ namespace Unity.UIToolkit.Editor
                         selectorSheetName);
                 case FieldAffordanceSourceInfoType.Inherited:
                     return FieldStatusIndicatorInheritedTooltip;
+                case FieldAffordanceSourceInfoType.AnimationAnimated:
+                    return FieldStatusIndicatorAnimationDrivenTooltip;
+                case FieldAffordanceSourceInfoType.AnimationRecording:
+                    return FieldStatusIndicatorAnimationRecordingTooltip;
+                case FieldAffordanceSourceInfoType.AnimationCandidate:
+                    return FieldStatusIndicatorAnimationCandidateTooltip;
                 default:
                     return FieldStatusIndicatorDefaultTooltip;
             }

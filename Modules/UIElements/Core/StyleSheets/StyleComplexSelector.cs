@@ -58,6 +58,7 @@ namespace UnityEngine.UIElements
         [field:NonSerialized]
         public StyleRule rule
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
             [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal set;
@@ -89,7 +90,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField]
         internal int ruleIndex;
 

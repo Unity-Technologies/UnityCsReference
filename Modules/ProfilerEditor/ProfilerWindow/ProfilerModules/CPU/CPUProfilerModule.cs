@@ -595,5 +595,10 @@ namespace UnityEditorInternal.Profiling
         {
             return HierarchyFrameDataView.columnTotalTime;
         }
+
+        public override int GetGCAllocColumn()
+        {
+            return HierarchyFrameDataView.columnGcMemory;
+        }
     }
 }

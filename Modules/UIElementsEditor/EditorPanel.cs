@@ -95,7 +95,7 @@ namespace UnityEditor.UIElements
             base.ValidateLayout();
         }
 
-        public override void UpdateForRepaint()
+        protected override void UpdateForRepaint()
         {
             CheckPanelScaling();
             visualTreeUpdater.UpdateForEditor();

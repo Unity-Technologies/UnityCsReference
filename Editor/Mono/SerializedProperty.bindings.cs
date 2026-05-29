@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -12,7 +13,6 @@ using Unity.Loading;
 
 using UnityObject = UnityEngine.Object;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using RefId = System.Int64;
 using UnityEngine.Scripting;
 
@@ -97,7 +97,10 @@ namespace UnityEditor
         GUID = 28,
 
         // LoadableObjectId value
-        LoadableObjectId = 29
+        LoadableObjectId = 29,
+
+        // LoadableSceneId value
+        LoadableSceneId = 30
     }
 
     // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
@@ -122,6 +125,7 @@ namespace UnityEditor
 
     [NativeHeader("Editor/Src/Utility/SerializedProperty.h")]
     [NativeHeader("Editor/Src/Utility/SerializedProperty.bindings.h")]
+    [NativeHeader("Editor/Src/Utility/SerializedDictionaryUtility.h")]
     [StructLayout(LayoutKind.Sequential)]
     public class SerializedProperty : IDisposable
     {
@@ -374,6 +378,7 @@ namespace UnityEditor
                     case SerializedPropertyType.GUID: return guidValue;
                     case SerializedPropertyType.EntityId: return entityIdValue;
                     case SerializedPropertyType.LoadableObjectId: return loadableObjectIdValue;
+                    case SerializedPropertyType.LoadableSceneId: return loadableSceneIdValue;
 
                     default:
                         throw new NotSupportedException(string.Format("The boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -463,6 +468,7 @@ namespace UnityEditor
                         case SerializedPropertyType.GUID: guidValue = (GUID)value; break;
                         case SerializedPropertyType.EntityId: entityIdValue = (EntityId)value; break;
                         case SerializedPropertyType.LoadableObjectId: loadableObjectIdValue = (LoadableObjectId)value; break;
+                        case SerializedPropertyType.LoadableSceneId: loadableSceneIdValue = (LoadableSceneId)value; break;
 
                         default: // FixedBufferSize is read-only
                             throw new NotSupportedException(string.Format("Set on boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -768,6 +774,62 @@ namespace UnityEditor
                 return GetEditableInternal();
             }
         }
+
+        /// <summary>
+        /// Returns the indices of duplicate dictionary entries (e.g. duplicate keys) for the dictionary this property refers to.
+        /// Use when drawing a dictionary to highlight or skip duplicate rows. Returns an empty array when it's not a dictionary property or there are no duplicate entries.
+        /// Duplicate entries are keyed by (hosting entity id, canonical property path). For SerializeReference nesting, only the innermost ref id is used with the path under that object (same as native FieldUniqueIdentifierContext::FormatFieldUniqueIdentifier, which prepends the active referenced object id once).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the underlying <see cref="SerializedObject"/> represents multiple selected targets. Multi-selection of dictionaries is not supported.
+        /// </exception>
+        public int[] GetDictionaryDuplicateEntryIndices()
+        {
+            Verify(VerifyFlags.None);
+            if (serializedObject != null && serializedObject.targetObjectsCount > 1)
+                throw new InvalidOperationException(
+                    "GetDictionaryDuplicateEntryIndices is not supported on a SerializedObject that represents multiple selected targets.");
+
+            UnityEngine.Debug.Assert(propertyType == SerializedPropertyType.Generic,
+                $"GetDictionaryDuplicateEntryIndices was called on property '{propertyPath}' whose type is '{propertyType}'. This API is only valid on a Dictionary<,> field (which surfaces as SerializedPropertyType.Generic).");
+
+            EntityId entityId = EntityId.None;
+            if (serializedObject?.targetObject is UnityEngine.Object target)
+                entityId = target.GetEntityId();
+            if (entityId == EntityId.None || !UnityEngine.DictionarySerialization.HostHasDuplicateDictionaryEntries(entityId))
+                return Array.Empty<int>();
+            return UnityEngine.DictionarySerialization.GetDuplicateIndices(entityId, GetDictionaryDuplicateLookupIdentifierInternal());
+        }
+
+        [NativeName("GetDictionaryDuplicateLookupIdentifier")]
+        private extern string GetDictionaryDuplicateLookupIdentifierInternal();
+
+        // Returns an FNV-1a 64-bit combination of GetContentHash() for every dictionary
+        // entry's key. Receiver must be the inner Array property of a serialized dictionary
+        // (each element's first child is the key field). Returns the FNV offset basis when
+        // the array is empty. Used by the UITK dictionary drawer's keys-signature gate.
+        internal ulong GetDictionaryKeysContentHash()
+        {
+            Verify(VerifyFlags.IteratorNotAtEnd);
+            return GetDictionaryKeysContentHashInternal();
+        }
+
+        [NativeName("GetDictionaryKeysContentHash")]
+        private extern ulong GetDictionaryKeysContentHashInternal();
+
+        // Returns indices sorted by dictionary entry key. Receiver must be the inner
+        // Array property of a serialized dictionary (each element's first child is the
+        // key field). Ties always break on the original array index in ascending order,
+        // regardless of <paramref name="ascending"/>, so equal-key entries (e.g. a
+        // duplicated entry) consistently appear after their original in display order.
+        internal int[] GetDictionarySortedIndices(int count, bool ascending = true)
+        {
+            Verify(VerifyFlags.IteratorNotAtEnd);
+            return GetDictionarySortedIndicesInternal(count, ascending);
+        }
+
+        [FreeFunction(Name = "DictionaryUtility::GetDictionarySortedIndices", HasExplicitThis = true)]
+        private extern int[] GetDictionarySortedIndicesInternal(int count, bool ascending);
 
         [NativeName("GetEditable")]
         private extern bool GetEditableInternal();
@@ -1237,6 +1299,12 @@ namespace UnityEditor
 
         [NativeName("SetLoadableObjectIdValue")]
         private extern void SetLoadableObjectIdValueInternal(LoadableObjectId value);
+
+        [NativeName("GetLoadableSceneIdValue")]
+        private extern LoadableSceneId GetLoadableSceneIdValueInternal();
+
+        [NativeName("SetLoadableSceneIdValue")]
+        private extern void SetLoadableSceneIdValueInternal(LoadableSceneId value);
 
         // Value of a gradient property.
         public Gradient gradientValue
@@ -1835,6 +1903,20 @@ namespace UnityEditor
             }
         }
 
+        internal LoadableSceneId loadableSceneIdValue
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (LoadableSceneId)GetLoadableSceneIdValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetLoadableSceneIdValueInternal(value);
+            }
+        }
+
         [FreeFunction(Name = "SerializedPropertyBindings::GetHash128ValueInternal", HasExplicitThis = true)]
         private extern Hash128 GetHash128ValueInternal();
 
@@ -2139,6 +2221,15 @@ namespace UnityEditor
         {
             Verify(VerifyFlags.IteratorNotAtEnd);
             return LoadableObjectIdValueEquals(value);
+        }
+
+        [NativeName("LoadableSceneIdValueEquals")]
+        extern private bool LoadableSceneIdValueEquals(LoadableSceneId value);
+
+        internal bool ValueEquals(LoadableSceneId value)
+        {
+            Verify(VerifyFlags.IteratorNotAtEnd);
+            return LoadableSceneIdValueEquals(value);
         }
 
         internal bool unsafeMode {get; set; }

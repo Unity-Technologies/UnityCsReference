@@ -63,7 +63,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             public bool m_FoundStartVE;
             public LayoutDebuggerVisualElement m_StartVE;
             public LayoutDebuggerVisualElement m_FoundVE;
-        };
+        }
 
         SearchInfo m_SearchInfo;
 
@@ -340,8 +340,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
         private string PrettyName(LayoutNode node)
         {
-             //Quick path is only if the node has measure for now.
-            var owner = node.GetOwner() ?? FindHandleInDescendents(selectedPanel.panel.GetRootVisualElement(), node);
+            selectedPanel.panel.TryGetMemberElementFromHandle(node.Handle, out var owner);
             string name = owner?.name;
             string type = owner?.typeName ?? string.Empty;
             var deptj = 0;
@@ -357,20 +356,6 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         private string PrettyTrace(LayoutNative.LayoutLogData data)
         {
             return $"{PrettyName(data.node)} : {data.eventType} : {data.message}";
-        }
-
-        private VisualElement FindHandleInDescendents(VisualElement ve, LayoutNode node)
-        {
-            if (ve.layoutNode.Handle.Index == node.Handle.Index)
-                return ve;
-
-            foreach (var child in ve.hierarchy.Children())
-            {
-                var found = FindHandleInDescendents(child, node);
-                if (found != null)
-                    return found;
-            }
-            return null;
         }
 
         private void onLog(LayoutNative.LayoutLogData data)

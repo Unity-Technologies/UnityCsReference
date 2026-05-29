@@ -138,10 +138,9 @@ namespace UnityEngine
     [Serializable]
     [NativeClass("EntityId")]
     [NativeHeader("Runtime/BaseClasses/BaseObject.h")]
+    [NativeHeader("Runtime/BaseClasses/EntityIdStore.h")]
     public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>, IFormattable
     {
-        const ulong MagicVersion = (ulong)0x7E25105 << 32;
-
         [SerializeField]
         ulong m_rawData;
 
@@ -172,21 +171,21 @@ namespace UnityEngine
 
 
         [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", true)]
-        public bool Equals(int other) => m_rawData == (MagicVersion | (ulong)(uint)other);
+        public bool Equals(int other) => throw new NotImplementedException();
 
         [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
-        public static implicit operator int(EntityId entityId) => (int)(entityId.m_rawData & 0xFFFFFFFF);
+        public static implicit operator int(EntityId entityId) => throw new NotImplementedException();
 
         [Obsolete("EntityId will not be representable by an int in the future. This casting operator will be removed in a future version.", true)]
-        public static implicit operator EntityId(int intValue) => new EntityId { m_rawData = MagicVersion | (ulong)(uint)intValue };
+        public static implicit operator EntityId(int intValue) => throw new NotImplementedException();
 
         public override string ToString() => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(CultureInfo.InvariantCulture)}:{(int)(m_rawData >> 32)}";
         public string ToString(string format) => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(format, CultureInfo.InvariantCulture)}:{(int)(m_rawData >> 32)}";
         public string ToString(string format, IFormatProvider formatProvider) => $"{((int)(m_rawData & 0xFFFFFFFF)).ToString(format, formatProvider)}:{((int)(m_rawData >> 32)).ToString(format, formatProvider)}";
 
 
-        [FreeFunction("AllocateNextEntityId")]
-        internal static extern EntityId AllocateNextEntityId();
+        [FreeFunction("AllocateEntityId")]
+        internal static extern EntityId AllocateEntityId();
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static EntityId Parse(string input)
@@ -214,11 +213,6 @@ namespace UnityEngine
 
         [Obsolete("Please use EntityId.ToULong(EntityId) instead.", false)]
         public ulong GetRawData() => m_rawData;
-
-        [Obsolete("Stop using EntityId.From(int)",false)]
-        internal static EntityId From(int input) => new EntityId {m_rawData = MagicVersion | (ulong)(uint)input};
-        [Obsolete("Stop using EntityId.From(ulong) and use EntityId.FromULong instead.",false)]
-        internal static EntityId From(ulong input) => new EntityId { m_rawData = input };
 
         public static EntityId FromULong(ulong input) => new EntityId { m_rawData = input };
         public static ulong ToULong(EntityId entityId) => entityId.m_rawData;
@@ -290,6 +284,7 @@ namespace UnityEngine
             // in this class treats destroyed objects as equal to null
             if (otherAsObject == null && other != null && !(other is Object))
                 return false;
+
             return CompareBaseObjects(this, otherAsObject);
         }
 
@@ -801,13 +796,13 @@ namespace UnityEngine
         }
 
 
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static T FindObjectOfType<T>() where T : Object
         {
             return (T)FindObjectOfType(typeof(T), false);
         }
 
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static T FindObjectOfType<T>(bool includeInactive) where T : Object
         {
             return (T)FindObjectOfType(typeof(T), includeInactive);
@@ -868,7 +863,7 @@ namespace UnityEngine
 
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static Object FindObjectOfType(System.Type type)
         {
             Object[] objects = FindObjectsOfType(type, false);
@@ -893,7 +888,7 @@ namespace UnityEngine
 
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
-        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindAnyObjectByType instead.", false)]
         public static Object FindObjectOfType(System.Type type, bool includeInactive)
         {
             Object[] objects = FindObjectsOfType(type, includeInactive);

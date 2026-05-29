@@ -148,7 +148,7 @@ namespace UnityEditor.PackageManager.UI
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
             var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
-            var packageInfo = upmCache.installedPackageInfosReady ? upmCache.GetInstalledPackageInfoByName(packageName) : PackageInfo.GetAllRegisteredPackages().FirstMatch(p => p.name == packageName);
+            var packageInfo = upmCache.installedPackageInfosReady ? upmCache.GetInstalledPackageInfo(packageName) : PackageInfo.GetAllRegisteredPackages().FirstMatch(p => p.name == packageName);
             if (packageInfo != null && (packageInfo.version == packageVersion || string.IsNullOrEmpty(packageVersion)))
                 return FindByPackage(packageInfo);
             return Array.Empty<Sample>();

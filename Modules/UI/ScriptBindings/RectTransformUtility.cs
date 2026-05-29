@@ -4,11 +4,9 @@
 
 namespace UnityEngine
 {
-    public sealed partial class RectTransformUtility
+    public static partial class RectTransformUtility
     {
         private static readonly Vector3[] s_Corners = new Vector3[4];
-
-        private RectTransformUtility() {}
 
         public static bool RectangleContainsScreenPoint(RectTransform rect, Vector2 screenPoint)
         {
@@ -170,6 +168,36 @@ namespace UnityEngine
         private static Vector2 GetTransposed(Vector2 input)
         {
             return new Vector2(input.y, input.x);
+        }
+
+        public static Rect GetScreenRect(this RectTransform rectTransform)
+        {
+            return GetScreenRect(rectTransform, Camera.main);
+        }
+
+        public static Rect GetScreenRect(this RectTransform rectTransform, Camera camera)
+        {
+            // Screen Space - Overlay canvases: world corners are already in screen space.
+            // Passing them through a camera would double-project and produce incorrect
+            // results, so we skip projection entirely in that mode.
+            var canvas = rectTransform.GetComponentInParent<Canvas>();
+            bool isOverlay = (camera == null || canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay);
+
+            if (isOverlay)
+                return rectTransform.GetWorldRect();
+
+            System.Span<Vector3> corners = stackalloc Vector3[4];
+            rectTransform.GetWorldCorners(corners);
+
+            Vector2 s0 = camera.WorldToScreenPoint(corners[0]);
+            Vector2 s1 = camera.WorldToScreenPoint(corners[1]);
+            Vector2 s2 = camera.WorldToScreenPoint(corners[2]);
+            Vector2 s3 = camera.WorldToScreenPoint(corners[3]);
+
+            Vector2 screenMin = Vector2.Min(Vector2.Min(s0, s1), Vector2.Min(s2, s3));
+            Vector2 screenMax = Vector2.Max(Vector2.Max(s0, s1), Vector2.Max(s2, s3));
+
+            return new Rect(screenMin, screenMax - screenMin);
         }
     }
 }

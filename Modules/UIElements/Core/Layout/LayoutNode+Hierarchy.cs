@@ -12,8 +12,6 @@ namespace UnityEngine.UIElements.Layout;
 
 partial struct LayoutNode
 {
-    const int k_DefaultChildCapacity = 4;
-
     /// <summary>
     /// Gets or sets the parent for this node.
     /// </summary>
@@ -24,36 +22,43 @@ partial struct LayoutNode
     }
 
     /// <summary>
-    /// Gets or sets the next child for this node.
+    /// Gets or sets the first child for this node.
     /// </summary>
-    public LayoutNode NextChild
+    public LayoutNode FirstChild
     {
-        get => new(m_Access, m_Access.GetNodeData(m_Handle).NextChild);
-        set => m_Access.GetNodeData(m_Handle).NextChild = value.m_Handle;
+        get => new (m_Access, m_Access.GetNodeData(m_Handle).FirstChild);
+        set => m_Access.GetNodeData(m_Handle).FirstChild = value.m_Handle;
     }
 
     /// <summary>
-    /// Returns the underlying layout list of children.
+    /// Gets or sets the next sibling for this node. Undefined after last child.
     /// </summary>
-    LayoutList<UnmanagedDataHandle> Children => m_Access.GetNodeData(m_Handle).Children;
-
-    /// <summary>
-    /// Return the child count for this node.
-    /// </summary>
-    public int Count => Children.IsCreated ? Children.Count : 0;
-
-    /// <summary>
-    /// Gets or sets the child at the given index.
-    /// </summary>
-    /// <remarks>
-    /// WARNING: This has no safety checks, use with caution.
-    /// </remarks>
-    /// <param name="index"></param>
-    public LayoutNode this[int index]
+    public LayoutNode NextSibling
     {
-        get => new (m_Access, Children[index]);
-        set => Children[index] = value.Handle;
+        get => new (m_Access, m_Access.GetNodeData(m_Handle).NextSibling);
+        set => m_Access.GetNodeData(m_Handle).NextSibling = value.m_Handle;
     }
+
+    /// <summary>
+    /// Gets or sets the previous sibling for this node. Loops around from first child to last child.
+    /// </summary>
+    public LayoutNode PrevSiblingRing
+    {
+        get => new (m_Access, m_Access.GetNodeData(m_Handle).PrevSiblingRing);
+        set => m_Access.GetNodeData(m_Handle).PrevSiblingRing = value.m_Handle;
+    }
+
+    /// <summary>
+    /// Returns true if this node has no children.
+    /// </summary>
+    public bool IsEmpty => FirstChild.IsUndefined;
+
+    /// <summary>
+    /// Returns whether the provided node is a child of this node.
+    /// </summary>
+    /// <param name="child">The node to verify as being one of our children</param>
+    /// <returns>True if @@child@@ is a child of this node</returns>
+    public bool Contains(LayoutNode child) => child.Parent == this;
 
     /// <summary>
     /// Adds the specified node as a child.
@@ -61,7 +66,53 @@ partial struct LayoutNode
     /// <param name="child">The child to add.</param>
     public void AddChild(LayoutNode child)
     {
-        Insert(Count, child);
+        Assert.IsFalse(child.IsUndefined);
+        Assert.IsTrue(child.Parent.IsUndefined);
+
+        var firstChild = FirstChild;
+        if (firstChild.IsUndefined)
+        {
+            child.PrevSiblingRing = child;
+            child.NextSibling = Undefined;
+            FirstChild = child;
+        }
+        else
+        {
+            var oldLastChild = firstChild.PrevSiblingRing;
+            firstChild.PrevSiblingRing = child;
+            child.PrevSiblingRing = oldLastChild;
+            oldLastChild.NextSibling = child;
+            child.NextSibling = Undefined;
+        }
+
+        child.Parent = this;
+        MarkDirty();
+    }
+
+    /// <summary>
+    /// Inserts a new child to this node before the other provided child.
+    /// </summary>
+    /// <param name="nextChild">The child node before the child to insert.</param>
+    /// <param name="child">The child node to insert.</param>
+    public void InsertBefore(LayoutNode nextChild, LayoutNode child)
+    {
+        Assert.IsFalse(child.IsUndefined);
+        Assert.IsTrue(child.Parent.IsUndefined);
+        Assert.IsFalse(nextChild.IsUndefined);
+        if (nextChild.Parent != this)
+            throw new ArgumentException("Argument nextChild is not a child of this node.");
+
+        var oldNextPrevSibling = nextChild.PrevSiblingRing;
+        nextChild.PrevSiblingRing = child;
+        child.PrevSiblingRing = oldNextPrevSibling;
+        child.NextSibling = nextChild;
+        if (nextChild == FirstChild)
+            FirstChild = child;
+        else
+            oldNextPrevSibling.NextSibling = child;
+
+        child.Parent = this;
+        MarkDirty();
     }
 
     /// <summary>
@@ -70,72 +121,31 @@ partial struct LayoutNode
     /// <param name="child">The child to remove.</param>
     public void RemoveChild(LayoutNode child)
     {
-        ref var data = ref m_Access.GetNodeData(m_Handle);
+        Assert.IsFalse(child.IsUndefined);
+        if (child.Parent != this)
+            throw new ArgumentException("Argument child is not a child of this node.");
 
-        Assert.IsTrue(data.Children.IsCreated);
+        var firstChild = FirstChild;
+        if (firstChild == child)
+        {
+            var secondChild = firstChild.NextSibling;
+            if (!secondChild.IsUndefined)
+                secondChild.PrevSiblingRing = firstChild.PrevSiblingRing;
+            FirstChild = secondChild;
+        }
+        else
+        {
+            var prevChild = child.PrevSiblingRing;
+            var nextChild = child.NextSibling;
+            prevChild.NextSibling = nextChild;
+            if (!nextChild.IsUndefined)
+                nextChild.PrevSiblingRing = prevChild;
+            else
+                firstChild.PrevSiblingRing = prevChild;
+        }
 
-        var index = data.Children.IndexOf(child.m_Handle);
-
-        if (index >= 0)
-            RemoveAt(index);
-    }
-
-    /// <summary>
-    /// Returns the index of the specified child.
-    /// </summary>
-    /// <param name="child">The child to ge the index of</param>
-    /// <returns>The index of the specified child; -1 if it's not a child.</returns>
-    public int IndexOf(LayoutNode child)
-    {
-        ref var data = ref m_Access.GetNodeData(m_Handle);
-
-        if (data.Children.IsCreated)
-            return data.Children.IndexOf(child.m_Handle);
-
-        return -1;
-    }
-
-    /// <summary>
-    /// Inserts a new child to this node.
-    /// </summary>
-    /// <param name="index">The index to insert the child at.</param>
-    /// <param name="child">The child node to insert.</param>
-    public void Insert(int index, LayoutNode child)
-    {
-        ref var data = ref m_Access.GetNodeData(m_Handle);
-
-        if (!data.Children.IsCreated)
-            data.Children = new LayoutList<UnmanagedDataHandle>(k_DefaultChildCapacity);
-
-        data.Children.Insert(index, child.Handle);
-        child.Parent = this;
-
+        child.PrevSiblingRing = child.NextSibling = child.Parent = Undefined;
         MarkDirty();
-    }
-
-    /// <summary>
-    /// Removes the child at the specified index.
-    /// </summary>
-    /// <param name="index">The index to remove the child at.</param>
-    public void RemoveAt(int index)
-    {
-        ref var data = ref m_Access.GetNodeData(m_Handle);
-
-        Assert.IsTrue(data.Children.IsCreated);
-
-        if ((uint) index >= data.Children.Count)
-            throw new ArgumentOutOfRangeException();
-
-        var childHandle = data.Children[index];
-
-        ref var childData = ref m_Access.GetNodeData(childHandle);
-
-        var isOwned = childData.Parent.Equals(m_Handle);
-        childData.Parent = UnmanagedDataHandle.Undefined;
-        data.Children.RemoveAt(index);
-
-        if (isOwned)
-            MarkDirty();
     }
 
     /// <summary>
@@ -143,13 +153,21 @@ partial struct LayoutNode
     /// </summary>
     public void Clear()
     {
-        ref var data = ref m_Access.GetNodeData(m_Handle);
+        var child = FirstChild;
 
-        if (!data.Children.IsCreated)
+        // Empty list
+        if (child.IsUndefined)
             return;
 
-        while (data.Children.Count > 0)
-            RemoveAt(data.Children.Count-1);
+        do
+        {
+            var oldNextSibling = child.NextSibling;
+            child.PrevSiblingRing = child.NextSibling = child.Parent = Undefined;
+            child = oldNextSibling;
+        } while (!child.IsUndefined);
+
+        FirstChild = Undefined;
+        MarkDirty();
     }
 
     /// <summary>
@@ -160,21 +178,21 @@ partial struct LayoutNode
     /// </remarks>
     public Enumerator GetEnumerator()
     {
-        return new Enumerator(m_Access, Children);
+        return new Enumerator(this);
     }
 
     public struct Enumerator : IEnumerator<LayoutNode>
     {
-        readonly LayoutDataAccess m_Access;
-        LayoutList<UnmanagedDataHandle>.Enumerator m_Enumerator;
+        private LayoutNode m_Current;
+        private LayoutNode m_Next;
 
-        public Enumerator(LayoutDataAccess access, LayoutList<UnmanagedDataHandle> children)
+        public Enumerator(LayoutNode parent)
         {
-            m_Access = access;
-            m_Enumerator = children.GetEnumerator();
+            m_Current = Undefined;
+            m_Next = parent.FirstChild;
         }
 
-        public LayoutNode Current => new (m_Access, m_Enumerator.Current);
+        public LayoutNode Current => m_Current;
         object IEnumerator.Current => Current;
 
         public void Dispose()
@@ -183,12 +201,15 @@ partial struct LayoutNode
 
         public void Reset()
         {
-            m_Enumerator.Reset();
+            throw new InvalidOperationException();
         }
 
         public bool MoveNext()
         {
-            return m_Enumerator.MoveNext();
+            if (m_Next.IsUndefined) return false;
+            m_Current = m_Next;
+            m_Next = m_Next.NextSibling;
+            return true;
         }
     }
 }

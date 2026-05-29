@@ -74,16 +74,11 @@ namespace UnityEngine.Rendering
             set { m_PerObjectData = value; }
         }
 
+        [System.Obsolete("enableDynamicBatching is obsolete.", true)]
         public bool enableDynamicBatching
         {
-            get { return (m_Flags & DrawRendererFlags.EnableDynamicBatching) != 0; }
-            set
-            {
-                if (value)
-                    m_Flags |= DrawRendererFlags.EnableDynamicBatching;
-                else
-                    m_Flags &= ~DrawRendererFlags.EnableDynamicBatching;
-            }
+            get => false;
+            set { }
         }
 
         public bool enableInstancing

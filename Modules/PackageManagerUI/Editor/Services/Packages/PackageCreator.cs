@@ -143,7 +143,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
 
         var newSuffix = 0;
-        while (m_UpmCache.GetInstalledPackageInfoByName(packageName) != null)
+        while (m_UpmCache.GetInstalledPackageInfo(packageName) != null)
         {
             newSuffix++;
             packageName = $"{packageNameWithoutSuffixNumber}{newSuffix}";

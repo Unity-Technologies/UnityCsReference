@@ -9,12 +9,12 @@ namespace UnityEditor.Build.Analysis
     [Serializable]
     internal class BuildReportData
     {
-        public BuildReportStepData[] Steps;
-        public BuildReportMessageData[] Messages;
+        public BuildReportStepData[] Steps = Array.Empty<BuildReportStepData>();
+        public BuildReportMessageData[] Messages = Array.Empty<BuildReportMessageData>();
+        public BuildReportAssetData[] Assets = Array.Empty<BuildReportAssetData>();
         public long TotalDurationMs;
         public int TotalErrors;
         public int TotalWarnings;
-        public int AssetCount;
         public float CachedReusePercent = -1f; // < 0 means unavailable
     }
 
@@ -32,5 +32,16 @@ namespace UnityEditor.Build.Analysis
         public string Severity;
         public int StepIndex;
         public string Content;
+    }
+
+    [Serializable]
+    internal struct BuildReportAssetData
+    {
+        public string Path;
+        public string GUID;
+        public ulong OutputSizeBytes;
+        public int ObjectCount;
+        public int ResourceCount;
+        public string ImporterTypeName;
     }
 }

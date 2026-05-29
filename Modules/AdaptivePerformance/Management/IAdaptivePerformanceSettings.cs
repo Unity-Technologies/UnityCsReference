@@ -141,7 +141,6 @@ namespace UnityEngine.AdaptivePerformance
                 return;
 
             ApplySettingsBase(AdaptiveFramerate, settings.AdaptiveFramerate);
-            ApplySettingsBase(AdaptiveBatching, settings.AdaptiveBatching);
             ApplySettingsBase(AdaptiveLOD, settings.AdaptiveLOD);
             ApplySettingsBase(AdaptiveLut, settings.AdaptiveLut);
             ApplySettingsBase(AdaptiveMSAA, settings.AdaptiveMSAA);
@@ -213,25 +212,14 @@ namespace UnityEngine.AdaptivePerformance
             set { m_AdaptiveResolution = value; }
         }
 
-        [SerializeField, Tooltip("Settings for a scaler used by the Indexer to control if dynamic batching is enabled.")]
-        AdaptivePerformanceScalerSettingsBase m_AdaptiveBatching = new AdaptivePerformanceScalerSettingsBase
-        {
-            name = "Adaptive Batching",
-            enabled = false,
-            scale = 1,
-            visualImpact = ScalerVisualImpact.Medium,
-            target =  ScalerTarget.CPU,
-            maxLevel = 1,
-            minBound = 0,
-            maxBound = 1,
-        };
         /// <summary>
         /// A scaler setting used by <see cref="AdaptivePerformanceIndexer"/> to control if dynamic batching is enabled.
         /// </summary>
+        [System.Obsolete("AdaptiveBatching is obsolete.", true)]
         public AdaptivePerformanceScalerSettingsBase AdaptiveBatching
         {
-            get { return m_AdaptiveBatching; }
-            set { m_AdaptiveBatching = value; }
+            get => default;
+            set { }
         }
 
         [SerializeField, Tooltip("Settings for a scaler used by the Indexer for adjusting at what distance LODs are switched.")]
@@ -530,27 +518,26 @@ namespace UnityEngine.AdaptivePerformance
             set { m_AdaptiveLayerCulling = value; }
         }
 
-        private AdaptivePerformanceScalerSettingsBase[] m_DefaultScalerSettings = new AdaptivePerformanceScalerSettingsBase[16];
+        private AdaptivePerformanceScalerSettingsBase[] m_DefaultScalerSettings = new AdaptivePerformanceScalerSettingsBase[15];
         private ReadOnlyCollection<AdaptivePerformanceScalerSettingsBase> m_ReadOnlyDefaultScalerSettings;
 
         void SyncDefaultScalerSettings()
         {
             m_DefaultScalerSettings[0] = AdaptiveFramerate;
-            m_DefaultScalerSettings[1] = AdaptiveBatching;
-            m_DefaultScalerSettings[2] = AdaptiveLOD;
-            m_DefaultScalerSettings[3] = AdaptiveLut;
-            m_DefaultScalerSettings[4] = AdaptiveMSAA;
-            m_DefaultScalerSettings[5] = AdaptiveResolution;
-            m_DefaultScalerSettings[6] = AdaptiveShadowCascade;
-            m_DefaultScalerSettings[7] = AdaptiveShadowDistance;
-            m_DefaultScalerSettings[8] = AdaptiveShadowmapResolution;
-            m_DefaultScalerSettings[9] = AdaptiveShadowQuality;
-            m_DefaultScalerSettings[10] = AdaptiveTransparency;
-            m_DefaultScalerSettings[11] = AdaptiveSorting;
-            m_DefaultScalerSettings[12] = AdaptiveViewDistance;
-            m_DefaultScalerSettings[13] = AdaptivePhysics;
-            m_DefaultScalerSettings[14] = AdaptiveLayerCulling;
-            m_DefaultScalerSettings[15] = AdaptiveDecals;
+            m_DefaultScalerSettings[1] = AdaptiveLOD;
+            m_DefaultScalerSettings[2] = AdaptiveLut;
+            m_DefaultScalerSettings[3] = AdaptiveMSAA;
+            m_DefaultScalerSettings[4] = AdaptiveResolution;
+            m_DefaultScalerSettings[5] = AdaptiveShadowCascade;
+            m_DefaultScalerSettings[6] = AdaptiveShadowDistance;
+            m_DefaultScalerSettings[7] = AdaptiveShadowmapResolution;
+            m_DefaultScalerSettings[8] = AdaptiveShadowQuality;
+            m_DefaultScalerSettings[9] = AdaptiveTransparency;
+            m_DefaultScalerSettings[10] = AdaptiveSorting;
+            m_DefaultScalerSettings[11] = AdaptiveViewDistance;
+            m_DefaultScalerSettings[12] = AdaptivePhysics;
+            m_DefaultScalerSettings[13] = AdaptiveLayerCulling;
+            m_DefaultScalerSettings[14] = AdaptiveDecals;
         }
 
         /// <summary>
@@ -571,7 +558,6 @@ namespace UnityEngine.AdaptivePerformance
         internal static readonly List<Type> k_DefaultScalerNames = new List<Type>
         {
             typeof(UnityEngine.AdaptivePerformance.AdaptiveFramerate),
-            typeof(UnityEngine.AdaptivePerformance.AdaptiveBatching),
             typeof(UnityEngine.AdaptivePerformance.AdaptiveLOD),
             typeof(UnityEngine.AdaptivePerformance.AdaptiveLut),
             typeof(UnityEngine.AdaptivePerformance.AdaptiveMSAA),

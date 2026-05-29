@@ -41,6 +41,7 @@ namespace UnityEditor
         SerializedProperty m_DefaultSettings;
 
         bool m_SelectionContainsTrackerFile;
+        string m_AmbisonicChannelWarning;
 
         [Serializable]
         class AudioImporterPlatformSettings
@@ -201,6 +202,23 @@ namespace UnityEditor
                 if (ext == "mod" || ext == "it" || ext == "s3m" || ext == "xm")
                 {
                     m_SelectionContainsTrackerFile = true;
+                    break;
+                }
+            }
+
+            UpdateAmbisonicChannelWarning();
+        }
+
+        private void UpdateAmbisonicChannelWarning()
+        {
+            m_AmbisonicChannelWarning = null;
+            foreach (AudioImporter importer in GetAllAudioImporterTargets())
+            {
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(importer.assetPath);
+                if (clip != null && !AudioClip.IsValidAmbisonicChannelCount(clip.channels))
+                {
+                    m_AmbisonicChannelWarning =
+                        $"Audio clip has {clip.channels} channels. Ambisonic audio is expected to have 4 (1st order), 9 (2nd order), or 16 (3rd order) channels.";
                     break;
                 }
             }
@@ -446,6 +464,11 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
                 EditorGUILayout.PropertyField(m_LoadInBackground);
                 EditorGUILayout.PropertyField(m_Ambisonic);
+
+                if (m_Ambisonic.boolValue && !m_Ambisonic.hasMultipleDifferentValues && m_AmbisonicChannelWarning != null)
+                {
+                    EditorGUILayout.HelpBox(m_AmbisonicChannelWarning, MessageType.Warning);
+                }
             }
 
             // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.

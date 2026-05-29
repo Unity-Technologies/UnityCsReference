@@ -9,12 +9,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IDateTimeProxy : IService
     {
+        DateTime now { get; }
         DateTime utcNow { get; }
     }
 
     [ExcludeFromCodeCoverage]
     internal class DateTimeProxy : BaseService<IDateTimeProxy>, IDateTimeProxy
     {
+        public DateTime now => DateTime.Now;
         public DateTime utcNow => DateTime.UtcNow;
     }
 }

@@ -302,6 +302,10 @@ namespace UnityEngine.Audio
             m_Handle.CheckValidOrThrow();
             processorInstance.Handle.CheckValidOrThrow();
 
+            // TODO: Consider changing to ObjectDisposedException in a future breaking-change release
+            if (!Exists(processorInstance))
+                throw new InvalidOperationException("Processor has been disposed");
+
             return processorInstance.Header->ControlReflectionData == IGeneratorControlExtensions.GetReflectionData<TControl, TRealtime>();
         }
 
@@ -316,13 +320,17 @@ namespace UnityEngine.Audio
             m_Handle.CheckValidOrThrow();
             processorInstance.Handle.CheckValidOrThrow();
 
+            // TODO: Consider changing to ObjectDisposedException in a future breaking-change release
+            if (!Exists(processorInstance))
+                throw new InvalidOperationException("Processor has been disposed");
+
             return processorInstance.Header->ControlReflectionData == IRootOutputControlExtensions.GetReflectionData<TControl, TRealtime>();
         }
 
         /// <summary>
         /// Test whether <paramref name="processorInstance"/> is valid and belongs to this <see cref="ControlContext"/>.
         /// </summary>
-        public bool Exists(ProcessorInstance processorInstance)
+        public readonly bool Exists(ProcessorInstance processorInstance)
         {
             m_Handle.CheckValidOrThrow();
             return ScriptableProcessorBindings.CheckProcessorExists(processorInstance.Handle, m_Header);
@@ -509,13 +517,13 @@ namespace UnityEngine.Audio
             return new(ret);
         }
 
-        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(Handle handle)
+        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(DualThreadHandle handle)
         {
             m_Handle.CheckValidOrThrow();
 
             // Cannot use processor.Handle.CheckValidOrThrow() here, as the handle may be in process of being disposed.
             // This will only be called from within Processor.Communication.GetAvailableData.
-            if (!handle.Valid)
+            if (!handle.WasCreated)
                 throw new InvalidOperationException("Invalid handle provided to GetAvailableData");
 
             var dataElement = ScriptableProcessorBindings.GetAvailableDataForControl(m_Header, handle);
@@ -523,7 +531,7 @@ namespace UnityEngine.Audio
             return new ProcessorInstance.AvailableData(dataElement);
         }
 
-        unsafe bool ProcessorInstance.IContext.SendData(Handle handle, void* data, int size, int align, long typehash)
+        unsafe bool ProcessorInstance.IContext.SendData(DualThreadHandle handle, void* data, int size, int align, long typehash)
         {
             return ScriptableProcessorBindings.AddDataToProcessorHandle(
                 m_Header,

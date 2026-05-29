@@ -8,44 +8,35 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsSampleItem
     {
-        private readonly IPackageVersion m_Version;
         private Sample m_Sample;
 
-        public PackageDetailsSampleItem(IPackageVersion version, Sample sample, IApplicationProxy application, IIOProxy iOProxy, ISampleImporter sampleImporter)
+        public PackageDetailsSampleItem(Sample sample, IApplicationProxy application, IIOProxy iOProxy, ISampleImporter sampleImporter)
         {
-            m_Version = version;
             m_Sample = sample;
             nameLabel.text = sample.displayName;
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             sizeLabel.text = UIUtils.ConvertToHumanReadableSize(sample.sizeInBytes);
             descriptionLabel.text = sample.description;
-            RefreshActionButtons();
+
             var importSampleAction = new ImportSampleAction(application, iOProxy, sampleImporter);
             var locateSampleAction = new LocateSampleAction(application, iOProxy);
-            importSampleAction.onActionTriggered += RefreshActionButtons;
-            importButton.clickable.clicked += () => importSampleAction.TriggerAction(m_Sample);
-            locateButton.clickable.clicked += () => locateSampleAction.TriggerAction(m_Sample);
+            m_ImportButton = new SampleToolBarSimpleButton(importSampleAction);
+            m_LocateButton = new SampleToolBarSimpleButton(locateSampleAction);
+            // We should refresh all buttons when the Import button is clicked in case no code was modified
+            // and domain reload is not triggered assuring a refresh of visibility and text either way.
+            importSampleAction.onActionTriggered += OnActionTriggered;
+            RefreshActionButtons();
+        }
+
+        private void OnActionTriggered()
+        {
+            RefreshActionButtons();
         }
 
         private void RefreshActionButtons()
         {
-            UIUtils.SetElementDisplay(locateButton, true);
-            if (m_Sample.isImported)
-            {
-                importStatus.AddToClassList("imported");
-                importButton.text = L10n.Tr("Reimport");
-            }
-            else if (m_Sample.previousImportPaths?.Count > 0)
-            {
-                importStatus.AddToClassList("imported");
-                importButton.text = L10n.Tr("Update");
-            }
-            else
-            {
-                UIUtils.SetElementDisplay(locateButton, false);
-                importStatus.RemoveFromClassList("imported");
-                importButton.text = L10n.Tr("Import");
-            }
+            m_ImportButton.Refresh(m_Sample);
+            m_LocateButton.Refresh(m_Sample);
         }
 
         private Label m_ImportStatus;
@@ -56,9 +47,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public Label sizeLabel => m_SizeLabel ??= new Label().WithClassList("sizeLabel");
         private SelectableLabel m_DescriptionLabel;
         public SelectableLabel descriptionLabel => m_DescriptionLabel ??= new SelectableLabel().WithClassList("descriptionLabel");
-        private Button m_ImportButton;
-        public Button importButton => m_ImportButton ??= new Button().WithClassList("actionButton");
-        private Button m_LocateButton;
-        public Button locateButton => m_LocateButton ??= new Button { text = L10n.Tr("Locate") }.WithClassList("actionButton");
+        private SampleToolBarSimpleButton m_ImportButton;
+        public SampleToolBarSimpleButton importButton => m_ImportButton;
+        private SampleToolBarSimpleButton m_LocateButton;
+        public SampleToolBarSimpleButton locateButton => m_LocateButton;
     }
 }

@@ -24,5 +24,16 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <remarks>Setter implementations should set the <see cref="ChangeHint.Data"/> change hint.</remarks>
         public abstract string ErrorMessage { get; }
+
+        /// <summary>
+        /// Object to pass to <see cref="Action"/> when it is invoked.
+        /// If <see cref="UserData"/> is null, the <see cref="ErrorMarker"/> tries to get its model to pass as an argument.
+        /// </summary>
+        public abstract object UserData { get; }
+
+        /// <summary>
+        /// The <see cref="GraphLogAction"/> for the error.
+        /// </summary>
+        public abstract GraphLogAction Action { get; }
     }
 }

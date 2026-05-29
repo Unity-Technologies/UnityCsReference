@@ -212,7 +212,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                 // Find attribute field and update it
                 foreach (var decorator in m_RegisteredDecorators)
                 {
-                    if (BindingId.Equals(info.bindingId, decorator.GetBindingPath()))
+                    if (BindingId.Equals(info.bindingId, decorator.GetFullBindingPath()))
                     {
                         decorator.Refresh();
                         break;

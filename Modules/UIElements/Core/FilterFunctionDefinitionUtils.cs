@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
         private static FilterFunctionDefinition s_SepiaDef;
         private static FilterFunctionDefinition s_ContrastDef;
         private static FilterFunctionDefinition s_HueRotateDef;
+        private static FilterFunctionDefinition s_DropShadowDef;
 
         public static string GetBuiltinFilterName(FilterFunctionType type)
         {
@@ -39,6 +40,8 @@ namespace UnityEngine.UIElements
                     return StyleValueFunctionExtension.k_FilterContrast;
                 case FilterFunctionType.HueRotate:
                     return StyleValueFunctionExtension.k_FilterHueRotate;
+                case FilterFunctionType.DropShadow:
+                    return StyleValueFunctionExtension.k_FilterDropShadow;
             }
 
             return null;
@@ -95,6 +98,12 @@ namespace UnityEngine.UIElements
                     if (s_HueRotateDef == null)
                         s_HueRotateDef = CreateColorEffectFilterFunctionDefinition(FilterFunctionType.HueRotate);
                     return s_HueRotateDef;
+                }
+                case FilterFunctionType.DropShadow:
+                {
+                    if (s_DropShadowDef == null)
+                        s_DropShadowDef = CreateDropShadowFilterFunctionDefinition();
+                    return s_DropShadowDef;
                 }
             }
 
@@ -217,6 +226,87 @@ namespace UnityEngine.UIElements
             return filter;
         }
 
+        static FilterFunctionDefinition CreateDropShadowFilterFunctionDefinition()
+        {
+            var blurMaterial = new Material(Shader.Find("Hidden/UIR/GaussianBlur"));
+            blurMaterial.hideFlags = HideFlags.HideAndDontSave;
+
+            var compositeMaterial = new Material(Shader.Find("Hidden/UIR/DropShadowComposite"));
+            compositeMaterial.hideFlags = HideFlags.HideAndDontSave;
+
+            var filter = ScriptableObject.CreateInstance<FilterFunctionDefinition>();
+            filter.hideFlags = HideFlags.HideAndDontSave;
+            filter.filterName = GetBuiltinFilterName(FilterFunctionType.DropShadow);
+
+            // Parameter layout: [0] offsetX (px), [1] offsetY (px), [2] sigma (px), [3] color
+            filter.parameters = new[]
+            {
+                new FilterParameterDeclaration {
+                    interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    name = "X"
+                },
+                new FilterParameterDeclaration {
+                    interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    name = "Y"
+                },
+                new FilterParameterDeclaration {
+                    interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    defaultValue = new FilterParameter { type = FilterParameterType.Float, floatValue = 0.0f },
+                    name = "Radius"
+                },
+                new FilterParameterDeclaration {
+                    interpolationDefaultValue = new FilterParameter { type = FilterParameterType.Color, colorValue = Color.clear },
+                    defaultValue = new FilterParameter { type = FilterParameterType.Color, colorValue = Color.black },
+                    name = "Color"
+                },
+            };
+
+            filter.passes = new[]
+            {
+                // Pass 0: horizontal blur of alpha (composite reads only .a, so RGB bleed is irrelevant)
+                new PostProcessingPass
+                {
+                    material = blurMaterial,
+                    passIndex = 0,
+                    readMargins = new(),
+                    writeMargins = new()
+                },
+                // Pass 1: vertical blur
+                new PostProcessingPass
+                {
+                    material = blurMaterial,
+                    passIndex = 1,
+                    readMargins = new(),
+                    writeMargins = new()
+                },
+                // Pass 2: composite — reads V-blur output AND the texture that fed pass 0.
+                new PostProcessingPass
+                {
+                    material = compositeMaterial,
+                    passIndex = 0,
+                    readMargins = new(),
+                    writeMargins = new(),
+                    requiredInputTextureName = "Source",
+                },
+            };
+
+            filter.passes[0].computeRequiredReadMarginsCallback = ComputeDropShadowHorizontalBlurMargins;
+            filter.passes[0].computeRequiredWriteMarginsCallback = ComputeDropShadowHorizontalBlurMargins;
+            filter.passes[0].applySettingsCallback = ApplyDropShadowBlurSettings;
+
+            filter.passes[1].computeRequiredReadMarginsCallback = ComputeDropShadowVerticalBlurMargins;
+            filter.passes[1].computeRequiredWriteMarginsCallback = ComputeDropShadowVerticalBlurMargins;
+            filter.passes[1].applySettingsCallback = ApplyDropShadowBlurSettings;
+
+            filter.passes[2].computeRequiredReadMarginsCallback = ComputeDropShadowCompositeReadMargins;
+            filter.passes[2].computeRequiredWriteMarginsCallback = ComputeDropShadowCompositeWriteMargins;
+            filter.passes[2].applySettingsCallback = ApplyDropShadowCompositeSettings;
+
+            return filter;
+        }
+
         static PostProcessingMargins ComputeHorizontalBlurMargins(FilterFunction func)
         {
             float sigma = Math.Max(0.0f, func.parameters[0].floatValue);
@@ -237,6 +327,72 @@ namespace UnityEngine.UIElements
             // Scale the sigma by DPI to maintain consistent blur radius across different DPI settings
             float scaledSigma = sigma * context.scaledPixelsPerPoint;
             mpb.SetFloat("_Sigma", scaledSigma);
+        }
+
+        static PostProcessingMargins ComputeDropShadowHorizontalBlurMargins(FilterFunction func)
+        {
+            float sigma = Math.Max(0.0f, func.parameters[2].floatValue);
+            int kernelSize = Mathf.CeilToInt(sigma * 3.0f + 1.0f);
+            return new PostProcessingMargins() { left = kernelSize, top = 0, right = kernelSize, bottom = 0 };
+        }
+
+        static PostProcessingMargins ComputeDropShadowVerticalBlurMargins(FilterFunction func)
+        {
+            float sigma = Math.Max(0.0f, func.parameters[2].floatValue);
+            int kernelSize = Mathf.CeilToInt(sigma * 3.0f + 1.0f);
+            return new PostProcessingMargins() { left = 0, top = kernelSize, right = 0, bottom = kernelSize };
+        }
+
+        static void ApplyDropShadowBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        {
+            float sigma = Math.Max(0.0f, context.filterFunction.parameters[2].floatValue);
+            float scaledSigma = sigma * context.scaledPixelsPerPoint;
+            mpb.SetFloat("_Sigma", scaledSigma);
+        }
+
+        static PostProcessingMargins ComputeDropShadowCompositeReadMargins(FilterFunction func)
+        {
+            float ox = func.parameters[0].floatValue;
+            float oy = func.parameters[1].floatValue;
+
+            // Read margins inflate the V-blur child by |offset| per side, so the composite can
+            // safely sample _MainTex at (p - offset) anywhere within its own output extent.
+            return new PostProcessingMargins {
+                left   = Mathf.Max(0.0f, Mathf.Ceil(ox)),
+                top    = Mathf.Max(0.0f, Mathf.Ceil(oy)),
+                right  = Mathf.Max(0.0f, Mathf.Ceil(-ox)),
+                bottom = Mathf.Max(0.0f, Mathf.Ceil(-oy)),
+            };
+        }
+
+        static PostProcessingMargins ComputeDropShadowCompositeWriteMargins(FilterFunction func)
+        {
+            float ox = func.parameters[0].floatValue;
+            float oy = func.parameters[1].floatValue;
+
+            // Write margins extend the visible composite output to fit the offset shadow extent
+            return new PostProcessingMargins {
+                left   = Mathf.Max(0.0f, Mathf.Ceil(-ox)),
+                top    = Mathf.Max(0.0f, Mathf.Ceil(-oy)),
+                right  = Mathf.Max(0.0f, Mathf.Ceil(ox)),
+                bottom = Mathf.Max(0.0f, Mathf.Ceil(oy)),
+            };
+        }
+
+        static void ApplyDropShadowCompositeSettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        {
+            var func = context.filterFunction;
+            float ox = func.parameters[0].floatValue;
+            float oy = func.parameters[1].floatValue;
+            Color color = func.parameters[3].colorValue;
+
+            // Offset is in points; the shader expects physical pixels (it converts to UV via _MainTex_TexelSize).
+            float scale = context.scaledPixelsPerPoint;
+            mpb.SetVector("_ShadowOffset", new Vector4(ox * scale, oy * scale, 0, 0));
+
+            if (!context.readsGamma)
+                color = color.linear;
+            mpb.SetColor("_ShadowColor", color);
         }
 
         static void ApplySettings(MaterialPropertyBlock mpb, FilterPassContext context)

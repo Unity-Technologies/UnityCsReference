@@ -121,7 +121,7 @@ namespace Unity.GraphToolkit.Editor
                     // If the selected element is a placemat, we do not consider the elements under it
                     ignoredModels.Add(element.Model);
                 }
-                else if (element is Wire)
+                else if (element is WireView)
                 {
                     // Don't consider wires
                     ignoredModels.Add(element.Model);

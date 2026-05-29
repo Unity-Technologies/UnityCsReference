@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -125,6 +126,15 @@ namespace UnityEngine
     {
         public enum Edge { Left = 0, Right = 1, Top = 2, Bottom = 3 }
         public enum Axis { Horizontal = 0, Vertical = 1 }
+        public enum FitResult
+        {
+            Success = 0,
+            AlreadyInside = 1,
+            FailLargerThanTarget = 2,
+            FailNotCoplanar = 3,
+            FailZRotationMismatch = 4,
+            FailInvalidSizeTarget = 5,
+        }
 
         public delegate void ReapplyDrivenProperties(RectTransform driven);
         public static event ReapplyDrivenProperties reapplyDrivenProperties;
@@ -206,6 +216,26 @@ namespace UnityEngine
             fourCornersArray[3] = new Vector3(x1, y0, 0f);
         }
 
+        public void GetLocalCorners(Span<Vector3> fourCorners)
+        {
+            if (fourCorners.Length < 4)
+            {
+                Debug.LogError("Calling GetLocalCorners with a Span<Vector3> that has less than 4 elements.");
+                return;
+            }
+
+            Rect tmpRect = rect;
+            float x0 = tmpRect.x;
+            float y0 = tmpRect.y;
+            float x1 = tmpRect.xMax;
+            float y1 = tmpRect.yMax;
+
+            fourCorners[0] = new Vector3(x0, y0, 0f);
+            fourCorners[1] = new Vector3(x0, y1, 0f);
+            fourCorners[2] = new Vector3(x1, y1, 0f);
+            fourCorners[3] = new Vector3(x1, y0, 0f);
+        }
+
         public void GetWorldCorners(Vector3[] fourCornersArray)
         {
             if (fourCornersArray == null || fourCornersArray.Length < 4)
@@ -219,6 +249,117 @@ namespace UnityEngine
             Matrix4x4 mat = localToWorldMatrix;
             for (int i = 0; i < 4; i++)
                 fourCornersArray[i] = mat.MultiplyPoint(fourCornersArray[i]);
+        }
+
+        public void GetWorldCorners(Span<Vector3> fourCorners)
+        {
+            if (fourCorners.Length < 4)
+            {
+                Debug.LogError("Calling GetWorldCorners with Span<Vector3> that has less than 4 elements.");
+                return;
+            }
+
+            Rect r = rect;
+            Matrix4x4 m = localToWorldMatrix;
+            fourCorners[0] = m.MultiplyPoint(new Vector3(r.xMin, r.yMin));
+            fourCorners[1] = m.MultiplyPoint(new Vector3(r.xMin, r.yMax));
+            fourCorners[2] = m.MultiplyPoint(new Vector3(r.xMax, r.yMax));
+            fourCorners[3] = m.MultiplyPoint(new Vector3(r.xMax, r.yMin));
+        }
+
+        public Rect GetWorldRect()
+        {
+            Span<Vector3> c = stackalloc Vector3[4];
+            GetWorldCorners(c);
+
+            Vector3 min = Vector3.Min(Vector3.Min(c[0], c[1]), Vector3.Min(c[2], c[3]));
+            Vector3 max = Vector3.Max(Vector3.Max(c[0], c[1]), Vector3.Max(c[2], c[3]));
+
+            return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
+        }
+
+        public bool Contains(RectTransform other)
+        {
+            Rect worldRect = GetWorldRect();
+            Rect otherRect = other.GetWorldRect();
+            return worldRect.xMin <= otherRect.xMin
+             && worldRect.xMax >= otherRect.xMax
+             && worldRect.yMin <= otherRect.yMin
+             && worldRect.yMax >= otherRect.yMax;
+        }
+
+        public float GetLocalTop() => GetRectInParentSpace().yMax;
+        public float GetLocalBottom() => GetRectInParentSpace().y;
+        public float GetLocalLeft() => GetRectInParentSpace().x;
+        public float GetLocalRight() => GetRectInParentSpace().xMax;
+
+        public void SetLocalTop(float value, bool preserveSize = true)
+        {
+            if (preserveSize)
+            {
+                anchoredPosition = new Vector2(anchoredPosition.x, anchoredPosition.y + (value - GetLocalTop()));
+            }
+            else
+            {
+                float delta = value - GetLocalTop();
+                sizeDelta = new Vector2(sizeDelta.x, sizeDelta.y + delta);
+                anchoredPosition = new Vector2(anchoredPosition.x, anchoredPosition.y + pivot.y * delta);
+            }
+        }
+
+        public void SetLocalBottom(float value, bool preserveSize = true)
+        {
+            if (preserveSize)
+            {
+                anchoredPosition = new Vector2(anchoredPosition.x, anchoredPosition.y + (value - GetLocalBottom()));
+            }
+            else
+            {
+                float delta = value - GetLocalBottom();
+                sizeDelta = new Vector2(sizeDelta.x, sizeDelta.y - delta);
+                anchoredPosition = new Vector2(anchoredPosition.x, anchoredPosition.y + (1f - pivot.y) * delta);
+            }
+        }
+
+        public void SetLocalLeft(float value, bool preserveSize = true)
+        {
+            if (preserveSize)
+            {
+                anchoredPosition = new Vector2(anchoredPosition.x + (value - GetLocalLeft()), anchoredPosition.y);
+            }
+            else
+            {
+                float delta = value - GetLocalLeft();
+                sizeDelta = new Vector2(sizeDelta.x - delta, sizeDelta.y);
+                anchoredPosition = new Vector2(anchoredPosition.x + (1f - pivot.x) * delta, anchoredPosition.y);
+            }
+        }
+
+        public void SetLocalRight(float value, bool preserveSize = true)
+        {
+            if (preserveSize)
+            {
+                anchoredPosition = new Vector2(anchoredPosition.x + (value - GetLocalRight()), anchoredPosition.y);
+            }
+            else
+            {
+                float delta = value - GetLocalRight();
+                sizeDelta = new Vector2(sizeDelta.x + delta, sizeDelta.y);
+                anchoredPosition = new Vector2(anchoredPosition.x + pivot.x * delta, anchoredPosition.y);
+            }
+        }
+
+        public void SetAnchors(Vector2 position)
+        {
+            anchorMin = position;
+            anchorMax = position;
+        }
+
+        public void SetPivotAndAnchors(Vector2 position)
+        {
+            pivot = position;
+            anchorMin = position;
+            anchorMax = position;
         }
 
         public void SetInsetAndSizeFromParentEdge(Edge edge, float inset, float size)
@@ -254,6 +395,14 @@ namespace UnityEngine
             sizeDelta = sizeD;
         }
 
+        [NativeMethod("SetPivotWithCounterAdjust")]
+        private extern void Internal_SetPivotWithCounterAdjust(Vector2 newPivot, bool adjustChildren);
+
+        public void SetPivotWithCounterAdjust(Vector2 newPivot, bool adjustChildren = false)
+        {
+            Internal_SetPivotWithCounterAdjust(newPivot, adjustChildren);
+        }
+
         [RequiredByNativeCode]
         internal static void SendReapplyDrivenProperties(RectTransform driven)
         {
@@ -265,11 +414,10 @@ namespace UnityEngine
         {
             Rect rectResult = rect;
             Vector2 offset = offsetMin + Vector2.Scale(pivot, rectResult.size);
-            if (parent)
+            RectTransform parentRectTransform = parent as RectTransform;
+            if (parentRectTransform)
             {
-                RectTransform parentRect = parent.GetComponent<RectTransform>();
-                if (parentRect)
-                    offset += Vector2.Scale(anchorMin, parentRect.rect.size);
+                offset += Vector2.Scale(anchorMin, parentRectTransform.rect.size);
             }
 
             rectResult.x += offset.x;
@@ -284,5 +432,35 @@ namespace UnityEngine
                 return Vector2.zero;
             return parentRect.rect.size;
         }
+
+        public bool IsCoplanarWith(RectTransform target)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            return Internal_IsCoplanarWith(target);
+        }
+
+        [NativeMethod("IsCoplanarWith")]
+        private extern bool Internal_IsCoplanarWith(RectTransform target);
+
+        public FitResult FitInsideCoplanarRectTransform(RectTransform target, bool allowShrink = false)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            return Internal_FitInsideCoplanarRectTransform(target, allowShrink);
+        }
+
+        [NativeMethod("FitInsideCoplanarRectTransform")]
+        private extern FitResult Internal_FitInsideCoplanarRectTransform(RectTransform target, bool allowShrink);
+
+        public FitResult TryFitInsideCoplanarRectTransform(RectTransform target, bool allowShrink = false)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            return Internal_TryFitInsideCoplanarRectTransform(target, allowShrink);
+        }
+
+        [NativeMethod("TryFitInsideCoplanarRectTransform")]
+        private extern FitResult Internal_TryFitInsideCoplanarRectTransform(RectTransform target, bool allowShrink);
     }
 }

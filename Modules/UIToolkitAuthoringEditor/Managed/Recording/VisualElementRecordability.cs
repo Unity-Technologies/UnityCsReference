@@ -42,6 +42,22 @@ namespace Unity.UIToolkit.Editor
     /// </summary>
     internal readonly struct VisualElementRecordability
     {
+        // Per-reason blocked messages. Shared verbatim between the inspector banner
+        // (see VisualElementInspector.UpdateControlsState) and the per-field tooltip
+        // composed in StylePropertyBinding so the user sees one consistent explanation
+        // in both places. The copy is intentionally action-oriented ("add a component",
+        // "give this element a name") so the user knows what to change.
+        internal static readonly string k_NoElementSelectedMessage =
+            L10n.Tr("Recording disabled: No element selected.");
+        internal static readonly string k_ProjectSettingDisabledMessage =
+            L10n.Tr("Recording disabled: Enable PanelRenderer animation in UI Toolkit project settings.");
+        internal static readonly string k_NoBinderAvailableMessage =
+            L10n.Tr("Recording disabled: Add a PanelRenderer component to display this element and enable recording.");
+        internal static readonly string k_ElementHasNoNameMessage =
+            L10n.Tr("Recording disabled: Give this element a unique name to make it animatable.");
+        internal static readonly string k_PropertyNotRecordableMessage =
+            L10n.Tr("Recording disabled: This property cannot be recorded in the Animation window.");
+
         public readonly RecordabilityReason Reason;
         public readonly UIAnimationBinder Binder;
         public readonly string Path;
@@ -55,14 +71,7 @@ namespace Unity.UIToolkit.Editor
 
         public bool CanRecord => Reason == RecordabilityReason.Ok;
 
-        /// <summary>
-        /// Returns the localized banner message explaining why recording is blocked, or
-        /// <c>null</c> when <see cref="CanRecord"/> is true. The inspector displays this
-        /// verbatim while animation recording is active; the copy is intentionally
-        /// action-oriented ("add a component", "give this element a name") so the user
-        /// knows what to change. Only names mechanisms that actually produce a binder on
-        /// this branch - mentioning unrelated hosts would mislead.
-        /// </summary>
+
         public string GetBlockedMessage()
         {
             switch (Reason)
@@ -70,16 +79,17 @@ namespace Unity.UIToolkit.Editor
                 case RecordabilityReason.Ok:
                     return null;
                 case RecordabilityReason.NoElementSelected:
-                    return L10n.Tr("Recording disabled: No element selected.");
+                    return k_NoElementSelectedMessage;
                 case RecordabilityReason.ProjectSettingDisabled:
-                    return L10n.Tr("Recording disabled: Enable PanelRenderer animation in UI Toolkit project settings.");
+                    return k_ProjectSettingDisabledMessage;
                 case RecordabilityReason.NoBinderAvailable:
-                    return L10n.Tr("Recording disabled: Add a PanelRenderer component to display this element and enable recording.");
+                    return k_NoBinderAvailableMessage;
                 case RecordabilityReason.ElementHasNoName:
-                    return L10n.Tr("Recording disabled: Give this element a unique name to make it animatable.");
+                    return k_ElementHasNoNameMessage;
                 case RecordabilityReason.PropertyNotRecordable:
+                    return k_PropertyNotRecordableMessage;
                 default:
-                    return L10n.Tr("Recording disabled.");
+                    return k_PropertyNotRecordableMessage;
             }
         }
 

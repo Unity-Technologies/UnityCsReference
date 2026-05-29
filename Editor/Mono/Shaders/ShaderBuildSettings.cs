@@ -6,10 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Shaders
 {
+    [NativeHeader("Modules/ShaderBuildSettingsEditor/Native/ShaderBuildSettings.h")]
+    [StaticAccessor("ShaderBuildSettingsScripting", StaticAccessorType.DoubleColon)]
     [RequiredByNativeCode (GenerateProxy = false)]
     [Serializable]
     public struct ShaderBuildSettings
@@ -20,6 +24,14 @@ namespace UnityEditor.Shaders
             MaterialUsageBasedVariants,
             AllVariants,
             SingleVariantWithDynamicBranching
+        }
+
+        [UsedByNativeCode]
+        internal enum ShaderCompilerToolchain
+        {
+            Default,
+            FXC,
+            DXC
         }
 
         internal static bool IsEmptyKeyword(string keyword)
@@ -202,6 +214,33 @@ namespace UnityEditor.Shaders
                 ref KeywordDeclarationOverride tmp = ref array[index];
                 tmp.keywords = keywords;
                 tmp.variantGenerationMode = (ShaderVariantGenerationMode)variantGenerationMode;
+            }
+        }
+
+        /// <summary>
+        /// Per-API compiler settings. Contains compiler-related settings that can be configured per graphics API.
+        /// </summary>
+        [RequiredByNativeCode(GenerateProxy = false)]
+        [Serializable]
+        internal struct ShaderCompilerSettings
+        {
+            [SerializeField] public GraphicsDeviceType graphicsAPI;
+            [SerializeField] public ShaderCompilerToolchain compilerToolchainOverride;
+
+            [UsedByNativeCode, RequiredMember]
+            internal static void DeconstructCompilerSettingsArrayElementRaw(ShaderCompilerSettings[] array, int index, out int graphicsAPI, out int compiler)
+            {
+                ref ShaderCompilerSettings tmp = ref array[index];
+                graphicsAPI = (int)tmp.graphicsAPI;
+                compiler = (int)tmp.compilerToolchainOverride;
+            }
+
+            [UsedByNativeCode, RequiredMember]
+            internal static void ReconstructCompilerSettingsArrayElementRaw(ShaderCompilerSettings[] array, int index, int graphicsAPI, int compiler)
+            {
+                ref ShaderCompilerSettings tmp = ref array[index];
+                tmp.graphicsAPI = (GraphicsDeviceType)graphicsAPI;
+                tmp.compilerToolchainOverride = (ShaderCompilerToolchain)compiler;
             }
         }
 
@@ -417,5 +456,74 @@ namespace UnityEditor.Shaders
             Array.Copy(defines, numInternalDefines, defineArray, 0, defineArray.Length);
             return defineArray;
         }
+
+        internal static bool ValidateShaderCompilerSettings(ShaderCompilerSettings[] settings, out string msg)
+        {
+            if (settings == null)
+            {
+                msg = "Null shader compiler settings array.";
+                return false;
+            }
+
+            for (int i = 0, n = settings.Length; i < n; ++i)
+            {
+                for (int j = i + 1; j < n; ++j)
+                {
+                    if (settings[i].graphicsAPI == settings[j].graphicsAPI)
+                    {
+                        msg = "Duplicate compiler settings entries for graphics API " + settings[i].graphicsAPI
+                            + " at indices " + i + " and " + j + ".";
+                        return false;
+                    }
+                }
+
+                if (settings[i].compilerToolchainOverride != ShaderCompilerToolchain.Default)
+                {
+                    ShaderCompilerToolchain[] supported = GetSupportedCompilersForAPI(settings[i].graphicsAPI);
+                    if (Array.IndexOf(supported, settings[i].compilerToolchainOverride) == -1)
+                    {
+                        msg = "Compiler '" + settings[i].compilerToolchainOverride + "' is not supported for graphics API '"
+                            + settings[i].graphicsAPI + "' at index " + i + ".";
+                        return false;
+                    }
+                }
+            }
+
+            msg = "";
+            return true;
+        }
+
+        [SerializeField] internal ShaderCompilerSettings[] compilerSettings = Array.Empty<ShaderCompilerSettings>();
+        internal ShaderCompilerSettings[] CompilerSettings
+        {
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                string msg;
+                if (ValidateShaderCompilerSettings(value, out msg))
+                    compilerSettings = value;
+                else
+                    throw new ArgumentException(msg);
+            }
+        }
+
+        internal ShaderCompilerSettings[] GetCompilerSettingsCopy()
+        {
+            return (ShaderCompilerSettings[])compilerSettings.Clone();
+        }
+
+        /// <summary>
+        /// Returns the list of shader compilers available for the specified graphics API.
+        /// Always returns at least a single-element array containing <see cref="ShaderCompiler.Default"/>;
+        /// use <see cref="SupportsCompilerOverride"/> to check whether the API exposes a real choice.
+        /// </summary>
+        internal static extern ShaderCompilerToolchain[] GetSupportedCompilersForAPI(GraphicsDeviceType api);
+
+        /// <summary>
+        /// Returns true if the specified graphics API supports shader compiler selection.
+        /// </summary>
+        internal static extern bool SupportsCompilerOverride(GraphicsDeviceType api);
     }
 }

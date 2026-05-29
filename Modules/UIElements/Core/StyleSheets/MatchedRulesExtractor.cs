@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -135,13 +136,25 @@ namespace UnityEngine.UIElements
 
         public void FindMatchingRules(VisualElement target)
         {
-            var matchingContext = new StyleMatchingContext((element, info) => {}) { currentElement = target };
+            var matchingContext = new StyleMatchingContext(applyPseudoMasks: false) { currentElement = target };
             SetupParents(target, matchingContext);
 
             matchRecords.Clear();
-            StyleSelectorHelper.FindMatches(matchingContext, matchRecords);
-
-            matchRecords.Sort(SelectorMatchRecord.Compare);
+            var matches = ListPool<StyleSelectorMatch>.Get();
+            try
+            {
+                StyleSelectorHelper.FindMatches(matchingContext, matches);
+                matches.Sort(StyleSelectorMatch.Comparison);
+                for (int i = 0; i < matches.Count; i++)
+                {
+                    var match = matches[i];
+                    matchRecords.Add(new SelectorMatchRecord(in match));
+                }
+            }
+            finally
+            {
+                ListPool<StyleSelectorMatch>.Release(matches);
+            }
 
             foreach (var record in matchRecords)
             {

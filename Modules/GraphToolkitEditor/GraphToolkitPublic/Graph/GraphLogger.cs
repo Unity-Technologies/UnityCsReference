@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.GraphToolkit.Editor.Implementation;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -22,7 +23,7 @@ namespace Unity.GraphToolkit.Editor
     /// </remarks>
     public class GraphLogger
     {
-        internal IErrorsAndWarnings errorsAndWarnings { get; set; }
+        internal ErrorsAndWarningsImp errorsAndWarnings { get; set; }
 
         /// <summary>
         /// Logs an error message.
@@ -39,7 +40,7 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public void LogError(object message, object context = null)
         {
-            errorsAndWarnings.LogError(message, context);
+            ((IErrorsAndWarnings)errorsAndWarnings).LogError(message, context);
         }
 
         /// <summary>
@@ -57,7 +58,7 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public void LogWarning(object message, object context = null)
         {
-            errorsAndWarnings.LogWarning(message, context);
+            ((IErrorsAndWarnings)errorsAndWarnings).LogWarning(message, context);
         }
 
         /// <summary>
@@ -74,7 +75,63 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public void Log(object message, object context = null)
         {
-            errorsAndWarnings.Log(message, context);
+            ((IErrorsAndWarnings)errorsAndWarnings).Log(message, context);
+        }
+
+        /// <summary>
+        /// Logs an error message with an associated marker action.
+        /// </summary>
+        /// <param name="message">The error message to display.</param>
+        /// <param name="context">
+        /// Context object to associate with the error message. The context is typically a node in the graph that the error relates to.
+        /// </param>
+        /// <param name="graphLogAction">A <see cref="GraphLogAction"/> that might be invoked with the provided context.</param>
+        /// <remarks>
+        /// The system displays an error marker next to the specified object in the Graph Editor and the provided <paramref name="graphLogAction"/> might be invoked for that context.
+        /// The error message also appears in the Unity Console.
+        /// Use the <paramref name="context"/> parameter to help users identify the source of the issue within the graph.
+        /// Use errors for situations where Unity can't recover or proceed normally.
+        /// </remarks>
+        public void LogError(object message, object context, GraphLogAction graphLogAction)
+        {
+            errorsAndWarnings.LogError(message, context, graphLogAction);
+        }
+
+        /// <summary>
+        /// Logs a warning message with an associated marker action.
+        /// </summary>
+        /// <param name="message">The warning message to display.</param>
+        /// <param name="context">
+        /// Context object to associate with the warning message. The context is typically a node in the graph that the warning relates to.
+        /// </param>
+        /// <param name="graphLogAction">A <see cref="GraphLogAction"/> that might be invoked with the provided context.</param>
+        /// <remarks>
+        /// The system displays a warning marker next to the specified object in the Graph Editor and the provided <paramref name="graphLogAction"/> might be invoked for that context.
+        /// The warning message also appears in the Unity Console.
+        /// Use the <paramref name="context"/> parameter to help users identify the source of the issue within the graph.
+        /// Use warnings for situations where Unity can recover or proceed, but users might be unaware of the side effects.
+        /// </remarks>
+        public void LogWarning(object message, object context, GraphLogAction graphLogAction)
+        {
+            errorsAndWarnings.LogWarning(message, context, graphLogAction);
+        }
+
+        /// <summary>
+        /// Logs an informational message with an associated marker action.
+        /// </summary>
+        /// <param name="message">The message to display.</param>
+        /// <param name="context">
+        /// Context object to associate with the message. The context is typically a node in the graph that the message relates to.
+        /// </param>
+        /// <param name="graphLogAction">A <see cref="GraphLogAction"/> that might be invoked with the provided context.</param>
+        /// <remarks>
+        /// The system displays an info marker next to the specified object in the Graph Editor and the provided <paramref name="graphLogAction"/> might be invoked for that context.
+        /// The message also appears in the Unity Console.
+        /// Use for communicating non-critical information.
+        /// </remarks>
+        public void Log(object message, object context, GraphLogAction graphLogAction)
+        {
+            errorsAndWarnings.Log(message, context, graphLogAction);
         }
     }
 }

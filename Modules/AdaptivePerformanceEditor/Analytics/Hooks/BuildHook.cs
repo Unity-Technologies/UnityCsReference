@@ -9,20 +9,16 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Analytics;
-using UnityEngine.SceneManagement;
 
 namespace UnityEditor.AdaptivePerformance.Editor.Analytics.Hooks
 {
-    class BuildHook : IProcessSceneWithReport
+    class BuildHook : IPreprocessBuildWithReport
     {
         int IOrderedCallback.callbackOrder => 1;
         AdaptivePerformanceUsage m_UsageEvent;
 
-        void IProcessSceneWithReport.OnProcessScene(Scene scene, BuildReport report)
+        void IPreprocessBuildWithReport.OnPreprocessBuild(BuildReport report)
         {
-            if (report is null)
-                return;
-
             if (!EditorAnalytics.enabled)
                 return;
 

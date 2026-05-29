@@ -16,7 +16,7 @@ namespace Unity.Hierarchy
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     public abstract class HierarchyNodeTypeHandler : HierarchyNodeTypeHandlerBase
     {
-        readonly HierarchyViewItemPool m_ViewItemPool = new(() => new HierarchyViewItem(), defaultCapacity: 0, maxSize: 512);
+        readonly HierarchyViewItemPool m_ViewItemPool = new(() => new HierarchyViewItem(), defaultCapacity: 256, maxSize: 512);
 
         /// <summary>
         /// The object pool used to store <see cref="HierarchyViewItem"/> instances specific to this handler.

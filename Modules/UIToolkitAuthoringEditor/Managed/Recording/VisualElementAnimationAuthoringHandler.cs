@@ -75,64 +75,96 @@ namespace Unity.UIToolkit.Editor
 
         // --- IAnimationWindowPropertyHandler ---
 
-        // Unique sub-channel suffix (e.g. ".value", ".offset.unit", ".x.value") to channel
-        // index, built from the generator's channel-suffix tables at first use. Single-char
-        // suffixes (.x / .y / .z / .r / .g / .b / .a / .w) are excluded because
-        // AnimationWindowUtility.GetComponentIndex already resolves them on its built-in
-        // path; including them here would shadow that fast path without benefit.
-        //
-        // This replaces the previous k_*Suffix constants + EndsWith cascades. Adding a new
-        // composite property with fresh Length sub-structs or a new enum selector channel
-        // now requires zero changes here: the generator emits the suffix, this map picks
-        // it up. The map also carries AnimationChannelKind so TryDoValueField can dispatch
-        // unit/enum/PPtr popups uniformly.
-        private static Dictionary<string, ChannelEntry> s_SuffixLookup;
+        // (id, suffix) -> channel index, built lazily from the generator's channel-suffix tables.
+        // Keying by property id disambiguates suffixes shared across properties (e.g. ".x.value"
+        // appears in BackgroundSize.x and BackgroundPosition.offset). Single-char component
+        // suffixes (.x, .r, ...) are intentionally skipped; AnimationWindowUtility.GetComponentIndex
+        // handles those.
+        private static Dictionary<(StylePropertyId, string), int> s_ChannelIndexLookup;
 
-        private readonly struct ChannelEntry
-        {
-            public readonly int ChannelIndex;
-            public readonly UIAnimationBinder.AnimationChannelKind Kind;
-            public readonly StylePropertyId PropertyId;
+        private static HashSet<string> s_KnownSubChannelSuffixes;
 
-            public ChannelEntry(int channelIndex, UIAnimationBinder.AnimationChannelKind kind, StylePropertyId propertyId)
-            {
-                ChannelIndex = channelIndex;
-                Kind = kind;
-                PropertyId = propertyId;
-            }
-        }
+        // (id, suffix) pairs whose property's only handler-reaching suffix is this one. Used
+        // to keep the full property name as the AnimationWindow group label for lone sub-channels
+        // (e.g. TextShadow.blurRadius) so the row doesn't collapse to the misleading parent
+        // (e.g. plain "TextShadow"). "Handler-reaching" excludes the 2-char fast-path suffixes
+        // (.r/.g/.b/.a/.x/.y/.z/.w) that AnimationWindowUtility strips before consulting handlers.
+        private static HashSet<(StylePropertyId, string)> s_LoneHandlerReachingSuffixes;
 
-        private static Dictionary<string, ChannelEntry> SuffixLookup
+        private static Dictionary<(StylePropertyId, string), int> ChannelIndexLookup
         {
             get
             {
-                if (s_SuffixLookup != null)
-                    return s_SuffixLookup;
-
-                var dict = new Dictionary<string, ChannelEntry>();
-                int idCount = UIAnimationBinder.StylePropertyIdCount;
-                for (int i = 0; i < idCount; i++)
-                {
-                    var id = (StylePropertyId)i;
-                    var suffixes = UIAnimationBinder.GetChannelSuffixes(id);
-                    for (int c = 0; c < suffixes.Count; c++)
-                    {
-                        string suffix = suffixes[c];
-                        if (string.IsNullOrEmpty(suffix)) continue;
-                        if (IsSingleCharComponentSuffix(suffix)) continue;
-
-                        var kind = UIAnimationBinder.GetChannelKind(id, c);
-                        // The generator ensures uniqueness: each non-single-char suffix
-                        // (.value, .unit, .align, .type, .offset.value, ...) belongs to at
-                        // most one channel of at most one property. If this invariant ever
-                        // breaks, the assignment simply picks the last winner and existing
-                        // tests will flag the discrepancy.
-                        dict[suffix] = new ChannelEntry(c, kind, id);
-                    }
-                }
-                s_SuffixLookup = dict;
-                return dict;
+                EnsureLookups();
+                return s_ChannelIndexLookup;
             }
+        }
+
+        private static HashSet<string> KnownSubChannelSuffixes
+        {
+            get
+            {
+                EnsureLookups();
+                return s_KnownSubChannelSuffixes;
+            }
+        }
+
+        private static HashSet<(StylePropertyId, string)> LoneHandlerReachingSuffixes
+        {
+            get
+            {
+                EnsureLookups();
+                return s_LoneHandlerReachingSuffixes;
+            }
+        }
+
+        private static void EnsureLookups()
+        {
+            if (s_ChannelIndexLookup != null)
+                return;
+
+            int idCount = UIAnimationBinder.StylePropertyIdCount;
+
+            // First pass: per-id count of suffixes that actually reach this handler at
+            // grouping time (fast-path-intercepted ones don't, so they don't count).
+            var handlerReachingCount = new int[idCount];
+            for (int i = 0; i < idCount; i++)
+            {
+                var suffixes = UIAnimationBinder.GetChannelSuffixes((StylePropertyId)i);
+                for (int c = 0; c < suffixes.Count; c++)
+                {
+                    string suffix = suffixes[c];
+                    if (string.IsNullOrEmpty(suffix)) continue;
+                    if (IsSingleCharComponentSuffix(suffix)) continue;
+                    if (IsFastPathInterceptedSuffix(suffix)) continue;
+                    handlerReachingCount[i]++;
+                }
+            }
+
+            var indexDict = new Dictionary<(StylePropertyId, string), int>();
+            var knownSuffixes = new HashSet<string>();
+            var loneSuffixes = new HashSet<(StylePropertyId, string)>();
+            for (int i = 0; i < idCount; i++)
+            {
+                var id = (StylePropertyId)i;
+                var suffixes = UIAnimationBinder.GetChannelSuffixes(id);
+                bool kindHasLoneHandlerReachingChannel = handlerReachingCount[i] == 1;
+                for (int c = 0; c < suffixes.Count; c++)
+                {
+                    string suffix = suffixes[c];
+                    if (string.IsNullOrEmpty(suffix)) continue;
+                    if (IsSingleCharComponentSuffix(suffix)) continue;
+
+                    indexDict[(id, suffix)] = c;
+                    knownSuffixes.Add(suffix);
+
+                    if (kindHasLoneHandlerReachingChannel && !IsFastPathInterceptedSuffix(suffix))
+                        loneSuffixes.Add((id, suffix));
+                }
+            }
+            s_ChannelIndexLookup = indexDict;
+            s_KnownSubChannelSuffixes = knownSuffixes;
+            s_LoneHandlerReachingSuffixes = loneSuffixes;
         }
 
         // Single-char channel components like ".x", ".r", ".w" are resolved by
@@ -140,10 +172,20 @@ namespace Unity.UIToolkit.Editor
         private static bool IsSingleCharComponentSuffix(string suffix) =>
             suffix.Length == 2 && suffix[0] == '.';
 
-        // Extracts the first '.' that separates the property name from its sub-channel,
-        // returning the full sub-channel suffix (leading dot included, e.g. ".offset.value")
-        // or null if there is no valid sub-channel. Property paths never contain dots so
-        // locating the slash-relative first dot is unambiguous.
+        // AnimationWindowUtility strips any ".<r|g|b|a|x|y|z|w>" suffix BEFORE consulting
+        // handlers, so suffixes matching that shape (including multi-char ones like
+        // ".color.r" or ".offset.x") never reach our GetPropertyGroupName.
+        private static bool IsFastPathInterceptedSuffix(string suffix)
+        {
+            if (suffix == null || suffix.Length < 3) return false;
+            if (suffix[suffix.Length - 2] != '.') return false;
+            char last = suffix[suffix.Length - 1];
+            return last == 'r' || last == 'g' || last == 'b' || last == 'a'
+                || last == 'x' || last == 'y' || last == 'z' || last == 'w';
+        }
+
+        // Returns the suffix starting at the first '.' after the trailing path segment
+        // (e.g. ".offset.value") or null when there is no sub-channel.
         private static string ExtractSubChannelSuffix(string propertyName)
         {
             if (string.IsNullOrEmpty(propertyName))
@@ -163,26 +205,70 @@ namespace Unity.UIToolkit.Editor
             if (suffix == null)
                 return -1;
 
-            return SuffixLookup.TryGetValue(suffix, out var entry) ? entry.ChannelIndex : -1;
+            string baseName = ExtractBasePropertyName(propertyName, suffix);
+            if (string.IsNullOrEmpty(baseName))
+                return -1;
+
+            if (!Enum.TryParse<StylePropertyId>(baseName, out var id) || id == StylePropertyId.Unknown)
+                return -1;
+
+            if (!ChannelIndexLookup.TryGetValue((id, suffix), out var channelIndex))
+                return -1;
+
+            // Filter slots present as independent groups (filter.0, filter.1, ...) so we
+            // report the slot-local sub-index (0..17), not the flat 0..71 channel index.
+            if (id == StylePropertyId.Filter)
+                return channelIndex % UIAnimationBinder.kFilterChannelsPerSlot;
+
+            return channelIndex;
         }
 
         public string GetPropertyGroupName([NotNull] string propertyName)
         {
             string suffix = ExtractSubChannelSuffix(propertyName);
-            if (suffix == null || !SuffixLookup.ContainsKey(suffix))
+            if (suffix == null || !KnownSubChannelSuffixes.Contains(suffix))
                 return null;
+
+            // Resolve the property id from the binding name rather than the suffix because
+            // the same suffix can belong to several properties (the same disambiguation
+            // GetChannelIndex applies).
+            string baseName = ExtractBasePropertyName(propertyName, suffix);
+            StylePropertyId id = StylePropertyId.Unknown;
+            if (!string.IsNullOrEmpty(baseName))
+                Enum.TryParse(baseName, out id);
+
+            // Filter groups are per-slot (filter.0, filter.1, ...); strip only the trailing
+            // ".<sub>" so the ".<i>" slot prefix stays in the group name.
+            if (id == StylePropertyId.Filter)
+            {
+                int secondDot = suffix.IndexOf('.', 1);
+                if (secondDot > 0)
+                    return propertyName.Substring(0, propertyName.Length - (suffix.Length - secondDot));
+            }
+
+            // Keep the full name for lone sub-channels (e.g. TextShadow.blurRadius) so the
+            // AnimationWindow row reads with the suffix instead of collapsing to the parent.
+            if (id != StylePropertyId.Unknown && LoneHandlerReachingSuffixes.Contains((id, suffix)))
+                return propertyName;
 
             return propertyName.Substring(0, propertyName.Length - suffix.Length);
         }
 
-        // Maps a Length-unit-like channel suffix to the enum type whose values populate the
-        // EditorGUI.EnumPopup. The LengthUnit suffix uses a custom popup (not this map)
-        // because we only expose "px" / "%" to users.
-        private static readonly Dictionary<string, Type> k_EnumPopupTypeBySuffix = new()
+        // Channel-suffix -> enum type for EditorGUI.EnumPopup. ".unit" is handled separately
+        // since we only expose px / %.
+        private static readonly Dictionary<string, Type> k_EnumPopupTypeBySuffix = BuildEnumPopupTypeBySuffix();
+
+        private static Dictionary<string, Type> BuildEnumPopupTypeBySuffix()
         {
-            { ".align", typeof(BackgroundPositionKeyword) },
-            { ".type", typeof(BackgroundSizeType) },
-        };
+            var map = new Dictionary<string, Type>
+            {
+                { ".align", typeof(BackgroundPositionKeyword) },
+                { ".type", typeof(BackgroundSizeType) },
+            };
+            for (int i = 0; i < UIAnimationBinder.kFilterSlotCount; ++i)
+                map["." + i.ToString() + ".type"] = typeof(FilterFunctionType);
+            return map;
+        }
 
         internal class BackgroundImageHandlerData
         {
@@ -209,7 +295,7 @@ namespace Unity.UIToolkit.Editor
             EditorCurveBinding curveBinding, Type curveValueType, Type animatableObjectType,
             object currentValue, out object newValue, ref object handlerData)
         {
-            if (animatableObjectType != typeof(PanelRenderer))
+            if (animatableObjectType != typeof(PanelRenderer) && animatableObjectType != typeof(UIAnimationClip))
             {
                 newValue = currentValue;
                 return false;
@@ -218,8 +304,7 @@ namespace Unity.UIToolkit.Editor
             var propName = curveBinding.propertyName;
             string suffix = ExtractSubChannelSuffix(propName);
 
-            // LengthUnit popup (px / %): matches every Length.unit sub-channel regardless of
-            // container (Length itself, BackgroundPosition.offset, BackgroundSize.x/.y, ...)
+            // px / % popup for any Length.unit sub-channel (Length, BackgroundPosition.offset, BackgroundSize.x/.y).
             if (suffix != null && suffix.EndsWith(".unit"))
             {
                 newValue = currentValue;
@@ -227,7 +312,6 @@ namespace Unity.UIToolkit.Editor
                 return true;
             }
 
-            // Simple enum-popup suffixes (.align, .type).
             if (suffix != null && k_EnumPopupTypeBySuffix.TryGetValue(suffix, out var enumType))
             {
                 newValue = currentValue;
@@ -235,15 +319,16 @@ namespace Unity.UIToolkit.Editor
                 return true;
             }
 
-            // BackgroundRepeat.x / .y reuse single-char suffixes shared with Translate /
-            // Scale / TransformOrigin, so we disambiguate by resolving the property from the
-            // propertyName rather than the suffix alone. The dedicated entry in
-            // SuffixLookup doesn't apply here because ".x" / ".y" are excluded for being
-            // single-char (the AnimationWindow's built-in component lookup handles their
-            // channel index separately).
+            // BackgroundRepeat.x / .y reuse single-char suffixes shared with Translate / Scale /
+            // TransformOrigin / Color, so we disambiguate by resolving the property from the
+            // propertyName rather than the suffix alone. ".x" / ".y" are excluded from the
+            // channel-index lookup for being single-char (the AnimationWindow's built-in component
+            // lookup handles their channel index separately). Strip the element-path prefix
+            // ("child/") because per-element bindings carry a path component before the property name.
             if (suffix == ".x" || suffix == ".y")
             {
-                var fullPropertyName = propName.Substring(0, propName.Length - suffix.Length);
+                var basePropertyName = ExtractBasePropertyName(propName, suffix);
+                if (basePropertyName == nameof(StylePropertyId.BackgroundRepeat))
                 {
                     newValue = currentValue;
                     return true;
@@ -259,18 +344,31 @@ namespace Unity.UIToolkit.Editor
 
             // PPtr sub-channels would render an EditorGUI.ObjectField at this point; no
             // composite currently emits a PPtr sub-channel suffix, so nothing to dispatch
-            // yet. SuffixLookup already carries the Kind metadata needed to wire this up
-            // once the first PPtr composite lands.
+            // yet. UIAnimationBinder.GetChannelKind already carries the metadata needed to
+            // wire this up once the first PPtr composite lands.
 
             newValue = currentValue;
             return false;
+        }
+
+        // Returns the bare property name (last path segment without sub-channel suffix)
+        // from a binding's propertyName. Handles both panel-wide and per-element shapes:
+        //   "BackgroundRepeat.x"            -> "BackgroundRepeat"
+        //   "child/BackgroundRepeat.x"      -> "BackgroundRepeat"
+        //   "panel/sub/BackgroundRepeat.x"  -> "BackgroundRepeat"
+        private static string ExtractBasePropertyName(string propertyName, string suffix)
+        {
+            int suffixStart = propertyName.Length - suffix.Length;
+            int lastSlash = propertyName.LastIndexOf('/', suffixStart - 1);
+            int baseStart = lastSlash + 1;
+            return propertyName.Substring(baseStart, suffixStart - baseStart);
         }
 
         public bool TryPopulateContextMenu(GenericMenu menu,
             EditorCurveBinding curveBinding, Type curveValueType, Type animatableObjectType,
             object handlerData, Action<object> setHandlerData)
         {
-            if (animatableObjectType != typeof(PanelRenderer))
+            if (animatableObjectType != typeof(PanelRenderer) && animatableObjectType != typeof(UIAnimationClip))
                 return false;
 
             if (!IsBackgroundImageProperty(curveBinding.propertyName))
@@ -304,7 +402,7 @@ namespace Unity.UIToolkit.Editor
         {
             validatedReferences = null;
 
-            if (animatableObjectType != typeof(PanelRenderer))
+            if (animatableObjectType != typeof(PanelRenderer) && animatableObjectType != typeof(UIAnimationClip))
                 return false;
 
             if (!IsBackgroundImageProperty(curveBinding.propertyName))
@@ -409,8 +507,7 @@ namespace Unity.UIToolkit.Editor
 
         private void HandleEnumProperty(System.Type enumType, Rect rect, ref object value)
         {
-            // The incoming value may be a float encoding an int via BitConverter; convert
-            // through Int32 so Enum.ToObject does not reject a boxed float.
+            // Value may be a float encoding an int via BitConverter; route through Int32.
             int intValue = Convert.ToInt32(value);
 
             Rect valueFieldRect = new Rect(rect.xMax - k_ValueFieldWidth - k_ValueFieldOffsetFromRightSide, rect.y, k_ValueFieldWidth, rect.height);

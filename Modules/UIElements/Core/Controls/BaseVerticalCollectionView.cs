@@ -1067,6 +1067,7 @@ namespace UnityEngine.UIElements
             selectionType = SelectionType.Single;
 
             m_ScrollView = new ScrollView();
+            m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             m_ScrollView.AddToClassList(listScrollViewUssClassNameUnique);
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
 

@@ -230,6 +230,10 @@ namespace UnityEditor
         ///<summary>Will force the buildGUID to all zeros.</summary>
         NoUniqueIdentifier = 1 << 23,
 
+        ///<summary>Suppress the error reported when a LoadableObjectId or LoadableSceneId is encountered during a Player build.</summary>
+        ///<remarks>Use this when migrating between build pipeline backends when assets legitimately have Loadable references, but the same content is also included in the Player. The references still resolve to null in the resulting build; this flag only silences the error log to keep the build usable.</remarks>
+        SuppressLoadableErrors = 1 << 24,
+
         // Wait for player connection on start
         ///<summary>Sets the Player to wait for player connection on player start.</summary>
         ///<seealso cref="Networking.PlayerConnection.PlayerConnection" />

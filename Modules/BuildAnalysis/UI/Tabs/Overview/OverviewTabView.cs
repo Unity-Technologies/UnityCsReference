@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Globalization;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using UnityEditor.Build.Reporting;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
@@ -20,15 +18,10 @@ namespace UnityEditor.Build.Analysis
         private VisualElement m_NoSelection;
         private ScrollView m_ScrollView;
 
-        private Label m_Title;
-        private Label m_Subtitle;
-        private Image m_SubtitlePlatformIcon;
-        private VisualElement m_StatusBadge;
-        private Label m_StatusBadgeText;
-        private Label m_TimeRange;
-        private Label m_TotalSizeKpiValue;
-        private Label m_BuildDurationKpiValue;
-        private Label m_AssetsKpiValue;
+        private BuildHeaderController m_Header;
+        private Label m_TotalSizeStatValue;
+        private Label m_BuildDurationStatValue;
+        private Label m_AssetsStatValue;
 
         private Label m_ErrorsValue;
         private Label m_WarningsValue;
@@ -56,15 +49,10 @@ namespace UnityEditor.Build.Analysis
             m_ScrollView = m_Root.Q<ScrollView>("overview-scroll");
             m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
-            m_Title = m_Root.Q<Label>("title");
-            m_Subtitle = m_Root.Q<Label>("subtitle");
-            m_SubtitlePlatformIcon = m_Root.Q<Image>("subtitle-platform-icon");
-            m_StatusBadge = m_Root.Q<VisualElement>("status-badge");
-            m_StatusBadgeText = m_Root.Q<Label>("status-badge-text");
-            m_TimeRange = m_Root.Q<Label>("time-range");
-            m_TotalSizeKpiValue = m_Root.Q<Label>("kpi-total-size-value");
-            m_BuildDurationKpiValue = m_Root.Q<Label>("kpi-build-duration-value");
-            m_AssetsKpiValue = m_Root.Q<Label>("kpi-assets-value");
+            m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));
+            m_TotalSizeStatValue = m_Root.Q<VisualElement>("stat-card-total-size").Q<Label>("value");
+            m_BuildDurationStatValue = m_Root.Q<VisualElement>("stat-card-build-duration").Q<Label>("value");
+            m_AssetsStatValue = m_Root.Q<VisualElement>("stat-card-assets").Q<Label>("value");
 
             m_ErrorsValue = m_Root.Q<Label>("errors-value");
             m_WarningsValue = m_Root.Q<Label>("warnings-value");
@@ -95,15 +83,10 @@ namespace UnityEditor.Build.Analysis
 
             var summary = analysis.Summary;
 
-            m_Title.text = selection.BuildName ?? string.Empty;
-            m_Subtitle.text = $"{selection.Platform} \u2022 {summary.BuildType}";
-            m_SubtitlePlatformIcon.image = PlatformIconUtility.GetPlatformIcon(selection.Platform);
-            m_StatusBadgeText.text = selection.BuildResult == BuildResult.Succeeded ? "Success" : "Failure";
-            m_TimeRange.text = FormatHeaderTimeRange(selection.BuildStartedAt, selection.TotalTimeMs);
-            ApplyStatusBadgeClasses(selection.BuildResult);
-            m_TotalSizeKpiValue.text = FormatUtils.FormatSize(selection.TotalSizeBytes);
-            m_BuildDurationKpiValue.text = FormatUtils.FormatDuration(selection.TotalTimeMs);
-            m_AssetsKpiValue.text = analysis.Computed.Counts.AssetCount.ToString();
+            m_Header.Bind(selection, analysis);
+            m_TotalSizeStatValue.text = FormatUtility.FormatSize(selection.TotalSizeBytes);
+            m_BuildDurationStatValue.text = FormatUtility.FormatDuration(selection.TotalTimeMs);
+            m_AssetsStatValue.text = analysis.Computed.Counts.AssetCount.ToString();
 
             m_ErrorsValue.text = summary.TotalErrors.ToString();
             m_WarningsValue.text = summary.TotalWarnings.ToString();
@@ -124,39 +107,16 @@ namespace UnityEditor.Build.Analysis
         {
         }
 
+        public void OnInspectorVisibilityChanged(bool isOpen)
+        {
+        }
+
         private static string FormatOptions(string[] options)
         {
             if (options == null || options.Length == 0)
                 return "None";
 
             return string.Join(", ", options);
-        }
-
-        private void ApplyStatusBadgeClasses(BuildResult buildResult)
-        {
-            m_StatusBadge.RemoveFromClassList("overview-header__status--success");
-            m_StatusBadge.RemoveFromClassList("overview-header__status--failed");
-
-            if (buildResult == BuildResult.Succeeded)
-            {
-                m_StatusBadge.AddToClassList("overview-header__status--success");
-                return;
-            }
-
-            m_StatusBadge.AddToClassList("overview-header__status--failed");
-        }
-
-        private static string FormatHeaderTimeRange(DateTime buildStartedAt, long totalTimeMs)
-        {
-            if (buildStartedAt == DateTime.MinValue)
-                return "Unknown";
-
-            var endTime = buildStartedAt.AddMilliseconds(Math.Max(0, totalTimeMs));
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                "{0:MM/dd/yyyy} \u2022 {0:HH:mm} to {1:HH:mm}",
-                buildStartedAt,
-                endTime);
         }
 
         private void OnOutputPathOpenClicked()

@@ -33,7 +33,7 @@ namespace UnityEditorInternal.Profiling
 
         public AssetLoadingProfilerModule() : base(ProfilerModuleChartType.StackedArea) {}
 
-        private protected override int defaultOrderIndex => 15;
+        private protected override int defaultOrderIndex => 17;
 
         internal override void OnEnable()
         {

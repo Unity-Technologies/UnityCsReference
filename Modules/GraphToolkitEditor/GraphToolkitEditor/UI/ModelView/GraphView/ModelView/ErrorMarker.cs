@@ -128,11 +128,12 @@ namespace Unity.GraphToolkit.Editor
                     for (var i = 0; i < errorsOnGraph.Count; i++)
                     {
                         var error = errorsOnGraph[i];
-                        var actionName = $"{i + 1}. " + FormatErrorItemName(error.ErrorMessage);
-                        evt.menu.AppendAction(actionName, _ =>
+                        var actionName = $"{error.GetEntryPrefix()}: {FormatErrorItemName(error.ErrorMessage)}";
+                        string prefix = $"{actionName}/";
+                        if (!error.TryAppendAction(evt.menu, RootView, prefix))
                         {
-                            ShowConsoleWindow();
-                        });
+                            evt.menu.AppendAction(actionName, _ => ShowConsoleWindow());
+                        }
                     }
 
                     if (graphErrors.Count == 1)
@@ -168,11 +169,17 @@ namespace Unity.GraphToolkit.Editor
                             var subgraphError = subgraphErrors[i];
 
                             // The error navigates to another graph.
-                            var actionName = $"Subgraph {GraphView.GraphModel.ResolveGraphModelFromReference(subgraphError.SourceGraphReference)?.Name ?? string.Empty} has ({errorCount}) error{sStr}/{i + 1}. " + FormatErrorItemName(subgraphError.ErrorMessage);
+                            var actionName =
+                                $"Subgraph {GraphView.GraphModel.ResolveGraphModelFromReference(subgraphError.SourceGraphReference)?.Name ?? string.Empty} has ({errorCount}) error{sStr}/{i + 1}. " +
+                                FormatErrorItemName(subgraphError.ErrorMessage);
                             evt.menu.AppendAction(actionName, _ => LoadGraphAndFrameElement(subgraphError, window));
                         }
                     }
                 }
+            }
+            else if (MarkerModel is ErrorMarkerModel errorMarkerModel)
+            {
+                errorMarkerModel.TryAppendAction(evt.menu, RootView);
             }
 
             m_Target.ReleaseMouse();
@@ -257,18 +264,19 @@ namespace Unity.GraphToolkit.Editor
             // If there is more than 1 issue, clicking on the marker should open a menu. Else, it should lead to the unity console.
             if (MarkerModel is MultipleGraphProcessingErrorsModel errorsModel)
             {
-                if (errorsModel.Errors.Count == 1)
+                if (ShouldOpenConsoleWindow(errorsModel.Errors))
                 {
                     var window = GraphView.Window as GraphViewEditorWindow;
                     var errorGraphAsset = errorsModel.Errors[0].SourceGraphReference;
-                    var clickable = errorGraphAsset.GraphModelGuid != GraphView.GraphModel.Guid ?
-                        new Clickable(() => LoadGraphAndFrameElement(errorsModel.Errors[0], window)) :
-                        new Clickable(ShowConsoleWindow);
+                    var clickable = errorGraphAsset.GraphModelGuid != GraphView.GraphModel.Guid
+                        ? new Clickable(() => LoadGraphAndFrameElement(errorsModel.Errors[0], window))
+                        : new Clickable(ShowConsoleWindow);
                     clickable.activators.Clear();
-                    clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, clickCount = 1 });
+                    clickable.activators.Add(
+                        new ManipulatorActivationFilter { button = MouseButton.LeftMouse, clickCount = 1 });
                     this.AddManipulator(clickable);
                 }
-                if (errorsModel.Errors.Count > 1)
+                else if (errorsModel.Errors.Count != 0)
                 {
                     ContextualMenuManipulator = new ErrorMarkerContextualMenuManipulator(BuildContextualMenu);
                 }
@@ -299,6 +307,21 @@ namespace Unity.GraphToolkit.Editor
             RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            return;
+
+            bool ShouldOpenConsoleWindow(List<GraphProcessingErrorModel> errors)
+            {
+                if (errors.Count == 1)
+                {
+                    var error = errors[0];
+                    if (error.Action == null)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <inheritdoc />

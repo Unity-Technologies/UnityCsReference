@@ -182,24 +182,25 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void OnDuplicateNode(AbstractNodeModel sourceNode)
         {
-            base.OnDuplicateNode(sourceNode);
-
-            if (sourceNode is not SubgraphNodeModel sourceSubgraphNode)
-                return;
-
-            if (!sourceSubgraphNode.IsReferencingLocalSubgraph && sourceSubgraphNode.m_CopyPasteLocalSubgraphModelReference == null)
-                return;
-
-            var sourceGraphModel = sourceSubgraphNode.GetSubgraphModel();
-            if (sourceGraphModel is null)
+            if (sourceNode is SubgraphNodeModel sourceSubgraphNode &&
+                (sourceSubgraphNode.IsReferencingLocalSubgraph ||
+                    sourceSubgraphNode.m_CopyPasteLocalSubgraphModelReference != null))
             {
-                SetSubgraphModel(default);
-                return;
+                var sourceGraphModel = sourceSubgraphNode.GetSubgraphModel();
+
+                if (sourceGraphModel is null)
+                {
+                    SetSubgraphModel(default);
+                }
+                else
+                {
+                    // Each duplicated local subgraph node should have their own instance of graph model
+                    var newSubgraph = GraphModel.DuplicateLocalSubGraph(sourceGraphModel, sourceNode.Title);
+                    SetSubgraphModel(newSubgraph.GetGraphReference(true));
+                }
             }
 
-            // Each duplicated local subgraph node should have their own instance of graph model
-            var newSubgraph = GraphModel.DuplicateLocalSubGraph(sourceGraphModel, sourceNode.Title);
-            SetSubgraphModel(newSubgraph.GetGraphReference(true));
+            base.OnDuplicateNode(sourceNode);
         }
 
         /// <summary>

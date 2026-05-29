@@ -40,7 +40,7 @@ namespace Unity.Hierarchy
         public bool IsCreated => m_Ptr != IntPtr.Zero;
 
         /// <summary>
-        /// The total number of flattned nodes.
+        /// The total number of flattened nodes.
         /// </summary>
         /// <remarks>
         /// The total includes the <see cref="Hierarchy.Root"/> node.
@@ -76,7 +76,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Cosntructs a new <see cref="HierarchyFlattened"/>.
+        /// Constructs a new <see cref="HierarchyFlattened"/> from a hierarchy.
         /// </summary>
         /// <param name="hierarchy">The hierarchy.</param>
         public HierarchyFlattened(Hierarchy hierarchy)
@@ -320,10 +320,10 @@ namespace Unity.Hierarchy
         }
         #endregion
 
-        #region Marked as obsolete warning in 6.3
-        [Obsolete("The Hierarchy property will be removed in the future, remove its usage from your code.", false)]
+        #region Marked as obsolete error in 6.6
+        [Obsolete("The Hierarchy property will be removed in the future, remove its usage from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Hierarchy Hierarchy => m_Hierarchy;
+        public Hierarchy Hierarchy { get => throw null; }
         #endregion
     }
 }

@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
     /// Base class for defining a binding.
     /// </summary>
     [UxmlObject]
+    [System.Serializable]
     public abstract partial class Binding
     {
         /// <summary>

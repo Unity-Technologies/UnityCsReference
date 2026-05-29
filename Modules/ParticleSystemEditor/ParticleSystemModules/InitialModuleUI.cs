@@ -207,6 +207,7 @@ namespace UnityEditor
             m_RandomizeRotationDirection = GetProperty("randomizeRotationDirection");
             m_GravitySource = GetProperty("gravitySource");
             m_GravityModifier = new SerializedMinMaxCurve(this, s_Texts.gravity, "gravityModifier", kUseSignedRange);
+            m_GravityModifier.m_DefaultCurveScalar = 0.0f;
             m_MaxNumParticles = GetProperty("maxNumParticles");
         }
 

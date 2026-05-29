@@ -100,10 +100,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void PingSampleInProjectBrowser(Sample sample)
         {
-            if (m_Application.PingObjectInProjectBrowser(IOUtils.GetRelativePath(m_IOProxy.CurrentDirectory, sample.importPath)))
+            if (m_Application.PingObjectInProjectBrowser(m_IOProxy.GetProjectRelativePath(sample.importPath)))
                 return;
             if (sample.previousImportPaths?.Count > 0)
-                m_Application.PingObjectInProjectBrowser(IOUtils.GetRelativePath(m_IOProxy.CurrentDirectory,sample.previousImportPaths[^1]));
+                m_Application.PingObjectInProjectBrowser(m_IOProxy.GetProjectRelativePath(sample.previousImportPaths[^1]));
+        }
+
+        protected override IEnumerable<DisableCondition> GetAllDisableConditions(Sample sample)
+        {
+            yield return new DisableIfPackageIsInInvalidLocation(sample);
+            yield return new DisableIfEntitlementsError(sample);
+            yield return new DisableIfPackageIsNotLoaded(sample);
         }
     }
 }

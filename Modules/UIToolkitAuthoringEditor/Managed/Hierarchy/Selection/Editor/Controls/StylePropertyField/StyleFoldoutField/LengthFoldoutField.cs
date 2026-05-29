@@ -98,11 +98,11 @@ namespace Unity.UIToolkit.Editor
             var allTheSame = true;
             var singleValue = "none";
             var cumulativeValue = string.Empty;
-            var shouldBeEnabled = true;
+            var shouldBeEnabled = false;
 
             for (var i = 0; i < fields.Count; ++i)
             {
-                shouldBeEnabled &= fields[i].enabledSelf;
+                shouldBeEnabled |= fields[i].enabledSelf;
                 var childValue = fields[i].value.ToString().ToLower();
                 if (childValue.Equals("0"))
                 {

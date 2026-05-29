@@ -181,7 +181,7 @@ By default, Windows will combine these under a single taskbar item.");
 
         private bool m_ReopenLastUsedProjectOnStartup;
         private bool m_EnableEditorAnalytics;
-        private bool m_AnalyticSettingChangedThisSession = false;
+        private static bool? s_OriginalEnableEditorAnalytics;
         private bool m_AutoSaveScenesBeforeBuilding;
         private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
@@ -532,21 +532,13 @@ By default, Windows will combine these under a single taskbar item.");
             // Options
             m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(GeneralProperties.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
 
-            bool enableEditorAnalyticsOld = m_EnableEditorAnalytics;
-
-            using (new EditorGUI.DisabledScope(m_AnalyticSettingChangedThisSession))
-            {
-                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics);
-                if (enableEditorAnalyticsOld != m_EnableEditorAnalytics)
-                {
-                    m_AnalyticSettingChangedThisSession = true;
-                    EditorAnalytics.enabled = m_EnableEditorAnalytics;
-                }
-                if (m_AnalyticSettingChangedThisSession)
-                {
-                    EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
-                }
-            }
+            s_OriginalEnableEditorAnalytics ??= m_EnableEditorAnalytics;
+            EditorGUI.BeginChangeCheck();
+            m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics);
+            if (EditorGUI.EndChangeCheck())
+                EditorAnalytics.enabled = m_EnableEditorAnalytics;
+            if (m_EnableEditorAnalytics != s_OriginalEnableEditorAnalytics)
+                EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
 
             m_AutoSaveScenesBeforeBuilding = EditorGUILayout.Toggle(GeneralProperties.autoSaveScenesBeforeBuilding, m_AutoSaveScenesBeforeBuilding);
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(GeneralProperties.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
@@ -1252,6 +1244,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
+            EditorPrefs.SetBool("EnableEditorAnalyticsV2", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("SaveScenesBeforeBuilding", m_AutoSaveScenesBeforeBuilding);
             EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)m_ScriptCompilationDuringPlay);
 

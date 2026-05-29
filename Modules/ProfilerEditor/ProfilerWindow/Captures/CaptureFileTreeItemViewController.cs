@@ -21,9 +21,7 @@ namespace Unity.Profiling.Editor.UI
         const string k_UxmlOpenButton = "profiler-capture-file__button";
         const string k_UxmlOpenCaptureTag = "profiler-capture-file__tag";
         const string k_UxmlRenameField = "profiler-capture-file__meta-data__rename";
-        const string k_UxmlUnityTextInput = "unity-text-input";
         const string k_UxmlRenameFieldWarning = "profiler-capture-file__warning";
-        const string k_UxmlRenameFieldWarningMsg = "captures-list__warning-msg";
         const string k_UxmlChangeFPSField = "profiler-capture-file__meta-data__change_fps";
         const string k_UxmlMenuButton = "profiler-capture-file__menu-button";
         const string k_UssMenuButtonActive = "profiler-capture-file__menu-button--active";
@@ -35,6 +33,7 @@ namespace Unity.Profiling.Editor.UI
 
         const string k_TargetFPSMenu = "Target Frame Time/";
         const int k_MinTimeBetweenClicksMs = 100;
+        const int k_WarningMessageVertOffset = -25;
 
         readonly int m_StrLenMaxFPS;
 
@@ -54,16 +53,19 @@ namespace Unity.Profiling.Editor.UI
         Label m_OpenCaptureTag;
         TextField m_RenameField;
         TextElement m_RenameFieldInputArea;
+        VisualElement m_RenameFieldTextInput;
         TextField m_ChangeFPSField;
         TextElement m_ChangeFPSFieldInputArea;
-        Label m_WarningMessage;
+        readonly Label m_WarningMessage;
+        ScrollView m_ScrollView;
 
-        public CaptureFileTreeItemViewController(CaptureFileModel model, CaptureDataService captureDataService, ScreenshotsManager screenshotsManager, ProfilerWindow profilerWindow) :
+        public CaptureFileTreeItemViewController(CaptureFileModel model, CaptureDataService captureDataService, ScreenshotsManager screenshotsManager, ProfilerWindow profilerWindow, Label warningLabel) :
             base(model, screenshotsManager)
         {
             m_CaptureDataService = captureDataService;
             m_StrLenMaxFPS = ProfilerUserSettings.k_MaximumTargetFramesPerSecond.ToString().Length;
             m_ProfilerWindow = profilerWindow;
+            m_WarningMessage = warningLabel;
             m_CaptureDataService.LoadedCapturesChanged += RefreshLoadedState;
         }
 
@@ -85,8 +87,12 @@ namespace Unity.Profiling.Editor.UI
         {
             if (disposing)
             {
-                m_WarningMessage?.RemoveFromHierarchy();
                 m_CaptureDataService.LoadedCapturesChanged -= RefreshLoadedState;
+                UnregisterScrollHandler();
+                if (m_RenameField is { visible: true })
+                {
+                    HideRenameWarning();
+                }
             }
 
             base.Dispose(disposing);
@@ -112,13 +118,11 @@ namespace Unity.Profiling.Editor.UI
             m_Container = view.Q(k_UxmlOpenButton);
             m_OpenCaptureTag = view.Q<Label>(k_UxmlOpenCaptureTag);
             m_RenameField = view.Q<TextField>(k_UxmlRenameField);
-            m_RenameFieldInputArea = m_RenameField.Q<TextElement>();
+            m_RenameFieldInputArea = m_RenameField?.Q<TextElement>();
+            m_RenameFieldTextInput = m_RenameField?.Q(TextField.textInputUssName);
             m_ChangeFPSField = view.Q<TextField>(k_UxmlChangeFPSField);
-            m_ChangeFPSFieldInputArea = m_ChangeFPSField.Q<TextElement>();
+            m_ChangeFPSFieldInputArea = m_ChangeFPSField?.Q<TextElement>();
             m_MenuButton = view.Q(k_UxmlMenuButton);
-
-            m_WarningMessage = new Label();
-            m_WarningMessage.AddToClassList(k_UxmlRenameFieldWarningMsg);
         }
 
         bool KeyEventEnterPressedOrSimilar(KeyDownEvent evt)
@@ -309,9 +313,49 @@ namespace Unity.Profiling.Editor.UI
 
         void RenameCapture()
         {
+            if (View.panel == null)
+                return;
+
             UIUtility.SwitchVisibility(m_RenameField, m_Name);
             m_RenameField.SetValueWithoutNotify(m_Name.text);
+            RegisterScrollHandler();
             FocusRenameField();
+        }
+
+        void RegisterScrollHandler()
+        {
+            if (m_ScrollView != null)
+                return;
+
+            // Find and store the ScrollView ancestor so we can reliably unregister later,
+            // even if the View gets detached from the hierarchy (e.g., during virtualization)
+            m_ScrollView = View.GetFirstAncestorOfType<ScrollView>();
+            if (m_ScrollView != null)
+            {
+                // Listen to vertical scroller value changes to catch all scroll methods:
+                // mouse wheel, scrollbar dragging, scrollbar clicking, keyboard navigation, etc.
+                m_ScrollView.verticalScroller.valueChanged += OnScrollDuringRename;
+            }
+        }
+
+        void UnregisterScrollHandler()
+        {
+            // Use the stored reference instead of searching the hierarchy,
+            // since the View may already be detached when this is called
+            if (m_ScrollView != null)
+            {
+                m_ScrollView.verticalScroller.valueChanged -= OnScrollDuringRename;
+                m_ScrollView = null;
+            }
+        }
+
+        void OnScrollDuringRename(float _)
+        {
+            if (m_RenameField.visible)
+            {
+                m_RenameField.SetValueWithoutNotify(Model.Name);
+                ResetRenameState();
+            }
         }
 
         void EditCaptureFPS()
@@ -428,6 +472,7 @@ namespace Unity.Profiling.Editor.UI
 
         void ResetRenameState()
         {
+            UnregisterScrollHandler();
             UIUtility.SwitchVisibility(m_RenameField, m_Name, false);
             HideRenameWarning();
         }
@@ -442,7 +487,7 @@ namespace Unity.Profiling.Editor.UI
             EditorCoroutineUtility.StartCoroutine(DelayedActionExecutor(action, framesDelay), this);
         }
 
-        IEnumerator DelayedActionExecutor(Action action, int framesDelay)
+        static IEnumerator DelayedActionExecutor(Action action, int framesDelay)
         {
             for (int i = 0; i < framesDelay; i++)
                 yield return null;
@@ -452,25 +497,30 @@ namespace Unity.Profiling.Editor.UI
 
         void ShowRenameWarning(string message)
         {
-
-            if (!m_RenameField.visible)
+            if (m_RenameField == null || !m_RenameField.visible || m_WarningMessage == null)
                 return;
 
-            m_RenameField.Q(k_UxmlUnityTextInput).AddToClassList(k_UxmlRenameFieldWarning);
+            m_RenameFieldTextInput?.AddToClassList(k_UxmlRenameFieldWarning);
 
-            var viewRoot = m_RenameField.panel.visualTree.Q("captures-list-view");
+            // Position warning message relative to the panel root
+            var viewRoot = m_RenameField.panel?.visualTree;
+            if (viewRoot == null)
+                return;
+
             var bounds = m_RenameField.ChangeCoordinatesTo(viewRoot, m_RenameField.contentRect);
-            m_WarningMessage.RemoveFromHierarchy();
-            viewRoot.Add(m_WarningMessage);
+
+            m_WarningMessage.style.display = DisplayStyle.Flex;
             m_WarningMessage.style.left = bounds.xMin;
-            m_WarningMessage.style.top = bounds.yMax + 4;
+            m_WarningMessage.style.top = bounds.yMax + k_WarningMessageVertOffset;
             m_WarningMessage.text = message;
+            m_WarningMessage.BringToFront();
         }
 
         void HideRenameWarning()
         {
-            m_RenameField.Q(k_UxmlUnityTextInput).RemoveFromClassList(k_UxmlRenameFieldWarning);
-            m_WarningMessage.RemoveFromHierarchy();
+            m_RenameFieldTextInput?.RemoveFromClassList(k_UxmlRenameFieldWarning);
+            if (m_WarningMessage != null)
+                m_WarningMessage.style.display = DisplayStyle.None;
         }
     }
 }

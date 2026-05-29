@@ -43,6 +43,8 @@ namespace Unity.Hierarchy.Editor
 
         HierarchyNodeType m_NodeType;
         bool m_IsMainStage;
+        HierarchyView m_BoundView;
+        StickyRowController m_StickyRowController;
 
         HierarchySceneHandler()
         {
@@ -131,6 +133,47 @@ namespace Unity.Hierarchy.Editor
             // We have no choice but to remove this class from the row container, since there is no guarantee
             // that the HierarchyViewItem will be reused in the same row container.
             item.RowContainer?.RemoveFromClassList(k_SceneNodeContainerUssClass);
+        }
+
+        protected override void OnBindView(HierarchyView view)
+        {
+            m_BoundView = view;
+            m_StickyRowController = new StickyRowController();
+            view.ListView.stickyRowController = m_StickyRowController;
+            view.ListView.BeforeRefreshingItems += UpdateStickyIndices;
+        }
+
+        protected override void OnUnbindView(HierarchyView view)
+        {
+            if (m_BoundView != null)
+            {
+                m_BoundView.ListView.BeforeRefreshingItems -= UpdateStickyIndices;
+                m_BoundView.ListView.stickyRowController = null;
+            }
+
+            m_BoundView = null;
+            m_StickyRowController = null;
+        }
+
+        void UpdateStickyIndices()
+        {
+            if (m_StickyRowController == null || m_BoundView?.ViewModel is not { IsCreated: true } viewModel)
+                return;
+
+            m_StickyRowController.ClearWithoutNotify();
+
+            var sceneCount = SceneManager.sceneCount;
+            for (var i = 0; i < sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                var node = GetOrCreateNode(scene);
+                if (node == HierarchyNode.Null)
+                    continue;
+
+                var viewModelIndex = viewModel.IndexOf(in node);
+                if (viewModelIndex >= 0)
+                    m_StickyRowController.SetStickyWithoutNotify(viewModelIndex, true);
+            }
         }
 
         #region IHierarchyEditorNodeTypeHandler

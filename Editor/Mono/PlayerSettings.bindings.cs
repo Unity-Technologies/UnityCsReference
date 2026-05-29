@@ -431,6 +431,9 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettingsPtr")]
         private static extern UnityEngine.Object InternalGetPlayerSettingsObject();
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern PlayerSettings GetProjectSettingsPlayerSettings();
+
         internal static void ValidateBuildTargetNameParameter(string buildTargetName, bool unknownIsValid = false)
         {
             // The empty string is the valid form of BuildTargetGroup.Unknown, so don't throw an execption for that case.
@@ -823,9 +826,11 @@ namespace UnityEditor
             return BuildPipeline.GetBuildTargetGroupName(targetGroup);
         }
 
+        // Deprecated: 'dynamicBatching' parameter is retained for serialized data compatibility and will be removed in a future release.
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void GetBatchingForPlatform(BuildTarget platform, out int staticBatching, out int dynamicBatching);
 
+        // Deprecated: 'dynamicBatching' parameter is retained for serialized data compatibility and will be removed in a future release.
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetBatchingForPlatform(BuildTarget platform, int staticBatching, int dynamicBatching);
 
@@ -841,17 +846,15 @@ namespace UnityEditor
             PlayerSettings.SetBatchingForPlatform(platform, enable == true ? 1 : 0, dynamicBatching);
         }
 
+        [System.Obsolete("GetDynamicBatchingForPlatform is obsolete.", true)]
         public static bool GetDynamicBatchingForPlatform(BuildTarget platform)
         {
-
-            PlayerSettings.GetBatchingForPlatform(platform, out _, out var dynamicBatching);
-            return dynamicBatching > 0;
+            return false;
         }
 
+        [System.Obsolete("SetDynamicBatchingForPlatform is obsolete.", true)]
         public static void SetDynamicBatchingForPlatform(BuildTarget platform, bool enable)
         {
-            PlayerSettings.GetBatchingForPlatform(platform, out var staticBatching, out _);
-            PlayerSettings.SetBatchingForPlatform(platform, staticBatching, enable == true ? 1 : 0);
         }
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
@@ -1869,9 +1872,11 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetScriptingDefineSymbols_Internal(PlayerSettings instance, string buildTargetName, string defines);
 
+        // Deprecated: 'dynamicBatching' parameter is retained for serialized data compatibility and will be removed in a future release.
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void GetBatchingForPlatform_Internal(PlayerSettings instance, BuildTarget platform, out int staticBatching, out int dynamicBatching);
 
+        // Deprecated: 'dynamicBatching' parameter is retained for serialized data compatibility and will be removed in a future release.
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetBatchingForPlatform_Internal(PlayerSettings instance, BuildTarget platform, int staticBatching, int dynamicBatching);
 
@@ -2059,14 +2064,14 @@ namespace UnityEditor
         internal extern bool GetAdjustIOSFPSUsingThermalState_Internal();
 
         public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
-     
+
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern RayTracingFeatureFlags GetRayTracingFeaturesSupportForPlatform_Internal(BuildTarget platform, bool checkGraphicsApisList);
 
         public static RayTracingFeatureFlags GetRayTracingFeaturesSupportForPlatform(BuildTarget platform, bool checkGraphicsApisList)
         {
             return GetRayTracingFeaturesSupportForPlatform_Internal(platform, checkGraphicsApisList);
-        }    
+        }
     }
 }
 

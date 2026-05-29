@@ -20,7 +20,7 @@ namespace Unity.GraphToolkit.Editor
     internal class WireManipulator : MouseManipulator
     {
         bool m_Active;
-        Wire m_Wire;
+        WireView m_Wire;
         Vector2 m_PressPos;
         WireDragHelper m_ConnectedWireDragHelper;
         List<WireDragHelper> m_AdditionalWireDragHelpers;
@@ -83,7 +83,7 @@ namespace Unity.GraphToolkit.Editor
                 return;
             }
 
-            m_Wire = (evt.target as VisualElement)?.GetFirstOfType<Wire>();
+            m_Wire = (evt.target as VisualElement)?.GetFirstOfType<WireView>();
             if (m_Wire != null && m_Wire.WireModel is IPlaceholder)
                 return;
 
@@ -100,7 +100,7 @@ namespace Unity.GraphToolkit.Editor
             // If the left mouse button is not down, check if the mouse is hovering near the nodes
             if (m_Wire == null)
             {
-                var wire = (evt.target as VisualElement)?.GetFirstOfType<Wire>();
+                var wire = (evt.target as VisualElement)?.GetFirstOfType<WireView>();
                 if (wire == null)
                     return;
 
@@ -236,11 +236,11 @@ namespace Unity.GraphToolkit.Editor
                         m_ConnectedWireDragHelper.HandleMouseUp(evt, true, m_AdditionalWireDragHelpers.Select(t => t.OriginalWire), m_AdditionalWireDragHelpers.Select(t => t.DraggedPort));
 #pragma warning restore UA2001
                         foreach (var dragHelper in m_AdditionalWireDragHelpers)
-                            dragHelper.HandleMouseUp(evt, false, Array.Empty<Wire>(), Array.Empty<PortModel>());
+                            dragHelper.HandleMouseUp(evt, false, Array.Empty<WireView>(), Array.Empty<PortModel>());
                     }
                     else
                     {
-                        m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Array.Empty<Wire>(), Array.Empty<PortModel>());
+                        m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Array.Empty<WireView>(), Array.Empty<PortModel>());
                     }
 
                     evt.StopPropagation();
@@ -303,7 +303,7 @@ namespace Unity.GraphToolkit.Editor
             return !(distanceFromInput > 50 * 50) || !(distanceFromOutput > 50 * 50);
         }
 
-        static List<WireDragHelper> GetAdditionalWireDragHelpers(PortModel detachedPort, Wire targetWire, RootView rootView, IMouseEvent evt)
+        static List<WireDragHelper> GetAdditionalWireDragHelpers(PortModel detachedPort, WireView targetWire, RootView rootView, IMouseEvent evt)
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var connectedWires = detachedPort.GetConnectedWires().ToList();
@@ -315,7 +315,7 @@ namespace Unity.GraphToolkit.Editor
 
             foreach (var wire in connectedWires)
             {
-                var wireUI = wire.GetView<Wire>(rootView);
+                var wireUI = wire.GetView<WireView>(rootView);
                 if (wireUI != null && wireUI != targetWire && wireUI.IsSelected())
                 {
                     var otherPort = detachedPort == wire.ToPort ? wire.FromPort : wire.ToPort;

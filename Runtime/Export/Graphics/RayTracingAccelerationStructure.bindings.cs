@@ -81,6 +81,8 @@ namespace UnityEngine.Rendering
     [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceCullingMaterialTest
     {
+        public string[] requiredShaderPasses;
+
         public string[] deniedShaderPasses;
 
         public RayTracingInstanceCullingShaderTagConfig[] requiredShaderTags;

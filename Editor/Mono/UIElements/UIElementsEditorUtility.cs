@@ -290,7 +290,8 @@ namespace UnityEditor.UIElements
             return updateCallback;
         }
 
-        static void ClearStyleCacheAfterUndoIfTracked(in UndoRedoInfo undo)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void ClearStyleCacheAfterUndoIfTracked(in UndoRedoInfo _)
         {
             var iterator = UIElementsUtility.GetPanelsIterator();
             var shouldClearCache = false;

@@ -183,6 +183,14 @@ namespace UnityEngine.UIElements
                     }
                 }
 
+                // The new PanelSettings may flip isWorldSpace; refresh the root's overlay/world-space styles.
+                if (parentUI == null)
+                {
+                    bool wasWorldSpace = m_PreviousPanelSettings != null && m_PreviousPanelSettings.renderMode == PanelRenderMode.WorldSpace;
+                    if (wasWorldSpace != isWorldSpace)
+                        SetupRootClassList();
+                }
+
                 m_PreviousPanelSettings = m_PanelSettings;
             }
         }
@@ -697,7 +705,7 @@ namespace UnityEngine.UIElements
 
         float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
-        Vector2 PivotOffset()
+        internal Vector2 PivotOffset()
         {
             var pivotPercent = PanelComponentUtils.GetPivotAsPercent(m_Pivot);
             var localBounds = PanelComponentUtils.LocalBoundsFromPivotSource(rootVisualElement, pivotReferenceSize);
@@ -1211,7 +1219,7 @@ namespace UnityEngine.UIElements
             if (rootVisualElement == null)
                 return;
 
-            PanelComponentUtils.DrawGizmoBounds(this, PivotOffset(), pixelsPerUnit);
+            PanelComponentUtils.DrawGizmoBounds(this, pixelsPerUnit);
         }
 
     }

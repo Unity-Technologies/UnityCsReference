@@ -164,6 +164,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.Core.CoreTests.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.TouchScreenKeyboard.Tests.Common")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
+[assembly: InternalsVisibleTo("PlaymodeTests")]
 [assembly: InternalsVisibleTo("ContentBuildLoadPreview")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.PlayMode.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]

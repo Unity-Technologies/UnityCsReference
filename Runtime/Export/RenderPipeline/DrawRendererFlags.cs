@@ -10,6 +10,7 @@ namespace UnityEngine.Rendering
     enum DrawRendererFlags
     {
         None = 0,
+        [System.Obsolete("EnableDynamicBatching is obsolete.", true)]
         EnableDynamicBatching = (1 << 0),
         EnableInstancing = (1 << 1),
     }

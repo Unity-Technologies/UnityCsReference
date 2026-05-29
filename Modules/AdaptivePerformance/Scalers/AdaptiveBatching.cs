@@ -7,19 +7,14 @@ namespace UnityEngine.AdaptivePerformance
     /// <summary>
     /// A scaler used by <see cref="AdaptivePerformanceIndexer"/> to control if dynamic batching is enabled.
     /// </summary>
+    [System.Obsolete("AdaptiveBatching is obsolete.", true)]
     public class AdaptiveBatching : AdaptivePerformanceScaler
     {
-        bool m_DefaultState;
-
         /// <summary>
         /// Ensures settings are applied during startup.
         /// </summary>
         protected override void Awake()
         {
-            base.Awake();
-            if (m_Settings == null)
-                return;
-            ApplyDefaultSetting(m_Settings.scalerSettings.AdaptiveBatching);
         }
 
         /// <summary>
@@ -27,7 +22,6 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         protected override void OnDisabled()
         {
-            AdaptivePerformanceRenderSettings.SkipDynamicBatching = m_DefaultState;
         }
 
         /// <summary>
@@ -35,7 +29,6 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         protected override void OnEnabled()
         {
-            m_DefaultState = AdaptivePerformanceRenderSettings.SkipDynamicBatching;
         }
 
         /// <summary>
@@ -43,8 +36,6 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         protected override void OnLevel()
         {
-            if (ScaleChanged())
-                AdaptivePerformanceRenderSettings.SkipDynamicBatching = (Scale < 1);
         }
     }
 }

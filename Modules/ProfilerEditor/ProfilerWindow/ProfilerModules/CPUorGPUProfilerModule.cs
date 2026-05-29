@@ -168,7 +168,7 @@ namespace UnityEditorInternal.Profiling
             EditorGUIUtility.TrTextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated."),
             EditorGUIUtility.TrTextContent("Show Full Scripting Method Names", "Display fully qualified method names including assembly name and namespace."),
             EditorGUIUtility.TrTextContent("Show Flow Events", "Visualize job scheduling and execution."),
-            EditorGUIUtility.TrTextContent("Hide 0ms Samples", "Hides samples displayed as 0 ms: < 0.01 ms (CPU profiler) and < 0.001 ms (GPU profiler). Child samples are also hidden." ),
+            EditorGUIUtility.TrTextContent("Hide 0ms Samples", "Hides samples displayed as 0 ms: (< 0.01 ms CPU Profiler, < 0.001 ms GPU Profiler). In the CPU Profiler, samples with GC Alloc are kept." ),
         };
 
         [SerializeField]
@@ -1159,5 +1159,9 @@ namespace UnityEditorInternal.Profiling
 
         public abstract float GetZeroSampleThresholdMs();
         public abstract int GetZeroSampleTimeColumn();
+        public virtual int GetGCAllocColumn()
+        {
+            return -1;
+        }
     }
 }

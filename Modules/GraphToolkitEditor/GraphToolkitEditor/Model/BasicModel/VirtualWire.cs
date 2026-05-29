@@ -9,7 +9,7 @@ namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
     /// This class is used to represent connections between a subset of the nodes in a graph. A series of
-    /// <see cref="Wire"/> to/between/from nodes that are not part of the subset is represented as
+    /// <see cref="WireModel"/> to/between/from nodes that are not part of the subset is represented as
     /// a single virtual wire.
     /// </summary>
     [UnityRestricted]

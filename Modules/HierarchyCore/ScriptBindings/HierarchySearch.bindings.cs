@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
@@ -22,7 +23,7 @@ namespace Unity.Hierarchy
         /// </summary>
         Equal,
         /// <summary>
-        /// Checks if a filter value occurs within the right-hand operand. For instance, with a string value `Contains` uses `string.Contains`. 
+        /// Checks if a filter value occurs within the right-hand operand. For instance, with a string value `Contains` uses `string.Contains`.
         /// </summary>
         Contains,
         /// <summary>
@@ -46,7 +47,7 @@ namespace Unity.Hierarchy
         /// </summary>
         NotEqual,
         /// <summary>
-        /// Checks for items that do not match the filter value. 
+        /// Checks for items that do not match the filter value.
         /// </summary>
         Not
     }
@@ -82,11 +83,14 @@ namespace Unity.Hierarchy
         /// </summary>
         public string Value { get; set; }
 
+        #region Marked as obsolete warning in 6.6
         /// <summary>
         /// Filter numerical value.
         /// </summary>
         [Obsolete("Use Value instead", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public float NumValue { get; set; }
+        #endregion
 
         /// <summary>
         /// The filter search operator.
@@ -124,7 +128,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Converts a textual value to its operator value if possible. 
+        /// Converts a textual value to its operator value if possible.
         /// </summary>
         /// <param name="op">The textual operator. For example: =, &lt;=, :, and .... </param>
         /// <returns>The `HierarchySearchFilterOperator` that matches the parsed string. For example, this function parses the string "=" and converts it to `HierarchySearchFilterOperator.Equal`. </returns>
@@ -185,6 +189,7 @@ namespace Unity.Hierarchy
             }
             return s;
         }
+
     }
 
     /// <summary>
@@ -234,7 +239,7 @@ namespace Unity.Hierarchy
         public bool Strict { get; set; }
 
         /// <summary>
-        /// Whether the query invalid. An invalid query yields no node.
+        /// Whether the query is invalid. An invalid query yields no node.
         /// </summary>
         public bool Invalid { get; set; }
 
@@ -244,7 +249,7 @@ namespace Unity.Hierarchy
         public bool IsValid => !Invalid && !IsEmpty;
 
         /// <summary>
-        /// Whether the query is empty. 
+        /// Whether the query is empty.
         /// </summary>
         public bool IsEmpty => Filters.Length == 0 && TextValues.Length == 0 && SystemFilters.Length == 0;
 

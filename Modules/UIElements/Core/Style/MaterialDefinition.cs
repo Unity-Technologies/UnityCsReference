@@ -434,6 +434,7 @@ namespace UnityEngine.UIElements
             return result;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static MaterialDefinition From(UnmanagedMaterialDefinition unmanagedMaterialDefinition)
         {
             Material material = null;

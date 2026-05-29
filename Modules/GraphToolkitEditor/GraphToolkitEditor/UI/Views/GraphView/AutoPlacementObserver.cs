@@ -113,7 +113,7 @@ namespace Unity.GraphToolkit.Editor
                         return;
 
                     var wireModel = graphModel.GetModel(modelToReposition.WireModel);
-                    if (wireModel != null && model.GetView<GraphElement>(m_GraphView) == null)
+                    if (wireModel != null && wireModel.GetView<GraphElement>(m_GraphView) == null)
                         return;
                 }
             }
@@ -262,7 +262,7 @@ namespace Unity.GraphToolkit.Editor
                         }
                     }
 
-                    var wireUI = wireModel.GetView<Wire>(m_GraphView);
+                    var wireUI = wireModel.GetView<WireView>(m_GraphView);
                     if (wireUI != null)
                         graphUpdater.MarkChanged(wireModel, ChangeHint.Layout);
                 }

@@ -263,6 +263,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "ads", // CS0168: unused variable
         };
 
+        internal static string ImmutablePackageRulesetPath { get; private set; }
+
         public string FilePath { get; set; }
         public string PathPrefix { get; set; }
         public string Name { get; set; }
@@ -290,8 +292,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public bool IsPredefined { get; set; }
 
-        private static string s_immutablePackageRulesetPath;
-
         private bool IsInWhitelistedPackage()
         {
             var pathSpan = PathPrefix.AsSpan();
@@ -310,47 +310,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return pathSpan.Contains("com.unity.".AsSpan(), StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static string GetImmutablePackageRulesetPath()
-        {
-            // When UNITY_INTERNAL_NOSUPPRESSWARNINGS=1, use default analyzer behavior (all warnings enabled)
-            // Otherwise, suppress all analyzer warnings except UAC0005/6/7/20/23 rules
-            var includeAllLine = k_CompilerWarningsForImmutablePackages ? "" : @"  <IncludeAll Action=""None"" />";
-
-            // Explicitly suppress UAC warnings (not intentional errors like UAC1003)
-            // Only applies when UNITY_INTERNAL_NOSUPPRESSWARNINGS is not set
-            var suppressedRules = k_CompilerWarningsForImmutablePackages ? "" : @"
-    <Rule Id=""UAC1001"" Action=""None"" />
-    <Rule Id=""UAC1002"" Action=""None"" />
-    <Rule Id=""UAC1004"" Action=""None"" />
-    <Rule Id=""UAC1008"" Action=""None"" />
-    <Rule Id=""UAC1009"" Action=""None"" />
-    <Rule Id=""UAC1010"" Action=""None"" />
-    <Rule Id=""UAC1011"" Action=""None"" />";
-
-            var rulesetContent = $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<RuleSet Name=""Immutable Package Rules"" Description=""Errors for Forbidden API rules"" ToolsVersion=""16.0"">
-{includeAllLine}
-  <Rules AnalyzerId=""Unity.Analyzers"" RuleNamespace=""Unity.Analyzers"">
-    <Rule Id=""UAC0005"" Action=""Error"" />
-    <Rule Id=""UAC0006"" Action=""Error"" />
-    <Rule Id=""UAC0007"" Action=""Error"" />
-    <Rule Id=""UAC0020"" Action=""Error"" />
-    <Rule Id=""UAC0023"" Action=""Error"" />{suppressedRules}
-  </Rules>
-</RuleSet>";
-
-            var projectPath = System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath);
-            var rulesetDirectory = System.IO.Path.Combine(projectPath, "Library");
-            var rulesetPath = System.IO.Path.Combine(rulesetDirectory, "ImmutablePackage.ruleset");
-
-            System.IO.Directory.CreateDirectory(rulesetDirectory);
-            System.IO.File.WriteAllText(rulesetPath, rulesetContent);
-
-            if (s_immutablePackageRulesetPath == null)
-                s_immutablePackageRulesetPath = rulesetPath;
-
-            return s_immutablePackageRulesetPath;
-        }
 
         public AssemblyFlags AssemblyFlags
         {
@@ -387,7 +346,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (IsUnityPackage() && !IsInWhitelistedPackage())
                     {
                         // Non-whitelisted Unity packages: Apply analyzer rules as errors
-                        CompilerOptions.RoslynAnalyzerRulesetPath = GetImmutablePackageRulesetPath();
+                        CompilerOptions.RoslynAnalyzerRulesetPath = ImmutablePackageRulesetPath;
                     }
                     else if (!k_CompilerWarningsForImmutablePackages)
                     {
@@ -406,6 +365,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static CustomScriptAssembly()
         {
+            CreateImmutablePackageRulesetFile();
+
             // When removing a platform from Platforms, please add it to DeprecatedPlatforms.
             DiscoveredTargetInfo[] buildTargetList = BuildTargetDiscovery.GetBuildTargetInfoList();
 
@@ -692,6 +653,57 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public override int GetHashCode()
         {
             return GUID.GetHashCode();
+        }
+
+        private static void CreateImmutablePackageRulesetFile()
+        {
+            // We only want to create ruleset from main Unity process.
+            if (UnityEditor.MPE.ProcessService.level != UnityEditor.MPE.ProcessLevel.Main || UnityEditor.AssetDatabase.IsAssetImportWorkerProcess())
+            {
+                return;
+            }
+            var projectPath = System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath);
+            var rulesetDirectory = System.IO.Path.Combine(projectPath, "Library");
+            ImmutablePackageRulesetPath = System.IO.Path.Combine(rulesetDirectory, "ImmutablePackage.ruleset");
+
+            var rulesetContent = GenerateImmutablePackageRulesetContent();
+
+            // Check if file exists with correct content before writing.
+            // Content may differ based on UNITY_INTERNAL_NOSUPPRESSWARNINGS environment variable.
+            if (System.IO.File.Exists(ImmutablePackageRulesetPath))
+            {
+                var existingContent = System.IO.File.ReadAllText(ImmutablePackageRulesetPath, System.Text.Encoding.UTF8);
+                if (string.Equals(existingContent, rulesetContent, System.StringComparison.Ordinal))
+                    return;
+            }
+
+            System.IO.Directory.CreateDirectory(rulesetDirectory);
+            System.IO.File.WriteAllText(ImmutablePackageRulesetPath, rulesetContent, System.Text.Encoding.UTF8);
+        }
+
+        private static string GenerateImmutablePackageRulesetContent()
+        {
+            var includeAllLine = k_CompilerWarningsForImmutablePackages ? "" : "  <IncludeAll Action=\"None\" />";
+            var suppressedRules = k_CompilerWarningsForImmutablePackages ? "" : @"
+    <Rule Id=""UAC1001"" Action=""None"" />
+    <Rule Id=""UAC1002"" Action=""None"" />
+    <Rule Id=""UAC1004"" Action=""None"" />
+    <Rule Id=""UAC1008"" Action=""None"" />
+    <Rule Id=""UAC1009"" Action=""None"" />
+    <Rule Id=""UAC1010"" Action=""None"" />
+    <Rule Id=""UAC1011"" Action=""None"" />";
+
+            return $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<RuleSet Name=""Immutable Package Rules"" Description=""Errors for Forbidden API rules"" ToolsVersion=""16.0"">
+{includeAllLine}
+  <Rules AnalyzerId=""Unity.Analyzers"" RuleNamespace=""Unity.Analyzers"">
+    <Rule Id=""UAC0005"" Action=""Error"" />
+    <Rule Id=""UAC0006"" Action=""Error"" />
+    <Rule Id=""UAC0007"" Action=""Error"" />
+    <Rule Id=""UAC0020"" Action=""Error"" />
+    <Rule Id=""UAC0023"" Action=""Error"" />{suppressedRules}
+  </Rules>
+</RuleSet>";
         }
     }
 }

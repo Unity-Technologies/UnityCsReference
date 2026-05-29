@@ -365,11 +365,17 @@ namespace UnityEngine.UIElements.UIR
 
         public void RenderNestedPasses()
         {
+            // Clear the property block to avoid accidentally inheriting properties from previous context.
+            m_Block.Clear();
+
             ExecuteDrawOperation_PostOrder(m_RootOperation);
         }
 
 
         static Vector4[] s_UVRects = new Vector4[1];
+
+        static readonly int s_MainTexId = Shader.PropertyToID("_MainTex");
+        static readonly int s_UnityUIE_UVRectId = Shader.PropertyToID("unity_uie_UVRect");
 
         void ExecuteDrawOperation_PostOrder(DrawOperation op)
         {
@@ -436,11 +442,24 @@ namespace UnityEngine.UIElements.UIR
 
                         mat.SetPass(op.FilterPass.passIndex);
 
-                        m_Block.SetTexture("_MainTex", srcTexEntry.texture); // TODO: Use int instead of string
+                        m_Block.SetTexture(s_MainTexId, srcTexEntry.texture);
 
                         s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
-                        m_Block.SetVectorArray("unity_uie_UVRect", s_UVRects);
+                        m_Block.SetVectorArray(s_UnityUIE_UVRectId, s_UVRects);
 
+                        var drawRect = op.drawSourceBounds;
+                        var texOffsets = op.drawSourceTexOffsets;
+
+                        float texWidth = srcTexEntry.texture.width;
+                        float texHeight = srcTexEntry.texture.height;
+
+                        var uvRect = new Rect(srcUVRect.x + texOffsets.x / texWidth,
+                                              srcUVRect.y + texOffsets.w / texHeight,
+                                              srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
+                                              srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
+
+                        if (!string.IsNullOrEmpty(op.FilterPass.requiredInputTextureName))
+                            BindRequiredInput(op, drawRect, uvRect);
 
                         bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
 
@@ -461,17 +480,6 @@ namespace UnityEngine.UIElements.UIR
                         var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, 0, 1);
                         GL.LoadProjectionMatrix(projection);
                         GL.modelview = Matrix4x4.identity;
-
-                        var drawRect = op.drawSourceBounds;
-                        var texOffsets = op.drawSourceTexOffsets;
-
-                        float texWidth = srcTexEntry.texture.width;
-                        float texHeight = srcTexEntry.texture.height;
-
-                        var uvRect = new Rect(srcUVRect.x + texOffsets.x / texWidth,
-                                              srcUVRect.y + texOffsets.y / texHeight,
-                                              srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
-                                              srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
 
                         GL.Viewport(new Rect(dstRect.xMin, dstRect.yMin, dstRect.width, dstRect.height));
                         GL.Begin(GL.QUADS);
@@ -505,6 +513,96 @@ namespace UnityEngine.UIElements.UIR
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        // Reserved name for the texture that fed the first pass of the current filter.
+        const string k_SourceInputName = "Source";
+
+        struct InputBindingIds
+        {
+            public int texId;
+            public int scaleOffsetId;
+            public int uvRectId;
+        }
+
+        static readonly Dictionary<string, InputBindingIds> s_InputBindingIds = new();
+
+        static InputBindingIds GetInputBindingIds(string name)
+        {
+            if (!s_InputBindingIds.TryGetValue(name, out var ids))
+            {
+                ids = new InputBindingIds {
+                    texId         = Shader.PropertyToID($"_{name}Tex"),
+                    scaleOffsetId = Shader.PropertyToID($"_{name}Tex_ST"),
+                    uvRectId      = Shader.PropertyToID($"_{name}Tex_UVRect"),
+                };
+                s_InputBindingIds[name] = ids;
+            }
+            return ids;
+        }
+
+        void BindRequiredInput(DrawOperation currentOp, RectInt drawRect, Rect uvRect)
+        {
+            string name = currentOp.FilterPass.requiredInputTextureName;
+
+            DrawOperation sourceOp = ResolveInputOp(currentOp, name);
+            if (sourceOp == null)
+            {
+                Debug.LogWarning($"Filter pass requested input '{name}' but no matching upstream pass was found.");
+                return;
+            }
+
+            if (sourceOp.dstAtlasBlock.texture == null)
+                return;
+            if (sourceOp.bounds.width <= 0 || sourceOp.bounds.height <= 0)
+                return;
+
+            BindMappedTexture(sourceOp, drawRect, uvRect, GetInputBindingIds(name));
+        }
+
+        static DrawOperation ResolveInputOp(DrawOperation currentOp, string name)
+        {
+            if (name == k_SourceInputName)
+            {
+                // Walk past every operations to get the source
+                var op = currentOp;
+                while (op.firstChild != null)
+                    op = op.firstChild;
+                return op;
+            }
+            else
+            {
+                // Walk down the child chain looking for a pass with matching outputName
+                var op = currentOp.firstChild;
+                while (op.firstChild != null)
+                {
+                    if (op.FilterPass.outputTextureName == name)
+                        return op;
+                    op = op.firstChild;
+                }
+            }
+            return null;
+        }
+
+        void BindMappedTexture(DrawOperation sourceOp, RectInt drawRect, Rect uvRect, InputBindingIds ids)
+        {
+            var srcUV = sourceOp.dstAtlasBlock.uvRect;
+            var srcBounds = sourceOp.bounds;
+
+            // IN.uv interpolates uvRect across drawRect
+            float Bx = srcUV.width / srcBounds.width;
+            float By = srcUV.height / srcBounds.height;
+            float Ax = drawRect.width / uvRect.width;
+            float Ay = drawRect.height / uvRect.height;
+
+            float scaleX = Bx * Ax;
+            float scaleY = By * Ay;
+            float offsetX = srcUV.xMin + Bx * (drawRect.xMin - srcBounds.xMin) - uvRect.xMin * scaleX;
+            float offsetY = srcUV.yMax - By * (drawRect.yMin - srcBounds.yMin) - uvRect.yMax * scaleY;
+
+            m_Block.SetTexture(ids.texId, sourceOp.dstAtlasBlock.texture);
+            m_Block.SetVector(ids.scaleOffsetId, new Vector4(scaleX, scaleY, offsetX, offsetY));
+            m_Block.SetVector(ids.uvRectId, new Vector4(srcUV.xMin, srcUV.yMin, srcUV.xMax, srcUV.yMax));
         }
 
         void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source, bool readsGamma)

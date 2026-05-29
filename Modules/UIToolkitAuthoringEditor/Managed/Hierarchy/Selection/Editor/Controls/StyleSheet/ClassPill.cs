@@ -16,11 +16,12 @@ namespace Unity.UIToolkit.Editor
         static readonly string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPillDark.uss";
         static readonly string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPillLight.uss";
 
-        static readonly string ussClassName = "unity-builder-class-pill";
+        public const string ussClassName = "unity-class-pill";
+        public const string NotInDocumentClassName = ussClassName + "--not-in-document";
 
-        // Hierarchy elements
         Label m_Label;
         Button m_DeleteButton;
+        bool m_SimpleSelectorExists;
 
         public Label labelElement => m_Label;
         public string selectorAsString { get; set; }
@@ -44,6 +45,18 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        public bool simpleSelectorExists
+        {
+            get => m_SimpleSelectorExists;
+            set
+            {
+                if (m_SimpleSelectorExists == value)
+                    return;
+                m_SimpleSelectorExists = value;
+                EnableInClassList(NotInDocumentClassName, !simpleSelectorExists);
+            }
+        }
+
         public ClassPill()
         {
             styleSheets.Add(EditorGUIUtility.Load(s_UssPath) as StyleSheet);
@@ -55,9 +68,9 @@ namespace Unity.UIToolkit.Editor
             var visualAsset = EditorGUIUtility.Load(s_UxmlPath) as VisualTreeAsset;
             visualAsset.CloneTree(this);
             AddToClassList(ussClassName);
-
             m_Label = this.Q<Label>("class-name-label");
             m_DeleteButton = this.Q<Button>("delete-class-button");
+            simpleSelectorExists = true;
         }
 
         public void SetDeleteButtonUserData(object data)

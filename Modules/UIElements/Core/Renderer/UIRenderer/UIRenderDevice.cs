@@ -36,6 +36,9 @@ namespace UnityEngine.UIElements.UIR
         {
             public static CommandListManager GetCommandListManager(UIRenderDevice device) => device.m_CommandListManager;
             public static MeshManager GetMeshManager(UIRenderDevice device) => device.m_MeshManager;
+
+            internal static KickRangesReason GetKickReasonForNonDrawCommand(CommandType type)
+                => KickReasonForNonDrawCommand(type);
         }
 
         struct DeviceToFree
@@ -71,6 +74,9 @@ namespace UnityEngine.UIElements.UIR
         readonly DrawParams m_DrawParams = new DrawParams();
         readonly TextureSlotManager m_TextureSlotManager = new TextureSlotManager();
         HashSet<Material> m_ScreenSpaceAlteredMaterials = new();
+
+        readonly UIRRenderDeviceProfiler m_Profiler = new();
+
         static LinkedList<DeviceToFree> m_DeviceFreeQueue = new LinkedList<DeviceToFree>();   // Not thread safe for now
         static int m_ActiveDeviceCount = 0; // Not thread safe for now
         static bool m_SubscribedToNotifications; // Not thread safe for now
@@ -78,6 +84,11 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
+        static readonly int s_XformPagePosID    = Shader.PropertyToID("_XformPagePos");
+        static readonly int s_ClipPagePosID     = Shader.PropertyToID("_ClipPagePos");
+        static readonly int s_OpacityPagePosID  = Shader.PropertyToID("_OpacityPagePos");
+        static readonly int s_ColorPagePosID    = Shader.PropertyToID("_ColorPagePos");
+        static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
 
         static ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
         static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AdvanceFrame");
@@ -163,37 +174,20 @@ namespace UnityEngine.UIElements.UIR
         {
             var vertexDecl = new VertexAttributeDescriptor[]
             {
-                // Vertex position first
+                // POSITION
                 new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
 
-                // The UINT32 color
+                // COLOR (UNorm8 tint)
                 new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
 
-                // The UV and LayoutUV
+                // TEXCOORD0: UV (.xy) + LayoutUV (.zw)
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 4),
 
-                // TransformID page coordinate (XY), ClipRectID page coordinate (ZW), packed into a Color32
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4),
+                // TEXCOORD1: Flags and Ids
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UInt32, 4),
 
-                // In-page index for (TransformID, ClipRectID, OpacityID, TextCoreID)
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.UNorm8, 4),
-
-                // Flags (vertex type), all packed into a Color32
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord3, VertexAttributeFormat.UNorm8, 4),
-
-                // OpacityID page coordinate (XY), Color-page/TextCore-setting (16-bit encoded in ZW), packed into a Color32
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord4, VertexAttributeFormat.UNorm8, 4),
-
-                // SVG (16-bit encoded in XY), packed into a Color32
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord5, VertexAttributeFormat.UNorm8, 4),
-
-                // Circle arcs
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord6, VertexAttributeFormat.Float32, 4),
-
-                // TextureID, to represent integers from 0 to 2048
-                // Float32 is overkill for the time being but it avoids conversion issues on GLES2 and metal. We should
-                // use a Float16 instead but this isn't a trivial because C# doesn't have a native "half" datatype.
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord7, VertexAttributeFormat.Float32, 1)
+                // TEXCOORD2: circle arc data OR text extra-dilate in .x
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 4),
             };
             m_VertexDecl = Utility.GetVertexDeclaration(vertexDecl);
         }
@@ -227,6 +221,8 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
+                m_Profiler.Dispose();
+
                 m_CommandListManager.ResetUIRendererDrawCallData();
 
                 DeviceToFree free = new DeviceToFree
@@ -376,7 +372,7 @@ namespace UnityEngine.UIElements.UIR
         // Before leaving an iteration over a command, the state that is altered by a draw command must be applied.
         // This must ONLY be called after stash/kick of the previous ranges has been performed.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, MaterialPropertyBlock userProps, EvaluationFlags defaultTextureSlotCountFlags, bool kickRanges, Texture gradientSettings, Texture shaderInfo, ref EvaluationState st)
+        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, MaterialPropertyBlock userProps, EvaluationFlags defaultTextureSlotCountFlags, bool kickRanges, Texture gradientSettings, ShaderInfoAllocator shaderInfoAllocator, ref EvaluationState st)
         {
             if (newMatDiffers)
             {
@@ -399,7 +395,7 @@ namespace UnityEngine.UIElements.UIR
 
                 // Add another material to the current owner
                 if ((st.flags & EvaluationFlags.IsSerializing) != 0)
-                    SetupCommandList(ref st, gradientSettings, shaderInfo, cmd.flags);
+                    SetupCommandList(ref st, gradientSettings, shaderInfoAllocator, cmd.flags);
             }
 
             if (kickRanges)
@@ -558,18 +554,21 @@ namespace UnityEngine.UIElements.UIR
         }
 
         public unsafe void EvaluateChain(
-            EntityId owner,
             RenderChainCommand head,
             Material defaultMat,
             Texture gradientSettings,
-            Texture shaderInfo,
+            ShaderInfoAllocator shaderInfoAllocator,
             Rect? scissor,
             float pixelsPerPoint,
             bool isSerializing,
             TextureSlotCount defaultTextureSlotCount,
             bool isRenderingNestedTreeRT,
-            ref Exception immediateException)
+            ref Exception immediateException,
+            BaseVisualElementPanel panel)
         {
+            EntityId owner = panel?.ownerObject != null ? panel.ownerObject.GetEntityId() : EntityId.None;
+            bool isEditorPanel = panel != null && panel.contextType == ContextType.Editor;
+
             Utility.ProfileDrawChainBegin(owner);
 
             bool doBreakBatches = this.breakBatches; // Keeping this on the stack for better performance
@@ -600,7 +599,7 @@ namespace UnityEngine.UIElements.UIR
             else
             {
                 st.constantProps = m_ConstantProps;
-                InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfo);
+                InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfoAllocator);
                 st.batchProps = m_BatchProps;
                 st.batchProps.Clear();
             }
@@ -615,20 +614,16 @@ namespace UnityEngine.UIElements.UIR
 
             MaterialPropertyBlock userProps = null;
 
+            bool batchProfilerEnabled = UIRUtility.k_ProfilerSupported && panel != null && ProfilerUIToolkit.ShouldCapturePanel(isEditorPanel);
+            if (batchProfilerEnabled)
+                m_Profiler.BeginPanel(in m_DrawStats);
+
             while (head != null)
             {
-                if (head.type == CommandType.BeginDisable)
+                if ((head.type & CommandType.AnyDisable) != 0)
                 {
                     m_DrawStats.commandCount++;
-                    disableCounter++;
-                    head = head.next;
-                    continue;
-                }
-
-                if (head.type == CommandType.EndDisable)
-                {
-                    m_DrawStats.commandCount++;
-                    disableCounter--;
+                    disableCounter += (head.type & CommandType.EndDisable) != 0 ? -1 : 1;
                     head = head.next;
                     continue;
                 }
@@ -640,11 +635,26 @@ namespace UnityEngine.UIElements.UIR
                     continue;
                 }
 
-                m_DrawStats.drawCommandCount += (head.type == CommandType.Draw ? 1u : 0u);
+                // Profiler-only marker — not renderable.
+                if (UIRUtility.k_ProfilerSupported && (head.type & CommandType.AnyPanelComponent) != 0)
+                {
+                    if (batchProfilerEnabled)
+                    {
+                        if (head.type == CommandType.BeginPanelComponent)
+                            m_Profiler.BeginComponent(head.panelComponentId);
+                        else
+                            m_Profiler.EndComponent();
+                    }
+                    head = head.next;
+                    continue;
+                }
+
+                uint isDrawCmd = (head.type == CommandType.Draw ? 1u : 0u);
+                m_DrawStats.drawCommandCount += isDrawCmd;
 
                 bool isLastRange = curDrawRange.indexCount > 0 && rangesReady == rangesCount - 1;
                 bool stashRange = false; // Should we close the contiguous draw range that we had before this command (if any)?
-                bool kickRanges = false; // Should we draw all the ranges that we had accumulated so far?
+                KickRangesReason kickReason = KickRangesReason.None; // Should we draw all the ranges that we had accumulated so far?
 
                 // The following data is fetched during the preprocessing phase below.
                 // They are cached so we can skip many checks afterwards.
@@ -657,6 +667,9 @@ namespace UnityEngine.UIElements.UIR
                 // be processed afterwards to avoid redundant computations. ** The state must NOT be altered in any way **
                 if (head.type == CommandType.Draw)
                 {
+                    if (batchProfilerEnabled)
+                        m_Profiler.OnDraw();
+
                     // Do we change the state by forcing a different render type?
                     uint forcedRenderTypeFromState = ((uint)(st.flags & EvaluationFlags.ForceRenderTypeBits)) >> (int)EvaluationFlags.ForceRenderTypeBitOffset;
                     uint forcedRenderTypeFromCommand = ((uint)(head.flags & CommandFlags.ForceRenderTypeBits)) >> (int)CommandFlags.ForceRenderTypeBitOffset;
@@ -674,7 +687,7 @@ namespace UnityEngine.UIElements.UIR
                         mustApplyCmdState = true;
                         newMatDiffers = true;
                         stashRange = true;
-                        kickRanges = true;
+                        kickReason |= KickRangesReason.MaterialChange;
                     }
                     else
                     {
@@ -682,7 +695,7 @@ namespace UnityEngine.UIElements.UIR
                         {
                             mustApplyCmdState = true;
                             stashRange = true;
-                            kickRanges = true;
+                            kickReason |= KickRangesReason.PageChange;
                         }
                         else if (curDrawIndex != head.mesh.allocIndices.start + head.indexOffset)
                             stashRange = true; // Same page but discontinuous range.
@@ -694,7 +707,7 @@ namespace UnityEngine.UIElements.UIR
                             if (textureSlot < 0 && m_TextureSlotManager.FreeSlots < 1)
                             { // No more slots available.
                                 stashRange = true;
-                                kickRanges = true;
+                                kickReason |= KickRangesReason.TextureSlotsExhausted;
                             }
                         }
 
@@ -702,7 +715,7 @@ namespace UnityEngine.UIElements.UIR
                         {
                             mustApplyCmdState = true;
                             stashRange = true;
-                            kickRanges = true;
+                            kickReason |= KickRangesReason.StencilRefChange;
                         }
 
                         if (stashRange && isLastRange)
@@ -712,31 +725,54 @@ namespace UnityEngine.UIElements.UIR
                             //       truly processed in a multi-threaded fashion without copies. When this happens, a new
                             //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
                             //       the time being, calling KickRanges will make the whole buffer available.
-                            kickRanges = true;
+                            kickReason |= KickRangesReason.RangesBufferFull;
                         }
                     }
                 }
                 else
                 {
-                    // Skip matching Pop/Push default material commands
-                    if (head.type == CommandType.PopDefaultMaterial
-                        && head.next?.type == CommandType.PushDefaultMaterial
-                        && defaultMat == head.next?.material
-                        && userProps == head.next?.userProps)
+                    // Skip matching Pop/Push default material commands. Profiler-only markers
+                    // between them don't affect rendering, but still feed them to the tracker.
+                    if (head.type == CommandType.PopDefaultMaterial)
                     {
-                        head = head.next.next;
-                        continue;
+                        var lookahead = head.next;
+                        if (UIRUtility.k_ProfilerSupported)
+                        {
+                            while (lookahead != null && (lookahead.type & CommandType.AnyPanelComponent) != 0)
+                                lookahead = lookahead.next;
+                        }
+
+                        if (lookahead != null
+                            && lookahead.type == CommandType.PushDefaultMaterial
+                            && defaultMat == lookahead.material
+                            && userProps == lookahead.userProps)
+                        {
+                            if (batchProfilerEnabled)
+                            {
+                                for (var marker = head.next; marker != lookahead; marker = marker.next)
+                                {
+                                    if (marker.type == CommandType.BeginPanelComponent)
+                                        m_Profiler.BeginComponent(marker.panelComponentId);
+                                    else
+                                        m_Profiler.EndComponent();
+                                }
+                            }
+                            head = lookahead.next;
+                            continue;
+                        }
                     }
 
                     stashRange = true;
-                    kickRanges = true;
+                    kickReason |= KickReasonForNonDrawCommand(head.type);
                 }
 
                 if (doBreakBatches)
                 {
                     stashRange = true;
-                    kickRanges = true;
+                    kickReason |= KickRangesReason.BreakBatches;
                 }
+
+                bool kickRanges = kickReason != KickRangesReason.None;
 
                 if (stashRange)
                 {
@@ -758,6 +794,7 @@ namespace UnityEngine.UIElements.UIR
                         curDrawRange.minIndexVal = (int)head.mesh.allocVerts.start;
                         curDrawIndex = curDrawRange.firstIndex + head.indexCount;
                         m_DrawStats.totalIndices += (uint)head.indexCount;
+                        m_DrawStats.totalVertices += head.mesh.allocVerts.size;
                     }
                 }
                 else // Only continuous draw commands can get here because other commands force stash+kick
@@ -774,9 +811,10 @@ namespace UnityEngine.UIElements.UIR
                     curDrawRange.vertsReferenced = Mathf.Max(prevLastVertex, curLastVertex) - curDrawRange.minIndexVal;
                     curDrawIndex += head.indexCount;
                     m_DrawStats.totalIndices += (uint)head.indexCount;
+                    m_DrawStats.totalVertices += head.mesh.allocVerts.size;
 
                     if (mustApplyCmdState)
-                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
+                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfoAllocator, ref st);
 
                     head = head.next;
                     continue;
@@ -789,6 +827,9 @@ namespace UnityEngine.UIElements.UIR
                     {
                         ApplyBatchState(ref st);
                         KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
+
+                        if (batchProfilerEnabled)
+                            m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, (uint)kickReason, in m_DrawStats);
                     }
 
                     if (head.type != CommandType.Draw)
@@ -811,15 +852,17 @@ namespace UnityEngine.UIElements.UIR
                             st.commandListOwner = visualElementOwner;
                         }
 
-                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
+                        if ((head.type & CommandType.AnyImmediate) != 0)
+                        {
                             ResetScreenSpaceMaterials();
+                            m_DrawStats.immediateDraws++;
+                        }
 
                         head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
-                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
+                        if ((head.type & (CommandType.AnyImmediate | CommandType.AnyDefaultMaterial)) != 0)
                         {
                             st.material = null; // A value that is unique to force material reset on next draw command
                             st.flags &= ~EvaluationFlags.MustApplyMaterial;
-                            m_DrawStats.immediateDraws++;
 
                             if (head.type == CommandType.PopDefaultMaterial)
                             {
@@ -828,7 +871,7 @@ namespace UnityEngine.UIElements.UIR
                                 userProps = drawParams.props[index];
                                 drawParams.defaultMaterial.RemoveAt(index);
                             }
-                            if (head.type == CommandType.PushDefaultMaterial)
+                            else if (head.type == CommandType.PushDefaultMaterial)
                             {
                                 drawParams.defaultMaterial.Add(defaultMat);
                                 drawParams.props.Add(head.userProps);
@@ -840,7 +883,7 @@ namespace UnityEngine.UIElements.UIR
                 } // If kick ranges
 
                 if (head.type == CommandType.Draw && mustApplyCmdState)
-                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
+                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfoAllocator, ref st);
 
                 head = head.next;
             } // While there are commands to execute
@@ -856,7 +899,14 @@ namespace UnityEngine.UIElements.UIR
             {
                 ApplyBatchState(ref st);
                 KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
+
+                // Final batch of the pass — kick reason 0 since it's the natural end.
+                if (batchProfilerEnabled)
+                    m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, kickRangesReason: 0u, in m_DrawStats);
             }
+
+            if (batchProfilerEnabled)
+                m_Profiler.EmitPanel(in m_DrawStats);
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
 
@@ -905,22 +955,32 @@ namespace UnityEngine.UIElements.UIR
             m_ScreenSpaceAlteredMaterials.Clear();
         }
 
-        private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, Texture shaderInfo)
+        private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, ShaderInfoAllocator shaderInfoAllocator)
         {
             if (gradientSettings != null)
                 constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
-            if (shaderInfo != null)
-                constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+            if (shaderInfoAllocator != null)
+            {
+                Texture shaderInfo = shaderInfoAllocator.atlas;
+                if (shaderInfo != null)
+                    constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+
+                constantProps.SetVectorArray(s_XformPagePosID,    shaderInfoAllocator.transformPagePositions);
+                constantProps.SetVectorArray(s_ClipPagePosID,     shaderInfoAllocator.clipRectPagePositions);
+                constantProps.SetVectorArray(s_OpacityPagePosID,  shaderInfoAllocator.opacityPagePositions);
+                constantProps.SetVectorArray(s_ColorPagePosID,    shaderInfoAllocator.colorPagePositions);
+                constantProps.SetVectorArray(s_TextCorePagePosID, shaderInfoAllocator.textCorePagePositions);
+            }
         }
 
-        private void SetupCommandList(ref EvaluationState st, Texture gradientSettings, Texture shaderInfo, CommandFlags commandFlags)
+        private void SetupCommandList(ref EvaluationState st, Texture gradientSettings, ShaderInfoAllocator shaderInfoAllocator, CommandFlags commandFlags)
         {
             if (st.commandListOwner == null)
                 // This is the default command list. Ignore material changes.
                 return;
 
             CommandList cmdList = m_CommandListManager.GetOrCreateCommandList(st.commandListOwner, st.material, commandFlags);
-            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfo);
+            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfoAllocator);
 
             st.activeCommandList = cmdList;
 
@@ -1058,10 +1118,52 @@ namespace UnityEngine.UIElements.UIR
             return m_MeshManager.GatherAllocationStatistics();
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        static KickRangesReason KickReasonForNonDrawCommand(CommandType type)
+        {
+            switch (type)
+            {
+                case CommandType.Immediate:
+                case CommandType.ImmediateCull:
+                    return KickRangesReason.ImmediateCommand;
+                case CommandType.CutRenderChain:
+                    return KickRangesReason.RenderChainCut;
+                case CommandType.PushDefaultMaterial:
+                case CommandType.PopDefaultMaterial:
+                    return KickRangesReason.DefaultMaterialChange;
+                case CommandType.PushScissor:
+                case CommandType.PopScissor:
+                    return KickRangesReason.ScissorChange;
+                case CommandType.PushView:
+                case CommandType.PopView:
+                    return KickRangesReason.ViewChange;
+                default:
+                    return KickRangesReason.None;
+            }
+        }
+
+        [System.Flags]
+        internal enum KickRangesReason : uint
+        {
+            None = 0,
+            MaterialChange = 1 << 0,
+            PageChange = 1 << 1,
+            TextureSlotsExhausted = 1 << 2,
+            StencilRefChange = 1 << 3,
+            BreakBatches = 1 << 4,
+            RangesBufferFull = 1 << 5,        // Stashed-range buffer ran out of slots mid-draw
+            ImmediateCommand = 1 << 6,        // Immediate / ImmediateCull
+            RenderChainCut = 1 << 7,          // CutRenderChain (new command list owner)
+            DefaultMaterialChange = 1 << 8,   // Push/PopDefaultMaterial
+            ScissorChange = 1 << 9,           // Push/PopScissor
+            ViewChange = 1 << 10,             // Push/PopView
+        }
+
         internal struct DrawStatistics
         {
             public int currentFrameIndex;
             public uint totalIndices;
+            public uint totalVertices;
             public uint commandCount;
             public uint skippedCommandCount;
             public uint drawCommandCount;

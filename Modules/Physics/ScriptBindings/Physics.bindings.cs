@@ -184,6 +184,8 @@ namespace UnityEngine
 
         extern static public bool invokeCollisionCallbacks { get; set; }
 
+        extern static public bool generateOnTriggerStayEvents { get; }
+
         public static PhysicsScene defaultPhysicsScene => PhysicsScene.GetDefaultScene();
 
         extern public static void IgnoreCollision([NotNull] Collider collider1, [NotNull] Collider collider2, [DefaultValue("true")] bool ignore);

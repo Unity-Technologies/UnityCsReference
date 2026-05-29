@@ -54,6 +54,8 @@ namespace UnityEditor.UIElements.Inspector
         private HelpBox m_EditorElementsWarning;
         private VisualElement m_InputConfiguration;
 
+        private PanelSettings m_CurrentPanelSettings;
+
         protected virtual Type parentObjectType => typeof(IPanelComponent);
 
         private void ConfigureFields()
@@ -163,7 +165,18 @@ namespace UnityEditor.UIElements.Inspector
         private void BindFields()
         {
             m_ParentField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
-            m_PanelSettingsField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
+            m_PanelSettingsField.RegisterCallback<ChangeEvent<Object>>(evt =>
+            {
+                if (target == null)
+                    return;
+
+                if (evt.newValue != m_CurrentPanelSettings)
+                {
+                    m_CurrentPanelSettings = evt.newValue as PanelSettings;
+                    ((IPanelComponent)target).PerformValidation(true);
+                }
+                UpdateValues();
+            });
             m_SourceAssetField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
             m_PositionEnumField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
             m_WorldSpaceSizeField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
@@ -215,8 +228,6 @@ namespace UnityEditor.UIElements.Inspector
             // These temporary objects are destroyed during asset creation which causes exceptions
             bool isPresetPreview = (panelComponent.gameObject.hideFlags & k_PresetPreviewFlags) == k_PresetPreviewFlags;
             m_SourceAssetButton.style.display = isPresetPreview ? DisplayStyle.None : DisplayStyle.Flex;
-
-            panelComponent.PerformValidation(true);
 
             // Let the component update its rendering properties (UUM-105765)
             panelComponent.PerformUpdate();
@@ -293,6 +304,11 @@ namespace UnityEditor.UIElements.Inspector
         {
             m_RootVisualElement = new VisualElement();
 
+            // BindTree can dispatch SerializedObjectBindEvent / SerializedPropertyBindEvent
+            // to a stale InspectorElement during play-mode transitions.
+            if (target == null)
+                return m_RootVisualElement;
+
             if (s_InspectorUxml == null)
             {
                 s_InspectorUxml = EditorGUIUtility.Load(k_InspectorVisualTreeAssetPath) as VisualTreeAsset;
@@ -306,6 +322,9 @@ namespace UnityEditor.UIElements.Inspector
 
             s_InspectorUxml.CloneTree(m_RootVisualElement);
             ConfigureFields();
+
+            m_CurrentPanelSettings = (target as IPanelComponent)?.panelSettings;
+
             BindFields();
             UpdateValues();
 

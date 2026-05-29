@@ -78,6 +78,7 @@ namespace UnityEngine.UIElements
             relatedTarget = null;
             direction = FocusChangeDirection.unspecified;
             focusController = null;
+            IsFocusDelegated = false;
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ namespace Unity.UI.Builder
 {
     internal class BuilderClassDragger : BuilderDragger
     {
-        static readonly string s_DraggableStyleClassPillClassName = "unity-builder-class-pill--draggable";
+        static readonly string s_DraggableStyleClassPillClassName = "unity-class-pill--draggable";
 
         string m_ClassNameBeingDragged;
 

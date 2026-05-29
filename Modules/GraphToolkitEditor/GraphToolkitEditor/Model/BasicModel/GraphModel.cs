@@ -3019,6 +3019,9 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>A new constant.</returns>
         public virtual Constant CreateConstantValue(TypeHandle constantTypeHandle)
         {
+            if (constantTypeHandle.IsCustomTypeHandle())
+                return null;
+
             var constantType = GetConstantType(constantTypeHandle);
             if (constantType == null)
                 return null;
@@ -3035,17 +3038,14 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The type associated with <paramref name="typeHandle"/></returns>
         public virtual Type GetConstantType(TypeHandle typeHandle)
         {
-            if (typeHandle.IsCustomTypeHandle())
-                return null;
-
-            Type t = typeHandle.Resolve();
-            if (t.IsEnum && t != typeof(Enum))
+            Type resolvedType = typeHandle.Resolve();
+            if (resolvedType.IsEnum && resolvedType != typeof(Enum))
                 return typeof(EnumConstant);
 
-            if (t == typeof(void))
+            if (resolvedType == typeof(void))
                 return null;
 
-            return typeof(Constant<>).MakeGenericType(t);
+            return typeof(Constant<>).MakeGenericType(resolvedType);
         }
 
         /// <summary>

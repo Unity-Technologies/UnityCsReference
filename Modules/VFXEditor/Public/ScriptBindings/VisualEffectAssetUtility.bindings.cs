@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -23,8 +24,6 @@ namespace UnityEditor.VFX
         public VFXRendererSettings rendererSettings;
         public VFXInstancingDisabledReason instancingDisabledReason;
         public VFXCompilationMode compilationMode;
-
-        public uint version;
     }
 
     [UsedByNativeCode]
@@ -41,14 +40,12 @@ namespace UnityEditor.VFX
         public VFXRendererSettings rendererSettings;
         public VFXInstancingDisabledReason instancingDisabledReason;
         public VFXCompilationMode compilationMode;
-
-        public uint version;
     }
 
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectAssetUtility.h")]
     internal static class VisualEffectAssetUtility
     {
-        private static VisualEffectAssetDescInternal ConvertDescToInternal(VisualEffectAssetDesc desc)
+        internal static VisualEffectAssetDescInternal ConvertDescToInternal(VisualEffectAssetDesc desc)
         {
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = desc.sheet.expressions;
@@ -68,7 +65,6 @@ namespace UnityEditor.VFX
                 rendererSettings = desc.rendererSettings,
                 instancingDisabledReason = desc.instancingDisabledReason,
                 compilationMode = desc.compilationMode,
-                version = desc.version,
             };
             return internalDesc;
         }
@@ -101,5 +97,12 @@ namespace UnityEditor.VFX
         private static extern VisualEffectAsset CreateVisualEffectAsset(AssetImporters.AssetImportContext context, VisualEffectAssetDescInternal runtimeData);
 
         public static extern VFXCompilationMode GetCompilationMode([NotNull] VisualEffectAsset asset);
+
+        public static extern uint GetExpressionCount([NotNull] VisualEffectAsset asset);
+
+        internal static extern void CopyVisualEffectAssetDesc(IntPtr dest, VisualEffectAssetDescInternal source);
+
+        //This function is used solely in tests to replicate GetVisualEffectDynamicDependencies behavior.
+        internal static extern GUID[] GetVisualEffectExternalRefs(GUID mainGuid);
     }
 }

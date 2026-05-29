@@ -209,10 +209,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshEntitlement()
         {
-            var showEntitlement = m_Package.hasEntitlements;
-            UIUtils.SetElementDisplay(detailEntitlement, showEntitlement);
-            detailEntitlement.text = showEntitlement ? "E" : string.Empty;
-            detailEntitlement.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
+            var showEnterpriseLabel = m_Package.isEnterprise;
+            UIUtils.SetElementDisplay(detailEnterpriseLabel, showEnterpriseLabel);
+            if (!showEnterpriseLabel)
+                return;
+            detailEnterpriseLabel.text = "E";
+            detailEnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.");
         }
 
         private void RefreshVersionLabel()
@@ -233,7 +235,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { get; }
 
         private SelectableLabel detailTitle => cache.Get<SelectableLabel>("detailTitle");
-        private Label detailEntitlement => cache.Get<Label>("detailEntitlement");
+        private Label detailEnterpriseLabel => cache.Get<Label>("detailEnterpriseLabel");
         private SelectableLabel detailVersion => cache.Get<SelectableLabel>("detailVersion");
         private VersionInfoIcon versionInfoIcon => cache.Get<VersionInfoIcon>("versionInfoIcon");
 

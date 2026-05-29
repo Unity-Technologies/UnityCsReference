@@ -27,13 +27,16 @@ namespace UnityEditor.Build.Analysis
         private const string k_KeyPrefix = "BuildAnalysisWindow.";
         private const string k_SplitterKey = k_KeyPrefix + "SplitterPosition";
         private const string k_SelectedBuildSessionKey = k_KeyPrefix + "SelectedBuildSessionGUID";
+        private const string k_InspectorOpenKey = k_KeyPrefix + "InspectorPanelOpen";
 
         private TwoPaneSplitView m_SplitView;
         private ListView m_BuildListView;
         private ToolbarSearchField m_SearchField;
         private ToolbarMenu m_SettingsMenu;
+        private ToolbarToggle m_InspectorToggle;
         private TabView m_TabView;
         private Tab m_OverviewTab;
+        private Tab m_AssetsTab;
         private VisualElement m_EmptyState;
         private Label m_EmptyStateTitle;
         private Label m_EmptyStateDescription;
@@ -103,12 +106,14 @@ namespace UnityEditor.Build.Analysis
             m_SettingsMenu = rootVisualElement.Q<ToolbarMenu>("build-settings-menu");
             m_TabView = rootVisualElement.Q<TabView>("main-tabs");
             m_OverviewTab = rootVisualElement.Q<Tab>("overview-tab");
+            m_AssetsTab = rootVisualElement.Q<Tab>("assets-tab");
             m_EmptyState = rootVisualElement.Q<VisualElement>("empty-state");
             m_EmptyStateTitle = rootVisualElement.Q<Label>("empty-state-title");
             m_EmptyStateDescription = rootVisualElement.Q<Label>("empty-state-description");
 
             SetupBuildListView();
             SetupSettingsMenu();
+            SetupInspectorToggle();
             SetupTabs();
 
             m_SearchField.RegisterValueChangedCallback(evt => FilterBuilds(evt.newValue));
@@ -119,11 +124,35 @@ namespace UnityEditor.Build.Analysis
             RefreshBuildList();
         }
 
+        private void SetupInspectorToggle()
+        {
+            var tabViewport = m_TabView.Q<VisualElement>(className: "unity-tab-view__content-viewport");
+            if (tabViewport == null)
+                throw new InvalidOperationException($"{BuildAnalysisConstants.k_ConsoleLogPrefix} TabView content viewport  .unity-tab-view__content-viewport not found.");
+
+            m_InspectorToggle = new ToolbarToggle
+            {
+                name = "inspector-toggle",
+                tooltip = "Toggle Inspector",
+            };
+            m_InspectorToggle.AddToClassList("inspector-toggle");
+            tabViewport.Add(m_InspectorToggle);
+
+            m_InspectorToggle.SetValueWithoutNotify(EditorPrefs.GetBool(k_InspectorOpenKey, false));
+            m_InspectorToggle.RegisterValueChangedCallback(evt =>
+            {
+                EditorPrefs.SetBool(k_InspectorOpenKey, evt.newValue);
+                m_TabHost.SetInspectorOpen(evt.newValue);
+            });
+        }
+
         private void SetupTabs()
         {
             m_TabHost = new BuildAnalysisTabHost(m_TabView);
             m_TabHost.Register(m_OverviewTab, new OverviewTabView());
+            m_TabHost.Register(m_AssetsTab, new AssetsTabView());
             m_TabHost.NotifyCurrentTabVisibility();
+            m_TabHost.SetInspectorOpen(m_InspectorToggle.value);
             m_TabHost.SetSelection(null, null);
         }
 
@@ -197,8 +226,8 @@ namespace UnityEditor.Build.Analysis
             var build = m_FilteredBuilds[index];
 
             element.Q<Label>("build-name").text = build.BuildName;
-            element.Q<Label>("size-duration").text = $"{FormatUtils.FormatSize(build.TotalSizeBytes)} • {FormatUtils.FormatDuration(build.TotalTimeMs)}";
-            element.Q<Label>("timestamp").text = FormatUtils.FormatBuildDate(build.BuildStartedAt);
+            element.Q<Label>("size-duration").text = $"{FormatUtility.FormatSize(build.TotalSizeBytes)} • {FormatUtility.FormatDuration(build.TotalTimeMs)}";
+            element.Q<Label>("timestamp").text = FormatUtility.FormatBuildDate(build.BuildStartedAt);
 
             var statusIcon = element.Q<VisualElement>("status-icon");
             if (build.BuildResult == BuildResult.Succeeded)
@@ -213,7 +242,7 @@ namespace UnityEditor.Build.Analysis
             }
 
             var platformIcon = element.Q<Image>("platform-icon");
-            platformIcon.image = PlatformIconUtility.GetPlatformIcon(build.Platform);
+            platformIcon.image = IconUtility.GetPlatformIcon(build.Platform);
         }
 
         private void OnBuildSelectionChanged(IEnumerable<object> selectedItems)
@@ -386,9 +415,12 @@ namespace UnityEditor.Build.Analysis
                 _ => CopyPath(),
                 m_SelectedBuild != null ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
-            evt.menu.AppendAction("Run Analysis Again",
-                _ => RunAnalysisAgain(),
-                m_SelectedBuild != null ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            if (Unsupported.IsDeveloperMode())
+            {
+                evt.menu.AppendAction("Run Analysis Again",
+                    _ => RunAnalysisAgain(),
+                    m_SelectedBuild != null ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
 
             evt.menu.AppendSeparator();
 

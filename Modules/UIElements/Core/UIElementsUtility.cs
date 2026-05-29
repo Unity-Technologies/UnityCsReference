@@ -103,6 +103,7 @@ namespace UnityEngine.UIElements
         StyleCache,
         InitialStyle,
         LayoutManager,
+        SelectorAccelerationCache,
         Count
     }
 
@@ -307,6 +308,7 @@ namespace UnityEngine.UIElements
         internal static readonly List<string> s_ReimportedStyleSheetsPathList = new();
         internal static bool s_StopRecordingStyleSheetUnloads = false;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void MarkStyleSheetAsChanged(StyleSheet styleSheet)
         {
             if (!styleSheet)

@@ -18,7 +18,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void AddToFetchProductInfoQueue(long productId);
         void RemoveFromFetchProductInfoQueue(long productId);
-        void AddToExtraFetchPackageInfoQueue(string packageNameOrId, long productId = 0);
+        void AddToSearchNonDiscoverableQueue(string packageName);
+        void AddToExtraFetchPackageInfoQueue(string packageId);
         void AddToFetchPurchaseInfoQueue(long productId);
         void PushToCheckUpdateStack(long productId, bool forceCheckUpdate = false);
         void ForceCheckUpdateAllCachedAndImportedPackages();
@@ -34,6 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_MaxFetchPurchaseInfoCount = 30;
         internal const int k_FetchProductInfoCountPerUpdate = 5;
         internal const int k_MaxFetchProductInfoCount = 20;
+
         internal const int k_ExtraFetchPackageInfoCountPerUpdate = 5;
         internal const int k_MaxExtraFetchPackageInfoCount = 20;
 
@@ -92,11 +94,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private List<long> m_FetchPurchaseInfoInProgress = new();
 
         [NonSerialized]
+        private Queue<string> m_SearchNonDiscoverableQueue = new();
+        [NonSerialized]
+        private HashSet<string> m_SearchNonDiscoverableInProgress = new();
+
+        [NonSerialized]
         private Queue<string> m_ExtraFetchPackageInfoQueue = new();
         [NonSerialized]
         private HashSet<string> m_ExtraFetchPackageInfoInProgress = new();
-        [NonSerialized]
-        private Dictionary<string, long> m_PackageNameToProductIdMap = new();
 
         [NonSerialized]
         private Stack<long> m_CheckUpdateStack = new();
@@ -114,11 +119,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private long[] m_SerializedFetchProductInfoQueue = Array.Empty<long>();
         [SerializeField]
+        private string[] m_SerializedSearchNonDiscoverableQueue = Array.Empty<string>();
+        [SerializeField]
         private string[] m_SerializedExtraFetchPackageInfoQueue = Array.Empty<string>();
-        [SerializeField]
-        private string[] m_SerializedPackageNameToProductIdMapKeys = Array.Empty<string>();
-        [SerializeField]
-        private long[] m_SerializedPackageNameToProductIdMapValues = Array.Empty<long>();
 
         public override void OnEnable()
         {
@@ -153,9 +156,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var numItemsToFetchProductInfo = m_FetchProductInfoInProgress.Count + m_FetchProductInfoQueue.Count;
             m_SerializedFetchProductInfoQueue = m_FetchProductInfoInProgress.Join(m_FetchProductInfoQueue.DequeueAll()).ToNewArray(numItemsToFetchProductInfo);
 
+            m_SerializedSearchNonDiscoverableQueue = m_SearchNonDiscoverableInProgress.Join(m_SearchNonDiscoverableQueue).ToNewArray(m_SearchNonDiscoverableInProgress.Count + m_SearchNonDiscoverableQueue.Count);
             m_SerializedExtraFetchPackageInfoQueue = m_ExtraFetchPackageInfoInProgress.Join(m_ExtraFetchPackageInfoQueue).ToNewArray(m_ExtraFetchPackageInfoInProgress.Count + m_ExtraFetchPackageInfoQueue.Count);
-            m_PackageNameToProductIdMap.Keys.ToArray(ref m_SerializedPackageNameToProductIdMapKeys);
-            m_PackageNameToProductIdMap.Values.ToArray(ref m_SerializedPackageNameToProductIdMapValues);
         }
 
         public void OnAfterDeserialize()
@@ -165,9 +167,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_FetchProductInfoQueue = new UniqueQueue<long>(m_SerializedFetchProductInfoQueue);
 
+            m_SearchNonDiscoverableQueue = new Queue<string>(m_SerializedSearchNonDiscoverableQueue);
             m_ExtraFetchPackageInfoQueue = new Queue<string>(m_SerializedExtraFetchPackageInfoQueue);
-            for (var i = 0; i < m_SerializedPackageNameToProductIdMapKeys.Length; ++i)
-                m_PackageNameToProductIdMap[m_SerializedPackageNameToProductIdMapKeys[i]] = m_SerializedPackageNameToProductIdMapValues[i];
         }
 
         private void OnLocalInfosChanged(IReadOnlyCollection<AssetStoreLocalInfo> addedOrUpdated, IReadOnlyCollection<AssetStoreLocalInfo> removed)
@@ -191,9 +192,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (activePage.id == MyAssetsPage.k_Id && activePage.filters.status == PageFilterStatus.UpdateAvailable)
                 CheckUpdateForUncheckedLocalInfos();
 
-            foreach (var fetchStatus in m_FetchStatusTracker.fetchStatuses)
-                if (fetchStatus.GetFetchError(FetchType.ProductInfo)?.error.errorCode == UIErrorCode.UserNotSignedIn)
-                    AddToFetchProductInfoQueue(fetchStatus.productId);
+            foreach (var productId in m_FetchStatusTracker.trackedProductIds)
+                if (m_FetchStatusTracker.GetProductInfoFetchStatus(productId).error?.errorCode == UIErrorCode.UserNotSignedIn)
+                    AddToFetchProductInfoQueue(productId);
         }
 
         private void OnFiltersChange(PageFiltersChangeArgs args)
@@ -217,11 +218,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!isInternetReachable)
                 return;
 
-            foreach (var fetchStatus in m_FetchStatusTracker.fetchStatuses)
+            foreach (var productId in m_FetchStatusTracker.trackedProductIds)
                 // We don't want to create a InternetReachability specific error code because that API is unreliable.
                 // However, we check these 2 errors only because they are the only ones possible in an offline case.
-                if (fetchStatus.GetFetchError(FetchType.ProductInfo)?.error.errorCode is UIErrorCode.AssetStoreAuthorizationError or UIErrorCode.AssetStoreRestApiError)
-                    AddToFetchProductInfoQueue(fetchStatus.productId);
+                if (m_FetchStatusTracker.GetProductInfoFetchStatus(productId).error?.errorCode is UIErrorCode.AssetStoreAuthorizationError or UIErrorCode.AssetStoreRestApiError)
+                    AddToFetchProductInfoQueue(productId);
         }
 
         public void AddToFetchProductInfoQueue(long productId)
@@ -258,36 +259,46 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public void AddToExtraFetchPackageInfoQueue(string packageNameOrId, long productId = 0)
+        public void AddToSearchNonDiscoverableQueue(string packageName)
         {
-            m_ExtraFetchPackageInfoQueue.Enqueue(packageNameOrId);
-            if (productId > 0)
-                m_PackageNameToProductIdMap[packageNameOrId] = productId;
+            m_SearchNonDiscoverableQueue.Enqueue(packageName);
         }
 
-        public void ClearExtraFetchPackageInfo()
+        public void AddToExtraFetchPackageInfoQueue(string packageId)
         {
-            m_ExtraFetchPackageInfoQueue.Clear();
-            m_PackageNameToProductIdMap.Clear();
-            m_ExtraFetchPackageInfoInProgress.Clear();
+            m_ExtraFetchPackageInfoQueue.Enqueue(packageId);
         }
 
-        private void ExtraFetchPackageInfoFromQueue()
+        private void ProcessExtraFetchQueues()
         {
+            // While extra fetch and search non-discoverable operations are serving different purposes, they are using the same operation under the hood, so we are handling the queue
+            // together so we can limit the amount of search operations in total.
             var numItemsAdded = 0;
-            while (m_ExtraFetchPackageInfoQueue.Count > 0 && numItemsAdded < k_ExtraFetchPackageInfoCountPerUpdate && m_ExtraFetchPackageInfoInProgress.Count < k_MaxExtraFetchPackageInfoCount)
+            while (numItemsAdded < k_ExtraFetchPackageInfoCountPerUpdate && m_SearchNonDiscoverableInProgress.Count + m_ExtraFetchPackageInfoInProgress.Count < k_MaxExtraFetchPackageInfoCount)
             {
-                var packageNameOrId = m_ExtraFetchPackageInfoQueue.Dequeue();
-                m_PackageNameToProductIdMap.TryGetValue(packageNameOrId, out var productId);
-                if (m_ExtraFetchPackageInfoInProgress.Contains(packageNameOrId) || m_UpmCache.GetProductSearchPackageInfo(productId) != null || m_UpmCache.GetExtraPackageInfo(packageNameOrId) != null)
-                    continue;
-                m_ExtraFetchPackageInfoInProgress.Add(packageNameOrId);
-                numItemsAdded++;
-                m_UpmClient.ExtraFetchPackageInfo(packageNameOrId, productId, doneCallback: () =>
+                // We prioritize searching non-discoverable package over extra fetch because non-discoverable package search result could affect the package generation more drastically
+                // For example, we could learn that a package is customized from an asset store package. The result of extra fetch is purely used to show more information about a specific
+                // version, so it is relatively lower priority
+                if (m_SearchNonDiscoverableQueue.Count > 0)
                 {
-                    m_ExtraFetchPackageInfoInProgress.Remove(packageNameOrId);
-                    m_PackageNameToProductIdMap.Remove(packageNameOrId);
-                });
+                    var packageName = m_SearchNonDiscoverableQueue.Dequeue();
+                    if (m_SearchNonDiscoverableInProgress.Contains(packageName) || m_UpmCache.GetSearchPackageInfo(packageName) != null)
+                        continue;
+                    m_SearchNonDiscoverableInProgress.Add(packageName);
+                    numItemsAdded++;
+                    m_UpmClient.SearchNonDiscoverable(packageName, doneCallback: () => m_SearchNonDiscoverableInProgress.Remove(packageName));
+                }
+                else if (m_ExtraFetchPackageInfoQueue.Count > 0)
+                {
+                    var packageId = m_ExtraFetchPackageInfoQueue.Dequeue();
+                    if (m_ExtraFetchPackageInfoInProgress.Contains(packageId) || m_UpmCache.GetExtraPackageInfo(packageId) != null)
+                        continue;
+                    m_ExtraFetchPackageInfoInProgress.Add(packageId);
+                    numItemsAdded++;
+                    m_UpmClient.ExtraFetchPackageInfo(packageId, doneCallback: () => m_ExtraFetchPackageInfoInProgress.Remove(packageId));
+                }
+                else
+                    break;
             }
         }
 
@@ -391,7 +402,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             FetchProductInfoFromQueue();
             FetchPurchaseInfoFromQueue();
             CheckUpdateFromStack();
-            ExtraFetchPackageInfoFromQueue();
+            ProcessExtraFetchQueues();
         }
     }
 }

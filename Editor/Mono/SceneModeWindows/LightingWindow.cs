@@ -36,12 +36,15 @@ namespace UnityEditor
             public static readonly GUIContent cancelLabel = EditorGUIUtility.TrTextContent("Cancel");
             public static readonly GUIContent ImageconversionModuleDisabledMessage = EditorGUIUtility.TrTextContentWithIcon("Generate Lighting is unavailable without the Image Conversion Module.", MessageType.Warning);
 
+            public static readonly string unityComputeLightBakerInfoBoxText = L10n.Tr("The Unity Compute Light Baker samples the environment and emissive surfaces with the direct sample count. To improve quality increase the number of Direct Samples. To reduce bake time, set GPU Baking Profile to Highest Performance.");
+            public static readonly GUIContent dontShowAgain = EditorGUIUtility.TrTextContent("Don't show again");
+
             public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
             public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
             public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
             public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
 
-            public static readonly GUIContent bakeOnSceneLoad = EditorGUIUtility.TrTextContent("Bake On Scene Load", "Whether to automatically generate lighting for Scenes that do not have valid lighting data when first opened."); 
+            public static readonly GUIContent bakeOnSceneLoad = EditorGUIUtility.TrTextContent("Bake On Scene Load", "Whether to automatically generate lighting for Scenes that do not have valid lighting data when first opened.");
 
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
@@ -561,6 +564,27 @@ namespace UnityEditor
             }
         }
 
+        static void DrawUnityComputeLightBakerInfoBox()
+        {
+            bool usingUnityComputeLightmapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.UnityComputeGPU;
+            if (!usingUnityComputeLightmapper)
+                return;
+
+            if (EditorPrefs.GetBool(GraphicsSettingsInspector.k_UnityComputeLightBakerInfoBoxDismissedKey, false))
+                return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label(EditorGUIUtility.TempContent(Styles.unityComputeLightBakerInfoBoxText, EditorGUIUtility.GetHelpIcon(MessageType.Info)), EditorStyles.wordWrappedLabel);
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(Styles.dontShowAgain, EditorStyles.miniButton))
+            {
+                EditorPrefs.SetBool(GraphicsSettingsInspector.k_UnityComputeLightBakerInfoBoxDismissedKey, true);
+            }
+            GUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
         void DrawBottomBarGUI(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
@@ -576,6 +600,7 @@ namespace UnityEditor
                 DrawBakingProfileSelector();
                 DrawBakeOnLoadSelector();
                 DrawEnableHardwareRayTracing();
+                DrawUnityComputeLightBakerInfoBox();
 
                 {
                     // Bake button if we are not currently baking
@@ -590,8 +615,11 @@ namespace UnityEditor
                                 customTab.OnBakeButtonGUI();
                             else
                             {
-                                bool usingUnityComputeLightmapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == (LightingSettings.Lightmapper)3;
-                                bool doDisableMainButton = (!m_ImageConversionModuleAvailable && usingUnityComputeLightmapper) || !IsPrecomputeBakingAndDenosingSupported();
+                                bool usingUnityComputeLightmapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.UnityComputeGPU;
+                                bool doDisableMainButton =
+                                    (!m_ImageConversionModuleAvailable && usingUnityComputeLightmapper) ||
+                                    Lightmapping.IsRosettaRequiredAndUnavailable() ||
+                                    !SelectedDenoisersSupported();
 
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
                                 if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: doDisableMainButton))
@@ -837,7 +865,7 @@ namespace UnityEditor
                 }
             }
 
-            if (!Lightmapping.IsRealtimeGiPrecomputeSupported())
+            if (Lightmapping.IsRosettaRequiredAndUnavailable())
             {
                 using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
                 {
@@ -954,9 +982,6 @@ namespace UnityEditor
             }
             GUILayout.EndVertical();
         }
-
-        // Check if anything is causing baking not to be supported
-        private static bool IsPrecomputeBakingAndDenosingSupported() => Lightmapping.IsRealtimeGiPrecomputeSupported() && SelectedDenoisersSupported();
 
         static bool SelectedDenoisersSupported()
         {

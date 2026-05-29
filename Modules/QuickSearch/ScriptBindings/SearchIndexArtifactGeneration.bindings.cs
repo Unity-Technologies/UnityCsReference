@@ -32,10 +32,10 @@ namespace UnityEditor.Search
         /// <returns>The number of available or failed artifacts.</returns>
         public static ulong UpdateOnDemandArtifactsProgress(in SearchIndexArtifactImportData.Batch artifactImportDataBatch)
         {
-            return UpdateOnDemandArtifactsProgress(artifactImportDataBatch.ImporterHashCodes, artifactImportDataBatch.OnDemandStates, artifactImportDataBatch.ArtifactKeys, artifactImportDataBatch.ImportResultIds);
+            return UpdateOnDemandArtifactsProgress(artifactImportDataBatch.ImporterHashCodes, artifactImportDataBatch.OutOfProcessImportStates, artifactImportDataBatch.ArtifactKeys, artifactImportDataBatch.ImportResultIds);
         }
 
-        static extern ulong UpdateOnDemandArtifactsProgress(Span<int> importerHashCodes, Span<OnDemandState> onDemandStates, Span<ArtifactKey> artifactKeys, Span<ImportResultID> importResultIds);
+        static extern ulong UpdateOnDemandArtifactsProgress(Span<int> importerHashCodes, Span<OutOfProcessImportState> onDemandStates, Span<ArtifactKey> artifactKeys, Span<ImportResultID> importResultIds);
 
         /// <summary>
         /// Requests the production of artifacts for the given artifact import data.

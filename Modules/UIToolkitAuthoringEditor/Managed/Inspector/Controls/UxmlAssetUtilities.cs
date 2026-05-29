@@ -141,10 +141,13 @@ internal static class UxmlAssetUtilities
 
             var name = pathParts[i];
             result.attributeDescription = result.dataDescription.FindAttributeWithPropertyName(name);
+            if (result.attributeDescription == null)
+                return result; // return success = false, not a UXML attribute (e.g. companion flag fields, uxmlAssetId)
+
             var attributeObjectDescription =
                 result.attributeDescription as UxmlSerializedUxmlObjectAttributeDescription;
             if (attributeObjectDescription == null)
-                break;
+                break; // regular (non-UxmlObject) attribute — stop traversing
 
             if (result.attributeOwner != null)
             {

@@ -240,6 +240,12 @@ namespace UnityEditor
                 {
                     case MinMaxCurveState.k_TwoCurves:
                     case MinMaxCurveState.k_Curve:
+                        // Force serialization so curves exist before adding to editor
+                        // This ensures the native MinMaxCurve has allocated and initialized
+                        // the curve data that the SerializedProperty references
+                        minMaxState.serializedObject.ApplyModifiedProperties();
+                        minMaxState.serializedObject.Update();
+
                         sce.AddCurve(CreateCurveData(sce.GetAvailableColor()));
                         break;
                     case MinMaxCurveState.k_Scalar:

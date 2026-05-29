@@ -4,13 +4,22 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.UIToolkit.Editor
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class StyleSheetAssetUtilities
     {
+        static readonly Regex k_ValidClassNameRegex = new(@"^[a-zA-Z][a-zA-Z0-9\-_]*$", RegexOptions.Compiled);
+
+        const string k_SpacesError = "Class names cannot contain spaces.";
+        const string k_StartsWithNumberError = "Class names cannot start with a number.";
+        const string k_InvalidCharactersError = "Class name can only contain letters, numbers, underscores, and dashes.";
+
         /// <summary>
         /// Creates a new USS file at the specified path and returns whether it was successful.
         /// </summary>
@@ -109,6 +118,19 @@ namespace Unity.UIToolkit.Editor
                 return fullPath.Substring(projectPath.Length + 1); // Remove leading "/"
 
             return null;
+        }
+
+        public static string GetClassNameValidationError(string className)
+        {
+            if (string.IsNullOrEmpty(className))
+                throw new ArgumentNullException(nameof(className), "Class name must not be null");
+
+            if (!k_ValidClassNameRegex.IsMatch(className))
+                return char.IsNumber(className[0])
+                    ? k_StartsWithNumberError
+                    : k_InvalidCharactersError;
+
+            return className.Contains(" ") ? k_SpacesError : string.Empty;
         }
     }
 }

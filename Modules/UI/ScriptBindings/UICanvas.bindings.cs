@@ -39,11 +39,49 @@ namespace UnityEngine
      NativeHeader("Modules/UI/CanvasManager.h"),
      NativeHeader("Modules/UI/UIStructs.h")]
     [UIModuleHelpURL("class-Canvas")]
-    public sealed class Canvas : Behaviour
+    public sealed partial class Canvas : Behaviour
     {
+        // Controls gating of PlayerUpdateCanvases by OnDemandRendering in Player.cpp
+        // In sync with CanvasManager::s_BatchingInterval
+        public enum BatchingInterval
+        {
+            GatedByRendering = 0,
+            AlwaysUpdate = 1
+        }
+
+        public static BatchingInterval batchingInterval
+        {
+            get => (BatchingInterval)Internal_GetBatchingInterval();
+            set
+            {
+                int intValue = (int)value;
+
+                if (!Enum.IsDefined(typeof(BatchingInterval), intValue))
+                {
+                    intValue = 0; // default fallback to GatedByRendering
+                    Debug.LogWarning($"Invalid value for Canvas.batchingInterval: {value}. Defaulting to BatchingInterval.GatedByRendering.");
+                }
+
+                Internal_SetBatchingInterval(intValue);
+            }
+        }
+
+        [FreeFunction("UI::CanvasManager::SetBatchingInterval")]
+        internal static extern void Internal_SetBatchingInterval(int value);
+
+        [FreeFunction("UI::CanvasManager::GetBatchingInterval")]
+        internal static extern int Internal_GetBatchingInterval();
+
         public delegate void WillRenderCanvases();
         public static event WillRenderCanvases preWillRenderCanvases;
         public static event WillRenderCanvases willRenderCanvases;
+
+        [OnEnteringPlayMode]
+        static void ResetStaticsOnPlayModeEnter()
+        {
+            preWillRenderCanvases = null;
+            willRenderCanvases = null;
+        }
 
         public extern RenderMode renderMode { get; set; }
         public extern bool isRootCanvas { get; }

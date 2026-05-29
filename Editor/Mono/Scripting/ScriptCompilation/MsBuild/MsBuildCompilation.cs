@@ -11,6 +11,7 @@ using UnityEditor.Compilation;
 using UnityEditor.MSBuild;
 using Unity.AsmDefToCSProj;
 using Unity.Scripting;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation.MsBuild;
@@ -26,9 +27,9 @@ enum CompileTarget
     PlayerWithTests
 }
 
-class MsBuildCompilation
+partial class MsBuildCompilation
 {
-    private MSBuildHostProgram _hostProgram = new MSBuildHostProgram();
+    private static MSBuildHostProgram _hostProgram = new MSBuildHostProgram();
     private Task<BuildResultMessage> _currentBuildTask;
 
     private MSBuildCompilationBuildState _currentBuildState;
@@ -38,12 +39,16 @@ class MsBuildCompilation
     private bool _editorAssembliesMightBeDirty = false;
 
     private static readonly TimeSpan _connectionTimeout = TimeSpan.FromMinutes(10);
-    private ICompilerClient _compilerClient;
+    static ICompilerClient CompilerClient => _compilerClient.Value;
+    private static Lazy<ICompilerClient> _compilerClient = new (() =>
+    {
+        var socketOrNamedPipe = _hostProgram.EnsureRunningAndGetSocketOrNamedPipe();
+        return ClientFactory.CreateChannel(socketOrNamedPipe, _connectionTimeout);
+    });
 
     public void Initialize(bool createInitCsprojs, MSBuildCompilationOptions compilationOptions)
     {
         UnityEditorMSBuildPropsTargetsGeneration.UpdateInstallPathFile();
-        EnsureCompilerClientInitialized();
 
         if (createInitCsprojs)
             ProjectGenerator.Instance.GenerateUnityProjectIfMissing(Path.Combine("Assets", "Runtime", "Runtime.csproj"));
@@ -52,13 +57,14 @@ class MsBuildCompilation
         UnityEditorMSBuildPropsTargetsGeneration.UpdateEssentialPropsOnly(EditorUserBuildSettings.activeBuildTarget);
     }
 
-    private void EnsureCompilerClientInitialized()
+    [OnCodeLoaded]
+    private static void PrimeCompilerClient()
     {
-        if (_compilerClient != null)
+        if (!MsBuildCompilationInterface.IsEnabled())
             return;
 
-        var socketOrNamedPipe = _hostProgram.EnsureRunningAndGetSocketOrNamedPipe();
-        _compilerClient = ClientFactory.CreateChannel(socketOrNamedPipe, _connectionTimeout);
+        // No need to wait for this, just kick off the connection so that it's ready when we need it.
+        _ = CompilerClient.PrimeConnectionAsync();
     }
 
     public void RequestMsBuildScriptCompilation(bool restore, string reason = null)
@@ -92,9 +98,7 @@ class MsBuildCompilation
 
     public bool TryGetLastBuildResult(CompileTarget target, out CompilationDoneResult? result)
     {
-        EnsureCompilerClientInitialized();
-
-        var buildState = new MSBuildCompilationBuildState(_compilerClient);
+        var buildState = new MSBuildCompilationBuildState(CompilerClient);
         var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
 
         //throw new NotImplementedException();
@@ -124,9 +128,7 @@ class MsBuildCompilation
         // Start a Build if requested
         if (_requestedBuild && _currentBuildTask == null)
         {
-            EnsureCompilerClientInitialized();
-
-            _currentBuildState = new MSBuildCompilationBuildState(_compilerClient);
+            _currentBuildState = new MSBuildCompilationBuildState(CompilerClient);
             _requestedBuild = false;
 
             Console.WriteLine($"Beginning build. Restoring: {_shouldRestore}");

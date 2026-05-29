@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Loading;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
@@ -12,9 +13,9 @@ namespace UnityEditor.UIElements
     /// Makes a field for editing a <see cref="LoadableSceneId"/>.
     /// </summary>
     [Icon("UIToolkit/Icons/ObjectField.png")]
-    internal sealed class LoadableSceneIdField : BaseField<Object>
+    internal class LoadableSceneIdField : BaseField<LoadableSceneId>
     {
-        readonly ObjectField m_ObjectField;
+        private ObjectField m_ObjectField;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -31,6 +32,16 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        /// <summary>
+        /// Initializes and returns an instance of LoadableSceneIdField.
+        /// </summary>
+        public LoadableSceneIdField()
+            : this(null) {}
+
+        /// <summary>
+        /// Initializes and returns an instance of LoadableSceneIdField.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
         public LoadableSceneIdField(string label)
             : base(label, null)
         {
@@ -49,16 +60,24 @@ namespace UnityEditor.UIElements
             AddToClassList(ussClassName);
         }
 
-        void OnObjectFieldValueChanged(ChangeEvent<Object> evt)
+        private void OnObjectFieldValueChanged(ChangeEvent<Object> evt)
         {
-            value = evt.newValue;
+            LoadableSceneId newLoadableSceneId = ObjectToLoadableSceneId(evt.newValue);
+            if (evt.newValue != null && !newLoadableSceneId.IsValid)
+            {
+                Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableSceneId."));
+                m_ObjectField.SetValueWithoutNotify(LoadableSceneIdToObject(value));
+                return;
+            }
+
+            value = newLoadableSceneId;
             evt.StopImmediatePropagation();
         }
 
-        public override void SetValueWithoutNotify(Object newValue)
+        public override void SetValueWithoutNotify(LoadableSceneId newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            m_ObjectField.SetValueWithoutNotify(newValue);
+            m_ObjectField.SetValueWithoutNotify(LoadableSceneIdToObject(value));
         }
 
         /// <inheritdoc />
@@ -66,6 +85,24 @@ namespace UnityEditor.UIElements
         {
             if (m_ObjectField != null)
                 m_ObjectField.showMixedValue = showMixedValue;
+        }
+
+        static Object LoadableSceneIdToObject(LoadableSceneId sceneId)
+        {
+            var guid = LoadableSceneIdEditorUtility.LoadableSceneIdToGuid(sceneId);
+            if (guid.Empty())
+                return null;
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            return AssetDatabase.LoadAssetAtPath<SceneAsset>(path);
+        }
+
+        static LoadableSceneId ObjectToLoadableSceneId(Object obj)
+        {
+            if (obj == null)
+                return default;
+            if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out var guidStr, out _))
+                return LoadableSceneIdEditorUtility.CreateLoadableSceneId(new GUID(guidStr));
+            return default;
         }
     }
 }

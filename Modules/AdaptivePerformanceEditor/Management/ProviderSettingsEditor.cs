@@ -47,7 +47,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         static GUIContent s_AdaptiveFramerate = EditorGUIUtility.TrTextContent(L10n.Tr("Framerate"), L10n.Tr("Adaptive Framerate enables you to automatically control the application's framerate by the defined minimum and maximum framerate. It uses Application.targetFramerate to control the framerate for your application."));
         static GUIContent s_AdaptiveResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Resolution"), L10n.Tr("Adaptive Resolution enables you to automatically control the screen resolution of the application by the defined scale. It uses Dynamic Resolution (Vulkan only) and uses Resolution Scale of the Universal Render Pipeline as fallback if the project uses Universal Render Pipeline."));
-        static GUIContent s_AdaptiveBatching = EditorGUIUtility.TrTextContent(L10n.Tr("Batching"), L10n.Tr("Adaptive Batching toggles dynamic batching based on the thermal and performance load."));
         static GUIContent s_AdaptiveLOD = EditorGUIUtility.TrTextContent(L10n.Tr("LOD"), L10n.Tr("Adaptive LOD changes the LOD bias based on the thermal and performance load."));
         static GUIContent s_AdaptiveLut = EditorGUIUtility.TrTextContent(L10n.Tr("LUT"), L10n.Tr("Requires Universal Render Pipeline. Adaptive LUT changes the LUT Bias of the Universal Render Pipeline based on the thermal and performance load."));
         static GUIContent s_AdaptiveMSAA = EditorGUIUtility.TrTextContent(L10n.Tr("MSAA"), L10n.Tr("Requires Universal Render Pipeline. Adaptive MSAA changes the Anti Aliasing Quality Bias of the Universal Render Pipeline based on the thermal and performance load."));
@@ -659,19 +658,18 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 {
                     ScalerSettingInformation scalerSettingInfo;
                     scalerProfileSettingInfo.scalerSettingsInfos.TryGetValue(scalerName, out scalerSettingInfo);
-                    if (scalerSettingInfo.showScalerSettings && scalerSetting.enabled)
+                    bool isDisabledFramerate = DisabledAdaptiveFramerateScaler(scalerName);
+                    bool sectionOpen = scalerSettingInfo.showScalerSettings && (scalerSetting.enabled || isDisabledFramerate);
+
+                    if (sectionOpen)
                     {
                         height += k_NumberOfScalerProperties * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
-                    }
-
-                    if (DisabledAdaptiveFramerateScaler(scalerName))
-                    {
-                        if (scalerSettingInfo.showScalerSettings && !scalerSetting.enabled) // if before was not executed due to scaler not enabled, but we need the height.
+                        
+                        // if we have a framerate section that is disabled by VSync being on, we add space for the warning
+                        if (isDisabledFramerate)
                         {
-                            height += k_NumberOfScalerProperties * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
+                            height += 2 * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
                         }
-
-                        height += EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
                     }
                 }
                 return height;
@@ -863,8 +861,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
                     return s_AdaptiveFramerate;
                 case "Adaptive Resolution":
                     return s_AdaptiveResolution;
-                case "Adaptive Batching":
-                    return s_AdaptiveBatching;
                 case "Adaptive LOD":
                     return s_AdaptiveLOD;
                 case "Adaptive Lut":

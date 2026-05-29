@@ -9,6 +9,7 @@ namespace UnityEngine.Rendering
         None,
         Importance,
         Size,
-        ImportanceThenSize
+        ImportanceThenSize,
+        ImportanceThenSizeInverse,
     }
 }

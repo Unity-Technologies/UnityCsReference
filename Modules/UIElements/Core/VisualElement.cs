@@ -1771,7 +1771,11 @@ namespace UnityEngine.UIElements
         // Hash of the inherited style data values
         internal int inheritedStylesHash = 0;
 
-        internal bool hasInlineStyle => inlineStyleAccess != null;
+        internal bool hasInlineStyle
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => inlineStyleAccess != null;
+        }
 
         internal bool styleInitialized
         {
@@ -2685,14 +2689,12 @@ namespace UnityEngine.UIElements
 
         private void AssignMeasureFunction()
         {
-            layoutNode.SetOwner(this);
             layoutNode.UsesMeasure = true;
         }
 
         private void RemoveMeasureFunction()
         {
             layoutNode.UsesMeasure = false;
-            layoutNode.SetOwner(null);
         }
 
         /// <undoc/>
@@ -2702,9 +2704,17 @@ namespace UnityEngine.UIElements
             return new Vector2(float.NaN, float.NaN);
         }
 
-        internal static void Measure(VisualElement ve, ref LayoutNode node, float width, LayoutMeasureMode widthMode, float height, LayoutMeasureMode heightMode, out LayoutSize result)
+        internal static void Measure(ref LayoutNode node, float width, LayoutMeasureMode widthMode, float height, LayoutMeasureMode heightMode, out LayoutSize result)
         {
             result = default;
+
+            if (!BaseVisualElementPanel.TryGetPanelFromHandle(node.Config.Handle, out var panel))
+            {
+                Debug.Assert(false, "LayoutNode needs to belong to an element attached to a panel.");
+                return;
+            }
+
+            var ve = panel.GetMemberElementFromHandle(node.Handle);
             Debug.Assert(node.Equals(ve.layoutNode), "LayoutNode instance mismatch");
             Vector2 size = ve.DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
             float ppp = ve.scaledPixelsPerPoint;

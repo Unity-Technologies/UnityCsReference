@@ -45,8 +45,8 @@ internal class InProjectPage : SimplePageWithPackages
     {
         base.RebuildVisualStateList();
 
-        var hasEntitlementPackagesInPage = visualStates.AnyMatches(v => m_PackageDatabase.GetPackage(v.itemUniqueId)?.hasEntitlements == true);
-        var newSupportedStatusFilters = hasEntitlementPackagesInPage
+        var hasEnterprisePackagesInPage = visualStates.AnyMatches(v => m_PackageDatabase.GetPackage(v.itemUniqueId)?.isEnterprise == true);
+        var newSupportedStatusFilters = hasEnterprisePackagesInPage
             ? new[] { PageFilterStatus.SubscriptionBased }
             : Array.Empty<PageFilterStatus>();
         UpdateSupportedStatuses(newSupportedStatusFilters, true);

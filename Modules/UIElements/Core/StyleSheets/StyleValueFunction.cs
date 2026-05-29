@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
         FilterBlur,
         FilterContrast,
         FilterHueRotate,
+        FilterDropShadow,
         MaterialProperty
     }
 
@@ -42,6 +43,7 @@ namespace UnityEngine.UIElements
         public const string k_FilterBlur = "blur";
         public const string k_FilterContrast = "contrast";
         public const string k_FilterHueRotate = "hue-rotate";
+        public const string k_FilterDropShadow = "drop-shadow";
         public const string k_MaterialProperty = "prop";
 
         public static StyleValueFunction FromUssString(string ussValue)
@@ -75,6 +77,8 @@ namespace UnityEngine.UIElements
                     return StyleValueFunction.FilterContrast;
                 case k_FilterHueRotate:
                     return StyleValueFunction.FilterHueRotate;
+                case k_FilterDropShadow:
+                    return StyleValueFunction.FilterDropShadow;
                 case k_MaterialProperty:
                     return StyleValueFunction.MaterialProperty;
                 default:
@@ -112,6 +116,8 @@ namespace UnityEngine.UIElements
                     return k_FilterContrast;
                 case StyleValueFunction.FilterHueRotate:
                     return k_FilterHueRotate;
+                case StyleValueFunction.FilterDropShadow:
+                    return k_FilterDropShadow;
                 case StyleValueFunction.MaterialProperty:
                     return k_MaterialProperty;
                 default:

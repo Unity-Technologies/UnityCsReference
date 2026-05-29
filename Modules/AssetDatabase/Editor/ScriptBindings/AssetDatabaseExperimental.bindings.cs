@@ -13,7 +13,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Experimental
 {
-    public enum OnDemandState
+    public enum OutOfProcessImportState
     {
         Unavailable = 0,
         Processing = 1,
@@ -69,9 +69,9 @@ namespace UnityEditor.Experimental
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct OnDemandProgress
+    public struct OutOfProcessImportProgress
     {
-        public OnDemandState state;
+        public OutOfProcessImportState state;
         public float progress;
     }
 
@@ -80,13 +80,6 @@ namespace UnityEditor.Experimental
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseExperimental.h")]
     public sealed partial class AssetDatabaseExperimental
     {
-        public enum OnDemandMode
-        {
-            Off = 0,
-            Lazy = 1,
-            Background = 2
-        }
-
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern ImporterID GetImporterID(Type importerType);
 
@@ -168,17 +161,6 @@ namespace UnityEditor.Experimental
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static void ImportCountersResetDeltas();
 
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        public extern static OnDemandMode ActiveOnDemandMode
-        {
-            [FreeFunction("GetOnDemandModeV2")]
-            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
-            get;
-            [FreeFunction("SetOnDemandModeV2")]
-            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
-            set;
-        }
-
         [NativeHeader("Modules/AssetDatabase/Editor/V2/Virtualization/Virtualization.h")]
         internal extern static bool VirtualizationEnabled
         {
@@ -251,7 +233,7 @@ namespace UnityEditor.Experimental
         private extern static string[] GetArtifactPathsImpl(ImportResultID hash, out bool success);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        public extern static OnDemandProgress GetOnDemandArtifactProgress(ArtifactKey artifactKey);
+        public extern static OutOfProcessImportProgress GetOutOfProcessImportProgress(ArtifactKey artifactKey);
 
         [FreeFunction("AssetDatabase::GetArtifactStaticDependencyHash")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]

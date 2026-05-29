@@ -79,7 +79,8 @@ internal sealed partial class StyleSheetInspector : VisualElement
 
     void OnCreateNewSelector(NewSelectorSubmitEvent evt)
     {
-        new AddStyleRuleCommand(StyleSheet, evt.selectorStr).Execute();
+        using var addRuleCommand = AddStyleRuleCommand.GetPooled(CommandSources.Inspector, StyleSheet, evt.selectorStr);
+        UICommandQueue.EnqueueCommand(addRuleCommand);
     }
 
     void ConfigureImportsListView()

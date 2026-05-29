@@ -90,6 +90,7 @@ namespace UnityEngine
         {
             textHandles.Clear();
             textHandlesTuple.Clear();
+            s_IMGUITextBuffer.Dispose();
         }
 
         /// <summary>

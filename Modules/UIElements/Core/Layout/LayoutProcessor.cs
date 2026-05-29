@@ -68,7 +68,8 @@ static class LayoutDelegates
         ref IntPtr exception,
         out LayoutSize result)
     {
-        var measureFunction = node.Config.Measure;
+        var config = node.Config;
+        var measureFunction = config.Measure;
 
         if (measureFunction == null)
         {
@@ -88,7 +89,7 @@ static class LayoutDelegates
         try
         {
             using (s_InvokeMeasureFunctionMarker.Auto())
-                measureFunction(node.GetOwner(), ref node, width, widthMode, height, heightMode, out result);
+                measureFunction(ref node, width, widthMode, height, heightMode, out result);
         }
         catch (Exception e)
         {

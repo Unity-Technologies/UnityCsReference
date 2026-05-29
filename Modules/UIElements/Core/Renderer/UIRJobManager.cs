@@ -114,14 +114,14 @@ namespace UnityEngine.UIElements.UIR
         public IntPtr vertDst;
         public int vertCount;
         public Matrix4x4 transform;
-        public Color32 xformClipPages;
-        public Color32 ids;
-        public Color32 addFlags;
-        public Color32 opacityPage;
-        public Color32 textCoreSettingsPage;
+        public ushort clipRectId;
+        public ushort transformId;
+        public ushort dynamicColorOrTextCoreId;
+        public ushort opacityId;
+        public VertexFlags flags;
+        public ushort textureId;
+        public ushort gradientSettingsIndexOffset;
         public int usesTextCoreSettings;
-        public float textureId;
-        public int gradientSettingsIndexOffset;
 
         public IntPtr indexSrc;
         public IntPtr indexDst;

@@ -25,6 +25,7 @@ namespace UnityEditor.UIElements
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
+        internal static readonly string inlineChildrenContainerProperty = "unity-inline-children-container";
         internal static readonly string listViewBoundFieldProperty = "unity-list-view-property-field-bound";
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly string listViewUssClassName = "unity-list-view-property-field";
@@ -65,6 +66,27 @@ namespace UnityEditor.UIElements
         }
 
         string m_Label;
+
+        bool m_ShowFirstFoldoutHeader = true;
+
+        // When set to false, a property that would normally render with a top-level
+        // Foldout (a generic struct/class with visible child fields) instead inlines
+        // its children directly into a plain container with no foldout chrome.
+        // Arrays, lists, and dictionaries are intentionally unaffected: their
+        // foldout header carries information the user needs (array size, dictionary
+        // count, etc.) and is always shown. Has no effect when the property is
+        // rendered by a custom property drawer.
+        internal bool showFirstFoldoutHeader
+        {
+            get => m_ShowFirstFoldoutHeader;
+            set
+            {
+                if (m_ShowFirstFoldoutHeader == value) return;
+                m_ShowFirstFoldoutHeader = value;
+                Rebind();
+            }
+        }
+
         SerializedObject m_SerializedObject;
         internal SerializedObject serializedObject => m_SerializedObject;
 
@@ -144,6 +166,14 @@ namespace UnityEditor.UIElements
                 return;
 
             bindingPath = property.propertyPath;
+        }
+
+        // Internal constructor that lets callers opt out of the top-level foldout
+        // header that would normally wrap a complex property's children.
+        internal PropertyField(SerializedProperty property, string label, bool showFirstFoldoutHeader)
+            : this(property, label)
+        {
+            m_ShowFirstFoldoutHeader = showFirstFoldoutHeader;
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)
@@ -687,6 +717,39 @@ namespace UnityEditor.UIElements
             }
         }
 
+        // Counterpart to CreateFoldout for the showFirstFoldoutHeader = false case:
+        // builds (or reuses) a plain VisualElement that holds the property's children
+        // directly, with no foldout chrome. The container is tagged via SetProperty
+        // so the next rebind can distinguish it from a Foldout cached from a prior
+        // bind to a property that did want the header.
+        VisualElement CreateOrUpdateInlineChildrenContainer(SerializedProperty property, object originalField)
+        {
+            property = property.Copy();
+
+            VisualElement container = null;
+            if (originalField is VisualElement candidate
+                && candidate is not Foldout
+                && candidate.GetProperty(inlineChildrenContainerProperty) is true)
+            {
+                container = candidate;
+            }
+            else
+            {
+                container = new VisualElement();
+                container.SetProperty(inlineChildrenContainerProperty, true);
+            }
+
+            container.name = "unity-inline-children-" + property.propertyPath;
+            m_ChildrenContainer = container;
+
+            // No foldout to gate expansion on, so always walk children. RefreshChildrenProperties
+            // updates each child PropertyField's bindingPath in place when the count and order
+            // line up, which is what makes the per-row rebind fast path in DictionaryView work.
+            RefreshChildrenProperties(property, bindNewFields: false);
+
+            return container;
+        }
+
         void OnFieldValueChanged(EventBase evt)
         {
             if (evt.target == m_ChildField && m_SerializedProperty.isValid)
@@ -968,7 +1031,11 @@ namespace UnityEditor.UIElements
             var propertyType = property.propertyType;
 
             if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray && property.type != nameof(ToggleButtonGroupState))
-                return CreateFoldout(property, originalField);
+            {
+                return m_ShowFirstFoldoutHeader
+                    ? CreateFoldout(property, originalField)
+                    : CreateOrUpdateInlineChildrenContainer(property, originalField);
+            }
 
             TrimChildrenContainerSize(0);
             m_ChildrenContainer = null;

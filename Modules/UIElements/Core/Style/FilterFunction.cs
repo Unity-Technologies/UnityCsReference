@@ -50,8 +50,14 @@ namespace UnityEngine.UIElements
         /// <summary>A built-in hue-rotation filter function that expects a single float value (angle).</summary>
         HueRotate,
 
+        /// <summary>
+        /// A built-in drop-shadow filter function that expects four parameters in order:
+        /// offsetX (float, pixels), offsetY (float, pixels), blur sigma (float, pixels), color (Color).
+        /// </summary>
+        DropShadow,
+
         /// <undoc/>
-        [Obsolete("Use Enum.GetValues(typeof(FilterFunctionType)).Length instead", false)]
+        [Obsolete("Use Enum.GetValues(typeof(FilterFunctionType)).Length instead", true)]
         Count
     }
 

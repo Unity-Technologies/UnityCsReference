@@ -149,6 +149,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.loadableObjectIdValue;
         }
 
+        public static LoadableSceneId GetLoadableSceneIdPropertyValue(SerializedProperty p)
+        {
+            return p.loadableSceneIdValue;
+        }
+
         public static Gradient GetGradientPropertyValue(SerializedProperty p)
         {
             return p.gradientValue;
@@ -388,6 +393,11 @@ namespace UnityEditor.UIElements.Bindings
         public static void SetLoadableObjectIdPropertyValue(SerializedProperty p, LoadableObjectId v)
         {
             p.loadableObjectIdValue = v;
+        }
+
+        public static void SetLoadableSceneIdPropertyValue(SerializedProperty p, LoadableSceneId v)
+        {
+            p.loadableSceneIdValue = v;
         }
 
         public static void SetGradientPropertyValue(SerializedProperty p, Gradient v)

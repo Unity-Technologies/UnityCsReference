@@ -94,4 +94,10 @@ internal enum CommandCategory
     /// Commands in this category either request or process highlight items.
     /// </summary>
     Highlight = 1 << 3,
+
+    /// <summary>
+    /// Command category for selection related commands.
+    /// Commands in this category either request or process selection.
+    /// </summary>
+    Selection = 1 << 4,
 }

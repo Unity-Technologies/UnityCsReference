@@ -569,6 +569,12 @@ namespace UnityEditor
 
         static Dictionary<Cache, FieldInfoCache> s_FieldInfoFromPropertyPathCache = new Dictionary<Cache, FieldInfoCache>();
 
+        // Precompiled regexes used by GetFieldInfoFromPropertyPath on cache misses to avoid pattern parsing
+        // and string concatenation. The trailing-anchor variant is used for the end-of-path check;
+        // the unanchored variant is used to strip all Array.data[x] segments out of the path.
+        static readonly Regex k_ArrayDataAtEndRegex = new Regex(@"\.Array\.data\[[0-9]+\]$", RegexOptions.Compiled);
+        static readonly Regex k_ArrayDataRegex = new Regex(@"\.Array\.data\[[0-9]+\]", RegexOptions.Compiled);
+
         private static FieldInfo GetFieldInfoFromPropertyPath(Type host, string path, out Type type)
         {
             Cache cache = new Cache(host, path);
@@ -579,15 +585,14 @@ namespace UnityEditor
                 return fieldInfoCache?.fieldInfo;
             }
 
-            const string arrayData = @"\.Array\.data\[[0-9]+\]";
-            // we are looking for array element only when the path ends with Array.data[x]
-            var lookingForArrayElement = Regex.IsMatch(path, arrayData + "$");
-            // remove any Array.data[x] from the path because it is prevents cache searching.
-            path = Regex.Replace(path, arrayData, ".___ArrayElement___");
+            // We are looking for array element only when the path ends with Array.data[x]
+            var lookingForArrayElement = k_ArrayDataAtEndRegex.IsMatch(path);
+            // Remove any Array.data[x] from the path because it prevents cache searching.
+            var modifiedPath = k_ArrayDataRegex.Replace(path, ".___ArrayElement___");
 
             FieldInfo fieldInfo = null;
             type = host;
-            string[] parts = path.Split('.');
+            string[] parts = modifiedPath.Split('.');
             for (int i = 0; i < parts.Length; i++)
             {
                 string member = parts[i];
@@ -609,16 +614,29 @@ namespace UnityEditor
                 fieldInfo = foundField;
                 type = fieldInfo.FieldType;
                 // we want to get the element type if we are looking for Array.data[x]
-                if (i < parts.Length - 1 && parts[i + 1] == "___ArrayElement___" && type.IsArrayOrList())
+                if (i < parts.Length - 1 && parts[i + 1] == "___ArrayElement___")
                 {
-                    i++; // skip the "___ArrayElement___" part
-                    type = type.GetArrayOrListElementType();
+                    if (type.IsArrayOrList())
+                    {
+                        i++; // skip the "___ArrayElement___" part
+                        type = type.GetArrayOrListElementType();
+                    }
+                    else if (type.IsDictionary())
+                    {
+                        i++; // skip the "___ArrayElement___" part
+                        type = type.GetDictionaryElementType();
+                    }
                 }
             }
 
             // we want to get the element type if we are looking for Array.data[x]
-            if (lookingForArrayElement && type != null && type.IsArrayOrList())
-                type = type.GetArrayOrListElementType();
+            if (lookingForArrayElement && type != null)
+            {
+                if (type.IsArrayOrList())
+                    type = type.GetArrayOrListElementType();
+                else if (type.IsDictionary())
+                    type = type.GetDictionaryElementType();
+            }
 
             fieldInfoCache = new FieldInfoCache
             {

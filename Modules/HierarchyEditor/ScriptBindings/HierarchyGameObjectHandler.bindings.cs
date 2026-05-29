@@ -154,6 +154,11 @@ namespace Unity.Hierarchy.Editor
                 HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
         }
 
+        protected override void OnUnbindItem(HierarchyViewItem item)
+        {
+            HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
+        }
+
         void IHierarchyExtendCreateMenu.PopulateCreateMenu(DropdownMenu menu)
         {
             PopulateCreateMenu(menu, null, null);

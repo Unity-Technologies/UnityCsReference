@@ -39,7 +39,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="hierarchyViewModel">The hierarchy view model.</param>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns>The hierarchy node the handler.</returns>
+        /// <returns>The hierarchy node type handler.</returns>
         public static HierarchyNodeTypeHandler GetNodeTypeHandler(this HierarchyViewModel hierarchyViewModel, in HierarchyNode node)
         {
             var handlerBase = hierarchyViewModel.GetNodeTypeHandlerBase(in node);

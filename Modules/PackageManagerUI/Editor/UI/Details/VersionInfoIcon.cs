@@ -36,7 +36,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (!version.HasTag(PackageTag.Unity) || version.hasEntitlements)
+            // Most Enterprise packages do not have a recommended version. We hide the info icon to avoid showing them as unsupported.
+            if (!version.HasTag(PackageTag.Unity) || version.isEnterprise)
                 return;
 
             var recommended = package.versions.recommended;

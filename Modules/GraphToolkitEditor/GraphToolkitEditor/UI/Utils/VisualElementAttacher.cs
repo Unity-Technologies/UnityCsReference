@@ -177,6 +177,10 @@ namespace Unity.GraphToolkit.Editor
 
         void AlignOnTarget()
         {
+            var hierarchyParent = Element.hierarchy.parent;
+            if (hierarchyParent == null)
+                return;
+
             // Dimensions of the element to attach.
             var elementHeight = ReferenceElement == null ? Element.resolvedStyle.height : ReferenceElement.resolvedStyle.height;
             var elementWidth = ReferenceElement == null ? Element.resolvedStyle.width : ReferenceElement.resolvedStyle.width;
@@ -185,7 +189,7 @@ namespace Unity.GraphToolkit.Editor
             var offsetX = ReferenceElement == null ? 0 : ReferenceElement.resolvedStyle.left - Element.resolvedStyle.left;
             var offsetY = ReferenceElement == null ? 0 : ReferenceElement.resolvedStyle.top - Element.resolvedStyle.top;
 
-            var targetRect = Target.parent.ChangeCoordinatesTo(Element.hierarchy.parent, Target.layout);
+            var targetRect = Target.parent.ChangeCoordinatesTo(hierarchyParent, Target.layout);
 
             float newX;
             float newY;

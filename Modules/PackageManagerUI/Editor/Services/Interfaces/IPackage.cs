@@ -35,9 +35,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // package level errors (for upm this refers to operation errors that are separate from the package info)
         IEnumerable<UIError> errors { get; }
 
-        bool hasEntitlements { get; }
-
         bool hasEntitlementsError { get; }
+
+        bool isEnterprise { get; }
 
         string deprecationMessage { get; }
 

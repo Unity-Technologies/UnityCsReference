@@ -736,15 +736,16 @@ namespace UnityEditor.Experimental.GraphView
                 evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, DropdownMenuAction.AlwaysEnabled);
                 evt.menu.AppendSeparator();
             }
+            bool validSelection = isValidSelection;
             if (evt.target is GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Cut", (a) => { CutSelectionCallback(); },
-                    (a) => { return canCutSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
+                    (a) => { return validSelection && canCutSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
             if (evt.target is GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Copy", (a) => { CopySelectionCallback(); },
-                    (a) => { return canCopySelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
+                    (a) => { return validSelection && canCopySelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
             if (evt.target is GraphView)
             {
@@ -755,13 +756,13 @@ namespace UnityEditor.Experimental.GraphView
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Delete", (a) => { DeleteSelectionCallback(AskUser.DontAskUser); },
-                    (a) => { return canDeleteSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
+                    (a) => { return validSelection && canDeleteSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
             }
             if (evt.target is GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Duplicate", (a) => { DuplicateSelectionCallback(); },
-                    (a) => { return canDuplicateSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
+                    (a) => { return validSelection && canDuplicateSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled; });
                 evt.menu.AppendSeparator();
             }
         }
@@ -1097,6 +1098,8 @@ namespace UnityEditor.Experimental.GraphView
                 clipboard = data;
             }
         }
+
+        protected internal virtual bool isValidSelection => selection.Count > 0;
 
         protected internal virtual bool canCutSelection =>
             selection.Exists(s => s is Node || s is Group || s is Placemat || s is StickyNote);

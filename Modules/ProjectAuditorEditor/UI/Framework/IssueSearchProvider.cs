@@ -19,7 +19,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         private const string k_ProviderDisplayName = "Project Auditor Issues";
 
         private static readonly Regex kStartUntilColon = new(@"^([^:]*)(?::(.*))?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        private static readonly Texture2D kSearchIcon = EditorGUIUtility.LoadIcon("QuickSearch/SearchWindow");
+        private static Texture2D s_SearchIcon;
 
         private enum TypeOfReportItem
         {
@@ -38,6 +38,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             tableConfig = GetDefaultTableConfig;
         }
 
+        private static Texture2D GetSearchIcon()
+        {
+            if (s_SearchIcon == null)
+                s_SearchIcon = EditorGUIUtility.LoadIcon("QuickSearch/SearchWindow");
+            return s_SearchIcon;
+        }
+
         IEnumerable<SearchProposition> FetchPropositions(SearchContext arg1, SearchPropositionOptions arg2)
         {
             var sb = new StringBuilder();
@@ -49,7 +56,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     sb.Append($"\"{type}\", ");
                 var allTypes = sb.ToString().TrimEnd(',', ' ');
                 foreach (var type in types)
-                    yield return new SearchProposition(category: "Type", label: type, replacement: $"type=<$list:\"{type}\", [{allTypes}]$>", moveCursor: TextCursorPlacement.MoveAutoComplete, icon: kSearchIcon, color: QueryColors.filter);
+                    yield return new SearchProposition(category: "Type", label: type, replacement: $"type=<$list:\"{type}\", [{allTypes}]$>", moveCursor: TextCursorPlacement.MoveAutoComplete, icon: GetSearchIcon(), color: QueryColors.filter);
                 sb.Clear();
             }
 
@@ -60,7 +67,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     sb.Append($"\"{category}\", ");
                 var allCategories = sb.ToString().TrimEnd(',', ' ');
                 foreach (var category in categories)
-                    yield return new SearchProposition(category: "Category", label: ObjectNames.NicifyVariableName(category.ToString()), replacement: $"category=<$list:\"{category}\", [{allCategories}]$>", moveCursor: TextCursorPlacement.MoveAutoComplete, icon: kSearchIcon, color: QueryColors.filter);
+                    yield return new SearchProposition(category: "Category", label: ObjectNames.NicifyVariableName(category.ToString()), replacement: $"category=<$list:\"{category}\", [{allCategories}]$>", moveCursor: TextCursorPlacement.MoveAutoComplete, icon: GetSearchIcon(), color: QueryColors.filter);
                 sb.Clear();
             }
 
@@ -71,7 +78,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     sb.Append($"\"{severity}\", ");
                 var allSeverities = sb.ToString().TrimEnd(',', ' ');
                 foreach (var severity in severities)
-                    yield return new SearchProposition(category: "Severity", label: severity, replacement: $"severity=<$list:\"{severity}\", [{allSeverities}]$>", moveCursor: TextCursorPlacement.MoveAutoComplete, icon: kSearchIcon, color: QueryColors.filter);
+                    yield return new SearchProposition(category: "Severity", label: severity, replacement: $"severity=<$list:\"{severity}\", [{allSeverities}]$>", moveCursor: TextCursorPlacement.MoveAutoComplete, icon: GetSearchIcon(), color: QueryColors.filter);
                 sb.Clear();
             }
         }
@@ -212,7 +219,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 case "Material":
                     return EditorGUIUtility.LoadIcon("Material Icon");
                 default:
-                    return kSearchIcon;
+                    return GetSearchIcon();
             }
         }
 

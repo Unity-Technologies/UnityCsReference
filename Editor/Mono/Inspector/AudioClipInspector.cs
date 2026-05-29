@@ -316,8 +316,21 @@ namespace UnityEditor
         public override string GetInfoString()
         {
             AudioClip clip = target as AudioClip;
+
             int c = AudioUtil.GetChannelCount(clip);
-            string ch = c == 1 ? "Mono" : c == 2 ? "Stereo" : (c - 1) + ".1";
+            string ch = (c, clip.ambisonic) switch
+            {
+                (1, false) => "Mono",
+                (2, false) => "Stereo",
+                (4, true) => "1st order Ambisonic",
+                (6, false) => "5.1",
+                (8, false) => "7.1",
+                (9, true) => "2nd order Ambisonic",
+                (12, false) => "7.1.4",
+                (16, true) => "3rd order Ambisonic",
+                _ => (c == 1) ? "1 channel" : c + " channels"
+            };
+
             AudioCompressionFormat platformFormat = AudioUtil.GetTargetPlatformSoundCompressionFormat(clip);
             AudioCompressionFormat editorFormat = AudioUtil.GetSoundCompressionFormat(clip);
             string s = platformFormat.ToString();

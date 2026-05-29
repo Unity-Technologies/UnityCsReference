@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
 using Unity.Collections;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.Serialization;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -117,6 +120,9 @@ namespace UnityEngine.UIElements
             // And otherwise we only register them if ATG is effectively used
             (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
 
+            if (m_Text != null && m_Text.Length > 0)
+                m_TextBuffer.CopyFrom(m_Text);
+
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
 
@@ -127,10 +133,15 @@ namespace UnityEngine.UIElements
             var textRegistry = (detachEvent.originPanel as BaseVisualElementPanel)?.textElementRegistry;
             if (textRegistry != null && textRegistry.IsValueCreated)
                 textRegistry.Value.Remove(this);
+            m_TextBuffer.Dispose();
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
 
         private string m_Text = String.Empty;
+        NativeTextBuffer m_TextBuffer;
+        bool m_IsTextBufferDirty;
+
+        internal ref NativeTextBuffer textBuffer => ref m_TextBuffer;
 
         /// <summary>
         /// The text to be displayed.
@@ -145,6 +156,175 @@ namespace UnityEngine.UIElements
             set => ((INotifyValueChanged<string>) this).value = value;
         }
 
+        /// <summary>
+        /// Sets the text content without allocating a managed string.
+        /// </summary>
+        /// <remarks>
+        /// Unlike assigning to <see cref="text"/>, this method writes directly into an internal
+        /// native buffer and defers string materialization until <see cref="text"/> is read.
+        /// A <see cref="ChangeEvent{T}"/> of type <c>string</c> is raised only when listeners
+        /// for value-change events exist in the element's hierarchy; when no such listeners are
+        /// present, the method is fully allocation-free.
+        /// </remarks>
+        /// <param name="text">The character span to set as the element's text content.</param>
+        public void SetText(ReadOnlySpan<char> text)
+        {
+            if (panel == null)
+            {
+                Debug.LogWarning("TextElement.SetText() called while the element is not attached to a panel. Falling back to string allocation.");
+                this.text = new string(text);
+                return;
+            }
+
+            int length = text.Length;
+            int maxLen = edition.maxLength;
+            if (maxLen >= 0 && length > maxLen)
+                length = maxLen;
+
+            if (IsBufferEqualTo(text, length))
+                return;
+
+            m_TextBuffer.CopyFrom(text, length);
+
+            ApplyBufferChange(length);
+        }
+
+        /// <summary>
+        /// Sets the text content from a character array slice without allocating a managed string.
+        /// </summary>
+        /// <param name="sourceText">The source character array.</param>
+        /// <param name="start">The starting index in the array.</param>
+        /// <param name="length">The number of characters to copy.</param>
+        public void SetText(char[] sourceText, int start, int length)
+        {
+            if (sourceText == null)
+                throw new ArgumentNullException(nameof(sourceText));
+            if ((uint)start > (uint)sourceText.Length || (uint)length > (uint)(sourceText.Length - start))
+                throw new ArgumentOutOfRangeException();
+            SetText(new ReadOnlySpan<char>(sourceText, start, length));
+        }
+
+        /// <summary>
+        /// Sets the text content from a <see cref="StringBuilder"/> without allocating a managed string.
+        /// </summary>
+        /// <param name="sb">The <see cref="StringBuilder"/> whose contents to copy.</param>
+        public void SetText(StringBuilder sb)
+        {
+            if (panel == null)
+            {
+                Debug.LogWarning("TextElement.SetText() called while the element is not attached to a panel. Falling back to string allocation.");
+                this.text = sb?.ToString() ?? string.Empty;
+                return;
+            }
+
+            if (sb == null || sb.Length == 0)
+            {
+                SetText(ReadOnlySpan<char>.Empty);
+                return;
+            }
+
+            int length = sb.Length;
+            int maxLen = edition.maxLength;
+            if (maxLen >= 0 && length > maxLen)
+                length = maxLen;
+
+            if (IsBufferEqualTo(sb, length))
+                return;
+
+            m_TextBuffer.EnsureCapacity(length);
+            for (int i = 0; i < length; i++)
+                m_TextBuffer[i] = sb[i];
+
+            ApplyBufferChange(length);
+        }
+
+        /// <summary>
+        /// Formats a float value directly into the text buffer without allocating a managed string.
+        /// </summary>
+        /// <param name="value">The float value to display.</param>
+        /// <param name="format">An optional standard or custom numeric format string.</param>
+        public void SetText(float value, string format = null)
+        {
+            Span<char> buffer = stackalloc char[64];
+            if (value.TryFormat(buffer, out int charsWritten, format.AsSpan()))
+                SetText((ReadOnlySpan<char>)buffer.Slice(0, charsWritten));
+            else
+                text = value.ToString(format);
+        }
+
+        /// <summary>
+        /// Formats an integer value directly into the text buffer without allocating a managed string.
+        /// </summary>
+        /// <param name="value">The integer value to display.</param>
+        public void SetText(int value)
+        {
+            Span<char> buffer = stackalloc char[12];
+            if (value.TryFormat(buffer, out int charsWritten))
+                SetText((ReadOnlySpan<char>)buffer.Slice(0, charsWritten));
+            else
+                text = value.ToString();
+        }
+
+        bool IsBufferEqualTo(ReadOnlySpan<char> span, int length)
+        {
+            if (!m_TextBuffer.isCreated)
+                return length == 0 && m_TextBuffer.length == 0;
+            if (m_TextBuffer.length != length)
+                return false;
+            for (int i = 0; i < length; i++)
+                if (m_TextBuffer[i] != span[i])
+                    return false;
+            return true;
+        }
+
+        bool IsBufferEqualTo(StringBuilder sb, int length)
+        {
+            if (!m_TextBuffer.isCreated)
+                return length == 0 && m_TextBuffer.length == 0;
+            if (m_TextBuffer.length != length)
+                return false;
+            for (int i = 0; i < length; i++)
+                if (m_TextBuffer[i] != sb[i])
+                    return false;
+            return true;
+        }
+
+        void ApplyBufferChange(int newLength)
+        {
+            string previousText = m_Text;
+
+            m_TextBuffer.length = newLength;
+            m_IsTextBufferDirty = true;
+            m_Text = null;
+            isElided = false;
+
+            if (AnySizeAutoOrNone(ref computedStyle))
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+            else
+                IncrementVersion(VersionChangeType.Repaint);
+
+            if (!string.IsNullOrEmpty(viewDataKey))
+                SaveViewData();
+
+            if (panel != null && HasParentEventInterests(EventCategory.ChangeValue))
+            {
+                m_Text = m_TextBuffer.Materialize();
+                SetRenderedText(m_Text);
+                m_IsTextBufferDirty = false;
+                using (var evt = ChangeEvent<string>.GetPooled(previousText ?? string.Empty, m_Text))
+                {
+                    evt.elementTarget = this;
+                    SendEvent(evt);
+                }
+            }
+
+            NotifyPropertyChanged(valueProperty);
+            NotifyPropertyChanged(textProperty);
+
+            if (editingManipulator != null)
+                editingManipulator.editingUtilities.text = this.text;
+        }
+        
         [MultilineTextField(displayName = "Text")]
         [UxmlAttribute("text"), UxmlAttributeBindingPath(nameof(text))]
         internal string textUXML
@@ -490,7 +670,7 @@ namespace UnityEngine.UIElements
         {
             if (TextUtilities.IsAdvancedTextEnabledForElement(this))
             {
-                return TextUtilities.MeasureVisualElementTextSize(this, renderedTextString, desiredWidth, widthMode, desiredHeight, heightMode);
+                return TextUtilities.MeasureVisualElementTextSize(this, null, desiredWidth, widthMode, desiredHeight, heightMode);
             }
             else
             {
@@ -501,10 +681,23 @@ namespace UnityEngine.UIElements
         //INotifyValueChange
         string INotifyValueChanged<string>.value
         {
-            get => m_Text ?? String.Empty;
+            get
+            {
+                if (m_IsTextBufferDirty)
+                {
+                    m_Text = m_TextBuffer.Materialize();
+                    m_IsTextBufferDirty = false;
+                }
+                return m_Text ?? string.Empty;
+            }
 
             set
             {
+                if (m_IsTextBufferDirty)
+                {
+                    m_Text = m_TextBuffer.Materialize();
+                    m_IsTextBufferDirty = false;
+                }
                 if (m_Text != value)
                 {
                     if (panel != null)
@@ -542,10 +735,18 @@ namespace UnityEngine.UIElements
         void INotifyValueChanged<string>.SetValueWithoutNotify(string newValue)
         {
             newValue = ((ITextEdition)this).CullString(newValue);
+            if (m_IsTextBufferDirty)
+            {
+                m_Text = m_TextBuffer.Materialize();
+                m_IsTextBufferDirty = false;
+            }
             if (m_Text != newValue)
             {
                 SetRenderedText(newValue);
                 m_Text = newValue;
+                isElided = false;
+                if (panel != null)
+                    m_TextBuffer.CopyFrom(newValue);
 
                 //No need to dirty the layout if the element's size is not affected by the text change
                 if (AnySizeAutoOrNone(ref computedStyle))

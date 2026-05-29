@@ -861,10 +861,10 @@ internal abstract class VisualElementNodeTypeHandler :
             var typeNameLabel = new Label(element.GetType().Name);
             typeNameLabel.AddToClassList(HierarchyItemElementTypeNameClassName);
             nameElement.parent.Insert(index, typeNameLabel);
-            typeNameLabel.EnableInClassList(HierarchyItemDisabledClassName, !element.enabledSelf);
+            typeNameLabel.EnableInClassList(HierarchyItemDisabledClassName, isReadonly || !element.enabledSelf);
         }
 
-        nameElement.EnableInClassList(HierarchyItemDisabledClassName, !element.enabledSelf);
+        nameElement.EnableInClassList(HierarchyItemDisabledClassName, isReadonly || !element.enabledSelf);
 
         if ((m_DisplayOptions & UIHierarchyDisplayOptions.UssClasses) != 0)
         {

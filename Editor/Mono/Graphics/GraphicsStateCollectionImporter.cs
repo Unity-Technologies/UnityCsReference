@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -10,16 +11,34 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
 {
-    [ScriptedImporter(version: 1, ext: "graphicsstate")]
+    [HelpURL("https://docs.unity3d.com/ScriptReference/Experimental.Rendering.GraphicsStateCollection.html")]
+    [ScriptedImporter(version: 1, ext: k_FileExtension)]
     [ExcludeFromPreset]
     class GraphicsStateCollectionImporter : ScriptedImporter
     {
+        private const string k_FileExtension = "graphicsstate";
+        private const string k_DefaultFileName = "New Graphics State Collection." + k_FileExtension;
+
         public RuntimePlatform runtimePlatform;
         public GraphicsDeviceType graphicsDeviceType;
         public int version;
         public string qualityLevelName;
         public int shaderVariantCount;
         public int graphicsStateCount;
+
+        [MenuItem("Assets/Create/Shader/Graphics State Collection", false, 309)]
+        internal static void CreateGraphicsStateCollectionAsset()
+        {
+            var action = ScriptableObject.CreateInstance<DoCreateGraphicsStateCollection>();
+            Texture2D icon = EditorGUIUtility.FindTexture(typeof(DefaultAsset));
+            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
+                EntityId.None,
+                action,
+                k_DefaultFileName,
+                icon,
+                null
+            );
+        }
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
@@ -38,12 +57,31 @@ namespace UnityEditor.Rendering
         }
     }
 
+    internal class DoCreateGraphicsStateCollection : ProjectWindowCallback.AssetCreationEndAction
+    {
+        public override void Action(EntityId entityId, string pathName, string resourceFile)
+        {
+            File.WriteAllText(pathName, "{}");
+            AssetDatabase.ImportAsset(pathName);
+            Object asset = AssetDatabase.LoadAssetAtPath<GraphicsStateCollection>(pathName);
+            if (asset != null)
+            {
+                ProjectWindowUtil.ShowCreatedAsset(asset);
+            }
+            else
+            {
+                File.Delete(pathName);
+                Debug.LogError($"Failed to create Graphics State Collection asset at path: {pathName}");
+            }
+        }
+    }
+
     [CustomEditor(typeof(GraphicsStateCollectionImporter))]
     class GraphicsStateCollectionImporterEditor : ScriptedImporterEditor
     {
         Dictionary<Shader, List<GraphicsStateCollection.ShaderVariant>> m_GroupedByShader = new Dictionary<Shader, List<GraphicsStateCollection.ShaderVariant>>();
         List<GraphicsStateCollection.GraphicsState> m_GraphicsStatesList = new List<GraphicsStateCollection.GraphicsState>();
-        HashSet<string> m_ExpandedShaderKeys = new HashSet<string>();
+        HashSet<EntityId> m_ExpandedShaderKeys = new HashSet<EntityId>();
         Dictionary<string, bool> m_ExpandedVariantKeys = new Dictionary<string, bool>();
         Dictionary<string, (bool vertexAttributes, bool renderState)> m_ExpandedPsoKeys = new Dictionary<string, (bool, bool)>();
         bool m_ShaderVariantsExpanded = true;
@@ -126,21 +164,15 @@ namespace UnityEditor.Rendering
             m_GraphicsStateCount = serializedObject.FindProperty("graphicsStateCount");
         }
 
-        static string ShaderKey(Shader shader)
-        {
-            if (shader == null) return "null";
-            return shader.GetEntityId().GetHashCode().ToString();
-        }
-
         static string VariantKey(Shader shader, GraphicsStateCollection.ShaderVariant v)
         {
-            string shaderKey = ShaderKey(shader);
+            EntityId shaderEntityId = shader.GetEntityId();
             string kw = "";
             if (v.keywords != null && v.keywords.Length > 0)
             {
                 kw = string.Join(" ", System.Array.ConvertAll(v.keywords, k => k.name ?? ""));
             }
-            return $"{shaderKey}/{v.passId.SubshaderIndex}/{v.passId.PassIndex}/{kw}";
+            return $"{shaderEntityId}/{v.passId.SubshaderIndex}/{v.passId.PassIndex}/{kw}";
         }
 
         static string VariantLabelShort(GraphicsStateCollection.ShaderVariant v, GraphicsStateCollection collection)
@@ -278,8 +310,8 @@ namespace UnityEditor.Rendering
             EditorGUILayout.Space();
             foreach (var (shader, variants) in m_GroupedByShader)
             {
-                string key = ShaderKey(shader);
-                bool expanded = m_ExpandedShaderKeys.Contains(key);
+                EntityId shaderEntityId = shader.GetEntityId();
+                bool expanded = m_ExpandedShaderKeys.Contains(shaderEntityId);
 
                 // Shader asset and foldout
                 {
@@ -293,9 +325,9 @@ namespace UnityEditor.Rendering
                     foldoutRect = new Rect(foldoutRect.x + 5, foldoutRect.y, 35, 15);
                     expanded = EditorGUI.Foldout(foldoutRect, expanded, "", true);
                     if (expanded)
-                        m_ExpandedShaderKeys.Add(key);
+                        m_ExpandedShaderKeys.Add(shaderEntityId);
                     else
-                        m_ExpandedShaderKeys.Remove(key);
+                        m_ExpandedShaderKeys.Remove(shaderEntityId);
                     GUILayout.FlexibleSpace();
                 }
 

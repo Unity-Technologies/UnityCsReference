@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
@@ -29,7 +30,16 @@ readonly struct UnmanagedDataHandle
         Version = version;
     }
 
-    public bool IsUndefined => this.Equals(Undefined);
+    public bool IsUndefined
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Version == 0; // Version starts at 1 for all properly created handles
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator ==(UnmanagedDataHandle a, UnmanagedDataHandle b) => a.Equals(b);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator !=(UnmanagedDataHandle a, UnmanagedDataHandle b) => !a.Equals(b);
 
     public bool Equals(UnmanagedDataHandle other)
         => Index == other.Index && Version == other.Version;

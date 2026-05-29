@@ -330,7 +330,7 @@ namespace Unity.UIToolkit.Editor
             if (context.EditedElement == null || string.IsNullOrEmpty(context.BindingProperty))
                 return;
 
-            var uiProperty = PropertyContainer.GetProperty(context.EditedElement, new PropertyPath(context.BindingProperty));
+            PropertyContainer.TryGetProperty(context.EditedElement, new PropertyPath(context.BindingProperty), out var uiProperty);
             var uiPropertyType = uiProperty?.DeclaredValueType();
             var propertyPath = new PropertyPath(context.DataSourcePath);
 

@@ -22,6 +22,11 @@ namespace UnityEngine.UIElements
             return InitialStyle.Acquire();
         }
 
+        internal void InvalidateMatchingRulesCache()
+        {
+            matchingRulesHash = -1;
+        }
+
         public void FinalizeApply(ref ComputedStyle parentStyle)
         {
             // Calculate pixel font size

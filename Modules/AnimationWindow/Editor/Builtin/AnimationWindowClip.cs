@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEditorInternal;
 
 namespace UnityEditor.AnimationWindowBuiltin
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class AnimationWindowClip : IAnimationWindowClip, IEquatable<AnimationWindowClip>
     {
         [SerializeField] AnimationClip m_Clip;
@@ -433,7 +435,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             return curveBinding.type == typeof(RectTransform) && AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName) == "m_LocalPosition";
         }
 
-        Type GetValueType(EditorCurveBinding binding)
+        protected virtual Type GetValueType(EditorCurveBinding binding)
         {
             if (m_RootGameObject != null)
             {

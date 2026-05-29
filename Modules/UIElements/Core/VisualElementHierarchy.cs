@@ -1067,10 +1067,11 @@ namespace UnityEngine.UIElements
                     m_Owner.m_Children.Sort(comp);
 
                     m_Owner.layoutNode.Clear();
-                    for (int i = 0; i < m_Owner.m_Children.Count; i++)
+                    foreach (var child in m_Owner.m_Children)
                     {
-                        m_Owner.layoutNode.Insert(i, m_Owner.m_Children[i].layoutNode);
+                        m_Owner.layoutNode.AddChild(child.layoutNode);
                     }
+
                     m_Owner.InvokeHierarchyChanged(HierarchyChangeType.ChildrenReordered);
                     m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 }
@@ -1082,20 +1083,22 @@ namespace UnityEngine.UIElements
                 if (index >= childCount)
                 {
                     m_Owner.m_Children.Add(child);
-                    m_Owner.layoutNode.Insert(m_Owner.layoutNode.Count, child.layoutNode);
+                    m_Owner.layoutNode.AddChild(child.layoutNode);
                 }
                 else
                 {
+                    var nextChild = this[index];
                     m_Owner.m_Children.Insert(index, child);
-                    m_Owner.layoutNode.Insert(index, child.layoutNode);
+                    m_Owner.layoutNode.InsertBefore(nextChild.layoutNode, child.layoutNode);
                 }
             }
 
             // manipulates the children list (without sending events or dirty flags)
             private void RemoveChildAtIndex(int index)
             {
+                var child = this[index];
                 m_Owner.m_Children.RemoveAt(index);
-                m_Owner.layoutNode.RemoveAt(index);
+                m_Owner.layoutNode.RemoveChild(child.layoutNode);
             }
 
             private void ReleaseChildList()

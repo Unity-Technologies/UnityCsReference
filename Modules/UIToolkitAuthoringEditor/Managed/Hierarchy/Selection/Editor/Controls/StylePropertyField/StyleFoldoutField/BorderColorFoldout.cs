@@ -78,10 +78,10 @@ namespace Unity.UIToolkit.Editor
             leftRow.Add(leftField);
             Add(leftRow);
 
-            topField.tooltip = "USS property: border-top-color\n\nColor of the element's top border.";
-            rightField.tooltip = "USS property: border-right-color\n\nColor of the element's right border.";
-            bottomField.tooltip = "USS property: border-bottom-color\n\nColor of the element's bottom border.";
-            leftField.tooltip = "USS property: border-left-color\n\nColor of the element's left border.";
+            topField.tooltip = "<b>USS property: border-top-color</b>\nColor of the element's top border.";
+            rightField.tooltip = "<b>USS property: border-right-color</b>\nColor of the element's right border.";
+            bottomField.tooltip = "<b>USS property: border-bottom-color</b>\nColor of the element's bottom border.";
+            leftField.tooltip = "<b>USS property: border-left-color</b>\nColor of the element's left border.";
 
             topField.AddValidation(new Syntax("border-top-width"));
             rightField.AddValidation(new Syntax("border-right-width"));
@@ -154,10 +154,10 @@ namespace Unity.UIToolkit.Editor
 
         public override void UpdateFromChildFields()
         {
-            var shouldBeEnabled = true;
+            var shouldBeEnabled = false;
             for (int i = 0; i < fields.Count; ++i)
             {
-                shouldBeEnabled &= fields[i].enabledSelf;
+                shouldBeEnabled |= fields[i].enabledSelf;
                 var value = GetCommonValueFromChildFields();
                 headerInputField.SetValueWithoutNotify(value);
 

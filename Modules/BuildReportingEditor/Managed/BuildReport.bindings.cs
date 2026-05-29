@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Bindings;
 using NiceIO;
 using System.Collections.Generic;
+using UnityEditor.Build;
 
 namespace UnityEditor.Build.Reporting
 {
@@ -161,8 +163,24 @@ namespace UnityEditor.Build.Reporting
         /// For AssetBundle builds, the build report is loaded from `Library/LastBuild.buildreport`.
         ///
         /// To access build reports from earlier builds, use the <see cref="BuildHistory"/> API.</remarks>
-        [FreeFunction("BuildReporting::GetLatestReport")]
-        public static extern BuildReport GetLatestReport();
+        public static BuildReport GetLatestReport()
+        {
+            const string legacyReportPath = "Library/LastBuild.buildreport";
+            string reportPath = legacyReportPath;
+
+            // An in-progress build at the head of the history must not mask the previous
+            // completed report - this matches the prior native behavior of reading
+            // LatestBuild.link, which was only written by FinalizeBuild.
+            // GetLastWriteTimeUtc returns 1601-01-01 for missing files, so no Exists check needed.
+            if (BuildHistory.TryGetLatestCompletedBuild(out GUID guid) &&
+                BuildHistory.TryGetFilePath(guid, guid + ".buildreport", out string historyReportPath) &&
+                File.GetLastWriteTimeUtc(legacyReportPath) < File.GetLastWriteTimeUtc(historyReportPath))
+            {
+                reportPath = historyReportPath;
+            }
+
+            return LoadReport(reportPath);
+        }
 
         [FreeFunction("BuildReporting::GetReport")]
         internal static extern BuildReport GetReport(GUID guid);

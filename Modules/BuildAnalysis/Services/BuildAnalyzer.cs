@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using UnityEngine;
@@ -56,13 +57,11 @@ namespace UnityEditor.Build.Analysis
 
         private static BuildAnalysis BuildAnalysisFrom(BuildReportSummary reportSummary, BuildReportData reportData)
         {
-            var steps = reportData.Steps ?? Array.Empty<BuildReportStepData>();
-            var messages = reportData.Messages ?? Array.Empty<BuildReportMessageData>();
-
-            var stepTable = ConvertSteps(steps);
-            var analysisMessages = ConvertMessages(messages, stepTable.Length);
+            var stepTable = ConvertSteps(reportData.Steps);
+            var analysisMessages = ConvertMessages(reportData.Messages, stepTable.Length);
+            ConvertAssets(reportData.Assets, out var assetTable, out var importerTypeTable);
             var computed = BuildComputed(
-                reportData.AssetCount,
+                assetTable,
                 analysisMessages,
                 reportData.CachedReusePercent);
 
@@ -90,6 +89,8 @@ namespace UnityEditor.Build.Analysis
                 Tables = new BuildAnalysisTables
                 {
                     Steps = stepTable,
+                    Assets = assetTable,
+                    ImporterTypes = importerTypeTable,
                 },
                 Messages = analysisMessages,
                 Computed = computed,
@@ -138,15 +139,66 @@ namespace UnityEditor.Build.Analysis
             return result;
         }
 
+        private static void ConvertAssets(
+            BuildReportAssetData[] sourceAssets,
+            out BuildAnalysisAsset[] assets,
+            out BuildAnalysisImporterType[] importerTypes)
+        {
+            if (sourceAssets.Length == 0)
+            {
+                assets = Array.Empty<BuildAnalysisAsset>();
+                importerTypes = Array.Empty<BuildAnalysisImporterType>();
+                return;
+            }
+
+            var importerIdByName = new Dictionary<string, int>(StringComparer.Ordinal);
+            var importerList = new List<BuildAnalysisImporterType>();
+
+            assets = new BuildAnalysisAsset[sourceAssets.Length];
+            for (var i = 0; i < sourceAssets.Length; i++)
+            {
+                var src = sourceAssets[i];
+                var importerKey = string.IsNullOrEmpty(src.ImporterTypeName) ? "Unknown" : src.ImporterTypeName;
+                if (!importerIdByName.TryGetValue(importerKey, out var importerId))
+                {
+                    importerId = importerList.Count;
+                    importerList.Add(new BuildAnalysisImporterType { Id = importerId, Name = importerKey });
+                    importerIdByName[importerKey] = importerId;
+                }
+
+                assets[i] = new BuildAnalysisAsset
+                {
+                    Id = i,
+                    Path = src.Path ?? string.Empty,
+                    GUID = src.GUID ?? string.Empty,
+                    OutputSizeBytes = src.OutputSizeBytes,
+                    ObjectCount = src.ObjectCount,
+                    ResourceCount = src.ResourceCount,
+                    ImporterTypeId = importerId,
+                };
+            }
+
+            importerTypes = importerList.ToArray();
+        }
+
         private static BuildAnalysisComputed BuildComputed(
-            int assetCount,
+            BuildAnalysisAsset[] assets,
             BuildAnalysisMessage[] messages,
             float cacheReusePercent)
         {
             var counts = new BuildAnalysisCounts
             {
-                AssetCount = assetCount,
+                AssetCount = assets.Length,
             };
+
+            foreach (var asset in assets)
+            {
+                if (!string.IsNullOrEmpty(asset.Path)
+                    && asset.Path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+                {
+                    counts.SceneCount++;
+                }
+            }
 
             foreach (var t in messages)
             {

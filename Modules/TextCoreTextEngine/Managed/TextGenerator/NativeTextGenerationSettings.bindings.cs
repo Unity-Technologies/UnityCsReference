@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.TextCore.Text;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.TextCore
 {
@@ -19,7 +20,8 @@ namespace UnityEngine.TextCore
     {
         public IntPtr fontAsset;
         public IntPtr textSettings;
-        public string text;         // Contains the parsed text, meaning the rich text tags have been removed.
+        public IntPtr textBufferPtr; // Contains the parsed text, meaning the rich text tags have been removed.
+        public int textBufferLength;
         public int screenWidth;     // Encoded in Fixed Point.
         public int screenHeight;    // Encoded in Fixed Point.
         public bool wordWrapEnabled;
@@ -54,6 +56,15 @@ namespace UnityEngine.TextCore
         public bool richTextEnabled;
 
         public bool hasLink => textSpans != null && Array.Exists(textSpans, span => span.linkID != -1);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+        internal unsafe void SetTextBuffer(Unity.Collections.NativeArray<char> buffer, int length)
+        {
+            textBufferPtr = length > 0
+                ? (IntPtr)NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(buffer)
+                : IntPtr.Zero;
+            textBufferLength = length;
+        }
 
         public readonly TextSpan CreateTextSpan()
         {
@@ -91,11 +102,11 @@ namespace UnityEngine.TextCore
         }
 
         // Used by automated tests
-        public string GetTextSpanContent(int spanIndex)
+        public unsafe string GetTextSpanContent(int spanIndex)
         {
-            if (string.IsNullOrEmpty(text))
+            if (textBufferPtr == IntPtr.Zero || textBufferLength == 0)
             {
-                throw new InvalidOperationException("The text property is null or empty.");
+                throw new InvalidOperationException("The text buffer is null or empty.");
             }
 
             if (textSpans == null || spanIndex < 0 || spanIndex >= textSpans.Length)
@@ -105,10 +116,28 @@ namespace UnityEngine.TextCore
 
             TextSpan span = textSpans[spanIndex];
 
-            if (span.startIndex < 0 || span.startIndex >= text.Length || span.startIndex + span.length > text.Length)
+            if (span.startIndex < 0 || span.startIndex >= textBufferLength || span.startIndex + span.length > textBufferLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid startIndex or length for the current text.");
             }
+
+            return new string((char*)textBufferPtr, span.startIndex, span.length);
+        }
+
+        // TODO: Remove this method once placeholder supports the native buffer directly.
+        // Used by automated tests - string overload for use without a native buffer
+        public string GetTextSpanContent(int spanIndex, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                throw new InvalidOperationException("The text is null or empty.");
+
+            if (textSpans == null || spanIndex < 0 || spanIndex >= textSpans.Length)
+                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid span index.");
+
+            TextSpan span = textSpans[spanIndex];
+
+            if (span.startIndex < 0 || span.startIndex >= text.Length || span.startIndex + span.length > text.Length)
+                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid startIndex or length for the current text.");
 
             return text.Substring(span.startIndex, span.length);
         }
@@ -123,7 +152,8 @@ namespace UnityEngine.TextCore
         // Used by automated tests
         internal NativeTextGenerationSettings(NativeTextGenerationSettings tgs)
         {
-            text = tgs.text;
+            textBufferPtr = tgs.textBufferPtr;
+            textBufferLength = tgs.textBufferLength;
             fontSize = tgs.fontSize;
             bestFit = tgs.bestFit;
             maxFontSize = tgs.maxFontSize;
@@ -171,7 +201,7 @@ namespace UnityEngine.TextCore
 
             return $"{nameof(fontAsset)}: {fontAsset}\n" +
                 $"{nameof(textSettings)}: {textSettings}\n" +
-                $"{nameof(text)}: {text}\n" +
+                $"textBufferLength: {textBufferLength}\n" +
                 $"{nameof(screenWidth)}: {screenWidth}\n" +
                 $"{nameof(screenHeight)}: {screenHeight}\n" +
                 $"{nameof(fontSize)}: {fontSize}\n" +
@@ -196,17 +226,23 @@ namespace UnityEngine.TextCore
                 $"{nameof(richTextEnabled)}: {richTextEnabled}\n";
         }
 
-
         // TODO : It's not ideal to have GetHashCode both in C# and C++. We would ideally keep only C++, but because of the string marshalling involved this is too costly for IMGUI.
         // Remove this once we have a free interop to native.
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             unchecked
             {
                 int hash = 17;
                 hash = hash * 23 + fontAsset.GetHashCode();
                 hash = hash * 23 + textSettings.GetHashCode();
-                hash = hash * 23 + (text != null ? text.GetHashCode() : 0);
+
+                if (textBufferPtr != IntPtr.Zero && textBufferLength > 0)
+                {
+                    char* p = (char*)textBufferPtr;
+                    for (int i = 0; i < textBufferLength; i++)
+                        hash = hash * 23 + p[i];
+                }
+
                 hash = hash * 23 + screenWidth;
                 hash = hash * 23 + screenHeight;
                 hash = hash * 23 + fontSize;

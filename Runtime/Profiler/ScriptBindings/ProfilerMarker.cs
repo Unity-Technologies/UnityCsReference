@@ -10,6 +10,7 @@ using Unity.Profiling.LowLevel.Unsafe;
 
 namespace Unity.Profiling
 {
+    [IgnoredByDeepProfiler]
     internal struct ProfilerMarkerWithStringData
     {
         const MethodImplOptions AggressiveInlining = (MethodImplOptions)256; // MethodImplOptions.AggressiveInlining introduced in .net 4.x
@@ -24,6 +25,7 @@ namespace Unity.Profiling
             };
         }
 
+        [IgnoredByDeepProfiler]
         public struct AutoScope : IDisposable
         {
             private IntPtr _marker;

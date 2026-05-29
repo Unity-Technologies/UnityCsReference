@@ -132,7 +132,7 @@ namespace UnityEditor.Build.Analysis
 
         public void Bind(BuildAnalysis analysis)
         {
-            var steps = analysis?.Tables.Steps;
+            var steps = analysis.Tables.Steps;
             if (steps == null || steps.Length == 0)
             {
                 SetEmpty();
@@ -177,11 +177,11 @@ namespace UnityEditor.Build.Analysis
             var errorBadge = element.Q(className: "build-step-badge--error");
 
             warnBadge.style.display = data.WarningCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            warnBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtils.FormatCount(data.WarningCount);
+            warnBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCount(data.WarningCount);
             warnBadge.tooltip = FormatBadgeTooltip(data.WarningCount, "Warning");
 
             errorBadge.style.display = data.ErrorCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            errorBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtils.FormatCount(data.ErrorCount);
+            errorBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCount(data.ErrorCount);
             errorBadge.tooltip = FormatBadgeTooltip(data.ErrorCount, "Error");
         }
 
@@ -198,7 +198,7 @@ namespace UnityEditor.Build.Analysis
             ((Label)element).text = string.Format(
                 CultureInfo.InvariantCulture,
                 "{0} ({1:F1}%)",
-                FormatUtils.FormatDuration(data.DurationMs),
+                FormatUtility.FormatDuration(data.DurationMs),
                 data.PercentOfTotal);
         }
 

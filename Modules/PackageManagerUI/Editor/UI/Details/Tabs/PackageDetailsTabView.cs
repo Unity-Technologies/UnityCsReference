@@ -40,8 +40,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_ValidTabIds.Clear();
             RefreshTabs(tabs, version);
-            UIUtils.SetElementDisplay(m_BodyContainer, !version.hasEntitlementsError);
-            UIUtils.SetElementDisplay(m_EntitlementsErrorLabel, version.hasEntitlementsError);
+            var hasEnterpriseEntitlementsError = version.hasEntitlementsError && version.isEnterprise;
+            UIUtils.SetElementDisplay(m_BodyContainer, !hasEnterpriseEntitlementsError);
+            UIUtils.SetElementDisplay(m_EntitlementsErrorLabel, hasEnterpriseEntitlementsError);
 
             CalculateTabHeaderDropdown();
         }

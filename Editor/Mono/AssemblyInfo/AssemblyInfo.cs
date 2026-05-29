@@ -121,6 +121,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.PlayMode.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ComponentUtility.Tests.Editor")]
@@ -225,6 +226,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Switch2.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.CodeCoverage.Tests.Editor")]
 //For add Component tests
 [assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.Playmode.EditorScripts.AssetCreation")]
 

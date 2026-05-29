@@ -15,14 +15,12 @@ namespace UnityEngine.UIElements.UIR
             public NativeSlice<Vertex> oldVerts;
             [Unity.Collections.LowLevel.Unsafe.NativeDisableContainerSafetyRestriction]
             public NativeSlice<Vertex> newVerts;
-            public Color32 opacityData;
+            public ushort opacityId;
 
             public void Execute(int i)
             {
                 Vertex vert = oldVerts[i];
-                vert.opacityColorPages.r = opacityData.r;
-                vert.opacityColorPages.g = opacityData.g;
-                vert.ids.b = opacityData.b;
+                vert.opacityId = opacityId;
                 newVerts[i] = vert;
             }
         }
@@ -35,13 +33,13 @@ namespace UnityEngine.UIElements.UIR
         NativeArray<JobHandle> m_Jobs = new NativeArray<JobHandle>(k_JobLimit, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
         int m_NextJobIndex;
 
-        public void CreateJob(NativeSlice<Vertex> oldVerts, NativeSlice<Vertex> newVerts, Color32 opacityData, int vertexCount)
+        public void CreateJob(NativeSlice<Vertex> oldVerts, NativeSlice<Vertex> newVerts, ushort opacityId, int vertexCount)
         {
             JobHandle jobHandle = new OpacityIdUpdateJob
             {
                 oldVerts = oldVerts,
                 newVerts = newVerts,
-                opacityData = opacityData
+                opacityId = opacityId
             }.Schedule(vertexCount, k_VerticesPerBatch);
 
             if (m_NextJobIndex == m_Jobs.Length)

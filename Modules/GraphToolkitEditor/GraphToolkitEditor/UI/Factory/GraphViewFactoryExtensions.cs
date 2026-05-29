@@ -94,7 +94,7 @@ namespace Unity.GraphToolkit.Editor
 
         public static ModelView CreateWire(this ElementBuilder elementBuilder, WireModel model)
         {
-            var ui = new Wire();
+            var ui = new WireView();
             ui.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
             return ui;
         }
@@ -148,17 +148,6 @@ namespace Unity.GraphToolkit.Editor
         {
             var marker = new ErrorMarker();
             marker.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
-
-            Assert.IsNotNull(marker);
-            if (model.Fix != null)
-            {
-                var contextualMenuManipulator = new ContextualMenuManipulator(e =>
-                {
-                    e.menu.AppendAction("Fix Error/" + model.Fix.Description,
-                        _ => model.Fix.QuickFixAction(elementBuilder.View));
-                });
-                marker.AddManipulator(contextualMenuManipulator);
-            }
             return marker;
         }
 

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 
@@ -111,6 +112,9 @@ namespace Unity.UI.Builder
         public static readonly string StyleSelectorElementContainerName = "__unity-selector-container-element";
         public static readonly string StyleSelectorElementName = "__unity-selector-element";
 
+        // Re-exported from the authoring module so both places stay in sync with the UXML.
+        public static readonly string AnimationClipNewButtonName = AnimationClipNewButtonController.AnimationClipNewButtonName;
+
         // Element Linked VE Property Names
         public static readonly string ElementLinkedStyleSheetIndexVEPropertyName = "__unity-ui-builder-linked-stylesheet-index";
         public static readonly string ElementLinkedFakeStyleSelectorVEPropertyName = "__unity-ui-builder-linked-fake-style-selector";
@@ -159,7 +163,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLocalStyleSelectorElementClassName = "unity-builder-inspector__style--selector-element";
         public static readonly string InspectorLocalStyleDefaultStatusClassName = "unity-builder-inspector__style--default";
         public static readonly string InspectorEmptyFoldoutLabelClassName = "unity-builder-inspector__empty-foldout-label";
-        public static readonly string InspectorClassPillNotInDocumentClassName = "unity-builder-class-pill--not-in-document";
+        public static readonly string InspectorClassPillNotInDocumentClassName = "unity-class-pill--not-in-document";
         public static readonly string InspectorClassHelpBox = "unity-builder-inspector__help-box";
         public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
         public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-composite-field-row";
@@ -529,8 +533,8 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerDayZeroStateLabelClassName = "unity-builder-explorer__day-zero-label";
 
         // Selector labels
-        public static readonly string SelectorLabelClassName = "unity-builder-selector-label";
-        public static readonly string SelectorLabelMultiplePartsClassName = "unity-builder-selector-label-multiple-parts";
+        public static readonly string SelectorLabelClassName = "unity-selector-label";
+        public static readonly string SelectorLabelMultiplePartsClassName = "unity-selector-label-multiple-parts";
 
         // StyleSheets Pane Menu
         public static readonly string ExplorerStyleSheetsPanePlusMenuNoElementsMessage = "Need at least one element in UXML to add StyleSheets.";
@@ -711,6 +715,9 @@ namespace Unity.UI.Builder
         public static readonly string SaveDialogExternalChangedAltButton = "Write to temporary file and use external";
         public static readonly string SaveDialogInvalidPathMessage = "Can only save in the 'Assets/' or 'Packages/' folders.";
         public static readonly string SaveDialogReplaceWithNewTemplateMessage = "Changes to your template affect this file. In order to replace this template, we need to save your current file.";
+        public static readonly string SaveDialogCreateUIAnimationClipTitle = "Create UI Animation Clip";
+        public static readonly string SaveDialogCreateUIAnimationClipDefaultName = "New UI Animation";
+        public static readonly string CreateUIAnimationClipUndoMessage = "Create UI Animation Clip";
 
         // Error Dialog Messages
         public static readonly string ErrorDialogNotice = "UI Builder: Notice";

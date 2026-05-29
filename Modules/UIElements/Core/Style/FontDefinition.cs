@@ -15,13 +15,14 @@ namespace UnityEngine.UIElements
     [Serializable]
     public partial struct FontDefinition : IEquatable<FontDefinition>
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static FontDefinition From(in EntityId entityId)
         {
             var obj = Resources.EntityIdToObject(entityId);
             return FromObject(obj);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void To(in FontDefinition fontDefinition, out EntityId entityId)
         {
             var obj = fontDefinition.GetSelectedFont();
@@ -60,6 +61,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal readonly Object GetSelectedFont()
         {
             if (fontAsset != null)

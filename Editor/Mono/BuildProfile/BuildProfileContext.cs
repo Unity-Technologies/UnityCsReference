@@ -893,7 +893,7 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        static bool SetActiveShaderBuildSettings(ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, string[] defines)
+        static bool SetActiveShaderBuildSettings(ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, string[] defines, ShaderBuildSettings.ShaderCompilerSettings[] compilerSettings)
         {
             if (!ActiveProfileHasGraphicsSettings())
                 return false;
@@ -901,24 +901,27 @@ namespace UnityEditor.Build.Profile
             activeProfile.graphicsSettings.shaderBuildSettings = new ShaderBuildSettings
             {
                 keywordDeclarationOverrides = keywordDeclarationOverrides,
-                defines = defines
+                defines = defines,
+                compilerSettings = compilerSettings
             };
             return true;
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        static void GetActiveShaderBuildSettings(out ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, out string[] defines)
+        static void GetActiveShaderBuildSettings(out ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, out string[] defines, out ShaderBuildSettings.ShaderCompilerSettings[] compilerSettings)
         {
             if (!ActiveProfileHasGraphicsSettings())
             {
                 keywordDeclarationOverrides = null;
                 defines = null;
+                compilerSettings = null;
                 return;
             }
 
             var shaderBuildSettings = activeProfile.graphicsSettings.shaderBuildSettings;
             keywordDeclarationOverrides = shaderBuildSettings.keywordDeclarationOverrides;
             defines = shaderBuildSettings.defines;
+            compilerSettings = shaderBuildSettings.compilerSettings;
         }
 
         [RequiredByNativeCode]

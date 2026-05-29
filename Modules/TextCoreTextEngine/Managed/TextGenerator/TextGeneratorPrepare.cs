@@ -545,7 +545,15 @@ namespace UnityEngine.TextCore.Text
                 return character;
 
             if (!canWriteOnAsset && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS))
+            {
+                if (textSettings.defaultSpriteAsset != null)
+                {
+                    SpriteCharacter spriteCharacter = GetSpriteCharacterFromSpriteAssetThreadSafe(unicode, textSettings.defaultSpriteAsset);
+                    if (spriteCharacter != null)
+                        return spriteCharacter;
+                }
                 return null;
+            }
 
             // Search potential list of fallback font assets assigned to the font asset.
             if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
@@ -597,7 +605,15 @@ namespace UnityEngine.TextCore.Text
             }
 
             if (!textSettings.isFallbackOSFontAssetsInitialized && !canWriteOnAsset)
+            {
+                if (textSettings.defaultSpriteAsset != null)
+                {
+                    SpriteCharacter spriteCharacter = GetSpriteCharacterFromSpriteAssetThreadSafe(unicode, textSettings.defaultSpriteAsset);
+                    if (spriteCharacter != null)
+                        return spriteCharacter;
+                }
                 return null;
+            }
             // Search for the character in the list of fallback assigned in the settings (General Fallbacks).
             character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? (generationSettings.fontSize ) : -1), textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
@@ -628,9 +644,9 @@ namespace UnityEngine.TextCore.Text
             // Search for the character in the Default Sprite Asset assigned in the settings file.
             if (textSettings.defaultSpriteAsset != null)
             {
-                if (!canWriteOnAsset && textSettings.defaultSpriteAsset.m_SpriteCharacterLookup == null)
-                    return null;
-                SpriteCharacter spriteCharacter = FontAssetUtilities.GetSpriteCharacterFromSpriteAsset(unicode, textSettings.defaultSpriteAsset, true);
+                SpriteCharacter spriteCharacter = canWriteOnAsset
+                    ? FontAssetUtilities.GetSpriteCharacterFromSpriteAsset(unicode, textSettings.defaultSpriteAsset, true)
+                    : GetSpriteCharacterFromSpriteAssetThreadSafe(unicode, textSettings.defaultSpriteAsset);
 
                 if (spriteCharacter != null)
                     return spriteCharacter;
@@ -1459,6 +1475,47 @@ namespace UnityEngine.TextCore.Text
         {
             // Event to allow users to modify the content of the text info before the text is rendered.
             OnMissingCharacter?.Invoke(unicode, stringIndex, textInfo, fontAsset);
+        }
+
+        /// <summary>
+        /// Thread-safe sprite character lookup that avoids lazy initialization and shared static mutation.
+        /// Uses m_SpriteCharacterLookup field directly and a local HashSet for cycle detection.
+        /// </summary>
+        static SpriteCharacter GetSpriteCharacterFromSpriteAssetThreadSafe(uint unicode, SpriteAsset spriteAsset)
+        {
+            if (spriteAsset.m_SpriteCharacterLookup == null)
+                return null;
+
+            if (spriteAsset.m_SpriteCharacterLookup.TryGetValue(unicode, out SpriteCharacter spriteCharacter))
+                return spriteCharacter;
+
+            var searched = new HashSet<int> { spriteAsset.GetHashCode() };
+            return GetSpriteFromFallbacksThreadSafe(unicode, spriteAsset.fallbackSpriteAssets, searched);
+        }
+
+        static SpriteCharacter GetSpriteFromFallbacksThreadSafe(uint unicode, List<SpriteAsset> fallbacks, HashSet<int> searched)
+        {
+            if (fallbacks == null)
+                return null;
+
+            for (int i = 0; i < fallbacks.Count; i++)
+            {
+                SpriteAsset fallback = fallbacks[i];
+                if (fallback == null || !searched.Add(fallback.GetHashCode()))
+                    continue;
+
+                if (fallback.m_SpriteCharacterLookup == null)
+                    continue;
+
+                if (fallback.m_SpriteCharacterLookup.TryGetValue(unicode, out SpriteCharacter spriteCharacter))
+                    return spriteCharacter;
+
+                spriteCharacter = GetSpriteFromFallbacksThreadSafe(unicode, fallback.fallbackSpriteAssets, searched);
+                if (spriteCharacter != null)
+                    return spriteCharacter;
+            }
+
+            return null;
         }
     }
 }
