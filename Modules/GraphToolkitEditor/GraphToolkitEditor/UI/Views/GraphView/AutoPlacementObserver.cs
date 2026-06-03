@@ -83,7 +83,7 @@ namespace Unity.GraphToolkit.Editor
                         return;
 
                     var wireModel = graphModel.GetModel(modelToReposition.WireModel);
-                    if (wireModel != null && model.GetView<GraphElement>(m_GraphView) == null)
+                    if (wireModel != null && wireModel.GetView<GraphElement>(m_GraphView) == null)
                         return;
                 }
             }

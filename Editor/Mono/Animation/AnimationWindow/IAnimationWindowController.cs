@@ -13,8 +13,6 @@ namespace UnityEditor
     {
         void OnSelectionChanged();
 
-        void OnPlayModeStateChanged(PlayModeStateChange state);
-
         float time { get; set; }
         int frame { get; set; }
 

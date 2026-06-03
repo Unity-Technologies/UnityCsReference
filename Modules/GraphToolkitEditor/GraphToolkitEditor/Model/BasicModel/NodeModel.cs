@@ -1402,6 +1402,13 @@ namespace Unity.GraphToolkit.Editor
             base.OnConnection(selfConnectedPortModel, otherConnectedPortModel);
 
             GetPortInfos(selfConnectedPortModel.Direction).orderedVisiblePorts.Clear();
+
+            if (!selfConnectedPortModel.AreAncestorsExpanded || m_Collapsed)
+            {
+                // Port visibility changes: sub-port with a collapsed ancestor becomes visible when connected;
+                // top-level port on a collapsed node depends on IsConnected(). Notify so the UI updates.
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />
@@ -1413,6 +1420,11 @@ namespace Unity.GraphToolkit.Editor
             {
                 GetPortInfos(selfConnectedPortModel.Direction).orderedVisiblePorts.Clear();
 
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+            }
+            else if (m_Collapsed)
+            {
+                // On a collapsed node, top-level port visibility depends on IsConnected().
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
             }
         }

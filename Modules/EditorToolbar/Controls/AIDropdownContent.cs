@@ -239,6 +239,8 @@ class AIDropdownContent : PopupWindowContent
 
     void OnClicked()
     {
+        EditorAIAssistantAnalytics.ReportAIInstallAcceptedEvent();
+
         Debug.Log($"Installing AI Packages.\n{string.Join("\n", data.packages)}");
 
         AIDropdownConfig.instance.termsAccepted = true;

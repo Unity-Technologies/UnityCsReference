@@ -2613,7 +2613,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (panel.GetCapturingElement(PointerId.mousePointerId) == null)
             {
-                Vector3 frameTranslation = Vector3.zero;
+                Vector3 frameTranslation = new Vector3(layout.width / 2f, layout.height / 2f, 0);
                 Vector3 frameScaling = Vector3.one;
                 Dispatch(new ReframeGraphViewCommand(frameTranslation, frameScaling));
                 e.StopPropagation();
@@ -3283,7 +3283,7 @@ namespace Unity.GraphToolkit.Editor
 
         void HideAutoPlacedElements()
         {
-            if (m_UpdateObserver == null || GraphViewModel == null)
+            if (m_UpdateObserver == null || GraphViewModel == null || GraphModel == null)
                 return;
 
             // Models that need repositioning are hidden until they are moved by the observer next frame.
@@ -3292,6 +3292,34 @@ namespace Unity.GraphToolkit.Editor
                 var autoPlacementChangeset = GraphViewModel.AutoPlacementState.GetAggregatedChangeset(autoPlacementObservation.LastObservedVersion);
                 if (autoPlacementChangeset != null && autoPlacementChangeset.ModelsToHideDuringAutoPlacement.Count != 0)
                 {
+                    // We hide elements only if there is a live node pending auto-placement.
+                    // When undoing the creation of a node, the node no longer exists in the graph.
+                    // No need to hide it and the wire it was connected to (this would cause the wire to become invisible after undo).
+                    var hasLiveAutoPlacementNode = false;
+                    foreach (var modelToReposition in autoPlacementChangeset.ModelsToRepositionAtCreation)
+                    {
+                        if (GraphModel.GetModel(modelToReposition.Model) != null)
+                        {
+                            hasLiveAutoPlacementNode = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasLiveAutoPlacementNode)
+                    {
+                        foreach (var modelGuid in autoPlacementChangeset.ModelsToAutoAlign)
+                        {
+                            if (GraphModel.GetModel(modelGuid) != null)
+                            {
+                                hasLiveAutoPlacementNode = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasLiveAutoPlacementNode)
+                        return;
+
                     foreach (var elementToHide in autoPlacementChangeset.ModelsToHideDuringAutoPlacement)
                     {
                         var childView = elementToHide.GetView(this);

@@ -66,19 +66,30 @@ namespace UnityEditor.Scripting
 
         internal static void Cleanup()
         {
-            if (Application.platform == RuntimePlatform.WindowsEditor)
+            var isWindows = Application.platform == RuntimePlatform.WindowsEditor;
+            if (isWindows)
             {
                 // Use CreateProcessW as opposed to C# Process class to run
                 // the script so that we could disable handle inheritance
                 STARTUPINFOW startInfo = default;
                 startInfo.cb = (uint)Marshal.SizeOf<STARTUPINFOW>();
 
-                var batFile = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynScripts", "kill_csc_server.bat");
-                if (!CreateProcessW(null, $"cmd.exe /c \"{batFile}\"", IntPtr.Zero, IntPtr.Zero, false, ProcessCreationFlags.CREATE_NO_WINDOW, IntPtr.Zero, null, ref startInfo, out var _))
+                if (!CreateProcessW(null, $"\"{NetCoreProgram.DotNetMuxerPath}\" build-server shutdown", IntPtr.Zero, IntPtr.Zero, false, ProcessCreationFlags.CREATE_NO_WINDOW, IntPtr.Zero, null, ref startInfo, out var _))
                 {
                     var lastError = Marshal.GetLastWin32Error();
                     Debug.LogError("Failed to kill csc server process: " + new Win32Exception(lastError).Message);
                 }
+            }
+            else
+            {
+                // Fire-and-forget: Don't wait for exit to avoid blocking the editor
+                using var _ = System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo(NetCoreProgram.DotNetMuxerPath.ToString())
+                    {
+                        Arguments = "build-server shutdown",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    });
             }
         }
     }

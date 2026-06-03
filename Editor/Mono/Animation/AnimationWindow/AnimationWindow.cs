@@ -259,6 +259,7 @@ namespace UnityEditor
 
             Undo.undoRedoEvent += UndoRedoPerformed;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
         }
 
         void OnDisable()
@@ -268,6 +269,7 @@ namespace UnityEditor
 
             Undo.undoRedoEvent -= UndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
         }
 
         void OnDestroy()
@@ -503,18 +505,35 @@ namespace UnityEditor
                 }
                 else
                 {
-                    selection?.OnPlayModeStateChanged(state);
+                    // Purge selection before domain reload to prevent stale GameObject references
+                    PurgeSelection();
                 }
             }
             else
             {
-                selection?.OnPlayModeStateChanged(state);
+                // Purge selection before domain reload on ExitingPlayMode
+                if (state == PlayModeStateChange.ExitingPlayMode)
+                {
+                    PurgeSelection();
+                }
 
                 if (state == PlayModeStateChange.EnteredEditMode)
                 {
                     // Reload selection
                     OnSelectionChangeInternal(false);
                 }
+            }
+        }
+
+        private void PurgeSelection()
+        {
+            // Clear selection to prevent stale GameObject references during domain reload.
+            // Note: Dispose() will also stop preview by disposing the controller.
+            // This matches the behavior during assembly reload (script compilation).
+            if (state != null)
+            {
+                state.linkedWithSequencer = false;
+                state.selection = new FallbackSelectionItem();
             }
         }
 

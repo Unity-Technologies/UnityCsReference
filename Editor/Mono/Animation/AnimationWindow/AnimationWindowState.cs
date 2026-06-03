@@ -332,17 +332,9 @@ namespace UnityEditorInternal
             }
         }
 
-        private void PurgeSelection()
-        {
-            linkedWithSequencer = false;
-            m_Selection?.Dispose();
-            m_Selection = new FallbackSelectionItem();
-        }
-
         public void OnEnable()
         {
             Undo.undoRedoEvent += UndoRedoPerformed;
-            AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
             AnimationUtility.onCurveWasModified += CurveWasModified;
 
             // NoOps...
@@ -357,7 +349,6 @@ namespace UnityEditorInternal
         public void OnDisable()
         {
             Undo.undoRedoEvent -= UndoRedoPerformed;
-            AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
             AnimationUtility.onCurveWasModified -= CurveWasModified;
 
             previewing = false;
