@@ -13,6 +13,7 @@ namespace Unity.Profiling.Editor.UI
     class SystemsImpactViewController : ViewController
     {
         // Model.
+        readonly IProfilerCaptureDataService m_DataService;
         readonly string m_Title;
         SystemsImpactModel? m_Model;
 
@@ -22,8 +23,9 @@ namespace Unity.Profiling.Editor.UI
         VisualElement m_ItemsContainer;
         ActivityIndicatorOverlay m_ActivityOverlay;
 
-        public SystemsImpactViewController(string title)
+        public SystemsImpactViewController(IProfilerCaptureDataService dataService, string title)
         {
+            m_DataService = dataService;
             m_Title = title;
             UserAccessiblitySettings.colorBlindConditionChanged += OnColorBlindSettingChanged;
         }

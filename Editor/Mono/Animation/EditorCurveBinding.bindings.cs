@@ -3,12 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
-using UnityEngine.Playables;
-using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.Internal;
 using UnityEngine;
+using UnityEngine.Bindings;
 using static UnityEditor.AnimationUtility;
 
 namespace UnityEditor
@@ -115,7 +111,7 @@ namespace UnityEditor
             EditorCurveBinding binding;
             BaseCurve(inPath, inType, inPropertyName, out binding);
             binding.m_isPPtrCurve = 1;
-            binding.m_isDiscreteCurve = 1;
+            binding.m_isDiscreteCurve = 0;
             binding.m_isSerializeReferenceCurve = 0;
             binding.m_isUnknownCurve = 0;
             return binding;
@@ -149,7 +145,7 @@ namespace UnityEditor
             EditorCurveBinding binding;
             BaseCurve(inPath, inType, $"managedReferences[{refID}].{inPropertyName}", out binding);
             binding.m_isPPtrCurve = isPPtr ? 1 : 0;
-            binding.m_isDiscreteCurve = isDiscrete || isPPtr ? 1 : 0;
+            binding.m_isDiscreteCurve = isDiscrete ? 1 : 0;
             binding.m_isSerializeReferenceCurve = 1;
             binding.m_isUnknownCurve = 0;
 

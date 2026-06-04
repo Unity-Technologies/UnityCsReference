@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditor.UIElements;
 using UnityEditorInternal.Profiling;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Unity.Profiling.Editor.UI.TopMarkersModel;
 
@@ -22,7 +24,7 @@ namespace Unity.Profiling.Editor.UI
      *          - When Profiler data is recording, ensure the child view controllers are reloaded once recording stops (via a timer).
                 - When a new selection is made in the Profiler window, ensure the SelectionSummaryViewController is reloaded now or when next displayed.
      */
-    class BottlenecksDetailsViewController : ViewController, SummaryViewController.IResponder
+    class BottlenecksDetailsViewController : ViewController, SummaryViewController.IResponder, IDetailsElementBinder
     {
         // Model.
         readonly IProfilerCaptureDataService m_DataService;
@@ -34,6 +36,7 @@ namespace Unity.Profiling.Editor.UI
         bool m_SelectionSummaryRequiresReload;
         double m_TimeOfLastNewProfilerFrame;
         bool m_IsWaitingForNoNewFramesToReloadData;
+        protected readonly Dictionary<VisualElement, IDetailsProvider> m_DetailsProviders = new();
 
         // View.
         ToolbarMenu m_SummaryTypeMenu;
@@ -93,6 +96,7 @@ namespace Unity.Profiling.Editor.UI
                    m_SettingsService,
                    m_ProfilerWindow,
                    responder: this,
+                   this,
                    true);
             AddChild(m_CaptureSummaryViewController);
 
@@ -100,7 +104,8 @@ namespace Unity.Profiling.Editor.UI
                    m_DataService,
                    m_SettingsService,
                    m_ProfilerWindow,
-                   responder: this);
+                   responder: this,
+                   this);
             AddChild(m_SelectionSummaryViewController);
 
             m_RecordingLabel.text = "Recording...";
@@ -114,6 +119,9 @@ namespace Unity.Profiling.Editor.UI
             }
 
             ShowSummary(selectedSummaryType);
+
+            // Register mouse click handler
+            View.RegisterCallback<PointerDownEvent>(OnPointerDown);
         }
 
         protected override void Dispose(bool disposing)
@@ -408,6 +416,77 @@ namespace Unity.Profiling.Editor.UI
             None,
             Capture,
             Selection
+        }
+        public void BindDetailsElement(VisualElement detailsElement, IDetailsProvider detailsProvider)
+        {
+            m_DetailsProviders[detailsElement] = detailsProvider;
+        }
+
+        public void UnbindDetailsElement(VisualElement detailsElement)
+        {
+            m_DetailsProviders.Remove(detailsElement);
+        }
+
+        void OnPointerDown(PointerDownEvent evt)
+        {
+            // If no target, return early
+            var target = evt.target as VisualElement;
+            if (target == null)
+                return;
+
+            // If no right mouse button clicked, return early
+            if (evt.button != (int)MouseButton.RightMouse)
+                return;
+
+            // Go up the hierarchy and try to find a bound details provider
+            IDetailsProvider detailsProvider = null;
+            VisualElement currentElement = target;
+            while (currentElement != null)
+            {
+                if (m_DetailsProviders.TryGetValue(currentElement, out detailsProvider))
+                    break;
+
+                currentElement = currentElement.parent;
+            }
+
+            if (detailsProvider == null)
+                return;
+
+            // Show assistant popup window on right mouse click
+            if (!((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).CpuProfilerAssistantSupported)
+                return;
+
+            // Create and show context menu
+            var dropdownMenu = new DropdownMenu();
+            dropdownMenu.AppendAction("Ask Assistant", (action) =>
+            {
+                try
+                {
+                    IDetailsProvider.AssistantRequestContext context = detailsProvider.GetAssistantContext(m_DataService);
+
+                    // Invoke profiler assistant
+                    var layout = target.localBound;
+                    var worldPos = target.LocalToWorld(new Vector2());
+                    var screenPos = GUIUtility.GUIToScreenPoint(worldPos);
+                    var screenRect = new Rect(screenPos, layout.size);
+
+                    var attachment = new CpuProfilerAssistantController.CpuProfilerContext(m_ProfilerWindow.CurrentLoadedCaptureFile,
+                        context.Attachment.FrameRange, context.Attachment.ThreadName, context.Attachment.MarkerIdPath, context.Attachment.MarkerName);
+                    string prompt = context.Prompt;
+
+                    ((UnityEditorInternal.IProfilerWindowController)m_ProfilerWindow).RequestCpuProfilerAssistance(screenRect, attachment, prompt);
+
+                    const string k_LinkDescription_AskAssistant= "Ask Assistant (Context Menu)";
+                    UnityEditor.Profiling.Analytics.ProfilerWindowAnalytics.SendBottleneckLinkSelectedEvent(k_LinkDescription_AskAssistant);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"Failed to launch Profiler Assistant: {e.Message}");
+                }
+            });
+
+            View.panel.contextualMenuManager.DisplayMenu(evt, target, dropdownMenu);
+            evt.StopPropagation();
         }
     }
 }

@@ -39,6 +39,12 @@ namespace UnityEngine
             set;
         }
 
+        internal extern Vector3 inverseCellStride
+        {
+            [FreeFunction("GridBindings::GetInverseCellStride", HasExplicitThis = true)]
+            get;
+        }
+
         [FreeFunction("GridBindings::CellSwizzle")]
         public extern static Vector3 Swizzle(GridLayout.CellSwizzle swizzle, Vector3 position);
 

@@ -36,12 +36,15 @@ namespace Unity.Profiling.Editor.UI
             const int k_FrameTimingManagerFixedDelay = 4;
             var gpuFrameIndex = frameIndex + k_FrameTimingManagerFixedDelay;
             var gpuActiveDurationNs = 0UL;
-            using (var mainThreadData = dataService.GetRawFrameDataView(gpuFrameIndex, k_MainThreadIndex))
+            if (gpuFrameIndex < dataService.FirstFrameIndex + dataService.FrameCount)
             {
-                if (mainThreadData.valid)
+                using (var mainThreadData = dataService.GetRawFrameDataView(gpuFrameIndex, k_MainThreadIndex))
                 {
-                    const string k_GpuFrameTimeCounterName = "GPU Frame Time";
-                    gpuActiveDurationNs = GetCounterValueAsUInt64(mainThreadData, k_GpuFrameTimeCounterName);
+                    if (mainThreadData.valid)
+                    {
+                        const string k_GpuFrameTimeCounterName = "GPU Frame Time";
+                        gpuActiveDurationNs = GetCounterValueAsUInt64(mainThreadData, k_GpuFrameTimeCounterName);
+                    }
                 }
             }
 

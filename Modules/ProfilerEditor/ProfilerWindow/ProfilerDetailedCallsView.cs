@@ -646,7 +646,11 @@ namespace UnityEditorInternal.Profiling
             InitIfNeeded();
             UpdateIfNeeded(frameDataView, selectedId);
 
+            GUILayout.BeginVertical();
             GUILayout.Label(m_TotalSelectedPropertyTimeLabel, EditorStyles.label);
+            DrawAssistantButton(selectedId);
+            GUILayout.EndVertical();
+
             SplitterGUILayout.BeginVerticalSplit(m_VertSplit, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
             // Callees

@@ -30,8 +30,8 @@ namespace UnityEditor.Build.Profile
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
         const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
-        const string k_HeroPathPrefix = "BuildProfile/Hero/";
-        const string k_HeroPathSuffix = ".Hero";
+        const string k_HeroImagesPath = "BuildProfile/Icons/Hero/";
+        const string k_HeroSuffix = ".Hero.png";
         // The asset database supports file name length to max. 250 symbols
         // Leave 5 symbols for the GenerateUniqueAssetPath() that adds " (1)"(2,3...) in case
         // an asset with such name already exists.
@@ -143,12 +143,8 @@ namespace UnityEditor.Build.Profile
             if (LoadBuildProfileIcon(platformId, out Texture2D icon))
                 return icon;
 
-            // Attempt to load the hero icon for the platform
-            icon = EditorGUIUtility.LoadIcon($"{k_HeroPathPrefix}{GetPlatformIconId(platformId)}{k_HeroPathSuffix}");
-
-            // If no specific hero icon is found, fallback to the platform icon
-            if (icon == null)
-                icon = GetPlatformIcon(platformId);
+            // Attempt to load the hero icon for the platform, if no specific hero icon is found, fallback to the platform icon
+            icon = EditorGUIUtility.LoadIcon($"{k_HeroImagesPath}{GetPlatformIconId(platformId)}{k_HeroSuffix}") ?? GetPlatformIcon(platformId);
 
             return icon;
         }
@@ -909,6 +905,10 @@ namespace UnityEditor.Build.Profile
                     {
                         PlayerSettings.SyncVirtualTexturingState(nextPlayerSettings);
                     }
+                    if (ContainsPlayerSetting(settingsRequiringRestart, PlayerSettingsRequiringRestart.GraphicsAPI))
+                    {
+                        PlayerSettings.SyncSettingsAndCleanSettings();
+                    }
 
                     EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                     return true;
@@ -1010,6 +1010,7 @@ namespace UnityEditor.Build.Profile
                     PlayerSettingsRequiringRestart.ActiveInputHandling => "Active Input Handling",
                     PlayerSettingsRequiringRestart.GraphicsJobs => "Graphics Jobs",
                     PlayerSettingsRequiringRestart.VirtualTexturing => "Virtual Texturing",
+                    PlayerSettingsRequiringRestart.GraphicsAPI => "Graphics API",
                     _ => string.Empty
                 };
                 settingsText.AppendLine(settingPromptText);

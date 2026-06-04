@@ -1131,51 +1131,56 @@ namespace UnityEditor
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
 
-            // Add ellipsis truncation for labels
+            // Add ellipsis truncation for labels. We have to restore the original clipping in a
+            // finally block because sub-methods may throw an exception, which would otherwise leak
+            // the mutated shared style to the rest of the editor.
             var previousTextClipping = EditorStyles.label.clipping;
             EditorStyles.label.clipping = TextClipping.Ellipsis;
-
-            int sectionIndex = 0;
-
-            if (serializedObjectUpdated)
+            try
             {
-                m_IconsEditor.SerializedObjectUpdated();
-                foreach (var settingsExtension in m_SettingsExtensions)
+                int sectionIndex = 0;
+
+                if (serializedObjectUpdated)
                 {
-                    settingsExtension?.SerializedObjectUpdated();
+                    m_IconsEditor.SerializedObjectUpdated();
+                    foreach (var settingsExtension in m_SettingsExtensions)
+                    {
+                        settingsExtension?.SerializedObjectUpdated();
+                    }
+                }
+
+                m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
+
+                ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+                PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+
+                PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
+
+                EditorGUILayout.EndPlatformGrouping();
+
+                serializedObject.ApplyModifiedProperties();
+
+                if (hasPresetWindowClosed)
+                {
+                    // We recompile after the window is closed just to make sure all the values are set/shown correctly.
+                    // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
+                    // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
+                    SetReason(RecompileReason.presetChanged);
+
+                    OnPresetSelectorClosed();
+                }
+                else if (HasReasonToCompile())
+                {
+                    RecompileScripts();
                 }
             }
-
-            m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
-
-            ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-            PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
-
-            PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
-
-            EditorGUILayout.EndPlatformGrouping();
-
-            serializedObject.ApplyModifiedProperties();
-
-            if (hasPresetWindowClosed)
+            finally
             {
-                // We recompile after the window is closed just to make sure all the values are set/shown correctly.
-                // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
-                // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
-                SetReason(RecompileReason.presetChanged);
-
-                OnPresetSelectorClosed();
+                EditorStyles.label.clipping = previousTextClipping;
             }
-            else if (HasReasonToCompile())
-            {
-                RecompileScripts();
-            }
-
-            // Resetting truncation of labels back
-            EditorStyles.label.clipping = previousTextClipping;
         }
 
         void DisplayBuildProfileHelpBoxIfNeeded()
@@ -1594,9 +1599,9 @@ namespace UnityEditor
         }
         private ChangeGraphicsApiAction CheckApplyGraphicsAPIList(BuildTarget target, bool firstEntryChanged, bool cancelAPIChange)
         {
-            bool doRestart = false;
             // If we're changing the first API for relevant editor, this will cause editor to switch: ask for scene save & confirmation
-            if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target))
+            // Also check if the current Player Settings are of the active build platform. If not, we simply dirty the value (which is handled elsewhere) and request a restart when changing the active build profile.
+            if (firstEntryChanged && WillEditorUseFirstGraphicsAPI(target) && IsActivePlayerSettingsEditor())
             {
                 // If we have dirty scenes we need to save or discard changes before we restart editor.
                 // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
@@ -1612,38 +1617,51 @@ namespace UnityEditor
                     var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
                         "Save and Restart", cancelAPIChange ? "Cancel Changing API" : "Not now", "Discard Changes and Restart");
-                    if (result == 1)
+                        
+                    switch (result)
                     {
-                        doRestart = false; // Cancel was selected
-                    }
-                    else
-                    {
-                        doRestart = true;
-                        if (result == 0) // Save and Restart was selected
+                    case 0: // Save scene changes and restart
+                        bool restart = true;
+                        for (int i = 0; i < dirtyScenes.Count; ++i)
                         {
-                            for (int i = 0; i < dirtyScenes.Count; ++i)
+                            var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
+                            if (!saved)
                             {
-                                var saved = EditorSceneManager.SaveScene(dirtyScenes[i]);
-                                if (saved == false)
-                                {
-                                    doRestart = false;
-                                }
+                                restart = false;
                             }
                         }
-                        else // Discard Changes and Restart was selected
-                        {
-                            for (int i = 0; i < dirtyScenes.Count; ++i)
-                                EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
-                        }
+                        return new ChangeGraphicsApiAction(restart, restart);
+                    
+                    case 2: // Discard scene changes and restart
+                        for (int i = 0; i < dirtyScenes.Count; ++i)
+                            EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                        
+                        return new ChangeGraphicsApiAction(true, true);
+                    
+                    case 1: // Cancel Changing API or Restart Later
+                    default:
+                        if (cancelAPIChange)
+                            return new ChangeGraphicsApiAction(false, false);
+                        else
+                            return new ChangeGraphicsApiAction(true, false);
                     }
                 }
                 else
                 {
-                    doRestart = EditorUtility.DisplayDialog("Changing editor graphics API",
+                    var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor.",
-                        "Restart Editor", "Not now");
+                        "Discard Changes and Restart", "Cancel Changing API", "Not now");
+
+                    return result switch
+                    {
+                        // Keep changes and restart now
+                        0 => new ChangeGraphicsApiAction(true, true),
+                        // Keep changes but restart later
+                        2 => new ChangeGraphicsApiAction(true, false),
+                        // Cancel and revert changes
+                        _ => new ChangeGraphicsApiAction(false, false),
+                    };
                 }
-                return new ChangeGraphicsApiAction(doRestart, doRestart);
             }
             else
             {

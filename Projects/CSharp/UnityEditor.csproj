@@ -51,6 +51,9 @@
     <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasInspector.cs">
       <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\AI\EditorAIAssistantAnalytics.cs">
+      <Link>Editor\Mono\AI\EditorAIAssistantAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Accessibility\UserAccessibilitySettings.cs">
       <Link>Editor\Mono\Accessibility\UserAccessibilitySettings.cs</Link>
     </Compile>
@@ -8100,6 +8103,15 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\IProfilerAssistantService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\IProfilerAssistantService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\MarkersInformationProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Assistant\ProfilerAssistantController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Assistant\ProfilerAssistantController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\BottlenecksChartViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\BottlenecksChartViewController.cs</Link>
     </Compile>
@@ -8157,6 +8169,12 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ReadOnlyFloatField.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Components\ReadOnlyFloatField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsElementBinder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsElementBinder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\DetailsPanel\IDetailsProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\FoldableSectionViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FoldableSection\FoldableSectionViewController.cs</Link>
     </Compile>
@@ -8189,9 +8207,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCCollect\FrameGCCollectViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameGCCollect\FrameGCCollectViewController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameSummary\FrameSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\FrameSummary\FrameSummaryViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\BottlenecksModelBuilder.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\ModelBuilders\BottlenecksBuilders\BottlenecksModelBuilder.cs</Link>
@@ -8277,11 +8292,14 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeGCAllocations\GCAllocationsViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeGCAllocations\GCAllocationsViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeSummary\RangeSummaryViewController.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\RangeSummary\RangeSummaryViewController.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SelectionSummary\SelectionSummaryViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SelectionSummary\SelectionSummaryViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\FrameSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\FrameSummaryViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\RangeSummaryViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\RangeSummaryViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\Summary\SummaryViewController.cs</Link>
@@ -8294,6 +8312,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemsImpactViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\SystemsImpact\SystemsImpactViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkerDetailsProvider.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkerDetailsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkerItem.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Overview\TopMarkers\TopMarkerItem.cs</Link>

@@ -94,6 +94,8 @@ namespace UnityEditor
 
         internal void Dispose()
         {
+            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog();
+
             UserSettings.ToConfig(m_CurrentRoot);
 
             m_Labels.Clear();

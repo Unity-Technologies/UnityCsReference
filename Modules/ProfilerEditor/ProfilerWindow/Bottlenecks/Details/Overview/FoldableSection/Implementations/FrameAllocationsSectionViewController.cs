@@ -18,13 +18,19 @@ namespace Unity.Profiling.Editor.UI
         readonly FrameGCCollectViewController m_GCCollectViewController;
 
         public FrameAllocationsSectionViewController(
-            TopMarkersViewController.IResponder topMarkersResponder) : base(k_Title)
+            ProfilerWindow profilerWindow,
+            TopMarkersViewController.IResponder topMarkersResponder,
+            IDetailsElementBinder detailsBinder) : base(k_Title)
         {
-            m_GCAllocationsViewController = new FrameGCAllocationsViewController("GC allocations in frame");
+            m_GCAllocationsViewController = new FrameGCAllocationsViewController("GC allocations in frame",
+                profilerWindow,
+                detailsBinder);
             m_TopGCMarkersViewController = new TopMarkersViewController(
                 "Top contributors to GC allocations in frame",
+                profilerWindow,
                 TopMarkersViewController.Action.SwitchToCpuModule,
-                topMarkersResponder);
+                topMarkersResponder,
+                detailsBinder);
             m_GCCollectViewController = new FrameGCCollectViewController("GC Collect (ms)");
         }
 

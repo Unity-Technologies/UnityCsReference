@@ -37,16 +37,12 @@ namespace UnityEditor.Connect
         const string k_CoppaNotCompliantJsonValue = "not_compliant";
 
         internal const string coppaContainerName = "CoppaContainer";
-        const string k_PersistContainerName = "PersistContainer";
         const string k_CoppaFieldName = "CoppaField";
         const string k_CoppaLearnLinkBtnName = "CoppaLearnLinkBtn";
-        const string k_SaveBtnName = "SaveBtn";
-        const string k_CancelBtnName = "CancelBtn";
 
         VisualElement m_CoppaContainer;
 
-        public SaveButtonCallback saveButtonCallback { private get; set; }
-        public CancelButtonCallback cancelButtonCallback { private get; set; }
+        public ChangeCallback changeCallback { private get; set; }
         public ExceptionCallback exceptionCallback { private get; set; }
 
         public VisualElement coppaContainer => m_CoppaContainer;
@@ -72,7 +68,6 @@ namespace UnityEditor.Connect
             var coppaTemplate = EditorGUIUtility.Load(k_CoppaTemplatePath) as VisualTreeAsset;
             rootVisualElement.Add(coppaTemplate.CloneTree().contentContainer);
             m_CoppaContainer = rootVisualElement.Q(coppaContainerName);
-            var persistContainer = m_CoppaContainer.Q(k_PersistContainerName);
             var coppaField = BuildPopupField(m_CoppaContainer, k_CoppaFieldName);
 
             //Setup dashboard link
@@ -91,131 +86,123 @@ namespace UnityEditor.Connect
             coppaField.choices = coppaChoicesList;
             SetCoppaFieldValue(originalCoppaValue, coppaField);
 
-            persistContainer.Q<Button>(k_SaveBtnName).clicked += () =>
+            coppaField.RegisterValueChangedCallback(evt =>
             {
-                try
+                if (evt.newValue == GetFieldValueForCompliancy(UnityConnect.instance.GetProjectInfo().COPPA.ToCOPPACompliance()))
                 {
-                    ServicesConfiguration.instance.RequestCurrentProjectCoppaApiUrl(projectCoppaApiUrl =>
+                    return;
+                }
+                ApplyCoppaChange(coppaField);
+            });
+        }
+
+        void ApplyCoppaChange(PopupField<string> coppaField)
+        {
+            var originalCoppaValue = UnityConnect.instance.GetProjectInfo().COPPA;
+            var payloadValue = GetCompliancyJsonValueFromFieldValue(coppaField);
+            var newCompliancyValue = GetCompliancyForFieldValue(coppaField);
+            SetEnabledCoppaControls(coppaContainer, false);
+            try
+            {
+                ServicesConfiguration.instance.RequestCurrentProjectCoppaApiUrl(projectCoppaApiUrl =>
+                {
+                    UnityWebRequest currentSaveRequest = null;
+                    try
                     {
-                        var payload = $"{{\"coppa\":\"{GetCompliancyJsonValueFromFieldValue(coppaField)}\"}}";
+                        var payload = $"{{\"coppa\":\"{payloadValue}\"}}";
                         var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
-                        var currentSaveRequest = new UnityWebRequest(projectCoppaApiUrl, UnityWebRequest.kHttpVerbPUT)
+                        currentSaveRequest = new UnityWebRequest(projectCoppaApiUrl, UnityWebRequest.kHttpVerbPUT)
                         { uploadHandler = uploadHandler};
                         currentSaveRequest.suppressErrorsToConsole = true;
                         currentSaveRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                         currentSaveRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
                         var operation = currentSaveRequest.SendWebRequest();
-                        SetEnabledCoppaControls(coppaContainer, false);
-                        operation.completed += asyncOperation =>
+                        operation.completed += _ =>
                         {
                             try
                             {
-                                if (currentSaveRequest.responseCode == k_HttpStatusNoContent)
-                                {
-                                    try
-                                    {
-                                        var newCompliancyValue = GetCompliancyForFieldValue(coppaField);
-                                        if (!UnityConnect.instance.SetCOPPACompliance(newCompliancyValue))
-                                        {
-                                            EditorAnalytics.SendCoppaComplianceEvent(new CoppaState() { isCompliant = newCompliancyValue == COPPACompliance.COPPACompliant });
-
-                                            SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                            SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                            exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage));
-                                        }
-                                        else
-                                        {
-                                            originalCoppaValue = newCompliancyValue.ToCoppaCompliance();
-                                            SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                            SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                            NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Info,
-                                                L10n.Tr(CoppaComplianceChangedMessage));
-                                            saveButtonCallback?.Invoke(originalCoppaValue);
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                        SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                        exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage, ex));
-                                    }
-                                    finally
-                                    {
-                                        currentSaveRequest.Dispose();
-                                        currentSaveRequest = null;
-                                    }
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        SetCoppaFieldValue(originalCoppaValue, coppaField);
-                                        SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                                        exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceWebConfigurationException(L10n.Tr(k_CoppaUnexpectedSaveRequestBehaviorMessage))
-                                        {
-                                            error = currentSaveRequest.error,
-                                            method = currentSaveRequest.method,
-                                            timeout = currentSaveRequest.timeout,
-                                            url = currentSaveRequest.url,
-                                            responseHeaders = currentSaveRequest.GetResponseHeaders(),
-                                            responseCode = currentSaveRequest.responseCode,
-                                            isHttpError = (currentSaveRequest.result == UnityWebRequest.Result.ProtocolError),
-                                            isNetworkError = (currentSaveRequest.result == UnityWebRequest.Result.ConnectionError),
-                                        });
-                                    }
-                                    finally
-                                    {
-                                        currentSaveRequest.Dispose();
-                                        currentSaveRequest = null;
-                                    }
-                                }
+                                HandleSaveResponse(currentSaveRequest, coppaField, originalCoppaValue, newCompliancyValue);
                             }
                             finally
                             {
+                                currentSaveRequest.Dispose();
                                 SetEnabledCoppaControls(coppaContainer, true);
                             }
                         };
-                    });
+                    }
+                    catch (Exception ex)
+                    {
+                        HandleApplyException(ex, originalCoppaValue, coppaField, currentSaveRequest);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                HandleApplyException(ex, originalCoppaValue, coppaField);
+            }
+        }
+
+        void HandleApplyException(Exception ex, CoppaCompliance originalCoppaValue, PopupField<string> coppaField, UnityWebRequest request = null)
+        {
+            request?.Dispose();
+            SetCoppaFieldValue(originalCoppaValue, coppaField);
+            SetEnabledCoppaControls(coppaContainer, true);
+            exceptionCallback?.Invoke(originalCoppaValue, ex);
+        }
+
+        void HandleSaveResponse(UnityWebRequest request, PopupField<string> coppaField, CoppaCompliance originalCoppaValue, COPPACompliance newCompliancyValue)
+        {
+            if (request.responseCode == k_HttpStatusNoContent)
+            {
+                try
+                {
+                    if (!UnityConnect.instance.SetCOPPACompliance(newCompliancyValue))
+                    {
+                        EditorAnalytics.SendCoppaComplianceEvent(new CoppaState() { isCompliant = newCompliancyValue == COPPACompliance.COPPACompliant });
+
+                        SetCoppaFieldValue(originalCoppaValue, coppaField);
+                        exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage));
+                    }
+                    else
+                    {
+                        originalCoppaValue = newCompliancyValue.ToCoppaCompliance();
+                        SetCoppaFieldValue(originalCoppaValue, coppaField);
+                        NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Info,
+                            L10n.Tr(CoppaComplianceChangedMessage));
+                        changeCallback?.Invoke(originalCoppaValue);
+                    }
                 }
                 catch (Exception ex)
                 {
                     SetCoppaFieldValue(originalCoppaValue, coppaField);
-                    SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                    exceptionCallback?.Invoke(originalCoppaValue, ex);
+                    exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceEditorConfigurationException(k_CoppaComplianceEditorConfigurationExceptionMessage, ex));
                 }
-            };
-
-            persistContainer.Q<Button>(k_CancelBtnName).clicked += () =>
+            }
+            else
             {
                 SetCoppaFieldValue(originalCoppaValue, coppaField);
-                SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-                cancelButtonCallback?.Invoke(originalCoppaValue);
-            };
-
-            persistContainer.style.display = DisplayStyle.None;
-            coppaField.RegisterValueChangedCallback(evt =>
-            {
-                SetPersistContainerVisibility(originalCoppaValue, persistContainer, coppaField);
-            });
+                exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceWebConfigurationException(L10n.Tr(k_CoppaUnexpectedSaveRequestBehaviorMessage))
+                {
+                    error = request.error,
+                    method = request.method,
+                    timeout = request.timeout,
+                    url = request.url,
+                    responseHeaders = request.GetResponseHeaders(),
+                    responseCode = request.responseCode,
+                    isHttpError = (request.result == UnityWebRequest.Result.ProtocolError),
+                    isNetworkError = (request.result == UnityWebRequest.Result.ConnectionError),
+                });
+            }
         }
 
         static void SetEnabledCoppaControls(VisualElement coppaContainer, bool enable)
         {
-            coppaContainer.Q(k_SaveBtnName).SetEnabled(enable);
-            coppaContainer.Q(k_CancelBtnName).SetEnabled(enable);
             coppaContainer.Q(k_CoppaFieldName).SetEnabled(enable);
         }
 
         static void SetCoppaFieldValue(CoppaCompliance coppaCompliance, PopupField<String> coppaField)
         {
             coppaField.SetValueWithoutNotify(GetFieldValueForCompliancy(coppaCompliance.ToCOPPACompliance()));
-        }
-
-        static void SetPersistContainerVisibility(CoppaCompliance coppaCompliance, VisualElement persistContainer, PopupField<String> coppaField)
-        {
-            persistContainer.style.display = coppaField.GetValueToDisplay() != GetFieldValueForCompliancy(coppaCompliance.ToCOPPACompliance())
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
         }
 
         static PopupField<string> BuildPopupField(VisualElement block, string anchorName)
@@ -260,9 +247,7 @@ namespace UnityEditor.Connect
             return coppaField.value == L10n.Tr(k_Yes) ? k_CoppaCompliantJsonValue : k_CoppaNotCompliantJsonValue;
         }
 
-        public delegate void SaveButtonCallback(CoppaCompliance coppaCompliance);
-
-        public delegate void CancelButtonCallback(CoppaCompliance coppaCompliance);
+        public delegate void ChangeCallback(CoppaCompliance coppaCompliance);
 
         public delegate void ExceptionCallback(CoppaCompliance coppaCompliance, Exception exception);
     }

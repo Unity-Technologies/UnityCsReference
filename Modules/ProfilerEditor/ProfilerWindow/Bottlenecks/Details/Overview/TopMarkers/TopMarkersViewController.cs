@@ -15,8 +15,10 @@ namespace Unity.Profiling.Editor.UI
     {
         // Model.
         readonly string m_Title;
+        readonly ProfilerWindow m_ProfilerWindow;
         readonly Action m_Action;
         readonly IResponder m_Responder;
+        private readonly IDetailsElementBinder m_DetailsBinder;
 
         // View.
         readonly List<TopMarkerItem> m_Items = new();
@@ -25,11 +27,25 @@ namespace Unity.Profiling.Editor.UI
         Label m_NoDataLabel;
         ActivityIndicatorOverlay m_ActivityOverlay;
 
-        public TopMarkersViewController(string title, Action action, IResponder responder)
+        public TopMarkersViewController(string title, ProfilerWindow profilerWindow, Action action, IResponder responder, IDetailsElementBinder detailsBinder)
         {
             m_Title = title;
+            m_ProfilerWindow = profilerWindow;
             m_Action = action;
             m_Responder = responder;
+            m_DetailsBinder = detailsBinder;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (var item in m_Items)
+                {
+                    m_DetailsBinder.UnbindDetailsElement(item);
+                }
+            }
+            base.Dispose(disposing);
         }
 
         public void RefreshView(TopMarkersModel model)
@@ -67,6 +83,8 @@ namespace Unity.Profiling.Editor.UI
                         _ => throw new ArgumentOutOfRangeException("Unknown action type."),
                     };
                     item.Configure(marker, markerValueNormalized, title, OnItemActionButtonPressed);
+
+                    m_DetailsBinder.BindDetailsElement(item, new TopMarkerDetailsProvider(m_ProfilerWindow, marker, m_Responder));
 
                     itemIndex++;
                 }

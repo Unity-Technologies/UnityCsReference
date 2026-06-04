@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
@@ -40,7 +41,7 @@ namespace UnityEngine.LowLevelPhysics2D
             if (s_UsingBIRP)
                 Camera.onPostRender += BIRP_RenderAllWorlds;
             else
-                RenderPipelineManager.endCameraRendering += SRP_RenderAllWorlds;
+                RenderPipelineManager.endContextRendering += SRP_RenderAllWorlds;
 
             // Flag as initialized.
             s_IsInitialized = true;
@@ -58,7 +59,7 @@ namespace UnityEngine.LowLevelPhysics2D
             if (s_UsingBIRP)
                 Camera.onPostRender -= BIRP_RenderAllWorlds;
             else
-                RenderPipelineManager.endCameraRendering -= SRP_RenderAllWorlds;
+                RenderPipelineManager.endContextRendering -= SRP_RenderAllWorlds;
 
             // Dispose of the drawer groups.
             if (s_DrawerGroups != null)
@@ -132,8 +133,15 @@ namespace UnityEngine.LowLevelPhysics2D
         }
 
         /// <undoc/>
-        static void SRP_RenderAllWorlds(ScriptableRenderContext context, Camera camera)
+        static void SRP_RenderAllWorlds(ScriptableRenderContext context, List<Camera> cameras)
         {
+            // Not sure if this can happen but protect against it regardless.
+            if (cameras.Count == 0)
+                return;
+
+            // Fetch the base camera.
+            var camera = cameras[0];
+
             // Ensure the camera type is valid.
             if (!IsCameraTypeValid(camera))
                 return;

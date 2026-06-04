@@ -559,7 +559,8 @@ namespace UnityEditor
                         new NameAndLink{name = L10n.Tr("Register as a Nintendo developer"), linkUrl = "http://developer.nintendo.com"}
                     },
                     iconName = "BuildSettings.Switch",
-                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget,
+                    buildProfilePlatformBannerBgColorHex = "#E60012"
                 }
             },
             {
@@ -572,7 +573,7 @@ namespace UnityEditor
                     buildTarget = BuildTarget.Switch2,
                     iconName = "BuildSettings.Switch2",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget,
-                    buildProfilePlatformBannerBgColorHex = "#E60012"
+                    buildProfilePlatformBannerBgColorHex = "#E60012",
                 }
             },
             // then others
@@ -611,7 +612,8 @@ namespace UnityEditor
                             new PlatformPackageInfo(L10n.Tr("Web Stripping Tool"), "com.unity.web.stripping-tool", L10n.Tr("A package for optimizing the code size of Unity Web builds.")),
                         }
                     },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget,
+                    buildProfilePlatformBannerBgColorHex = "#FFFFFF"
                 }
             },
             {
@@ -670,7 +672,8 @@ namespace UnityEditor
                                 L10n.Tr("Meta"), true),
                         }
                     },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget,
+                    buildProfilePlatformBannerBgColorHex = "#FFFFFF"
                 }
             },
             {
@@ -790,7 +793,8 @@ namespace UnityEditor
                     // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
                     temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No QNX® module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team."), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
 
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget,
+                    buildProfilePlatformBannerBgColorHex = "#FF443A",
                 }
             },
             {

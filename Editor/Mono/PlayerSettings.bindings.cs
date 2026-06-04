@@ -374,6 +374,7 @@ namespace UnityEditor
         ActiveInputHandling = 1,
         GraphicsJobs = 2,
         VirtualTexturing = 3,
+        GraphicsAPI = 4,
     }
 
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
@@ -1916,6 +1917,9 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SyncVirtualTexturingState(PlayerSettings settings);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SyncSettingsAndCleanSettings();
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern PlayerSettingsRequiringRestart[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);

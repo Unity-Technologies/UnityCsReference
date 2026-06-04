@@ -86,7 +86,7 @@ namespace Unity.Profiling.Editor.UI
                 return FrameGCAllocationsModel.Empty;
             }
 
-            return new FrameGCAllocationsModel(gcAllocTotalCount, gcAllocTotalSize);
+            return new FrameGCAllocationsModel(frameIndex, gcAllocTotalCount, gcAllocTotalSize);
         }
     }
 }

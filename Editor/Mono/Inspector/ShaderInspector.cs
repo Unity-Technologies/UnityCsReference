@@ -207,11 +207,14 @@ namespace UnityEditor
 
         private static void ShowShaderProperties(Shader s)
         {
+            int n = s.GetPropertyCount();
+            if (n == 0)
+                return;
+
             GUILayout.Space(kSpace);
             s_PropertiesUnfolded = EditorGUILayout.Foldout(s_PropertiesUnfolded, "Properties");
             if (s_PropertiesUnfolded)
             {
-                int n = s.GetPropertyCount();
                 for (int i = 0; i < n; ++i)
                 {
                     string pname = s.GetPropertyName(i);

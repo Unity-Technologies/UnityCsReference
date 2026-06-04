@@ -314,17 +314,6 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                     m_ShaderChannels.intValue = newShaderChannelValue;
 
-                if (m_RenderMode.intValue == 0) // Overlay canvas
-                {
-                    if (Event.current.type != EventType.ExecuteCommand && // UUM-64603: make sure the HelpBox addition doesn't collide with other UI changes and causes UI to fail to update properly
-                        ((newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Normal) | (newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Tangent)) != 0)
-                    {
-                        EditorGUILayout.HelpBox(
-                            "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. It's likely these channels are not needed.",
-                            MessageType.Warning);
-                    }
-                }
-
                 EditorGUILayout.PropertyField(m_VertexColorAlwaysGammaSpace, Styles.vertexColorAlwaysGammaSpace);
 
                 if (PlayerSettings.colorSpace == ColorSpace.Linear)

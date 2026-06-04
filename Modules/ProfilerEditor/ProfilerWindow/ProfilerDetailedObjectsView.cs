@@ -4,12 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
-using UnityEngine.Profiling;
 using UnityEngine;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
@@ -23,7 +21,7 @@ namespace UnityEditorInternal.Profiling
         static readonly string kInstancesCountFormatText = L10n.Tr("{0} instances of {1} sample:");
         static readonly string kInstancesCountTooltipText = L10n.Tr("Total count of samples which represent the selected item in the Hierarchy View.");
         static readonly string kMetadataText = LocalizationDatabase.GetLocalizedString("Metadata:");
-        static readonly string kCallstackText = LocalizationDatabase.GetLocalizedString("Call Stack:");
+        static readonly string kCallstackText = LocalizationDatabase.GetLocalizedString("Call Stack:\n");
         static readonly string kNoMetadataOrCallstackText = LocalizationDatabase.GetLocalizedString("No metadata or call stack is available for the selected sample.");
 
         [NonSerialized]
@@ -332,7 +330,10 @@ namespace UnityEditorInternal.Profiling
                 selectedSampleMetadataCount = frameDataView.GetItemMergedSamplesMetadataCount(selectedSampleId, selectedMergedSampleIndex);
             }
 
+            GUILayout.BeginVertical();
             GUILayout.Label(m_InstancesLabel, EditorStyles.label);
+            DrawAssistantButton(selectedSampleId);
+            GUILayout.EndVertical();
 
             var showCallstack = m_CachedCallstack.Count > 0;
             var showMetadata = selectedSampleMetadataCount != 0;
@@ -383,6 +384,7 @@ namespace UnityEditorInternal.Profiling
 
                 if (showCallstack)
                 {
+                    sb.Append(kCallstackText);
                     m_ProfilerFrameDataHierarchyView.CompileCallStack(sb, m_CachedCallstack, frameDataView);
                 }
             }

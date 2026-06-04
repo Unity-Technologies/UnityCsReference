@@ -2,16 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 
 namespace Unity.Profiling.Editor.UI
 {
     readonly struct SystemsImpactModel
     {
-        public SystemsImpactModel(SystemImpact[] data)
+        public SystemsImpactModel(Range frameRange, SystemImpact[] data)
         {
+            FrameRange = frameRange;
             Data = data;
         }
+
+        public Range FrameRange { get; }
 
         public SystemImpact[] Data { get; }
 

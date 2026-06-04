@@ -3,11 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using Unity.Profiling.Editor;
 using UnityEditor.Profiling;
-using UnityEditorInternal.Profiling;
-using UnityEngine.Profiling;
+using UnityEngine;
 
 namespace UnityEditorInternal
 {
@@ -33,6 +31,9 @@ namespace UnityEditorInternal
         void SetClearOnPlay(bool enabled);
         bool GetClearOnPlay();
 
+        bool CpuProfilerAssistantSupported { get; }
+        void RequestCpuProfilerAssistance(Rect screenRect, CpuProfilerAssistantController.CpuProfilerContext attachment, string request);
+        
         HierarchyFrameDataView GetFrameDataView(string groupName, string threadName, ulong threadId, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
         HierarchyFrameDataView GetFrameDataView(int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
 

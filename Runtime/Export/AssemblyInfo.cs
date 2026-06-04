@@ -114,6 +114,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Tooling")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.CommonUtils")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Application")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Uaal")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Lifecycle")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.PlayerBuildAndRun")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetBundles")]

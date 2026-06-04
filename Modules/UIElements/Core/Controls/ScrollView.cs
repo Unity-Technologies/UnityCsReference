@@ -1634,9 +1634,7 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse)
                 return;
 
-            var isXRPointer = evt.pointerType == PointerType.tracked;
-
-            if (!evt.isPrimary && !isXRPointer)
+            if (!evt.isPrimary)
                 return;
 
             if (evt.pointerId != PointerId.invalidPointerId)
@@ -1670,9 +1668,7 @@ namespace UnityEngine.UIElements
             if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 
-            var isXRPointer = evt.pointerType == PointerType.tracked;
-
-            if (!evt.isPrimary && !isXRPointer)
+            if (!evt.isPrimary)
                 return;
 
             if (evt.isHandledByDraggable)
@@ -1687,7 +1683,7 @@ namespace UnityEngine.UIElements
             var delta = position - m_PointerStartPosition;
 
             // Apply XR-specific transformations.
-            if (isXRPointer)
+            if (evt.pointerType == PointerType.tracked)
             {
                 // Handle large, unreasonable deltas caused by coordinate system jumps (e.g., UI layer exit/re-entry).
                 const float maxReasonableDelta = 10f; // Maximum allowed delta in meters per frame.

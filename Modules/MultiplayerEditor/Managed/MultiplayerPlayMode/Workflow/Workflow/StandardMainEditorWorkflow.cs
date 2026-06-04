@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Multiplayer.Internal;
+using UnityEditor.U2D;
 using UnityEngine;
 using UnityEngine.Multiplayer.Internal;
 using UnityEngine.SceneManagement;
@@ -176,6 +177,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         MppmLog.Warning("Unsaved scene changes in the main editor will not be loaded on other players. " +
                             $"Currently open scenes with unsaved changes include: {openSceneNames}");
                     }
+
+                    // Pre-pack Sprite Atlases to prevent read-only asset errors in clones
+                    PrePackSpriteAtlases();
                 }
 
                 EditorPrefs.SetBool(k_OpenGameViewOnPlayCache, OpenWindowOnEnteringPlayMode);
@@ -244,6 +248,32 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             openSceneNames = string.Join(", ", sceneNames);
             return true;
+        }
+
+        static void PrePackSpriteAtlases()
+        {
+            // Clones share Library with main editor but have read-only AssetDatabase.
+            // Pre-pack atlases here so clones use cached data instead of triggering reimports.
+            var atlasGuids = AssetDatabase.FindAssets("t:SpriteAtlas");
+            if (atlasGuids.Length == 0)
+            {
+                MppmLog.Debug("No Sprite Atlases found in project, skipping pre-packing");
+                return;
+            }
+
+            try
+            {
+                var buildTarget = EditorUserBuildSettings.activeBuildTarget;
+                MppmLog.Debug($"Pre-packing {atlasGuids.Length} Sprite Atlas(es) for build target: {buildTarget}");
+
+                SpriteAtlasUtility.PackAllAtlases(buildTarget);
+
+                MppmLog.Debug("Sprite Atlas pre-packing completed");
+            }
+            catch (System.Exception ex)
+            {
+                 Debug.LogWarning($"Sprite Atlas pre-packing failed: {ex.Message}");
+            }
         }
     }
 }

@@ -182,9 +182,12 @@ namespace UnityEditor
             // Animator & Auto-Fill on the same line
             EditorGUILayout.BeginHorizontal();
             animator = (Animator)EditorGUILayout.ObjectField("Animator", animator, typeof(Animator), true);
-            if (GUILayout.Button("Auto-Fill", GUILayout.Width(100)))
+            using (new EditorGUI.DisabledScope(animator == null))
             {
-                AutoAssignTransforms();
+                if (GUILayout.Button("Auto-Fill", GUILayout.Width(100)))
+                {
+                    AutoAssignTransforms();
+                }
             }
             EditorGUILayout.EndHorizontal();
 
