@@ -314,7 +314,7 @@ namespace UnityEditorInternal
 
             foreach (var key in keyframes)
             {
-                if (!key.isPPtrCurve)
+                if (key.isFloatCurve)
                     return true;
             }
 

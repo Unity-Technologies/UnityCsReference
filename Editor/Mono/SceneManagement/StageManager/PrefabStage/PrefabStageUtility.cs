@@ -309,6 +309,21 @@ namespace UnityEditor.SceneManagement
             return false;
         }
 
+        [UsedByNativeCode]
+        internal static void OpenPrefabFromRestructureDialog(EntityId prefabAssetEntityId, EntityId instanceRootEntityId)
+        {
+            string assetPath = AssetDatabase.GetAssetPath(prefabAssetEntityId);
+            if (string.IsNullOrEmpty(assetPath) || !assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var instanceRoot = EditorUtility.EntityIdToObject(instanceRootEntityId) as GameObject;
+            if (instanceRoot != null && !PrefabUtility.IsPartOfPrefabInstance(instanceRoot))
+                instanceRoot = null;
+
+            var mode = instanceRoot != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
+            OpenPrefab(assetPath, instanceRoot, mode, StageNavigationManager.Analytics.ChangeType.EnterViaAssetOpened);
+        }
+
         static bool IsDynamicallyCreatedDuringLoad(GameObject gameObject)
         {
             return Unsupported.GetFileIDHint(gameObject) == 0;

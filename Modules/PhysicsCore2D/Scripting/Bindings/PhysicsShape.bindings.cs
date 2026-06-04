@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsShape::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsShapeDefinition PhysicsShape_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsShape::GetDefaultSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetDefaultSurfaceMaterial(bool useSettings);

@@ -36,7 +36,6 @@ namespace UnityEditor
         IAnimationWindowClip[] GetClips();
         IAnimationWindowClip CreateNewClip();
         bool InitializeSelection();
-        void OnPlayModeStateChanged(PlayModeStateChange state);
 
         bool IsCompatibleWith(UnityEngine.Object selectedObject);
         EditorCurveBinding[] GetAnimatableBindings(GameObject gameObject);

@@ -33,7 +33,7 @@ namespace Unity.U2D.Physics
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsComposer other && Equals(other);
 
         /// <undoc/>
         public bool Equals(PhysicsComposer other) { return m_Index1 == other.m_Index1 && m_Generation == other.m_Generation; }

@@ -35,6 +35,7 @@ namespace UnityEditor
         private const int k_DefaultNumSteps = 0;
         private GUIView m_DelegateView;
         private System.Action<Gradient> m_Delegate;
+        private System.Action m_OnClosed;
         private bool m_HDR;
         private ColorSpace m_ColorSpace;
         private bool gradientChanged { get; set; }
@@ -42,24 +43,35 @@ namespace UnityEditor
         // Static methods
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace = ColorSpace.Gamma)
         {
-            Show(newGradient, hdr, colorSpace, null, GUIView.current);
+            Show(newGradient, hdr, colorSpace, null, null, GUIView.current);
         }
 
         public static void Show(Gradient newGradient, bool hdr, System.Action<Gradient> onGradientChanged)
         {
-            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged, null);
+            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged, null, null);
         }
 
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged)
         {
-            Show(newGradient, hdr, colorSpace, onGradientChanged, null);
+            Show(newGradient, hdr, colorSpace, onGradientChanged, null, null);
         }
 
-        private static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged, GUIView currentView)
+        internal static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged, System.Action onClosed)
+        {
+            Show(newGradient, hdr, colorSpace, onGradientChanged, onClosed, null);
+        }
+
+        private static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged, System.Action onClosed, GUIView currentView)
         {
             PrepareShow(hdr, colorSpace);
+
+            // If the picker is being re-shown for a different field, fire the previous owner's onClosed before we hand over.
+            if (s_GradientPicker.m_OnClosed != null && s_GradientPicker.m_OnClosed != onClosed)
+                s_GradientPicker.m_OnClosed.Invoke();
+
             s_GradientPicker.m_DelegateView = currentView;
             s_GradientPicker.m_Delegate = onGradientChanged;
+            s_GradientPicker.m_OnClosed = onClosed;
             s_GradientPicker.Init(newGradient, hdr, colorSpace);
 
             GradientPreviewCache.ClearCache();
@@ -155,6 +167,9 @@ namespace UnityEditor
             //EditorApplication.playmodeStateChanged -= OnPlayModeStateChanged;
             if (m_GradientLibraryEditorState != null)
                 m_GradientLibraryEditorState.TransferEditorPrefsState(false);
+
+            m_OnClosed?.Invoke();
+            m_OnClosed = null;
 
             s_GradientPicker?.UnregisterEvents();
             s_GradientPicker = null;
@@ -298,7 +313,7 @@ namespace UnityEditor
 
         private void OnUndoPerformed(in UndoRedoInfo info)
         {
-            this.Init(this.m_Gradient, this.m_HDR, this.m_ColorSpace);
+            RefreshGradientData();
         }
     }
 } // namespace

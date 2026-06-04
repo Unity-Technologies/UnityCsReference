@@ -32,6 +32,16 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Create an axis-aligned bounding-box that encapsulates the specified point.
+        /// </summary>
+        /// <param name="point">The point which the AABB should encapsulate.</param>
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public PhysicsAABB(Vector2 point)
+        {
+            m_LowerBound = m_UpperBound = point;
+        }
+
+        /// <summary>
         /// Check if the AABB is valid. To be valid, <see cref="PhysicsAABB.upperBound"/> should be equal to or above <see cref="PhysicsAABB.lowerBound"/>.
         /// </summary>
         public readonly bool isValid => PhysicsAABB_IsValid(this);
@@ -104,6 +114,14 @@ namespace Unity.U2D.Physics
         /// <param name="aabb">The AABB to create a union with.</param>
         /// <returns>The results of the union.</returns>
         public readonly PhysicsAABB Union(PhysicsAABB aabb) => PhysicsAABB_Union(this, aabb);
+
+        /// <summary>
+        /// Create an AABB as a translated version of the current AABB.
+        /// </summary>
+        /// <param name="translation">The translation to use.</param>
+        /// <returns>The translated AABB.</returns>
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly PhysicsAABB Translate(Vector2 translation) => new(lowerBound + translation, upperBound + translation);
 
         /// <summary>
         /// Checks if the AABB contains (completely encapsulates) the specified AABB.

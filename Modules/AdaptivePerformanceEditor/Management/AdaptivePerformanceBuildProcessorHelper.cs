@@ -209,5 +209,24 @@ namespace UnityEditor.AdaptivePerformance.Editor
         {
             return EditorUtilities.AddCustomScalerToProviderSetting(settings);
         }
+
+        /// <summary>
+        /// Checks the "Adjust iOS FPS based on thermal state" Player Setting and, if it is enabled,
+        /// prompts the user (via dialog in interactive sessions) to disable it so the Adaptive
+        /// Performance Apple provider can manage thermal mitigation.
+        /// </summary>
+        /// <param name="profile">Optional active build profile. When supplied, the profile's player
+        /// settings are inspected and updated; otherwise the project-wide PlayerSettings are used.</param>
+        /// <param name="forcePrompt">When <c>true</c>, bypass the per-session "asked once" suppression
+        /// and always re-display the dialog (when not in batch mode). Build-time callers should pass
+        /// <c>true</c> so a misconfiguration is surfaced even if the user already dismissed the
+        /// dialog earlier in the editor session.</param>
+        /// <returns><c>true</c> if the setting is still enabled (i.e. the user declined to disable
+        /// it, or the dialog could not be shown in batch mode); <c>false</c> if the setting is
+        /// already disabled or was disabled in response to the prompt.</returns>
+        public static bool CheckEnableThermalStateForIOS(BuildProfile profile = null, bool forcePrompt = false)
+        {
+            return EditorUtilities.CheckEnableThermalStateForIOS(profile, forcePrompt);
+        }
     }
 }

@@ -29,7 +29,13 @@ class AIDropdown : EditorToolbarDropdown
         text = L10n.Tr("AI");
         icon = EditorGUIUtility.FindTexture("AISparkle Icon");
 
-        clicked += () => PopupWindow.Show(worldBound, m_Content ??= defaultContent);
+        clicked += () =>
+        {
+            if (AIDropdownConfig.instance.config == null)
+                EditorAIAssistantAnalytics.ReportAIDropdownOpenedEvent();
+
+            PopupWindow.Show(worldBound, m_Content ??= defaultContent);
+        };
 
         instance = this;
         RefreshContent();

@@ -21,10 +21,6 @@ namespace UnityEditorInternal
 
         public abstract void OnSelectionChanged();
 
-        public void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-        }
-
         public void Init(AnimationWindowState state)
         {
             m_State = state;

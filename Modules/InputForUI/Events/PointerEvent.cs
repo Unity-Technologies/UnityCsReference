@@ -106,10 +106,11 @@ namespace UnityEngine.InputForUI
 
         /// <summary>
         /// Returns true if pointer can be considered to be a primary pointer.
-        /// This will be true for the first instance of each pointer type:
-        /// mouse, pen, left tracked device, first touching finger.
+        /// This will be true for the first instance of most pointer type:
+        /// mouse, pen, first touching finger.
+        /// For tracked device, all controllers are considered primary pointers.
         /// </summary>
-        public bool isPrimaryPointer => pointerIndex == 0;
+        public bool isPrimaryPointer => pointerIndex == 0 || eventSource == EventSource.TrackedDevice;
 
         /// <summary>
         /// Current position of the pointer.

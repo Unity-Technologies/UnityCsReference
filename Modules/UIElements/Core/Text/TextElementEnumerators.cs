@@ -5,13 +5,32 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using UnityEngine.Assertions;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
     public partial class TextElement
     {
+        /// <summary>
+        /// Classifies what a <see cref="Glyph"/> represents. ATG-only; the
+        /// legacy TextCore generator always reports <see cref="Character"/>.
+        /// </summary>
+        public enum GlyphKind
+        {
+            /// <summary>A regular text character.</summary>
+            Character = 0,
+            /// <summary>A glyph emitted by an inline <c>&lt;sprite&gt;</c> tag.</summary>
+            Sprite = 1,
+            // Reserved for upcoming decoration-quad support. Kept commented
+            // out until the generator emits them so we don't ship public
+            // values that always return Character. When uncommenting,
+            // preserve these ordinals — do not renumber.
+            // Underline = 2,
+            // Strikethrough = 3,
+            // Mark = 4,
+        }
+
         /// <summary>
         /// Encapsulates a single glyph rendered inside a <see cref="TextElement"/> mesh.
         /// A glyph is a quad made of four vertices, laid out clockwise:
@@ -33,9 +52,29 @@ namespace UnityEngine.UIElements
             /// </summary>
             public readonly NativeSlice<Vertex> vertices;
 
-            internal Glyph(NativeSlice<Vertex> vertices)
+            /// <summary>
+            /// Zero-based visual line number on which this glyph is laid out.
+            /// </summary>
+            public readonly int line;
+
+            /// <summary>
+            /// Value of the enclosing <c>&lt;link=...&gt;</c> tag, matching
+            /// <see cref="Experimental.PointerDownLinkTagEvent.linkID"/>, or
+            /// <c>null</c> when the glyph is not inside a <c>&lt;link&gt;</c> tag.
+            /// </summary>
+            public readonly string linkID;
+
+            /// <summary>
+            /// What this glyph represents. See <see cref="GlyphKind"/>.
+            /// </summary>
+            public readonly GlyphKind kind;
+
+            internal Glyph(NativeSlice<Vertex> vertices, int line, string linkID, GlyphKind kind)
             {
                 this.vertices = vertices;
+                this.line = line;
+                this.linkID = linkID;
+                this.kind = kind;
             }
         }
 
@@ -132,40 +171,58 @@ namespace UnityEngine.UIElements
 
             private bool MoveNextStandard()
             {
-                var textInfo = m_TextElement.uitkTextHandle.textInfo;
+                var handle = m_TextElement.uitkTextHandle;
+                var textInfo = handle.textInfo;
                 int count = textInfo.characterCount;
 
-                 while (m_NextIndex < count)
-                 {
-                     ref var ei = ref textInfo.textElementInfo[m_NextIndex++];
-                     if (!ei.isVisible)
+                while (m_NextIndex < count)
+                {
+                    int idx = m_NextIndex++;
+                    ref var ei = ref textInfo.textElementInfo[idx];
+                    if (!ei.isVisible)
                         continue;
 
-                     Current = new Glyph(m_Vertices[ei.materialReferenceIndex].Slice(ei.vertexIndex, 4));
-                     return true;
-                 }
+                    var slice = m_Vertices[ei.materialReferenceIndex].Slice(ei.vertexIndex, 4);
+                    Current = new Glyph(slice, ei.lineNumber, null, GlyphKind.Character);
+                    return true;
+                }
 
                 return false;
             }
 
             bool MoveNextAdvanced()
             {
-                var tgi = m_TextElement.uitkTextHandle.textGenerationInfo;
+                var handle = m_TextElement.uitkTextHandle;
+                var tgi = handle.textGenerationInfo;
                 var count = TextGenerationInfo.GetGlyphCount(tgi);
 
                 while (m_NextIndex < count)
                 {
-                    var textRenderingIndices = TextGenerationInfo.GetTextRenderingIndices(tgi, m_NextIndex++);
+                    int glyphIndex = m_NextIndex++;
+                    var info = TextGenerationInfo.GetGlyphRenderInfo(tgi, glyphIndex);
 
                     // Skip invisible glyphs such as \n
-                    if (textRenderingIndices.textElementInfoIndex < 0 || textRenderingIndices.meshIndex < 0)
+                    if (info.textElementInfoIndex < 0 || info.meshIndex < 0)
                         continue;
 
-                    Current = new Glyph(m_Vertices[textRenderingIndices.meshIndex].Slice(textRenderingIndices.textElementInfoIndex * 4, 4));
+                    string linkID = ResolveLinkID(handle, info.linkID);
+
+                    var slice = m_Vertices[info.meshIndex].Slice(info.textElementInfoIndex * 4, 4);
+                    Current = new Glyph(slice, info.lineIndex, linkID, (GlyphKind)info.kind);
                     return true;
                 }
 
                 return false;
+            }
+
+            // Returns null outside <link>, or for <a href> hyperlinks (filtered to match pointer-event semantics).
+            static string ResolveLinkID(UITKTextHandle handle, int linkID)
+            {
+                var links = handle.m_Links;
+                if (links == null || (uint)linkID >= (uint)links.Count)
+                    return null;
+                var (_, type, value) = links[linkID];
+                return type == RichTextTagParser.TagType.Hyperlink ? null : value;
             }
 
             /// <summary>

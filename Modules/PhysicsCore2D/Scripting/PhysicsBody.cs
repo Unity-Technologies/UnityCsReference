@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
@@ -26,26 +25,38 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsBody : IEquatable<PhysicsBody>
+    public readonly partial struct PhysicsBody : IPhysicsHandle<PhysicsBody>, IEquatable<PhysicsBody>
     {
-        #region Id
-
-        readonly Int32 m_Index1;
-        readonly UInt16 m_World0;
-        readonly UInt16 m_Generation;
+        #region Handle
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"type={type}, index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
+        readonly PhysicsHandle m_PhysicsHandle;
+
+        /// <summary>
+        /// Create a body from a physics handle.
+        /// 
+        /// NOTE: You must ensure that the physics handle represents the correct object type otherwise hard to detect bugs can occur.
+        /// </summary>
+        /// <param name="physicsHandle">The physics handle to use.</param>
+        public PhysicsBody(PhysicsHandle physicsHandle) { m_PhysicsHandle = physicsHandle; }
+
+        /// <summary>
+        /// Get the physics handle.
+        /// </summary>
+        public readonly PhysicsHandle physicsHandle => m_PhysicsHandle;
+
+        /// <undoc/>
+        public override readonly string ToString() => isValid ? $"type={type}, {m_PhysicsHandle}" : "<INVALID>";
 
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsBody other && Equals(other);
 
         /// <undoc/>
-        public bool Equals(PhysicsBody other) { return m_Index1 == other.m_Index1 && m_World0 == other.m_World0 && m_Generation == other.m_Generation; }
+        public bool Equals(PhysicsBody other) => m_PhysicsHandle == other.m_PhysicsHandle;
 
         /// <undoc/>
         public static bool operator ==(PhysicsBody lhs, PhysicsBody rhs) => lhs.Equals(rhs);
@@ -54,7 +65,7 @@ namespace Unity.U2D.Physics
         public static bool operator !=(PhysicsBody lhs, PhysicsBody rhs) => !(lhs == rhs);
 
         /// <undoc/>
-        public override int GetHashCode() { return HashCode.Combine(m_Index1, m_World0, m_Generation); }
+        public override int GetHashCode() => m_PhysicsHandle.GetHashCode();
 
         #endregion
 
@@ -1415,6 +1426,14 @@ namespace Unity.U2D.Physics
         /// <param name="definition">The chain definition to use.</param>
         /// <returns>The created chain.</returns>
         public readonly PhysicsChain CreateChain(ChainGeometry geometry, PhysicsChainDefinition definition) => PhysicsChain.Create(this, geometry.vertices, definition);
+
+        /// <summary>
+        /// Create a Chain of multiple shapes attached to this body.
+        /// </summary>
+        /// <param name="vertices">The vertices that will create the ChainSegment shapes.</param>
+        /// <param name="definition">The shape definition to use.</param>
+        /// <returns>The created chain.</returns>
+        public readonly PhysicsChain CreateChain(ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition) => PhysicsChain.Create(this, vertices, definition);
 
         #endregion
 

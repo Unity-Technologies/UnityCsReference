@@ -32,12 +32,22 @@ namespace Unity.U2D.Physics
         /// <undoc/>
         public override readonly string ToString() => isValid ? $"index={m_Index1}, generation={m_Generation}" : "<INVALID>";
 
+        /// <summary>
+        /// Get the world handle index.
+        /// </summary>
+        public readonly Int32 index => m_Index1;
+
+        /// <summary>
+        /// Get the world handle generation.
+        /// </summary>
+        public readonly UInt16 generation => m_Generation;
+
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsWorld other && Equals(other);
 
         /// <undoc/>
         public bool Equals(PhysicsWorld other) { return m_Index1 == other.m_Index1 && m_Generation == other.m_Generation; }

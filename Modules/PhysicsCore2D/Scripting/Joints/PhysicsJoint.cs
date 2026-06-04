@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
@@ -15,7 +14,7 @@ namespace Unity.U2D.Physics
     /// Defines a common joint interface.
     /// This is a helper implementation interface (used for commonality/consistency) and should not be used to access a joint.
     /// </summary>
-    interface IPhysicsJoint
+    interface IPhysicsJoint<T>
     {
         /// <undoc/>
         bool Destroy(int ownerKey = 0);
@@ -111,26 +110,38 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly struct PhysicsJoint : IPhysicsJoint, IEquatable<PhysicsJoint>
+    public readonly struct PhysicsJoint : IPhysicsJoint<PhysicsJoint>, IPhysicsHandle<PhysicsJoint>, IEquatable<PhysicsJoint>
     {
-        #region Id
-
-        readonly Int32 index1;
-        readonly UInt16 world0;
-        readonly UInt16 generation;
+        #region Handle
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"type={jointType}, index={index1}, world={world0}, generation={generation}" : "<INVALID>";
+        readonly PhysicsHandle m_PhysicsHandle;
+
+        /// <summary>
+        /// Create a joint from a physics handle.
+        /// 
+        /// NOTE: You must ensure that the physics handle represents the correct object type otherwise hard to detect bugs can occur.
+        /// </summary>
+        /// <param name="physicsHandle">The physics handle to use.</param>
+        public PhysicsJoint(PhysicsHandle physicsHandle) { m_PhysicsHandle = physicsHandle; }
+
+        /// <summary>
+        /// Get the physics handle.
+        /// </summary>
+        public readonly PhysicsHandle physicsHandle => m_PhysicsHandle;
+
+        /// <undoc/>
+        public override readonly string ToString() => isValid ? $"type={jointType}, {m_PhysicsHandle}" : "<INVALID>";
 
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsJoint other && Equals(other);
 
         /// <undoc/>
-        public bool Equals(PhysicsJoint other) { return index1 == other.index1 && world0 == other.world0 && generation == other.generation; }
+        public bool Equals(PhysicsJoint other) => m_PhysicsHandle == other.m_PhysicsHandle;
 
         /// <undoc/>
         public static bool operator ==(PhysicsJoint lhs, PhysicsJoint rhs) => lhs.Equals(rhs);
@@ -139,7 +150,7 @@ namespace Unity.U2D.Physics
         public static bool operator !=(PhysicsJoint lhs, PhysicsJoint rhs) => !(lhs == rhs);
 
         /// <undoc/>
-        public override int GetHashCode() { return HashCode.Combine(index1, world0, generation); }
+        public override int GetHashCode() => m_PhysicsHandle.GetHashCode();
 
         #endregion
 

@@ -27,26 +27,38 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsShape : IEquatable<PhysicsShape>
+    public readonly partial struct PhysicsShape : IPhysicsHandle<PhysicsShape>, IEquatable<PhysicsShape>
     {
-        #region Id
-
-        readonly Int32 m_Index1;
-        readonly UInt16 m_World0;
-        readonly UInt16 m_Generation;
+        #region Handle
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"type={shapeType}, index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
+        readonly PhysicsHandle m_PhysicsHandle;
+
+        /// <summary>
+        /// Create a shape from a physics handle.
+        /// 
+        /// NOTE: You must ensure that the physics handle represents the correct object type otherwise hard to detect bugs can occur.
+        /// </summary>
+        /// <param name="physicsHandle">The physics handle to use.</param>
+        public PhysicsShape(PhysicsHandle physicsHandle) { m_PhysicsHandle = physicsHandle; }
+
+        /// <summary>
+        /// Get the physics handle.
+        /// </summary>
+        public readonly PhysicsHandle physicsHandle => m_PhysicsHandle;
+
+        /// <undoc/>
+        public override readonly string ToString() => isValid ? $"type={shapeType}, {m_PhysicsHandle}" : "<INVALID>";
 
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsShape other && Equals(other);
 
         /// <undoc/>
-        public bool Equals(PhysicsShape other) { return m_Index1 == other.m_Index1 && m_World0 == other.m_World0 && m_Generation == other.m_Generation; }
+        public bool Equals(PhysicsShape other) => m_PhysicsHandle == other.m_PhysicsHandle;
 
         /// <undoc/>
         public static bool operator ==(PhysicsShape lhs, PhysicsShape rhs) => lhs.Equals(rhs);
@@ -55,7 +67,8 @@ namespace Unity.U2D.Physics
         public static bool operator !=(PhysicsShape lhs, PhysicsShape rhs) => !(lhs == rhs);
 
         /// <undoc/>
-        public override int GetHashCode() { return HashCode.Combine(m_Index1, m_World0, m_Generation); }
+        public override int GetHashCode() => m_PhysicsHandle.GetHashCode();
+
 
         #endregion
 
@@ -952,7 +965,7 @@ namespace Unity.U2D.Physics
             /// The <see cref="PhysicsShape.ShapeProxy.count"/> must be 1.
             /// </summary>
             /// <exception cref="InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not 1.</exception>
-            public CircleGeometry circleGeometry
+            public readonly CircleGeometry circleGeometry
             {
                 get
                 {
@@ -968,7 +981,7 @@ namespace Unity.U2D.Physics
             /// The <see cref="PhysicsShape.ShapeProxy.count"/> must be 2.
             /// </summary>
             /// <exception cref="InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not 2.</exception>
-            public CapsuleGeometry capsuleGeometry
+            public readonly CapsuleGeometry capsuleGeometry
             {
                 get
                 {
@@ -983,7 +996,7 @@ namespace Unity.U2D.Physics
             /// Get a <see cref="PolygonGeometry"/> from the shape proxy.
             /// </summary>
             /// <exception cref="System.InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not in the range [3, <see cref="PhysicsConstants.MaxPolygonVertices"/>].</exception>
-            public unsafe PolygonGeometry polygonGeometry
+            public readonly unsafe PolygonGeometry polygonGeometry
             {
                 get
                 {
@@ -1004,7 +1017,7 @@ namespace Unity.U2D.Physics
             /// The <see cref="PhysicsShape.ShapeProxy.count"/> must be 2.
             /// </summary>
             /// <exception cref="InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not 2.</exception>
-            public SegmentGeometry segmentGeometry
+            public readonly SegmentGeometry segmentGeometry
             {
                 get
                 {
@@ -1038,7 +1051,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Check if the shape proxy is valid.
             /// </summary>
-            public bool isValid => m_ShapeType switch
+            public readonly bool isValid => m_ShapeType switch
             {
                 ShapeType.Circle => m_Count == 1,
                 ShapeType.Capsule => m_Count == 2 && radius > 0.0f,
@@ -1049,10 +1062,23 @@ namespace Unity.U2D.Physics
             };
 
             /// <summary>
+            /// Get the AABB that bounds the shape proxy.
+            /// </summary>
+            public readonly PhysicsAABB aabb => m_ShapeType switch
+            {
+                ShapeType.Circle => circleGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.Capsule => capsuleGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.Polygon => polygonGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.Segment => segmentGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.ChainSegment => segmentGeometry.CalculateAABB(PhysicsTransform.identity),
+                _ => throw new NotImplementedException()
+            };
+
+            /// <summary>
             /// Get the convex-hull vertices as a span.
             /// </summary>
             /// <returns>The span representing the vertices in the convex-hull.</returns>
-            public unsafe Span<Vector2> AsSpan() => vertices.AsSpan(m_Count);
+            public readonly Span<Vector2> AsSpan() => vertices.AsSpan(m_Count);
 
             #region Internal
 
@@ -1783,6 +1809,55 @@ namespace Unity.U2D.Physics
                 ShapeType.Polygon => new ShapeProxy(useWorldSpace ? polygonGeometry.Transform(body.transform) : polygonGeometry),
                 ShapeType.Segment => new ShapeProxy(useWorldSpace ? segmentGeometry.Transform(body.transform) : segmentGeometry),
                 ShapeType.ChainSegment => new ShapeProxy(chainSegmentGeometry),
+                _ => throw new ArgumentException("PhysicsShape type is unknown."),
+            };
+        }
+
+        /// <summary>
+        /// Create a shape proxy from the shape, transformed by the specified transform.
+        /// </summary>
+        /// <param name="transform">The transform used to position the shape geometry.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the shape is not valid.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape type is unknown.</exception>
+        public readonly ShapeProxy CreateShapeProxy(PhysicsTransform transform)
+        {
+            if (!isValid)
+                throw new ArgumentException("PhysicsShape is not valid.");
+
+            // Extract the appropriate geometry from the shape and delegate to the geometry-level overload.
+            return shapeType switch
+            {
+                ShapeType.Circle => circleGeometry.CreateShapeProxy(transform),
+                ShapeType.Capsule => capsuleGeometry.CreateShapeProxy(transform),
+                ShapeType.Polygon => polygonGeometry.CreateShapeProxy(transform),
+                ShapeType.Segment => segmentGeometry.CreateShapeProxy(transform),
+                ShapeType.ChainSegment => chainSegmentGeometry.CreateShapeProxy(transform),
+                _ => throw new ArgumentException("PhysicsShape type is unknown."),
+            };
+        }
+
+        /// <summary>
+        /// Create a shape proxy from the shape, transformed by the specified transform.
+        /// The maximum absolute value component from the scale will be used to scale the radius when <paramref name="scaleRadius"/> is true. Shape types without a radius ignore the flag.
+        /// </summary>
+        /// <param name="transform">The transform used to position the shape geometry.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape. Only affects shape types that carry a radius (Circle, Capsule, Polygon).</param>
+        /// <exception cref="System.ArgumentException">Thrown if the shape is not valid.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape type is unknown.</exception>
+        public readonly ShapeProxy CreateShapeProxy(Matrix4x4 transform, bool scaleRadius)
+        {
+            if (!isValid)
+                throw new ArgumentException("PhysicsShape is not valid.");
+
+            // Extract the appropriate geometry from the shape and delegate to the geometry-level overload.
+            // Segment and ChainSegment have no radius, so the scaleRadius flag is irrelevant for them.
+            return shapeType switch
+            {
+                ShapeType.Circle => circleGeometry.CreateShapeProxy(transform, scaleRadius),
+                ShapeType.Capsule => capsuleGeometry.CreateShapeProxy(transform, scaleRadius),
+                ShapeType.Polygon => polygonGeometry.CreateShapeProxy(transform, scaleRadius),
+                ShapeType.Segment => segmentGeometry.CreateShapeProxy(transform),
+                ShapeType.ChainSegment => chainSegmentGeometry.CreateShapeProxy(transform),
                 _ => throw new ArgumentException("PhysicsShape type is unknown."),
             };
         }

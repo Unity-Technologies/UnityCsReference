@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsBody::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsBodyDefinition PhysicsBody_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsBody::Create", IsThreadSafe = true)] extern internal static PhysicsBody PhysicsBody_Create(PhysicsWorld world, PhysicsBodyDefinition definition);

@@ -589,7 +589,7 @@ namespace UnityEditorInternal
                 Hashtable editorCurves = new Hashtable();
                 foreach (AnimationWindowKeyframe key in state.selectedKeys)
                 {
-                    if (key.isDiscreteCurve)
+                    if (!key.isFloatCurve)
                         continue;
 
                     int index = key.curve.GetKeyframeIndex(AnimationKeyTime.Time(key.time, state.frameRate));

@@ -13,7 +13,7 @@ namespace Unity.U2D.Physics
     [NativeHeader("Modules/PhysicsCore2D/Core/PhysicsCore2D.h")]
     [NativeHeader("Modules/PhysicsCore2D/Core/PhysicsWorldManager2D.h")]
     [StaticAccessor("PhysicsCore2D", StaticAccessorType.DoubleColon)]
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsWorld::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsWorldDefinition PhysicsWorld_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsWorld::GetDefaultExplosionDefinition", IsThreadSafe = true)] extern internal static PhysicsWorld.ExplosionDefinition PhysicsWorld_GetDefaultExplosionDefinition();

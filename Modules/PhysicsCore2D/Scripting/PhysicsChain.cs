@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Unity.Collections;
@@ -31,26 +30,38 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsChain : IEquatable<PhysicsChain>
+    public readonly partial struct PhysicsChain : IPhysicsHandle<PhysicsChain>, IEquatable<PhysicsChain>
     {
-        #region Id
-
-        readonly Int32 m_Index1;
-        readonly UInt16 m_World0;
-        readonly UInt16 m_Generation;
+        #region Handle
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
+        readonly PhysicsHandle m_PhysicsHandle;
+
+        /// <summary>
+        /// Create a chain from a physics handle.
+        /// 
+        /// NOTE: You must ensure that the physics handle represents the correct object type otherwise hard to detect bugs can occur.
+        /// </summary>
+        /// <param name="physicsHandle">The physics handle to use.</param>
+        public PhysicsChain(PhysicsHandle physicsHandle) { m_PhysicsHandle = physicsHandle; }
+
+        /// <summary>
+        /// Get the physics handle.
+        /// </summary>
+        public readonly PhysicsHandle physicsHandle => m_PhysicsHandle;
+
+        /// <undoc/>
+        public override readonly string ToString() => isValid ? $"type={typeof(PhysicsChain).Name}, {m_PhysicsHandle}" : "<INVALID>";
 
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsChain other && Equals(other);
 
         /// <undoc/>
-        public bool Equals(PhysicsChain other) { return m_Index1 == other.m_Index1 && m_World0 == other.m_World0 && m_Generation == other.m_Generation; }
+        public bool Equals(PhysicsChain other) => m_PhysicsHandle == other.m_PhysicsHandle;
 
         /// <undoc/>
         public static bool operator ==(PhysicsChain lhs, PhysicsChain rhs) => lhs.Equals(rhs);
@@ -59,7 +70,8 @@ namespace Unity.U2D.Physics
         public static bool operator !=(PhysicsChain lhs, PhysicsChain rhs) => !(lhs == rhs);
 
         /// <undoc/>
-        public override int GetHashCode() { return HashCode.Combine(m_Index1, m_World0, m_Generation); }
+        public override int GetHashCode() => m_PhysicsHandle.GetHashCode();
+
 
         #endregion
 

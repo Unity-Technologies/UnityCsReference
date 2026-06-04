@@ -291,7 +291,7 @@ namespace UnityEngine.TextCore.Text
         private static extern void DestroyAllTempAllocations();
 
         [NativeMethod(IsThreadSafe = true)]
-        public static extern TextRenderingIndices GetTextRenderingIndices(IntPtr ptr, int glyphIndex);
+        public static extern NativeGlyphRenderInfo GetGlyphRenderInfo(IntPtr ptr, int glyphIndex);
 
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetGlyphCount(IntPtr ptr);

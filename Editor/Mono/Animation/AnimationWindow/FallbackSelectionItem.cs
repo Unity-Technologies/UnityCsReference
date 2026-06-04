@@ -79,10 +79,6 @@ namespace UnityEditor
             return null;
         }
 
-        public void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-        }
-
         public bool isImported => false;
         public bool hasUnsavedChanges => false;
         public void SaveChanges()

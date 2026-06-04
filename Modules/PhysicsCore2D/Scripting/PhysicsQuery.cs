@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine;
@@ -291,19 +292,19 @@ namespace Unity.U2D.Physics
             /// The final transform the mover finished at.
             /// The transform rotation is always the same as the <see cref="PhysicsQuery.WorldMoverInput.transform"/> provided.
             /// </summary>
-            public PhysicsTransform transform => m_Transform;
+            public readonly PhysicsTransform transform => m_Transform;
 
             /// <summary>
             /// The final velocity the mover finished at.
             /// </summary>
-            public Vector2 velocity => m_Velocity;
+            public readonly Vector2 velocity => m_Velocity;
 
             /// <summary>
             /// All the individual <see cref="PhysicsShape.MoverCollision"/> results for all iterations.
             /// Multiple non-unique contacts for the same <see cref="PhysicsShape"/> may be returned due to iterations, overlapping and casting.
             /// This is only populated if <see cref="PhysicsQuery.WorldMoverInput.collisionResults"/> is true.
             /// </summary>
-            public NativeArray<PhysicsShape.MoverCollision> collisionResults => m_CollisionResults.ToNativeArray<PhysicsShape.MoverCollision>();
+            public readonly NativeArray<PhysicsShape.MoverCollision> collisionResults => m_CollisionResults.ToNativeArray<PhysicsShape.MoverCollision>();
 
             /// <summary>
             /// Dispose of any allocated memory for the collision results.
@@ -451,6 +452,15 @@ namespace Unity.U2D.Physics
             /// Check if the result is valid.
             /// </summary>
             public readonly bool isValid => m_Shape.isValid;
+
+            /// <summary>
+            /// Ascending distance sort comparer.
+            /// </summary>
+            public readonly struct SortAscendingOrder : IComparer<WorldCastResult>
+            {
+                /// <undoc/>
+                readonly int IComparer<WorldCastResult>.Compare(WorldCastResult x, WorldCastResult y) => x.fraction.CompareTo(y.fraction);
+            }
 
             #region Internal
 
@@ -746,7 +756,7 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Cast result when performing ray-cast or shape-cast queries against geometry.
+        /// Cast result when performing cast-ray or cast-shape queries against geometry.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         public readonly partial struct CastResult
@@ -784,6 +794,15 @@ namespace Unity.U2D.Physics
             /// <param name="output">The CastResult to convert.</param>
             public static implicit operator bool(CastResult output) { return output.isValid; }
 
+            /// <summary>
+            /// Ascending distance sort comparer.
+            /// </summary>
+            public readonly struct SortAscendingOrder : IComparer<CastResult>
+            {
+                /// <undoc/>
+                readonly int IComparer<CastResult>.Compare(CastResult x, CastResult y) => x.m_Fraction.CompareTo(y.m_Fraction);
+            }
+
             #region Internal
 
             readonly Vector2 m_Normal;
@@ -793,7 +812,6 @@ namespace Unity.U2D.Physics
             readonly bool m_IsValid;
 
             #endregion
-
         }
 
         /// <summary>
@@ -848,28 +866,37 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Closest point on shape A.
             /// </summary>
-            public Vector2 pointA => m_PointA;
+            public readonly Vector2 pointA => m_PointA;
 
             /// <summary>
             /// Closest point on shape B.
             /// </summary>
-            public Vector2 pointB => m_PointB;
+            public readonly Vector2 pointB => m_PointB;
 
             /// <summary>
             /// A Normal vector that points from A to B.
             /// This is invalid if the distance is zero.
             /// </summary>
-            public Vector2 normal => m_Normal;
+            public readonly Vector2 normal => m_Normal;
 
             /// <summary>
             /// The distance between the points, zero if overlapped.
             /// </summary>
-            public float distance => m_Distance;
+            public readonly float distance => m_Distance;
 
             /// <summary>
             /// The number of iterations used in the calculation.
             /// </summary>
             public readonly int iterations => m_Iterations;
+
+            /// <summary>
+            /// Ascending distance sort comparer.
+            /// </summary>
+            public readonly struct SortAscendingOrder : IComparer<DistanceResult>
+            {
+                /// <undoc/>
+                readonly int IComparer<DistanceResult>.Compare(DistanceResult x, DistanceResult y) => x.m_Distance.CompareTo(y.m_Distance);
+            }
 
             #region Internal
 
@@ -892,27 +919,36 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// The closest point on the first segment
             /// </summary>
-            public Vector2 closest1 => m_Closest1;
+            public readonly Vector2 closest1 => m_Closest1;
 
             /// <summary>
             /// The closest point on the second segment
             /// </summary>
-            public Vector2 closest2 => m_Closest2;
+            public readonly Vector2 closest2 => m_Closest2;
 
             /// <summary>
             /// The barycentric coordinate on the first segment
             /// </summary>
-            public float fraction1 => m_Fraction1;
+            public readonly float fraction1 => m_Fraction1;
 
             /// <summary>
             /// The barycentric coordinate on the second segment
             /// </summary>
-            public float fraction2 => m_Fraction2;
+            public readonly float fraction2 => m_Fraction2;
 
             /// <summary>
             /// The distance between the closest points
             /// </summary>
-            public float distance => m_Distance;
+            public readonly float distance => m_Distance;
+
+            /// <summary>
+            /// Ascending distance sort comparer.
+            /// </summary>
+            public readonly struct SortAscendingOrder : IComparer<SegmentDistanceResult>
+            {
+                /// <undoc/>
+                readonly int IComparer<SegmentDistanceResult>.Compare(SegmentDistanceResult x, SegmentDistanceResult y) => x.m_Distance.CompareTo(y.m_Distance);
+            }
 
             #region Internal
 
@@ -1054,22 +1090,31 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// The point of contact.
             /// </summary>
-            public Vector2 point => m_Point;
+            public readonly Vector2 point => m_Point;
 
             /// <summary>
             /// The surface normal at the point of contact.
             /// </summary>
-            public Vector2 normal => m_Normal;
+            public readonly Vector2 normal => m_Normal;
 
             /// <summary>
             /// The impact state.
             /// </summary>
-            public State impactState => m_ImpactState;
+            public readonly State impactState => m_ImpactState;
 
             /// <summary>
             /// The sweep time of the collision interval in the range [0, maxFraction].
             /// </summary>
-            public float fraction => m_Fraction;
+            public readonly float fraction => m_Fraction;
+
+            /// <summary>
+            /// Ascending distance sort comparer.
+            /// </summary>
+            public readonly struct SortAscendingOrder : IComparer<TimeOfImpactResult>
+            {
+                /// <undoc/>
+                readonly int IComparer<TimeOfImpactResult>.Compare(TimeOfImpactResult x, TimeOfImpactResult y) => x.fraction.CompareTo(y.fraction);
+            }
 
             #region Internal
 

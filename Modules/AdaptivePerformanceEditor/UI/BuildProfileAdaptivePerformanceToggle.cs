@@ -153,7 +153,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
         public void InitializeSettingsAndUI()
         {
             EditorUtilities.CheckEnableFrameTimingState(m_BuildProfile);
-            EditorUtilities.CheckEnableThermalState(m_BuildProfile);
+            EditorUtilities.CheckEnableThermalStateForIOS(m_BuildProfile);
             AddAdaptivePerformanceGeneralSettingsObject(m_BuildProfile);
             m_AdaptivePerformanceProviderUI.CreateUI();
             m_AdaptivePerformanceProviderUI.SelectDefaultProvider();

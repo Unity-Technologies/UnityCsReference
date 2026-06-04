@@ -45,7 +45,7 @@ namespace Unity.U2D.Physics
         /// Get/Set the simulation mode which controls when or if the simulation will be automatically simulated.
         /// See <see cref="PhysicsWorld.SimulationType"/> and <see cref="PhysicsWorld.Simulate(float)"/>.
         /// </summary>
-        public PhysicsWorld.SimulationType simulateType { readonly get => m_SimulationType; set => m_SimulationType = value; }
+        public PhysicsWorld.SimulationType simulationType { readonly get => m_SimulationType; set => m_SimulationType = value; }
 
         /// <summary>
         /// Get/Set the simulation sub-steps to use during simulation.

@@ -11,7 +11,7 @@ namespace Unity.U2D.Physics
 {
     [NativeHeader("Modules/PhysicsCore2D/Core/PhysicsDestructor2D.h")]
     [StaticAccessor("PhysicsDestructor2D", StaticAccessorType.DoubleColon)]
-    internal static class PhysicsDestructorScripting2D
+    static class PhysicsDestructorScripting2D
     {
         [NativeMethod(Name = "Fragment", IsThreadSafe = true)] extern internal static PhysicsDestructor.FragmentResult PhysicsDestructor_Fragment(PhysicsDestructor.FragmentGeometry target, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator);
         [NativeMethod(Name = "FragmentMasked", IsThreadSafe = true)] extern internal static PhysicsDestructor.FragmentResult PhysicsDestructor_FragmentMasked(PhysicsDestructor.FragmentGeometry target, PhysicsDestructor.FragmentGeometry mask, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator);

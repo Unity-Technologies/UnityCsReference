@@ -101,8 +101,9 @@ namespace UnityEditorInternal
             }
         }
 
-        public bool isPPtrCurve { get { return curve.isPPtrCurve; } }
-        public bool isDiscreteCurve { get { return curve.isDiscreteCurve; } }
+        public bool isPPtrCurve => curve.isPPtrCurve;
+        public bool isDiscreteCurve => curve.isDiscreteCurve;
+        public bool isFloatCurve => curve.isFloatCurve;
 
         public AnimationWindowKeyframe()
         {

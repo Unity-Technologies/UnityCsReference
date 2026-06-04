@@ -1,1 +1,1 @@
-For more information about third party notices please refer to the Unity release page: https://unity.com/releases/editor/whats-new/6000.5.0b10#third-party-notices
+For more information about third party notices please refer to the Unity release page: https://unity.com/releases/editor/whats-new/6000.5.0b11#third-party-notices

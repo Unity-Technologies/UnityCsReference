@@ -20,6 +20,9 @@ namespace UnityEditor
             if (SessionState.GetBool(k_SessionKey, false))
                 return;
 
+            if (EditorUtility.isInSafeMode)
+                return;
+
             EditorApplication.update += WarnIfDynamicBatchingEnabled;
         }
 

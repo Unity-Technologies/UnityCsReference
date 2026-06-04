@@ -38,6 +38,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTooltip = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -66,6 +67,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -79,6 +81,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomSubtitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -96,6 +99,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -163,6 +167,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTooltip = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -191,6 +196,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -204,6 +210,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomSubtitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -221,6 +228,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -290,6 +298,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTooltip = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -318,6 +327,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -331,6 +341,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomSubtitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -348,6 +359,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }

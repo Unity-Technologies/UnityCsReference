@@ -11,7 +11,7 @@ namespace Unity.U2D.Physics
 {
     [NativeHeader("Modules/PhysicsCore2D/Core/PhysicsComposer2D.h")]
     [StaticAccessor("PhysicsComposer2D", StaticAccessorType.DoubleColon)]
-    internal static class PhysicsComposerScripting2D
+    static class PhysicsComposerScripting2D
     {
         [NativeMethod(Name = "Create", IsThreadSafe = true)] extern internal static PhysicsComposer PhysicsComposer_Create(Allocator allocator);
         [NativeMethod(Name = "Destroy", IsThreadSafe = true)] extern internal static bool PhysicsComposer_Destroy(PhysicsComposer composer);

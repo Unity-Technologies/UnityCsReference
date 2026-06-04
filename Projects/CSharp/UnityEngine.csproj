@@ -1755,11 +1755,11 @@
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsChain.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsChain.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsComposer2D.bindings.cs">
-      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsComposer2D.bindings.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsComposer.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsComposer.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsDestructor2D.bindings.cs">
-      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsDestructor2D.bindings.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsDestructor.bindings.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsDestructor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Bindings\PhysicsGeometry.bindings.cs</Link>
@@ -1847,6 +1847,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsAABB.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsAABB.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsHandle.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsLayers.cs">
       <Link>Modules\PhysicsCore2D\Scripting\Miscellaneous\PhysicsLayers.cs</Link>
@@ -2460,6 +2463,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\GlyphRenderInfo.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\GlyphRenderInfo.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs</Link>
     </Compile>
@@ -2498,9 +2504,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextPreprocessor.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextPreprocessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextRenderingIndices.bindings.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextRenderingIndices.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs</Link>

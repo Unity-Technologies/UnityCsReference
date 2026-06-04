@@ -59,6 +59,32 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Create a shape proxy from the geometry, transformed by the specified transform.
+        /// </summary>
+        /// <param name="transform">The transform used to position the geometry.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the geometry is not valid.</exception>
+        public readonly PhysicsShape.ShapeProxy CreateShapeProxy(PhysicsTransform transform)
+        {
+            if (isValid)
+                return new PhysicsShape.ShapeProxy(Transform(transform));
+
+            throw new ArgumentException("Geometry is not valid.");
+        }
+
+        /// <summary>
+        /// Create a shape proxy from the geometry, transformed by the specified transform.
+        /// </summary>
+        /// <param name="transform">The transform used to position the geometry.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the geometry is not valid.</exception>
+        public readonly PhysicsShape.ShapeProxy CreateShapeProxy(Matrix4x4 transform)
+        {
+            if (isValid)
+                return new PhysicsShape.ShapeProxy(Transform(transform));
+
+            throw new ArgumentException("Geometry is not valid.");
+        }
+
+        /// <summary>
         /// Check if the geometry is valid or not.
         /// </summary>
         public readonly bool isValid => SegmentGeometry_IsValid(this);
@@ -219,8 +245,8 @@ namespace Unity.U2D.Physics
 
             return new SegmentGeometry
             {
-                point1 = midPoint - extension,
-                point2 = midPoint + extension
+                point1 = centroid - extension,
+                point2 = centroid + extension
             };
         }
 

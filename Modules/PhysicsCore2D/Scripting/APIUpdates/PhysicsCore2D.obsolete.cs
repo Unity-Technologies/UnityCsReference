@@ -52,6 +52,11 @@ namespace Unity.U2D.Physics
 
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorldDefinition.simulateType is deprecated, please use PhysicsWorldDefinition.simulationType instead. (UnityUpgradable) -> simulationType", false)]
+        public PhysicsWorld.SimulationType simulateType { readonly get => simulationType; set => simulationType = value; }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorldDefinition.drawImpulseScale is deprecated, please use PhysicsWorldDefinition.drawForceScale instead. (UnityUpgradable) -> drawForceScale", false)]
         public float drawImpulseScale { readonly get => drawForceScale; set => drawForceScale = value; }
 

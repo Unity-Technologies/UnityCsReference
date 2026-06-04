@@ -16,7 +16,6 @@ namespace UnityEditor
         public void Dispose() {}
 
         public void OnSelectionChanged() {}
-        public void OnPlayModeStateChanged(PlayModeStateChange state) { }
 
         public float time
         {
