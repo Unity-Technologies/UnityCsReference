@@ -134,12 +134,10 @@ namespace UnityEditorInternal
 
         public void OnEnable()
         {
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         public void OnCreate(AnimationWindow animationWindow, Component component)
@@ -160,15 +158,6 @@ namespace UnityEditorInternal
                 m_Time = AnimationKeyTime.Time(0f, state.frameRate);
 
             StopPreview();
-        }
-
-        void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.ExitingPlayMode ||
-                state == PlayModeStateChange.ExitingEditMode)
-            {
-                StopPreview();
-            }
         }
 
         public float time

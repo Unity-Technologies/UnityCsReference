@@ -243,6 +243,7 @@ class AIDropdownContent : PopupWindowContent
     {
         Debug.Log($"Installing AI Packages.\n{string.Join("\n", data.packages)}");
 
+        EditorAIAssistantAnalytics.ReportAIInstallAcceptedEvent();
         EditorPrefs.SetBool(k_TermsAcceptedEditorPrefKey, true);
 
         editorWindow?.Close();

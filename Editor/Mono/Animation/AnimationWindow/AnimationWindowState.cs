@@ -328,18 +328,10 @@ namespace UnityEditorInternal
             refresh = RefreshType.Everything;
         }
 
-        private void PurgeSelection()
-        {
-            linkedWithSequencer = false;
-            m_OverrideControlInterface = null;
-            m_Selection = null;
-        }
-
         public void OnEnable()
         {
             AnimationUtility.onCurveWasModified += CurveWasModified;
             Undo.undoRedoEvent += UndoRedoPerformed;
-            AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
 
             // NoOps...
             onStartLiveEdit += () => {};
@@ -360,7 +352,6 @@ namespace UnityEditorInternal
         {
             AnimationUtility.onCurveWasModified -= CurveWasModified;
             Undo.undoRedoEvent -= UndoRedoPerformed;
-            AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
 
             m_ControlInterface.OnDisable();
             previewing = false;

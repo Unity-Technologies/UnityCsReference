@@ -214,6 +214,8 @@ namespace UnityEditor
             OnSelectionChange();
 
             Undo.undoRedoEvent += UndoRedoPerformed;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
         }
 
         void OnDisable()
@@ -222,6 +224,8 @@ namespace UnityEditor
             m_AnimEditor.OnDisable();
 
             Undo.undoRedoEvent -= UndoRedoPerformed;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
         }
 
         void OnDestroy()
@@ -475,6 +479,48 @@ namespace UnityEditor
         private void UndoRedoPerformed(in UndoRedoInfo info)
         {
             Repaint();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                // Purge selection before domain reload to prevent stale GameObject references
+                PurgeSelection();
+            }
+            else
+            {
+                // Purge selection before domain reload on ExitingPlayMode
+                if (state == PlayModeStateChange.ExitingPlayMode)
+                {
+                    PurgeSelection();
+                }
+
+                if (state == PlayModeStateChange.EnteredEditMode)
+                {
+                    // Reload selection when exiting play mode
+                    OnSelectionChange();
+                }
+
+                if (state == PlayModeStateChange.EnteredPlayMode)
+                {
+                    // Reload selection when entering play mode
+                    OnSelectionChange();
+                }
+            }
+        }
+
+        private void PurgeSelection()
+        {
+            // Clear selection to prevent stale GameObject references during domain reload.
+            // Note: Dispose() will also stop preview by disposing the controller.
+            // This matches the behavior during assembly reload (script compilation).
+            if (state != null)
+            {
+                state.linkedWithSequencer = false;
+                state.overrideControlInterface = null;
+                state.selection = null;
+            }
         }
 
         public void AddItemsToMenu(GenericMenu menu)

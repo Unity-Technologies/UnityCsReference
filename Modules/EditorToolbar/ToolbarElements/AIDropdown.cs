@@ -55,6 +55,8 @@ namespace UnityEditor.Toolbars
             if (panel == null || resolvedStyle.display == DisplayStyle.None)
                 return;
 
+            // Package is absent when this button is alive; fire the engine-side analytics.
+            EditorAIAssistantAnalytics.ReportAIDropdownOpenedEvent();
             PopupWindow.Show(worldBound, m_Content ??= new AIDropdownContent());
         }
 
