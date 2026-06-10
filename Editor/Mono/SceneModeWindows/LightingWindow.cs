@@ -583,7 +583,10 @@ namespace UnityEditor
                             else
                             {
                                 bool usingUnityComputeLightmapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == (LightingSettings.Lightmapper)3;
-                                bool doDisableMainButton = (!m_ImageConversionModuleAvailable && usingUnityComputeLightmapper) || !IsPrecomputeBakingAndDenosingSupported();
+                                bool doDisableMainButton =
+                                    (!m_ImageConversionModuleAvailable && usingUnityComputeLightmapper) ||
+                                    Lightmapping.IsRosettaRequiredAndUnavailable() ||
+                                    !SelectedDenoisersSupported();
 
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
                                 if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: doDisableMainButton))
@@ -767,7 +770,7 @@ namespace UnityEditor
                 }
             }
 
-            if (!Lightmapping.IsRealtimeGiPrecomputeSupported())
+            if (Lightmapping.IsRosettaRequiredAndUnavailable())
             {
                 using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
                 {
@@ -884,9 +887,6 @@ namespace UnityEditor
             }
             GUILayout.EndVertical();
         }
-
-        // Check if anything is causing baking not to be supported
-        private static bool IsPrecomputeBakingAndDenosingSupported() => Lightmapping.IsRealtimeGiPrecomputeSupported() && SelectedDenoisersSupported();
 
         static bool SelectedDenoisersSupported()
         {

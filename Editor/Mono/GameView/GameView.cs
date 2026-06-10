@@ -252,7 +252,7 @@ namespace UnityEditor
             get
             {
                 var targetSizeCached = targetRenderSize;
-                return EditorGUIUtility.PixelsToPoints(new Rect(-0.5f * targetSizeCached, targetSizeCached));
+                return EditorGUIUtility.PixelsToPoints(new Rect(-0.5f * targetSizeCached, targetSizeCached), backingScale);
             }
         }
 
@@ -814,7 +814,7 @@ namespace UnityEditor
 
         private float ScaleThatFitsTargetInView(Vector2 targetInPixels, Vector2 viewInPoints)
         {
-            var targetInPoints = EditorGUIUtility.PixelsToPoints(targetInPixels);
+            var targetInPoints = EditorGUIUtility.PixelsToPoints(targetInPixels, backingScale);
             var viewToTargetRatio = new Vector2(viewInPoints.x / targetInPoints.x, viewInPoints.y / targetInPoints.y);
             return Mathf.Min(viewToTargetRatio.x, viewToTargetRatio.y);
         }
@@ -1168,7 +1168,7 @@ namespace UnityEditor
         void OnOpenStatsWindow()
         {
             if (m_StatsWindowInstance != null)
-                return; 
+                return;
 
             const string path = "UXML/GameWindow/Stats_Window.uxml";
             var statsWindowAsset = EditorGUIUtility.Load(path) as VisualTreeAsset;
@@ -1176,7 +1176,7 @@ namespace UnityEditor
             if (statsWindowAsset != null)
             {
                 m_StatsWindowInstance = statsWindowAsset.CloneTree();
-                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true);     
+                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true);
                 InitializeFoldoutState(m_StatsWindowInstance, "SceneFoldout", true);
                 InitializeFoldoutState(m_StatsWindowInstance, "DrawsFoldout", false);
                 InitializeFoldoutState(m_StatsWindowInstance, "MemoryFoldout", false);
@@ -1219,7 +1219,7 @@ namespace UnityEditor
             var foldout = instance.Q<Foldout>(foldoutName);
             if (foldout == null)
             {
-                return; 
+                return;
             }
 
             string prefsKey = $"{this.GetType().Name}.{foldoutName}.IsExpanded";

@@ -7,6 +7,7 @@ using UnityEditor.AssetImporters;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -153,8 +154,9 @@ namespace UnityEditor
         {
             bool isTextFieldCaretShowing = EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection;
 
-            return !EditorFocusMonitor.AreBindableElementsSelected() &&
+            return !EditorFocusMonitor.HasTextElementFocus() &&
             GUIUtility.hotControl == 0 &&
+            !MouseCaptureController.IsMouseCaptured() &&
             !isTextFieldCaretShowing &&
             !EditorApplication.isCompiling &&
             !CurveEditorWindow.visible &&

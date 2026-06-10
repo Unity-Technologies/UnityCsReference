@@ -4736,6 +4736,7 @@ namespace Unity.GraphToolkit.Editor
                 m_GraphView = graphView;
             }
 
+            public void AppendDeveloperBuildMenuActions(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendDeveloperBuildMenuActions(evt, selection);
             public void AppendInsertBlockItemMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, bool insertAbove, string itemName = "") => m_GraphView.AppendInsertBlockItemMenuItem(evt, selection, insertAbove, itemName);
             public void AppendFontSizeAndThemeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendFontSizeAndThemeMenuItem(evt, selection);
             public void AppendCreatePlacematMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendCreatePlacematMenuItem(evt, selection);

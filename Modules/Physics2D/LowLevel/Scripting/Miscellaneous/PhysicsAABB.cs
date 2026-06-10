@@ -15,7 +15,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct PhysicsAABB
+    public partial struct PhysicsAABB
     {
         /// <summary>
         /// Create an axis-aligned bounding-box with the specified bounds.
@@ -63,7 +63,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Normalize the AABB ensuring that <see cref="LowLevelPhysics2D.PhysicsAABB.lowerBound"/> is lower than or equal to <see cref="LowLevelPhysics2D.PhysicsAABB.upperBound"/>.
         /// </summary>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Normalized() => this = normalized;
+        public void Normalize() => this = normalized;
 
         /// <summary>
         /// Check if the specified point overlaps this AABB.

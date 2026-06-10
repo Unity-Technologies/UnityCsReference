@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -112,5 +113,22 @@ namespace Unity.GraphToolkit.Editor
 
         /// <inheritdoc />
         public abstract IGroupItemModel GetGroupItemInTargetGraph(GraphModel targetGraphModel, Dictionary<VariableDeclarationModelBase, VariableDeclarationModelBase> variableTranslation);
+
+        /// <inheritdoc />
+        public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;
+
+        static readonly ContextualMenuItem[] k_ContextualMenuItems =
+        [
+            ContextualMenuHelpers.createVariableItem,
+            ContextualMenuHelpers.createGroupItem,
+            ContextualMenuHelpers.cutItem,
+            ContextualMenuHelpers.copyItem,
+            ContextualMenuHelpers.pasteItem,
+            ContextualMenuHelpers.renameItem,
+            ContextualMenuHelpers.duplicateItem,
+            ContextualMenuHelpers.deleteItem,
+            ContextualMenuHelpers.selectAllItem,
+            ContextualMenuHelpers.selectUnusedItem
+        ];
     }
 }

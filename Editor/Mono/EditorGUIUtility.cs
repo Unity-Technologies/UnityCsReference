@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEngine.Events;
@@ -230,6 +231,17 @@ namespace UnityEditor
             return rect;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Rect PixelsToPoints(Rect rect, float pixelScale)
+        {
+            var cachedInvPixelsPerPoint = 1f / pixelScale; // 4 multiplication and a division is faster than 4 division.
+            rect.x *= cachedInvPixelsPerPoint;
+            rect.y *= cachedInvPixelsPerPoint;
+            rect.width *= cachedInvPixelsPerPoint;
+            rect.height *= cachedInvPixelsPerPoint;
+            return rect;
+        }
+
         public static Vector2 PointsToPixels(Vector2 position)
         {
             GUIUtility.WarnOnGUI();
@@ -242,6 +254,14 @@ namespace UnityEditor
         public static Vector2 PixelsToPoints(Vector2 position)
         {
             var cachedInvPixelsPerPoint = 1f / pixelsPerPoint;
+            position.x *= cachedInvPixelsPerPoint;
+            position.y *= cachedInvPixelsPerPoint;
+            return position;
+        }
+
+        internal static Vector2 PixelsToPoints(Vector2 position, float scaling)
+        {
+            var cachedInvPixelsPerPoint = 1f / scaling;
             position.x *= cachedInvPixelsPerPoint;
             position.y *= cachedInvPixelsPerPoint;
             return position;

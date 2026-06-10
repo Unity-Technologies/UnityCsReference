@@ -1996,7 +1996,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void AutosaveReport()
         {
-            m_Report?.Save(GetAutosaveFilename());
+            if (m_Report?.IsValid() ?? false)
+                m_Report?.Save(GetAutosaveFilename());
         }
 
         void TryLoadAutosavedReport()

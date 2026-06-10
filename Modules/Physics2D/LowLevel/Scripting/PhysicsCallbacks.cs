@@ -76,7 +76,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// During this time, the simulation state is undefined for the broadphase, events etc.
             ///	For this reason, any attempt to perform a write operation will result in a deadlock as the world itself is write locked.
             ///	Performing simple read operations on <see cref="LowLevelPhysics2D.PhysicsBody"/>, <see cref="LowLevelPhysics2D.PhysicsShape"/> or <see cref="LowLevelPhysics2D.PhysicsJoint"/> is safe, such as reading velocity or getting the geometry of a shape, however more complex operations involving the world such as performing a query can result in corruption or crashes.
-            /// A recommend is using the provided contact details to make a decision in the callback.
+            /// A recommendation is to use the provided contact details to make a decision in the callback.
             /// An additional recommendation is reading <see cref="UnityEngine.LowLevelPhysics2D.PhysicsUserData"/> from any object which is a completely safe read operation therefore any required information should be encoded there if possible.
             /// </summary>
             /// <param name="preSolveEvent">The event that occurred.</param>
@@ -97,7 +97,7 @@ namespace UnityEngine.LowLevelPhysics2D
             void OnTriggerBegin2D(PhysicsEvents.TriggerBeginEvent beginEvent);
 
             /// <summary>
-            /// Called when a <see cref="LowLevelPhysics2D.PhysicsEvents.TriggerBeginEvent"/> for the object occurs.
+            /// Called when a <see cref="LowLevelPhysics2D.PhysicsEvents.TriggerEndEvent"/> for the object occurs.
             /// This will always be called on the main-thread after the simulation has finished.
             /// </summary>
             /// <param name="endEvent">The event that occurred.</param>
@@ -142,12 +142,12 @@ namespace UnityEngine.LowLevelPhysics2D
         #region Callback Targets
 
         /// <summary>
-        /// Contains all the body update callback targets returned from <see cref="LowLevelPhysics2D.PhysicsWorld.GetJointThresholdCallbackTargets(Unity.Collections.Allocator)"/>.
+        /// Contains all the body update callback targets returned from <see cref="LowLevelPhysics2D.PhysicsWorld.GetBodyUpdateCallbackTargets(Unity.Collections.Allocator)"/>.
         /// </summary>
         public readonly struct BodyUpdateCallbackTargets : IDisposable
         {
             /// <summary>
-            /// Joint threshold event target for callbacks.
+            /// Body update event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
             public readonly struct BodyUpdateTarget

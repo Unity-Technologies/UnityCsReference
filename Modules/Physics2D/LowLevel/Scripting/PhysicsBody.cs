@@ -97,7 +97,7 @@ namespace UnityEngine.LowLevelPhysics2D
             PositionY = 1 << 1,
 
             /// <summary>
-            /// FreConstraineze rotation along the Z-axis.
+            /// Constrain rotation along the Z-axis.
             /// </summary>
             Rotation = 1 << 2,
 

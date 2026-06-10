@@ -16,12 +16,12 @@ namespace UnityEngine.LowLevelPhysics2D
     public readonly struct PhysicsQuery
     {
         /// <summary>
-        /// Check the intersection between two <see cref="UnityEngine.LowLevelPhysics2D.PhysicsShape"/>.
+        /// Check the intersection between two shapes (<see cref="UnityEngine.LowLevelPhysics2D.PhysicsShape"/>).
         /// </summary>
         /// <param name="shapeA">The first shape to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="shapeB">The second shape to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold ShapeAndShape(PhysicsShape shapeA, PhysicsTransform transformA, PhysicsShape shapeB, PhysicsTransform transformB) => PhysicsQuery_ShapeAndShape(shapeA, transformA, shapeB, transformB);
 
@@ -31,7 +31,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold CircleAndCircle(CircleGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_CircleAndCircle(geometryA, transformA, geometryB, transformB);
 
@@ -41,7 +41,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold CapsuleAndCircle(CapsuleGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_CapsuleAndCircle(geometryA, transformA, geometryB, transformB);
 
@@ -51,7 +51,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold SegmentAndCircle(SegmentGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_SegmentAndCircle(geometryA, transformA, geometryB, transformB);
 
@@ -61,7 +61,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold PolygonAndCircle(PolygonGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_PolygonAndCircle(geometryA, transformA, geometryB, transformB);
 
@@ -71,7 +71,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold CapsuleAndCapsule(CapsuleGeometry geometryA, PhysicsTransform transformA, CapsuleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_CapsuleAndCapsule(geometryA, transformA, geometryB, transformB);
 
@@ -81,7 +81,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold SegmentAndCapsule(SegmentGeometry geometryA, PhysicsTransform transformA, CapsuleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_SegmentAndCapsule(geometryA, transformA, geometryB, transformB);
 
@@ -91,7 +91,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold PolygonAndCapsule(PolygonGeometry geometryA, PhysicsTransform transformA, CapsuleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_PolygonAndCapsule(geometryA, transformA, geometryB, transformB);
 
@@ -101,7 +101,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold PolygonAndPolygon(PolygonGeometry geometryA, PhysicsTransform transformA, PolygonGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_PolygonAndPolygon(geometryA, transformA, geometryB, transformB);
 
@@ -111,7 +111,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold SegmentAndPolygon(SegmentGeometry geometryA, PhysicsTransform transformA, PolygonGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_SegmentAndPolygon(geometryA, transformA, geometryB, transformB);
 
@@ -121,7 +121,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold ChainSegmentAndCircle(ChainSegmentGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_ChainSegmentAndCircle(geometryA, transformA, geometryB, transformB);
 
@@ -131,7 +131,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold ChainSegmentAndCapsule(ChainSegmentGeometry geometryA, PhysicsTransform transformA, CapsuleGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_ChainSegmentAndCapsule(geometryA, transformA, geometryB, transformB);
 
@@ -141,7 +141,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The contact manifold fully detailing the intersection.</returns>
         public static PhysicsShape.ContactManifold ChainSegmentAndPolygon(ChainSegmentGeometry geometryA, PhysicsTransform transformA, PolygonGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_ChainSegmentAndPolygon(geometryA, transformA, geometryB, transformB);
 
@@ -151,7 +151,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometryA">The first geometry to use.</param>
         /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
         /// <param name="geometryB">The second geometry to use.</param>
-        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="transformB">The transform used to specify where the second geometry is positioned.</param>
         /// <returns>The segment distance results.</returns>
         public static SegmentDistanceResult SegmentDistance(SegmentGeometry geometryA, PhysicsTransform transformA, SegmentGeometry geometryB, PhysicsTransform transformB) => PhysicsQuery_SegmentDistance(geometryA, transformA, geometryB, transformB);
 
@@ -160,7 +160,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Initially touching shapes are treated as a miss. You should check for overlap first if initial overlap is required.
         /// </summary>
         /// <param name="castShapePairInput">The input describing the shape proxies and how they should move.</param>
-        public static void CastShapes(CastShapePairInput castShapePairInput) => PhysicsQuery_CastShapes(castShapePairInput);
+        /// <returns>The cast result.</returns>
+        public static PhysicsQuery.CastResult CastShapes(CastShapePairInput castShapePairInput) => PhysicsQuery_CastShapes(castShapePairInput);
 
         /// <summary>
         /// Calculate the distance and closest points between two shape proxies.
@@ -435,7 +436,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Dispose of any allocated memory for the collision results.
             /// </summary>
-            public void Dispose() => collisionResults.Dispose();
+            public void Dispose() => m_CollisionResults.Dispose();
 
             #region Internal
 

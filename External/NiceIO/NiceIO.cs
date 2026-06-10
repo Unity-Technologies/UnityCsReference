@@ -423,7 +423,7 @@ namespace NiceIO
             foreach (var parent in path.RecursiveParents.ToArray())
             {
                 sb.Append("../");
-                if (IsChildOf(parent))
+                if (IsSameAsOrChildOf(parent))
                 {
                     sb.Append(thisString.Substring(parent.ToString().Length));
                     return new NPath(sb.ToString());

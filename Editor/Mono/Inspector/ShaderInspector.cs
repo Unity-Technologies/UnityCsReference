@@ -612,7 +612,7 @@ namespace UnityEditor
             var windowHeight = rowCount * EditorGUI.kSingleLineHeight + kSeparatorHeight * 3;
             windowHeight += 2 * kFrameWidth;
 
-            var windowSize = new Vector2(210, windowHeight);
+            var windowSize = new Vector2(225, windowHeight);
             return windowSize;
         }
 

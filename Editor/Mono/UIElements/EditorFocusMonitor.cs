@@ -8,20 +8,25 @@ namespace UnityEditor.UIElements
 {
     class EditorFocusMonitor
     {
-        /// <summary>
-        /// Checks if any Editor windows have a bindable element currently focused.
-        /// </summary>
-        /// <returns>True if a bindable element is focused; false otherwise.</returns>
-        public static bool AreBindableElementsSelected()
+        // If no focusController is provided, check the keyboard-focused window.
+        internal static bool HasTextElementFocus(FocusController focusController = null)
         {
-            foreach (var window in EditorWindow.activeEditorWindows)
-            {
-                var focusController = window.rootVisualElement?.panel?.focusController;
+            if (focusController != null)
+                return IsTextEditingActive(focusController);
 
-                // We only care about elements that are bindable, as they are the only ones that could be making changes to the prefab.
-                if (focusController?.focusedElement is BindableElement)
-                    return true;
-            }
+            var focusedWindow = EditorWindow.focusedWindow;
+            return focusedWindow != null &&
+                   IsTextEditingActive(focusedWindow.rootVisualElement?.panel?.focusController);
+        }
+
+        static bool IsTextEditingActive(FocusController focusController)
+        {
+            if (focusController == null)
+                return false;
+
+            if (focusController.GetLeafFocusedElement() is TextElement textElement)
+                return textElement.hasFocus && textElement.selection.isSelectable && !textElement.edition.isReadOnly;
+
             return false;
         }
     }

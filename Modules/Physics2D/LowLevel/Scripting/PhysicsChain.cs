@@ -149,7 +149,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly PhysicsShape.SurfaceMaterial.MixingMode frictionMixing { get => PhysicsChain_GetFrictionMixing(this); set => PhysicsChain_SetFrictionMixing(this, value); }
 
         /// <summary>
-        /// Defines the method used when mixing the friction values of two shapes to form a shape contact.
+        /// Defines the method used when mixing the bounciness values of two shapes to form a shape contact.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
         public readonly PhysicsShape.SurfaceMaterial.MixingMode bouncinessMixing { get => PhysicsChain_GetBouncinessMixing(this); set => PhysicsChain_SetBouncinessMixing(this, value); }

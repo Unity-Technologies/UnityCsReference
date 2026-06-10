@@ -560,8 +560,13 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Gets all the existing Transform Write Tweens that are handled per-frame.
+        ///
+        /// The returned <see cref="NativeArray{T}"/> aliases the per-frame internal buffer owned by the world; it does not own its memory (so disposing it does nothing).
+        /// The contents are only valid until the next simulation step runs, after which the buffer may be reused or destroyed.
+        /// If a longer-lived copy is required, copy the contents into a caller-owned <see cref="NativeArray{T}"/>.
         /// </summary>
-        /// <returns>All the existing Transform Write Tweens that are handled per-frame.</returns>
+        /// <returns>A world-owned view of the existing Transform Write Tweens that are handled per-frame.
+        /// Contents are invalidated by the next simulation step.</returns>
         public readonly NativeArray<PhysicsBody.TransformWriteTween> GetTransformWriteTweens() => PhysicsWorld_GetTransformWriteTweens(this).ToNativeArray<PhysicsBody.TransformWriteTween>();
 
         /// <summary>

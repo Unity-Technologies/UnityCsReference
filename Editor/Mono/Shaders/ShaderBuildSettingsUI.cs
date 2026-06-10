@@ -198,6 +198,9 @@ namespace UnityEditor.Shaders
 
         private void LoadSettingsData()
         {
+            // Clean stale selections before shrinking the list of keywords.
+            m_ListView.ClearSelection();
+
             m_ListView.Clear();
             m_KeywordDeclarationOverrides.Clear();
 

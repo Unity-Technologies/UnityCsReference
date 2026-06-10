@@ -1232,6 +1232,33 @@ namespace Unity.UI.Builder
                 visualTreeAsset.DeepOverwrite(m_VisualTreeAssetBackup);
         }
 
+        internal void ResyncBackupToCurrentAsset()
+        {
+            if (string.IsNullOrEmpty(uxmlOldPath))
+                return;
+
+            var fresh = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(uxmlOldPath);
+            if (fresh == null)
+                return;
+
+            m_VisualTreeAsset = fresh;
+            m_VisualTreeAssetRef = fresh;
+
+            if (m_VisualTreeAssetBackup == null)
+            {
+                m_VisualTreeAssetBackup = fresh.DeepCopy();
+                return;
+            }
+
+            // Preserve the backup's selection markers across the wholesale sync, and re-apply
+            // them onto the freshly reimported asset so the canvas selection survives the
+            // dependent reimport. (UUM-141060)
+            var markers = CaptureSelectionMarkers(m_VisualTreeAssetBackup);
+            fresh.DeepOverwrite(m_VisualTreeAssetBackup);
+            ApplySelectionMarkers(m_VisualTreeAssetBackup, markers);
+            ApplySelectionMarkers(fresh, markers);
+        }
+
         bool PostSaveToDiskChecksAndFixes(string newUxmlPath, bool needsFullRefresh)
         {
             var oldVTAReference = visualTreeAsset;
@@ -1269,10 +1296,86 @@ namespace Unity.UI.Builder
                 m_ContentHash = m_VisualTreeAsset.contentHash;
             }
 
+            // Sync the backup to the freshly imported asset so a later RestoreAssetsFromBackup
+            // doesn't revert ids referenced by ancestor serializedDataOverrides (UUM-141060),
+            // capturing selection markers across the sync so the editor-only state survives.
+            if (m_VisualTreeAssetBackup != null && m_VisualTreeAsset != null)
+            {
+                var markers = CaptureSelectionMarkers(m_VisualTreeAssetBackup);
+                m_VisualTreeAsset.DeepOverwrite(m_VisualTreeAssetBackup);
+                ApplySelectionMarkers(m_VisualTreeAssetBackup, markers);
+                ApplySelectionMarkers(m_VisualTreeAsset, markers);
+            }
+
             // Reset file settings
             fileSettings.SetRootElementAsset(m_VisualTreeAsset);
 
             return needsFullRefresh;
+        }
+
+        struct SelectionMarkerSnapshot
+        {
+            public List<int> selectedVeaIndices;
+            public bool hasRootMarker;
+        }
+
+        static SelectionMarkerSnapshot CaptureSelectionMarkers(VisualTreeAsset vta)
+        {
+            var snapshot = new SelectionMarkerSnapshot
+            {
+                selectedVeaIndices = new List<int>(),
+                hasRootMarker = false,
+            };
+            if (vta == null)
+                return snapshot;
+
+            var idx = 0;
+            foreach (var ua in vta.DepthFirstTraversal())
+            {
+                if (ua.fullTypeName == BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName)
+                {
+                    snapshot.hasRootMarker = true;
+                    continue;
+                }
+                if (ua is VisualElementAsset vea)
+                {
+                    var value = vea.GetAttributeValue(BuilderConstants.SelectedVisualElementAssetAttributeName);
+                    if (value == BuilderConstants.SelectedVisualElementAssetAttributeValue)
+                        snapshot.selectedVeaIndices.Add(idx);
+                }
+                idx++;
+            }
+            return snapshot;
+        }
+
+        static void ApplySelectionMarkers(VisualTreeAsset vta, SelectionMarkerSnapshot snapshot)
+        {
+            if (vta == null)
+                return;
+
+            if (snapshot.selectedVeaIndices != null && snapshot.selectedVeaIndices.Count > 0)
+            {
+                var lookup = new HashSet<int>(snapshot.selectedVeaIndices);
+                var idx = 0;
+                foreach (var ua in vta.DepthFirstTraversal())
+                {
+                    if (ua.fullTypeName == BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName)
+                        continue;
+                    if (lookup.Contains(idx) && ua is VisualElementAsset vea)
+                    {
+                        vea.SetAttribute(
+                            BuilderConstants.SelectedVisualElementAssetAttributeName,
+                            BuilderConstants.SelectedVisualElementAssetAttributeValue);
+                    }
+                    idx++;
+                }
+            }
+
+            if (snapshot.hasRootMarker
+                && vta.FindElementByType(BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName) == null)
+            {
+                SelectionUtility.AddToSelection(vta);
+            }
         }
 
         public BuilderDocumentOpenUSS GetUssFileFromSheet(StyleSheet styleSheet)

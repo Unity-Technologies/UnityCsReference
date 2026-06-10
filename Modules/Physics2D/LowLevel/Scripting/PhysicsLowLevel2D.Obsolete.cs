@@ -87,4 +87,12 @@ namespace UnityEngine.LowLevelPhysics2D
         [Obsolete("PhysicsChain.bouncinessCombine has been deprecated. Please use PhysicsChain.bouncinessMixing instead.", false)]
         public readonly PhysicsMaterialCombine2D bouncinessCombine { get => (PhysicsMaterialCombine2D)bouncinessMixing; set => bouncinessMixing = (PhysicsShape.SurfaceMaterial.MixingMode)value; }
     }
+
+    public partial struct PhysicsAABB
+    {
+        /// <undoc/>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsAABB.Normalized() is deprecated, please use PhysicsAABB.Normalize() instead. (UnityUpgradable) -> Normalize()", false)]
+        public void Normalized() => Normalize();
+    }
 }

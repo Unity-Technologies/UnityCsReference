@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEngine.Accessibility
 {
@@ -342,8 +341,8 @@ namespace UnityEngine.Accessibility
         ///- <see cref="AccessibilityRole.Dropdown"/>
         ///- <see cref="AccessibilityRole.ScrollView"/>
         ///
-        /// On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have 
-        /// a value containing a number between 0 and 100 to accurately communicate the scroll percentage 
+        /// On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have
+        /// a value containing a number between 0 and 100 to accurately communicate the scroll percentage
         /// to the screen reader. For scroll views that support both vertical and horizontal scrolling, the value
         /// must contain two numbers, with the vertical scroll percentage listed first.
         /// For example, a value of `50, 75` indicates that the scroll view represented by the node is scrolled 50% vertically and 75% horizontally.
@@ -741,25 +740,16 @@ namespace UnityEngine.Accessibility
         void CreateNativeNodeWithData(ref AccessibilityNodeData nodeData)
         {
             // Ignore unsupported platforms, where AccessibilityNodeManager.CreateNativeNodeWithData returns false.
-            if (AccessibilityManager.isSupportedPlatform)
+            if (!AccessibilityManager.isSupportedPlatform)
             {
-                while (AccessibilityNodeManager.CreateNativeNodeWithData(nodeData) == false)
-                {
-                    Debug.LogWarning($"{nameof(CreateNativeNodeWithData)}: Node ID '{nodeData.nodeId}' is already " +
-                        "used. Trying to create a node with an incremented node ID.");
-
-                    if (nodeData.nodeId == int.MaxValue)
-                    {
-                        nodeData.nodeId = 0;
-                    }
-                    else
-                    {
-                        nodeData.nodeId++;
-                    }
-                }
+                return;
             }
 
-            id = nodeData.nodeId;
+            if (!AccessibilityNodeManager.CreateNativeNodeWithData(nodeData))
+            {
+                throw new InvalidOperationException($"{nameof(CreateNativeNodeWithData)}: Could not create native " +
+                    $"accessibility node with ID {nodeData.nodeId}. Please check the Player log for more details.");
+            }
         }
 
         internal void GetNodeData(ref AccessibilityNodeData nodeData)

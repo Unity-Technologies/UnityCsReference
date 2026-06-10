@@ -480,6 +480,17 @@ namespace Unity.UI.Builder
         public void OnPostProcessAsset(string assetPath)
         {
             activeOpenUXMLFile.OnPostProcessAsset(assetPath);
+
+            // Resync stale backups for non-active documents to avoid overwriting reimported assets (UUM-141060).
+            for (int i = 0; i < m_OpenUXMLFiles.Count; i++)
+            {
+                var openUXMLFile = m_OpenUXMLFiles[i];
+                if (openUXMLFile == activeOpenUXMLFile)
+                    continue;
+                if (openUXMLFile.uxmlOldPath == assetPath || openUXMLFile.ussPaths.Contains(assetPath))
+                    openUXMLFile.ResyncBackupToCurrentAsset();
+            }
+            
             var builderWindow = Builder.ActiveWindow;
             if (builderWindow != null)
                 builderWindow.toolbar?.InitCanvasTheme();
