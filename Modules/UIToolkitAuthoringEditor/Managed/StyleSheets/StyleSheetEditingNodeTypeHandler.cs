@@ -262,8 +262,10 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
         allStyleSheets.InsertRange(adjustedInsertIndex, sheetsToInsert);
 
         // Execute the set stylesheets command
-        var command = new SetStyleSheetsCommand(vta, allStyleSheets);
-        return command.Execute() ? DragVisualMode.Move : DragVisualMode.Rejected;
+        using var command = SetStyleSheetsCommand.GetPooled(CommandSources.StyleSheets, vta, allStyleSheets);
+        return UICommandQueue.Execute(command).Status == CommandExecutionStatus.Success
+            ? DragVisualMode.Move
+            : DragVisualMode.Rejected;
     }
 
     DragVisualMode HandleStyleRuleDrop(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
@@ -297,8 +299,8 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
                 adjustedIndex--;
         }
 
-        var command = new ReorderStyleRulesCommand(parentStyleNode.StyleSheet, draggedRules, adjustedIndex);
-        if (!command.Execute())
+        using var command = ReorderStyleRulesCommand.GetPooled(CommandSources.StyleSheets, parentStyleNode.StyleSheet, draggedRules, adjustedIndex);
+        if (UICommandQueue.Execute(command).Status != CommandExecutionStatus.Success)
             return DragVisualMode.Rejected;
 
         // Get the refreshed rules from the stylesheet from the target position
@@ -371,7 +373,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             if (existingStyleSheets != null && existingStyleSheets.Contains(styleSheet))
                 continue;
 
-            new AddStyleSheetCommand(vta, ussPath, insertIndex).Execute();
+            AddStyleSheetCommand.Execute(CommandSources.StyleSheets, vta, ussPath, insertIndex);
 
             var wasAdded = false;
             foreach (var stylesheet in vta.stylesheets)
@@ -437,7 +439,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             var styleSheet = Window.ActiveStyleSheet;
             var originalRuleCount = styleSheet.rules.Length;
 
-            new PasteStyleRuleCommand(Clipboard.SystemCopyBuffer, styleSheet).Execute();
+            PasteStyleRuleCommand.Execute(CommandSources.StyleSheets, Clipboard.SystemCopyBuffer, styleSheet);
 
             // Collect all newly pasted rule(s)
             using var _ = ListPool<StyleRule>.Get(out var pastedRules);
@@ -486,7 +488,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             return false;
         }
 
-        new RenameStyleRuleCommand(selectorStrings, node.Rule).Execute();
+        RenameStyleRuleCommand.Execute(CommandSources.StyleSheets, selectorStrings, node.Rule);
 
         // Force the selection object to refresh (even though reference didn't change)
         SelectionHandler.Remap([new StyleRuleRemap(node.Rule, node.Rule)]);
@@ -533,7 +535,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             toDuplicate[i] = nodes[i].Rule;
         }
 
-        new DuplicateStyleRuleCommand(toDuplicate).Execute();
+        DuplicateStyleRuleCommand.Execute(CommandSources.StyleSheets, toDuplicate);
 
         // Need to get the updated rules in order to apply the proper selection (and scroll)
         using var freshRules = ListPool<StyleRule>.Get(out var newRules);
@@ -582,7 +584,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             toRemove[i] = nodes[i].Rule;
         }
 
-        new RemoveStyleRulesCommand(toRemove).Execute();
+        RemoveStyleRulesCommand.Execute(CommandSources.StyleSheets, toRemove);
         return true;
     }
 

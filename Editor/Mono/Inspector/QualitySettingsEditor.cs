@@ -22,6 +22,13 @@ namespace UnityEditor
     [CustomEditor(typeof(QualitySettings))]
     internal class QualitySettingsEditor : ProjectSettingsBaseEditor
     {
+        private class ContentNonSearchable
+        {
+            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require either the Deferred Shading rendering path or Cameras that render depth textures.");
+            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mipmap levels. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
+            public static readonly GUIContent kAsyncUploadBufferSizeWarning = EditorGUIUtility.TrTextContent("Unity has detected that you are using an upload buffer size of {0} MB with the '{1}' setting enabled. If you have issues with excessive memory usage, you may need to reduce the upload buffer size or disable the '{1}' setting. Memory fragmentation can occur if you choose the latter option.");
+        }
+
         internal class Content
         {
             public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
@@ -70,7 +77,6 @@ namespace UnityEditor
             public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = EditorGUIUtility.TrTextContent("Max IO Requests", "The maximum number of texture file requests from the Mipmap Streaming system that can be active at the same time.");
 
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
-            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require either the Deferred Shading rendering path or Cameras that render depth textures.");
             public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.");
             public static readonly GUIContent kUseLegacyDistribution = EditorGUIUtility.TrTextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.");
             public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
@@ -79,12 +85,10 @@ namespace UnityEditor
             public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Group Level", "The highest LOD to use in the application.");
             public static readonly GUIContent kMeshLODThresholdLabel = EditorGUIUtility.TrTextContent("Mesh LOD Threshold", "Unity uses this parameter when selecting the Mesh LOD index to render. Increasing this setting makes Unity favor less detailed LODs in the evaluation process.");
             public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
-            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mipmap levels. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
 
             public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
             public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
             public static readonly GUIContent kAsyncUploadPersistentBuffer = EditorGUIUtility.TrTextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.");
-            public static readonly GUIContent kAsyncUploadBufferSizeWarning = EditorGUIUtility.TrTextContent("Unity has detected that you are using an upload buffer size of {0} MB with the '{1}' setting enabled. If you have issues with excessive memory usage, you may need to reduce the upload buffer size or disable the '{1}' setting. Memory fragmentation can occur if you choose the latter option.");
 
             public static readonly GUIContent kOverrideTerrainPixelError = EditorGUIUtility.TrTextContent("", "Whether to override pixel error in active Terrains.");
             public static readonly GUIContent kOverrideTerrainBasemapDist = EditorGUIUtility.TrTextContent("", "Whether to override base map distance in active Terrains.");
@@ -787,6 +791,22 @@ namespace UnityEditor
             row.name = "QualityLevelRow";
             row.AddToClassList("quality-table__row");
 
+            // Add "Current" tag label after the name field
+            var currentTag = new Label(L10n.Tr("Current"));
+            currentTag.name = "CurrentQualityLevelTag";
+            currentTag.AddToClassList("quality-level-current-tag");
+            currentTag.tooltip = "This is the current active quality level";
+            currentTag.style.display = DisplayStyle.None; // Hidden by default, shown in BindQualityLevelItem
+            row.Add(currentTag);
+
+            // Add spacer element to maintain alignment when "Current" tag is not visible
+            var spacer = new VisualElement();
+            spacer.name = "CurrentQualityLevelSpacer";
+            spacer.style.width = 56; // 50px (tag width) + 6px (margin) = 56px
+            spacer.style.flexShrink = 0;
+            spacer.style.display = DisplayStyle.Flex; // Visible by default
+            row.Add(spacer);
+
             var nameField = new TextField
             {
                 name = "QualityName"
@@ -803,22 +823,6 @@ namespace UnityEditor
             });
 
             row.Add(nameField);
-
-            // Add "Current" tag label after the name field
-            var currentTag = new Label("Current");
-            currentTag.name = "CurrentQualityLevelTag";
-            currentTag.AddToClassList("quality-level-current-tag");
-            currentTag.tooltip = "This is the current active quality level";
-            currentTag.style.display = DisplayStyle.None; // Hidden by default, shown in BindQualityLevelItem
-            row.Add(currentTag);
-
-            // Add spacer element to maintain alignment when "Current" tag is not visible
-            var spacer = new VisualElement();
-            spacer.name = "CurrentQualityLevelSpacer";
-            spacer.style.width = 56; // 50px (tag width) + 6px (margin) = 56px
-            spacer.style.flexShrink = 0;
-            spacer.style.display = DisplayStyle.Flex; // Visible by default
-            row.Add(spacer);
 
             for (int i = 0; i < m_ValidPlatforms.Count; i++)
             {
@@ -1123,6 +1127,7 @@ namespace UnityEditor
                 style = {
                     marginTop = 10,
                     marginBottom = 10,
+                    marginRight = 10,
                     alignItems = Align.Center,
                     flexDirection = FlexDirection.Row
                 }
@@ -1481,7 +1486,7 @@ namespace UnityEditor
 
             if (m_AsyncUploadBufferSizeProperty.intValue >= kAsyncRingBufferSizeWarningThreshold && m_AsyncUploadPersistentBufferProperty.boolValue)
             {
-                string messageToDisplay = string.Format(Content.kAsyncUploadBufferSizeWarning.text, m_AsyncUploadBufferSizeProperty.intValue, Content.kAsyncUploadPersistentBuffer.text);
+                string messageToDisplay = string.Format(ContentNonSearchable.kAsyncUploadBufferSizeWarning.text, m_AsyncUploadBufferSizeProperty.intValue, Content.kAsyncUploadPersistentBuffer.text);
                 EditorGUILayout.HelpBox(messageToDisplay, MessageType.Warning, false);
             }
 
@@ -1534,7 +1539,7 @@ namespace UnityEditor
             if ((mainCamera.depthTextureMode & DepthTextureMode.Depth) != 0)
                 return; // already produces depth texture, all is good
 
-            EditorGUILayout.HelpBox(Content.kSoftParticlesHint.text, MessageType.Warning, false);
+            EditorGUILayout.HelpBox(ContentNonSearchable.kSoftParticlesHint.text, MessageType.Warning, false);
         }
 
         void MipStrippingHintGUI()
@@ -1542,7 +1547,7 @@ namespace UnityEditor
             if (PlayerSettings.mipStripping)
                 return;
 
-            EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info);
+            EditorGUILayout.HelpBox(ContentNonSearchable.kMipStrippingHint.text, MessageType.Info);
         }
 
         /**

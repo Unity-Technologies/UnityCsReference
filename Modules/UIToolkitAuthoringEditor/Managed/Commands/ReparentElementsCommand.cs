@@ -2,57 +2,83 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct ReparentElementsCommand
+internal sealed class ReparentElementsCommand : Command<ReparentElementsCommand>
 {
     const string CommandUndoName = "Reparent elements";
 
-    readonly VisualElementAsset ParentAsset;
-    readonly int Index;
-    readonly VisualElementAsset[] ChildrenAssetsAssets;
-
-    public ReparentElementsCommand(VisualElementAsset parentAsset, int index, VisualElementAsset[] childrenAssets)
+    public static ReparentElementsCommand GetPooled(object source, VisualElementAsset parentAsset, int index, VisualElementAsset[] childrenAssets)
     {
-        ParentAsset = parentAsset;
-        Index = index;
-        ChildrenAssetsAssets = childrenAssets;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.ParentAsset = parentAsset;
+        cmd.Index = index;
+        cmd.ChildrenAssets = childrenAssets;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElementAsset parentAsset, int index, VisualElementAsset[] childrenAssets)
     {
-        Assert.IsNotNull(ParentAsset);
-        Assert.IsTrue(Index >= -1 && Index <= ParentAsset.childCount);
-        foreach (var asset in ChildrenAssetsAssets)
-            Assert.IsNotNull(asset);
+        using var command = GetPooled(source, parentAsset, index, childrenAssets);
+        UICommandQueue.Execute(command);
+    }
 
+    public VisualElementAsset ParentAsset { get; private set; }
+    public int Index { get; private set; }
+    public VisualElementAsset[] ChildrenAssets { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Hierarchy;
+
+    protected override void Init()
+    {
+        base.Init();
+        ParentAsset = null;
+        Index = -1;
+        ChildrenAssets = null;
+    }
+
+    public override bool Validate()
+    {
+        if (ParentAsset == null || ParentAsset.visualTreeAsset == null)
+            return false;
+        if (Index < -1 || Index > ParentAsset.childCount)
+            return false;
+        if (ChildrenAssets == null)
+            return false;
+        foreach (var asset in ChildrenAssets)
+        {
+            if (asset == null)
+                return false;
+        }
+        return true;
+    }
+
+    public override void Prepare(in PrepareContext context)
+    {
         var visualTreeAsset = ParentAsset.visualTreeAsset;
-        Assert.IsNotNull(visualTreeAsset);
-
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
+        context.RecordUndo(visualTreeAsset);
 
         using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
-        foreach (var asset in ChildrenAssetsAssets)
+        foreach (var asset in ChildrenAssets)
         {
             var vta = asset.visualTreeAsset;
-            if (vta && vta != visualTreeAsset)
-                set.Add(vta);
+            if (vta && vta != visualTreeAsset && set.Add(vta))
+                context.RecordUndo(vta);
         }
 
-        foreach (var vta in set)
-            Undo.RegisterCompleteObjectUndo(vta, CommandUndoName);
+        context.RecordUndo(visualTreeAsset.GetOrCreateInlineStyleSheet());
+    }
 
-        var inlineStyleSheet = visualTreeAsset.GetOrCreateInlineStyleSheet();
-        Undo.RegisterCompleteObjectUndo(inlineStyleSheet, CommandUndoName);
-
-        for (var i = 0; i < ChildrenAssetsAssets.Length; ++i)
+    public override CommandExecutionStatus Execute()
+    {
+        for (var i = 0; i < ChildrenAssets.Length; ++i)
         {
-            var asset = ChildrenAssetsAssets[i];
+            var asset = ChildrenAssets[i];
             if (Index < 0)
             {
                 ParentAsset.Add(asset);
@@ -62,12 +88,6 @@ internal readonly record struct ReparentElementsCommand
             ParentAsset.Insert(index, asset);
         }
 
-        EditorUtility.SetDirty(visualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
-        foreach (var vta in set)
-        {
-            EditorUtility.SetDirty(vta);
-            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
-        }
+        return CommandExecutionStatus.Success;
     }
 }

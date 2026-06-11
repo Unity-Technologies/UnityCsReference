@@ -65,7 +65,7 @@ namespace UnityEngine
             EditorGUI.EndDisabledGroup();
             m_Material.SetFloat(s_ShaderExposure, GetExposureValueForTexture(t));
 
-            EditorGUI.BeginDisabledGroup(m_MipCount == 0);
+            EditorGUI.BeginDisabledGroup(m_MipCount <= 1);
             GUILayout.Box(EditorGUIUtility.IconContent("PreTextureMipMapLow"), Styles.toolbarLabel);
             m_Mip = Mathf.RoundToInt(GUILayout.HorizontalSlider(m_Mip, m_MipCount - 1, 0, GUILayout.Width(64)));
             GUILayout.Box(EditorGUIUtility.IconContent("PreTextureMipMapHigh"), Styles.toolbarLabel);

@@ -475,7 +475,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             outBytes = (ulong)(transparencyPixelsCount * GetBytesPerPixel(texture2D));
         }
 
-        static Texture2D CopyTexture(Texture2D texture)
+        internal static Texture2D CopyTexture(Texture2D texture)
         {
             Texture2D newTexture;
 

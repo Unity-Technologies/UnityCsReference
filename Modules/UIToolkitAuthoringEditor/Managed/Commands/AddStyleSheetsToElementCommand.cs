@@ -3,44 +3,70 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct AddStyleSheetsToElementCommand
+internal sealed class AddStyleSheetsToElementCommand : Command<AddStyleSheetsToElementCommand>
 {
     const string CommandUndoName = "Add style sheets to element";
 
-    readonly VisualElementAsset VisualElementAsset;
-    readonly StyleSheet[] StyleSheets;
-
-    public AddStyleSheetsToElementCommand(VisualElementAsset visualElementAsset, StyleSheet[] styleSheets)
+    public static AddStyleSheetsToElementCommand GetPooled(object source, VisualElementAsset visualElementAsset, StyleSheet[] styleSheets)
     {
-        VisualElementAsset = visualElementAsset;
-        StyleSheets = styleSheets;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.VisualElementAsset = visualElementAsset;
+        cmd.StyleSheets = styleSheets;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElementAsset visualElementAsset, StyleSheet[] styleSheets)
     {
-        Assert.IsNotNull(VisualElementAsset);
-        Assert.IsNotNull(VisualElementAsset.visualTreeAsset);
-        Assert.IsNotNull(StyleSheets);
+        using var command = GetPooled(source, visualElementAsset, styleSheets);
+        UICommandQueue.Execute(command);
+    }
+
+    public VisualElementAsset VisualElementAsset { get; private set; }
+    public StyleSheet[] StyleSheets { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Hierarchy;
+
+    protected override void Init()
+    {
+        base.Init();
+        VisualElementAsset = null;
+        StyleSheets = null;
+    }
+
+    public override bool Validate()
+    {
+        if (VisualElementAsset == null || VisualElementAsset.visualTreeAsset == null || StyleSheets == null)
+            return false;
+
         foreach (var styleSheet in StyleSheets)
         {
-            Assert.IsNotNull(styleSheet);
-            Assert.IsFalse(string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(styleSheet)));
+            if (styleSheet == null)
+                return false;
+            if (string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(styleSheet)))
+                return false;
         }
 
-        var visualTreeAsset = VisualElementAsset.visualTreeAsset;
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
+        return true;
+    }
 
-        // Remove existing style sheet so that they are re-added at the end.
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(VisualElementAsset.visualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
+        // Remove existing style sheets so that they are re-added at the end.
         foreach (var styleSheet in StyleSheets)
             VisualElementAsset.stylesheets.Remove(styleSheet);
 
         VisualElementAsset.stylesheets.AddRange(StyleSheets);
-
-        EditorUtility.SetDirty(visualTreeAsset);
+        return CommandExecutionStatus.Success;
     }
 }

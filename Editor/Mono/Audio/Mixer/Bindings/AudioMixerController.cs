@@ -111,6 +111,9 @@ namespace UnityEditor.Audio
         public static float kVolumeWarp = 1.7f;
         public static string s_GroupEffectDisplaySeperator = "\\"; // Use backslash instead of forward slash to prevent OS menus from splitting path and creating submenus
 
+        public const int kMaxMeteringChannels = 12;
+        public const int kGlobalMeteringChannel = kMaxMeteringChannels;
+
         public event ChangedExposedParameterHandler ChangedExposedParameter;
 
         public void OnChangedExposedParameter()

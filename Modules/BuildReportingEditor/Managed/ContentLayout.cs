@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Build
 {
@@ -12,6 +13,7 @@ namespace UnityEditor.Build
     /// Category strings used by <see cref="BinaryArtifact.Category"/>.
     /// Keep in sync with the kBuildArtifactCategory_* constants in native code.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     internal static class BuildArtifactCategory
     {
         /// <summary>Texture data, written to a streaming resource (.resS) file.</summary>
@@ -36,6 +38,7 @@ namespace UnityEditor.Build
     /// <summary>
     /// Describes a SerializedFile in the build output.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     [Serializable]
     internal struct SerializedFileLayout
     {
@@ -73,6 +76,7 @@ namespace UnityEditor.Build
     /// Records a loadable object in the build. Listed at the top level of the ContentLayout so that a
     /// loadable's identity is described independently of the SerializedFile that happens to contain it.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     [Serializable]
     internal class LoadableObjectIdLayout
     {
@@ -99,6 +103,7 @@ namespace UnityEditor.Build
     /// <summary>
     /// Records a scene exposed as loadable in the build, and the SerializedFile that contains it.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     [Serializable]
     internal class LoadableSceneIdLayout
     {
@@ -115,6 +120,7 @@ namespace UnityEditor.Build
     /// <summary>
     /// Describes a binary artifact produced by the build (SerializedFile, streaming resource, manifest, etc.).
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     [Serializable]
     internal class BinaryArtifact
     {
@@ -170,6 +176,7 @@ namespace UnityEditor.Build
     /// It is not shipped with the build; it exists for tools and tests that analyze build output.
     /// The schema is subject to change and there is currently no backward compatibility.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     [Serializable]
     internal class ContentLayout
     {

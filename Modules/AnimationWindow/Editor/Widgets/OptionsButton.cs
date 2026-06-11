@@ -248,6 +248,18 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                     if (!Valid) return DropdownMenuAction.Status.Disabled;
                     return state.showReadOnly ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
                 });
+
+            AddAction(
+                L10n.Tr("Enable Query Builder"),
+                k_GeneralOptionsGroupName,
+                _ => state.enableQueryBuilder = !state.enableQueryBuilder,
+                _ =>
+                {
+                    if (!Valid) return DropdownMenuAction.Status.Disabled;
+                    return state.enableQueryBuilder
+                        ? DropdownMenuAction.Status.Checked
+                        : DropdownMenuAction.Status.Normal;
+                });
         }
 
         void OnRefresh()

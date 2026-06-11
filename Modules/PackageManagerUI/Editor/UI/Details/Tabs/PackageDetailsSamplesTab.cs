@@ -162,6 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var idsAsList = new List<string>(packageIdsToSelect);
+            PackageManagerWindowAnalytics.SendEvent("viewMoreSamples", m_Version);
             m_DelayedSelectionHandler.SelectSamplePageWithPackageFilters(idsAsList);
         }
 

@@ -108,8 +108,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                             DrawActionButton(allFixed ? SharedContents.QuickFixDone : content, () =>
                             {
-                                foreach (var issue in selectedIssues)
-                                    issue.Id.GetDescriptor().Fix(issue, m_ViewManager.Report.SessionInfo);
+                                using (new AssetDatabase.AssetEditingScope())
+                                {
+                                    foreach (var issue in selectedIssues)
+                                        issue.Id.GetDescriptor().Fix(issue, m_ViewManager.Report.SessionInfo);
+                                }
 
                                 m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke(selectedIssues);
                             });

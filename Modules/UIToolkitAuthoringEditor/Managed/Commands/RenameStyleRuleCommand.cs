@@ -2,45 +2,60 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct RenameStyleRuleCommand
+internal sealed class RenameStyleRuleCommand : Command<RenameStyleRuleCommand>
 {
     const string CommandUndoName = "Rename style rule";
 
-    readonly string[] NewSelectors;
-    readonly StyleRule ToUpdateStyleRule;
-
-    public RenameStyleRuleCommand(string[] newSelectors, StyleRule toUpdateStyleRule)
+    public static RenameStyleRuleCommand GetPooled(object source, string[] newSelectors, StyleRule toUpdateStyleRule)
     {
-        NewSelectors = newSelectors;
-        ToUpdateStyleRule = toUpdateStyleRule;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.NewSelectors = newSelectors;
+        cmd.ToUpdateStyleRule = toUpdateStyleRule;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, string[] newSelectors, StyleRule toUpdateStyleRule)
     {
-        Assert.IsNotNull(NewSelectors);
-        Assert.IsNotNull(ToUpdateStyleRule);
+        using var command = GetPooled(source, newSelectors, toUpdateStyleRule);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(ToUpdateStyleRule.styleSheet, CommandUndoName);
+    public string[] NewSelectors { get; private set; }
+    public StyleRule ToUpdateStyleRule { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
+
+    protected override void Init()
+    {
+        base.Init();
+        NewSelectors = null;
+        ToUpdateStyleRule = null;
+    }
+
+    public override bool Validate() => NewSelectors != null && ToUpdateStyleRule != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(ToUpdateStyleRule.styleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         foreach (var selector in ToUpdateStyleRule.complexSelectors)
-        {
             ToUpdateStyleRule.RemoveSelector(selector);
-        }
 
         foreach (var selector in NewSelectors)
         {
-            if (ToUpdateStyleRule.TryAddSelector(selector, out _))
-                continue;
-
-            return;
+            if (!ToUpdateStyleRule.TryAddSelector(selector, out _))
+                return CommandExecutionStatus.ExecutionFailed;
         }
 
-        EditorUtility.SetDirty(ToUpdateStyleRule.styleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

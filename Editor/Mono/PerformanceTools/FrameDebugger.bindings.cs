@@ -109,6 +109,10 @@ namespace UnityEditorInternal.FrameDebuggerInternal
     {
         public string m_Name;
         public int m_Flags;
+        public ShaderFloatInfo[] m_Floats;
+        public ShaderIntInfo[] m_Ints;
+        public ShaderVectorInfo[] m_Vectors;
+        public ShaderMatrixInfo[] m_Matrices;
     }
 
     internal struct ShaderInfo
@@ -288,5 +292,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         // Returns false, if frameEventData holds data from previous selected frame
         public extern static bool GetFrameEventData(int index, [Out][NotNull] FrameDebuggerEventData frameDebuggerEventData);
+
+        // Surround a Camera.Render() call with these two methods to replicate the player-loop
+        // capture scope (EnterOffscreenRendering / LeaveOffscreenRendering).  Without this
+        // surrounding scope, Camera.Render() called outside the player loop does not set
+        // m_InGameView, so IsCapturingFrameInfo() returns false and no events are recorded.
+        // Intended for use in editor tests only.
+        public extern static void EnterCapturingScope();
+        public extern static void LeaveCapturingScope();
     }
 }

@@ -121,7 +121,6 @@ namespace Unity.UI.Builder
                 if (m_PaneWindow.document)
                     m_PaneWindow.document.viewportZoomScale = value;
                 m_Canvas.zoomScale = value;
-                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
             }
         }
 
@@ -279,6 +278,8 @@ namespace Unity.UI.Builder
                 ShortcutIntegration.instance.contextManager.DeregisterToolContext(this);
             });
 
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+
             RegisterCallback<FocusEvent>(e =>
             {
                 ShortcutIntegration.instance.contextManager.RegisterToolContext(this);
@@ -286,6 +287,13 @@ namespace Unity.UI.Builder
             });
 
             m_Canvas.RegisterCallback<GeometryChangedEvent>(e => { m_CheckerboardBackground.MarkDirtyRepaint(); });
+        }
+
+        // Canvas content is arbitrary; opt the panel into every channel any draw might use.
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            if (panel != null)
+                panel.extraVertexChannels = UIElementsUtility.k_AllExtraChannels;
         }
 
         private void ResetViewTransform()

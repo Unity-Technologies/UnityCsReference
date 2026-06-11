@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.IL2CPP.CompilerServices;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -14,6 +15,8 @@ namespace UnityEngine.UIElements.StyleSheets
     // where the elements (e.g. SelectorRangeDescriptor) are large enough that the per-comparison
     // copy of System.Comparison<T> shows up. Quicksort with median-of-three pivot, insertion sort
     // for small partitions; not stable.
+    [Il2CppSetOption(Option.NullChecks, false)]
+    [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
     internal static class SpanSort
     {
         const int k_InsertionSortThreshold = 16;

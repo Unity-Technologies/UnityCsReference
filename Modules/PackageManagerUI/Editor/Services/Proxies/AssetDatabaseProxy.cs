@@ -41,12 +41,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ImportPackage(string packagePath, bool interactive)
         {
-            AssetDatabase.ImportPackage(packagePath, interactive);
+            AssetPackage.Package.Import(packagePath, interactive);
         }
 
         public void ImportPackage(string packagePath, AssetOrigin origin, bool interactive)
         {
-            AssetDatabase.ImportPackage(packagePath, origin, interactive);
+            AssetPackage.Utility.ImportPackage(packagePath, origin, interactive);
         }
 
         public bool DeleteAssets(string[] paths, List<string> outFailedPaths)

@@ -74,6 +74,19 @@ namespace Unity.GraphToolkit.Editor
         public Color DefaultColor { get; set; }
 
         /// <summary>
+        /// The progress fill amount displayed on the node's accent bar, expressed as a percentage.
+        /// </summary>
+        /// <remarks>
+        /// Accepted values range from -100 to 100. A positive value fills the bar from left to right.
+        /// A negative value fills it from right to left. A value of <c>0</c> hides the bar.
+        /// </remarks>
+        public float FillAmount
+         {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        /// <summary>
         /// Whether the node is connected to at least one other node.
         /// </summary>
         public bool IsConnected => NodeModel.IsConnected;
@@ -86,10 +99,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The globally unique identifier for this node.
         /// </summary>
-        /// <remarks>
-        /// This GUID uniquely identifies the node instance and persists across sessions.
-        /// </remarks>
-        public Hash128 Guid { get; }
+        public Hash128 ID { get; }
 
         /// <summary>
         /// Retrieves an input port using its index.

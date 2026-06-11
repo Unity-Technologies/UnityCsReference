@@ -3,14 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using Unity.Properties;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -22,12 +20,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     public static readonly BindingId EditFlagsProperty = nameof(EditFlags);
 
     public const string UssClass = "unity-visual-element-inspector";
-    public const string HeaderUssClass = UssClass + "__header";
     public const string AssetNotEditableHelpBoxUssClass = UssClass + "__not-editable-help-box";
-    public const string AssetPathContainerUssClass = UssClass + "__asset-path-container";
-    public const string AssetPathTypeIconUssClass = UssClass + "__asset-path-type-icon";
-    public const string AssetPathFieldUssClass = UssClass + "__asset-path-field";
-    public const string AssetActionsViewUssClass = UssClass + "__asset-actions-view";
     public const string BindingsSectionViewClass = UssClass + "__bindings-section";
     public const string ClassListClass = UssClass + "__class-list";
     public const string MatchingSelectorsClass = UssClass + "__matching-selectors";
@@ -39,17 +32,9 @@ internal sealed partial class VisualElementInspector : UIInspector
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
-    private const string k_NoAssetPath = "<none>.uxml";
-
     private VisualElement m_Element;
     private VisualElementEditFlags m_EditFlags;
 
-    private readonly VisualElementHeader m_Header;
-    readonly VisualElement m_AssetPathContainer;
-    private readonly Image m_AssetPathTypeIcon;
-    private readonly TextField m_AssetPathField;
-
-    private readonly VisualTreeAssetInspectorActionsView m_AssetActionsView;
     private readonly VisualElement m_AssetNotEditableHelpBox;
     private readonly VisualElementBindingsInspectorElement m_BindingsInspector;
     private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
@@ -59,6 +44,8 @@ internal sealed partial class VisualElementInspector : UIInspector
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
     private VariablesInspector m_VariablesSection;
     private HelpBox m_RecordingBanner;
+
+    internal VisualElementAttributesInspectorElement AttributesInspector => m_AttributesInspector;
 
     bool m_IsRecording;
 
@@ -84,15 +71,8 @@ internal sealed partial class VisualElementInspector : UIInspector
                 return;
             m_Element = value;
 
-            m_Header.Element = m_Element;
-
             if (m_Element == null)
             {
-                m_AssetPathField.value = k_NoAssetPath;
-                m_AssetPathField.tooltip = String.Empty;
-                m_AssetActionsView.VisualTreeAsset = null;
-                m_AssetActionsView.PanelSettings = null;
-                m_AssetActionsView.SubDocumentPath = null;
                 m_ClassListElement.Target = null;
                 m_MatchingSelectorsElement.Target = null;
                 m_StyleInspector.Target = new StyleInspectorTarget(null);
@@ -101,29 +81,6 @@ internal sealed partial class VisualElementInspector : UIInspector
             }
             else
             {
-                var visualTreeAsset = m_Element.visualTreeAssetSource
-                    ? m_Element.visualTreeAssetSource
-                    : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
-
-                var assetPath = k_NoAssetPath;
-                var assetPathToolTip = string.Empty;
-
-                if (visualTreeAsset)
-                {
-                    var fullPath = AssetDatabase.GetAssetPath(visualTreeAsset.GetEntityId());
-                    assetPath = Path.GetFileName(fullPath);
-                    assetPathToolTip = fullPath;
-                }
-                m_AssetPathField.value = assetPath;
-                m_AssetPathField.tooltip = assetPathToolTip;
-                m_AssetActionsView.VisualTreeAsset = visualTreeAsset;
-                using var _ = ListPool<TemplateAsset>.Get(out var templateAssetPath);
-
-                m_Element.GenerateSubDocumentPath(templateAssetPath);
-
-                m_AssetActionsView.SubDocumentPath = templateAssetPath.ToArray();
-                m_AssetActionsView.PanelSettings = m_Element.GetPanelSettings();
-
                 m_ClassListElement.Target = m_Element;
                 m_MatchingSelectorsElement.Target = m_Element;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
@@ -161,14 +118,6 @@ internal sealed partial class VisualElementInspector : UIInspector
 
         m_AssetNotEditableHelpBox = this.Q(className:AssetNotEditableHelpBoxUssClass);
 
-        m_Header = this.Q<VisualElementHeader>(className:HeaderUssClass);
-        m_AssetPathContainer = this.Q(className:AssetPathContainerUssClass);
-        m_AssetPathTypeIcon = this.Q<Image>(className:AssetPathTypeIconUssClass);
-        m_AssetPathTypeIcon.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
-        m_AssetPathField = this.Q<TextField>(className:AssetPathFieldUssClass);
-        m_AssetActionsView = this.Q<VisualTreeAssetInspectorActionsView>(className:AssetActionsViewUssClass);
-        InitializeSearchField();
-
         // Attributes
         m_AttributesInspector = this.Q<VisualElementAttributesInspectorElement>();
 
@@ -176,7 +125,6 @@ internal sealed partial class VisualElementInspector : UIInspector
         m_BindingsInspector = this.Q<VisualElementBindingsInspectorElement>();
 
         // Context Sharing
-        m_Header.AttributesView.ShareContext(m_AttributesInspector.AttributesView);
         m_BindingsInspector.AttributesView.ShareContext(m_AttributesInspector.AttributesView);
 
         // StyleSheet
@@ -196,9 +144,7 @@ internal sealed partial class VisualElementInspector : UIInspector
             return;
         m_RecordingBanner = new HelpBox("", HelpBoxMessageType.Warning) { name = "RecordingBanner" };
         m_RecordingBanner.style.display = DisplayStyle.None;
-        var assetActionsViewIndex = this.IndexOf(m_AssetActionsView);
-        if (assetActionsViewIndex >= 0)
-            this.Insert(assetActionsViewIndex , m_RecordingBanner);
+        Insert(0, m_RecordingBanner);
     }
 
     void SetEditFlags(VisualElementEditFlags editFlags)
@@ -209,7 +155,6 @@ internal sealed partial class VisualElementInspector : UIInspector
         {
             // Complete read-only.
             case VisualElementEditFlags.None:
-                m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
                 m_ClassListElement.IsReadOnly = true;
@@ -219,7 +164,6 @@ internal sealed partial class VisualElementInspector : UIInspector
                 break;
             // Attribute overrides
             case VisualElementEditFlags.Attributes:
-                m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
                 m_ClassListElement.IsReadOnly = true;
@@ -229,7 +173,6 @@ internal sealed partial class VisualElementInspector : UIInspector
                 break;
             // Should almost never get here.
             case VisualElementEditFlags.Styles:
-                m_Header.SetEnabled(false);
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
                 m_ClassListElement.IsReadOnly = false;
@@ -239,7 +182,6 @@ internal sealed partial class VisualElementInspector : UIInspector
                 break;
             // Full editing
             case VisualElementEditFlags.FullyEditable:
-                m_Header.SetEnabled(true);
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
                 m_ClassListElement.IsReadOnly = false;
@@ -274,22 +216,12 @@ internal sealed partial class VisualElementInspector : UIInspector
         }
 
         var inStaging = StageUtility.GetCurrentStage() is VisualElementEditingStage;
-        var assetActionsVisible = DisplayStyle.None;
-        var editableHelpBoxAndAssetPathFieldVisible = DisplayStyle.None;
+        var editableHelpBoxVisible = DisplayStyle.None;
 
-        if (m_IsRecording && !inStaging)
-        {
-            assetActionsVisible = DisplayStyle.Flex;
-        }
-        else
-        {
-            if (m_EditFlags == VisualElementEditFlags.None && !inStaging)
-                assetActionsVisible = editableHelpBoxAndAssetPathFieldVisible = DisplayStyle.Flex;
-        }
+        if (!m_IsRecording && m_EditFlags == VisualElementEditFlags.None && !inStaging)
+            editableHelpBoxVisible = DisplayStyle.Flex;
 
-        m_AssetActionsView.style.display = assetActionsVisible;
-        m_AssetNotEditableHelpBox.style.display = editableHelpBoxAndAssetPathFieldVisible;
-        m_AssetPathContainer.style.display = editableHelpBoxAndAssetPathFieldVisible;
+        m_AssetNotEditableHelpBox.style.display = editableHelpBoxVisible;
     }
 
     /// <summary>

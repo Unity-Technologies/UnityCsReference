@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace UnityEngine.UIElements.UIR
@@ -11,17 +13,21 @@ namespace UnityEngine.UIElements.UIR
     {
         struct OpacityIdUpdateJob : IJobParallelFor
         {
-            [Unity.Collections.LowLevel.Unsafe.NativeDisableContainerSafetyRestriction]
-            public NativeSlice<Vertex> oldVerts;
-            [Unity.Collections.LowLevel.Unsafe.NativeDisableContainerSafetyRestriction]
-            public NativeSlice<Vertex> newVerts;
+            [NativeDisableUnsafePtrRestriction]
+            public IntPtr oldVerts;
+            [NativeDisableUnsafePtrRestriction]
+            public IntPtr newVerts;
+            public int vertStride;
+
             public ushort opacityId;
 
-            public void Execute(int i)
+            public unsafe void Execute(int i)
             {
-                Vertex vert = oldVerts[i];
-                vert.opacityId = opacityId;
-                newVerts[i] = vert;
+                byte* oldData = (byte*)oldVerts + i * vertStride;
+                byte* newData = (byte*)newVerts + i * vertStride;
+                if (newData != oldData)
+                    UnsafeUtility.MemCpy(newData, oldData, vertStride);
+                ((Vertex*)newData)->opacityId = opacityId;
             }
         }
 
@@ -33,12 +39,13 @@ namespace UnityEngine.UIElements.UIR
         NativeArray<JobHandle> m_Jobs = new NativeArray<JobHandle>(k_JobLimit, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
         int m_NextJobIndex;
 
-        public void CreateJob(NativeSlice<Vertex> oldVerts, NativeSlice<Vertex> newVerts, ushort opacityId, int vertexCount)
+        public void CreateJob(IntPtr oldVerts, IntPtr newVerts, int vertStride, ushort opacityId, int vertexCount)
         {
             JobHandle jobHandle = new OpacityIdUpdateJob
             {
                 oldVerts = oldVerts,
                 newVerts = newVerts,
+                vertStride = vertStride,
                 opacityId = opacityId
             }.Schedule(vertexCount, k_VerticesPerBatch);
 

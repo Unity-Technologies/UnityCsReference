@@ -8,7 +8,6 @@ using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -18,17 +17,33 @@ internal sealed class UIQueryTypeListBlock : QueryListBlock
 {
     private static readonly List<SearchProposition> k_ElementTypePropositions = new ();
 
-    [InitializeOnLoadMethod, UsedImplicitly]
-    static void RegisterTypes()
+    public UIQueryTypeListBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+        : base(source, id, value, attr)
     {
-        if (Application.isBuildingEditorResources)
-            return;
+        icon = UIResources.GetIconForType(typeof(VisualElement), UIResources.RequestSize.Px16).texture;
+    }
 
-        k_ElementTypePropositions.Clear();
-        // [TODO] MP: Force sync. Can be removed once we switch to the generate attribute descriptions.
-        UxmlSerializedDataRegistry.GetDescription("UnityEngine.UIElements.VisualElement");
+    public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags f = SearchPropositionFlags.None)
+    {
+        return GetOrGenerateSearchPropositions();
+    }
 
-        // [TODO] MP: Populate a list of runtime-compatible and editor-only types separately.
+    public override void Apply(in SearchProposition searchProposition)
+    {
+        value = searchProposition.label;
+        if (searchProposition.data is Type t)
+            icon = UIResources.GetIconForType(t, UIResources.RequestSize.Px16).texture;
+        else
+            icon = UIResources.GetIconForType(typeof(VisualElement), UIResources.RequestSize.Px16).texture;
+
+        ApplyChanges();
+    }
+
+    static IEnumerable<SearchProposition> GetOrGenerateSearchPropositions()
+    {
+        if (k_ElementTypePropositions.Count > 0)
+            return k_ElementTypePropositions;
+
         foreach (var kvp in UxmlSerializedDataRegistry.SerializedDataTypes)
         {
             var elementType = kvp.Value.DeclaringType;
@@ -42,27 +57,7 @@ internal sealed class UIQueryTypeListBlock : QueryListBlock
                 icon:UIResources.GetIconForType(elementType, UIResources.RequestSize.Px16).texture,
                 data:elementType));
         }
-    }
 
-    public UIQueryTypeListBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
-        : base(source, id, value, attr)
-    {
-        icon = UIResources.GetIconForType(typeof(VisualElement), UIResources.RequestSize.Px16).texture;
-    }
-
-    public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags f = SearchPropositionFlags.None)
-    {
         return k_ElementTypePropositions;
-    }
-
-    public override void Apply(in SearchProposition searchProposition)
-    {
-        value = searchProposition.label;
-        if (searchProposition.data is Type t)
-            icon = UIResources.GetIconForType(t, UIResources.RequestSize.Px16).texture;
-        else
-            icon = UIResources.GetIconForType(typeof(VisualElement), UIResources.RequestSize.Px16).texture;
-
-        ApplyChanges();
     }
 }

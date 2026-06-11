@@ -33,7 +33,7 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get a default <see cref="PhysicsWorld"/> definition.
         /// </summary>
-        public static PhysicsWorldDefinition defaultDefinition { get => PhysicsWorld_GetDefaultDefinition(true); }
+        public static PhysicsWorldDefinition defaultDefinition => PhysicsWorld_GetDefaultDefinition(true);
 
         /// <summary>
         /// Get/Set the gravity vector applied to all bodies in the world, usually in m/s^2.
@@ -45,7 +45,7 @@ namespace Unity.U2D.Physics
         /// Get/Set the simulation mode which controls when or if the simulation will be automatically simulated.
         /// See <see cref="PhysicsWorld.SimulationType"/> and <see cref="PhysicsWorld.Simulate(float)"/>.
         /// </summary>
-        public PhysicsWorld.SimulationType simulateType { readonly get => m_SimulationType; set => m_SimulationType = value; }
+        public PhysicsWorld.SimulationType simulationType { readonly get => m_SimulationType; set => m_SimulationType = value; }
 
         /// <summary>
         /// Get/Set the simulation sub-steps to use during simulation.

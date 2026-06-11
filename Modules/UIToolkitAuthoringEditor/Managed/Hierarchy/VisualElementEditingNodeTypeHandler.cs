@@ -278,7 +278,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             foreach (var element in draggedVisualElements)
                 logicalParent.Add(element);
 
-            new ReparentElementsCommand(parentAsset, -1, childrenAssets).Execute();
+            ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, childrenAssets);
             return DragVisualMode.Move;
         }
 
@@ -322,7 +322,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 --adjustedIndex;
         }
 
-        new ReparentElementsCommand(parentAsset, adjustedIndex, childrenAssets).Execute();
+        ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, adjustedIndex, childrenAssets);
 
         return DragVisualMode.Move;
     }
@@ -405,7 +405,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             return DragVisualMode.Rejected;
 
         var visualElementAsset = element.visualElementAsset;
-        new AddStyleSheetsToElementCommand(visualElementAsset, styleSheets.ToArray()).Execute();
+        AddStyleSheetsToElementCommand.Execute(CommandSources.Hierarchy, visualElementAsset, styleSheets.ToArray());
 
         foreach (var styleSheet in styleSheets)
             element.styleSheets.Remove(styleSheet);
@@ -494,7 +494,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         if (data.DropPosition == DragAndDropPosition.OverItem)
         {
             Assert.IsTrue(data.ChildIndex == -1);
-            new AddTemplatesToElementCommand(parentAsset, -1, visualTreeAssets.ToArray()).Execute();
+            AddTemplatesToElementCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, visualTreeAssets.ToArray());
             m_Stage.RequestRefresh();
             return DragVisualMode.Move;
         }
@@ -506,7 +506,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 --adjustedIndex;
         }
 
-        new AddTemplatesToElementCommand(parentAsset, adjustedIndex, visualTreeAssets.ToArray()).Execute();
+        AddTemplatesToElementCommand.Execute(CommandSources.Hierarchy, parentAsset, adjustedIndex, visualTreeAssets.ToArray());
         m_Stage.RequestRefresh();
 
         return DragVisualMode.Copy;
@@ -514,7 +514,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     DragVisualMode HandleLibraryItemBeingDragged(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
     {
-        if (DragAndDrop.GetGenericData("LibraryItem") is not LibraryItem libraryItem)
+        if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is not LibraryItem libraryItem)
             return DragVisualMode.None;
 
         var elementType = libraryItem.libraryType.type;
@@ -592,8 +592,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             }
         }
 
-        var command = new AddElementCommand(elementType, m_Stage.EditedVisualTreeAsset, parentAsset, adjustedIndex);
-        command.Execute();
+        AddElementCommand.Execute(CommandSources.Hierarchy, elementType, m_Stage.EditedVisualTreeAsset, parentAsset, adjustedIndex);
 
         m_Stage.RequestRefresh();
 
@@ -613,10 +612,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             return DragVisualMode.Rejected;
 
         if (performDrop)
-        {
-            using (var command = AddClassCommand.GetPooled(CommandSources.Hierarchy, element.visualElementAsset, className))
-                UICommandQueue.EnqueueCommand(command);
-        }
+            AddClassCommand.Execute(CommandSources.Hierarchy, element.visualElementAsset, className);
 
         return DragVisualMode.Copy;
     }
@@ -700,7 +696,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             toRemove[i] = elements[i].visualElementAsset;
         }
 
-        new RemoveElementsCommand(toRemove).Execute();
+        RemoveElementsCommand.Execute(CommandSources.Hierarchy, toRemove);
         foreach (var t in elements)
         {
             t.RemoveFromHierarchy();
@@ -734,7 +730,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             toDuplicate[i] = elements[i].visualElementAsset;
         }
 
-        new DuplicateElementsCommand(toDuplicate).Execute();
+        DuplicateElementsCommand.Execute(CommandSources.Hierarchy, toDuplicate);
         m_Stage.RequestRefresh();
         return true;
     }
@@ -777,7 +773,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 toPaste[i] = ve.visualElementAsset;
             }
 
-            new ReparentElementsCommand(parentAsset, -1, toPaste).Execute();
+            ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, toPaste);
             RequestSelectionOnNextUpdate(toPaste);
             Clipboard.ClearCutElements();
             view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
@@ -790,7 +786,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         try
         {
-            new PasteElementsCommand(Clipboard.SystemCopyBuffer, parentAsset).Execute();
+            PasteElementsCommand.Execute(CommandSources.Hierarchy, Clipboard.SystemCopyBuffer, parentAsset);
             m_Stage.RequestRefresh();
             view.ViewModel.ClearFlags(HierarchyNodeFlags.Cut);
             return true;

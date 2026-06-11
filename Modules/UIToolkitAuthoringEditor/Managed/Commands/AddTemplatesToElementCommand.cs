@@ -4,41 +4,69 @@
 
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct AddTemplatesToElementCommand
+internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToElementCommand>
 {
     const string CommandUndoName = "Add templates to document";
 
-    readonly VisualElementAsset ParentAsset;
-    readonly int Index;
-    readonly VisualTreeAsset[] Templates;
-
-    public AddTemplatesToElementCommand(VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates)
+    public static AddTemplatesToElementCommand GetPooled(object source, VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates)
     {
-        ParentAsset = parentAsset;
-        Index = index;
-        Templates = templates;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.ParentAsset = parentAsset;
+        cmd.Index = index;
+        cmd.Templates = templates;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates)
     {
-        Assert.IsNotNull(ParentAsset);
-        Assert.IsNotNull(ParentAsset.visualTreeAsset);
-        Assert.IsNotNull(Templates);
+        using var command = GetPooled(source, parentAsset, index, templates);
+        UICommandQueue.Execute(command);
+    }
+
+    public VisualElementAsset ParentAsset { get; private set; }
+    public int Index { get; private set; }
+    public VisualTreeAsset[] Templates { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Hierarchy;
+
+    protected override void Init()
+    {
+        base.Init();
+        ParentAsset = null;
+        Index = -1;
+        Templates = null;
+    }
+
+    public override bool Validate()
+    {
+        if (ParentAsset == null || ParentAsset.visualTreeAsset == null || Templates == null)
+            return false;
+        if (Index < -1 || Index > ParentAsset.childCount)
+            return false;
         foreach (var template in Templates)
         {
-            Assert.IsNotNull(template);
-            Assert.IsFalse(string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(template)));
+            if (template == null)
+                return false;
+            if (string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(template)))
+                return false;
         }
-        Assert.IsTrue(Index >= -1 && Index <= ParentAsset.childCount);
+        return true;
+    }
 
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(ParentAsset.visualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         var visualTreeAsset = ParentAsset.visualTreeAsset;
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
-
         for (var i = 0; i < Templates.Length; ++i)
         {
             var index = Index + i;
@@ -55,7 +83,6 @@ internal readonly record struct AddTemplatesToElementCommand
             visualTreeAsset.ReparentElementInDocument(templateAsset, ParentAsset, index);
         }
 
-        EditorUtility.SetDirty(visualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
+        return CommandExecutionStatus.Success;
     }
 }

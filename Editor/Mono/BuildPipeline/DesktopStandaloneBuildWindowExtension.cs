@@ -153,7 +153,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
                 return new BuildTargetInfo
                 {
                     buildTarget = BuildTarget.StandaloneOSX,
-                    architecture = OSArchitecture.x64
+                    architecture = OSArchitecture.ARM64
                 };
             default:
                 return new BuildTargetInfo

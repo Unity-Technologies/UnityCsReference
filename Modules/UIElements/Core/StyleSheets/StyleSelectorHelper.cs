@@ -9,6 +9,7 @@ using UnityEngine.Pool;
 using Unity.Profiling;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
+using Unity.IL2CPP.CompilerServices;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -34,28 +35,45 @@ namespace UnityEngine.UIElements.StyleSheets
         // and Sort(inline lambda) both allocate per call.
         public static readonly Comparison<StyleSelectorMatch> Comparison = (a, b) => Compare(in a, in b);
 
+        // Same comparison, but ref-based — for SpanSort, which avoids the per-comparison
+        // struct copy that List<T>.Sort(Comparison<T>) does on this ~24B readonly struct.
+        public static readonly RefComparison<StyleSelectorMatch> RefComparison = (ref StyleSelectorMatch a, ref StyleSelectorMatch b) => Compare(in a, in b);
+
+        [Il2CppSetOption(Option.NullChecks, false)]
         static int Compare(in StyleSelectorMatch a, in StyleSelectorMatch b)
         {
+            // Cache the chased fields once so we don't re-deref the `in` parameter on every step,
+            // and don't call into the StyleSheet property getter twice on the default-sheet branch.
+            var sheetA = a.sheet;
+            var sheetB = b.sheet;
+
             // First compare absolute priority (Unity style sheets are always lower priority)
-            if (a.sheet.isDefaultStyleSheet != b.sheet.isDefaultStyleSheet)
-                return a.sheet.isDefaultStyleSheet ? -1 : 1;
+            bool aDefault = sheetA.isDefaultStyleSheet;
+            bool bDefault = sheetB.isDefaultStyleSheet;
+            if (aDefault != bDefault)
+                return aDefault ? -1 : 1;
+
+            var csA = a.complexSelector;
+            var csB = b.complexSelector;
+
+            // Use direct int subtraction rather than int.CompareTo / Specificity.CompareTo: Specificity packs
+            // three byte-sized scores into a 24-bit non-negative int, and the index fields below are non-negative
+            // array indices — no diff can overflow. This skips the per-call IComparable<int>.CompareTo branching.
 
             // Then use selector specificity according to standards
-            int res = a.complexSelector.specificity.CompareTo(b.complexSelector.specificity);
+            int res = (int)csA.specificity - (int)csB.specificity;
+            if (res != 0) return res;
 
             // If they are same, use the order into which stylesheets were added to the element or its parents (later wins)
-            if (res == 0)
-                res = a.styleSheetIndexInStack.CompareTo(b.styleSheetIndexInStack);
+            res = a.styleSheetIndexInStack - b.styleSheetIndexInStack;
+            if (res != 0) return res;
 
             // If they are the same, use the index in the imported style sheets of the owner style sheets (later wins)
-            if (res == 0)
-                res = a.importedStyleSheetIndex.CompareTo(b.importedStyleSheetIndex);
+            res = a.importedStyleSheetIndex - b.importedStyleSheetIndex;
+            if (res != 0) return res;
 
             // All else being equal, use the order in the style sheet itself
-            if (res == 0)
-                res = a.complexSelector.orderInStyleSheet.CompareTo(b.complexSelector.orderInStyleSheet);
-
-            return res;
+            return csA.orderInStyleSheet - csB.orderInStyleSheet;
         }
     }
 

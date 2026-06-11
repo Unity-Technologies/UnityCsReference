@@ -481,7 +481,7 @@ namespace Unity.Loading
         }
 
         [ExcludeFromDocs]
-        [RequiredByNativeCode(Optional = true)]
+        [RequiredByNativeCode(Optional = false)]
         internal unsafe static void ProcessResults()
         {
             if (!s_Initialized)

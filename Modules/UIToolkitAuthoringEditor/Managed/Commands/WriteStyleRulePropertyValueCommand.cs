@@ -2,43 +2,68 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct WriteStyleRulePropertyValueCommand<T>
+internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyleRulePropertyValueCommand<T>>
 {
     const string CommandUndoName = "Write style rule property value";
 
-    readonly StyleSheet StyleSheet;
-    readonly StyleProperty Property;
-    readonly VariablesInspector.VariableType Type;
-    readonly T Value;
-
-    public WriteStyleRulePropertyValueCommand(
+    public static WriteStyleRulePropertyValueCommand<T> GetPooled(
+        object source,
         StyleSheet styleSheet,
         StyleProperty property,
         VariablesInspector.VariableType type,
         T value)
     {
-        StyleSheet = styleSheet;
-        Property = property;
-        Type = type;
-        Value = value;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Property = property;
+        cmd.Type = type;
+        cmd.Value = value;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source,
+        StyleSheet styleSheet,
+        StyleProperty property,
+        VariablesInspector.VariableType type,
+        T value)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(Property);
+        using var command = GetPooled(source, styleSheet, property, type, value);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
+    public StyleProperty Property { get; private set; }
+    public VariablesInspector.VariableType Type { get; private set; }
+    public T Value { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Property = null;
+        Type = default;
+        Value = default;
+    }
+
+    public override bool Validate() => StyleSheet != null && Property != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         switch (Type)
         {
             case VariablesInspector.VariableType.Float:
@@ -70,6 +95,6 @@ internal readonly record struct WriteStyleRulePropertyValueCommand<T>
                 break;
         }
 
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

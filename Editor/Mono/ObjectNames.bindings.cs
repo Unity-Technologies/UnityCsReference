@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine.Bindings;
 
 using UnityObject = UnityEngine.Object;
@@ -29,5 +31,8 @@ namespace UnityEditor
 
         [FreeFunction("GetUniqueName_Internal")]
         public static extern string GetUniqueName(string[] existingNames, string name);
+
+        [FreeFunction("GetUniqueObjectName_Internal")]
+        public static extern string GetUniqueObjectName(List<UnityEngine.Object> existingObjects, string name);
     }
 }

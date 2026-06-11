@@ -19,10 +19,5 @@ namespace UnityEditor.SceneManagement
         /// The scene asset GUID of the sub scene.
         /// </summary>
         public GUID SceneGuid { get; set; }
-
-        /// <summary>
-        /// The color of the sub scene.
-        /// </summary>
-        public Color32 Color { get; set; }
     }
 }

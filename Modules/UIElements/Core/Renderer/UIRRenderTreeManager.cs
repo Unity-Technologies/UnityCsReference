@@ -46,6 +46,7 @@ namespace UnityEngine.UIElements.UIR
         BasicNodePool<MeshHandle> m_MeshHandleNodePool = new();
         BasicNodePool<GraphicEntry> m_GraphicEntryPool = new();
         Dictionary<RenderData, ExtraRenderData> m_ExtraData = new();
+        PerGlyphTextCoreSettings m_PerGlyphTcs;
         internal List<ElementInsertionData> m_InsertionList = new(1024); // Internal for testing purposes
 
         MeshGenerationDeferrer m_MeshGenerationDeferrer = new();
@@ -65,6 +66,7 @@ namespace UnityEngine.UIElements.UIR
         internal VisualChangesProcessor visualChangesProcessor => m_VisualChangesProcessor;
 
         public OpacityIdAccelerator opacityIdAccelerator { get; private set; }
+        internal PerGlyphTextCoreSettings perGlyphTcs => m_PerGlyphTcs;
 
         // TODO: Consider exposing these pools globally, not per panel
         UnityEngine.Pool.ObjectPool<RenderData> m_RenderDataPool = new(() => new RenderData(), null, null, null, false, 256, 1024);
@@ -123,6 +125,7 @@ namespace UnityEngine.UIElements.UIR
             tempMeshAllocator = new TempMeshAllocatorImpl();
             jobManager = new JobManager();
             opacityIdAccelerator = new OpacityIdAccelerator();
+            entryRecorder = new EntryRecorder(s_SharedEntryPool, panel.panelRenderer.extraVertexChannels);
             meshGenerationNodeManager = new MeshGenerationNodeManager(entryRecorder);
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
@@ -142,11 +145,12 @@ namespace UnityEngine.UIElements.UIR
                     forceGammaRendering = true;
             }
             isFlat = panel.isFlat;
-            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering);
+            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering, panel.panelRenderer.extraVertexChannels);
 
             Shaders.Acquire();
 
             shaderInfoAllocator = new ShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
+            m_PerGlyphTcs = new PerGlyphTextCoreSettings(this);
         }
 
         #region Dispose Pattern
@@ -261,62 +265,63 @@ namespace UnityEngine.UIElements.UIR
 
         public void ProcessChanges()
         {
-            k_MarkerProcess.Begin();
-
-            m_Stats = new ChainBuilderStats();
-
-            // Process pending additions before updating totals. Removes were already counted
-            // synchronously into m_StatsElementsRemoved by UIEOnChildRemoving; adds are deferred
-            // and only happen in this loop. Folding both into m_TotalVisualElements after the
-            // loop keeps adds and removes from the same frame in lockstep.
-            uint addedThisFrame = 0;
-            int insertionCount = m_InsertionList.Count;
-            for (int i = 0; i < insertionCount; ++i)
+            using (k_MarkerProcess.Auto())
             {
-                var data = m_InsertionList[i];
-                if (!data.canceled)
+
+                m_Stats = new ChainBuilderStats();
+
+                // Process pending additions before updating totals. Removes were already counted
+                // synchronously into m_StatsElementsRemoved by UIEOnChildRemoving; adds are deferred
+                // and only happen in this loop. Folding both into m_TotalVisualElements after the
+                // loop keeps adds and removes from the same frame in lockstep.
+                uint addedThisFrame = 0;
+                int insertionCount = m_InsertionList.Count;
+                for (int i = 0; i < insertionCount; ++i)
                 {
-                    data.element.insertionIndex = -1;
-                    addedThisFrame += ProcessChildAdded(data.element);
+                    var data = m_InsertionList[i];
+                    if (!data.canceled)
+                    {
+                        data.element.insertionIndex = -1;
+                        addedThisFrame += ProcessChildAdded(data.element);
+                    }
                 }
+                if (insertionCount > 0)
+                    m_InsertionList.Clear();
+
+                uint removedThisFrame = m_StatsElementsRemoved;
+                m_StatsElementsRemoved = 0;
+                m_Stats.elementsAdded = addedThisFrame;
+                m_Stats.elementsRemoved = removedThisFrame;
+                m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
+
+                m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
+                m_Compositor.Update(m_RootRenderTree);
+                device.AdvanceFrame(); // Before making any changes to the buffers
+                DepthFirstProcessChanges(m_RootRenderTree);
+                m_BlockDirtyRegistration = false;
+
+                meshGenerationNodeManager.ResetAll();
+                tempMeshAllocator.Clear();
+                meshWriteDataPool.ReturnAll();
+                entryPool.ReturnAll();
+
+                // Commit new requests for atlases if any
+                atlas?.InvokeUpdateDynamicTextures(panel); // TODO: For a shared atlas + drawInCameras, postpone after all updates have occurred.
+                vectorImageManager?.Commit();
+                shaderInfoAllocator.IssuePendingStorageChanges();
+
+                device.OnFrameRenderingBegin();
+
+                // Nested render trees must be rendered before we draw the root tree, in order to avoid render texture
+                // flushes to memory, and for compatibility with render passes. For now, we render them as part of the
+                // update. In the future though, we should render them just before any rendering to the target of the root
+                // render tree starts. This would allow to keep GPU memory usage to a minimum.
+                RenderNestedTrees();
+
+                if (drawInCameras)
+                    SerializeRootTreeCommands();
+
             }
-            if (insertionCount > 0)
-                m_InsertionList.Clear();
-
-            uint removedThisFrame = m_StatsElementsRemoved;
-            m_StatsElementsRemoved = 0;
-            m_Stats.elementsAdded = addedThisFrame;
-            m_Stats.elementsRemoved = removedThisFrame;
-            m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
-
-            m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
-            m_Compositor.Update(m_RootRenderTree);
-            device.AdvanceFrame(); // Before making any changes to the buffers
-            DepthFirstProcessChanges(m_RootRenderTree);
-            m_BlockDirtyRegistration = false;
-
-            meshGenerationNodeManager.ResetAll();
-            tempMeshAllocator.Clear();
-            meshWriteDataPool.ReturnAll();
-            entryPool.ReturnAll();
-
-            // Commit new requests for atlases if any
-            atlas?.InvokeUpdateDynamicTextures(panel); // TODO: For a shared atlas + drawInCameras, postpone after all updates have occurred.
-            vectorImageManager?.Commit();
-            shaderInfoAllocator.IssuePendingStorageChanges();
-
-            device.OnFrameRenderingBegin();
-
-            // Nested render trees must be rendered before we draw the root tree, in order to avoid render texture
-            // flushes to memory, and for compatibility with render passes. For now, we render them as part of the
-            // update. In the future though, we should render them just before any rendering to the target of the root
-            // render tree starts. This would allow to keep GPU memory usage to a minimum.
-            RenderNestedTrees();
-
-            if (drawInCameras)
-                SerializeRootTreeCommands();
-
-            k_MarkerProcess.End();
         }
 
         void SerializeRootTreeCommands()
@@ -331,27 +336,28 @@ namespace UnityEngine.UIElements.UIR
             if (!float.IsFinite(ppu) || ppu < Mathf.Epsilon)
                 return;
 
-            k_MarkerSerialize.Begin();
+            using (k_MarkerSerialize.Auto())
+            {
 
-            Exception immediateException = null;
+                Exception immediateException = null;
 
-            m_BlockDirtyRegistration = true;
-            device.EvaluateChain(
-                m_RootRenderTree.firstCommand,
-                m_DefaultMat,
-                vectorImageManager?.atlas,
-                shaderInfoAllocator,
-                null,
-                panel.scaledPixelsPerPoint,
-                true,
-                textureSlotCount,
-                false,
-                ref immediateException,
-                panel);
-            m_BlockDirtyRegistration = false;
+                m_BlockDirtyRegistration = true;
+                device.EvaluateChain(
+                    m_RootRenderTree.firstCommand,
+                    m_DefaultMat,
+                    vectorImageManager?.atlas,
+                    shaderInfoAllocator,
+                    null,
+                    panel.scaledPixelsPerPoint,
+                    true,
+                    textureSlotCount,
+                    false,
+                    ref immediateException,
+                    panel);
+                m_BlockDirtyRegistration = false;
 
-            Debug.Assert(immediateException == null); // Not supported for cameras
-            k_MarkerSerialize.End();
+                Debug.Assert(immediateException == null); // Not supported for cameras
+            }
         }
 
         public void RenderRootTree()
@@ -632,7 +638,7 @@ namespace UnityEngine.UIElements.UIR
         internal VectorImageManager vectorImageManager { get; private set; }
         internal TempMeshAllocatorImpl tempMeshAllocator { get; private set; }
         internal MeshWriteDataPool meshWriteDataPool { get; } = new();
-        public EntryRecorder entryRecorder = new (s_SharedEntryPool);
+        public EntryRecorder entryRecorder;
         internal EntryPool entryPool => s_SharedEntryPool;
         public MeshGenerationDeferrer meshGenerationDeferrer => m_MeshGenerationDeferrer;
         public MeshGenerationNodeManager meshGenerationNodeManager { get; private set; }
@@ -702,11 +708,19 @@ namespace UnityEngine.UIElements.UIR
             return extraData;
         }
 
+        public ExtraRenderData GetExtraData(RenderData renderData)
+        {
+            return m_ExtraData[renderData];
+        }
+
         public void FreeExtraData(RenderData renderData)
         {
             Debug.Assert(renderData.hasExtraData);
             Debug.Assert(!renderData.hasExtraMeshes); // Meshes should have been freed before calling this method
             m_ExtraData.Remove(renderData, out ExtraRenderData extraData);
+
+            m_PerGlyphTcs.FreeAllocs(extraData);
+
             m_ExtraDataPool.Return(extraData);
 
             renderData.flags &= ~RenderDataFlags.HasExtraData;

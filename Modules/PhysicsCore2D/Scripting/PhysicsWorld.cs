@@ -32,12 +32,22 @@ namespace Unity.U2D.Physics
         /// <undoc/>
         public override readonly string ToString() => isValid ? $"index={m_Index1}, generation={m_Generation}" : "<INVALID>";
 
+        /// <summary>
+        /// Get the world handle index.
+        /// </summary>
+        public readonly Int32 index => m_Index1;
+
+        /// <summary>
+        /// Get the world handle generation.
+        /// </summary>
+        public readonly UInt16 generation => m_Generation;
+
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsWorld other && Equals(other);
 
         /// <undoc/>
         public bool Equals(PhysicsWorld other) { return m_Index1 == other.m_Index1 && m_Generation == other.m_Generation; }
@@ -93,7 +103,7 @@ namespace Unity.U2D.Physics
             FrameStart,
 
             /// <summary>
-            /// Transform Change callbacks are sent after the "FixedUpdate" script callbacks but before any "FixedUpdate" simulation*s).
+            /// Transform Change callbacks are sent after the "FixedUpdate" script callbacks but before any "FixedUpdate" simulation(s).
             /// This is typically used when any changes to Transforms occur in the "FixedUpdate" script callbacks need to be handled before any "FixedUpdate" simulation(s).
             /// </summary>
             FixedUpdate,
@@ -153,7 +163,7 @@ namespace Unity.U2D.Physics
 
             /// <summary>
             /// Transform tweens are calculated and written linearly on a single thread, likely the main-thread.
-            /// This may be faster than using <see cref="PhysicsWorld.TransformTweenMode.Parallel"/> if the majority of the  are not split across hierarchies so that they can be written in parallel.
+            /// This may be faster than using <see cref="PhysicsWorld.TransformTweenMode.Parallel"/> if the majority of the <see cref="UnityEngine.Transform"/> are not split across hierarchies so that they can be written in parallel.
             /// To further clarify, if most of the <see cref="UnityEngine.Transform"/> are not interleaved across different hierarchies, this non-parallel (sequential) mode may be faster than <see cref="PhysicsWorld.TransformTweenMode.Parallel"/>,
             /// because it avoids the overhead of splitting and synchronizing work across multiple threads when there is not enough independent hierarchy work to parallelize efficiently.
             /// </summary>
@@ -1100,8 +1110,13 @@ namespace Unity.U2D.Physics
         /// If the <see cref="PhysicsWorld.transformTweenMode"/> is <see cref="PhysicsWorld.TransformTweenMode.Sequential"/> then the tweens are sorted into ascending transform depth allowing writing to the Transform hierarchy by simply iterating the tweens .
         /// If the <see cref="PhysicsWorld.transformTweenMode"/> is <see cref="PhysicsWorld.TransformTweenMode.Sequential"/> then the tweens are unsorted as a <see cref="UnityEngine.Jobs.TransformAccessArray"/> is used to write them.
         /// See <see cref="PhysicsBody.TransformWriteTween"/> and <see cref="PhysicsBody.TransformWriteMode"/>.
+        ///
+        /// The returned <see cref="NativeArray{T}"/> aliases the per-frame internal buffer owned by the world; it does not own its memory (so disposing it does nothing).
+        /// The contents are only valid until the next simulation step runs, after which the buffer may be reused or destroyed.
+        /// If a longer-lived copy is required, copy the contents into a caller-owned <see cref="NativeArray{T}"/>.
         /// </summary>
-        /// <returns>All the existing Transform Write Tweens that are handled per-frame.</returns>
+        /// <returns>A world-owned view of the existing Transform Write Tweens that are handled per-frame.
+        /// Contents are invalidated by the next simulation step.</returns>
         public readonly NativeArray<PhysicsBody.TransformWriteTween> GetTransformWriteTweens() => PhysicsWorld_GetTransformWriteTweens(this).ToNativeArray<PhysicsBody.TransformWriteTween>();
 
         /// <summary>
@@ -1590,6 +1605,25 @@ namespace Unity.U2D.Physics
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The query overlap results. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public readonly NativeArray<PhysicsQuery.WorldOverlapResult> OverlapAABB(ReadOnlySpan<PhysicsAABB> aabbs, PhysicsQuery.QueryFilter filter, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_OverlapAABB(this, aabbs, filter, allocator).ToNativeArray<PhysicsQuery.WorldOverlapResult>();
+
+        /// <summary>
+        /// Apply buoyancy, flow and damping forces to every dynamic body shape that overlaps <paramref name="aabb"/> in this world.
+        /// The same <see cref="PhysicsBody.BuoyancyInput"/> is applied to all overlapping shapes. Shapes whose body is not <see cref="PhysicsBody.BodyType.Dynamic"/> are silently skipped.
+        /// Forces and torques are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="aabb">The world-space axis-aligned box describing the fluid volume. Only shapes whose broadphase AABB overlaps this box are processed.</param>
+        /// <param name="input">The fluid and force configuration. See <see cref="PhysicsBody.BuoyancyInput"/>.</param>
+        /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
+        public readonly void ApplyBuoyancy(PhysicsAABB aabb, PhysicsBody.BuoyancyInput input, float deltaTime) => PhysicsBody.ApplyBuoyancy(this, aabb, input, deltaTime);
+
+        /// <summary>
+        /// Apply wind forces to every dynamic body shape that overlaps <paramref name="aabb"/> in this world.
+        /// The same <see cref="PhysicsBody.WindInput"/> is applied to all overlapping shapes; shapes whose body is not <see cref="PhysicsBody.BodyType.Dynamic"/> are silently skipped.
+        /// Forces are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="aabb">The world-space axis-aligned box describing the wind volume. Only shapes whose broadphase AABB overlaps this box are processed.</param>
+        /// <param name="input">The wind configuration. See <see cref="PhysicsBody.WindInput"/>.</param>
+        public readonly void ApplyWind(PhysicsAABB aabb, PhysicsBody.WindInput input) => PhysicsBody.ApplyWind(this, aabb, input);
 
         /// <summary>
         /// Returns all shapes that overlap the provided shape.

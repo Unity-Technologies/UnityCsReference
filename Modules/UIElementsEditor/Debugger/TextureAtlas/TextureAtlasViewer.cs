@@ -2,9 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
-using UnityEngine;
 using System;
+using Unity.Scripting.LifecycleManagement;
+using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEditor.UIElements.Debugger
@@ -25,6 +26,7 @@ namespace UnityEditor.UIElements.Debugger
             AllocationAreas = 1 << 2,
         }
 
+        [NoAutoStaticsCleanup] // debugger reference set externally; editor tool state
         public static UIElementsDebugger UIElementsDebugger;
 
         DynamicAtlasPage m_SelectedAtlasPage;

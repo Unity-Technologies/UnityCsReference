@@ -19,6 +19,12 @@ sealed class RemoveClassFromElementCommand : Command<RemoveClassFromElementComma
         return cmd;
     }
 
+    public static void Execute(object source, VisualElementAsset vea, string className)
+    {
+        using var command = GetPooled(source, vea, className);
+        UICommandQueue.Execute(command);
+    }
+
     public VisualElementAsset ElementAsset { get; private set; }
     public string ClassName { get; private set; }
 

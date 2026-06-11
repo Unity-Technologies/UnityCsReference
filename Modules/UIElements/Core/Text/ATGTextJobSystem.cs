@@ -214,25 +214,26 @@ internal class ATGTextJobSystem
 
         public void Execute(int index)
         {
-            k_GenerateTextMarker.Begin();
-            var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
-            ManagedJobData managedJobData = managedJobDatas[index];
-            var ve = managedJobData.textElement;
-            if (ve.PostProcessTextVertices != null)
-                ve.uitkTextHandle.CacheTextGenerationInfo();
-
-            (managedJobData.textInfo, managedJobData.success) = ve.uitkTextHandle.UpdateNative();
-
-            managedJobData.hasMissingGlyphs = managedJobData.textElement.uitkTextHandle.HasMissingGlyphs(managedJobData.textInfo, ref managedJobData.missingGlyphsPerFontAsset);
-
-            // No missing glyphs means we do not need to return to main thread before converting to UIR
-            if (!managedJobData.hasMissingGlyphs)
+            using (k_GenerateTextMarker.Auto())
             {
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh);
-                ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
-            }
+                var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
+                ManagedJobData managedJobData = managedJobDatas[index];
+                var ve = managedJobData.textElement;
+                if (ve.PostProcessTextVertices != null)
+                    ve.uitkTextHandle.CacheTextGenerationInfo();
 
-            k_GenerateTextMarker.End();
+                (managedJobData.textInfo, managedJobData.success) = ve.uitkTextHandle.UpdateNative();
+
+                managedJobData.hasMissingGlyphs = managedJobData.textElement.uitkTextHandle.HasMissingGlyphs(managedJobData.textInfo, ref managedJobData.missingGlyphsPerFontAsset);
+
+                // No missing glyphs means we do not need to return to main thread before converting to UIR
+                if (!managedJobData.hasMissingGlyphs)
+                {
+                    managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh);
+                    ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
+                }
+
+            }
         }
     }
 
@@ -256,38 +257,39 @@ internal class ATGTextJobSystem
 
     void GenerateTextJobified(MeshGenerationContext mgc, object _)
     {
-        k_ATGTextJobMarker.Begin();
-
-        mgc.GetTempMeshAllocator(out var alloc);
-        var textJob = new GenerateTextJobData
+        using (k_ATGTextJobMarker.Auto())
         {
-            managedJobDataHandle = textJobDatasHandle,
-            alloc = alloc
-        };
 
-        for (int i = textJobDatas.Count - 1; i >= 0; i--)
-        {
-            var textData = textJobDatas[i];
-            var textElement = textData.textElement;
-            bool valid = PrepareTextElementForJobsOnMainThread(textElement);
-            if (!valid)
-                textJobDatas.RemoveAt(i);
+            mgc.GetTempMeshAllocator(out var alloc);
+            var textJob = new GenerateTextJobData
+            {
+                managedJobDataHandle = textJobDatasHandle,
+                alloc = alloc
+            };
+
+            for (int i = textJobDatas.Count - 1; i >= 0; i--)
+            {
+                var textData = textJobDatas[i];
+                var textElement = textData.textElement;
+                bool valid = PrepareTextElementForJobsOnMainThread(textElement);
+                if (!valid)
+                    textJobDatas.RemoveAt(i);
+            }
+
+            if (k_IsMultiThreaded)
+            {
+                var jobHandle = textJob.ScheduleParallelByRef(textJobDatas.Count, 1, default);
+                mgc.AddMeshGenerationJob(jobHandle);
+                mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, true);
+            }
+            else
+            {
+                for (int i = 0; i < textJobDatas.Count; i++)
+                    textJob.Execute(i);
+                mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, false);
+            }
+
         }
-
-        if (k_IsMultiThreaded)
-        {
-            var jobHandle = textJob.ScheduleParallelByRef(textJobDatas.Count, 1, default);
-            mgc.AddMeshGenerationJob(jobHandle);
-            mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, true);
-        }
-        else
-        {
-            for (int i = 0; i < textJobDatas.Count; i++)
-                textJob.Execute(i);
-            mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, false);
-        }
-
-        k_ATGTextJobMarker.End();
     }
 
     static List<uint> s_GlyphsToAddBuffer = new List<uint>();
@@ -335,7 +337,7 @@ internal class ATGTextJobSystem
             s_GlyphsToAddBuffer.Clear();
             s_GlyphsToAddBuffer.AddRange(entry.Value);
 
-            fa.TryAddGlyphs(s_GlyphsToAddBuffer);
+            fa.TryAddGlyphs(s_GlyphsToAddBuffer, populateFontFeatures: false);
         }
 
         s_AggregatedMissingGlyphsPool.Release(allUniqueMissingGlyphs);
@@ -363,8 +365,21 @@ internal class ATGTextJobSystem
                 var textInfo = managedJobData.textInfo;
 
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
-                managedJobData.textElement.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, textInfo.meshInfos));
-                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.atlases, managedJobData.renderModes, managedJobData.sdfScales);
+                bool usesPerGlyphTcs = false;
+                if (managedJobData.textElement.PostProcessTextVertices != null)
+                {
+                    var glyphs = new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, textInfo.meshInfos);
+                    var rd = managedJobData.textElement.renderData;
+                    var perGlyphTcs = rd?.renderTree?.renderTreeManager?.perGlyphTcs;
+                    usesPerGlyphTcs = PerGlyphTextCoreSettings.InvokePostProcessVertices(
+                        perGlyphTcs, managedJobData.textElement, rd, managedJobData.vertices, in glyphs);
+                }
+                else
+                {
+                    var rd = managedJobData.textElement.renderData;
+                    rd?.renderTree?.renderTreeManager?.perGlyphTcs?.Reset(rd);
+                }
+                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.atlases, managedJobData.renderModes, managedJobData.sdfScales, usesPerGlyphTcs);
                 managedJobData.textElement.OnGenerateTextOverNative(mgc);
                 managedJobData.textElement.uitkTextHandle.UpdateATGTextEventHandler();
 

@@ -13,7 +13,7 @@ namespace UnityEditor
     /// Clears duplicate dictionary serialization cache when hosts are destroyed. Uses <see cref="ObjectChangeEvents"/>
     /// for undo-recorded destroys, <see cref="EditorSceneManager.sceneClosed"/> when a scene is closed in the Editor
     /// (including <see cref="EditorSceneManager.CloseScene"/> in Edit Mode), and <see cref="SceneManager.sceneUnloaded"/>
-    /// for runtime unloads (e.g. Play Mode). Prunes map entries whose <see cref="EntityId"/> no longer resolves.
+    /// for runtime unloads (e.g. Play Mode). Prunes map entries whose host is no longer in memory.
     /// </summary>
     // 'partial' is required by the [OnCodeLoaded] source generator (UAC0031); the
     // generated companion holds the registration that wires Initialize() into the
@@ -75,8 +75,7 @@ namespace UnityEditor
 
         static void PruneStaleDuplicateHosts()
         {
-            DictionarySerialization.PruneDuplicateDictionaryEntriesWhere(hostId =>
-                hostId == EntityId.None || EditorUtility.EntityIdToObject(hostId) == null);
+            DictionarySerialization.PruneDuplicateDictionaryEntriesForUnloadedHosts();
         }
     }
 }

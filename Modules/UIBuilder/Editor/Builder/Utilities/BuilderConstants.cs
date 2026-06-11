@@ -7,6 +7,7 @@ using System.IO;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -78,10 +79,10 @@ namespace Unity.UI.Builder
         public const string UssPath_NewClassWindow = BuilderConstants.UIBuilderPackagePath + "/Inspector/NewClassWindow.uss";
 
         // Global Style Class Names
-        public static readonly string HiddenStyleClassName = "unity-builder-hidden";
+        public static readonly UniqueStyleString HiddenStyleClassName = new("unity-builder-hidden");
         public static readonly string ReadOnlyStyleClassName = "unity-builder--readonly";
-        public static readonly string ElementTypeClassName = "unity-builder-code-label--element-type";
-        public static readonly string ElementNameClassName = "unity-builder-code-label--element-name";
+        public static readonly UniqueStyleString ElementTypeClassName = new("unity-builder-code-label--element-type");
+        public static readonly UniqueStyleString ElementNameClassName = new("unity-builder-code-label--element-name");
         public static readonly string ElementClassNameClassName = "unity-builder-code-label--element-class-name";
         public static readonly string ElementAttachedStyleSheetClassName = "unity-builder-code-label--element-attached-stylesheet";
         public static readonly string ElementPseudoStateClassName = "unity-builder-code-label--element-pseudo-state";
@@ -140,28 +141,28 @@ namespace Unity.UI.Builder
 
         // Inspector Style Property and Class Names
         public static readonly string InspectorFoldoutOverrideClassName = "unity-foldout--override";
-        public static readonly string InspectorCategoryFoldoutOverrideClassName = "unity-builder-inspector__category-foldout--override";
+        public static readonly UniqueStyleString InspectorCategoryFoldoutOverrideClassName = new("unity-builder-inspector__category-foldout--override");
         public static readonly string BuilderStyleRowBlueOverrideBoxClassName = "unity-builder-inspector-blue-override-box";
         public static readonly string FoldoutFieldPropertyName = "unity-foldout-field";
-        public static readonly string BoundFoldoutFieldClassName = FoldoutFieldPropertyName + "--binding";
+        public static readonly UniqueStyleString BoundFoldoutFieldClassName = new(FoldoutFieldPropertyName + "--binding");
         public static readonly string FoldoutFieldHeaderClassName = FoldoutFieldPropertyName + "__header";
         public static readonly string InspectorMultiLineTextFieldClassName = "unity-builder-inspector__multi-line-text-field";
         public static readonly string InspectorFlexColumnModeClassName = "unity-builder-inspector--flex-column";
         public static readonly string InspectorFlexColumnReverseModeClassName = "unity-builder-inspector--flex-column-reverse";
         public static readonly string InspectorFlexRowModeClassName = "unity-builder-inspector--flex-row";
         public static readonly string InspectorFlexRowReverseModeClassName = "unity-builder-inspector--flex-row-reverse";
-        public static readonly string InspectorStyleCategoryFoldoutOverrideClassName = "unity-builder-inspector__style-category-foldout--override";
-        public static readonly string InspectorCategoryFoldoutBindingClassName = "unity-builder-inspector__style-category-foldout--binding";
-        public static readonly string InspectorLocalStyleOverrideClassName = "unity-builder-inspector__style--override";
-        public static readonly string InspectorLocalStyleResetClassName = "unity-builder-inspector__style--reset"; // used to reset font style of children
-        public static readonly string InspectorLocalStyleUnresolvedVariableClassName = "unity-builder-inspector__style--unresolved-variable";
-        public static readonly string InspectorLocalStyleVariableClassName = "unity-builder-inspector__style--variable";
-        public static readonly string InspectorLocalStyleInheritedClassName = "unity-builder-inspector__style--inherited";
-        public static readonly string InspectorLocalStyleSelectorClassName = "unity-builder-inspector__style--uss-selector";
-        public static readonly string InspectorLocalStyleBindingClassName = "unity-builder-inspector__style--binding";
-        public static readonly string InspectorLocalStyleUnresolvedBindingClassName = "unity-builder-inspector__style--unresolved-binding";
-        public static readonly string InspectorLocalStyleSelectorElementClassName = "unity-builder-inspector__style--selector-element";
-        public static readonly string InspectorLocalStyleDefaultStatusClassName = "unity-builder-inspector__style--default";
+        public static readonly UniqueStyleString InspectorStyleCategoryFoldoutOverrideClassName = new("unity-builder-inspector__style-category-foldout--override");
+        public static readonly UniqueStyleString InspectorCategoryFoldoutBindingClassName = new("unity-builder-inspector__style-category-foldout--binding");
+        public static readonly UniqueStyleString InspectorLocalStyleOverrideClassName = new("unity-builder-inspector__style--override");
+        public static readonly UniqueStyleString InspectorLocalStyleResetClassName = new("unity-builder-inspector__style--reset"); // used to reset font style of children
+        public static readonly UniqueStyleString InspectorLocalStyleUnresolvedVariableClassName = new("unity-builder-inspector__style--unresolved-variable");
+        public static readonly UniqueStyleString InspectorLocalStyleVariableClassName = new("unity-builder-inspector__style--variable");
+        public static readonly UniqueStyleString InspectorLocalStyleInheritedClassName = new("unity-builder-inspector__style--inherited");
+        public static readonly UniqueStyleString InspectorLocalStyleSelectorClassName = new("unity-builder-inspector__style--uss-selector");
+        public static readonly UniqueStyleString InspectorLocalStyleBindingClassName = new("unity-builder-inspector__style--binding");
+        public static readonly UniqueStyleString InspectorLocalStyleUnresolvedBindingClassName = new("unity-builder-inspector__style--unresolved-binding");
+        public static readonly UniqueStyleString InspectorLocalStyleSelectorElementClassName = new("unity-builder-inspector__style--selector-element");
+        public static readonly UniqueStyleString InspectorLocalStyleDefaultStatusClassName = new("unity-builder-inspector__style--default");
         public static readonly string InspectorEmptyFoldoutLabelClassName = "unity-builder-inspector__empty-foldout-label";
         public static readonly string InspectorClassPillNotInDocumentClassName = "unity-class-pill--not-in-document";
         public static readonly string InspectorClassHelpBox = "unity-builder-inspector__help-box";
@@ -169,7 +170,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-composite-field-row";
         public static readonly string InspectorCompositeStyleRowElementClassName = "unity-builder-composite-style-row-element";
         public static readonly string InspectorBindingIndicatorClassName = "unity-builder-foldout-binding-indicator";
-        public static readonly string InspectorFieldBindingInlineEditingEnabledClassName = "unity-builder-binding-inline-editing-enabled";
+        public static readonly UniqueStyleString InspectorFieldBindingInlineEditingEnabledClassName = new("unity-builder-binding-inline-editing-enabled");
         public static readonly string InspectorListViewAllowAddRemoveFieldClassName = "unity-builder-uxml-attribute__allow-add-remove";
 
         // Inspector Links VE Property Names
@@ -510,7 +511,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerItemLinkedUXMLFileName = "__unity-ui-builder-linked-uxml-file-name";
 
         // Explorer Names
-        public static readonly string ExplorerItemRenameTextfieldName = "unity-builder-explorer__rename-textfield";
+        public static readonly UniqueStyleString ExplorerItemRenameTextfieldName = new("unity-builder-explorer__rename-textfield");
 
         // Explorer Style Class Names
         public static readonly string ExplorerHeaderRowClassName = "unity-builder-explorer__header";
@@ -520,13 +521,13 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerItemReorderZoneClassName = "unity-builder-explorer__reorder-zone";
         public static readonly string ExplorerItemReorderZoneAboveClassName = "unity-builder-explorer__reorder-zone-above";
         public static readonly string ExplorerItemReorderZoneBelowClassName = "unity-builder-explorer__reorder-zone-below";
-        public static readonly string ExplorerItemRenameTextfieldClassName = "unity-builder-explorer__rename-textfield";
-        public static readonly string ExplorerItemNameLabelClassName = "unity-builder-explorer__name-label";
+        public static readonly UniqueStyleString ExplorerItemRenameTextfieldClassName = new("unity-builder-explorer__rename-textfield");
+        public static readonly UniqueStyleString ExplorerItemNameLabelClassName = new("unity-builder-explorer__name-label");
         public static readonly string ExplorerItemTypeLabelClassName = "unity-builder-explorer__type-label";
         public static readonly string ExplorerItemLabelContClassName = "unity-builder-explorer-tree-item-label-cont";
         public static readonly string ExplorerItemSelectorLabelContClassName = "unity-builder-explorer-tree-item-selector-label-cont";
-        public static readonly string ExplorerItemLabelClassName = "unity-builder-explorer-tree-item-label";
-        public static readonly string ExplorerItemIconClassName = "unity-builder-explorer-tree-item-icon";
+        public static readonly UniqueStyleString ExplorerItemLabelClassName = new("unity-builder-explorer-tree-item-label");
+        public static readonly UniqueStyleString ExplorerItemIconClassName = new("unity-builder-explorer-tree-item-icon");
         public static readonly string ExplorerStyleSheetsPaneClassName = "unity-builder-stylesheets-pane";
         public static readonly string ExplorerActiveStyleSheetClassName = "unity-builder-stylesheets-pane--active-stylesheet";
         public static readonly string ExplorerItemBelongsToOpenDocument = "unity-builder-explorer-excluded";

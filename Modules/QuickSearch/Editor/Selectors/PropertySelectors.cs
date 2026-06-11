@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Unity.Loading;
 
 namespace UnityEditor.Search
 {
@@ -180,7 +179,11 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.EntityId: return p.entityIdValue.ToString();
                 case SerializedPropertyType.LoadableObjectId: return UnityEditor.LoadableObjectIdEditorUtility.LoadableObjectIdToObject(p.loadableObjectIdValue);
 
+                case SerializedPropertyType.LoadableSceneId:
+                    return LoadableSceneIdEditorUtility.LoadableSceneIdToScene(p.loadableSceneIdValue);
+
                 case SerializedPropertyType.ManagedReference:
+                    break;
                 case SerializedPropertyType.Generic:
                     break;
             }

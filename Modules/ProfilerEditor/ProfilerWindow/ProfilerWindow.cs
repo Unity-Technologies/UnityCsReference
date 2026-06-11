@@ -2198,7 +2198,7 @@ namespace UnityEditor
         bool IProfilerWindowController.ConnectedToEditor { get => ConnectedToEditor; }
 #pragma warning disable CS0618
 
-        bool IProfilerWindowController.CpuProfilerAssistantSupported => m_CpuProfilerAssistantController.Supported;
+        bool IProfilerWindowController.CpuProfilerAssistantSupported => ProcessService.level == ProcessLevel.Main && m_CpuProfilerAssistantController.Supported;
 
         void IProfilerWindowController.RequestCpuProfilerAssistance(Rect screenRect, CpuProfilerAssistantController.CpuProfilerContext attachment, string request)
         {

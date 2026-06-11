@@ -191,7 +191,7 @@ namespace UnityEditor.Build.Analysis
 
         private bool TryGetBuildAnalysisPath(GUID buildSessionGUID, out string path)
         {
-            return m_BuildHistory.TryGetFilePath(buildSessionGUID, BuildAnalysisConstants.k_BuildAnalysisFileName, out path);
+            return m_BuildHistory.TryGetFilePath(buildSessionGUID, BuildAnalysisConstants.k_BuildAnalysisRelativePath, out path);
         }
 
         private BuildAnalysis LoadBuildAnalysisFromDisk(string analysisPath)

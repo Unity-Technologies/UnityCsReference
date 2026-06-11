@@ -28,6 +28,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         public HashSet<string> AllPlugins { get; set; }
         public string[] EditorModulePaths { get; set; }
         public string[] PlayerModulePaths { get; set; }
+        public string[] RoslynAnalyzerPaths { get; set; }
     }
 
     private static PrecompiledAssemblyProviderCache GetOrCreateCache(BuildTarget buildTarget)
@@ -64,6 +65,9 @@ class UnityEditorMSBuildPropsTargetsGeneration
             cache.EditorModulePaths = GetModulesAssemblyPaths(true, buildTarget);
             cache.PlayerModulePaths = GetModulesAssemblyPaths(false, buildTarget);
 
+            // Cache Roslyn analyzer paths (built-in + user-labeled, unified by the native side).
+            cache.RoslynAnalyzerPaths = new PrecompiledAssemblyProvider().GetRoslynAnalyzerPaths();
+
             s_assemblyProviderCache = cache;
             s_cachedBuildTarget = buildTarget;
             return cache;
@@ -82,7 +86,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
     {
         ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
         var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationScriptingPath, "MSBuild/sdk-nugets");
-        ProjectGenerator.Instance.MaintainGlobalJson("1.0.0", "global.json");
+        ProjectGenerator.Instance.MaintainGlobalJson(GetUnitySdkVersion(unityNugetLocalFeed), "global.json");
         ProjectGenerator.Instance.MaintainNugetConfig(unityNugetLocalFeed, "NuGet.config");
 
         UpdateUnityEditorVersion();
@@ -90,9 +94,16 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateReferencesProps(buildTarget);
         UpdatePluginsProps(buildTarget);
         UpdateSystemSearchPaths(buildTarget);
+        UpdateRoslynAnalyzersProps();
 
         var optimization = CompilationPipeline.codeOptimization;
         PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, buildTarget.ToString(), GetCurrentDotNETRuntimeId(), optimization == CodeOptimization.Release);
+    }
+
+    private static void UpdateRoslynAnalyzersProps()
+    {
+        var analyzerPaths = new PrecompiledAssemblyProvider().GetRoslynAnalyzerPaths();
+        PropsGenerator.Instance.UpdateRoslynAnalyzersProps(analyzerPaths);
     }
 
     /// <summary>
@@ -103,7 +114,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
     {
         ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
         var unityNugetLocalFeed = Path.Combine(EditorApplication.applicationScriptingPath, "MSBuild/sdk-nugets");
-        ProjectGenerator.Instance.MaintainGlobalJson("1.0.0", "global.json");
+        ProjectGenerator.Instance.MaintainGlobalJson(GetUnitySdkVersion(unityNugetLocalFeed), "global.json");
         ProjectGenerator.Instance.MaintainNugetConfig(unityNugetLocalFeed, "NuGet.config");
 
         var optimization = CompilationPipeline.codeOptimization;
@@ -151,7 +162,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
             cache.EditorPluginPaths,
             cache.PlayerPluginPaths,
             cache.AllPlugins,
-            searchPaths);
+            searchPaths,
+            cache.RoslynAnalyzerPaths);
     }
 
     private static string GetCurrentDotNETRuntimeId()
@@ -186,6 +198,38 @@ class UnityEditorMSBuildPropsTargetsGeneration
         }
 
         throw new NotSupportedException($"Unsupported OS platform {RuntimeInformation.OSDescription}");
+    }
+
+    private static string s_cachedUnitySdkVersion;
+
+    // Reads the version from Unity.Sdk.<version>.nupkg so global.json tracks CI's bumped value
+    // (in sdk/UnitySdksCommon.props) instead of a hardcoded literal.
+    private static string GetUnitySdkVersion(string sdkNugetsPath)
+    {
+        if (s_cachedUnitySdkVersion != null)
+            return s_cachedUnitySdkVersion;
+
+        const string prefix = "Unity.Sdk.";
+        const string suffix = ".nupkg";
+
+        if (!Directory.Exists(sdkNugetsPath))
+            throw new DirectoryNotFoundException($"Unity SDK nuget feed not found at {sdkNugetsPath}");
+
+        foreach (var file in Directory.EnumerateFiles(sdkNugetsPath, $"{prefix}*{suffix}"))
+        {
+            var name = Path.GetFileName(file);
+            if (name.EndsWith(".symbols.nupkg", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var candidate = name.Substring(prefix.Length, name.Length - prefix.Length - suffix.Length);
+            if (candidate.Length == 0 || !char.IsDigit(candidate[0]))
+                continue;
+
+            s_cachedUnitySdkVersion = candidate;
+            return candidate;
+        }
+
+        throw new FileNotFoundException($"No {prefix}*{suffix} package found in {sdkNugetsPath}");
     }
 
     public static void UpdateInstallPathFile()

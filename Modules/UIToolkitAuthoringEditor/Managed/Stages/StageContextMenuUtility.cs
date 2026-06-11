@@ -61,7 +61,7 @@ internal static class StageContextMenuUtility
         AppendAction(menu, k_SelectChildren, Menu.GetHotkey(selectChildrenMenu), view.SelectChildrenAndExpandRecursive);
     }
 
-    static void PopulateElementOperations(DropdownMenu menu)
+    public static void PopulateElementOperations(DropdownMenu menu)
     {
         // Use the top most group priority value as default
         var previousPriority = MenuItemGenerator.k_DefaultStandardElementsPriority;
@@ -95,9 +95,20 @@ internal static class StageContextMenuUtility
 
                 previousPriority = menuItem.priority;
 
+                var menuItemPath = menuItem.path;
                 menu.AppendAction(
                     contextMenuPath,
-                    _ => EditorApplication.ExecuteMenuItem(menuItem.path),
+                    _ =>
+                    {
+                        // Bypass the GameObject menu (which adds as a sibling) when the path
+                        // resolves to a known element type — the hierarchy context menu mirrors
+                        // Unity's GameObject context menu and adds as a child of the right-clicked
+                        // node. Other items (e.g. "UI Library...") fall through.
+                        if (MenuItemGenerator.TryGetTypeForMenuPath(menuItemPath, out var type))
+                            MenuUtility.AddElementAsLastChild(type);
+                        else
+                            EditorApplication.ExecuteMenuItem(menuItemPath);
+                    },
                     _ => DropdownMenuAction.Status.Normal
                 );
             }

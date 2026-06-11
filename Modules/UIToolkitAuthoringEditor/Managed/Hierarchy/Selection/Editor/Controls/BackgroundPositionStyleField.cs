@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine.UIElements;
-using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -26,7 +24,8 @@ namespace Unity.UIToolkit.Editor
     {
         static readonly string FieldClassName = "unity-background-position-style-field";
         static readonly string UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleField.uxml";
-        static readonly string IconPath =  "UIToolkit/Icons";
+        static readonly string UssPathDark = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleFieldDark.uss";
+        static readonly string UssPathLight = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleFieldLight.uss";
         public static readonly string BackgroundPositionFieldName = "position";
         public static readonly string BackgroundPositionAlignFieldName = "align";
         public static readonly string InspectorContainerClassName = "unity-ui-inspector__container";
@@ -61,6 +60,9 @@ namespace Unity.UIToolkit.Editor
         {
             AddToClassList(InspectorContainerClassName);
             AddToClassList(FieldClassName);
+
+            var ussPath = EditorGUIUtility.isProSkin ? UssPathDark : UssPathLight;
+            styleSheets.Add(EditorGUIUtility.Load(ussPath) as StyleSheet);
 
             var template = EditorGUIUtility.Load(UxmlPath) as VisualTreeAsset;
             template.CloneTree(this);
@@ -139,37 +141,26 @@ namespace Unity.UIToolkit.Editor
 
         void OnModeChanged()
         {
-            var icons = new List<Background>();
-            var tooltips = new List<string>();
+            string[] classNames;
+            string[] tooltips;
 
             if (m_Mode == BackgroundPosition.Axis.Horizontal)
             {
-                icons.Add(UIResources.LoadIcon($"{IconPath}/background-position-x-left.png"));
-                icons.Add(UIResources.LoadIcon($"{IconPath}/background-position-x-center.png"));
-                icons.Add(UIResources.LoadIcon($"{IconPath}/background-position-x-right.png"));
-
-                tooltips.Add(BackgroundPositionXLeftTooltip);
-                tooltips.Add(BackgroundPositionXCenterTooltip);
-                tooltips.Add(BackgroundPositionXRightTooltip);
+                classNames = new[] { "background-position-x-left", "background-position-x-center", "background-position-x-right" };
+                tooltips = new[] { BackgroundPositionXLeftTooltip, BackgroundPositionXCenterTooltip, BackgroundPositionXRightTooltip };
             }
             else
             {
-                icons.Add(UIResources.LoadIcon($"{IconPath}/background-position-y-top.png"));
-                icons.Add(UIResources.LoadIcon($"{IconPath}/background-position-y-center.png"));
-                icons.Add(UIResources.LoadIcon($"{IconPath}/background-position-y-bottom.png"));
-
-                tooltips.Add(BackgroundPositionYTopTooltip);
-                tooltips.Add(BackgroundPositionYCenterTooltip);
-                tooltips.Add(BackgroundPositionYBottomTooltip);
+                classNames = new[] { "background-position-y-top", "background-position-y-center", "background-position-y-bottom" };
+                tooltips = new[] { BackgroundPositionYTopTooltip, BackgroundPositionYCenterTooltip, BackgroundPositionYBottomTooltip };
             }
 
             m_BackgroundPositionAlign.Clear();
 
-            for (var i = 0; i < icons.Count; ++i)
+            for (var i = 0; i < classNames.Length; ++i)
             {
-                var icon = icons[i];
-                var tooltip = tooltips[i];
-                var button = new Button() { iconImage = icon, tooltip = tooltip };
+                var button = new Button { tooltip = tooltips[i] };
+                button.AddToClassList(classNames[i]);
                 m_BackgroundPositionAlign.Add(button);
             }
 

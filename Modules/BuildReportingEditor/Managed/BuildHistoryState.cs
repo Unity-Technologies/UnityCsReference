@@ -323,7 +323,7 @@ namespace UnityEditor.Build
 
             foreach (var buildGUID in buildSessionGuids)
             {
-                if (TryGetMetadataPath(buildGUID, out string metadataPath))
+                if (TryGetBuildReportDirectory(buildGUID, out string metadataPath))
                 {
                     try
                     {
@@ -413,23 +413,18 @@ namespace UnityEditor.Build
             return deletedCount;
         }
 
-        /// <summary>
-        /// Attempts to get the metadata path for a specific build.
-        /// </summary>
-        /// <param name="buildSessionGuid">The GUID of the build.</param>
-        /// <param name="metadataPath">When this method returns, contains the metadata path if found.</param>
-        /// <returns>True if the build was found; otherwise false.</returns>
-        public bool TryGetMetadataPath(GUID buildSessionGuid, out string metadataPath)
+        // Attempts to get the build report directory for a specific build.
+        public bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory)
         {
             EnsureCacheLoaded();
 
             if (m_Builds.TryGetValue(buildSessionGuid, out BuildEntry entry))
             {
-                metadataPath = entry.MetadataPath;
+                directory = entry.MetadataPath;
                 return true;
             }
 
-            metadataPath = string.Empty;
+            directory = string.Empty;
             return false;
         }
 

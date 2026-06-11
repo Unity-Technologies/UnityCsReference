@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -11,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    class ProgressWindow : EditorWindow
+    partial class ProgressWindow : EditorWindow
     {
         internal const string ussBasePath = "StyleSheets/ProgressWindow";
         internal static readonly string ussPath = $"{ussBasePath}/ProgressWindow.uss";
@@ -25,10 +26,13 @@ namespace UnityEditor
         const float k_WindowWidth = 400;
         const float k_WindowHeight = 300;
 
+        [AutoStaticsCleanupOnCodeReload]
         static ProgressWindow s_Window;
         static readonly string k_CheckWindowKeyName = $"{typeof(ProgressWindow).FullName}h";
         internal static bool canHideDetails => s_Window && !s_Window.docked;
+        [NoAutoStaticsCleanup]
         static ProgressOrderComparer s_ProgressComparer = new ProgressOrderComparer(true);
+        [AutoStaticsCleanupOnCodeReload]
         static VisualTreeAsset s_VisualProgressItemTask = null;
 
         Button m_DismissAllBtn;

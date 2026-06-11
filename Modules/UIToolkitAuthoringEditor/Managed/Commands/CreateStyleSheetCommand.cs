@@ -20,11 +20,18 @@ internal sealed class CreateStyleSheetCommand : Command<CreateStyleSheetCommand>
         return cmd;
     }
 
+    public static void Execute(object source, VisualTreeAsset vta, string ussPath, int index = -1)
+    {
+        using var command = GetPooled(source, vta, ussPath, index);
+        UICommandQueue.Execute(command);
+    }
+
     public VisualTreeAsset VisualTreeAsset { get; private set; }
     public string UssPath { get; private set; }
     public int Index { get; private set; }
 
     public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
 
     protected override void Init()
     {
@@ -41,8 +48,7 @@ internal sealed class CreateStyleSheetCommand : Command<CreateStyleSheetCommand>
         if (!StyleSheetAssetUtilities.CreateNewUSSFile(UssPath))
             return CommandExecutionStatus.ExecutionFailed;
 
-        var addCommand = new AddStyleSheetCommand(VisualTreeAsset, UssPath, Index);
-        addCommand.Execute();
-        return CommandExecutionStatus.Success;
+        using var addCommand = AddStyleSheetCommand.GetPooled(Source, VisualTreeAsset, UssPath, Index);
+        return UICommandQueue.Execute(addCommand).Status;
     }
 }

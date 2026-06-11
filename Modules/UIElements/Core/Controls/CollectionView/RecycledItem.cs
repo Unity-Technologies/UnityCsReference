@@ -18,6 +18,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         CollectionView m_CollectionView;
         VisualElement m_Element;
 
+        // Cached source of truth for translate.y. resolvedStyle.translate.y lags writes by a
+        // frame, which corrupts the UpdatePositions cascade that reads previous's offset.
+        float m_VerticalOffset = float.NaN;
+
         public VisualElement element
         {
             get => m_Element;
@@ -26,16 +30,14 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         public float verticalOffset
         {
-            get => m_Element.resolvedStyle.translate.y;
+            get => float.IsNaN(m_VerticalOffset) ? m_Element.resolvedStyle.translate.y : m_VerticalOffset;
             set
             {
-                var pos = m_Element.resolvedStyle.translate;
-
-                if (Mathf.Approximately(pos.y, value))
+                if (!float.IsNaN(m_VerticalOffset) && Mathf.Approximately(m_VerticalOffset, value))
                     return;
 
-                pos.y = value;
-                m_Element.style.translate= pos;
+                m_VerticalOffset = value;
+                m_Element.style.translate = new Translate(0, value, 0);
             }
         }
 
@@ -66,6 +68,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_CollectionView = parent;
             this.element = element;
             index = k_UndefinedIndex;
+            m_VerticalOffset = float.NaN;
             element.AddToClassList(BaseVerticalCollectionView.itemUssClassNameUnique);
         }
 

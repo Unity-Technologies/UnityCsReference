@@ -53,7 +53,11 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_ResizableElement = new ResizableElement { name = PartName };
                 m_ResizableElement.AddToClassList(m_ParentClassName.WithUssElement(PartName));
-                container.Add(m_ResizableElement);
+                // Add to the owner's hierarchy directly (not via contentContainer) so the
+                // position:absolute offsets in Resizable.uss resolve against the element's
+                // outer bounds, not its contentContainer. Also ensures ElementResizer targets
+                // the GraphElement itself rather than contentContainer. (UUM-131394)
+                ((VisualElement)m_OwnerElement).hierarchy.Add(m_ResizableElement);
             }
         }
 

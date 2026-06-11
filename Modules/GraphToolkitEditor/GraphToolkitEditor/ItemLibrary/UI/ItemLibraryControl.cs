@@ -266,6 +266,10 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                 m_DetailsToggle.SetValueWithoutNotify(showPreview);
                 SetDetailsPanelVisibility(showPreview);
                 m_DetailsToggle.RegisterValueChangedCallback(OnDetailsToggleValueChange);
+
+                // Setup can be called multiple times if the same library is opened multiple times, so we need to make sure we don't register the callback multiple times
+                m_DetailsToggle.UnregisterCallback<KeyDownEvent>(OnDetailsToggleKeyDown, TrickleDown.TrickleDown);
+                m_DetailsToggle.RegisterCallback<KeyDownEvent>(OnDetailsToggleKeyDown, TrickleDown.TrickleDown);
                 m_TitleContainer.Add(m_DetailsToggle);
             }
             else
@@ -349,6 +353,15 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                 splitter.SetEnabled(true);
                 splitter.Insert(0, m_LibraryPanel);
             }
+        }
+
+        void OnDetailsToggleKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode != KeyCode.Escape)
+                return;
+
+            OnItemChosen(null);
+            evt.StopPropagation();
         }
 
         void OnDetailsToggleValueChange(ChangeEvent<bool> evt)

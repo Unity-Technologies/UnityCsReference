@@ -249,7 +249,7 @@ namespace UnityEditor
             bool hasColors = sprite.HasVertexAttribute(VertexAttribute.Color);
 
             Material copyMaterial = null;
-            if (spriteRendererMaterial != null)
+            if (spriteRendererMaterial != null && texture != null)
             {
                 if (_matHasTexture)
                 {

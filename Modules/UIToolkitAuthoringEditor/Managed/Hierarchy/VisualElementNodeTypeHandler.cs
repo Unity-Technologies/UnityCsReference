@@ -26,7 +26,6 @@ internal abstract class VisualElementNodeTypeHandler :
     HierarchyNodeTypeHandler,
     IVisualElementChangeProcessor,
     IHierarchySearchPropositionProvider,
-    IHierarchyEntityIdConverter,
     IHierarchyEditorNodeTypeHandler
 {
     public const string NodeTypeName = "VisualElement";
@@ -474,7 +473,7 @@ internal abstract class VisualElementNodeTypeHandler :
             CommandList.SetDirty();
             return false;
         }
-        new SetElementNameCommand(elementVea, name).Execute();
+        SetElementNameCommand.Execute(this, elementVea, name);
         element.name = name;
         return true;
     }
@@ -1561,45 +1560,61 @@ internal abstract class VisualElementNodeTypeHandler :
         return true;
     }
 
-    HierarchyNode IHierarchyEntityIdConverter.GetNode(EntityId entityId)
+    public override HierarchyNode GetNodeFromEntityId(EntityId entityId)
     {
         return m_Mappings.TryGetNodeFromSelectionHandle(entityId, out var node)
             ? node
             : HierarchyNode.Null;
     }
 
-    void IHierarchyEntityIdConverter.GetNodes(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes)
+    public override int GetNodesFromEntityIds(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes)
     {
+        var resolved = 0;
         for (var i = 0; i < entityIds.Length; ++i)
         {
             ref var outNode = ref outNodes[i];
             if (outNode != HierarchyNode.Null)
+            {
+                ++resolved;
                 continue;
+            }
 
             if (m_Mappings.TryGetNodeFromSelectionHandle(entityIds[i], out var node))
+            {
                 outNode = node;
+                ++resolved;
+            }
         }
+        return entityIds.Length - resolved;
     }
 
-    EntityId IHierarchyEntityIdConverter.GetEntityId(in HierarchyNode node)
+    public override EntityId GetEntityIdFromNode(in HierarchyNode node)
     {
         return m_Mappings.TryGetSelectionHandle(node, out var selectionHandle)
             ? selectionHandle
             : EntityId.None;
     }
 
-    void IHierarchyEntityIdConverter.GetEntityIds(ReadOnlySpan<HierarchyNode> nodes,
+    public override int GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes,
         Span<EntityId> outEntityIds)
     {
+        var resolved = 0;
         for (var i = 0; i < nodes.Length; ++i)
         {
             ref var outEntityId = ref outEntityIds[i];
             if (outEntityId != EntityId.None)
+            {
+                ++resolved;
                 continue;
+            }
 
             if (m_Mappings.TryGetSelectionHandle(nodes[i], out var selectionHandle))
+            {
                 outEntityId = selectionHandle;
+                ++resolved;
+            }
         }
+        return nodes.Length - resolved;
     }
 
     private void OnDisplayOptionsChanged(UIHierarchyDisplayOptions options)

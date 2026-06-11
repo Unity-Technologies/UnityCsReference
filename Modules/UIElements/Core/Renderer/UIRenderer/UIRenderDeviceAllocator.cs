@@ -341,7 +341,7 @@ namespace UnityEngine.UIElements.UIR
 
     class Page : IDisposable
     {
-        public Page(uint vertexMaxCount, uint indexMaxCount, bool mapped)
+        public Page(uint vertexMaxCount, uint indexMaxCount, uint extrasStride, bool mapped)
         {
             // The vertexMaxCount imposed here is only because we use UInt16 as the index type.
             // The actual render device may not support 0xFFFF as an index but it is up to the device
@@ -353,8 +353,15 @@ namespace UnityEngine.UIElements.UIR
             // Align index buffer size to 4 bytes (indexMaxCount * sizeof(UInt16) must be 4-byte aligned)
             indexMaxCount = (indexMaxCount + 1) & ~1u;
 
-            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, mapped, vertexMaxCount);
-            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, mapped, indexMaxCount);
+            // Each "vertex record" is [Vertex (64 B)][extras (0..80 B)], interleaved in one stream.
+            uint combinedStride = (uint)Unsafe.SizeOf<Vertex>() + extrasStride;
+            vertices = new DataSet(Utility.GPUBufferType.Vertex, mapped, vertexMaxCount, combinedStride);
+            indices = new DataSet(Utility.GPUBufferType.Index, mapped, indexMaxCount, sizeof(UInt16));
+        }
+
+        public void MarkVertexRangeDirty(uint start, uint count)
+        {
+            vertices.AddDirtyRange(start, count);
         }
 
         #region Dispose Pattern
@@ -388,8 +395,8 @@ namespace UnityEngine.UIElements.UIR
 
         public bool isEmpty { get { return vertices.allocator.isEmpty && indices.allocator.isEmpty; } }
 
-        public DataSet<Vertex> vertices;
-        public DataSet<UInt16> indices;
+        public DataSet vertices;
+        public DataSet indices;
         public Page next;
         public int framesEmpty; // For how many consecutive frames has the page been empty?
     }

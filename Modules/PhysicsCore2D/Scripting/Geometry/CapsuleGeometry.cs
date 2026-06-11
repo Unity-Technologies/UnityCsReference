@@ -63,6 +63,34 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Create a shape proxy from the geometry, transformed by the specified transform.
+        /// </summary>
+        /// <param name="transform">The transform used to position the geometry.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the geometry is not valid.</exception>
+        public readonly PhysicsShape.ShapeProxy CreateShapeProxy(PhysicsTransform transform)
+        {
+            if (isValid)
+                return new PhysicsShape.ShapeProxy(Transform(transform));
+
+            throw new ArgumentException("Geometry is not valid.");
+        }
+
+        /// <summary>
+        /// Create a shape proxy from the geometry, transformed by the specified transform.
+        /// The maximum absolute value component from the scale will be used to scale the radius when <paramref name="scaleRadius"/> is true.
+        /// </summary>
+        /// <param name="transform">The transform used to position the geometry.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the geometry is not valid.</exception>
+        public readonly PhysicsShape.ShapeProxy CreateShapeProxy(Matrix4x4 transform, bool scaleRadius)
+        {
+            if (isValid)
+                return new PhysicsShape.ShapeProxy(Transform(transform, scaleRadius));
+
+            throw new ArgumentException("Geometry is not valid.");
+        }
+
+        /// <summary>
         /// Creates multiple <see cref="PolygonGeometry"/> from the geometry.
         /// A limit is imposed on small vertex distances so it is recommended that the geometry is scaled appropriately rather than on the returned geometry so geometry is not discarded due to it being invalid.
         /// </summary>

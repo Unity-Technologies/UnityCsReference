@@ -67,7 +67,7 @@ namespace UnityEditor.Build.Profile
         /// <param name="profileName">The name for the build profile. Used as the asset filename.</param>
         /// <param name="onProfileReady">Optional callback invoked when the profile has completed
         /// initialization and is ready to use. For the callback to survive domain reloads, it must be
-        /// a static method or a method on a serialized UnityEngine.Object. 
+        /// a static method or a method on a serialized UnityEngine.Object.
         /// Non-persistent callbacks will not be invoked if a domain reload occurs during initialization.</param>
         /// <returns>
         /// The newly created <see cref="BuildProfile"/> instance. The profile may require initialization if
@@ -95,7 +95,7 @@ namespace UnityEditor.Build.Profile
         ///     androidGuid,
         ///     "My Profile",
         ///     OnProfileReadyStatic);
-        /// 
+        ///
         /// static void OnProfileReadyStatic(BuildProfile profile)
         /// {
         ///     Debug.Log($"Profile {profile.name} ready!");
@@ -107,12 +107,14 @@ namespace UnityEditor.Build.Profile
             string profileName,
             UnityAction<BuildProfile> onProfileReady = null)
         {
-            // Ensure the requested platform is installed.
-            var installedPlatforms = BuildProfile.GetInstalledPlatformModules();
+            // Ensure the base platform is installed. Derived platforms will
+            // be automatically loaded during profile initialization.
             bool isPlatformInstalled = false;
+            GUID basePlatformGUID = BuildTargetDiscovery.GetBasePlatformGUID(platformId);
+            var installedPlatforms = BuildProfile.GetInstalledPlatformModules();
             foreach (var platform in installedPlatforms)
             {
-                if (platform.platformGuid == platformId)
+                if (basePlatformGUID == platform.platformGuid)
                 {
                     isPlatformInstalled = true;
                     break;
@@ -162,7 +164,7 @@ namespace UnityEditor.Build.Profile
             buildProfile.platformGuid = platformId;
             AssetDatabase.CreateAsset(
                 buildProfile,
-                AssetDatabase.GenerateUniqueAssetPath(assetPath));
+                BuildProfileModuleUtil.GetUniqueBuildProfilePath(assetPath));
             BuildProfileContext.instance.RegisterProfileAwaitingInitialization(
                 buildProfile, packagesToAdd, preconfiguredSettingsVariant, onProfileReady);
 

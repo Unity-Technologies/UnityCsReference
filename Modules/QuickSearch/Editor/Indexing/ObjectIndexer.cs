@@ -11,7 +11,6 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEditor.Search.Providers;
 using UnityEngine;
-using Unity.Loading;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Search
@@ -695,6 +694,11 @@ namespace UnityEditor.Search
                     var loadableObj = UnityEditor.LoadableObjectIdEditorUtility.LoadableObjectIdToObject(p.loadableObjectIdValue);
                     AddReference(documentIndex, fieldName, loadableObj);
                     LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, loadableObj);
+                    break;
+                case SerializedPropertyType.LoadableSceneId:
+                    var sceneAsset = LoadableSceneIdEditorUtility.LoadableSceneIdToScene(p.loadableSceneIdValue);
+                    AddReference(documentIndex, fieldName, sceneAsset);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, sceneAsset);
                     break;
             }
         }

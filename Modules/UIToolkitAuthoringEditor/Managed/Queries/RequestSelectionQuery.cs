@@ -15,6 +15,12 @@ class RequestSelectionQuery<T> : Command<RequestSelectionQuery<T>>
         return cmd;
     }
 
+    public static void Execute(object source, T toSelect)
+    {
+        using var command = GetPooled(source, toSelect);
+        UICommandQueue.Execute(command);
+    }
+
     public T ToSelect { get; private set; }
 
     public override CommandCategory Category => CommandCategory.Selection;

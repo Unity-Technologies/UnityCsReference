@@ -70,6 +70,14 @@ namespace UnityEditor
         /// is certain to have new output if you upgrade and rebuild, even for a minor version upgrade.
         /// </remarks>
         SerializeUnityVersion = 1 << 15,
+
+        /// <summary>
+        /// Skip writing built artifacts and the archive to
+        /// <see cref="BuildContentDirectoryParameters.outputPath"/>.
+        /// Incompatible with <see cref="UseArchive"/> and any non-Uncompressed
+        /// <see cref="BuildCompression"/>.
+        /// </summary>
+        SkipExportToOutputPath = 1 << 16,
     }
 }
 

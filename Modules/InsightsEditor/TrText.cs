@@ -41,9 +41,9 @@ internal class TrText
     internal static readonly string k_ProjectSettingsDiagnosticsInfoTextDisabledLink = L10n.Tr("https://docs.unity.com/cloud/en-us/developer-data-framework/overview");
 
     internal static readonly string k_DisabledWarningWindowTitle = L10n.Tr("Disable Diagnostics?");
-    internal static readonly string k_DisabledWarningHelpBoxText = L10n.Tr("Disabling diagnostics can cause problems when other services are linked to Cloud Diagnostics, and prevent Unity from collecting essential data to improve the engine.");
-    internal static readonly string k_DisabledWarningCtaText = L10n.Tr("Are you sure you want to disable Diagnostic Data?");
-    internal static readonly string k_DisabledWarningWindowAcceptButton = L10n.Tr("Yes, disable Diagnostic Data");
+    internal static readonly string k_DisabledWarningHelpBoxText = L10n.Tr("Disabling Diagnostics can cause problems when other services are linked to Diagnostics, and prevent Unity from collecting essential data to improve the engine.");
+    internal static readonly string k_DisabledWarningCtaText = L10n.Tr("Are you sure you want to disable Diagnostics?");
+    internal static readonly string k_DisabledWarningWindowAcceptButton = L10n.Tr("Yes, disable Diagnostics");
     internal static readonly string k_DisabledWarningWindowCancelButton = L10n.Tr("Cancel");
 
     // Describes text block with multiple clickable elements. First one proposes expected order, rest is substitutions for tokens.

@@ -298,15 +298,47 @@ namespace Unity.Multiplayer.Editor
         private static MultiplayerRoleFlags MultiplayerRoleToFlags(MultiplayerRole role)
             => (MultiplayerRoleFlags)(1 << (int)role);
 
-        private class NewComponentSelectionPopup : PopupWindowContent
+        internal class NewComponentSelectionPopup : PopupWindowContent
         {
+            internal const string k_PlaceholderText = "Type to search for a component...";
+
             public delegate void AddDelegate(Type type);
             private AddDelegate m_AddCallback;
             private SearchField m_SearchField;
             private string m_SearchText;
             private IEnumerable<Type> m_Types;
-            private IEnumerable<Type> m_FilteredTypes;
+            private List<Type> m_FilteredTypes;
             private Vector2 m_ScrollPosition;
+
+            internal bool ShouldShowPlaceholder => m_FilteredTypes == null;
+
+            internal IReadOnlyList<Type> FilteredTypes => m_FilteredTypes;
+
+            internal void UpdateSearchText(string searchText)
+            {
+                if (searchText == m_SearchText)
+                    return;
+
+                m_SearchText = searchText;
+                if (string.IsNullOrWhiteSpace(searchText))
+                {
+                    m_FilteredTypes = null;
+                    return;
+                }
+
+                if (m_FilteredTypes == null)
+                    m_FilteredTypes = new List<Type>();
+                else
+                    m_FilteredTypes.Clear();
+
+                foreach (var t in m_Types)
+                {
+                    if (t.FullName != null && t.FullName.Contains(m_SearchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        m_FilteredTypes.Add(t);
+                    }
+                }
+            }
 
             public NewComponentSelectionPopup(AddDelegate addCallback)
             {
@@ -338,28 +370,16 @@ namespace Unity.Multiplayer.Editor
                 GUILayout.Space(5);
 
                 var searchText = m_SearchField.OnGUI(EditorGUILayout.GetControlRect(), m_SearchText);
-                if (searchText != m_SearchText)
-                {
-                    m_SearchText = searchText;
-                    if (string.IsNullOrWhiteSpace(searchText))
-                        m_FilteredTypes = null;
-                    else
-                    {
-                        var filteredTypes = new List<Type>();
-                        foreach (var t in m_Types)
-                        {
-                            if (t.FullName.Contains(m_SearchText, StringComparison.CurrentCultureIgnoreCase))
-                            {
-                                filteredTypes.Add(t);
-                            }
-                        }
-                        m_FilteredTypes = filteredTypes;
-                    }
-                }
+                UpdateSearchText(searchText);
 
                 m_SearchField.SetFocus();
 
-                if (m_FilteredTypes != null)
+                if (ShouldShowPlaceholder)
+                {
+                    GUILayout.Space(10);
+                    EditorGUILayout.LabelField(k_PlaceholderText, EditorStyles.centeredGreyMiniLabel);
+                }
+                else
                 {
                     m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
                     foreach (var type in m_FilteredTypes)

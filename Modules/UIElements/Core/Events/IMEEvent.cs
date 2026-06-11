@@ -24,7 +24,22 @@ namespace UnityEngine.UIElements
         public static IMEEvent GetPooled(string compositionString)
         {
             var evt = GetPooled();
-            evt.compositionString = compositionString;
+            evt.compositionString = compositionString ?? string.Empty;
+            return evt;
+        }
+
+        /// <summary>
+        /// Gets a ime event from the event pool and initializes it with the given values. Use this
+        /// function instead of creating new events. Events obtained using this method need to be released
+        /// back to the pool. You can use `Dispose()` to release them.
+        /// </summary>
+        /// <param name="compositionString">IME's current composition string.</param>
+        /// <returns>An initialized event.</returns>
+        internal static IMEEvent GetPooled(Event systemEvent, string compositionString)
+        {
+            var evt = GetPooled();
+            evt.imguiEvent = systemEvent;
+            evt.compositionString = compositionString ?? string.Empty;
             return evt;
         }
 
@@ -41,7 +56,12 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.IgnoreDisabledElements;
-            compositionString = default(string);
+            compositionString = string.Empty;
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToFocusedElementOrPanelRoot(this, panel);
         }
 
         /// <summary>

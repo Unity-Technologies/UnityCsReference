@@ -88,31 +88,37 @@ namespace Unity.UIToolkit.Editor
         }
 
         /// <summary>
-        /// Resolves the library path for a type based on namespace and optional attribute.
+        /// Determines whether a type should be surfaced in library UI (picker, menus).
+        /// </summary>
+        internal static bool IsVisibleInLibrary(Type type)
+        {
+            if (type == null)
+                return false;
+
+            var uxmlAttr = type.GetCustomAttribute<UxmlElementAttribute>();
+            if (uxmlAttr != null && uxmlAttr.visibility == LibraryVisibility.Hidden)
+                return false;
+
+            if (type.Namespace != null && type.Namespace.StartsWith("UnityEditor."))
+                return false;
+
+            if (type.IsAbstract)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Returns the explicit library path declared on the type, or null when the type isn't visible in the library or has no path set.
         /// </summary>
         static string ResolveLibraryPath(Type type)
         {
-            if (type == null)
+            if (!IsVisibleInLibrary(type))
                 return null;
 
             var uxmlAttr = type.GetCustomAttribute<UxmlElementAttribute>();
-
-            // Check visibility setting
-            if (uxmlAttr != null && uxmlAttr.visibility == LibraryVisibility.Hidden)
-                return null;
-
-            // Removing editor controls - for now
-            if (type.Namespace != null && type.Namespace.StartsWith("UnityEditor."))
-                return null;
-
-            if (type.IsAbstract)
-                return null;
-
-            // Look for existing libraryPath value, this means they have opt-in for their control to appear in the menu.
             if (uxmlAttr is { libraryPath: not null })
-            {
                 return uxmlAttr.libraryPath == "" ? string.Empty : uxmlAttr.libraryPath;
-            }
 
             return null;
         }

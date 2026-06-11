@@ -60,8 +60,7 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
         }
 
         StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id);
-        var command = new SetVariableCommand(CurrentStyleSheet, rule, id, variableName);
-        command.Execute();
+        SetVariableCommand.Execute(CommandSources.Inspector, CurrentStyleSheet, rule, id, variableName);
 
         // Update selector element
         var element = CurrentVisualElement;
@@ -75,8 +74,7 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
             return;
 
         StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id);
-        var command = new RemoveVariableCommand(CurrentStyleSheet, CurrentRule, id);
-        command.Execute();
+        RemoveVariableCommand.Execute(CommandSources.Inspector, CurrentStyleSheet, CurrentRule, id);
 
         // Update selector element
         var element = CurrentVisualElement;

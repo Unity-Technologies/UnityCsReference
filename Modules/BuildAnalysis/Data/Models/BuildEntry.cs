@@ -16,6 +16,7 @@ namespace UnityEditor.Build.Analysis
         public BuildTarget Platform;
         public DateTime BuildStartedAt;
         public BuildResult BuildResult;
+        public BuildType BuildType;
         public long TotalSizeBytes;
         public long TotalTimeMs;
         public string FolderPath = string.Empty;  // Library/BuildHistory/{guid}

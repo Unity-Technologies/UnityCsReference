@@ -193,7 +193,7 @@ namespace UnityEditorInternal
         // - It's stored inside a readonly package
         // - It's an engine asset (primitives defined in the engine like cube, quad...)
         // - It's stored inside a scene
-        // - It's stored inside a .asset (because multiple meshes can be stored inside an asset, and we cannot assume they should be modified the same way, like for a ModelImporter)
+        // - It's stored inside a .asset that contains more than one Mesh (we cannot assume which Mesh the caller refers to)
         [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
         internal static bool CanMeshBeModifiedFromCode(string assetPath)
         {
@@ -209,8 +209,27 @@ namespace UnityEditorInternal
             if (AssetImporter.GetAtPath(assetPath) is ModelImporter)
                 return true; // Non readonly mesh from ModelImporter can be modified
 
-            // This include meshes stored inside .asset files.
-            return false;
+            // .asset files can hold multiple Meshes; only safe to auto-modify when there is exactly one.
+            return TryGetSingleMeshAtPath(assetPath) != null;
+        }
+
+        internal static Mesh TryGetSingleMeshAtPath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath) || !assetPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+                return null;
+                
+            var all = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+            Mesh found = null;
+            for (int i = 0; i < all.Length; ++i)
+            {
+                if (all[i] is Mesh m)
+                {
+                    if (found != null)
+                        return null;
+                    found = m;
+                }
+            }
+            return found;
         }
 
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
@@ -267,17 +286,23 @@ namespace UnityEditorInternal
                 EditorUtility.SetDirty(mesh);
                 AssetDatabase.SaveAssetIfDirty(mesh);
             }
+            else if (AssetImporter.GetAtPath(assetPath) is ModelImporter modelImporter)
+            {
+                modelImporter.isReadable = true;
+                modelImporter.SaveAndReimport();
+            }
             else
             {
-                var modelImporter = AssetImporter.GetAtPath(assetPath) as ModelImporter;
-                if (modelImporter == null)
+                var mesh = TryGetSingleMeshAtPath(assetPath);
+                if (mesh == null)
                 {
-                    Debug.LogError("Mesh importer not found.");
+                    Debug.LogError($"Could not resolve a unique Mesh at '{assetPath}'.");
                     return false;
                 }
 
-                modelImporter.isReadable = true;
-                modelImporter.SaveAndReimport();
+                mesh.isReadable = true;
+                EditorUtility.SetDirty(mesh);
+                AssetDatabase.SaveAssetIfDirty(mesh);
             }
 
             return true;
@@ -305,15 +330,8 @@ namespace UnityEditorInternal
                 EditorUtility.SetDirty(mesh);
                 AssetDatabase.SaveAssetIfDirty(mesh);
             }
-            else
+            else if (AssetImporter.GetAtPath(assetPath) is ModelImporter modelImporter)
             {
-                var modelImporter = AssetImporter.GetAtPath(assetPath) as ModelImporter;
-                if (modelImporter == null)
-                {
-                    Debug.LogError("Mesh importer not found.");
-                    return false;
-                }
-
                 if (isConvex)
                 {
                     modelImporter.preBakeConvexCollisionMesh = true;
@@ -323,6 +341,19 @@ namespace UnityEditorInternal
                     modelImporter.preBakeTriangleCollisionMesh = true;
                 }
                 modelImporter.SaveAndReimport();
+            }
+            else
+            {
+                var mesh = TryGetSingleMeshAtPath(assetPath);
+                if (mesh == null)
+                {
+                    Debug.LogError($"Could not resolve a unique Mesh at '{assetPath}'.");
+                    return false;
+                }
+
+                mesh.SetPreBakeCollisionMeshInternal(isConvex, true);
+                EditorUtility.SetDirty(mesh);
+                AssetDatabase.SaveAssetIfDirty(mesh);
             }
 
             return true;

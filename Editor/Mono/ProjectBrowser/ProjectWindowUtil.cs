@@ -522,7 +522,7 @@ namespace UnityEditor
         }
 
         // Returns the path of currently selected folder. If multiple are selected, returns the first one.
-        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static string GetActiveFolderPath()
         {
             ProjectBrowser projectBrowser = GetProjectBrowserIfExists();

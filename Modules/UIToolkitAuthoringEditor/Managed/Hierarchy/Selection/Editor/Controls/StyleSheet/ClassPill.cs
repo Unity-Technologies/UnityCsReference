@@ -9,7 +9,8 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class ClassPill : VisualElement
+    [UxmlElement]
+    internal partial class ClassPill : VisualElement
     {
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPill.uxml";
         static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/StyleSheet/ClassPill.uss";
@@ -29,7 +30,7 @@ namespace Unity.UIToolkit.Editor
         public Clickable onDeleteClickable => m_DeleteButton.clickable;
         public bool isDragged;
 
-        // Set's the Label element's text
+        [UxmlAttribute]
         public string text
         {
             get => m_Label.text;

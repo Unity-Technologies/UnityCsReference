@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
@@ -26,26 +25,38 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsBody : IEquatable<PhysicsBody>
+    public readonly partial struct PhysicsBody : IPhysicsHandle<PhysicsBody>, IEquatable<PhysicsBody>
     {
-        #region Id
-
-        readonly Int32 m_Index1;
-        readonly UInt16 m_World0;
-        readonly UInt16 m_Generation;
+        #region Handle
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"type={type}, index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
+        readonly PhysicsHandle m_PhysicsHandle;
+
+        /// <summary>
+        /// Create a body from a physics handle.
+        /// 
+        /// NOTE: You must ensure that the physics handle represents the correct object type otherwise hard to detect bugs can occur.
+        /// </summary>
+        /// <param name="physicsHandle">The physics handle to use.</param>
+        public PhysicsBody(PhysicsHandle physicsHandle) { m_PhysicsHandle = physicsHandle; }
+
+        /// <summary>
+        /// Get the physics handle.
+        /// </summary>
+        public readonly PhysicsHandle physicsHandle => m_PhysicsHandle;
+
+        /// <undoc/>
+        public override readonly string ToString() => isValid ? $"type={type}, {m_PhysicsHandle}" : "<INVALID>";
 
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsBody other && Equals(other);
 
         /// <undoc/>
-        public bool Equals(PhysicsBody other) { return m_Index1 == other.m_Index1 && m_World0 == other.m_World0 && m_Generation == other.m_Generation; }
+        public bool Equals(PhysicsBody other) => m_PhysicsHandle == other.m_PhysicsHandle;
 
         /// <undoc/>
         public static bool operator ==(PhysicsBody lhs, PhysicsBody rhs) => lhs.Equals(rhs);
@@ -54,7 +65,7 @@ namespace Unity.U2D.Physics
         public static bool operator !=(PhysicsBody lhs, PhysicsBody rhs) => !(lhs == rhs);
 
         /// <undoc/>
-        public override int GetHashCode() { return HashCode.Combine(m_Index1, m_World0, m_Generation); }
+        public override int GetHashCode() => m_PhysicsHandle.GetHashCode();
 
         #endregion
 
@@ -101,7 +112,7 @@ namespace Unity.U2D.Physics
             PositionY = 1 << 1,
 
             /// <summary>
-            /// FreConstraineze rotation along the Z-axis.
+            /// Constrain rotation along the Z-axis.
             /// </summary>
             Rotation = 1 << 2,
 
@@ -357,6 +368,165 @@ namespace Unity.U2D.Physics
             [SerializeField] float m_Mass;
             [SerializeField] Vector2 m_Center;
             [SerializeField] float m_RotationalInertia;
+
+            #endregion
+        }
+
+        /// <summary>
+        /// Input to <see cref="PhysicsBody.ApplyBuoyancy(BuoyancyInput, float)"/> describing the fluid surface, density, flow and damping used to compute buoyancy, flow and damping forces for the body.
+        /// </summary>
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct BuoyancyInput
+        {
+            /// <summary>
+            /// Create a default <see cref="BuoyancyInput"/>.
+            /// The <see cref="mask"/> defaults to <see cref="PhysicsMask.All"/> so every attached shape contributes unless explicitly filtered out.
+            /// The surface defaults to a flat horizontal water surface at the world origin (<see cref="surfacePosition"/> = <see cref="Vector2.zero"/>, <see cref="surfaceNormal"/> = <see cref="Vector2.up"/>).
+            /// </summary>
+            public BuoyancyInput()
+            {
+                m_SurfacePosition = Vector2.zero;
+                m_SurfaceNormal = Vector2.up;
+                m_Density = 1f;
+                m_FlowDirection = PhysicsRotate.right;
+                m_FlowSpeed = 0f;
+                m_LinearDamping = 0f;
+                m_AngularDamping = 0f;
+                m_UseTriggers = false;
+                m_Mask = PhysicsMask.All;
+            }
+
+            /// <summary>
+            /// A point in world space lying on the fluid surface.
+            /// Together with <see cref="surfaceNormal"/> this defines the infinite plane of the fluid.
+            /// </summary>
+            public Vector2 surfacePosition { readonly get => m_SurfacePosition; set => m_SurfacePosition = value; }
+
+            /// <summary>
+            /// The outward-pointing surface normal of the fluid, in world space.
+            /// Points away from the submerged side; shape points with a negative separation from the plane are submerged.
+            /// Defaults to <see cref="Vector2.up"/> (a flat horizontal water surface).
+            /// Must be non-zero; the engine normalises it internally so it does not need to be unit length.
+            /// </summary>
+            public Vector2 surfaceNormal { readonly get => m_SurfaceNormal; set => m_SurfaceNormal = value; }
+
+            /// <summary>
+            /// The fluid density, used to compute the Archimedean buoyancy force per submerged unit area.
+            /// Clamped to a lower bound of <see cref="Mathf.Epsilon"/>.
+            /// </summary>
+            public float density { readonly get => m_Density; set => m_Density = Mathf.Max(float.Epsilon, value); }
+
+            /// <summary>
+            /// The direction of the fluid flow as a 2D rotation.
+            /// Combined with <see cref="flowSpeed"/> to produce the flow velocity vector applied as force per unit submerged area at the submerged centroid.
+            /// </summary>
+            public PhysicsRotate flowDirection { readonly get => m_FlowDirection; set => m_FlowDirection = value; }
+
+            /// <summary>
+            /// The magnitude of the fluid flow along <see cref="flowDirection"/>.
+            /// The per-shape force contribution is flowDirection * flowSpeed * submergedArea.
+            /// </summary>
+            public float flowSpeed { readonly get => m_FlowSpeed; set => m_FlowSpeed = value; }
+
+            /// <summary>
+            /// Linear damping coefficient.
+            /// Slows the body's linear velocity at the submerged centroid relative to the fluid.
+            /// </summary>
+            public float linearDamping { readonly get => m_LinearDamping; set => m_LinearDamping = Mathf.Max(0f, value); }
+
+            /// <summary>
+            /// Angular damping coefficient.
+            /// Slows the body's angular velocity while submerged.
+            /// </summary>
+            public float angularDamping { readonly get => m_AngularDamping; set => m_AngularDamping = Mathf.Max(0f, value); }
+
+            /// <summary>
+            /// When true, trigger shapes contribute to buoyancy alongside solid shapes.
+            /// When false, trigger shapes are skipped.
+            /// </summary>
+            public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
+
+            /// <summary>
+            /// Category mask used to filter which attached shapes contribute.
+            /// A shape participates iff (shape.contactFilter.categories.bitMask &amp; mask.bitMask) != 0.
+            /// Defaults to <see cref="PhysicsMask.All"/> when the input is created via the parameterless constructor.
+            /// </summary>
+            public PhysicsMask mask { readonly get => m_Mask; set => m_Mask = value; }
+
+            #region Internal
+
+            [SerializeField] Vector2 m_SurfacePosition;
+            [SerializeField] Vector2 m_SurfaceNormal;
+            [SerializeField] [Min(float.Epsilon)] float m_Density;
+            [SerializeField] PhysicsRotate m_FlowDirection;
+            [SerializeField] float m_FlowSpeed;
+            [SerializeField] [Min(0f)] float m_LinearDamping;
+            [SerializeField] [Min(0f)] float m_AngularDamping;
+            [SerializeField] bool m_UseTriggers;
+            [SerializeField] PhysicsMask m_Mask;
+
+            #endregion
+        }
+
+        /// <summary>
+        /// Input to <see cref="PhysicsBody.ApplyWind(WindInput)"/> describing the wind velocity, drag and lift coefficients and the shape filter used to compute aerodynamic forces per attached shape.
+        /// </summary>
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WindInput
+        {
+            /// <summary>
+            /// Create a default <see cref="WindInput"/>.
+            /// The <see cref="mask"/> defaults to <see cref="PhysicsMask.All"/> so every attached shape contributes unless explicitly filtered out.
+            /// </summary>
+            public WindInput()
+            {
+                m_Force = Vector2.zero;
+                m_Drag = 0f;
+                m_Lift = 0f;
+                m_UseTriggers = false;
+                m_Mask = PhysicsMask.All;
+            }
+
+            /// <summary>
+            /// The wind velocity vector.
+            /// Scaled by <see cref="drag"/> when computing the per-shape aerodynamic relative velocity.
+            /// </summary>
+            public Vector2 force { readonly get => m_Force; set => m_Force = value; }
+
+            /// <summary>
+            /// Drag coefficient.
+            /// Scales the wind contribution in the relative-velocity term that drives the per-shape aerodynamic force.
+            /// </summary>
+            public float drag { readonly get => m_Drag; set => m_Drag = Mathf.Max(0f, value); }
+
+            /// <summary>
+            /// Lift coefficient.
+            /// Scales the perpendicular component of the per-edge aerodynamic force (capsules and polygons only; circles ignore lift).
+            /// </summary>
+            public float lift { readonly get => m_Lift; set => m_Lift = Mathf.Max(0f, value); }
+
+            /// <summary>
+            /// When true, trigger shapes contribute to wind alongside solid shapes.
+            /// When false, trigger shapes are skipped.
+            /// </summary>
+            public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
+
+            /// <summary>
+            /// Category mask used to filter which attached shapes contribute.
+            /// A shape participates iff (shape.contactFilter.categories.bitMask &amp; mask.bitMask) != 0.
+            /// Defaults to <see cref="PhysicsMask.All"/> when the input is created via the parameterless constructor.
+            /// </summary>
+            public PhysicsMask mask { readonly get => m_Mask; set => m_Mask = value; }
+
+            #region Internal
+
+            [SerializeField] Vector2 m_Force;
+            [SerializeField] [Min(0f)] float m_Drag;
+            [SerializeField] [Min(0f)] float m_Lift;
+            [SerializeField] bool m_UseTriggers;
+            [SerializeField] PhysicsMask m_Mask;
 
             #endregion
         }
@@ -1118,6 +1288,104 @@ namespace Unity.U2D.Physics
         public readonly void ApplyAngularImpulse(float impulse, bool wake = true) => PhysicsBody_ApplyAngularImpulse(this, impulse, wake);
 
         /// <summary>
+        /// Apply buoyancy, flow and damping forces to the body based on how its attached shapes are submerged in a fluid plane.
+        /// Forces and torques are continuous (not impulses), so this is expected to be called every simulation step.
+        /// The body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; otherwise a warning is logged and the call is a no-op.
+        /// </summary>
+        /// <param name="input">The fluid and force configuration. See <see cref="BuoyancyInput"/>.</param>
+        /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
+        public unsafe readonly void ApplyBuoyancy(BuoyancyInput input, float deltaTime)
+        {
+            var body = this;
+            ApplyBuoyancy(input, new ReadOnlySpan<PhysicsBody>(&body, 1), deltaTime);
+        }
+
+        /// <summary>
+        /// Apply buoyancy, flow and damping forces to every body in <paramref name="bodies"/> based on how their attached shapes are submerged in a fluid plane.
+        /// The same <see cref="BuoyancyInput"/> is applied to all bodies. Each body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; non-dynamic or invalid bodies log a warning and are skipped.
+        /// Forces and torques are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="input">The fluid and force configuration. See <see cref="BuoyancyInput"/>.</param>
+        /// <param name="bodies">The bodies that buoyancy should be applied to.</param>
+        /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
+        public static void ApplyBuoyancy(BuoyancyInput input, ReadOnlySpan<PhysicsBody> bodies, float deltaTime)
+        {
+            if (deltaTime <= 0f)
+                return;
+            if (input.density <= 0f)
+                throw new ArgumentException($"{nameof(BuoyancyInput)}.{nameof(BuoyancyInput.density)} must be greater than zero; no meaningful buoyancy force can be produced otherwise.", nameof(input));
+            if (input.mask == PhysicsMask.None)
+                throw new ArgumentException($"{nameof(BuoyancyInput)}.{nameof(BuoyancyInput.mask)} is empty; no shape can pass the category filter.", nameof(input));
+
+            PhysicsBody_ApplyBuoyancy(input, bodies, deltaTime);
+        }
+
+        /// <summary>
+        /// Apply buoyancy, flow and damping forces to every dynamic body shape that overlaps <paramref name="aabb"/> in <paramref name="world"/>.
+        /// The same <see cref="BuoyancyInput"/> is applied to all overlapping shapes. Shapes whose body is not <see cref="PhysicsBody.BodyType.Dynamic"/> are silently skipped.
+        /// Forces and torques are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="world">The world to query for overlapping shapes.</param>
+        /// <param name="aabb">The world-space axis-aligned box describing the fluid volume. Only shapes whose broadphase AABB overlaps this box are processed.</param>
+        /// <param name="input">The fluid and force configuration. See <see cref="BuoyancyInput"/>.</param>
+        /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
+        public static void ApplyBuoyancy(PhysicsWorld world, PhysicsAABB aabb, BuoyancyInput input, float deltaTime)
+        {
+            if (deltaTime <= 0f)
+                return;
+            if (input.density <= 0f)
+                throw new ArgumentException($"{nameof(BuoyancyInput)}.{nameof(BuoyancyInput.density)} must be greater than zero; no meaningful buoyancy force can be produced otherwise.", nameof(input));
+            if (input.mask == PhysicsMask.None)
+                throw new ArgumentException($"{nameof(BuoyancyInput)}.{nameof(BuoyancyInput.mask)} is empty; no shape can pass the category filter.", nameof(input));
+
+            PhysicsBody_ApplyBuoyancyOverlap(world, aabb, input, deltaTime);
+        }
+
+        /// <summary>
+        /// Apply wind forces to this body's attached shapes.
+        /// Forces are continuous (not impulses) and are computed per shape by Box2D using the drag/lift coefficients in <paramref name="input"/>; this method is expected to be called every simulation step while the body is exposed to the wind.
+        /// The body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; otherwise a warning is logged and the call is a no-op.
+        /// Sleeping bodies are woken automatically by Box2D when the per-shape force is non-trivial.
+        /// </summary>
+        /// <param name="input">The wind configuration. See <see cref="WindInput"/>.</param>
+        public unsafe readonly void ApplyWind(WindInput input)
+        {
+            var body = this;
+            ApplyWind(input, new ReadOnlySpan<PhysicsBody>(&body, 1));
+        }
+
+        /// <summary>
+        /// Apply wind forces to every body in <paramref name="bodies"/> by iterating each body's attached shapes.
+        /// The same <see cref="WindInput"/> is applied to all bodies. Each body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; non-dynamic or invalid bodies log a warning and are skipped.
+        /// Forces are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="input">The wind configuration. See <see cref="WindInput"/>.</param>
+        /// <param name="bodies">The bodies that wind should be applied to.</param>
+        public static void ApplyWind(WindInput input, ReadOnlySpan<PhysicsBody> bodies)
+        {
+            if (input.mask == PhysicsMask.None)
+                throw new ArgumentException($"{nameof(WindInput)}.{nameof(WindInput.mask)} is empty; no shape can pass the category filter.", nameof(input));
+
+            PhysicsBody_ApplyWind(input, bodies);
+        }
+
+        /// <summary>
+        /// Apply wind forces to every dynamic body shape that overlaps <paramref name="aabb"/> in <paramref name="world"/>.
+        /// The same <see cref="WindInput"/> is applied to all overlapping shapes. Shapes whose body is not <see cref="PhysicsBody.BodyType.Dynamic"/> are silently skipped.
+        /// Forces are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="world">The world to query for overlapping shapes.</param>
+        /// <param name="aabb">The world-space axis-aligned box describing the wind volume. Only shapes whose broadphase AABB overlaps this box are processed.</param>
+        /// <param name="input">The wind configuration. See <see cref="WindInput"/>.</param>
+        public static void ApplyWind(PhysicsWorld world, PhysicsAABB aabb, WindInput input)
+        {
+            if (input.mask == PhysicsMask.None)
+                throw new ArgumentException($"{nameof(WindInput)}.{nameof(WindInput.mask)} is empty; no shape can pass the category filter.", nameof(input));
+
+            PhysicsBody_ApplyWindOverlap(world, aabb, input);
+        }
+
+        /// <summary>
         /// Clear any user forces that have been applied to this body.
         /// Forces on a body are automatically cleared when a simulation step completes, however under some circumstances it may be desirable to clear the forces explicitly.
         /// </summary>
@@ -1415,6 +1683,14 @@ namespace Unity.U2D.Physics
         /// <param name="definition">The chain definition to use.</param>
         /// <returns>The created chain.</returns>
         public readonly PhysicsChain CreateChain(ChainGeometry geometry, PhysicsChainDefinition definition) => PhysicsChain.Create(this, geometry.vertices, definition);
+
+        /// <summary>
+        /// Create a Chain of multiple shapes attached to this body.
+        /// </summary>
+        /// <param name="vertices">The vertices that will create the ChainSegment shapes.</param>
+        /// <param name="definition">The shape definition to use.</param>
+        /// <returns>The created chain.</returns>
+        public readonly PhysicsChain CreateChain(ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition) => PhysicsChain.Create(this, vertices, definition);
 
         #endregion
 

@@ -48,7 +48,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/BatchCommands/RaycastCommand.h")]
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public partial struct RaycastCommand
     {
         public RaycastCommand(Vector3 from, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
@@ -105,7 +105,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/BatchCommands/SpherecastCommand.h")]
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public partial struct SpherecastCommand
     {
         public SpherecastCommand(Vector3 origin, float radius, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
@@ -164,7 +164,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/BatchCommands/CapsulecastCommand.h")]
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public partial struct CapsulecastCommand
     {
         public CapsulecastCommand(Vector3 p1, Vector3 p2, float radius, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
@@ -226,7 +226,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/BatchCommands/BoxcastCommand.h")]
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public partial struct BoxcastCommand
     {
         public BoxcastCommand(Vector3 center, Vector3 halfExtents, Quaternion orientation, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
@@ -288,7 +288,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/BatchCommands/ClosestPointCommand.h")]
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public struct ClosestPointCommand
     {
         [System.Obsolete("ClosestPointCommand(Vector3, int, Vector3, Quaternion, Vector3) is obsolete. Use ClosestPointCommand(Vector3, EntityId, Vector3, Quaternion, Vector3) instead.", true)]

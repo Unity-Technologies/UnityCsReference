@@ -242,8 +242,8 @@ namespace UnityEditor
                     // 1) The VUMeter used is not in the same style that fits the rest of the Audio UI
                     // 2) The layout of the VU meters is hacked together and a lot of magic numbers are used.
                     int numChannels = 0;
-                    float[] vuinfo_level = new float[9];
-                    float[] vuinfo_peak = new float[9];
+                    float[] vuinfo_level = new float[AudioMixerController.kMaxMeteringChannels + 1];
+                    float[] vuinfo_peak = new float[AudioMixerController.kMaxMeteringChannels + 1];
 
                     numChannels = group.controller.GetGroupVUInfo(group.groupID, true, vuinfo_level, vuinfo_peak);
 

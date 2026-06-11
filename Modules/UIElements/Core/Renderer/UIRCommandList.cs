@@ -13,7 +13,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine.UIElements.UIR
 {
     // Keep in sync with native SerializedCommandType enum
-    enum SerializedCommandType
+    enum SerializedCommandType : byte
     {
         DrawRanges,
         SetTexture,
@@ -26,14 +26,15 @@ namespace UnityEngine.UIElements.UIR
     struct SerializedCommand
     {
         public SerializedCommandType type;
+        public KickRangesReason kickReason;
         public IntPtr vertexBuffer;
         public IntPtr indexBuffer;
         public int firstRange;
         public int rangeCount;
 
         public int textureName;
-        public IntPtr textureRefPtr;
         public int gpuDataOffset;
+        public IntPtr textureRefPtr;
         public Vector4 gpuData0;
         public Vector4 gpuData1;
 
@@ -147,11 +148,12 @@ namespace UnityEngine.UIElements.UIR
             m_Commands.Add(ref cmd);
         }
 
-        public void DrawRanges(Utility.GPUBuffer<ushort> ib, Utility.GPUBuffer<Vertex> vb, NativeSlice<DrawBufferRange> ranges)
+        public void DrawRanges(Utility.GPUBuffer ib, Utility.GPUBuffer vb, NativeSlice<DrawBufferRange> ranges, KickRangesReason kickReason)
         {
             var cmd = new SerializedCommand
             {
                 type = SerializedCommandType.DrawRanges,
+                kickReason = kickReason,
                 vertexBuffer = vb.BufferPointer,
                 indexBuffer = ib.BufferPointer,
                 firstRange = m_DrawRanges.Count,

@@ -217,9 +217,6 @@ namespace UnityEditor.Shaders
             }
         }
 
-        /// <summary>
-        /// Per-API compiler settings. Contains compiler-related settings that can be configured per graphics API.
-        /// </summary>
         [RequiredByNativeCode(GenerateProxy = false)]
         [Serializable]
         internal struct ShaderCompilerSettings
@@ -461,7 +458,7 @@ namespace UnityEditor.Shaders
         {
             if (settings == null)
             {
-                msg = "Null shader compiler settings array.";
+                msg = "Null shader compilerToolchain settings array.";
                 return false;
             }
 
@@ -471,15 +468,22 @@ namespace UnityEditor.Shaders
                 {
                     if (settings[i].graphicsAPI == settings[j].graphicsAPI)
                     {
-                        msg = "Duplicate compiler settings entries for graphics API " + settings[i].graphicsAPI
+                        msg = "Duplicate compilerToolchain settings entries for graphics API " + settings[i].graphicsAPI
                             + " at indices " + i + " and " + j + ".";
                         return false;
                     }
                 }
 
+                if (!SupportsCompilerToolchainOverride(settings[i].graphicsAPI))
+                {
+                    msg = "Graphics API '" + settings[i].graphicsAPI + "' at index " + i
+                        + " does not support compilerToolchain selection.";
+                    return false;
+                }
+
                 if (settings[i].compilerToolchainOverride != ShaderCompilerToolchain.Default)
                 {
-                    ShaderCompilerToolchain[] supported = GetSupportedCompilersForAPI(settings[i].graphicsAPI);
+                    ShaderCompilerToolchain[] supported = GetSupportedCompilerToolchainsForAPI(settings[i].graphicsAPI);
                     if (Array.IndexOf(supported, settings[i].compilerToolchainOverride) == -1)
                     {
                         msg = "Compiler '" + settings[i].compilerToolchainOverride + "' is not supported for graphics API '"
@@ -494,36 +498,9 @@ namespace UnityEditor.Shaders
         }
 
         [SerializeField] internal ShaderCompilerSettings[] compilerSettings = Array.Empty<ShaderCompilerSettings>();
-        internal ShaderCompilerSettings[] CompilerSettings
-        {
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
 
-                string msg;
-                if (ValidateShaderCompilerSettings(value, out msg))
-                    compilerSettings = value;
-                else
-                    throw new ArgumentException(msg);
-            }
-        }
+        internal static extern ShaderCompilerToolchain[] GetSupportedCompilerToolchainsForAPI(GraphicsDeviceType api);
 
-        internal ShaderCompilerSettings[] GetCompilerSettingsCopy()
-        {
-            return (ShaderCompilerSettings[])compilerSettings.Clone();
-        }
-
-        /// <summary>
-        /// Returns the list of shader compilers available for the specified graphics API.
-        /// Always returns at least a single-element array containing <see cref="ShaderCompiler.Default"/>;
-        /// use <see cref="SupportsCompilerOverride"/> to check whether the API exposes a real choice.
-        /// </summary>
-        internal static extern ShaderCompilerToolchain[] GetSupportedCompilersForAPI(GraphicsDeviceType api);
-
-        /// <summary>
-        /// Returns true if the specified graphics API supports shader compiler selection.
-        /// </summary>
-        internal static extern bool SupportsCompilerOverride(GraphicsDeviceType api);
+        internal static extern bool SupportsCompilerToolchainOverride(GraphicsDeviceType api);
     }
 }

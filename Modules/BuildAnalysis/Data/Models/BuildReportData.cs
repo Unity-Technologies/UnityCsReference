@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
 namespace UnityEditor.Build.Analysis
 {
@@ -38,7 +39,7 @@ namespace UnityEditor.Build.Analysis
     internal struct BuildReportAssetData
     {
         public string Path;
-        public string GUID;
+        public GUID GUID;
         public ulong OutputSizeBytes;
         public int ObjectCount;
         public int ResourceCount;

@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling;
 using UnityEngine.Bindings;
-using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
 
 #pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
@@ -14,6 +14,8 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal partial class TextGenerator
     {
+        static readonly ProfilerMarker s_CalculatePreferredValuesMarker = new ProfilerMarker("TextGenerator.CalculatePreferredValues");
+
         public Vector2 GetPreferredValues(TextGenerationSettings settings, TextInfo textInfo)
         {
             if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
@@ -54,7 +56,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         protected virtual Vector2 CalculatePreferredValues(ref float fontSize, Vector2 marginSize, bool isTextAutoSizingEnabled, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
-            Profiler.BeginSample("TextGenerator.CalculatePreferredValues");
+            using var calculatePreferredValuesScope = s_CalculatePreferredValuesMarker.Auto();
 
             // Early exit if no font asset was assigned. This should not be needed since LiberationSans SDF will be assigned by default.
             if (generationSettings.fontAsset == null || generationSettings.fontAsset.characterLookupTable == null)
@@ -67,7 +69,6 @@ namespace UnityEngine.TextCore.Text
             // Early exit if we don't have any Text to generate.
             if (m_TextProcessingArray == null || m_TextProcessingArray.Length == 0 || m_TextProcessingArray[0].unicode == (char)0)
             {
-                Profiler.EndSample();
                 return Vector2.zero;
             }
 
@@ -731,7 +732,6 @@ namespace UnityEngine.TextCore.Text
                                     m_CharWidthAdjDelta += adjustmentDelta / adjustedTextWidth;
                                     m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, TextGenerationSettings.charWidthMaxAdj / 100);
 
-                                    Profiler.EndSample();
                                     return Vector2.zero;
                                 }
 
@@ -1079,7 +1079,6 @@ namespace UnityEngine.TextCore.Text
                 fontSize += sizeDelta;
                 fontSize = Mathf.Min((int)(fontSize * 20 + 0.5f) / 20f, TextGenerationSettings.fontSizeMax);
 
-                Profiler.EndSample();
                 return Vector2.zero;
             }
 
@@ -1100,7 +1099,6 @@ namespace UnityEngine.TextCore.Text
                 if (renderedHeight != 0.0f)
                     renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
             }
-            Profiler.EndSample();
 
             return new Vector2(renderedWidth, renderedHeight);
         }

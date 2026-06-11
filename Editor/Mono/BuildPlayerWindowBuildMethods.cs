@@ -324,7 +324,7 @@ namespace UnityEditor
                 options.subtarget = subtarget;
                 options.targetGroup = buildTargetGroup;
                 options.locationPathName = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-                options.previousBuildMetadataLocations = PostprocessBuildPlayer.GetPreviousContentBuildMetadataLocations();
+                options.previousBuildReportDirectories = PostprocessBuildPlayer.GetPreviousContentBuildReportDirectories();
                 options.assetBundleManifestPath = PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
 
                 // Build a list of scenes that are enabled

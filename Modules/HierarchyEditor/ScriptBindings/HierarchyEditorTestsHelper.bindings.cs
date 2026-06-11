@@ -20,7 +20,7 @@ namespace Unity.Hierarchy.Editor
         internal static extern HierarchyNodeType GetNodeType_HierarchySceneHandler();
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern HierarchyNodeType GetNodeType_HierarchySubSceneHandler();
+        internal static extern HierarchyNodeType GetNodeType_HierarchySubSceneAuthoringHandler();
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern void SearchBeginNative(HierarchyGameObjectHandler handler, HierarchySearchQueryDescriptor query);

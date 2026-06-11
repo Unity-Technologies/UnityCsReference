@@ -294,6 +294,27 @@ namespace UnityEditor
             set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteCustom(new LoadableObjectIdWrapper(value));
         }
 
+        public static bool hasLoadableSceneId
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchLoadableSceneId();
+                return m_State.m_HasLoadableSceneId.Value;
+            }
+        }
+
+        public static LoadableSceneId loadableSceneIdValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchLoadableSceneId();
+                return m_State.m_ValueLoadableSceneId;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = ClipboardParser.WriteCustom(new LoadableSceneIdWrapper(value));
+        }
+
         public static bool hasVector3
         {
             get

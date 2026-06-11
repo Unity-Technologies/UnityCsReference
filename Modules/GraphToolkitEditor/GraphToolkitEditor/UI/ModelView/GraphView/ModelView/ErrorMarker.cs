@@ -12,66 +12,42 @@ namespace Unity.GraphToolkit.Editor
     /// <summary>
     /// A marker that displays an error message.
     /// </summary>
-    [UnityRestricted]
-    internal class ErrorMarker : Marker
+    class ErrorMarker : Marker
     {
-        /// <summary>
-        /// The USS class name added to <see cref="ErrorMarker"/>'s.
-        /// </summary>
-        public new static readonly string ussClassName = "ge-error-marker";
+        const string k_IssuesCounterName = "issues-counter";
+        const string k_ElementName = "error-marker";
 
-        /// <summary>
-        /// The USS class name added to the icon of the marker.
-        /// </summary>
-        public static readonly string iconUssClassName = ussClassName.WithUssElement(GraphElementHelper.iconName);
+        const string k_ErrorMarkerClassName = "ge-error-marker";
+        static readonly string k_IconClassName = k_ErrorMarkerClassName.WithUssElement(GraphElementHelper.iconName);
+        static readonly string k_TextClassName = k_ErrorMarkerClassName.WithUssElement(GraphElementHelper.textAreaName);
+        const string k_HasErrorClassName = "ge-has-error-marker";
+        static readonly string k_MarkerElementClassName = k_ErrorMarkerClassName.WithUssElement("marker-element");
+        static readonly string k_CounterClassName = k_ErrorMarkerClassName.WithUssElement("counter-element");
 
-        /// <summary>
-        /// The USS class name added to the text element of the marker.
-        /// </summary>
-        public static readonly string textUssClassName = ussClassName.WithUssElement(GraphElementHelper.textAreaName);
+        const string k_DefaultStylePath = "ErrorMarker.uss";
 
-        /// <summary>
-        /// The USS class name added to elements that have an <see cref="ErrorMarker"/> attached to them.
-        /// </summary>
-        public static readonly string hasErrorUssClassName = "ge-has-error-marker";
-
-        /// <summary>
-        /// The USS class name added to the marker element.
-        /// </summary>
-        public static readonly string markerElementUssClassName = ussClassName.WithUssElement("marker-element");
-
-        /// <summary>
-        /// The USS class name added to the marker's counter element.
-        /// </summary>
-        public static readonly string counterElementUssClassName = ussClassName.WithUssElement("counter-element");
-
-        static readonly string k_DefaultStylePath = "ErrorMarker.uss";
-
-        static CustomStyleProperty<float> s_TextSizeProperty = new("--error-text-size");
-        static CustomStyleProperty<float> s_TextMaxWidthProperty = new("--error-text-max-width");
+        static readonly CustomStyleProperty<float> s_TextSizeProperty = new("--error-text-size");
+        static readonly CustomStyleProperty<float> s_TextMaxWidthProperty = new("--error-text-max-width");
         static readonly CustomStyleProperty<float> k_IconWidthProperty = new("--error-icon-width");
         static readonly CustomStyleProperty<float> k_IconHeightProperty = new("--error-icon-height");
         static readonly CustomStyleProperty<Color> k_BackgroundColorProperty = new("--background-color");
         static readonly CustomStyleProperty<Color> k_BorderColorProperty = new("--border-color");
 
-        /// <summary>
-        /// The model of the marker.
-        /// </summary>
         public MarkerModel MarkerModel => Model as MarkerModel;
 
         /// <inheritdoc />
         public override GraphElementModel ParentModel => (Model as MarkerModel)?.GetParentModel(GraphView.GraphModel);
 
         protected Image m_TipElement;
-        protected Image m_IconElement;
+        Image m_IconElement;
         protected Label m_TextElement;
 
-        protected Color m_BackgroundColor;
-        protected Color m_BorderColor;
+        Color m_BackgroundColor;
+        Color m_BorderColor;
 
-        protected VisualElement m_MarkerElement;
-        protected Label m_CounterElement;
-        protected string m_MarkerType;
+        VisualElement m_MarkerElement;
+        Label m_CounterElement;
+        string m_MarkerType;
 
         float m_LastZoom;
         bool m_ErrorMarkerVisualContentAlreadyDrawn;
@@ -92,109 +68,85 @@ namespace Unity.GraphToolkit.Editor
             {
                 if (m_MarkerType != value)
                 {
-                    RemoveFromClassList(ussClassName.WithUssModifier(m_MarkerType));
+                    RemoveFromClassList(k_ErrorMarkerClassName.WithUssModifier(m_MarkerType));
 
                     m_MarkerType = value;
 
-                    AddToClassList(ussClassName.WithUssModifier(m_MarkerType));
+                    AddToClassList(k_ErrorMarkerClassName.WithUssModifier(m_MarkerType));
                 }
             }
         }
 
-        /// <inheritdoc />
-        protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        void OnClick()
         {
-            m_Target.CaptureMouse();
+            if (MarkerModel == null || GraphView == null)
+                return;
 
-            evt.menu.ClearItems();
-            if (MarkerModel is MultipleGraphProcessingErrorsModel multipleErrorsModel)
+            if (MarkerModel is ErrorMarkerModel errorMarkerModel)
             {
-                var graphErrors = new Dictionary<Hash128, List<GraphProcessingErrorModel>>();
-                foreach (var errorModel in multipleErrorsModel.Errors)
+                // Single subgraph error: navigate directly instead of opening the popup
+                if (errorMarkerModel is GraphProcessingErrorModel gpError &&
+                    gpError.SourceGraphReference != default &&
+                    gpError.SourceGraphReference.GraphModelGuid != GraphView?.GraphModel.Guid)
                 {
-                    var sourceGraphGuid = errorModel.SourceGraphReference.GraphModelGuid;
-                    if (graphErrors.TryGetValue(sourceGraphGuid, out var errorModels))
-                        errorModels.Add(errorModel);
-                    else
-                        graphErrors.Add(sourceGraphGuid, new List<GraphProcessingErrorModel> { errorModel });
-                }
-
-                var shouldAddSeparator = true;
-                var currentGraph = GraphView.GraphModel;
-
-                // Section 1 of contextual menu: Errors on the current element.
-                if (graphErrors.TryGetValue(currentGraph.Guid, out var errorsOnGraph))
-                {
-                    for (var i = 0; i < errorsOnGraph.Count; i++)
-                    {
-                        var error = errorsOnGraph[i];
-                        var actionName = $"{error.GetEntryPrefix()}: {FormatErrorItemName(error.ErrorMessage)}";
-                        string prefix = $"{actionName}/";
-                        if (!error.TryAppendAction(evt.menu, RootView, prefix))
-                        {
-                            evt.menu.AppendAction(actionName, _ => ShowConsoleWindow());
-                        }
-                    }
-
-                    if (graphErrors.Count == 1)
-                    {
-                        // There is no section 2, no need for a separator.
-                        shouldAddSeparator = false;
-                    }
-                }
-                else
-                {
-                    // There is no section 1, no need for a separator.
-                    shouldAddSeparator = false;
-                }
-
-                if (shouldAddSeparator)
-                    evt.menu.AppendSeparator();
-
-                // Section 2 of contextual menu: Errors on lower levels of sub graphs.
-                if (graphErrors.Keys.Count > 0)
-                {
-                    var window = GraphView.Window as GraphViewEditorWindow;
-                    foreach (var sourceGraphGuid in graphErrors.Keys)
-                    {
-                        if (currentGraph.Guid == sourceGraphGuid)
-                            continue;
-
-                        var subgraphErrors = graphErrors[sourceGraphGuid];
-                        var errorCount = subgraphErrors.Count;
-                        var sStr = errorCount > 1 ? "s" : "";
-
-                        for (var i = 0; i < subgraphErrors.Count; i++)
-                        {
-                            var subgraphError = subgraphErrors[i];
-
-                            // The error navigates to another graph.
-                            var actionName =
-                                $"Subgraph {GraphView.GraphModel.ResolveGraphModelFromReference(subgraphError.SourceGraphReference)?.Name ?? string.Empty} has ({errorCount}) error{sStr}/{i + 1}. " +
-                                FormatErrorItemName(subgraphError.ErrorMessage);
-                            evt.menu.AppendAction(actionName, _ => LoadGraphAndFrameElement(subgraphError, window));
-                        }
-                    }
+                    ErrorMarkerUtilities.LoadGraphAndFrameElement(gpError, GraphView);
+                    return;
                 }
             }
-            else if (MarkerModel is ErrorMarkerModel errorMarkerModel)
+
+            List<ErrorMarkerModel> currentGraphErrors = new();
+            Dictionary<GraphReference, List<ErrorMarkerModel>> subgraphErrorsDict = new();
+
+            ErrorMarkerUtilities.PopulateDetailedGraphErrors(MarkerModel,
+                GraphView,
+                currentGraphErrors,
+                subgraphErrorsDict);
+
+            if (currentGraphErrors.Count == 0 && subgraphErrorsDict.Count == 0)
+                return;
+
+            if (currentGraphErrors.Count == 0 && subgraphErrorsDict.Count == 1)
             {
-                errorMarkerModel.TryAppendAction(evt.menu, RootView);
+                GraphProcessingErrorModel singleSubgraphError = null;
+                foreach (var v in subgraphErrorsDict.Values)
+                {
+                    foreach (var subGraphErrorModel in v)
+                    {
+                        if (subGraphErrorModel is GraphProcessingErrorModel graphProcessingErrorModel)
+                        {
+                            if (singleSubgraphError != null)
+                            {
+                                // if we've found a second GraphProcessingErrorModel then we should open the popup
+                                singleSubgraphError = null;
+                                break;
+                            }
+
+                            singleSubgraphError = graphProcessingErrorModel;
+                        }
+                        else
+                        {
+                            singleSubgraphError = null;
+                            break;
+                        }
+                    }
+                    break;
+                }
+
+                if (singleSubgraphError != null)
+                {
+                    ErrorMarkerUtilities.LoadGraphAndFrameElement(singleSubgraphError, GraphView);
+                    return;
+                }
             }
 
-            m_Target.ReleaseMouse();
-            evt.StopImmediatePropagation();
-        }
+            var subgraphErrorGroups = ErrorMarkerUtilities.CreateSubgraphErrorGroups(subgraphErrorsDict);
 
-        static string FormatErrorItemName(string errorMessage)
-        {
-            const int maxCharCount = 100;
+            // Sort errors by severity
+            currentGraphErrors.Sort((a, b) =>
+                ErrorMarkerUtilities.GetSeverityPriority(a.ErrorType)
+                    .CompareTo(ErrorMarkerUtilities.GetSeverityPriority(b.ErrorType)));
 
-            var formattedMessage = errorMessage;
-            if (formattedMessage.Length > maxCharCount)
-                formattedMessage = formattedMessage[..maxCharCount] + "...";
-
-            return formattedMessage.Replace('/', '\\');
+            new ErrorMarkerPopupWindow().Show(worldBound, currentGraphErrors, subgraphErrorGroups, GraphView);
         }
 
         /// <inheritdoc />
@@ -234,72 +186,32 @@ namespace Unity.GraphToolkit.Editor
                 schedule.Execute(() => SetElementLevelOfDetail(m_LastZoom, GraphViewZoomMode.Unknown, GraphViewZoomMode.Unknown)).ExecuteLater(0);
         }
 
-        void LoadGraphAndFrameElement(GraphProcessingErrorModel error, GraphViewEditorWindow window)
-        {
-            var targetGraph = error.SourceGraphReference;
-            if (targetGraph == default || window is null)
-                return;
-
-            if (error.Context is { Count: > 0 })
-            {
-                // Load each graph leading to the target graph in the breadcrumbs.
-                var alreadyVisited = new HashSet<Hash128> { window.GraphView.GraphModel.Guid };
-                for (var i = 0; i < error.Context.Count; i++)
-                {
-                    var contextModel = error.Context[i];
-                    if (contextModel.GraphModel.Guid != targetGraph.GraphModelGuid && alreadyVisited.Add(contextModel.GraphModel.Guid))
-                    {
-                        var title = contextModel is SubgraphNodeModel subgraphNode ? subgraphNode.Title : string.Empty;
-                        window.GraphTool.Dispatch(new LoadGraphCommand(contextModel.GraphModel, LoadGraphCommand.LoadStrategies.PushOnStack, title: title));
-                    }
-                }
-            }
-
-            GraphViewEditorWindow.FrameGraphElement(error.ParentModelGuid, window, GraphView.GraphModel.ResolveGraphModelFromReference(targetGraph));
-        }
-
         /// <inheritdoc />
         protected override void BuildUI()
         {
-            // If there is more than 1 issue, clicking on the marker should open a menu. Else, it should lead to the unity console.
-            if (MarkerModel is MultipleGraphProcessingErrorsModel errorsModel)
-            {
-                if (ShouldOpenConsoleWindow(errorsModel.Errors))
-                {
-                    var window = GraphView.Window as GraphViewEditorWindow;
-                    var errorGraphAsset = errorsModel.Errors[0].SourceGraphReference;
-                    var clickable = errorGraphAsset.GraphModelGuid != GraphView.GraphModel.Guid
-                        ? new Clickable(() => LoadGraphAndFrameElement(errorsModel.Errors[0], window))
-                        : new Clickable(ShowConsoleWindow);
-                    clickable.activators.Clear();
-                    clickable.activators.Add(
-                        new ManipulatorActivationFilter { button = MouseButton.LeftMouse, clickCount = 1 });
-                    this.AddManipulator(clickable);
-                }
-                else if (errorsModel.Errors.Count != 0)
-                {
-                    ContextualMenuManipulator = new ErrorMarkerContextualMenuManipulator(BuildContextualMenu);
-                }
-            }
+            var clickable = new Clickable(OnClick);
+            clickable.activators.Clear();
+            clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, clickCount = 1 });
+            this.AddManipulator(clickable);
 
             base.BuildUI();
-            name = "error-marker";
+            name = k_ElementName;
 
             m_MarkerElement = new VisualElement();
-            m_MarkerElement.AddToClassList(markerElementUssClassName);
+            m_MarkerElement.AddToClassList(k_MarkerElementClassName);
             Add(m_MarkerElement);
 
             m_IconElement = new Image { name = GraphElementHelper.iconName };
-            m_IconElement.AddToClassList(iconUssClassName);
+            m_IconElement.AddToClassList(k_IconClassName);
             m_MarkerElement.Add(m_IconElement);
 
-            m_CounterElement = new Label { name = "issues-counter" };
-            m_CounterElement.AddToClassList(counterElementUssClassName);
+            m_CounterElement = new Label { name = k_IssuesCounterName };
+            m_CounterElement.AddToClassList(k_CounterClassName);
             m_CounterElement.AddToClassList(hiddenUssClassName);
             m_MarkerElement.Add(m_CounterElement);
 
             m_TextElement = new Label { name = GraphElementHelper.textAreaName };
-            m_TextElement.AddToClassList(textUssClassName);
+            m_TextElement.AddToClassList(k_TextClassName);
             m_TextElement.EnableInClassList(hiddenUssClassName, true);
             Add(m_TextElement);
 
@@ -307,21 +219,6 @@ namespace Unity.GraphToolkit.Editor
             RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             RegisterCallback<MouseEnterEvent>(OnMouseEnter);
-            return;
-
-            bool ShouldOpenConsoleWindow(List<GraphProcessingErrorModel> errors)
-            {
-                if (errors.Count == 1)
-                {
-                    var error = errors[0];
-                    if (error.Action == null)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
 
         /// <inheritdoc />
@@ -348,11 +245,11 @@ namespace Unity.GraphToolkit.Editor
         {
             base.PostBuildUI();
 
-            AddToClassList(ussClassName);
-            this.AddPackageStylesheet(k_DefaultStylePath);
+            AddToClassList(k_ErrorMarkerClassName);
+            AddStyleSheetPath(k_DefaultStylePath);
 
             //we need to add the style sheet to the Text element as well since it will be parented elsewhere
-            m_TextElement.AddPackageStylesheet(k_DefaultStylePath);
+            m_TextElement.AddStyleSheetPath(k_DefaultStylePath);
         }
 
         /// <inheritdoc />
@@ -362,10 +259,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (Model is ErrorMarkerModel errorMarkerModel && visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
-                if (m_TextElement != null)
-                {
-                    m_TextElement.text = errorMarkerModel.ErrorMessage;
-                }
+                UpdateTextElement();
 
                 if (Model is MultipleGraphProcessingErrorsModel multipleErrorModel && m_CounterElement != null)
                 {
@@ -374,9 +268,49 @@ namespace Unity.GraphToolkit.Editor
                         m_CounterElement.text = multipleErrorModel.Errors.Count.ToString();
                     m_CounterElement.EnableInClassList(hiddenUssClassName, !hasMoreThanOneError);
                 }
+                else
+                {
+                    m_CounterElement?.EnableInClassList(hiddenUssClassName, true);
+                }
 
                 VisualStyle = errorMarkerModel.ErrorType.ToString().ToLower();
             }
+        }
+
+        void UpdateTextElement()
+        {
+            if (m_TextElement == null)
+                return;
+
+            if (MarkerModel is ErrorMarkerModel errorMarkerModel)
+            {
+                // If only 1 error and its on a subgraph, text should summarize this
+                if (errorMarkerModel is GraphProcessingErrorModel gpError &&
+                    gpError.SourceGraphReference != default &&
+                    gpError.SourceGraphReference.GraphModelGuid != GraphView?.GraphModel.Guid)
+                {
+                    m_TextElement.text = ErrorMarkerUtilities.GetSubgraphMessageString(
+                        ErrorMarkerUtilities.GetGraphPath(gpError.SourceGraphReference),
+                        1,
+                        ErrorMarkerUtilities.GetLogString(errorMarkerModel.ErrorType));
+                    return;
+                }
+
+                if (errorMarkerModel is MultipleGraphProcessingErrorsModel { Errors: [var singleError] } &&
+                    singleError.SourceGraphReference != default &&
+                    singleError.SourceGraphReference.GraphModelGuid != GraphView?.GraphModel.Guid)
+                {
+                    m_TextElement.text = ErrorMarkerUtilities.GetSubgraphMessageString(
+                        ErrorMarkerUtilities.GetGraphPath(singleError.SourceGraphReference),
+                        1,
+                        ErrorMarkerUtilities.GetLogString(singleError.ErrorType));
+                    return;
+                }
+
+                m_TextElement.text = errorMarkerModel.ErrorMessage;
+            }
+            else
+                m_TextElement.text = string.Empty;
         }
 
         /// <inheritdoc />
@@ -439,7 +373,7 @@ namespace Unity.GraphToolkit.Editor
                     break;
             }
 
-            m_Target?.AddToClassList(hasErrorUssClassName);
+            m_Target?.AddToClassList(k_HasErrorClassName);
 
             // If the error marker is aligned on the left center, the text should appear on the left of the marker.
             if (Alignment == SpriteAlignment.LeftCenter)
@@ -451,7 +385,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void Detach()
         {
-            m_Target?.RemoveFromClassList(hasErrorUssClassName);
+            m_Target?.RemoveFromClassList(k_HasErrorClassName);
             base.Detach();
         }
 
@@ -461,18 +395,12 @@ namespace Unity.GraphToolkit.Editor
             return new DynamicErrorMarkerBorder(this);
         }
 
-        /// <summary>
-        /// Displays the text of the marker.
-        /// </summary>
         protected void ShowText()
         {
             if (m_TextElement?.hierarchy.parent != null && m_TextElement.ClassListContains(hiddenUssClassName))
                 m_TextElement?.EnableInClassList(hiddenUssClassName, false);
         }
 
-        /// <summary>
-        /// Hides the text of the marker.
-        /// </summary>
         protected void HideText()
         {
             if (m_TextElement?.hierarchy.parent != null && !m_TextElement.ClassListContains(hiddenUssClassName))
@@ -609,11 +537,6 @@ namespace Unity.GraphToolkit.Editor
             p2d.ArcTo(new Vector2(rect.xMin, rect.yMax), new Vector2(rect.xMin, rect.yMax - rectRadius), rectRadius);
 
             p2d.ClosePath();
-        }
-
-        static void ShowConsoleWindow()
-        {
-            ConsoleWindowHelper.ShowConsoleWindow();
         }
     }
 }

@@ -33,8 +33,8 @@ namespace Unity.UI.Builder
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPath));
 
             m_ToggleButtonGroup = new ToggleButtonGroup { isMultipleSelection = true, allowEmptySelection = true };
-            m_ToggleButtonGroup.Add(new Button() { name = "bold", iconImage = BuilderInspectorUtilities.LoadIcon("Bold", "Text/"), tooltip = "bold" });
-            m_ToggleButtonGroup.Add(new Button() { name = "italic", iconImage = BuilderInspectorUtilities.LoadIcon("Italic", "Text/"), tooltip = "italic" });
+            m_ToggleButtonGroup.Add(new Button() { name = "bold", tooltip = "Bold" });
+            m_ToggleButtonGroup.Add(new Button() { name = "italic", tooltip = "Italic" });
             m_ToggleButtonGroup.RegisterValueChangedCallback(OnFontStyleChange);
             m_ToggleButtonGroup.value = ToggleButtonGroupState.FromEnumFlags(FontStyleFlag.None);
 

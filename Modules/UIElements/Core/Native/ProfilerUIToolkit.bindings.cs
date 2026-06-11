@@ -6,9 +6,9 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
-using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements
 {
@@ -19,9 +19,10 @@ namespace UnityEngine.UIElements
     /// <see cref="ownerOffset"/> and <see cref="ownerCount"/> slice into the corresponding
     /// PANEL_BATCH_OWNERS chunk (paired by per-frame ordinal) which carries a flat
     /// <c>NativeArray&lt;EntityId&gt;</c> of every batch's IPanelComponent owners back-to-back.
-    /// Ordinal pairing avoids storing the panel id on the owners chunk and keeps both payloads
-    /// fixed-size <c>T</c>-typed so the standard <see cref="Profiler.EmitFrameMetaData{T}(Guid,int,NativeArray{T})"/>
-    /// API can be used directly — no custom variable-length native binding required.
+    /// Both chunks are emitted in a single P/Invoke via the
+    /// <c>ProfilerUIToolkit_EmitBatchMetricsForPanel</c> binding (rather than
+    /// <see cref="Profiler.EmitFrameMetaData{T}(Guid,int,NativeArray{T})"/>, which is
+    /// <c>[Conditional("ENABLE_PROFILER")]</c> and would strip the entire managed call site).
     /// </summary>
     [NativeHeader("Modules/UIElements/Core/Native/ProfilerUIToolkit.h")]
     [StructLayout(LayoutKind.Sequential)]
@@ -34,8 +35,9 @@ namespace UnityEngine.UIElements
         public UInt32 indexCount;
         public UInt32 immediateDraws;
         public UInt32 drawRangeCount;
-        public UInt32 kickRangesReason;
-        public UInt32 isRenderingNestedTreeRT; // 0 or 1
+        public byte kickRangesReason;        // UIR.KickRangesReason ordinal — byte-sized; pair with isRenderingNestedTreeRT to avoid alignment waste.
+        public byte isRenderingNestedTreeRT; // 0 or 1
+        // 2 bytes padding here to align ownerOffset
         public UInt32 ownerOffset; // Index into the per-frame PANEL_BATCH_OWNERS chunk.
         public UInt32 ownerCount;
     }
@@ -65,7 +67,7 @@ namespace UnityEngine.UIElements
     /// metadata chunks (PANEL_ENTRIES + PANEL_METRICS) and folds the panel update counters into the
     /// global counters via the native AddPanelUpdateMetrics binding. Per-batch metadata
     /// (PANEL_BATCH_METRICS + PANEL_BATCH_OWNERS) is emitted once per panel from the renderer at the
-    /// end of EvaluateChain via <see cref="Profiler.EmitFrameMetaData{T}(Guid,int,NativeArray{T})"/>;
+    /// end of EvaluateChain via the native <c>ProfilerUIToolkit_EmitBatchMetricsForPanel</c> binding;
     /// the aggregate batch counters are updated in a single per-panel call to
     /// <see cref="AddBatchAggregateCounters"/>.
     /// </summary>
@@ -85,8 +87,8 @@ namespace UnityEngine.UIElements
         internal const int kProfilerUIToolkitMetadataTagPanelBatchOwners = 3;
 
         // Mirrors ProfilerUIToolkit::CaptureMode in ProfilerUIToolkit.h. Pushed from native via
-        // SetActiveCaptureMode whenever the mode changes (in ProfilerUIToolkit::NewFrame). Cached
-        // here so ShouldCapturePanel can answer without a native crossing on every batch event.
+        // the SetActiveCaptureMode callback whenever the mode changes (in ProfilerUIToolkit::NewFrame).
+        // Cached here so ShouldCapturePanel can answer without a native crossing on every batch event.
         internal enum CaptureMode
         {
             Disabled = 0,
@@ -96,7 +98,31 @@ namespace UnityEngine.UIElements
 
         static CaptureMode s_ActiveCaptureMode = CaptureMode.Disabled;
 
-        [RequiredByNativeCode(Optional = true)]
+        // Registered into native via Native_RegisterManagedCallbacks at managed init time so
+        // ProfilerUIToolkit::NewFrame (native) can push mode transitions back to managed. The
+        // static readonly fields keep the delegates alive — Marshal.GetFunctionPointerForDelegate
+        // doesn't pin them.
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate void SetActiveCaptureModeDelegate(int mode);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate void RecordProfilerPanelMetadataForCaptureDelegate();
+
+        static readonly SetActiveCaptureModeDelegate s_SetActiveCaptureModeDelegate = SetActiveCaptureMode;
+        static readonly RecordProfilerPanelMetadataForCaptureDelegate s_RecordProfilerPanelMetadataForCaptureDelegate = RecordProfilerPanelMetadataForCapture;
+
+        [FreeFunction("ProfilerUIToolkit_RegisterManagedCallbacks")]
+        extern static void Native_RegisterManagedCallbacks(IntPtr setActiveCaptureMode, IntPtr recordProfilerPanelMetadataForCapture);
+
+        // Called once during managed UIElements init (UIElementsInitialization.InitializeUIElementsManaged)
+        // to wire the native-side function pointers.
+        internal static void RegisterManagedCallbacks()
+        {
+            Native_RegisterManagedCallbacks(
+                Marshal.GetFunctionPointerForDelegate(s_SetActiveCaptureModeDelegate),
+                Marshal.GetFunctionPointerForDelegate(s_RecordProfilerPanelMetadataForCaptureDelegate));
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(SetActiveCaptureModeDelegate))]
         internal static void SetActiveCaptureMode(int mode)
         {
             s_ActiveCaptureMode = (CaptureMode)mode;
@@ -113,9 +139,22 @@ namespace UnityEngine.UIElements
 
         // Per-panel batch aggregate counter update: updates the 4 batch counters (BatchCount,
         // DrawCalls, Vertices, Indices) in one call. No metadata emission (the per-batch chunks
-        // are emitted directly from managed via Profiler.EmitFrameMetaData).
+        // are emitted from native via Native_EmitBatchMetricsForPanel).
         [FreeFunction("ProfilerUIToolkit_AddBatchAggregateCounters")]
         extern internal static void AddBatchAggregateCounters(UInt32 batchCount, UInt32 drawCalls, UInt32 vertices, UInt32 indices);
+
+        // Per-panel PANEL_BATCH_METRICS + PANEL_BATCH_OWNERS emission. Replaces the two
+        // Profiler.EmitFrameMetaData<T> calls that used to live in EmitBatchMetricsForPanel:
+        // those are [Conditional("ENABLE_PROFILER")], which strips the whole managed call site
+        // (including the NativeArray prep) from non-development builds and silently neuters the
+        // per-batch profiler payload. Routing through a native binding keeps the managed site
+        // live and moves the ENABLE_PROFILER gate to native, where it matches AddPanelUpdateMetrics
+        // and AddBatchAggregateCounters. Both chunks go through one P/Invoke since they're emitted
+        // as a paired ordinal.
+        [FreeFunction("ProfilerUIToolkit_EmitBatchMetricsForPanel")]
+        extern static unsafe void Native_EmitBatchMetricsForPanel(
+            UIToolkitBatchMetricsInfo* batches, int batchCount,
+            EntityId* owners, int ownerCount);
 
         // Pure managed check against the cached mode (kept in sync from native NewFrame). No
         // native crossing per query — important for the per-panel hot path in EvaluateChain.
@@ -134,13 +173,14 @@ namespace UnityEngine.UIElements
         // legitimately be empty for a flat panel with no IPanelComponent contributors. Skipped
         // entirely when batches is empty so we don't insert a phantom ordinal slot.
         // Caller must have already gated this via ShouldCapturePanel.
-        internal static void EmitBatchMetricsForPanel(NativeArray<UIToolkitBatchMetricsInfo> batches, NativeArray<EntityId> owners)
+        internal static unsafe void EmitBatchMetricsForPanel(NativeArray<UIToolkitBatchMetricsInfo> batches, NativeArray<EntityId> owners)
         {
             if (batches.Length == 0)
                 return;
 
-            Profiler.EmitFrameMetaData(kProfilerMetadataGuid, kProfilerUIToolkitMetadataTagPanelBatchMetrics, batches);
-            Profiler.EmitFrameMetaData(kProfilerMetadataGuid, kProfilerUIToolkitMetadataTagPanelBatchOwners, owners);
+            Native_EmitBatchMetricsForPanel(
+                (UIToolkitBatchMetricsInfo*)batches.GetUnsafeReadOnlyPtr(), batches.Length,
+                (EntityId*)owners.GetUnsafeReadOnlyPtr(), owners.Length);
         }
 
         // Caller must have already gated this via ShouldCapturePanel.
@@ -158,7 +198,7 @@ namespace UnityEngine.UIElements
             Native_AddPanelUpdateMetrics(ref info);
         }
 
-        [RequiredByNativeCode(Optional = true)]
+        [AOT.MonoPInvokeCallback(typeof(RecordProfilerPanelMetadataForCaptureDelegate))]
         internal static void RecordProfilerPanelMetadataForCapture()
         {
             ProfilerUIToolkitPanelMetadataCapture.RecordForCapture();

@@ -105,6 +105,7 @@ namespace UnityEditor.UIElements.Inspector
             m_PositionEnumField.Init(pc.position);
             m_PositionEnumField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change Position");
                 pc.position = (Position)evt.newValue;
             });
 
@@ -112,6 +113,7 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceSizeField.Init(pc.worldSpaceSizeMode);
             m_WorldSpaceSizeField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change World Space Size Mode");
                 pc.worldSpaceSizeMode = (WorldSpaceSizeMode)evt.newValue;
             });
 
@@ -141,6 +143,7 @@ namespace UnityEditor.UIElements.Inspector
             m_PivotReferenceSizeField.Init(pc.pivotReferenceSize);
             m_PivotReferenceSizeField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change Pivot Reference Size");
                 pc.pivotReferenceSize = (PivotReferenceSize)evt.newValue;
             });
 
@@ -148,6 +151,7 @@ namespace UnityEditor.UIElements.Inspector
             m_PivotField.Init(pc.pivot);
             m_PivotField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change Pivot");
                 pc.pivot = (Pivot)evt.newValue;
             });
 

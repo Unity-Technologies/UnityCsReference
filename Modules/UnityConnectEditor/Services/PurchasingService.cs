@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Net;
 using UnityEditor.Purchasing;
+using UnityEditor.AssetPackage;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -158,7 +159,7 @@ namespace UnityEditor.Connect
                         string etag = request.GetResponseHeaders()[k_ETagHeader];
                         SaveETag(etag);
 
-                        AssetDatabase.ImportPackage(location, false);
+                        AssetPackage.Package.Import(location, false);
 
                         EditorAnalytics.SendImportServicePackageEvent(new ImportPackageInfo() { packageName = Path.GetFileName(k_PackageUri.ToString()) , eTag = etag });
 

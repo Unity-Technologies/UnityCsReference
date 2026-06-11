@@ -48,18 +48,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Data = new Data
             {
                 action = action,
+                // for samples analytics, packageId stores the sample.uniqueId
                 package_id = packageId ?? string.Empty,
                 package_tag = packageTag ?? string.Empty,
                 package_ids = packageIds ?? Array.Empty<string>(),
                 package_tags = packageTags ?? Array.Empty<string>(),
                 search_text = activePage.searchText,
                 filter_name = activePage.id,
-                details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
+                details_tab = activePage.id == SamplesPage.k_Id
+                    ? string.Empty
+                    : packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
                 window_docked = PackageManagerWindow.instance?.docked ?? false,
                 // packages installed as dependency are always visible
                 // we keep the dependencies_visible to not break the analytics
                 dependencies_visible = true,
-                preview_visible = settingsProxy.enablePreReleasePackages
+                preview_visible = settingsProxy.enablePreReleasePackages,
             };
         }
 
@@ -100,6 +103,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static void SendEvent(string action, IReadOnlyCollection<IPackageVersion> versions)
         {
             SendEvent(action, packageIds: versions?.SelectToNewArray(GetAnalyticsPackageId), packageTags: versions?.SelectToNewArray(v => v.GetAnalyticsTags()));
+        }
+
+        public static void SendEvent(string action, Sample sample)
+        {
+            SendEvent(action, sample.uniqueId);
+        }
+
+        public static void SendEvent(string action, IReadOnlyCollection<Sample> samples)
+        {
+            SendEvent(action, packageIds: samples?.SelectToNewArray(s => s.uniqueId));
         }
 
         public static void SendEvent(string action, string packageId = null, string[] packageIds = null, string packageTag = null, string[] packageTags = null)

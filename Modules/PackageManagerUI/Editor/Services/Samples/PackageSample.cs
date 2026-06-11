@@ -75,12 +75,14 @@ namespace UnityEditor.PackageManager.UI
 
         internal string packageUniqueId { get; private set; }
 
+        internal string assetPackagePath { get; private set; }
+
         private Internal.IPackage m_Package;
         internal Internal.IPackage package => m_Package;
 
         internal string uniqueId => $"{packageUniqueId}/{displayName}";
 
-        internal Sample(SampleInfo sampleInfo, string packageUniqueId, string resolvedPath, string importPath, bool isImported, ulong sizeInBytes, string[] previousImportPaths, Internal.IPackage package)
+        internal Sample(SampleInfo sampleInfo, string packageUniqueId, string resolvedPath, string importPath, bool isImported, ulong sizeInBytes, string[] previousImportPaths, string assetPackagePath, Internal.IPackage package)
         {
             displayName = sampleInfo.displayName;
             description = sampleInfo.description;
@@ -93,6 +95,7 @@ namespace UnityEditor.PackageManager.UI
             this.sizeInBytes = sizeInBytes;
             m_PreviousImportPaths = previousImportPaths ?? Array.Empty<string>();
             m_Package = package;
+            this.assetPackagePath = assetPackagePath;
         }
 
         internal bool IsEquivalent(Sample other)
@@ -104,6 +107,7 @@ namespace UnityEditor.PackageManager.UI
                    importPath == other.importPath &&
                    interactiveImport == other.interactiveImport &&
                    isImported == other.isImported &&
+                   assetPackagePath == other.assetPackagePath &&
                    sizeInBytes == other.sizeInBytes &&
                    images.IsSequenceEqual(other.images) &&
                    m_PreviousImportPaths.IsSequenceEqual(other.m_PreviousImportPaths);

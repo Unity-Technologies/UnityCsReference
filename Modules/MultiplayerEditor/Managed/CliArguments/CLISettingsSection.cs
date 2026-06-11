@@ -24,7 +24,7 @@ namespace Unity.DedicatedServer
             if (!InternalUtility.IsServerProfile(profile))
                 return;
 
-            m_Expanded = EditorGUILayout.Foldout(m_Expanded, "CLI Arguments defaults");
+            m_Expanded = EditorGUILayout.Foldout(m_Expanded, "CLI Arguments defaults", true);
 
             if (m_Expanded)
             {

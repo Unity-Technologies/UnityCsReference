@@ -137,21 +137,23 @@ namespace UnityEngine.UIElements.UIR
                     if (immediateException != null)
                         break;
 
-                    s_ImmediateOverheadMarker.Begin();
+                    Matrix4x4 oldProjection;
+                    Camera oldCamera;
+                    RenderTexture oldRT;
+                    using (s_ImmediateOverheadMarker.Auto())
+                    {
+                        if (owner.compositeOpacity < 0.001f)
+                            break;
 
-                    if (owner.compositeOpacity < 0.001f)
-                        break;
+                        oldProjection = Utility.GetUnityProjectionMatrix();
+                        oldCamera = Camera.current;
+                        oldRT = RenderTexture.active;
 
-                    Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
-                    Camera oldCamera = Camera.current;
-                    RenderTexture oldRT = RenderTexture.active;
+                        UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
+                        GL.modelview = matrix;
 
-                    UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
-                    GL.modelview = matrix;
-
-                    PushScissor(drawParams, owner.clippingRect, pixelsPerPoint);
-
-                    s_ImmediateOverheadMarker.End();
+                        PushScissor(drawParams, owner.clippingRect, pixelsPerPoint);
+                    }
                     try
                     {
                         callback();
@@ -160,17 +162,16 @@ namespace UnityEngine.UIElements.UIR
                     {
                         immediateException = e;
                     }
-                    s_ImmediateOverheadMarker.Begin();
+                    using (s_ImmediateOverheadMarker.Auto())
+                    {
+                        PopScissor(drawParams, pixelsPerPoint);
 
-                    PopScissor(drawParams, pixelsPerPoint);
-
-                    Camera.SetupCurrent(oldCamera);
-                    RenderTexture.active = oldRT;
-                    GL.modelview = drawParams.view.Peek();
-                    GL.LoadProjectionMatrix(oldProjection);
-                    GL.invertCulling = false;
-
-                    s_ImmediateOverheadMarker.End();
+                        Camera.SetupCurrent(oldCamera);
+                        RenderTexture.active = oldRT;
+                        GL.modelview = drawParams.view.Peek();
+                        GL.LoadProjectionMatrix(oldProjection);
+                        GL.invertCulling = false;
+                    }
                     break;
                 }
                 case CommandType.PushView:

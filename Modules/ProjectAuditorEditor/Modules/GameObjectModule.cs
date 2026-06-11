@@ -47,6 +47,9 @@ namespace Unity.ProjectAuditor.Editor.Core
             {
                 var gameObjectTracker = new HashSet<EntityId>(); // Only analyze each GameObject once
 
+                foreach (var analyzer in analyzers)
+                    analyzer.OnAnalysisStarted();
+
                 yield return AuditScenes(analyzers, gameObjectTracker, analysisParams, progress);
                 yield return AuditPrefabs(analyzers, gameObjectTracker, analysisParams, progress);
             }

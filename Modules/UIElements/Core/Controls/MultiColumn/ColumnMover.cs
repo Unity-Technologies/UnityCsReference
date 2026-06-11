@@ -76,6 +76,7 @@ namespace UnityEngine.UIElements.Internal
         Column m_ColumnToMove;
         float m_ColumnToMovePos;
         float m_ColumnToMoveWidth;
+        ScrollView m_CollectionScrollView;
         Column m_DestinationColumn;
         bool m_MoveBeforeDestination;
 
@@ -311,12 +312,19 @@ namespace UnityEngine.UIElements.Internal
             m_LocationPreviewElement = new MultiColumnHeaderColumnMoveLocationPreview();
             m_Header.hierarchy.Add(m_PreviewElement);
 
-            VisualElement locationPreviewParent = m_Header.GetFirstAncestorOfType<ScrollView>()?.parent??m_Header;
+            m_CollectionScrollView = m_Header.GetFirstAncestorOfType<ScrollView>();
+            VisualElement locationPreviewParent = m_CollectionScrollView?.parent ?? m_Header;
             locationPreviewParent.hierarchy.Add(m_LocationPreviewElement);
+            // The drop line is parented outside the ScrollView and won't follow it; refresh on scroll
+            // so wheel/programmatic scrolls during the drag don't leave it stale.
+            if (m_CollectionScrollView != null)
+                m_CollectionScrollView.horizontalScroller.valueChanged += OnHorizontalScrollChanged;
             m_ColumnToMovePos = columnLayout.GetDesiredPosition(m_ColumnToMove);
             m_ColumnToMoveWidth = columnLayout.GetDesiredWidth(m_ColumnToMove);
             UpdateMoveLocation();
         }
+
+        void OnHorizontalScrollChanged(float value) => UpdatePreviewPosition();
 
         /// <summary>
         /// Called when moving using mouse.
@@ -335,8 +343,11 @@ namespace UnityEngine.UIElements.Internal
 
             if (m_DestinationColumn != null)
             {
-                m_LocationPreviewElement.style.left = columnLayout.GetDesiredPosition(m_DestinationColumn) + (!m_MoveBeforeDestination ?
-                    columnLayout.GetDesiredWidth(m_DestinationColumn) : 0);
+                // The drop line is parented outside the ScrollView so it can extend past the header,
+                // so translate the column position from header space to the drop line's parent space.
+                var headerLeft = columnLayout.GetDesiredPosition(m_DestinationColumn)
+                    + (!m_MoveBeforeDestination ? columnLayout.GetDesiredWidth(m_DestinationColumn) : 0);
+                m_LocationPreviewElement.style.left = m_Header.ChangeCoordinatesTo(m_LocationPreviewElement.hierarchy.parent, new Vector2(headerLeft, 0)).x;
             }
         }
 
@@ -393,6 +404,11 @@ namespace UnityEngine.UIElements.Internal
                 }
             }
 
+            if (m_CollectionScrollView != null)
+            {
+                m_CollectionScrollView.horizontalScroller.valueChanged -= OnHorizontalScrollChanged;
+                m_CollectionScrollView = null;
+            }
             m_PreviewElement?.RemoveFromHierarchy();
             m_PreviewElement = null;
             m_LocationPreviewElement?.RemoveFromHierarchy();

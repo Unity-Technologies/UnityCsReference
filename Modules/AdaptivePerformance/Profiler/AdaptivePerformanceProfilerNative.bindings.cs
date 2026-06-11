@@ -31,6 +31,6 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Span", IsFreeFunction = true, IsThreadSafe = true)]
-        internal static extern unsafe void EmitGlobalMetaData_Span(void* id, int idLen, int tag, ReadOnlySpan<byte> data, int count, int elementSize, bool frameData);
+        internal static extern unsafe void EmitGlobalMetaData_Span(void* id, int idLen, int tag, Span<byte> data, int count, int elementSize, bool frameData);
     }
 }

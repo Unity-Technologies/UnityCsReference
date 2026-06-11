@@ -40,11 +40,11 @@ namespace UnityEditor.UIElements
         internal static readonly string prefabOverrideBarContainerName = "unity-prefab-override-bars-container";
         internal static readonly string prefabOverrideBarUssClassName = "unity-binding__prefab-override-bar";
         internal static readonly string prefabOverrideBarNotApplicableUssClassName = "unity-binding__prefab-override-bar-not-applicable";
-        internal static readonly string drivenUssClassName = "unity-binding--driven";
-        internal static readonly string animationAnimatedUssClassName = "unity-binding--animation-animated";
-        internal static readonly string animationRecordedUssClassName = "unity-binding--animation-recorded";
-        internal static readonly string animationCandidateUssClassName = "unity-binding--animation-candidate";
-        internal static readonly string livePropertyUssClassName = "unity-binding--live-property";
+        internal static readonly UniqueStyleString drivenUssClassName = new("unity-binding--driven");
+        internal static readonly UniqueStyleString animationAnimatedUssClassName = new("unity-binding--animation-animated");
+        internal static readonly UniqueStyleString animationRecordedUssClassName = new("unity-binding--animation-recorded");
+        internal static readonly UniqueStyleString animationCandidateUssClassName = new("unity-binding--animation-candidate");
+        internal static readonly UniqueStyleString livePropertyUssClassName = new("unity-binding--live-property");
         internal static readonly string livePropertyBarName = "unity-binding-live-property-bar";
         internal static readonly string livePropertyBarContainerName = "unity-live-property-bars-container";
         internal static readonly string livePropertyBarUssClassName = "unity-binding__live-property-bar";

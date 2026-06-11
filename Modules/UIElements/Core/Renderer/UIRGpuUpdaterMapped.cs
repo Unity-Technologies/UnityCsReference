@@ -8,7 +8,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class GpuUpdaterMapped<T>: GpuUpdater<T> where T : unmanaged
+    class GpuUpdaterMapped : GpuUpdater
     {
         CircularRangeBuffer<GfxUpdateBufferRange> m_UpdateRangesPool;
         int m_CurrentFrameIndex;
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements.UIR
             m_UpdateRangesPool = new CircularRangeBuffer<GfxUpdateBufferRange>(128);
         }
 
-        public override void ProcessDataSet(DataSet<T> dataSet)
+        public override void ProcessDataSet(DataSet dataSet)
         {
             if (dataSet.dirtyRanges.Count == 0)
                 return;
@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements.UIR
 
         public override void CompleteUpdate() {}
 
-        unsafe void UploadDirtyRanges(DataSet<T> dataSet)
+        unsafe void UploadDirtyRanges(DataSet dataSet)
         {
             ref PerFrameData frameData = ref m_FrameDataArray[m_CurrentFrameIndex];
 
@@ -50,24 +50,25 @@ namespace UnityEngine.UIElements.UIR
             // Track the allocated ranges so they can be freed later
             frameData.rangesToFree += rangeCount;
 
-            T* source = (T*)NativeArrayUnsafeUtility.GetUnsafePtr(dataSet.cpuData);
+            byte* source = (byte*)dataSet.cpuData.GetUnsafePtr();
+            uint elemStride = (uint)dataSet.cpuData.Stride;
 
             // Use the pre-computed bounds from the DataSet
-            int writeStart = (int)(dataSet.dirtyRangeMin * dataSet.elemStride);
-            int writeEnd = (int)(dataSet.dirtyRangeMax * dataSet.elemStride);
+            int writeStart = (int)(dataSet.dirtyRangeMin * elemStride);
+            int writeEnd = (int)(dataSet.dirtyRangeMax * elemStride);
 
             // Populate each update range from the dirty ranges
             for (int i = 0; i < rangeCount; i++)
             {
                 var dirtyRange = dirtyRanges[i];
-                uint offsetBytes = dirtyRange.start * dataSet.elemStride;
-                uint sizeBytes = dirtyRange.count * dataSet.elemStride;
+                uint offsetBytes = dirtyRange.start * elemStride;
+                uint sizeBytes = dirtyRange.count * elemStride;
 
                 updateRanges[i] = new GfxUpdateBufferRange
                 {
                     offsetFromWriteStart = offsetBytes - (uint)writeStart, // Offset relative to writeStart
                     size = sizeBytes,
-                    source = new UIntPtr(source + dirtyRange.start)
+                    source = new UIntPtr(source + offsetBytes)
                 };
             }
 

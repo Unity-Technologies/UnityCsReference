@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements.UIR
             m_NeedsContributorCapture = false;
         }
 
-        public void AppendBatch(EntityId panelId, bool isRenderingNestedTreeRT, uint kickRangesReason, in UIRenderDevice.DrawStatistics current)
+        public void AppendBatch(EntityId panelId, bool isRenderingNestedTreeRT, KickRangesReason kickRangesReason, in UIRenderDevice.DrawStatistics current)
         {
             var info = new UIToolkitBatchMetricsInfo
             {
@@ -107,8 +107,8 @@ namespace UnityEngine.UIElements.UIR
                 indexCount = current.totalIndices - m_BatchBaseIndices,
                 immediateDraws = current.immediateDraws - m_BatchBaseImmediates,
                 drawRangeCount = current.drawRangeCount - m_BatchBaseDrawRanges,
-                kickRangesReason = kickRangesReason,
-                isRenderingNestedTreeRT = isRenderingNestedTreeRT ? 1u : 0u,
+                kickRangesReason = (byte)kickRangesReason,
+                isRenderingNestedTreeRT = isRenderingNestedTreeRT ? (byte)1 : (byte)0,
                 ownerOffset = (uint)m_BatchOwners.Count,
                 ownerCount = (uint)m_BatchContributors.Count,
             };

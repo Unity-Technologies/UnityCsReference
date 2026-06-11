@@ -3,35 +3,54 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct ReorderStyleRulePropertiesCommand
+internal sealed class ReorderStyleRulePropertiesCommand : Command<ReorderStyleRulePropertiesCommand>
 {
     const string CommandUndoName = "Reorder style rule properties";
 
-    readonly StyleSheet StyleSheet;
-    readonly StyleRule Rule;
-    readonly StyleProperty[] NewPropertyOrder;
-
-    public ReorderStyleRulePropertiesCommand(StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder)
+    public static ReorderStyleRulePropertiesCommand GetPooled(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder)
     {
-        StyleSheet = styleSheet;
-        Rule = rule;
-        NewPropertyOrder = newPropertyOrder;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Rule = rule;
+        cmd.NewPropertyOrder = newPropertyOrder;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(Rule);
-        Assert.IsNotNull(NewPropertyOrder);
+        using var command = GetPooled(source, styleSheet, rule, newPropertyOrder);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
+    public StyleRule Rule { get; private set; }
+    public StyleProperty[] NewPropertyOrder { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Rule = null;
+        NewPropertyOrder = null;
+    }
+
+    public override bool Validate() => StyleSheet != null && Rule != null && NewPropertyOrder != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         var variableIndices = new List<int>();
         for (var i = 0; i < Rule.properties.Length; i++)
         {
@@ -48,6 +67,6 @@ internal readonly record struct ReorderStyleRulePropertiesCommand
         for (var i = 0; i < variableIndices.Count && i < NewPropertyOrder.Length; i++)
             Rule.properties[variableIndices[i]] = NewPropertyOrder[i];
 
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

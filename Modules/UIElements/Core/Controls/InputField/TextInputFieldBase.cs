@@ -823,7 +823,7 @@ namespace UnityEngine.UIElements
                 textEdition.GetDefaultValueType = GetDefaultValueType;
 
                 AddToClassList(inputUssClassNameUnique);
-                name = TextField.textInputUssName;
+                SetName(TextField.k_TextInputUssName);
 
                 SetSingleLine();
 

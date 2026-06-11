@@ -575,7 +575,9 @@ namespace UnityEditor.UIElements
                 // Header
                 using (new EditorGUI.DisabledScope(!IsOpenForEdit)) // Only disable the entire header if the asset is locked by VCS
                 {
-                    editor.DrawHeader();
+                    // Use the UI Toolkit header if available, otherwise fall back to the IMGUI OnHeaderGUI.
+                    if (m_InspectorElement?.inspectorHeaderContent == null)
+                        editor.DrawHeader();
                 }
             }
 

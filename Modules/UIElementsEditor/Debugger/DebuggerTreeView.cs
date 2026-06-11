@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements.Debugger
         internal const string itemLabelUssClassName = "unity-debugger-tree-item-label";
         internal const string itemTypeUssClassName = "unity-debugger-tree-item-type";
         internal const string itemNameUssClassName = "unity-debugger-tree-item-name";
-        internal const string itemNameLabelUssClassName = "unity-debugger-tree-item-name-label";
+        internal static readonly UniqueStyleString itemNameLabelUssClassName = new("unity-debugger-tree-item-name-label");
         internal const string itemClassListUssClassName = "unity-debugger-tree-item-classlist";
         internal const string itemClassListLabelUssClassName = "unity-debugger-tree-item-classlist-label";
         internal const string debuggerHighlightUssClassName = "unity-debugger-highlight";

@@ -38,7 +38,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// GraphLogAction to address the error.
         /// </summary>
-        public GraphLogAction Fix { get; }
+        public GraphLogAction Action { get; }
 
         /// <summary>
         /// The error type.
@@ -52,7 +52,7 @@ namespace Unity.GraphToolkit.Editor
 
         internal GraphProcessingError() { }
 
-        public GraphProcessingError(string description, Hash128 sourceModelGuid, LogType errorType, GraphReference sourceGraphReference, IReadOnlyList<GraphElementModel> context, GraphLogAction fix = null, object userData = null)
+        public GraphProcessingError(string description, Hash128 sourceModelGuid, LogType errorType, GraphReference sourceGraphReference, IReadOnlyList<GraphElementModel> context, GraphLogAction action = null, object userData = null)
             : this()
         {
             Description = description;
@@ -60,7 +60,7 @@ namespace Unity.GraphToolkit.Editor
             ErrorType = errorType;
             SourceGraphReference = sourceGraphReference;
             Context = context;
-            Fix = fix;
+            Action = action;
             UserData = userData;
         }
 
@@ -85,7 +85,7 @@ namespace Unity.GraphToolkit.Editor
                 SourceModelGuid == other.SourceModelGuid &&
                 ErrorType == other.ErrorType &&
                 Equals(Context, other.Context) &&
-                Fix == other.Fix &&
+                Action == other.Action &&
                 UserData == other.UserData;
 
             return isEquals;
@@ -109,8 +109,8 @@ namespace Unity.GraphToolkit.Editor
                 hashCode = (hashCode * 397) ^ SourceGraphReference.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceModelGuid.GetHashCode();
                 hashCode = (hashCode * 397) ^ ErrorType.GetHashCode();
-                if (Fix != null)
-                    hashCode = (hashCode * 397) ^ Fix.GetHashCode();
+                if (Action != null)
+                    hashCode = (hashCode * 397) ^ Action.GetHashCode();
                 if (UserData != null)
                     hashCode = (hashCode * 397) ^ UserData.GetHashCode();
                 return hashCode;

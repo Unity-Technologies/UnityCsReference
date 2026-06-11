@@ -99,6 +99,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class ResolvedTextShadowProperty : ResolvedStyleProperty<TextShadow>
+        {
+        }
+
         void AddPropertyRange(params IStyleProperty[] properties)
         {
             foreach (var property in properties)

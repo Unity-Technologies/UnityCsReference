@@ -151,6 +151,44 @@ namespace Unity.Hierarchy
         public extern virtual HierarchyNodeFlags GetDefaultNodeFlags(in HierarchyNode node, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None);
 
         /// <summary>
+        /// Gets the <see cref="HierarchyNode"/> corresponding to the given <see cref="EntityId"/>.
+        /// </summary>
+        /// <param name="entityId">The <see cref="EntityId"/> to look up.</param>
+        /// <returns>The matching <see cref="HierarchyNode"/>, or <see cref="HierarchyNode.Null"/> if not found.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern virtual HierarchyNode GetNodeFromEntityId(EntityId entityId);
+
+        /// <summary>
+        /// Gets the <see cref="HierarchyNode"/> corresponding to each <see cref="EntityId"/> in <paramref name="entityIds"/>.
+        /// Slots already set to a non-null value must be skipped.
+        /// </summary>
+        /// <param name="entityIds">The <see cref="EntityId"/> values to look up.</param>
+        /// <param name="outNodes">Output buffer to fill; must be the same length as <paramref name="entityIds"/>.</param>
+        /// <returns>The number of slots in <paramref name="outNodes"/> still set to <see cref="HierarchyNode.Null"/> after this handler runs.
+        /// A return value of 0 means all entity ids were resolved; callers may skip subsequent handlers.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern virtual int GetNodesFromEntityIds(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes);
+
+        /// <summary>
+        /// Gets the <see cref="EntityId"/> corresponding to the given <see cref="HierarchyNode"/>.
+        /// </summary>
+        /// <param name="node">The <see cref="HierarchyNode"/> to look up.</param>
+        /// <returns>The matching <see cref="EntityId"/>, or <see cref="EntityId.None"/> if not found.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern virtual EntityId GetEntityIdFromNode(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the <see cref="EntityId"/> corresponding to each <see cref="HierarchyNode"/> in <paramref name="nodes"/>.
+        /// Slots already set to a non-<see cref="EntityId.None"/> value must be skipped.
+        /// </summary>
+        /// <param name="nodes">The <see cref="HierarchyNode"/> values to look up.</param>
+        /// <param name="outEntityIds">Output buffer to fill; must be the same length as <paramref name="nodes"/>.</param>
+        /// <returns>The number of slots in <paramref name="outEntityIds"/> still set to <see cref="EntityId.None"/> after this handler runs.
+        /// A return value of 0 means all nodes were resolved; callers may skip subsequent handlers.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern virtual int GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
+
+        /// <summary>
         /// Called when a new search query begins.
         /// </summary>
         /// <param name="query">The search query descriptor.</param>
@@ -323,6 +361,26 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static void InvokeViewModelPostSetState(IntPtr handlePtr, IntPtr viewModelPtr) => FromIntPtr(handlePtr).ViewModelPostSetState(HierarchyViewModel.FromIntPtr(viewModelPtr));
+
+        [RequiredByNativeCode]
+        static void InvokeGetNodeFromEntityId(IntPtr handlePtr, in EntityId entityId, out HierarchyNode result)
+            => result = FromIntPtr(handlePtr).GetNodeFromEntityId(entityId);
+
+        [RequiredByNativeCode]
+        static unsafe void InvokeGetNodesFromEntityIds(IntPtr handlePtr, IntPtr entityIds, int count, IntPtr outNodes, out int remaining)
+            => remaining = FromIntPtr(handlePtr).GetNodesFromEntityIds(
+                new ReadOnlySpan<EntityId>((void*)entityIds, count),
+                new Span<HierarchyNode>((void*)outNodes, count));
+
+        [RequiredByNativeCode]
+        static void InvokeGetEntityIdFromNode(IntPtr handlePtr, in HierarchyNode node, out EntityId result)
+            => result = FromIntPtr(handlePtr).GetEntityIdFromNode(in node);
+
+        [RequiredByNativeCode]
+        static unsafe void InvokeGetEntityIdsFromNodes(IntPtr handlePtr, IntPtr nodes, int count, IntPtr outEntityIds, out int remaining)
+            => remaining = FromIntPtr(handlePtr).GetEntityIdsFromNodes(
+                new ReadOnlySpan<HierarchyNode>((void*)nodes, count),
+                new Span<EntityId>((void*)outEntityIds, count));
 
         [RequiredByNativeCode]
         static void InvokeGetUIDInfo(IntPtr handlePtr, out HierarchyUIDInfo info)

@@ -3,9 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -98,6 +99,7 @@ namespace UnityEngine.UIElements
         /// Returns an instance of the declaring element.
         /// </summary>
         /// <returns>The new instance of the declaring element.</returns>
+        /// <seealso cref="UxmlCreateInstanceMethodAttribute"/>
         public abstract object CreateInstance();
 
         /// <summary>
@@ -132,18 +134,13 @@ namespace UnityEngine.UIElements
     [Serializable]
     abstract class UxmlSerializableAdapterBase
     {
-        public abstract object dataBoxed { get; set; }
         public abstract object CloneInstanceBoxed(object value);
     }
 
     [Serializable]
     internal sealed class UxmlSerializableAdapter<T> : UxmlSerializableAdapterBase
     {
-        public static readonly UxmlSerializableAdapter<T> SharedInstance = new UxmlSerializableAdapter<T>();
-
         public T data;
-
-        public override object dataBoxed { get => data; set => data = (T)value; }
 
         public T CloneInstance(T value)
         {
@@ -172,6 +169,40 @@ namespace UnityEngine.UIElements
         public override object CloneInstanceBoxed(object value) => CloneInstance((T)value);
     }
 
+    [Serializable]
+    internal sealed class UxmlSerializableDeserializeReferenceListAdapter<TElement> : UxmlSerializableAdapterBase
+        where TElement : IUxmlSerializedDataDeserializeReference
+    {
+
+        public override object CloneInstanceBoxed(object value)
+        {
+            try
+            {
+                if (value is TElement[] array)
+                {
+                    var cloned = new TElement[array.Length];
+                    for (int i = 0; i < array.Length; i++)
+                        cloned[i] = array[i] is IUxmlSerializedDataDeserializeReference r ? (TElement)r.DeserializeReference() : default;
+                    return cloned;
+                }
+
+                if (value is List<TElement> list)
+                {
+                    var cloned = new List<TElement>(list.Count);
+                    foreach (var item in list)
+                        cloned.Add(item is IUxmlSerializedDataDeserializeReference r ? (TElement)r.DeserializeReference() : default);
+                    return cloned;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            return null;
+        }
+    }
+
     /// <summary>
     /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>.
     /// </summary>
@@ -193,13 +224,7 @@ namespace UnityEngine.UIElements
             try
             {
                 if (!s_Adapters.TryGetValue(value.GetType(), out var adapter))
-                {
-                    var adapterType = typeof(UxmlSerializableAdapter<>).MakeGenericType(value.GetType());
-
-                    var field = adapterType.GetField("SharedInstance", BindingFlags.Static | BindingFlags.Public);
-                    adapter = (UxmlSerializableAdapterBase)field.GetValue(null);
-                    s_Adapters[value.GetType()] = adapter;
-                }
+                    adapter = CreateAdapter(value.GetType());
                 copy = adapter.CloneInstanceBoxed(value);
             }
             catch (Exception e)
@@ -210,10 +235,37 @@ namespace UnityEngine.UIElements
             return copy;
         }
 
-        public static T CopySerialized<T>(object value)
+        public static T CopySerialized<T>(object value) =>
+            (T)UxmlSerializableCopyAdapter<T>.Instance.CloneInstanceBoxed(value);
+
+        static class UxmlSerializableCopyAdapter<T>
         {
-            var adapter = UxmlSerializableAdapter<T>.SharedInstance;
-            return adapter.CloneInstance((T)value);
+            public static readonly UxmlSerializableAdapterBase Instance = Register();
+
+            static UxmlSerializableAdapterBase Register()
+            {
+                Type elementType = null;
+                if (typeof(T).IsArray)
+                    elementType = typeof(T).GetElementType();
+                else if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(List<>))
+                    elementType = typeof(T).GetGenericArguments()[0];
+
+                UxmlSerializableAdapterBase adapter;
+                if (elementType != null && typeof(IUxmlSerializedDataDeserializeReference).IsAssignableFrom(elementType))
+                    adapter = (UxmlSerializableAdapterBase)Activator.CreateInstance(
+                        typeof(UxmlSerializableDeserializeReferenceListAdapter<>).MakeGenericType(elementType));
+                else
+                    adapter = new UxmlSerializableAdapter<T>();
+
+                s_Adapters[typeof(T)] = adapter;
+                return adapter;
+            }
+        }
+
+        static UxmlSerializableAdapterBase CreateAdapter(Type type)
+        {
+            RuntimeHelpers.RunClassConstructor(typeof(UxmlSerializableCopyAdapter<>).MakeGenericType(type).TypeHandle);
+            return s_Adapters[type];
         }
     }
 }

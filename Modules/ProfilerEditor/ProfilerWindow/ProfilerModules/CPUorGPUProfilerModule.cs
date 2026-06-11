@@ -112,6 +112,10 @@ namespace UnityEditorInternal.Profiling
         const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
 
         protected abstract string SettingsKeyPrefix { get; }
+        // Drives the column set the hierarchy view picks during InitIfNeeded.
+        // Must be known before base.OnEnable hands the value to m_FrameDataHierarchyView
+        // (see UUM-114839 -- accessing treeView before this is correct selects CPU columns).
+        protected virtual bool IsGpuView => false;
         string ViewTypeSettingsKey { get { return SettingsKeyPrefix + k_ViewTypeSettingsKey; } }
         string HierarchyViewSettingsKeyPrefix { get { return SettingsKeyPrefix + k_HierarchyViewSettingsKeyPrefix; } }
 
@@ -277,7 +281,7 @@ namespace UnityEditorInternal.Profiling
             if (m_FrameDataHierarchyView == null)
                 m_FrameDataHierarchyView = new ProfilerFrameDataHierarchyView(HierarchyViewSettingsKeyPrefix);
 
-            m_FrameDataHierarchyView.OnEnable(this, ProfilerWindow, false);
+            m_FrameDataHierarchyView.OnEnable(this, ProfilerWindow, IsGpuView);
 
             // safety guarding against event registration leaks due to an imbalance of OnEnable/OnDisable Calls, by deregistering first
             m_FrameDataHierarchyView.viewTypeChanged -= CPUOrGPUViewTypeChanged;

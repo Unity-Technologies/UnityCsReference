@@ -1903,6 +1903,7 @@ namespace UnityEditor
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.QuickSearchModule")]
         internal LoadableSceneId loadableSceneIdValue
         {
             get

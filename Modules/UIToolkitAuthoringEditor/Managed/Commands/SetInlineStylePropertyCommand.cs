@@ -3,46 +3,76 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetInlineStylePropertyCommand<T>
+internal sealed class SetInlineStylePropertyCommand<T> : Command<SetInlineStylePropertyCommand<T>>
 {
     const string CommandUndoName = "Set inline style property";
 
-    readonly VisualElement Element;
-    readonly StylePropertyId StylePropertyId;
-    readonly Action<StyleProperty, StyleSheet, T> ValueSetter;
-    readonly T Value;
-
-    public SetInlineStylePropertyCommand(
+    public static SetInlineStylePropertyCommand<T> GetPooled(
+        object source,
         VisualElement element,
         StylePropertyId stylePropertyId,
         Action<StyleProperty, StyleSheet, T> valueSetter,
         T value)
     {
-        Element = element;
-        StylePropertyId = stylePropertyId;
-        ValueSetter = valueSetter;
-        Value = value;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.Element = element;
+        cmd.StylePropertyId = stylePropertyId;
+        cmd.ValueSetter = valueSetter;
+        cmd.Value = value;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(
+        object source,
+        VisualElement element,
+        StylePropertyId stylePropertyId,
+        Action<StyleProperty, StyleSheet, T> valueSetter,
+        T value)
     {
-        Assert.IsNotNull(Element);
-        Assert.IsNotNull(Element.visualElementAsset);
-        Assert.IsNotNull(Element.visualTreeAssetSource);
+        using var command = GetPooled(source, element, stylePropertyId, valueSetter, value);
+        UICommandQueue.Execute(command);
+    }
 
+    public VisualElement Element { get; private set; }
+    public StylePropertyId StylePropertyId { get; private set; }
+    public Action<StyleProperty, StyleSheet, T> ValueSetter { get; private set; }
+    public T Value { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling;
+
+    protected override void Init()
+    {
+        base.Init();
+        Element = null;
+        StylePropertyId = default;
+        ValueSetter = null;
+        Value = default;
+    }
+
+    public override bool Validate() =>
+        Element != null
+        && Element.visualElementAsset != null
+        && Element.visualTreeAssetSource != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
         var visualTreeAsset = Element.visualTreeAssetSource;
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
+        context.RecordUndo(visualTreeAsset);
+        context.RecordUndo(visualTreeAsset.GetOrCreateInlineStyleSheet());
+    }
 
+    public override CommandExecutionStatus Execute()
+    {
+        var visualTreeAsset = Element.visualTreeAssetSource;
         var inlineStyleSheet = visualTreeAsset.GetOrCreateInlineStyleSheet();
-        Undo.RegisterCompleteObjectUndo(inlineStyleSheet, CommandUndoName);
 
         var vea = Element.visualElementAsset;
         var rule = GetOrCreateRule(vea, inlineStyleSheet);
@@ -52,16 +82,10 @@ internal readonly record struct SetInlineStylePropertyCommand<T>
         Element.UpdateInlineRule(inlineStyleSheet, rule);
         Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
 
-        EditorUtility.SetDirty(visualTreeAsset);
-        EditorUtility.SetDirty(inlineStyleSheet);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
-        {
-            stage.PanelElement.FrameUpdate();
-        }
+        return CommandExecutionStatus.Success;
     }
 
-    private static StyleRule GetOrCreateRule(VisualElementAsset vea, StyleSheet styleSheet)
+    static StyleRule GetOrCreateRule(VisualElementAsset vea, StyleSheet styleSheet)
     {
         if (vea.ruleIndex >= 0)
             return styleSheet.rules[vea.ruleIndex];
@@ -72,7 +96,7 @@ internal readonly record struct SetInlineStylePropertyCommand<T>
         return rule;
     }
 
-    private static StyleProperty GetOrCreateStyleProperty(StyleRule rule, StylePropertyId stylePropertyId)
+    static StyleProperty GetOrCreateStyleProperty(StyleRule rule, StylePropertyId stylePropertyId)
     {
         return rule.FindLastProperty(stylePropertyId) ?? rule.AddProperty(stylePropertyId);
     }

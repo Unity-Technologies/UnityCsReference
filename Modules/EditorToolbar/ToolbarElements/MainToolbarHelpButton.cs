@@ -13,7 +13,7 @@ namespace UnityEditor.Toolbars
         [MainToolbarElement("Services/Toolbar Help", defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement QueryElementInfo()
         {
-            return new MainToolbarButton(new MainToolbarContent(GUIContents.helpIcon.image as Texture2D), OpenMainToolbarAPIDocumentation);
+            return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("_Help")), OpenMainToolbarAPIDocumentation);
         }
 
         static void OpenMainToolbarAPIDocumentation()

@@ -2,36 +2,51 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor;
-using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetElementNameCommand
+internal sealed class SetElementNameCommand : Command<SetElementNameCommand>
 {
     const string CommandUndoName = "Rename element";
 
-    readonly VisualElementAsset ElementAsset;
-    readonly string Name;
-
-    public SetElementNameCommand(VisualElementAsset elementVea, string name)
+    public static SetElementNameCommand GetPooled(object source, VisualElementAsset elementVea, string name)
     {
-        ElementAsset = elementVea;
-        Name = name;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.ElementAsset = elementVea;
+        cmd.Name = name;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElementAsset elementVea, string name)
     {
-        Assert.IsNotNull(ElementAsset);
+        using var command = GetPooled(source, elementVea, name);
+        UICommandQueue.Execute(command);
+    }
 
-        var visualTreeAsset = ElementAsset.visualTreeAsset;
-        Assert.IsNotNull(visualTreeAsset);
+    public VisualElementAsset ElementAsset { get; private set; }
+    public string Name { get; private set; }
 
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Hierarchy;
 
+    protected override void Init()
+    {
+        base.Init();
+        ElementAsset = null;
+        Name = null;
+    }
+
+    public override bool Validate() => ElementAsset != null && ElementAsset.visualTreeAsset != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(ElementAsset.visualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         var uxmlTypeDescription = UxmlDescriptionRegistry.GetDescription(ElementAsset.serializedData.GetType());
         var nameIndex = uxmlTypeDescription.cSharpNameToIndex[nameof(VisualElement.name)];
         var nameAttribute = uxmlTypeDescription.attributeDescriptions[nameIndex];
@@ -39,7 +54,6 @@ internal readonly record struct SetElementNameCommand
         nameAttribute.serializedFieldAttributeFlags.SetValue(ElementAsset.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
         ElementAsset.SetAttribute(nameof(VisualElement.name), Name);
-        EditorUtility.SetDirty(visualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
+        return CommandExecutionStatus.Success;
     }
 }

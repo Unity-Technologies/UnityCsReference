@@ -447,7 +447,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        static string k_noAssetText = L10n.Tr("No source available for already imported asset");
+        static readonly string k_noAssetText = L10n.Tr("No source available for already imported asset");
 
         private void DrawStylesheet()
         {

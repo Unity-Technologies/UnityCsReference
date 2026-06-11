@@ -14,15 +14,15 @@ namespace Unity.Hierarchy.Editor
     /// </summary>
     static class HierarchyViewPrefabStyleUtility
     {
-        static readonly string s_HierarchyItemNormalPrefabStyle = "hierarchy-item__prefab-normal-node";
-        static readonly string s_HierarchyItemVariantPrefabStyle = "hierarchy-item__prefab-variant-node";
-        static readonly string s_HierarchyItemModelPrefabStyle = "hierarchy-item__prefab-model-node";
-        static readonly string s_HierarchyItemGameObjectStyle = "hierarchy-item__gameobject-node";
+        static readonly UniqueStyleString s_HierarchyItemNormalPrefabStyle = new("hierarchy-item__prefab-normal-node");
+        static readonly UniqueStyleString s_HierarchyItemVariantPrefabStyle = new("hierarchy-item__prefab-variant-node");
+        static readonly UniqueStyleString s_HierarchyItemModelPrefabStyle = new("hierarchy-item__prefab-model-node");
+        static readonly UniqueStyleString s_HierarchyItemGameObjectStyle = new("hierarchy-item__gameobject-node");
 
-        static readonly string s_HierarchyItemPrefabBlueTextStyle = "hierarchy-item__prefab-node-blue-text";
-        static readonly string s_HierarchyItemMissingPrefabStyle = "hierarchy-item__prefab-node-red-text";
-        static readonly string s_HierarchyItemPrefabOverlayStyle = "hierarchy-item__prefab-overlay-node";
-        static readonly string s_HierarchyItemPrefabOverrideStyle = "hierarchy-item__prefab-override-bar";
+        static readonly UniqueStyleString s_HierarchyItemPrefabBlueTextStyle = new("hierarchy-item__prefab-node-blue-text");
+        static readonly UniqueStyleString s_HierarchyItemMissingPrefabStyle = new("hierarchy-item__prefab-node-red-text");
+        static readonly UniqueStyleString s_HierarchyItemPrefabOverlayStyle = new("hierarchy-item__prefab-overlay-node");
+        static readonly UniqueStyleString s_HierarchyItemPrefabOverrideStyle = new("hierarchy-item__prefab-override-bar");
 
         static readonly ManipulatorActivationFilter k_PrefabAltActivationFilter = new() { button = MouseButton.LeftMouse, modifiers = EventModifiers.Alt };
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -18,7 +19,7 @@ namespace Unity.UIToolkit.Editor
     /// panel-wide binder driven by <c>AnimationMode.SampleAnimationClip</c>.
     /// </summary>
     [Serializable]
-    internal sealed class VisualElementAnimationWindowController : IAnimationWindowController
+    internal sealed partial class VisualElementAnimationWindowController : IAnimationWindowController, IAnimationContextualResponder
     {
         struct SnapshotEntry
         {
@@ -41,7 +42,6 @@ namespace Unity.UIToolkit.Editor
         [NonSerialized] List<SnapshotEntry> m_PrePreviewSnapshot;
         [NonSerialized] bool m_PostprocessSubscribed;
         [NonSerialized] bool m_BinderHookSubscribed;
-        [NonSerialized] bool m_CurveModifiedSubscribed;
 
         internal VisualElementAnimationWindowController(VisualElementAnimationSelectionItem selection)
         {
@@ -211,9 +211,13 @@ namespace Unity.UIToolkit.Editor
 
             SubscribeBinderHook();
             SubscribeUndoPostprocess();
-            SubscribeActiveClipCurveModified();
 
             CreateCandidateClip();
+
+            // Owns the inspector style-property context menu for the per-element clip
+            // path; mirrors AnimationWindowControl's panel-wide registration so only
+            // one responder is active for the current Animation Window selection.
+            AnimationPropertyContextualMenu.Instance.SetResponder(this);
 
             ResampleAnimation();
         }
@@ -228,9 +232,13 @@ namespace Unity.UIToolkit.Editor
 
             UnsubscribeUndoPostprocess();
             UnsubscribeBinderHook();
-            UnsubscribeActiveClipCurveModified();
             StopCandidateRecording();
             DestroyCandidateClip();
+
+            // Release the inspector context menu hand-off so a follow-up panel-wide
+            // selection's AnimationWindowControl can claim it cleanly.
+            if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
+                AnimationPropertyContextualMenu.Instance.SetResponder(null);
 
             m_Selection?.clipOwner?.SetUIAnimationClipPreviewing(false);
 
@@ -257,12 +265,13 @@ namespace Unity.UIToolkit.Editor
         {
             UnsubscribeUndoPostprocess();
             UnsubscribeBinderHook();
-            UnsubscribeActiveClipCurveModified();
             StopCandidateRecording();
             DestroyCandidateClip();
             m_PrePreviewSnapshot = null;
             // Defensive: in case of race conditions
             m_Selection?.clipOwner?.SetUIAnimationClipPreviewing(false);
+            if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
+                AnimationPropertyContextualMenu.Instance.SetResponder(null);
             PerElementAnimationContext.ClearActive(m_Selection?.uiAnimationClip);
         }
 
@@ -381,7 +390,7 @@ namespace Unity.UIToolkit.Editor
                 // The candidate clip stores values at t=0 (single key per binding);
                 // promote them to a key at the playhead time on the active clip.
                 float candidateValue = candidateCurve.keys[0].value;
-                AnimationWindowAddOrReplaceKey(existing, m_Time, candidateValue);
+                AnimationClipKeyEditing.AddOrReplaceFloatKey(existing, m_Time, candidateValue);
                 AnimationUtility.SetEditorCurve(animClip, binding, existing);
             }
 
@@ -393,7 +402,7 @@ namespace Unity.UIToolkit.Editor
 
                 var existing = AnimationUtility.GetObjectReferenceCurve(animClip, binding) ?? Array.Empty<ObjectReferenceKeyframe>();
                 Object candidateRef = candidatePptrs[0].value;
-                var merged = ReplaceObjectReferenceKey(existing, m_Time, candidateRef);
+                var merged = AnimationClipKeyEditing.ReplaceObjectReferenceKey(existing, m_Time, candidateRef);
                 AnimationUtility.SetObjectReferenceCurve(animClip, binding, merged);
             }
 
@@ -443,42 +452,6 @@ namespace Unity.UIToolkit.Editor
         void StopCandidateRecording()
         {
             AnimationMode.StopCandidateRecording();
-        }
-
-        // Mirrors AnimationWindowUtility.AddKeyframeToCurve, which is not visible here.
-        static void AnimationWindowAddOrReplaceKey(AnimationCurve curve, float time, float value)
-        {
-            for (int i = 0; i < curve.length; i++)
-            {
-                if (Mathf.Approximately(curve.keys[i].time, time))
-                {
-                    var k = curve.keys[i];
-                    k.value = value;
-                    curve.MoveKey(i, k);
-                    return;
-                }
-            }
-            curve.AddKey(time, value);
-        }
-
-        static ObjectReferenceKeyframe[] ReplaceObjectReferenceKey(ObjectReferenceKeyframe[] existing, float time, Object value)
-        {
-            for (int i = 0; i < existing.Length; i++)
-            {
-                if (Mathf.Approximately(existing[i].time, time))
-                {
-                    existing[i] = new ObjectReferenceKeyframe { time = time, value = value };
-                    return existing;
-                }
-            }
-            var merged = new ObjectReferenceKeyframe[existing.Length + 1];
-            Array.Copy(existing, merged, existing.Length);
-            merged[existing.Length] = new ObjectReferenceKeyframe { time = time, value = value };
-            // SetObjectReferenceCurve requires chronologically sorted keyframes; appending
-            // a new key earlier than the last existing one would otherwise break clip
-            // duration calculations and the binary search used at evaluation time.
-            Array.Sort(merged, (a, b) => a.time.CompareTo(b.time));
-            return merged;
         }
 
         // GetFloatValue / GetIntValue / GetObjectReferenceValue seed the default keyframe
@@ -620,41 +593,6 @@ namespace Unity.UIToolkit.Editor
             m_PostprocessSubscribed = false;
         }
 
-        void SubscribeActiveClipCurveModified()
-        {
-            if (m_CurveModifiedSubscribed)
-                return;
-            AnimationUtility.onCurveWasModified += OnActiveClipCurveModified;
-            m_CurveModifiedSubscribed = true;
-        }
-
-        void UnsubscribeActiveClipCurveModified()
-        {
-            if (!m_CurveModifiedSubscribed)
-                return;
-            AnimationUtility.onCurveWasModified -= OnActiveClipCurveModified;
-            m_CurveModifiedSubscribed = false;
-        }
-
-        void OnActiveClipCurveModified(AnimationClip clip, EditorCurveBinding binding, AnimationUtility.CurveModifiedType type)
-        {
-            if (clip == null)
-                return;
-
-            var uiClip = m_Selection?.uiAnimationClip;
-            if (uiClip == null || clip != uiClip.animationClip)
-                return;
-
-            // Re-resolve so removed/edited curves don't leave a stale sample.
-            var curveBinder = m_Selection?.GetOrCreateElementBinder();
-            if (curveBinder != null)
-                curveBinder.IncrementBoundElementsStyleVersion();
-
-            // Resample immediately so surviving curves don't snap to non-animated values for a tick.
-            if (previewing)
-                ResampleAnimation();
-        }
-
         // Consumes synthetic UndoPropertyModifications targeting our active UIAnimationClip;
         // anything else is returned unchanged for the standard panel-wide path.
         UndoPropertyModification[] PostprocessModifications(UndoPropertyModification[] modifications)
@@ -721,12 +659,12 @@ namespace Unity.UIToolkit.Editor
 
                     if (isRecording)
                     {
-                        AddOrReplaceObjectReferenceKey(animClip, binding, m_Time, objectValue);
+                        AnimationClipKeyEditing.AddOrReplaceObjectReferenceKey(animClip, binding, m_Time, objectValue);
                         AnimationMode.AddPropertyModification(binding, prop, mod.keepPrefabOverride);
                     }
                     else
                     {
-                        AddOrReplaceObjectReferenceKey(m_CandidateClip, binding, 0f, objectValue);
+                        AnimationClipKeyEditing.AddOrReplaceObjectReferenceKey(m_CandidateClip, binding, 0f, objectValue);
                         AnimationMode.AddCandidate(binding, prop, mod.keepPrefabOverride);
                     }
                     continue;
@@ -751,64 +689,20 @@ namespace Unity.UIToolkit.Editor
 
                 if (isRecording)
                 {
-                    AddOrReplaceKey(animClip, floatBinding, m_Time, storedValue);
+                    AnimationClipKeyEditing.AddOrReplaceKey(animClip, floatBinding, m_Time, storedValue);
                     AnimationMode.AddPropertyModification(floatBinding, prop, mod.keepPrefabOverride);
                 }
                 else
                 {
-                    AddOrReplaceKey(m_CandidateClip, floatBinding, 0f, storedValue);
+                    AnimationClipKeyEditing.AddOrReplaceKey(m_CandidateClip, floatBinding, 0f, storedValue);
                     AnimationMode.AddCandidate(floatBinding, prop, mod.keepPrefabOverride);
                 }
             }
 
             if (isRecording)
                 ResampleAnimation();
-        }
-
-        // Caller is responsible for bit-encoding the value when binding.isDiscreteCurve.
-        static void AddOrReplaceKey(AnimationClip clip, EditorCurveBinding binding, float time, float value)
-        {
-            var curve = AnimationUtility.GetEditorCurve(clip, binding) ?? new AnimationCurve();
-            if (binding.isDiscreteCurve)
-            {
-                AddOrReplaceDiscreteKey(curve, time, value);
-            }
             else
-            {
-                AnimationWindowAddOrReplaceKey(curve, time, value);
-            }
-            AnimationUtility.SetEditorCurve(clip, binding, curve);
-        }
-
-        static void AddOrReplaceObjectReferenceKey(AnimationClip clip, EditorCurveBinding binding, float time, Object value)
-        {
-            var existing = AnimationUtility.GetObjectReferenceCurve(clip, binding) ?? Array.Empty<ObjectReferenceKeyframe>();
-            var merged = ReplaceObjectReferenceKey(existing, time, value);
-            AnimationUtility.SetObjectReferenceCurve(clip, binding, merged);
-        }
-
-        static void AddOrReplaceDiscreteKey(AnimationCurve curve, float time, float bitEncodedValue)
-        {
-            int existing = -1;
-            for (int i = 0; i < curve.length; i++)
-            {
-                if (Mathf.Approximately(curve[i].time, time))
-                {
-                    existing = i;
-                    break;
-                }
-            }
-
-            var key = new Keyframe(time, bitEncodedValue) { weightedMode = WeightedMode.None };
-            int index = existing >= 0 ? curve.MoveKey(existing, key) : curve.AddKey(key);
-            // Step between bit-encoded ints instead of interpolating - same shape
-            // as the panel-wide discrete recording path.
-            if (index >= 0)
-            {
-                AnimationUtility.SetKeyBroken(curve, index, true);
-                AnimationUtility.SetKeyLeftTangentMode(curve, index, AnimationUtility.TangentMode.Constant);
-                AnimationUtility.SetKeyRightTangentMode(curve, index, AnimationUtility.TangentMode.Constant);
-            }
+                InspectorWindow.RepaintAllInspectors();
         }
 
         void CapturePrePreviewSnapshot(UIAnimationClip uiClip, UIAnimationBinder binder)
@@ -908,7 +802,6 @@ namespace Unity.UIToolkit.Editor
             StopPreview();
             UnsubscribeBinderHook();
             UnsubscribeUndoPostprocess();
-            UnsubscribeActiveClipCurveModified();
             DestroyCandidateClip();
             if (m_Driver != null)
             {

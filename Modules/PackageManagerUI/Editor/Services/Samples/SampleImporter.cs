@@ -61,9 +61,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool ImportSample(Sample sample, Sample.ImportOptions options = Sample.ImportOptions.None)
         {
             var interactive = (options & Sample.ImportOptions.HideImportWindow) == Sample.ImportOptions.None && sample.interactiveImport;
-            var unityPackages = m_IOProxy.GetFiles(sample.resolvedPath, "*.unitypackage");
-            if (unityPackages.Length > 0)
-                m_AssetDatabase.ImportPackage(unityPackages[0], interactive);
+            if (!string.IsNullOrEmpty(sample.assetPackagePath))
+                m_AssetDatabase.ImportPackage(sample.assetPackagePath, interactive);
             else
             {
                 var prevImports = sample.previousImportPaths;

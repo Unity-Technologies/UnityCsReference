@@ -3,62 +3,79 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct AddElementCommand
+sealed class AddElementCommand : Command<AddElementCommand>
 {
-    const string CommandUndoName = "Add element";
-
-    readonly Type ElementType;
-    readonly VisualTreeAsset VisualTreeAsset;
-    readonly VisualElementAsset ParentVea;
-    readonly int Index;
-
-    public AddElementCommand(
-        Type elementType,
-        VisualTreeAsset visualTreeAsset,
-        VisualElementAsset parentVea,
-        int index = -1)
+    public static AddElementCommand GetPooled(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1)
     {
-        ElementType = elementType;
-        VisualTreeAsset = visualTreeAsset;
-        ParentVea = parentVea ?? visualTreeAsset.visualTree;
-        Index = index;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.m_ElementType = elementType;
+        cmd.m_VisualTreeAsset = visualTreeAsset;
+        cmd.m_ParentVea = parentVea ?? visualTreeAsset.visualTree;
+        cmd.m_Index = index;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1)
     {
-        Assert.IsNotNull(ElementType);
-        Assert.IsNotNull(VisualTreeAsset);
+        using var command = GetPooled(source, elementType, visualTreeAsset, parentVea, index);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(VisualTreeAsset, CommandUndoName);
+    Type m_ElementType;
+    VisualTreeAsset m_VisualTreeAsset;
+    VisualElementAsset m_ParentVea;
+    int m_Index;
 
-        var fullTypeName = ElementType.FullName;
-        var vea = VisualTreeAsset.AddElementOfType(ParentVea, fullTypeName);
-        vea.serializedData = UxmlSerializedDataCreator.CreateUxmlSerializedData(ElementType);
+    public override string UndoName => "Add element";
+    public override CommandCategory Category { get; } = CommandCategory.Hierarchy;
 
-        if (ParentVea[ParentVea.childCount - 1] is VisualElementAsset newVea)
-        {
+    public Type ElementType => m_ElementType;
+    public VisualTreeAsset VisualTreeAsset => m_VisualTreeAsset;
+    public VisualElementAsset ParentVea => m_ParentVea;
+    public int Index => m_Index;
+
+    protected override void Init()
+    {
+        base.Init();
+        m_ElementType = null;
+        m_VisualTreeAsset = null;
+        m_ParentVea = null;
+        m_Index = -1;
+    }
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(m_VisualTreeAsset);
+    }
+
+    public override bool Validate() => m_ElementType != null && m_VisualTreeAsset != null;
+
+    public override CommandExecutionStatus Execute()
+    {
+        var vea = m_VisualTreeAsset.AddElementOfType(m_ParentVea, m_ElementType.FullName);
+        vea.serializedData = UxmlSerializedDataCreator.CreateUxmlSerializedData(m_ElementType);
+
+        if (vea is VisualElementAsset newVea)
             HandlePositioning(newVea);
-        }
 
-        EditorUtility.SetDirty(VisualTreeAsset);
         using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
         toSelectAssets.Add(vea);
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(VisualTreeAsset);
+
+        return CommandExecutionStatus.Success;
     }
 
     void HandlePositioning(VisualElementAsset newVea)
     {
-        if (Index < 0 || Index >= ParentVea.childCount) return;
+        if (m_Index < 0 || m_Index >= m_ParentVea.childCount) return;
 
-        VisualTreeAsset.ReparentElementInDocument(newVea, ParentVea, Index);
+        m_VisualTreeAsset.ReparentElementInDocument(newVea, m_ParentVea, m_Index);
     }
 }

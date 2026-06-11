@@ -9,7 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Jobs
 {
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindings.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindings.h")]
     public struct JobHandle : IEquatable<JobHandle>
     {
         internal ulong jobGroup;

@@ -81,11 +81,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
             DocumentationUrl = "https://docs.unity3d.com/ScriptReference/Mesh-isReadable.html"
         };
 
+        readonly HashSet<EntityId> m_VisitedAssets = new HashSet<EntityId>(512);
+
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_TextureNotReadWriteDescriptor);
             registerDescriptor(k_MeshNotReadWriteDescriptor);
             registerDescriptor(k_SceneMeshReadWriteEnabledDescriptor);
+        }
+
+        internal override void OnAnalysisStarted()
+        {
+            m_VisitedAssets.Clear();
         }
 
         public override IEnumerable<ReportItemBuilder> Analyze(GameObjectAnalysisContext context)
@@ -97,24 +104,25 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 var shape = ps.shape;
 
                 // Shape Texture
-                if ((shape.texture != null) && (shape.texture.isReadable == false))
+                if ((shape.texture != null) && (shape.texture.isReadable == false) && m_VisitedAssets.Add(shape.texture.GetEntityId()))
                     yield return CreateTextureIssue(shape.texture, context);
 
                 // Shape Meshes
-                if ((shape.mesh != null) && (shape.mesh.isReadable == false))
+                if ((shape.mesh != null) && (shape.mesh.isReadable == false) && m_VisitedAssets.Add(shape.mesh.GetEntityId()))
                     yield return CreateMeshIssue(shape.mesh, context);
 
                 if (shape.meshRenderer != null)
                 {
                     var psMeshFilter = shape.meshRenderer.GetComponent<MeshFilter>();
-                    if ((psMeshFilter != null) && (psMeshFilter.sharedMesh != null) && (psMeshFilter.sharedMesh.isReadable == false))
+                    var psMesh = (psMeshFilter != null) ? psMeshFilter.sharedMesh : null;
+                    if ((psMesh != null) && (psMesh.isReadable == false) && m_VisitedAssets.Add(psMesh.GetEntityId()))
                         yield return CreateMeshIssue(psMeshFilter.sharedMesh, context);
                 }
 
                 if (shape.skinnedMeshRenderer != null)
                 {
                     var skinnedMesh = shape.skinnedMeshRenderer.sharedMesh;
-                    if ((skinnedMesh != null) && (skinnedMesh.isReadable == false))
+                    if ((skinnedMesh != null) && (skinnedMesh.isReadable == false) && m_VisitedAssets.Add(skinnedMesh.GetEntityId()))
                         yield return CreateMeshIssue(skinnedMesh, context);
                 }
             }
@@ -129,7 +137,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     int meshCount = psr.GetMeshes(meshes);
                     for (int i = 0; i < meshCount; i++)
                     {
-                        if ((meshes[i] != null) && (meshes[i].isReadable == false))
+                        if ((meshes[i] != null) && (meshes[i].isReadable == false) && m_VisitedAssets.Add(meshes[i].GetEntityId()))
                             yield return CreateMeshIssue(meshes[i], context);
                     }
                 }
@@ -139,7 +147,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var terrain = context.GameObject.GetComponent<Terrain>();
             if (terrain != null)
             {
-                var prototypeMeshTextures = new HashSet<Texture>();
                 foreach (var prototype in terrain.terrainData.detailPrototypes)
                 {
                     if (!prototype.useInstancing)
@@ -147,7 +154,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         if (prototype.usePrototypeMesh)
                         {
                             var terrainMeshFilter = prototype.prototype.GetComponent<MeshFilter>();
-                            if ((terrainMeshFilter != null) && (terrainMeshFilter.sharedMesh != null) && (terrainMeshFilter.sharedMesh.isReadable == false))
+                            if ((terrainMeshFilter != null) && (terrainMeshFilter.sharedMesh != null) && (terrainMeshFilter.sharedMesh.isReadable == false) && m_VisitedAssets.Add(terrainMeshFilter.sharedMesh.GetEntityId()))
                                 yield return CreateMeshIssue(terrainMeshFilter.sharedMesh, context);
 
                             if (prototype.prototype.TryGetComponent<MeshRenderer>(out var renderer) && renderer.sharedMaterial != null)
@@ -157,14 +164,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
                                 foreach (var propertyNameId in propertyNameIds)
                                 {
                                     Texture tex = mat.GetTexture(propertyNameId);
-                                    if (tex != null && !tex.isReadable && prototypeMeshTextures.Add(tex))
+                                    if (tex != null && !tex.isReadable && m_VisitedAssets.Add(tex.GetEntityId()))
                                         yield return CreateTextureIssue(tex, context);
                                 }
                             }
                         }
                         else
                         {
-                            if ((prototype.prototypeTexture != null) && (prototype.prototypeTexture.isReadable == false))
+                            if ((prototype.prototypeTexture != null) && (prototype.prototypeTexture.isReadable == false) && m_VisitedAssets.Add(prototype.prototypeTexture.GetEntityId()))
                                 yield return CreateTextureIssue(prototype.prototypeTexture, context);
                         }
                     }
@@ -181,7 +188,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     // Scene meshes, like those created by Polybrush, do not exist in the Assets folder
                     if (!AssetDatabase.Contains(mesh) || InSceneAssetUtility.IsInSceneAsset(mesh))
                     {
-                        if (mesh.isReadable)
+                        if (mesh.isReadable && m_VisitedAssets.Add(mesh.GetEntityId()))
                             yield return CreateSceneMeshIssue(mesh, context);
                     }
                 }
@@ -197,7 +204,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     // Scene meshes, like those created by Polybrush, do not exist in the Assets folder
                     if (!AssetDatabase.Contains(mesh) || InSceneAssetUtility.IsInSceneAsset(mesh))
                     {
-                        if (mesh.isReadable)
+                        if (mesh.isReadable && m_VisitedAssets.Add(mesh.GetEntityId()))
                             yield return CreateSceneMeshIssue(mesh, context);
                     }
                 }

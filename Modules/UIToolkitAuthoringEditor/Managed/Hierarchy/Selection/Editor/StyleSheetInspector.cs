@@ -17,10 +17,8 @@ internal sealed partial class StyleSheetInspector : VisualElement
 
     private NewSelectorField m_NewSelectorField;
     private ListView m_ImportsListView;
-    private readonly StyleSheetHeader m_Header;
 
     public const string UssClass = "unity-stylesheet-inspector";
-    public const string HeaderUssClass = "unity-stylesheet-inspector__header";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/StyleSheet/StyleSheetInspector.uxml";
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/StyleSheet/StyleSheetInspectorDark.uss";
@@ -40,8 +38,6 @@ internal sealed partial class StyleSheetInspector : VisualElement
                 return;
 
             m_StyleSheet = value;
-
-            m_Header.StyleSheet = StyleSheet;
 
             if (m_ImportsListView != null && m_StyleSheet != null)
             {
@@ -71,16 +67,13 @@ internal sealed partial class StyleSheetInspector : VisualElement
         m_NewSelectorField = this.Q<NewSelectorField>("new-selector-field");
         m_NewSelectorField.RegisterCallback<NewSelectorSubmitEvent>(OnCreateNewSelector);
 
-        m_Header = this.Q<StyleSheetHeader>(className:HeaderUssClass);
-
         m_ImportsListView = this.Q<ListView>("imports-list-view");
         ConfigureImportsListView();
     }
 
     void OnCreateNewSelector(NewSelectorSubmitEvent evt)
     {
-        using var addRuleCommand = AddStyleRuleCommand.GetPooled(CommandSources.Inspector, StyleSheet, evt.selectorStr);
-        UICommandQueue.EnqueueCommand(addRuleCommand);
+        AddStyleRuleCommand.Execute(CommandSources.Inspector, StyleSheet, evt.selectorStr);
     }
 
     void ConfigureImportsListView()
@@ -122,7 +115,7 @@ internal sealed partial class StyleSheetInspector : VisualElement
         if (m_StyleSheet == null)
             return;
 
-        new AddStyleSheetImportCommand(m_StyleSheet).Execute();
+        AddStyleSheetImportCommand.Execute(CommandSources.Inspector, m_StyleSheet);
 
         // This is needed as imports is a standard array. When updating the list, we must re-assign the ItemsSource property.
         listView.itemsSource = m_StyleSheet.imports;
@@ -138,7 +131,7 @@ internal sealed partial class StyleSheetInspector : VisualElement
         if (index < 0 || index >= m_StyleSheet.imports.Length)
             index = m_StyleSheet.imports.Length - 1;
 
-        new RemoveStyleSheetImportCommand(m_StyleSheet, index).Execute();
+        RemoveStyleSheetImportCommand.Execute(CommandSources.Inspector, m_StyleSheet, index);
 
         // This is needed as imports is a standard array. When updating the list, we must re-assign the ItemsSource property.
         listView.itemsSource = m_StyleSheet.imports;
@@ -153,6 +146,6 @@ internal sealed partial class StyleSheetInspector : VisualElement
         var field = (ObjectField)evt.target;
         int index = (int)field.userData;
 
-        new SetStyleSheetImportCommand(m_StyleSheet, index, evt.newValue as StyleSheet).Execute();
+        SetStyleSheetImportCommand.Execute(CommandSources.Inspector, m_StyleSheet, index, evt.newValue as StyleSheet);
     }
 }

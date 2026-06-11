@@ -400,7 +400,7 @@ namespace UnityEngine.UIElements
                         {
                             if (!property.isCustomProperty)
                                 continue;
-                            var sv = new StyleVariable(property.name, rule.styleSheet, property.values);
+                            var sv = new StyleVariable(property.customNameId, rule.styleSheet, property.values);
                             variableContext.Add(sv);
                         }
                     }
@@ -508,18 +508,22 @@ namespace UnityEngine.UIElements
 
         ComputedStyle ProcessMatchedRules(VisualElement element, List<StyleSelectorMatch> matchingSelectors)
         {
-            matchingSelectors.Sort(StyleSelectorMatch.Comparison);
+            // SpanSort over the backing array uses RefComparison, skipping the per-comparison
+            // struct copy that List<T>.Sort(Comparison<T>) does on this ~24B readonly struct.
+            // The span is created once and reused by the three loops below (sort is in-place
+            // and no later step here resizes the list).
+            var matches = NoAllocHelpers.CreateSpan(matchingSelectors);
+            SpanSort.Sort(matches, StyleSelectorMatch.RefComparison);
 
-            Int64 matchingRulesHash = element.fullTypeName.GetHashCode();
+            Int64 matchingRulesHash = element.typeNameId;
             // Let current DPI contribute to the hash so cache is invalidated when this changes
             matchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
 
             int oldVariablesHash = m_StyleMatchingContext.variableContext.GetVariableHash();
             int customPropertiesCount = 0;
-
-            foreach (var match in matchingSelectors)
+            for (int i = 0; i < matches.Length; i++)
             {
-                customPropertiesCount += match.complexSelector.rule.customPropertiesCount;
+                customPropertiesCount += matches[i].complexSelector.rule.customPropertiesCount;
             }
 
             if (customPropertiesCount > 0)
@@ -528,13 +532,14 @@ namespace UnityEngine.UIElements
                 m_ProcessVarContext.AddInitialRange(m_StyleMatchingContext.variableContext);
             }
 
-            foreach (var match in matchingSelectors)
+            for (int i = 0; i < matches.Length; i++)
             {
                 // UUM-87950 Don't use rule.GetHashCode() as it isn't defined on the class and
                 // falls back on the base Object.GetHashCode() which have been seen to return the
                 // same value for different rules across scene changes. The rule index is a good
                 // alternate unique identifier for the rule.
 
+                ref readonly var match = ref matches[i];
                 var sheet = match.sheet;
                 var ruleIndex = match.complexSelector.ruleIndex;
                 var specificity = match.complexSelector.specificity;
@@ -545,7 +550,7 @@ namespace UnityEngine.UIElements
                 var rule = match.complexSelector.rule;
                 if (rule.customPropertiesCount > 0)
                 {
-                    ProcessMatchedVariables(match.sheet, rule);
+                    ProcessMatchedVariables(sheet, rule);
                 }
             }
 
@@ -581,8 +586,9 @@ namespace UnityEngine.UIElements
                 resolvedStyles.matchingRulesHash = matchingRulesHash;
 
                 float dpiScaling = element.scaledPixelsPerPoint;
-                foreach (var match in matchingSelectors)
+                for (int i = 0; i < matches.Length; i++)
                 {
+                    ref readonly var match = ref matches[i];
                     m_StylePropertyReader.SetContext(match.sheet, match.complexSelector, m_StyleMatchingContext.variableContext, dpiScaling);
                     resolvedStyles.ApplyProperties(m_StylePropertyReader, ref parentStyle);
                 }
@@ -602,7 +608,7 @@ namespace UnityEngine.UIElements
                 if (property.isCustomProperty)
                 {
                     var sv = new StyleVariable(
-                        property.name,
+                        property.customNameId,
                         sheet,
                         property.values
                     );

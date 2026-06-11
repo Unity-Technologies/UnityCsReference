@@ -188,6 +188,21 @@ namespace UnityEditor
                         p => p.loadableObjectIdValue = Clipboard.loadableObjectIdValue,
                         propertyFieldEnabled);
                     break;
+                case SerializedPropertyType.LoadableSceneId:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.loadableSceneIdValue = p.loadableSceneIdValue,
+                        p => Clipboard.hasLoadableSceneId
+                            || (Clipboard.hasObject && Clipboard.objectValue is SceneAsset),
+                        p =>
+                        {
+                            if (Clipboard.hasLoadableSceneId)
+                                p.loadableSceneIdValue = Clipboard.loadableSceneIdValue;
+                            else if (Clipboard.hasObject && Clipboard.objectValue is SceneAsset scene
+                                && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(scene, out var guidStr, out _))
+                                p.loadableSceneIdValue = LoadableSceneIdEditorUtility.CreateLoadableSceneId(new GUID(guidStr));
+                        },
+                        propertyFieldEnabled);
+                    break;
                 case SerializedPropertyType.Generic:
                     if (property.type == "MinMaxGradient")
                     {

@@ -51,13 +51,65 @@ namespace UnityEditor
             }
         }
 
-        class SettingsContent
+        class SettingsContentNonSearchable
         {
+            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
+            public static readonly GUIContent[] insecureHttpOptions =
+            {
+                EditorGUIUtility.TrTextContent("Not allowed"),
+                EditorGUIUtility.TrTextContent("Allowed in development builds"),
+                EditorGUIUtility.TrTextContent("Always allowed"),
+            };
+            public static readonly GUIContent[] meshDeformations = { EditorGUIUtility.TrTextContent("CPU"), EditorGUIUtility.TrTextContent("GPU"), EditorGUIUtility.TrTextContent("GPU (Batched)") };
+            public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
+            public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent[] il2CppLTOModeOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Full"), EditorGUIUtility.TrTextContent("Thin") };
+            public static readonly GUIContent[] il2CppLTOModeNoneOption = new GUIContent[] { EditorGUIUtility.TrTextContent("None") };
+            public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
+            public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
+            public static readonly GUIContent strippingMinimal = EditorGUIUtility.TrTextContent("Minimal");
+            public static readonly GUIContent strippingLow = EditorGUIUtility.TrTextContent("Low");
+            public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
+            public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
+            public static readonly GUIContent activeInputHandlingBoth = EditorGUIUtility.TrTextContent("Both");
+            public static readonly GUIContent normalMapEncodingXYZ = EditorGUIUtility.TrTextContent("XYZ");
+            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
+            public static readonly GUIContent[] hdrCubemapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
+            public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Platform Default"), EditorGUIUtility.TrTextContent("Unified") };
+            public static readonly GUIContent loadStoreDebugModeEditorOnlyCheckbox = EditorGUIUtility.TrTextContent("Editor Only", "Load/Store Action Debug Mode will only affect the Editor");
+            public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
+            public static readonly GUIContent windowed = EditorGUIUtility.TrTextContent("Windowed");
+            public static readonly GUIContent overrideDefaultChunkSettings = EditorGUIUtility.TrTextContent("Override", "Override the default settings for this build target.");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Changes to this list will switch editor to the first available platform.");
             public static readonly GUIContent playerOnlyGraphicsAPIInfo = EditorGUIUtility.TrTextContent("Changes to this list will take effect in builds. The editor API remains unchanged.");
             public static readonly GUIContent appleSiliconOpenGLWarning = EditorGUIUtility.TrTextContent("OpenGL is not supported on Apple Silicon chips. Metal will be used on devices with Apple Silicon chips instead.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
+            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
+            public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
+            public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
+            public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
+            public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
+            public static readonly GUIContent flipModelSwapChainWarning = EditorGUIUtility.TrTextContent("Disabling DXGI flip model swapchain will result in Unity falling back to the slower and less efficient BitBlt model. See documentation for more information.");
+            public static readonly GUIContent unsetApplicationIdentifierWarning = EditorGUIUtility.TrTextContent("Don't forget to set the Application Identifier.");
+            public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
+            public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
+            public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
+            public static readonly GUIContent insecureHttpWarning = EditorGUIUtility.TrTextContent("Plain text HTTP connections are not secure and can make your application vulnerable to attacks.");
+            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources is off.");
+            public static readonly GUIContent activeInputHandlingDeprecationError = EditorGUIUtility.TrTextContent("The Input Manager is a legacy feature and not recommended for new projects. For new projects you should use the Input System Package.");
+            public static readonly GUIContent activeInputHandlingError = EditorGUIUtility.TrTextContent("The Active Input Handling is invalid. To use Input System Package (New) or Both, install the Input System package. Otherwise set the Active Input Handling to Input Manager (Old).");
+            public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
+            public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
+            public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
+            public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = EditorGUIUtility.TrTextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.");
+            public static readonly string changeColorSpaceString = L10n.Tr("Changing the color space may take a significant amount of time.");
+            public static readonly string globalPlayerSettingsInfo =
+                L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using its own customized player settings. Edit the build profile to change them.");
+            public static readonly string globalPlayerSettingsInfoButton = L10n.Tr("Edit Build Profile");
+        }
 
+        class SettingsContent
+        {
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
             public static readonly GUIContent defaultCursor = EditorGUIUtility.TrTextContent("Default Cursor");
             public static readonly GUIContent vertexChannelCompressionMask = EditorGUIUtility.TrTextContent("Vertex Compression*", "Select which vertex channels should be compressed. Compression can save memory and bandwidth, but precision will be lower.");
@@ -75,6 +127,8 @@ namespace UnityEditor
             public static readonly GUIContent renderingTitle = EditorGUIUtility.TrTextContent("Rendering");
             public static readonly GUIContent vulkanSettingsTitle = EditorGUIUtility.TrTextContent("Vulkan Settings");
             public static readonly GUIContent d3d12SettingsTitle = EditorGUIUtility.TrTextContent("D3D12 Settings");
+
+            public static readonly GUIContent webGPUSettingsTitle = EditorGUIUtility.TrTextContent("WebGPU Settings");
             public static readonly GUIContent identificationTitle = EditorGUIUtility.TrTextContent("Identification");
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
@@ -91,7 +145,6 @@ namespace UnityEditor
             public static readonly GUIContent shaderVariantLoadingTitle = EditorGUIUtility.TrTextContent("Shader Variant Loading Settings");
             public static readonly GUIContent defaultShaderChunkSize = EditorGUIUtility.TrTextContent("Default chunk size (MB)*", "Use this setting to control how much memory is used when loading shader variants.");
             public static readonly GUIContent defaultShaderChunkCount = EditorGUIUtility.TrTextContent("Default chunk count*", "Use this setting to control how much memory is used when loading shader variants.");
-            public static readonly GUIContent overrideDefaultChunkSettings = EditorGUIUtility.TrTextContent("Override", "Override the default settings for this build target.");
             public static readonly GUIContent platformShaderChunkSize = EditorGUIUtility.TrTextContent("Chunk size (MB)", "Use this setting to control how much memory is used when loading shader variants.");
             public static readonly GUIContent platformShaderChunkCount = EditorGUIUtility.TrTextContent("Chunk count", "Use this setting to control how much memory is used when loading shader variants.");
 
@@ -107,9 +160,6 @@ namespace UnityEditor
             public static readonly GUIContent mipStripping = EditorGUIUtility.TrTextContent("Texture Mipmap Stripping*", "Remove unused texture mipmap levels from package builds, reducing package size on disk. Limits the texture quality settings to the highest mipmap level that was included during the build.");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
             public static readonly GUIContent enableOpenGLProfilerGPURecorders = EditorGUIUtility.TrTextContent("OpenGL: Profiler GPU Recorders", "Enable Profiler Recorders when rendering with OpenGL. Always enabled with other rendering APIs. Optional on OpenGL due to potential incompatibility with Frame Timing Stats and the GPU Profiler.");
-            public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
-            public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
-            public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
@@ -128,14 +178,11 @@ namespace UnityEditor
             public static readonly GUIContent exclusiveFullscreen = EditorGUIUtility.TrTextContent("Exclusive Fullscreen");
             public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TrTextContent("Fullscreen Window");
             public static readonly GUIContent maximizedWindow = EditorGUIUtility.TrTextContent("Maximized Window");
-            public static readonly GUIContent windowed = EditorGUIUtility.TrTextContent("Windowed");
             public static readonly GUIContent displayResolutionDialogEnabledLabel = EditorGUIUtility.TrTextContent("Enabled (Deprecated)");
             public static readonly GUIContent displayResolutionDialogHiddenLabel = EditorGUIUtility.TrTextContent("Hidden by Default (Deprecated)");
-            public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch*");
             public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI flip model swapchain for D3D11", "Disable this option to fallback to Windows 7-style BitBlt model. Using flip model (leaving this option enabled) ensures the best performance. This setting affects only D3D11 graphics API.");
-            public static readonly GUIContent flipModelSwapChainWarning = EditorGUIUtility.TrTextContent("Disabling DXGI flip model swapchain will result in Unity falling back to the slower and less efficient BitBlt model. See documentation for more information.");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
@@ -150,12 +197,12 @@ namespace UnityEditor
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer*", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
             public static readonly GUIContent metalUseMetalDisplayLink = EditorGUIUtility.TrTextContent("Use MetalDisplayLink*", "CAMetalDisplayLink provides smoother frame pacing and decreases stuttering. It also makes Time.deltaTime more stable and deterministic.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth*", "Memoryless mode of framebuffer depth");
-            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
             public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Get swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
             public static readonly GUIContent vulkanEnableCommandBufferRecycling = EditorGUIUtility.TrTextContent("Recycle command buffers*", "When enabled, command buffers are recycled after they have been executed as opposed to being freed.");
             public static readonly GUIContent d3d12FilterLists = EditorGUIUtility.TrTextContent("Device Filtering Asset", "This asset defines one or more device filter lists that may allow or disallow the use of the D3D12 API on a given device or a set a preferred graphics mode for devices that match a given filter.");
+            public static readonly GUIContent webGPUFilterLists = EditorGUIUtility.TrTextContent("Device Filtering Asset", "This asset defines one or more device filter lists that may allow or disallow the use of the WebGPU API on a given device or a set a preferred graphics mode for devices that match a given filter.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching", "Toggle Dynamic Batching. Note: Sprites are always dynamically batched.");
@@ -166,11 +213,6 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
             public static readonly GUIContent graphicsJobsSyncAfterKick = EditorGUIUtility.TrTextContent("Sync after kick (fallback)", "This prevents graphics jobs from running in parallel to the render thread. Enable this if you see artifacts with graphics jobs.");
-            public static readonly GUIContent unsetApplicationIdentifierWarning = EditorGUIUtility.TrTextContent("Don't forget to set the Application Identifier.");
-            public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
-            public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
-            public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
-            public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC*", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
@@ -185,30 +227,18 @@ namespace UnityEditor
             public static readonly GUIContent thermalStateCriticalIOSFPS = EditorGUIUtility.TrTextContent("Critical Thermal State FPS", "When the device enters Critical Thermal State Unity will lower the frame rate to this value.");
             public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TrTextContent("Requires Persistent WiFi*");
             public static readonly GUIContent insecureHttpOption = EditorGUIUtility.TrTextContent("Allow downloads over HTTP*", "");
-            public static readonly GUIContent insecureHttpWarning = EditorGUIUtility.TrTextContent("Plain text HTTP connections are not secure and can make your application vulnerable to attacks.");
-            public static readonly GUIContent[] insecureHttpOptions =
-            {
-                EditorGUIUtility.TrTextContent("Not allowed"),
-                EditorGUIUtility.TrTextContent("Allowed in development builds"),
-                EditorGUIUtility.TrTextContent("Always allowed"),
-            };
-
             public static readonly GUIContent autoGraphicsAPI = EditorGUIUtility.TrTextContent("Auto Graphics API");
             public static readonly GUIContent autoGraphicsAPIForWindows = EditorGUIUtility.TrTextContent("Auto Graphics API for Windows");
             public static readonly GUIContent autoGraphicsAPIForMac = EditorGUIUtility.TrTextContent("Auto Graphics API for Mac");
             public static readonly GUIContent autoGraphicsAPIForLinux = EditorGUIUtility.TrTextContent("Auto Graphics API for Linux");
 
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
-            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources is off.");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Calculate mesh skinning and blend shapes on the GPU via shaders");
-            public static readonly GUIContent[] meshDeformations = { EditorGUIUtility.TrTextContent("CPU"), EditorGUIUtility.TrTextContent("GPU"), EditorGUIUtility.TrTextContent("GPU (Batched)") };
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
             public static readonly GUIContent additionalCompilerArguments = EditorGUIUtility.TrTextContent("Additional Compiler Arguments", "Additional arguments passed to the C# script compiler.");
-            public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
-            public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
             public static readonly GUIContent scriptingDefineSymbolsCopyDefines = EditorGUIUtility.TrTextContent("Copy Defines", "Copy applied defines");
             public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169, CS0649, and CS0282.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
@@ -220,17 +250,11 @@ namespace UnityEditor
             public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
             public static readonly GUIContent il2CppLTOMode = EditorGUIUtility.TrTextContent("IL2CPP LTO Mode", "Link Time Optimization mode. Full LTO produces smaller and faster code but takes longer to link. Thin LTO is faster to link with nearly equivalent optimization.");
             public static readonly GUIContent il2CppLTOModeDisabled = EditorGUIUtility.TrTextContent("IL2CPP LTO Mode", "LTO is only applied in Master builds. Switch the C++ Compiler Configuration to Master to enable LTO.");
-            public static readonly GUIContent[] il2CppLTOModeOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Full"), EditorGUIUtility.TrTextContent("Thin") };
-            public static readonly GUIContent[] il2CppLTOModeNoneOption = new GUIContent[] { EditorGUIUtility.TrTextContent("None") };
+            public static readonly GUIContent[] il2CppLTOModeOptions = SettingsContentNonSearchable.il2CppLTOModeOptions;
+            public static readonly GUIContent[] il2CppLTOModeNoneOption = SettingsContentNonSearchable.il2CppLTOModeNoneOption;
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR (Internal only)");
-            public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
-            public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
-            public static readonly GUIContent strippingMinimal = EditorGUIUtility.TrTextContent("Minimal");
-            public static readonly GUIContent strippingLow = EditorGUIUtility.TrTextContent("Low");
-            public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
-            public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
@@ -245,48 +269,35 @@ namespace UnityEditor
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
-            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
-            public static readonly GUIContent activeInputHandlingDeprecationError = EditorGUIUtility.TrTextContent("The Input Manager is a legacy feature and not recommended for new projects. For new projects you should use the Input System Package.");
-            public static readonly GUIContent activeInputHandlingError = EditorGUIUtility.TrTextContent("The Active Input Handling is invalid. To use Input System Package (New) or Both, install the Input System package. Otherwise set the Active Input Handling to Input Manager (Old).");
+            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), SettingsContentNonSearchable.activeInputHandlingBoth };
             public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
-            public static readonly GUIContent[] normalMapEncodingNames = { EditorGUIUtility.TrTextContent("XYZ"), EditorGUIUtility.TrTextContent("DXT5nm-style") };
+            public static readonly GUIContent[] normalMapEncodingNames = { SettingsContentNonSearchable.normalMapEncodingXYZ, EditorGUIUtility.TrTextContent("DXT5nm-style") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
-            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
+            public static readonly GUIContent[] lightmapEncodingNames = SettingsContentNonSearchable.lightmapEncodingNames;
             public static readonly GUIContent hdrCubemapEncodingLabel = EditorGUIUtility.TrTextContent("HDR Cubemap Encoding", "Determines which encoding scheme Unity uses to encode HDR cubemaps.");
-            public static readonly GUIContent[] hdrCubemapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
+            public static readonly GUIContent[] hdrCubemapEncodingNames = SettingsContentNonSearchable.hdrCubemapEncodingNames;
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming", "Only load larger lightmap mipmap levels as needed to render the current game cameras. Requires texture mipmap streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Virtual Texturing (Experimental)*", "Enable Virtual Texturing. This feature is experimental and not ready for production use. Changing this value requires an Editor restart.");
-            public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
             public static readonly GUIContent shaderPrecisionModel = EditorGUIUtility.TrTextContent("Shader Precision Model*", "Controls the default sampler precision and the definition of HLSL half.");
-            public static readonly GUIContent[] shaderPrecisionModelOptions = { EditorGUIUtility.TrTextContent("Platform Default"), EditorGUIUtility.TrTextContent("Unified") };
+            public static readonly GUIContent[] shaderPrecisionModelOptions = SettingsContentNonSearchable.shaderPrecisionModelOptions;
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
             public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
-            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent loadStoreDebugModeCheckbox = EditorGUIUtility.TrTextContent("Load/Store Action Debug Mode", "Initializes Framebuffer such that errors in the load/store actions will be visually apparent. (Removed in Release Builds)");
-            public static readonly GUIContent loadStoreDebugModeEditorOnlyCheckbox = EditorGUIUtility.TrTextContent("Editor Only", "Load/Store Action Debug Mode will only affect the Editor");
             public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Enable the use of HDR displays and include all the resources required for them to function correctly.");
             public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
-            public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
-            public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
-            public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = EditorGUIUtility.TrTextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.");
-
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing.");
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
             public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
             public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
             public static readonly string undoChangedGraphicsJobsString             = L10n.Tr("Changed Graphics Jobs Setting");
             public static readonly string undoChangedGraphicsJobModeString          = L10n.Tr("Changed Graphics Job Mode Setting");
-            public static readonly string changeColorSpaceString                    = L10n.Tr("Changing the color space may take a significant amount of time.");
             public static readonly string undoChangedPlatformShaderChunkSizeString  = L10n.Tr("Changed Shader Chunk Size Platform Setting");
             public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting");
             public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting");
             public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
 
-            public static readonly string globalPlayerSettingsInfo =
-            L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using its own customized player settings. Edit the build profile to change them.");
-            public static readonly string globalPlayerSettingsInfoButton = L10n.Tr("Edit Build Profile");
         }
 
         internal class RecompileReason
@@ -354,6 +365,9 @@ namespace UnityEditor
 
         // D3D12
         SerializedProperty m_D3D12FilterListsAsset;
+
+        // WebGPU
+        SerializedProperty m_WebGPUFilterListAsset;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -543,9 +557,6 @@ namespace UnityEditor
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
 
-        // True when current graphics API mismatches with top of the list one
-        private static bool hasPendingGraphicsAPIChange = false;
-
         // True when user has modified auto graphics API setting in the current session
         private static bool isAutoGraphicsAPITouched = false;
 
@@ -632,6 +643,8 @@ namespace UnityEditor
             m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
 
             m_D3D12FilterListsAsset         = FindPropertyAssert("d3d12DeviceFilterListAsset");
+
+            m_WebGPUFilterListAsset         = FindPropertyAssert("webGPUDeviceFilterListAsset");
 
             m_OverrideDefaultApplicationIdentifier = FindPropertyAssert("overrideDefaultApplicationIdentifier");
             m_ApplicationIdentifier         = FindPropertyAssert("applicationIdentifier");
@@ -1211,10 +1224,10 @@ namespace UnityEditor
                 GUILayout.Space(5);
                 GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Warning), GUILayout.ExpandWidth(false));
                 GUILayout.EndVertical();
-                GUILayout.Label(SettingsContent.globalPlayerSettingsInfo, EditorStyles.wordWrappedMiniLabel);
+                GUILayout.Label(SettingsContentNonSearchable.globalPlayerSettingsInfo, EditorStyles.wordWrappedMiniLabel);
                 GUILayout.BeginVertical();
                 GUILayout.Space(5);
-                if (GUILayout.Button(SettingsContent.globalPlayerSettingsInfoButton))
+                if (GUILayout.Button(SettingsContentNonSearchable.globalPlayerSettingsInfoButton))
                     BuildPipeline.ShowBuildProfileWindow();
                 GUILayout.Space(5);
                 GUILayout.EndVertical();
@@ -1273,12 +1286,12 @@ namespace UnityEditor
 
         public void ShowSharedNote()
         {
-            GUILayout.Label(SettingsContent.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
+            GUILayout.Label(SettingsContentNonSearchable.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
         }
 
         internal static void ShowNoSettings()
         {
-            GUILayout.Label(SettingsContent.notApplicableInfo, EditorStyles.miniLabel);
+            GUILayout.Label(SettingsContentNonSearchable.notApplicableInfo, EditorStyles.miniLabel);
         }
 
         private static bool TargetSupportsOptionalBuiltinSplashScreen(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
@@ -1319,7 +1332,7 @@ namespace UnityEditor
                     {
 
                         var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
-                        var fullscreenModeNames = new[] { SettingsContent.fullscreenWindow, SettingsContent.exclusiveFullscreen, SettingsContent.maximizedWindow, SettingsContent.windowed };
+                        var fullscreenModeNames = new[] { SettingsContent.fullscreenWindow, SettingsContent.exclusiveFullscreen, SettingsContent.maximizedWindow, SettingsContentNonSearchable.windowed };
                         var fullscreenModeNew = FullScreenMode.FullScreenWindow;
                         using (var horizontal = new EditorGUILayout.HorizontalScope())
                         {
@@ -1423,7 +1436,7 @@ namespace UnityEditor
 
                         if (!PlayerSettings.useFlipModelSwapchain)
                         {
-                            EditorGUILayout.HelpBox(SettingsContent.flipModelSwapChainWarning.text, MessageType.Warning, true);
+                            EditorGUILayout.HelpBox(SettingsContentNonSearchable.flipModelSwapChainWarning.text, MessageType.Warning, true);
                         }
 
                         EditorGUILayout.Space();
@@ -1694,7 +1707,7 @@ namespace UnityEditor
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action, bool skipRemoveCached)
         {
-            hasPendingGraphicsAPIChange = true;
+            isAutoGraphicsAPITouched = true;
             if (action.changeList)
             {
                 m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
@@ -1784,6 +1797,7 @@ namespace UnityEditor
                         "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
                         "Restart Editor", "Restart Later");
                 }
+
             }
             return doRestart;
         }
@@ -1845,19 +1859,7 @@ namespace UnityEditor
             if (availableDevices == null || availableDevices.Length < 2)
                 return;
 
-            // toggle for automatic API selection
-            EditorGUI.BeginChangeCheck();
-            var automatic = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
-            automatic = EditorGUILayout.Toggle(platformTitleContent ?? GUIContent.none, automatic);
-            if (EditorGUI.EndChangeCheck())
-            {
-                isAutoGraphicsAPITouched = true;
-                Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, automatic);
-                OnTargetObjectChangedDirectly();
-                if (WillEditorUseFirstGraphicsAPI(targetPlatform))
-                    hasPendingGraphicsAPIChange = false;
-            }
+           
 
             string displayTitle = String.Empty;
             if (platformTitleContent != null)
@@ -1897,35 +1899,136 @@ namespace UnityEditor
             var currentDevice = SystemInfo.graphicsDeviceType;
             bool firstAPIDifferent = currentDevice != selectedDevice;
 
-            if (selectedDevice != null && firstAPIDifferent && WillEditorUseFirstGraphicsAPI(targetPlatform) && isAutoGraphicsAPITouched)
+            // toggle for automatic API selection
+            EditorGUI.BeginChangeCheck();
+            var storedAutomatic = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
+            var toggledAutomatic = EditorGUILayout.Toggle(platformTitleContent ?? GUIContent.none, storedAutomatic);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (IsActivePlayerSettingsEditor() && WillEditorUseFirstGraphicsAPI(targetPlatform))
+                {
+                    if (toggledAutomatic)
+                    {
+                        // if automatic graphics API is checked
+                        // then the selected device is the first in the list automatic Graphics API devices for this platform
+                        var platformAutomaticAPIs = m_CurrentTarget.GetPlatformAutomaticGraphicsAPIsList(targetPlatform);
+                        if (platformAutomaticAPIs.Length > 0)
+                        {
+                            selectedDevice = platformAutomaticAPIs[0];
+                        }
+                    }
+
+                    if (currentDevice != selectedDevice)
+                    {
+                        // Initialize the restart action as "Cancel" (has the value of "1" in the dialog) 
+                        var doRestart = 1;
+
+                        // if the first API listed after unchecking the automatic API checkbox is different from the stored value of the flag,
+                        // trigger a restart prompt
+                        // If we have dirty scenes we need to save or discard changes *before* we restart editor.
+                        // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
+                        var dirtyScenes = new List<Scene>();
+                        for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
+                        {
+                            var scene = EditorSceneManager.GetSceneAt(i);
+                            if (scene.isDirty)
+                                dirtyScenes.Add(scene);
+                        }
+                        if (dirtyScenes.Count != 0)
+                        {
+                            var doSaveScene = EditorUtility.DisplayDialogComplex(
+                                "Changing editor graphics API",
+                                "You've changed the active graphics API. This requires a restart of the Editor.  Do you want to save the Scene when restarting?",
+                                "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+  
+                            if (doSaveScene != 1) // The selected option is "Save and Restart" (0) or "Discard Changes and Restart" (2)
+                            {
+                                // both cases require a restart
+                                doRestart = 0;
+
+                                if (doSaveScene == 0) // Save and Restart was selected
+                                {
+                                    for (int i = 0; i < dirtyScenes.Count; ++i)
+                                    {
+                                        EditorSceneManager.SaveScene(dirtyScenes[i]);
+                                    }
+                                }
+                                else // Discard Changes and Restart was selected
+                                {
+                                    for (int i = 0; i < dirtyScenes.Count; ++i)
+                                        EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                                }
+                            }
+                        }
+                        else // no dirty scenes to handle
+                        {
+                            doRestart = EditorUtility.DisplayDialogComplex(
+                                "Changing editor graphics API",
+                                "You've changed the active graphics API. This requires a restart of the Editor.",
+                                "Restart Editor", "Cancel API Change", "Restart Later");
+                        }
+
+                        if (doRestart != 1) // The option selected is "Restart Editor" (0) or "Restart Later" (2)
+                        {
+                            isAutoGraphicsAPITouched = true;
+                            // if restart = 0 (restart now), or 2 (restart later), we update the setting value.
+                            Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                            m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                            
+                            // we need to update the APIs list when we toggle automatic graphics API
+                            var apiList = (List<GraphicsDeviceType>)deviceList.list;
+                            var apis = apiList.ToArray();
+                            m_CurrentTarget.SetGraphicsAPIs_Internal(targetPlatform, apis, firstAPIDifferent);
+
+                            OnTargetObjectChangedDirectly();
+
+                            if (doRestart == 0)  // restart now
+                            {
+                                
+                                EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                                GUIUtility.ExitGUI();
+                            }
+                        }
+                    }
+                    else // if the first API listed after unchecking the automatic API checkbox is not different from the API
+                         // set the value of Default Graphics API (users could still choose DX12 without checking Automatic Graphics API)
+                    {
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                        m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                        OnTargetObjectChangedDirectly();
+                    }
+                }
+                else // if not active build profile and not an editor platform, we don't check for restarts, just store the value
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                    m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                    OnTargetObjectChangedDirectly();
+                }
+            }
+           
+            if (isAutoGraphicsAPITouched && selectedDevice != null && firstAPIDifferent && WillEditorUseFirstGraphicsAPI(targetPlatform) && IsActivePlayerSettingsEditor())
             {
                 string text = $"Auto Graphics API was changed, but requires an Editor restart to take Effect. The Editor will restart using {GraphicsDeviceTypeToString(targetPlatform, (GraphicsDeviceType)selectedDevice)}";
                 EditorGUILayout.HelpBox(text, MessageType.Warning, true);
-                if (!hasPendingGraphicsAPIChange)
-                {
-                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(targetPlatform, true, false);
-                    var apiList = (List<GraphicsDeviceType>)deviceList.list;
-                    var apis = apiList.ToArray();
-                    ApplyChangeGraphicsApiAction(targetPlatform, apis, action, true);
-                }
             }
 
-            EditorGUI.BeginDisabledGroup(automatic);
+            EditorGUI.BeginDisabledGroup(toggledAutomatic);
 
             // graphics API list if not automatic
             // note that editor will use first item, when we're in standalone settings
             if (WillEditorUseFirstGraphicsAPI(targetPlatform))
             {
-                EditorGUILayout.HelpBox(SettingsContent.recordingInfo.text, MessageType.Info, true);
+                EditorGUILayout.HelpBox(SettingsContentNonSearchable.recordingInfo.text, MessageType.Info, true);
             }
             else
             {
-                EditorGUILayout.HelpBox(SettingsContent.playerOnlyGraphicsAPIInfo.text, MessageType.Info, true);
+                EditorGUILayout.HelpBox(SettingsContentNonSearchable.playerOnlyGraphicsAPIInfo.text, MessageType.Info, true);
             }
 
             if (targetPlatform == BuildTarget.StandaloneOSX && m_GraphicsDeviceLists[BuildTarget.StandaloneOSX].list.Contains(GraphicsDeviceType.OpenGLCore))
             {
-                EditorGUILayout.HelpBox(SettingsContent.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
+                EditorGUILayout.HelpBox(SettingsContentNonSearchable.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
             }
 
             deviceList.DoLayoutList();
@@ -1938,14 +2041,14 @@ namespace UnityEditor
                 bool deviceListContainsGLES = deviceList.list.Contains(GraphicsDeviceType.OpenGLES3);
                 if (isEntitiesGraphicsPackageInstalled && deviceListContainsGLES)
                 {
-                    EditorGUILayout.HelpBox(SettingsContent.glesWithEntitiesGraphicsDeprecationMessage.text,
+                    EditorGUILayout.HelpBox(SettingsContentNonSearchable.glesWithEntitiesGraphicsDeprecationMessage.text,
                         MessageType.Warning, true);
                 }
             }
 
             bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
             if (containsDeprecatedAPIs)
-                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Warning, true);
+                EditorGUILayout.HelpBox(SettingsContentNonSearchable.graphicsAPIDeprecationMessage.text, MessageType.Warning, true);
 
             //@TODO: undo
 
@@ -2225,6 +2328,7 @@ namespace UnityEditor
                     OtherSectionRenderingGUI(platform, settingsExtension);
                     OtherSectionVulkanSettingsGUI(platform, settingsExtension);
                     OtherSectionD3D12SettingsGUI(platform, settingsExtension);
+                    OtherSectionWebGPUSettingsGUI(platform, settingsExtension);
                     OtherSectionIdentificationGUI(platform, settingsExtension);
                 }
                 OtherSectionConfigurationGUI(platform, settingsExtension);
@@ -2269,7 +2373,7 @@ namespace UnityEditor
                 ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
                 ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(
                     SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues,
-                    SettingsContent.shaderPrecisionModelOptions);
+                    SettingsContentNonSearchable.shaderPrecisionModelOptions);
                 if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
                 {
                     m_ShaderPrecisionModel.intValue = (int)newShaderPrecisionModel;
@@ -2308,7 +2412,7 @@ namespace UnityEditor
             }
 
             bool oldOverride = PlayerSettings.GetOverrideShaderChunkSettingsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
-            bool newOverride = EditorGUILayout.Toggle(SettingsContent.overrideDefaultChunkSettings, oldOverride);
+            bool newOverride = EditorGUILayout.Toggle(SettingsContentNonSearchable.overrideDefaultChunkSettings, oldOverride);
             if (oldOverride != newOverride)
             {
                 PlayerSettings.SetOverrideShaderChunkSettingsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newOverride);
@@ -2352,7 +2456,7 @@ namespace UnityEditor
 
                 if (EditorGUI.EndChangeCheck() && IsActivePlayerSettingsEditor())
                 {
-                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", SettingsContent.changeColorSpaceString, $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
+                    if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", SettingsContentNonSearchable.changeColorSpaceString, $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
                     {
                         serializedObject.ApplyModifiedProperties();
                     }
@@ -2395,7 +2499,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_MetalForceHardShadows, SettingsContent.metalForceHardShadows);
 
                 int[] memorylessModeValues = { 0, 1, 2 };
-                BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
+                BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContentNonSearchable.memorylessModeNames);
 
                 // VisionOS uses completely separate mechanism
                 if (platform.namedBuildTarget != NamedBuildTarget.VisionOS)
@@ -2521,7 +2625,7 @@ namespace UnityEditor
                     MeshDeformation currentDeformation = (MeshDeformation)m_MeshDeformation.intValue;
 
                     EditorGUI.BeginChangeCheck();
-                    MeshDeformation newDeformation = BuildEnumPopup(SettingsContent.skinOnGPU, currentDeformation, m_MeshDeformations, SettingsContent.meshDeformations);
+                    MeshDeformation newDeformation = BuildEnumPopup(SettingsContent.skinOnGPU, currentDeformation, m_MeshDeformations, SettingsContentNonSearchable.meshDeformations);
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_SkinOnGPU.boolValue = newDeformation != MeshDeformation.CPU;
@@ -2736,7 +2840,7 @@ namespace UnityEditor
                         EditorGUI.BeginChangeCheck();
                         LightmapEncodingQuality encodingQuality = m_CurrentTarget.GetLightmapEncodingQualityForPlatform_Internal(platform.defaultTarget);
                         LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
-                        LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
+                        LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContentNonSearchable.lightmapEncodingNames);
                         if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
                             m_CurrentTarget.SetLightmapEncodingQualityForPlatform_Internal(platform.defaultTarget, newEncodingQuality);
@@ -2753,7 +2857,7 @@ namespace UnityEditor
                         EditorGUI.BeginChangeCheck();
                         HDRCubemapEncodingQuality encodingQuality = m_CurrentTarget.GetHDRCubemapEncodingQualityForPlatform_Internal(platform.defaultTarget);
                         HDRCubemapEncodingQuality[] hdrCubemapProbeEncodingValues = { HDRCubemapEncodingQuality.Low, HDRCubemapEncodingQuality.Normal, HDRCubemapEncodingQuality.High };
-                        HDRCubemapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.hdrCubemapEncodingLabel, encodingQuality, hdrCubemapProbeEncodingValues, SettingsContent.hdrCubemapEncodingNames);
+                        HDRCubemapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.hdrCubemapEncodingLabel, encodingQuality, hdrCubemapProbeEncodingValues, SettingsContentNonSearchable.hdrCubemapEncodingNames);
                         if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
                             m_CurrentTarget.SetHDRCubemapEncodingQualityForPlatform_Internal(platform.defaultTarget, newEncodingQuality);
@@ -2806,7 +2910,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_EnableFrameTimingStats, SettingsContent.enableFrameTimingStats);
                     if (m_EnableFrameTimingStats.boolValue)
                     {
-                        EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOnGPURecordersOffInfo.text, MessageType.Info);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.openGLFrameTimingStatsOnGPURecordersOffInfo.text, MessageType.Info);
                     }
                 }
 
@@ -2820,7 +2924,7 @@ namespace UnityEditor
                     // so are listed below both to (hopefully) highlight that they're linked.
                     if (m_EnableOpenGLProfilerGPURecorders.boolValue)
                     {
-                        EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOffGPURecordersOnInfo.text, MessageType.Info);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.openGLFrameTimingStatsOffGPURecordersOnInfo.text, MessageType.Info);
                     }
                 }
 
@@ -2869,7 +2973,7 @@ namespace UnityEditor
 
                     if (m_AllowHDRDisplaySupport.boolValue && GraphicsSettings.currentRenderPipeline != null && !SupportedRenderingFeatures.active.supportsHDR)
                     {
-                        EditorGUILayout.HelpBox(SettingsContent.hdrOutputRequireHDRRenderingWarning.text, MessageType.Info);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.hdrOutputRequireHDRRenderingWarning.text, MessageType.Info);
                     }
 
                     if (requestRepaint)
@@ -2914,7 +3018,7 @@ namespace UnityEditor
                     bool platformSupportsVT = UnityEngine.Rendering.VirtualTexturingEditor.Building.IsPlatformSupportedForPlayer(platform.defaultTarget);
                     if (!platformSupportsVT)
                     {
-                        EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedPlatformWarning.text, MessageType.Warning);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.virtualTexturingUnsupportedPlatformWarning.text, MessageType.Warning);
                     }
 
                     // Test for all three 'Automatic Graphics API for X' checkboxes and report API/Platform-specific error
@@ -2957,7 +3061,7 @@ namespace UnityEditor
                 if (debugModeEnabled)
                 {
                     EditorGUI.indentLevel++;
-                    debugModeEditorOnly = EditorGUILayout.Toggle(SettingsContent.loadStoreDebugModeEditorOnlyCheckbox, debugModeEditorOnly);
+                    debugModeEditorOnly = EditorGUILayout.Toggle(SettingsContentNonSearchable.loadStoreDebugModeEditorOnlyCheckbox, debugModeEditorOnly);
                     EditorGUI.indentLevel--;
                 }
                 if (EditorGUI.EndChangeCheck())
@@ -3066,9 +3170,20 @@ namespace UnityEditor
 
         private void OtherSectionD3D12SettingsGUI(BuildPlatform buildPlatform, ISettingEditorExtension settingsExtension)
         {
+            if (buildPlatform.namedBuildTarget == NamedBuildTarget.WebGL) return;
             GUILayout.Label(SettingsContent.d3d12SettingsTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_D3D12FilterListsAsset, SettingsContent.d3d12FilterLists);
+
+            EditorGUILayout.Space();
+        }
+
+        private void OtherSectionWebGPUSettingsGUI(BuildPlatform buildPlatform, ISettingEditorExtension settingsExtension)
+        {
+            if (buildPlatform.namedBuildTarget != NamedBuildTarget.WebGL) return;
+            GUILayout.Label(SettingsContent.webGPUSettingsTitle, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_WebGPUFilterListAsset, SettingsContent.webGPUFilterLists);
 
             EditorGUILayout.Space();
         }
@@ -3081,9 +3196,9 @@ namespace UnityEditor
         internal static GUIContent GetApplicationIdentifierError(BuildTargetGroup targetGroup)
         {
             if (targetGroup == BuildTargetGroup.Android)
-                return SettingsContent.packageNameError;
+                return SettingsContentNonSearchable.packageNameError;
 
-            return SettingsContent.applicationIdentifierError;
+            return SettingsContentNonSearchable.applicationIdentifierError;
         }
 
         internal void ShowApplicationIdentifierUI(BuildTargetGroup targetGroup, string label, string tooltip)
@@ -3179,7 +3294,7 @@ namespace UnityEditor
             {
                 case "com.unity3d.player":
                 case "com.Company.ProductName":
-                    var warning = SettingsContent.unsetApplicationIdentifierWarning.text;
+                    var warning = SettingsContentNonSearchable.unsetApplicationIdentifierWarning.text;
                     return new ApplicationIdentifierValidationResult(
                         id,
                         LogType.Warning, warning,
@@ -3199,7 +3314,7 @@ namespace UnityEditor
             }
             if (sanitizedId != id)
             {
-                var warningMessage = SettingsContent.applicationIdentifierWarning.text;
+                var warningMessage = SettingsContentNonSearchable.applicationIdentifierWarning.text;
                 return new ApplicationIdentifierValidationResult(
                     sanitizedId,
                     LogType.Warning, warningMessage,
@@ -3358,7 +3473,7 @@ namespace UnityEditor
                             if (scripting == null)
                             {
                                 allowCompilerConfigurationSelection = true; // All platforms that support only one scripting backend are IL2CPP platforms
-                                BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
+                                BuildDisabledEnumPopup(SettingsContentNonSearchable.scriptingDefault, SettingsContent.scriptingBackend);
                             }
                             else
                             {
@@ -3532,7 +3647,7 @@ namespace UnityEditor
                                 using (new EditorGUI.DisabledScope(!allowCompilerConfigurationSelection))
                                 {
                                     Il2CppLTOMode currentMode = GetCurrentIl2CppLTOModeForTarget(platform.namedBuildTarget, settingsExtension);
-                                    var newMode = BuildEnumPopup(SettingsContent.il2CppLTOMode, currentMode, m_Il2CppLTOModes, SettingsContent.il2CppLTOModeOptions);
+                                    var newMode = BuildEnumPopup(SettingsContent.il2CppLTOMode, currentMode, m_Il2CppLTOModes, SettingsContentNonSearchable.il2CppLTOModeOptions);
 
                                     if (currentMode != newMode)
                                         m_Il2CppLTOMode.SetMapValue(platform.namedBuildTarget.TargetName, (int)newMode);
@@ -3543,7 +3658,7 @@ namespace UnityEditor
                                 // On Debug/Release, LTO is not applied, show a disabled "None" label
                                 using (new EditorGUI.DisabledScope(true))
                                 {
-                                    EditorGUILayout.Popup(SettingsContent.il2CppLTOModeDisabled, 0, SettingsContent.il2CppLTOModeNoneOption);
+                                    EditorGUILayout.Popup(SettingsContent.il2CppLTOModeDisabled, 0, SettingsContentNonSearchable.il2CppLTOModeNoneOption);
                                 }
                             }
                         }
@@ -3587,9 +3702,9 @@ namespace UnityEditor
                 }
             }
 
-            var insecureHttp = BuildEnumPopup(m_InsecureHttpOption, SettingsContent.insecureHttpOption, new[] { InsecureHttpOption.NotAllowed, InsecureHttpOption.DevelopmentOnly, InsecureHttpOption.AlwaysAllowed }, SettingsContent.insecureHttpOptions);
+            var insecureHttp = BuildEnumPopup(m_InsecureHttpOption, SettingsContent.insecureHttpOption, new[] { InsecureHttpOption.NotAllowed, InsecureHttpOption.DevelopmentOnly, InsecureHttpOption.AlwaysAllowed }, SettingsContentNonSearchable.insecureHttpOptions);
             if (insecureHttp == InsecureHttpOption.AlwaysAllowed)
-                EditorGUILayout.HelpBox(SettingsContent.insecureHttpWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(SettingsContentNonSearchable.insecureHttpWarning.text, MessageType.Warning);
 
             // Privacy permissions
             bool showPrivacyPermissions =
@@ -3625,7 +3740,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_MuteOtherAudioSources, SettingsContent.muteOtherAudioSources);
 
                     if (m_MuteOtherAudioSources.boolValue == false && platform.namedBuildTarget == NamedBuildTarget.iOS)
-                        EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
                 }
 
                 // TVOS TODO: check what should stay or go
@@ -3685,11 +3800,11 @@ namespace UnityEditor
                     var isInputSystemPackageInstalled = UnityEditor.PackageManager.PackageInfo.IsPackageRegistered(kInputSystemPackageName);
                     if(m_ActiveInputHandler.intValue != 0 && !isInputSystemPackageInstalled)
                     {
-                        EditorGUILayout.HelpBox(SettingsContent.activeInputHandlingError.text, MessageType.Error, true);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.activeInputHandlingError.text, MessageType.Error, true);
                     }
                     if(m_ActiveInputHandler.intValue != 1)
                     {
-                        EditorGUILayout.HelpBox(SettingsContent.activeInputHandlingDeprecationError.text, MessageType.Warning, true);
+                        EditorGUILayout.HelpBox(SettingsContentNonSearchable.activeInputHandlingDeprecationError.text, MessageType.Warning, true);
                     }
                 }
             }
@@ -3792,7 +3907,7 @@ namespace UnityEditor
 
                         GUI.enabled = hasScriptingDefinesBeenModified;
 
-                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
+                        if (GUILayout.Button(SettingsContentNonSearchable.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton))
                         {
                             // Make sure to remove focus from reorderable list text field on revert
                             GUI.FocusControl(null);
@@ -3800,7 +3915,7 @@ namespace UnityEditor
                             UpdateScriptingDefineSymbolsLists();
                         }
 
-                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton))
+                        if (GUILayout.Button(SettingsContentNonSearchable.scriptingDefineSymbolsApply, EditorStyles.miniButton))
                         {
                             // Make sure to remove focus from reorderable list text field on apply
                             GUI.FocusControl(null);
@@ -3851,12 +3966,12 @@ namespace UnityEditor
 
                             using (new EditorGUI.DisabledScope(!hasAdditionalCompilerArgumentsBeenModified))
                             {
-                                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                                if (GUILayout.Button(SettingsContentNonSearchable.scriptingDefineSymbolsApplyRevert, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
                                     UpdateAdditionalCompilerArgumentsLists();
                                 }
 
-                                if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                                if (GUILayout.Button(SettingsContentNonSearchable.scriptingDefineSymbolsApply, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                                 {
                                     additionalCompilerArgumentsList.RemoveAll(string.IsNullOrWhiteSpace);
                                     SetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget, additionalCompilerArgumentsList.ToArray());
@@ -4337,11 +4452,11 @@ namespace UnityEditor
             {
                 m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
                 {
-                    { ManagedStrippingLevel.Disabled, SettingsContent.strippingDisabled },
-                    { ManagedStrippingLevel.Minimal, SettingsContent.strippingMinimal },
-                    { ManagedStrippingLevel.Low, SettingsContent.strippingLow },
-                    { ManagedStrippingLevel.Medium, SettingsContent.strippingMedium },
-                    { ManagedStrippingLevel.High, SettingsContent.strippingHigh },
+                    { ManagedStrippingLevel.Disabled, SettingsContentNonSearchable.strippingDisabled },
+                    { ManagedStrippingLevel.Minimal, SettingsContentNonSearchable.strippingMinimal },
+                    { ManagedStrippingLevel.Low, SettingsContentNonSearchable.strippingLow },
+                    { ManagedStrippingLevel.Medium, SettingsContentNonSearchable.strippingMedium },
+                    { ManagedStrippingLevel.High, SettingsContentNonSearchable.strippingHigh },
                 };
             }
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);

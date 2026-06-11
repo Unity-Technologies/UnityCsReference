@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(packageName))
                 return false;
 
+            PackageManagerWindowAnalytics.SendEvent("goToPackage", sample);
             m_PackageManagerWindowProxy.OpenAndSelectPackage(packageName, InProjectPage.k_Id);
             return true;
         }

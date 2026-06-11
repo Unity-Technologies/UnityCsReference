@@ -180,15 +180,6 @@ namespace UnityEditor.AnimationWindowBuiltin
             StopPreview();
         }
 
-        public void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.ExitingPlayMode ||
-                state == PlayModeStateChange.ExitingEditMode)
-            {
-                StopPreview();
-            }
-        }
-
         public float time
         {
             get => m_Time.time;

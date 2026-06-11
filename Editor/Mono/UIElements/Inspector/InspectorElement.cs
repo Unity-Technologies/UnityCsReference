@@ -45,6 +45,7 @@ namespace UnityEditor.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-inspector-element";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
 
         /// <summary>
         /// USS class name of custom inspector elements in elements of this type.
@@ -142,9 +143,22 @@ namespace UnityEditor.UIElements
         /// </summary>
         VisualElement m_InspectorElement;
 
+        /// <summary>
+        /// The header element returned by <see cref="Editor.CreateInspectorHeaderGUI"/>.
+        /// Placed either inline (non-sticky) or in the PropertyEditor header container (sticky).
+        /// </summary>
+        VisualElement m_InspectorHeaderElement;
+
+        /// <summary>
+        /// Cached reference to the sticky header container found in the PropertyEditor UXML hierarchy.
+        /// Populated once on attach; avoids repeated ancestor walks on subsequent rebuilds while attached.
+        /// </summary>
+        VisualElement m_StickyHeaderContainer;
+
         VisualElement m_ObsoleteElement;
 
         internal VisualElement inspectorContent => m_InspectorElement;
+        internal VisualElement inspectorHeaderContent => m_InspectorHeaderElement;
 
         /// <summary>
         /// The default framework to use for generic inspectors.
@@ -331,12 +345,23 @@ namespace UnityEditor.UIElements
                 }
 
                 m_ContextWidthElement = currentElement;
+                m_StickyHeaderContainer = currentElement.Q(className: PropertyEditor.s_StickyHeaderContainerClassName);
                 break;
             }
+
+            // Sticky headers live outside this element's subtree and must be re-placed manually on re-attach.
+            if (m_InspectorHeaderElement != null && m_Editor?.isHeaderSticky == true)
+                PlaceStickyHeader();
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            // Sticky headers live outside this element's subtree and won't detach automatically.
+            if (m_Editor?.isHeaderSticky == true)
+                m_InspectorHeaderElement?.RemoveFromHierarchy();
+            m_ContextWidthElement = null;
+            m_StickyHeaderContainer = null;
+
             DestroyOwnedEditor();
         }
 
@@ -424,9 +449,12 @@ namespace UnityEditor.UIElements
 
         void ClearInspectorElement()
         {
-            // Clear any previously generated element.
+            m_InspectorHeaderElement?.RemoveFromHierarchy();
+            m_InspectorHeaderElement = null;
+            
+            // Remove from hierarchy but keep the reference so IMGUI containers can be reused.
+            // Reusing the container preserves control IDs, which is critical for ObjectSelector functionality.
             m_InspectorElement?.RemoveFromHierarchy();
-            m_InspectorElement = null;
 
             // Clear all top level styles
             RemoveFromClassList(iMGUIInspectorVariantUssClassName);
@@ -498,6 +526,14 @@ namespace UnityEditor.UIElements
 
                     ClearObsolete();
                     m_ObsoleteElement = CreateObsoleteElement();
+                }
+
+                if (m_InspectorHeaderElement != null && m_InspectorHeaderElement.parent == null)
+                {
+                    if (m_Editor.isHeaderSticky)
+                        PlaceStickyHeader();
+                    else
+                        hierarchy.Add(m_InspectorHeaderElement);
                 }
 
                 // Re-add the generated elements if they were re-created.
@@ -647,8 +683,21 @@ namespace UnityEditor.UIElements
                 HashSetPool<string>.Release(propertiesToExcludeHash);
         }
 
+        void PlaceStickyHeader()
+        {
+            if (m_InspectorHeaderElement == null || m_StickyHeaderContainer == null)
+                return;
+
+            if (m_InspectorHeaderElement.parent == m_StickyHeaderContainer)
+                return;
+
+            m_StickyHeaderContainer.Add(m_InspectorHeaderElement);
+        }
+
         VisualElement CreateInspectorElementUsingUIToolkit(Editor targetEditor)
         {
+            m_InspectorHeaderElement = targetEditor.CreateInspectorHeaderGUI();
+
             var element = targetEditor.CreateInspectorGUI();
 
             if (element != null)

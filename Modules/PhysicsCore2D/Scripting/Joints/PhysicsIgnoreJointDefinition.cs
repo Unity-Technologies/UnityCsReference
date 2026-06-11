@@ -21,7 +21,7 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a default <see cref="PhysicsIgnoreJoint"/> definition.
         /// </summary>
-        public PhysicsIgnoreJointDefinition() { this = IgnorePhysicsJoint_GetDefaultDefinition(); }
+        public PhysicsIgnoreJointDefinition() { this = defaultDefinition; }
 
         /// <summary>
         /// Create a default <see cref="PhysicsIgnoreJoint"/> definition.

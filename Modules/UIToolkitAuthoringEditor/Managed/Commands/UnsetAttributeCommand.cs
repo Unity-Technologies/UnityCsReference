@@ -2,28 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct UnsetAttributeCommand
+internal sealed class UnsetAttributeCommand : Command<UnsetAttributeCommand>
 {
     const string CommandUndoName = "Unset attribute";
 
-    readonly VisualTreeAsset m_VisualTreeAsset;
-    readonly UxmlAsset m_AttributeUxmlOwner;
-    readonly UxmlSerializedData m_OwnerSerializedData;
-    readonly UxmlSerializedAttributeDescription m_AttributeDescription;
-    readonly VisualElement m_VisualElement;
-    readonly string m_BindingPath;
-    private readonly bool m_IsInTemplateInstance;
-    readonly bool m_RemoveBinding;
-
-    public UnsetAttributeCommand(
+    public static UnsetAttributeCommand GetPooled(
+        object source,
         VisualTreeAsset vta,
         UxmlAsset attributeUxmlOwner,
         UxmlSerializedData ownerSerializedData,
@@ -33,84 +23,125 @@ internal readonly record struct UnsetAttributeCommand
         bool isInTemplateInstance,
         bool removeBinding)
     {
-        m_VisualTreeAsset = vta;
-        m_OwnerSerializedData = ownerSerializedData;
-        m_AttributeUxmlOwner = attributeUxmlOwner;
-        m_AttributeDescription = desc;
-        m_VisualElement = visualElement;
-        m_BindingPath = bindingPath;
-        m_IsInTemplateInstance = isInTemplateInstance;
-        m_RemoveBinding = removeBinding;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.VisualTreeAsset = vta;
+        cmd.AttributeUxmlOwner = attributeUxmlOwner;
+        cmd.OwnerSerializedData = ownerSerializedData;
+        cmd.AttributeDescription = desc;
+        cmd.VisualElement = visualElement;
+        cmd.BindingPath = bindingPath;
+        cmd.IsInTemplateInstance = isInTemplateInstance;
+        cmd.RemoveBinding = removeBinding;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source,
+        VisualTreeAsset vta,
+        UxmlAsset attributeUxmlOwner,
+        UxmlSerializedData ownerSerializedData,
+        UxmlSerializedAttributeDescription desc,
+        VisualElement visualElement,
+        string bindingPath,
+        bool isInTemplateInstance,
+        bool removeBinding)
     {
-        Assert.IsNotNull(m_VisualTreeAsset);
-        Assert.IsNotNull(m_AttributeDescription);
+        using var command = GetPooled(source, vta, attributeUxmlOwner, ownerSerializedData, desc, visualElement, bindingPath, isInTemplateInstance, removeBinding);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(m_VisualTreeAsset, CommandUndoName);
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
+    public UxmlAsset AttributeUxmlOwner { get; private set; }
+    public UxmlSerializedData OwnerSerializedData { get; private set; }
+    public UxmlSerializedAttributeDescription AttributeDescription { get; private set; }
+    public VisualElement VisualElement { get; private set; }
+    public string BindingPath { get; private set; }
+    public bool IsInTemplateInstance { get; private set; }
+    public bool RemoveBinding { get; private set; }
 
-        if (m_IsInTemplateInstance)
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Attributes;
+
+    protected override void Init()
+    {
+        base.Init();
+        VisualTreeAsset = null;
+        AttributeUxmlOwner = null;
+        OwnerSerializedData = null;
+        AttributeDescription = null;
+        VisualElement = null;
+        BindingPath = null;
+        IsInTemplateInstance = false;
+        RemoveBinding = false;
+    }
+
+    public override bool Validate() => VisualTreeAsset != null && AttributeDescription != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(VisualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
+        if (IsInTemplateInstance)
         {
-            var templateContainer = UxmlAssetUtilities.GetRootTemplateContainerInEditedVisualTree(m_VisualTreeAsset, m_VisualElement);
+            var templateContainer = UxmlAssetUtilities.GetRootTemplateContainerInEditedVisualTree(VisualTreeAsset, VisualElement);
             var templateAsset = templateContainer?.visualElementAsset as TemplateAsset;
 
-            if (templateAsset != null)
-            {
-                var attributeName = m_AttributeDescription.name;
-                var pathToTemplateAsset = UxmlAssetUtilities.GetPathToTemplateAsset(templateAsset, m_VisualElement);
+            if (templateAsset == null)
+                return CommandExecutionStatus.Success;
 
-                templateAsset.RemoveAttributeOverride(attributeName, pathToTemplateAsset);
+            var attributeName = AttributeDescription.name;
+            var pathToTemplateAsset = UxmlAssetUtilities.GetPathToTemplateAsset(templateAsset, VisualElement);
 
-                // Re-sync serializedDataOverrides since attribute overrides have changed.
-                templateAsset.serializedDataOverrides.Clear();
-                UxmlSerializer.CreateSerializedDataOverrides(m_VisualTreeAsset);
+            templateAsset.RemoveAttributeOverride(attributeName, pathToTemplateAsset);
 
-                var currentStage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-                currentStage?.RequestRefresh();
-            }
-            else
-            {
-                return;
-            }
+            // Re-sync serializedDataOverrides since attribute overrides have changed.
+            templateAsset.serializedDataOverrides.Clear();
+            UxmlSerializer.CreateSerializedDataOverrides(VisualTreeAsset);
+
+            var currentStage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
+            currentStage?.RequestRefresh();
         }
         else
         {
-            if (m_RemoveBinding)
+            if (RemoveBinding)
             {
-                var cmd = new RemoveBindingCommand(m_VisualElement, m_BindingPath);
-                cmd.Execute();
+                RemoveBindingCommand.Execute(Source, VisualElement, BindingPath);
             }
 
-            m_AttributeUxmlOwner.RemoveAttribute(m_AttributeDescription.name);
-            m_AttributeDescription.SyncDefaultValue(m_OwnerSerializedData, true);
+            AttributeUxmlOwner.RemoveAttribute(AttributeDescription.name);
+            AttributeDescription.SyncDefaultValue(OwnerSerializedData, true);
         }
 
         UnsetEnumValue();
-        EditorUtility.SetDirty(m_VisualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAsset);
+        return CommandExecutionStatus.Success;
     }
 
     void UnsetEnumValue()
     {
-        if (m_AttributeDescription.name != "type")
+        if (AttributeDescription.name != "type")
             return;
 
         // When unsetting the type value for an enum field, we also need to clear the value field as well.
-        if (m_VisualElement is EnumField or EnumFlagsField)
+        if (VisualElement is EnumField or EnumFlagsField)
         {
-            var valueAttribute = m_AttributeDescription.dataDescription.FindAttributeWithUxmlName("value");
+            var valueAttribute = AttributeDescription.dataDescription.FindAttributeWithUxmlName("value");
             var valueBindingAttribute = nameof(EnumField.value);
 
-            var unsetValueCommand = new UnsetAttributeCommand(m_VisualTreeAsset,
-                m_AttributeUxmlOwner,
-                m_OwnerSerializedData,
+            using var unsetValueCommand = GetPooled(
+                Source,
+                VisualTreeAsset,
+                AttributeUxmlOwner,
+                OwnerSerializedData,
                 valueAttribute,
-                m_VisualElement,
+                VisualElement,
                 valueBindingAttribute,
-                m_IsInTemplateInstance, m_RemoveBinding);
+                IsInTemplateInstance,
+                RemoveBinding);
 
-            unsetValueCommand.Execute();
+            UICommandQueue.Execute(unsetValueCommand);
         }
     }
 }

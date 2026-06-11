@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -117,7 +116,7 @@ namespace Unity.UIToolkit.Editor
                 toObject = ToObject,
                 showDetails = true,
                 showDetailsOptions = ShowDetailsOptions.Preview,
-                actions = [CreateAddElementAction(config.Id)],
+                actions = [CreateAddElementAction(config.Id), CreateAddChildElementAction(config.Id)],
                 isExplicitProvider = true,
                 fetchParentDescriptor = FetchParentDescriptor,
                 fetchParentsTokenSeparatedIds = FetchParentsTokenSeparatedIds
@@ -149,7 +148,7 @@ namespace Unity.UIToolkit.Editor
             {
                 // Store the library item for drag-and-drop
                 DragAndDrop.PrepareStartDrag();
-                DragAndDrop.SetGenericData("LibraryItem", libItem);
+                DragAndDrop.SetGenericData(LibraryItem.DragDataKey, libItem);
                 DragAndDrop.StartDrag(libItem.name);
             }
         }
@@ -252,7 +251,12 @@ namespace Unity.UIToolkit.Editor
                 s_CachedTypesByCategory.Clear();
                 s_CachedTypesHash = currentHash;
 
-                s_SortedTypes = new List<LibraryTypeKey>(libraryTypes.Keys);
+                s_SortedTypes = new List<LibraryTypeKey>(libraryTypes.Count);
+                foreach (var typeKey in libraryTypes.Keys)
+                {
+                    if (LibraryContent.IsVisibleInLibrary(typeKey.type))
+                        s_SortedTypes.Add(typeKey);
+                }
                 s_SortedTypes.Sort((a, b) => string.Compare(b.name, a.name, StringComparison.Ordinal));
             }
 
@@ -317,26 +321,37 @@ namespace Unity.UIToolkit.Editor
             if (item.data is not LibraryItem libItem)
                 return;
 
-            if (StageUtility.GetCurrentStage() is not VisualElementEditingStage stage)
+            var elementType = libItem.libraryType.type;
+            if (elementType == null)
                 return;
 
-            var selectedElement = (Selection.activeObject as VisualElementSelection)?.Element;
-            var parentVea = selectedElement?.visualElementAsset ?? stage.EditedVisualTreeAsset.visualTree;
+            MenuUtility.AddElementAsSibling(elementType);
+        }
 
-            if (selectedElement != null)
-            {
-                var editFlags = stage.Context.GetElementEditFlags(selectedElement);
-                if (editFlags != VisualElementEditFlags.FullyEditable)
-                {
-                    parentVea = stage.EditedVisualTreeAsset.visualTree;
-                }
-            }
+        static SearchAction CreateAddChildElementAction(string providerId)
+        {
+            var action = new SearchAction(
+                providerId,
+                "add-child-to-visual-tree-asset" ,
+                new GUIContent("Add Child Element"),
+                AddChildElementToVisualTreeAsset
+            );
+
+            // Keep the window open after adding an element
+            action.closeWindowAfterExecution = false;
+            return action;
+        }
+
+        static void AddChildElementToVisualTreeAsset(SearchItem item)
+        {
+            if (item.data is not LibraryItem libItem)
+                return;
 
             var elementType = libItem.libraryType.type;
-            var command = new AddElementCommand(elementType, stage.EditedVisualTreeAsset, parentVea);
-            command.Execute();
+            if (elementType == null)
+                return;
 
-            stage.RequestRefresh();
+            MenuUtility.AddElementAsLastChild(elementType);
         }
     }
 }

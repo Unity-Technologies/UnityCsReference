@@ -19,6 +19,12 @@ sealed class AddClassCommand : Command<AddClassCommand>
         return cmd;
     }
 
+    public static void Execute(object source, VisualElementAsset vea, string className)
+    {
+        using var command = GetPooled(source, vea, className);
+        UICommandQueue.Execute(command);
+    }
+
     VisualElementAsset m_ElementAsset;
     string m_ClassName;
 

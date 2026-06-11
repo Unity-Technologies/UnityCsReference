@@ -2,31 +2,49 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct AddStyleSheetImportCommand
+internal sealed class AddStyleSheetImportCommand : Command<AddStyleSheetImportCommand>
 {
     const string CommandUndoName = "Add import to stylesheet";
 
-    readonly StyleSheet StyleSheet;
-
-    public AddStyleSheetImportCommand(StyleSheet styleSheet)
+    public static AddStyleSheetImportCommand GetPooled(object source, StyleSheet styleSheet)
     {
-        StyleSheet = styleSheet;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, StyleSheet styleSheet)
     {
-        Assert.IsNotNull(StyleSheet);
+        using var command = GetPooled(source, styleSheet);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+    }
+
+    public override bool Validate() => StyleSheet != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         StyleSheet.AddImportAtIndex(-1, new StyleSheet.ImportStruct());
-
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

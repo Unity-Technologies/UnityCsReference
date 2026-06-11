@@ -761,6 +761,8 @@ namespace UnityEngine.UIElements
             // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
             if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
+            else if (uitkTextHandle.IsCachedPermanentATG)
+                TextEditingService.SetText(uitkTextHandle.textGenerationInfo, newValue);
         }
 
         /// <summary>

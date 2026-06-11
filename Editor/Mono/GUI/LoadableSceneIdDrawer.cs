@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using Unity.Loading;
 using Object = UnityEngine.Object;
-using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -22,6 +21,7 @@ namespace UnityEditor
             var field = new LoadableSceneIdField(preferredLabel);
             field.BindProperty(property);
             PropertyField.ConfigureFieldStyles<LoadableSceneIdField, LoadableSceneId>(field);
+            BindingsStyleHelpers.RegisterRightClickMenu(field, property);
             return field;
         }
 
@@ -39,14 +39,8 @@ namespace UnityEditor
         internal void DrawLoadableSceneIdField(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
-            Object value = null;
-            var guid = LoadableSceneIdEditorUtility.LoadableSceneIdToGuid(property.loadableSceneIdValue);
+            var value = LoadableSceneIdEditorUtility.LoadableSceneIdToScene(property.loadableSceneIdValue);
             var objectType = typeof(SceneAsset);
-            if (!guid.Empty())
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                value = AssetDatabase.LoadAssetAtPath(path, objectType);
-            }
 
             var fieldRect = EditorGUI.PrefixLabel(position, label);
             int id = GUIUtility.GetControlID(FocusType.Keyboard, fieldRect);

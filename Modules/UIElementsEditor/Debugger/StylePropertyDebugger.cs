@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -25,8 +26,9 @@ namespace UnityEditor.UIElements.Debugger
         public bool isShorthand => longhands != null;
     }
 
-    internal class StylePropertyDebugger : VisualElement
+    internal partial class StylePropertyDebugger : VisualElement
     {
+        [NoAutoStaticsCleanup] // style property metadata cache; populated by OnCodeLoaded, reused across inspectors
         static readonly List<StylePropertyInfo> s_StylePropertyInfos = new List<StylePropertyInfo>();
 
         private Dictionary<StylePropertyId, StyleField> m_IdToFieldDictionary = new Dictionary<StylePropertyId, StyleField>();
@@ -46,9 +48,10 @@ namespace UnityEditor.UIElements.Debugger
             set => m_ShowAll = value;
         }
 
-        static StylePropertyDebugger()
+        [OnCodeLoaded]
+        static void InitializeStylePropertyInfos()
         {
-            // Retrieve all style property infos
+            s_StylePropertyInfos.Clear();
             var names = StyleDebug.GetStylePropertyNames();
             foreach (var name in names)
             {

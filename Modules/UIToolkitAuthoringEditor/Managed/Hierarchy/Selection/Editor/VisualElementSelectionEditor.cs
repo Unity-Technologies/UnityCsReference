@@ -14,6 +14,7 @@ namespace Unity.UIToolkit.Editor;
 class VisualElementSelectionEditor : UnityEditor.Editor
 {
     VisualElementInspector m_Inspector;
+    VisualElementHeader m_Header;
     // Tracks AnimationMode preview-mode transitions that do NOT go through the recording
     // start/stop events (e.g. a controller flips previewing=true without recording=true).
     // The animation-driven inspector tint must update on those transitions, otherwise the
@@ -64,7 +65,10 @@ class VisualElementSelectionEditor : UnityEditor.Editor
         if (m_Inspector == null)
             return;
         if (e.propertyName == VisualElementSelection.ElementProperty)
+        {
+            m_Header.Element = Target.Element;
             m_Inspector.Element = Target.Element;
+        }
         ApplyState();
     }
 
@@ -83,28 +87,45 @@ class VisualElementSelectionEditor : UnityEditor.Editor
             ? StyleInspectorAnimationRecordingContext.TryCreateForElement(Target.Element)
             : null;
 
+        // The controller will be null if the project setting is disabled or when we are not recording.
+        // When the controller exists, we need to change the inspector visibility in two cases:
+        // - When something can be animated and we are not in staging, we need to unlock the style section (everything disabled by default).
+        // - When in staging and recording, we disable the sections other than the styles, locking sections that can't be recorded.
         bool inStagingMode = StageUtility.GetCurrentStage() is VisualElementEditingStage;
         bool animatable = controller != null && controller.HasRecordableProperties;
+
         bool overrideEditFlags = controller != null && (!inStagingMode || animatable);
-        if (overrideEditFlags)
-            m_Inspector.EditFlags = animatable ? VisualElementEditFlags.Styles : VisualElementEditFlags.None;
-        else
-            m_Inspector.EditFlags = Target.EditFlags;
+        var editFlags = overrideEditFlags
+            ? (animatable ? VisualElementEditFlags.Styles : VisualElementEditFlags.None)
+            : Target.EditFlags;
 
+        m_Inspector.EditFlags = editFlags;
         m_Inspector.RefreshRecordingState(controller);
-    }
 
-    protected override void OnHeaderGUI()
-    {
-        // Intentionally left empty to override the header.
+        m_Header.SetEditState(editFlags);
+
+        bool isRecording = controller != null;
+        m_Header.UpdateAssetVisibility(editFlags, isRecording, inStagingMode);
     }
 
     // We don't want to have an artificial padding.
     public override bool UseDefaultMargins() => false;
 
+    internal override bool isHeaderSticky => true;
+
+    internal override VisualElement CreateInspectorHeaderGUI()
+    {
+        m_Header = new VisualElementHeader { name = "Header" };
+        m_Header.Element = Target.Element;
+        return m_Header;
+    }
+
     public override VisualElement CreateInspectorGUI()
     {
-        m_Inspector = new VisualElementInspector { Element = Target.Element };
+        m_Inspector = new VisualElementInspector();
+        m_Inspector.InitializeSearchField(m_Header.SearchField);
+        m_Header.AttributesView.ShareContext(m_Inspector.AttributesInspector.AttributesView);
+        m_Inspector.Element = Target.Element;
         ApplyState();
         Target.propertyChanged += OnTargetPropertyChanged;
         return m_Inspector;

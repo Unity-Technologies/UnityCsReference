@@ -18,11 +18,13 @@ namespace UnityEditor
             public static readonly string ussPath = "StyleSheets/InspectorWindow/InspectorPreview.uss";
             public static readonly string controlsUssPath = "StyleSheets/InspectorWindow/InspectorPreviewControls.uss";
             public static readonly string titleName = "title";
+            public static readonly string windowResizeName = "sub-title";
             public static readonly string previewName = "inspector-preview";
             public static readonly string contentContainerName = "content-container";
             public static readonly string toolbarName = "toolbar";
-            public static readonly string elipsisMenuName = "ellipsis-menu";
+            public static readonly string ellipsisMenuName = "ellipsis-menu";
             public static readonly string headerName = "header";
+            public static readonly string dropdownName = "preview-selector-dropdown";
             public static readonly string dropdownButton = "unity-dropdown-button";
             public static readonly string basePopupFieldArrow = "unity-base-popup-field__arrow";
             public static readonly string previewPopupFieldArrow = "unity-dropdown-arrow";
@@ -30,10 +32,19 @@ namespace UnityEditor
 
         VisualElement m_Container;
         VisualElement m_Toolbar;
-        internal ToolbarMenu m_EllipsisMenu;
+        VisualElement m_Header;
+        Label m_Title;
+        VisualElement m_Resizer;
+        DropdownField m_Dropdown;
+        ToolbarMenu m_EllipsisMenu;
 
+        public VisualElement GetHeader() { return m_Header; }
+        public Label GetTitle() { return m_Title; }
+        public VisualElement GetResizer() { return m_Resizer; }
         public VisualElement GetButtonPane() { return m_Toolbar; }
         public VisualElement GetPreviewPane() { return m_Container; }
+        public DropdownField GetDropdown() { return m_Dropdown; }
+        public VisualElement GetEllipsisMenu() { return m_EllipsisMenu; }
 
         public PreviewRootElement()
         {
@@ -48,9 +59,14 @@ namespace UnityEditor
             name = Styles.previewName;
             m_Container = this.Q(Styles.contentContainerName);
             m_Toolbar = this.Q(Styles.toolbarName);
+            m_Header = this.Q(Styles.headerName);
+            m_Title = m_Header?.Q<Label>(Styles.titleName);
+            m_Resizer = m_Header?.Q(Styles.windowResizeName);
+            m_Dropdown = m_Header?.Q<DropdownField>(Styles.dropdownName);
+
             focusable = true;
 
-            m_EllipsisMenu = this.Q<ToolbarMenu>(Styles.elipsisMenuName);
+            m_EllipsisMenu = this.Q<ToolbarMenu>(Styles.ellipsisMenuName);
             m_EllipsisMenu.style.display = DisplayStyle.Flex;
         }
 

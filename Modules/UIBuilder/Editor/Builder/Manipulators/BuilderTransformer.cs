@@ -15,7 +15,7 @@ namespace Unity.UI.Builder
     {
         static readonly string s_UssClassName = "unity-builder-transformer";
         static readonly string s_ActiveHandleClassName = "unity-builder-transformer--active";
-        public static readonly string s_DisabledHandleClassName = "unity-builder-transformer--disabled";
+        public static readonly UniqueStyleString s_DisabledHandleClassName = new("unity-builder-transformer--disabled");
 
 
         protected List<string> m_ScratchChangeList;

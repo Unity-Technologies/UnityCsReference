@@ -49,8 +49,8 @@ namespace UnityEditor.Connect
         private VisualElement m_CreateCloudProjectTab;
 
         // uxml elements
-        private DropdownField m_ProjectsDropdown;
-        private DropdownField m_OrganizationsDropdown;
+        private SearchableDropdownField m_ProjectsDropdown;
+        private SearchableDropdownField m_OrganizationsDropdown;
         private RadioButtonGroup m_RadioButtonGroup;
         private HelpBox m_CreatePermissionsHelpBox;
         private Button m_LinkCloudProjectButton;
@@ -179,8 +179,8 @@ namespace UnityEditor.Connect
             m_LinkCloudProjectTab = m_LinkOrCreateBlock.Q("LinkCloudProjectBlock");
             m_CreateCloudProjectTab = m_LinkOrCreateBlock.Q("CreateCloudProjectBlock");
 
-            m_ProjectsDropdown = m_LinkCloudProjectTab.Q<DropdownField>("ProjectDropdown");
-            m_OrganizationsDropdown = organizationSelectionBlock.Q<DropdownField>("OrganizationDropdown");
+            m_ProjectsDropdown = m_LinkCloudProjectTab.Q<SearchableDropdownField>("ProjectDropdown");
+            m_OrganizationsDropdown = organizationSelectionBlock.Q<SearchableDropdownField>("OrganizationDropdown");
 
             var radioButtonUse = m_RadioButtonGroup.Q<RadioButton>("RadioButtonUse");
             var radioButtonCreate = m_RadioButtonGroup.Q<RadioButton>("RadioButtonCreate");

@@ -19,7 +19,7 @@ namespace UnityEditor.Build.Profile
     {
         public const int kPreconfiguredSettingsVariantNotSet = -2;
 
-        internal enum State
+        public enum State
         {
             /// <summary>
             /// Initial state of a created build profile.
@@ -42,6 +42,14 @@ namespace UnityEditor.Build.Profile
             /// Package installation failed.
             /// </summary>
             InstallingError,
+
+            /// <summary>
+            /// Derived platform requires GUID activation via EditorPrefs before
+            /// the platform module can be used. Waits for the domain reload
+            /// triggered by <see cref="BuildProfileModuleUtil.RequestScriptCompilation"/>
+            /// before proceeding to <see cref="InstallingPackages"/> or <see cref="Ready"/>.
+            /// </summary>
+            AwaitingDomainReload,
         }
 
         /// <summary>
@@ -73,6 +81,14 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         [SerializeField]
         public State state = State.Unknown;
+
+        /// <summary>
+        /// Set to true when entering <see cref="State.AwaitingDomainReload"/> and automatically
+        /// cleared by the domain reload (non-serialized). Guards against advancing the state machine
+        /// on the synchronous OnState call that fires before the reload has occurred.
+        /// </summary>
+        [NonSerialized]
+        bool m_ReloadPending;
 
         /// <summary>
         /// Factory method to create a <see cref="BuildProfileInitialization"/> instance.
@@ -127,12 +143,20 @@ namespace UnityEditor.Build.Profile
             {
                 case State.Unknown:
                 {
-                    if (packageAddInfo != null)
+                    if (RequiresDerivedPlatformActivation(profile))
+                        NextState(State.AwaitingDomainReload, profile);
+                    else if (packageAddInfo != null)
                         NextState(State.InstallingPackages, profile);
                     else
                         NextState(State.Ready, profile);
                     break;
                 }
+                case State.AwaitingDomainReload:
+                    if (!m_ReloadPending)
+                    {
+                        NextState(packageAddInfo != null ? State.InstallingPackages : State.Ready, profile);
+                    }
+                    break;
                 case State.InstallingPackages:
                     if (packageAddInfo != null)
                     {
@@ -181,13 +205,37 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Returns true when the profile's platform is a derived platform that has not yet
+        /// been activated via its EditorPrefs key. Activation must happen before the platform
+        /// module can load, which requires a domain reload.
+        /// </summary>
+        static bool RequiresDerivedPlatformActivation(BuildProfile profile)
+        {
+            var platformId = profile.platformGuid;
+            if (!BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(platformId))
+                return false;
+
+            return EditorPrefs.GetInt(platformId.ToString(), 0) == 0;
+        }
+
+        /// <summary>
         /// Perform one-time actions upon entering a new state.
         /// </summary>
         void OnEnterState(State state, BuildProfile profile)
         {
             switch (state)
             {
+                case State.AwaitingDomainReload:
+                {
+                    m_ReloadPending = true;
+                    var platformId = profile.platformGuid;
+                    EditorPrefs.SetInt(platformId.ToString(), 1);
+                    EditorPrefs.SetString("LastEnabledPlatformGUID", platformId.ToString());
+                    BuildProfileModuleUtil.RequestScriptCompilation(null);
+                    break;
+                }
                 case State.Ready:
+                {
                     if (preconfiguredSettingsVariant != kPreconfiguredSettingsVariantNotSet)
                     {
                         profile.NotifyBuildProfileExtensionOfCreation(preconfiguredSettingsVariant);
@@ -195,6 +243,7 @@ namespace UnityEditor.Build.Profile
                     onBuildProfileCreateCompletion?.Invoke(profile);
                     Cleanup();
                     break;
+                }
             }
         }
 

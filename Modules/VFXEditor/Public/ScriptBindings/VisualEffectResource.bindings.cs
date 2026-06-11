@@ -498,6 +498,7 @@ namespace UnityEditor.VFX
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceCount", ThrowsException = true, HasExplicitThis = true)] public extern int GetShaderSourceCount();
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceName", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSourceName(int index);
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSource", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSource(int index);
+        [FreeFunction(Name = "VisualEffectResourceBindings::GetShader", ThrowsException = true, HasExplicitThis = true)] public extern UnityObject GetShader(int index);
 
         public extern bool compileInitialVariants { get; set; }
 
@@ -550,8 +551,6 @@ namespace UnityEditor.VFX
             }
         }
         extern public ScriptableObject graph { get; set; }
-        extern public int GetShaderIndex(UnityObject shader);
-        public extern void ShowGeneratedShaderFile(int index, int line = 0);
 
         extern public Material FindMaterial(ScriptableObject model);
 

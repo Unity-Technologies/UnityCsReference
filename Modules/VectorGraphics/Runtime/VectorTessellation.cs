@@ -4,12 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace Unity.VectorGraphics
 {
     public static partial class VectorUtils
     {
+        static readonly ProfilerMarker s_TessellatePathMarker = new ProfilerMarker("TessellatePath");
+
         /// <summary>
         /// Structure to store the tessellation options.
         /// </summary>
@@ -94,42 +97,41 @@ namespace Unity.VectorGraphics
             tessellateOptions.MaxCordDeviation = Mathf.Max(0.0001f, tessellateOptions.MaxCordDeviation);
             tessellateOptions.MaxTanAngleDeviation = Mathf.Max(0.0001f, tessellateOptions.MaxTanAngleDeviation);
 
-            UnityEngine.Profiling.Profiler.BeginSample("TessellatePath");
-
-            float[] segmentLengths = VectorUtils.SegmentsLengths(contour.Segments, contour.Closed);
-
-            // Approximate the number of vertices/indices we need to store the results so we reduce memory reallocations during work
-            float approxTotalLength = 0.0f;
-            foreach (var s in segmentLengths)
-                approxTotalLength += s;
-
-            int approxStepCount = Math.Max((int)(approxTotalLength / tessellateOptions.StepDistance + 0.5f), 2);
-            if (pathProps.Stroke.Pattern != null)
-                approxStepCount += pathProps.Stroke.Pattern.Length * 2;
-
-            List<Vector2> verts = new List<Vector2>(approxStepCount * 2 + 32); // A little bit possibly for the endings
-            List<UInt16> inds = new List<UInt16>((int)(verts.Capacity * 1.5f)); // Usually every 4 verts represent a quad that uses 6 indices
-
-            var patternIt = new PathPatternIterator(pathProps.Stroke.Pattern, pathProps.Stroke.PatternOffset);
-            var pathIt = new PathDistanceForwardIterator(contour.Segments, contour.Closed, tessellateOptions.MaxCordDeviationSquared, tessellateOptions.MaxTanAngleDeviationCosine, tessellateOptions.SamplingStepSize);
-
-            JoiningInfo[] joiningInfo = new JoiningInfo[2];
-            HandleNewSegmentJoining(pathIt, patternIt, joiningInfo, pathProps.Stroke.HalfThickness, segmentLengths);
-
-            int rangeIndex = 0;
-            while (!pathIt.Ended)
+            using (s_TessellatePathMarker.Auto())
             {
-                if (patternIt.IsSolid)
-                    TessellateRange(patternIt.SegmentLength, pathIt, patternIt, pathProps, tessellateOptions, joiningInfo, segmentLengths, approxTotalLength, rangeIndex++, verts, inds);
-                else
-                    SkipRange(patternIt.SegmentLength, pathIt, patternIt, pathProps, joiningInfo, segmentLengths);
-                patternIt.Advance();
+                float[] segmentLengths = VectorUtils.SegmentsLengths(contour.Segments, contour.Closed);
+
+                // Approximate the number of vertices/indices we need to store the results so we reduce memory reallocations during work
+                float approxTotalLength = 0.0f;
+                foreach (var s in segmentLengths)
+                    approxTotalLength += s;
+
+                int approxStepCount = Math.Max((int)(approxTotalLength / tessellateOptions.StepDistance + 0.5f), 2);
+                if (pathProps.Stroke.Pattern != null)
+                    approxStepCount += pathProps.Stroke.Pattern.Length * 2;
+
+                List<Vector2> verts = new List<Vector2>(approxStepCount * 2 + 32); // A little bit possibly for the endings
+                List<UInt16> inds = new List<UInt16>((int)(verts.Capacity * 1.5f)); // Usually every 4 verts represent a quad that uses 6 indices
+
+                var patternIt = new PathPatternIterator(pathProps.Stroke.Pattern, pathProps.Stroke.PatternOffset);
+                var pathIt = new PathDistanceForwardIterator(contour.Segments, contour.Closed, tessellateOptions.MaxCordDeviationSquared, tessellateOptions.MaxTanAngleDeviationCosine, tessellateOptions.SamplingStepSize);
+
+                JoiningInfo[] joiningInfo = new JoiningInfo[2];
+                HandleNewSegmentJoining(pathIt, patternIt, joiningInfo, pathProps.Stroke.HalfThickness, segmentLengths);
+
+                int rangeIndex = 0;
+                while (!pathIt.Ended)
+                {
+                    if (patternIt.IsSolid)
+                        TessellateRange(patternIt.SegmentLength, pathIt, patternIt, pathProps, tessellateOptions, joiningInfo, segmentLengths, approxTotalLength, rangeIndex++, verts, inds);
+                    else
+                        SkipRange(patternIt.SegmentLength, pathIt, patternIt, pathProps, joiningInfo, segmentLengths);
+                    patternIt.Advance();
+                }
+
+                vertices = verts.ToArray();
+                indices = inds.ToArray();
             }
-
-            vertices = verts.ToArray();
-            indices = inds.ToArray();
-
-            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         static Vector2[] TraceShape(BezierContour contour, Stroke stroke, TessellationOptions tessellateOptions)

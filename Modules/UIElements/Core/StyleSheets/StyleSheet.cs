@@ -94,6 +94,13 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal string[] strings = Array.Empty<string>();
 
+        // Cached UniqueStyleString ids for strings referenced by var() functions, indexed by
+        // string-table index. -1 means "not (yet) referenced by a var()". Populated by
+        // SetupReferences so the variable resolver can compare ints without paying
+        // UniqueStyleString.TryGet per resolution.
+        [NonSerialized]
+        private int[] variableNameIds = Array.Empty<int>();
+
         [SerializeField]
         internal Object[] assets = Array.Empty<Object>();
 
@@ -337,6 +344,14 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            // Reset the variable-name id cache for this sheet's strings table. -1 marks
+            // entries that aren't referenced as var() names; SetupReferences fills the rest
+            // by walking the var() handle triples below.
+            if (variableNameIds.Length != strings.Length)
+                variableNameIds = new int[strings.Length];
+            for (int i = 0; i < variableNameIds.Length; i++)
+                variableNameIds[i] = -1;
+
             var orderInStyleSheet = 0;
             for (var index = 0; index < rules.Length; index++)
             {
@@ -360,15 +375,33 @@ namespace UnityEngine.UIElements
                     if (property.isCustomProperty)
                     {
                         ++rule.customPropertiesCount;
+                        property.customNameId = new UniqueStyleString(property.name).id;
                     }
 
-                    foreach (var handle in property.values)
+                    // A var() function is three flat handles: VarFunction, argCount, name.
+                    // Pre-register every var()'d name with UniqueStyleString and cache its id
+                    // so the resolver can pass ints to TryFindVariable without a per-call
+                    // dictionary lookup.
+                    var values = property.values;
+                    int i = 0;
+                    while (i < values.Length)
                     {
-                        if (handle.IsVarFunction())
+                        if (!values[i].IsVarFunction())
                         {
-                            property.requireVariableResolve = true;
-                            break;
+                            ++i;
+                            continue;
                         }
+
+                        property.requireVariableResolve = true;
+                        Debug.Assert(i + 2 < values.Length, "Malformed var() triple: argCount or name handle missing");
+
+                        // valueIndex is the slot in this sheet's strings[]; UniqueStyleString.id is a
+                        // separate, process-global integer that we cache into the same-sized
+                        // variableNameIds[] so the resolver can address it by string-table index.
+                        int strIdx = values[i + 2].valueIndex;
+                        variableNameIds[strIdx] = new UniqueStyleString(strings[strIdx]).id;
+
+                        i += 3;
                     }
                 }
             }
@@ -566,6 +599,15 @@ namespace UnityEngine.UIElements
         internal string ReadVariable(StyleValueHandle handle)
         {
             return CheckAccess(strings, StyleValueType.Variable, handle);
+        }
+
+        // Returns the UniqueStyleString id pre-cached by SetupReferences for this
+        // variable-name handle, or -1 if the slot was never populated (e.g. the sheet
+        // never went through SetupReferences, or the handle isn't a Variable handle).
+        internal int ReadVariableId(StyleValueHandle handle)
+        {
+            int idx = handle.valueIndex;
+            return idx < variableNameIds.Length ? variableNameIds[idx] : -1;
         }
 
         internal bool TryReadVariable(StyleValueHandle handle, out string value)

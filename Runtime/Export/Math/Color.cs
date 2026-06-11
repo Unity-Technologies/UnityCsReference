@@ -113,9 +113,16 @@ namespace UnityEngine
         }
 
         /// <undoc/>
-        public static bool operator!=(Color lhs, Color rhs) =>
+        public static bool operator!=(Color lhs, Color rhs)
+        {
             // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            float diffr = lhs.r - rhs.r;
+            float diffg = lhs.g - rhs.g;
+            float diffb = lhs.b - rhs.b;
+            float diffa = lhs.a - rhs.a;
+            float sqrmag = diffr * diffr + diffg * diffg + diffb * diffb + diffa * diffa;
+            return !(sqrmag < Vector4.kEpsilon * Vector4.kEpsilon);
+        }
 
 
         // Interpolates between colors /a/ and /b/ by /t/.

@@ -75,8 +75,18 @@ namespace UnityEditor
             extern public static bool enableFileSystemTrace { get; set; }
 
             // What LTO setting to use on Switch.
-            [NativeProperty("switchLTOSetting", TargetType.Field)]
-            extern public static int switchLTOSetting { get; set; }
+            [Obsolete("Use UnityEngine.PlayerSettings.SetIl2CppLTOMode(NamedBuildTarget.NintendoSwitch, mode) instead.", false)]
+            public static int switchLTOSetting
+            {
+                get
+                {
+                    return (int)GetIl2CppLTOMode(UnityEditor.Build.NamedBuildTarget.NintendoSwitch);
+                }
+                set
+                {
+                    SetIl2CppLTOMode(UnityEditor.Build.NamedBuildTarget.NintendoSwitch, (Il2CppLTOMode)(value));
+                }
+            }
 
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
             extern public static int queueCommandMemory

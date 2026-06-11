@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEditor;
 using Unity.Loading;
 using Object = UnityEngine.Object;
@@ -35,6 +34,19 @@ namespace UnityEditor
         public static GUID LoadableSceneIdToGuid(LoadableSceneId loadableSceneId)
         {
             return loadableSceneId.m_SceneGUID;
+        }
+
+        /// <summary>
+        /// Resolves the Scene asset referenced by a LoadableSceneId.
+        /// </summary>
+        /// <param name="loadableSceneId">The LoadableSceneId to resolve.</param>
+        /// <returns>The Scene asset, or null if the id is invalid or the asset is missing.</returns>
+        public static SceneAsset LoadableSceneIdToScene(LoadableSceneId loadableSceneId)
+        {
+            var guid = LoadableSceneIdToGuid(loadableSceneId);
+            if (guid.Empty())
+                return null;
+            return AssetDatabase.LoadMainAssetAtGUID(guid) as SceneAsset;
         }
 
         /// <summary>

@@ -39,13 +39,17 @@ namespace UnityEditor
             RenderingLayers = 4
         }
 
+        internal class StylesNonSearchable
+        {
+            public static GUIContent existingTagMessage = EditorGUIUtility.TrTextContent("Tag with \"{0}\" name already exists.");
+        }
+
         internal class Styles
         {
             public static GUIContent tags = EditorGUIUtility.TrTextContent("Tags");
             public static GUIContent sortingLayers = EditorGUIUtility.TrTextContent("Sorting Layers");
             public static GUIContent layers = EditorGUIUtility.TrTextContent("Layers");
             public static GUIContent renderingLayers = EditorGUIUtility.TrTextContent("Rendering Layers");
-            public static GUIContent existingTagMessage = EditorGUIUtility.TrTextContent("Tag with \"{0}\" name already exists.");
 
             public static float elementHeight = EditorGUIUtility.singleLineHeight + 2;
             public const float headerListHeight = 3;
@@ -524,7 +528,7 @@ namespace UnityEditor
 
                 if (m_IsExistingTag)
                 {
-                    EditorGUILayout.HelpBox(string.Format(Styles.existingTagMessage.text, m_NewTagName.Length < 42 ? m_NewTagName : m_NewTagName[..39] + "..."), MessageType.Error);
+                    EditorGUILayout.HelpBox(string.Format(StylesNonSearchable.existingTagMessage.text, m_NewTagName.Length < 42 ? m_NewTagName : m_NewTagName[..39] + "..."), MessageType.Error);
                 }
 
                 if (m_NeedsFocus)

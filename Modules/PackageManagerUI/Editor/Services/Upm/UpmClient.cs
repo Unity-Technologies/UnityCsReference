@@ -311,9 +311,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (info == null)
                     continue;
 
-                var trustAndSignature = UpmPackageVersion.GetTrustAndSignature(info, true);
+                var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(info, true);
                 var currentlyInstalled = m_UpmCache.GetInstalledPackageInfo(info.name);
-                if (currentlyInstalled?.packageId == info.packageId && UpmPackageVersion.GetTrustAndSignature(currentlyInstalled, true) == trustAndSignature)
+                if (currentlyInstalled?.packageId == info.packageId && TrustAndSignatureHelper.GetTrustAndSignature(info, true) == trustAndSignature)
                     continue;
                 switch (trustAndSignature)
                 {

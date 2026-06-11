@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Profiling;
 using static UnityEngine.UIElements.UIR.UIRenderDevice;
@@ -13,8 +14,9 @@ namespace UnityEngine.UIElements.UIR
     {
         protected readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => { });
 
-        public abstract void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData);
-        public abstract void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
+        public abstract void Update(MeshHandle mesh, uint vertexCount, out RawSlice vertexData);
+        public abstract void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset);
+
         public virtual void Free(MeshHandle mesh)
         {
             mesh.allocVerts = new Alloc();
@@ -64,33 +66,36 @@ namespace UnityEngine.UIElements.UIR
         protected readonly uint m_LargeMeshVertexCount;
         protected readonly float m_IndexToVertexCountRatio;
         protected readonly bool m_PagesGpuDataIsMapped;
+        protected readonly uint m_ExtrasStride;
 
         protected uint m_FrameIndex;
         protected Page m_FirstPage;
 
-        protected GpuUpdater<Vertex> m_VertexUpdater;
-        protected GpuUpdater<UInt16> m_IndexUpdater;
+        protected GpuUpdater m_VertexUpdater;
+        protected GpuUpdater m_IndexUpdater;
 
         static ProfilerMarker s_MarkerAllocate = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Allocate");
 
-        protected MeshManager(uint initialVertexCapacity, uint initialIndexCapacity, GpuUpdaterType gpuUpdaterType)
+        protected MeshManager(uint initialVertexCapacity, uint initialIndexCapacity, uint extrasStride, GpuUpdaterType gpuUpdaterType)
         {
+            int vertexStride = Unsafe.SizeOf<Vertex>() + (int)extrasStride;
+
             switch (gpuUpdaterType)
             {
                 case GpuUpdaterType.Mapped:
                     m_PagesGpuDataIsMapped = true;
-                    m_VertexUpdater = new GpuUpdaterMapped<Vertex>();
-                    m_IndexUpdater = new GpuUpdaterMapped<ushort>();
+                    m_VertexUpdater = new GpuUpdaterMapped();
+                    m_IndexUpdater = new GpuUpdaterMapped();
                     break;
                 case GpuUpdaterType.StagedGpuOnly:
                     m_PagesGpuDataIsMapped = false;
-                    m_VertexUpdater = new GpuUpdaterStaged<Vertex>(Utility.GPUBufferType.Vertex, StagingMode.GpuOnly);
-                    m_IndexUpdater = new GpuUpdaterStaged<ushort>(Utility.GPUBufferType.Index, StagingMode.GpuOnly);
+                    m_VertexUpdater = new GpuUpdaterStaged(Utility.GPUBufferType.Vertex, StagingMode.GpuOnly, vertexStride);
+                    m_IndexUpdater = new GpuUpdaterStaged(Utility.GPUBufferType.Index, StagingMode.GpuOnly, sizeof(ushort));
                     break;
                 case GpuUpdaterType.StagedCpuGpu:
                     m_PagesGpuDataIsMapped = false;
-                    m_VertexUpdater = new GpuUpdaterStaged<Vertex>(Utility.GPUBufferType.Vertex, StagingMode.CpuGpu);
-                    m_IndexUpdater = new GpuUpdaterStaged<ushort>(Utility.GPUBufferType.Index, StagingMode.CpuGpu);
+                    m_VertexUpdater = new GpuUpdaterStaged(Utility.GPUBufferType.Vertex, StagingMode.CpuGpu, vertexStride);
+                    m_IndexUpdater = new GpuUpdaterStaged(Utility.GPUBufferType.Index, StagingMode.CpuGpu, sizeof(ushort));
                     break;
                 default:
                     throw new NotImplementedException();
@@ -100,9 +105,10 @@ namespace UnityEngine.UIElements.UIR
             m_LargeMeshVertexCount = m_NextPageVertexCount;
             m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
             m_IndexToVertexCountRatio = Mathf.Max(m_IndexToVertexCountRatio, 2);
+            m_ExtrasStride = extrasStride;
         }
 
-        public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
+        public MeshHandle Allocate(uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             MeshHandle meshHandle = m_MeshHandles.Get();
             Allocate(meshHandle, vertexCount, indexCount, out vertexData, out indexData, false);
@@ -110,117 +116,121 @@ namespace UnityEngine.UIElements.UIR
             return meshHandle;
         }
 
-        protected void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
+        protected void Allocate(MeshHandle meshHandle, uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, bool shortLived)
         {
-            s_MarkerAllocate.Begin();
-
-            Page page = null;
-            Alloc va = new Alloc(), ia = new Alloc();
-
-            if (vertexCount <= m_LargeMeshVertexCount)
+            using (s_MarkerAllocate.Auto())
             {
-                // Search for a page that will accept this allocation
-                if (m_FirstPage != null)
+
+                Page page = null;
+                Alloc va = new Alloc(), ia = new Alloc();
+
+                if (vertexCount <= m_LargeMeshVertexCount)
                 {
-                    page = m_FirstPage;
-                    for (;;)
+                    // Search for a page that will accept this allocation
+                    if (m_FirstPage != null)
                     {
-                        if (TryAllocFromPage(page, (uint)vertexCount, (uint)indexCount, ref va, ref ia, shortLived) || (page.next == null))
-                            break;
-                        else page = page.next;
+                        page = m_FirstPage;
+                        for (;;)
+                        {
+                            if (TryAllocFromPage(page, (uint)vertexCount, (uint)indexCount, ref va, ref ia, shortLived) || (page.next == null))
+                                break;
+                            else page = page.next;
+                        }
+                    }
+
+                    if (ia.size == 0)
+                    {
+                        m_NextPageVertexCount <<= 1; // Double the vertex count
+                        m_NextPageVertexCount = Math.Max(m_NextPageVertexCount, vertexCount * 2);
+                        m_NextPageVertexCount = Math.Min(m_NextPageVertexCount, UIRenderDevice.maxVerticesPerPage);  // Stay below 64k for 16-bit indices
+                        uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
+                        newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
+                        Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
+                        page = new Page(m_NextPageVertexCount, newPageIndexCount, m_ExtrasStride, m_PagesGpuDataIsMapped);
+                        // Link this new page to the head of the list so next allocations have more chance of succeeding rather than scanning through all pages to land in this page
+                        page.next = m_FirstPage;
+                        m_FirstPage = page;
+                        va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
+                        ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
+                        Debug.Assert(va.size != 0);
+                        Debug.Assert(ia.size != 0);
                     }
                 }
-
-                if (ia.size == 0)
+                else
                 {
-                    m_NextPageVertexCount <<= 1; // Double the vertex count
-                    m_NextPageVertexCount = Math.Max(m_NextPageVertexCount, vertexCount * 2);
-                    m_NextPageVertexCount = Math.Min(m_NextPageVertexCount, UIRenderDevice.maxVerticesPerPage);  // Stay below 64k for 16-bit indices
-                    uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
-                    newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
-                    Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
-                    page = new Page(m_NextPageVertexCount, newPageIndexCount, m_PagesGpuDataIsMapped);
-                    // Link this new page to the head of the list so next allocations have more chance of succeeding rather than scanning through all pages to land in this page
-                    page.next = m_FirstPage;
-                    m_FirstPage = page;
+                    // Search for an empty page that offers the best fit.
+                    Page current = m_FirstPage;
+                    Page lastPage = m_FirstPage;
+                    int combinedStride = Unsafe.SizeOf<Vertex>() + (int)m_ExtrasStride;
+                    int requestedVertexBytes = (int)vertexCount * combinedStride;
+                    int requestedIndexBytes = (int)indexCount * sizeof(ushort);
+                    int bestFitExtraVertexBytes = int.MaxValue;
+                    while (current != null)
+                    {
+                        int extraVertexBytes = current.vertices.cpuData.ByteLength - requestedVertexBytes;
+                        int extraIndexBytes = current.indices.cpuData.ByteLength - requestedIndexBytes;
+                        if (current.isEmpty && extraVertexBytes >= 0 && extraIndexBytes >= 0 && extraVertexBytes < bestFitExtraVertexBytes)
+                        {
+                            // The page is empty and large enough and wastes less vertices.
+                            page = current;
+                            bestFitExtraVertexBytes = extraVertexBytes;
+                        }
+
+                        lastPage = current;
+                        current = current.next;
+                    }
+
+                    if (page == null)
+                    {
+                        // If we want to do an allocation larger than the maximum the render device support,
+                        // we allocate a small page and let the alloc fails.
+                        // The page itself is not going to be usable and will be freed after 60 frames.
+                        // This is done because because the page is required when creating the native slice
+                        var pageVertexCount = (vertexCount > UIRenderDevice.maxVerticesPerPage) ? 2 : vertexCount;
+                        Debug.Assert(vertexCount <= UIRenderDevice.maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
+
+                        // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
+                        page = new Page((uint)pageVertexCount, (uint)indexCount, m_ExtrasStride, m_PagesGpuDataIsMapped);
+                        if (lastPage != null)
+                            lastPage.next = page;
+                        else m_FirstPage = page;
+                    }
+
                     va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
                     ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
-                    Debug.Assert(va.size != 0);
-                    Debug.Assert(ia.size != 0);
                 }
-            }
-            else
-            {
-                // Search for an empty page that offers the best fit.
-                Page current = m_FirstPage;
-                Page lastPage = m_FirstPage;
-                int bestFitExtraVertices = int.MaxValue;
-                while (current != null)
+
+
+                Debug.Assert(va.size == vertexCount, "Vertices allocated != Vertices requested");
+                Debug.Assert(ia.size == indexCount, "Indices allocated != Indices requested");
+
+                // If the allocated VB or IB has a different size than expected, both are invalidated.
+                // The user may check one buffer size but not the other.
+                if (va.size != vertexCount || ia.size != indexCount)
                 {
-                    int extraVertices = current.vertices.cpuData.Length - (int)vertexCount;
-                    int extraIndices = current.indices.cpuData.Length - (int)indexCount;
-                    if (current.isEmpty && extraVertices >= 0 && extraIndices >= 0 && extraVertices < bestFitExtraVertices)
-                    {
-                        // The page is empty and large enough and wastes less vertices.
-                        page = current;
-                        bestFitExtraVertices = extraVertices;
-                    }
+                    if (va.handle != null)
+                        page.vertices.allocator.Free(va);
+                    if (ia.handle != null)
+                        page.indices.allocator.Free(ia);
 
-                    lastPage = current;
-                    current = current.next;
+                    ia = new Alloc();
+                    va = new Alloc();
                 }
 
-                if (page == null)
-                {
-                    // If we want to do an allocation larger than the maximum the render device support,
-                    // we allocate a small page and let the alloc fails.
-                    // The page itself is not going to be usable and will be freed after 60 frames.
-                    // This is done because because the page is required when creating the native slice
-                    var pageVertexCount = (vertexCount > UIRenderDevice.maxVerticesPerPage) ? 2 : vertexCount;
-                    Debug.Assert(vertexCount <= UIRenderDevice.maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
+                if (va.size > 0)
+                    page.MarkVertexRangeDirty(va.start, va.size);
+                if (ia.size > 0)
+                    page.indices.AddDirtyRange(ia.start, ia.size);
 
-                    // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
-                    page = new Page((uint)pageVertexCount, (uint)indexCount, m_PagesGpuDataIsMapped);
-                    if (lastPage != null)
-                        lastPage.next = page;
-                    else m_FirstPage = page;
-                }
+                vertexData = page.vertices.cpuData.Slice((int)va.start, (int)va.size);
+                indexData = page.indices.cpuData.SliceAs<UInt16>((int)ia.start, (int)ia.size);
 
-                va = page.vertices.allocator.Allocate((uint)vertexCount, shortLived);
-                ia = page.indices.allocator.Allocate((uint)indexCount, shortLived);
+                meshHandle.allocPage = page;
+                meshHandle.allocVerts = va;
+                meshHandle.allocIndices = ia;
+                meshHandle.allocTime = m_FrameIndex;
+
             }
-
-
-            Debug.Assert(va.size == vertexCount, "Vertices allocated != Vertices requested");
-            Debug.Assert(ia.size == indexCount, "Indices allocated != Indices requested");
-
-            // If the allocated VB or IB has a different size than expected, both are invalidated.
-            // The user may check one buffer size but not the other.
-            if (va.size != vertexCount || ia.size != indexCount)
-            {
-                if (va.handle != null)
-                    page.vertices.allocator.Free(va);
-                if (ia.handle != null)
-                    page.indices.allocator.Free(ia);
-
-                ia = new Alloc();
-                va = new Alloc();
-            }
-
-            if (va.size > 0)
-                page.vertices.AddDirtyRange(va.start, va.size);
-            if (ia.size > 0)
-                page.indices.AddDirtyRange(ia.start, ia.size);
-
-            vertexData = new NativeSlice<Vertex>(page.vertices.cpuData, (int)va.start, (int)va.size);
-            indexData = new NativeSlice<UInt16>(page.indices.cpuData, (int)ia.start, (int)ia.size);
-
-            meshHandle.allocPage = page;
-            meshHandle.allocVerts = va;
-            meshHandle.allocIndices = ia;
-            meshHandle.allocTime = m_FrameIndex;
-
-            s_MarkerAllocate.End();
         }
 
         protected bool TryAllocFromPage(Page page, uint vertexCount, uint indexCount, ref Alloc va, ref Alloc ia, bool shortLived)

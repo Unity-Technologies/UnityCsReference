@@ -35,9 +35,33 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
         public bool KeepAliveEnabled;
     }
 
+    [Serializable]
+    struct CloneEditorAnalyticsData : ICustomInstanceAnalyticsData
+    {
+        public bool IsKeepActive;
+        public bool IsEditorActiveOnStart;
+        public string ToJsonString() => JsonUtility.ToJson(this);
+    }
+
     internal const bool k_DefaultKeepAliveEnabled = true;
 
     internal override string GetTypeNameForAnalytics() => "VirtualEditor";
+
+    protected internal override ICustomInstanceAnalyticsData GetCustomAnalyticsData(ExecutionGraph graph)
+    {
+        var keepActive = GetUserSettings(
+            new UserSettings { KeepAliveEnabled = k_DefaultKeepAliveEnabled }).KeepAliveEnabled;
+        var editorActiveOnStart = false;
+        foreach (var node in graph.GetNodes(ExecutionStage.Deploy))
+        {
+            if (node is CloneEditorDeployNode deployNode)
+            {
+                editorActiveOnStart = deployNode.AlreadyActive.GetValue<bool>();
+                break;
+            }
+        }
+        return new CloneEditorAnalyticsData { IsKeepActive = keepActive, IsEditorActiveOnStart = editorActiveOnStart };
+    }
 
     protected internal override void SetupExecutionGraph(ExecutionGraphBuilder graphBuilder)
     {

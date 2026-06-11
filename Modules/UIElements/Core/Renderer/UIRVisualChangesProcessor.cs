@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
@@ -118,11 +119,12 @@ namespace UnityEngine.UIElements.UIR
                     rootEntry = rootEntry
                 });
 
-                k_GenerateEntriesMarker.Begin();
-                m_MeshGenerationContext.Begin(rootEntry, renderData.owner, renderData);
-                m_ElementBuilder.Build(m_MeshGenerationContext);
-                m_MeshGenerationContext.End();
-                k_GenerateEntriesMarker.End();
+                using (k_GenerateEntriesMarker.Auto())
+                {
+                    m_MeshGenerationContext.Begin(rootEntry, renderData.owner, renderData);
+                    m_ElementBuilder.Build(m_MeshGenerationContext);
+                    m_MeshGenerationContext.End();
+                }
 
                 if (hierarchical)
                 {
@@ -153,79 +155,83 @@ namespace UnityEngine.UIElements.UIR
 
             public void ConvertEntriesToCommands(ref ChainBuilderStats stats)
             {
-                k_ConvertEntriesToCommandsMarker.Begin();
-
-                // The depth from the VE that triggered a recursive visuals update. Not necessarily equal
-                // to the depth of the VE in the hierarchy.
-                int depth = 0;
-                for (int i = 0; i < m_EntryProcessingList.Count; ++i)
+                using (k_ConvertEntriesToCommandsMarker.Auto())
                 {
-                    var processingInfo = m_EntryProcessingList[i];
-                    if (processingInfo.type == VisualsProcessingType.Head)
+
+                    // The depth from the VE that triggered a recursive visuals update. Not necessarily equal
+                    // to the depth of the VE in the hierarchy.
+                    int depth = 0;
+                    for (int i = 0; i < m_EntryProcessingList.Count; ++i)
                     {
-                        EntryProcessor processor;
-                        if (depth < m_Processors.Count)
-                            processor = m_Processors[depth];
+                        var processingInfo = m_EntryProcessingList[i];
+                        if (processingInfo.type == VisualsProcessingType.Head)
+                        {
+                            EntryProcessor processor;
+                            if (depth < m_Processors.Count)
+                                processor = m_Processors[depth];
+                            else
+                            {
+                                processor = new EntryProcessor();
+                                m_Processors.Add(processor);
+                            }
+
+                            ++depth;
+                            processor.Init(processingInfo.rootEntry, m_RenderTreeManager, processingInfo.renderData);
+                            processor.ProcessHead();
+                            CommandManipulator.ReplaceHeadCommands(m_RenderTreeManager, processingInfo.renderData, processor);
+                        }
                         else
                         {
-                            processor = new EntryProcessor();
-                            m_Processors.Add(processor);
+                            --depth;
+                            EntryProcessor processor = m_Processors[depth];
+                            processor.ProcessTail();
+                            CommandManipulator.ReplaceTailCommands(m_RenderTreeManager, processingInfo.renderData, processor);
                         }
+                    }
 
-                        ++depth;
-                        processor.Init(processingInfo.rootEntry, m_RenderTreeManager, processingInfo.renderData);
-                        processor.ProcessHead();
-                        CommandManipulator.ReplaceHeadCommands(m_RenderTreeManager, processingInfo.renderData, processor);
-                    }
-                    else
-                    {
-                        --depth;
-                        EntryProcessor processor = m_Processors[depth];
-                        processor.ProcessTail();
-                        CommandManipulator.ReplaceTailCommands(m_RenderTreeManager, processingInfo.renderData, processor);
-                    }
+                    m_EntryProcessingList.Clear();
+
+                    for (int i = 0; i < m_Processors.Count; ++i)
+                        m_Processors[i].ClearReferences();
+
                 }
-
-                m_EntryProcessingList.Clear();
-
-                for (int i = 0; i < m_Processors.Count; ++i)
-                    m_Processors[i].ClearReferences();
-
-                k_ConvertEntriesToCommandsMarker.End();
             }
 
 
             public static void UpdateOpacityId(RenderData renderData, RenderTreeManager renderTreeManager)
             {
-                k_UpdateOpacityIdMarker.Begin();
-
-                if (renderData.headMesh != null)
-                    DoUpdateOpacityId(renderData, renderTreeManager, renderData.headMesh);
-
-                if (renderData.tailMesh != null)
-                    DoUpdateOpacityId(renderData, renderTreeManager, renderData.tailMesh);
-
-                if (renderData.hasExtraMeshes)
+                using (k_UpdateOpacityIdMarker.Auto())
                 {
-                    ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
-                    BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
-                    while (extraMesh != null)
-                    {
-                        DoUpdateOpacityId(renderData, renderTreeManager, extraMesh.data);
-                        extraMesh = extraMesh.next;
-                    }
-                }
 
-                k_UpdateOpacityIdMarker.End();
+                    if (renderData.headMesh != null)
+                        DoUpdateOpacityId(renderData, renderTreeManager, renderData.headMesh);
+
+                    if (renderData.tailMesh != null)
+                        DoUpdateOpacityId(renderData, renderTreeManager, renderData.tailMesh);
+
+                    if (renderData.hasExtraMeshes)
+                    {
+                        ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
+                        BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
+                        while (extraMesh != null)
+                        {
+                            DoUpdateOpacityId(renderData, renderTreeManager, extraMesh.data);
+                            extraMesh = extraMesh.next;
+                        }
+                    }
+
+                }
             }
 
             static void DoUpdateOpacityId(RenderData renderData, RenderTreeManager renderTreeManager, MeshHandle mesh)
             {
                 int vertCount = (int)mesh.allocVerts.size;
-                NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
-                renderTreeManager.device.Update(mesh, (uint)vertCount, out NativeSlice<Vertex> newVerts);
+                RawSlice oldSlice = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
+                renderTreeManager.device.Update(mesh, (uint)vertCount, out RawSlice newSlice);
+
                 ushort opacityId = ShaderInfoAllocator.BMPAllocToId(renderData.opacityID);
-                renderTreeManager.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityId, vertCount);
+                renderTreeManager.opacityIdAccelerator.CreateJob(
+                    oldSlice.GetUnsafeReadOnlyPtr(), newSlice.GetUnsafePtr(), newSlice.Stride, opacityId, vertCount);
             }
 
             #region Dispose Pattern

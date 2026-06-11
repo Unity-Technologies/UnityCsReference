@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId toggleOnLabelClickProperty = nameof(toggleOnLabelClick);
 
+        static readonly UniqueStyleString k_CheckmarkName = new("unity-checkmark");
+
         protected Label m_Label;
         internal protected readonly VisualElement m_CheckMark;
         internal readonly Clickable m_Clickable;
@@ -56,7 +58,8 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             // Allocate and add the checkmark to the hierarchy
-            m_CheckMark = new VisualElement() { name = "unity-checkmark", pickingMode = PickingMode.Ignore };
+            m_CheckMark = new VisualElement() { pickingMode = PickingMode.Ignore };
+            m_CheckMark.SetName(k_CheckmarkName);
             visualInput.Add(m_CheckMark);
 
             // The picking mode needs to be Position in order to have the Pseudostate Hover applied...

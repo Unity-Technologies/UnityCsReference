@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEditor;
+using UnityEditor.Accessibility;
 using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
@@ -57,6 +58,7 @@ namespace Unity.Profiling.Editor.UI
             m_SettingsService.TargetFrameDurationChanged += OnTargetFrameDurationChanged;
             m_SettingsService.MaximumFrameCountChanged += OnMaximumFrameCountChanged;
             m_ProfilerWindow.SelectedFrameIndexChanged += OnNewFrameIndexSelectedInProfilerWindow;
+            UserAccessiblitySettings.colorBlindConditionChanged += OnColorBlindSettingChanged;
         }
 
         public IResponder Responder { get; }
@@ -119,6 +121,7 @@ namespace Unity.Profiling.Editor.UI
         {
             if (disposing)
             {
+                UserAccessiblitySettings.colorBlindConditionChanged -= OnColorBlindSettingChanged;
                 m_ProfilerWindow.SelectedFrameIndexChanged -= OnNewFrameIndexSelectedInProfilerWindow;
                 m_SettingsService.MaximumFrameCountChanged -= OnMaximumFrameCountChanged;
                 m_SettingsService.TargetFrameDurationChanged -= OnTargetFrameDurationChanged;
@@ -214,6 +217,14 @@ namespace Unity.Profiling.Editor.UI
             MoveFrameIndicatorToFrameRange(m_ProfilerWindow.SelectedFrameRange);
         }
 
+        void OnColorBlindSettingChanged()
+        {
+            if (!IsViewLoaded)
+                return;
+
+            m_BlocksGraphView?.MarkDirtyRepaint();
+        }
+
         // This allows the user to click on the key to switch modules.
         void OnKeyContainerClicked(ClickEvent evt)
         {
@@ -291,7 +302,7 @@ namespace Unity.Profiling.Editor.UI
 
         Color BlocksGraphViewRender.IDataSource.ColorForDataSeriesInGraphView(int dataSeriesIndex)
         {
-            return BottlenecksChartViewModel.Colors[dataSeriesIndex];
+            return BottlenecksChartViewModel.GetColorForDataSeries(dataSeriesIndex);
         }
 
         Color BlocksGraphViewRender.IDataSource.InvalidColorForDataSeriesInGraphView()

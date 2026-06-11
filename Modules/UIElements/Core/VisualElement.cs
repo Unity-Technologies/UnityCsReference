@@ -1458,11 +1458,28 @@ namespace UnityEngine.UIElements
                 if (m_Name == value)
                     return;
                 m_Name = value;
-                // Pre-emptively convert name to UniqueStyleString ID
-                m_NameId = string.IsNullOrEmpty(value) ? -1 : new UniqueStyleString(value).id;
-                IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Name);
-                NotifyPropertyChanged(nameProperty);
+                SetNameId(string.IsNullOrEmpty(value) ? -1 : new UniqueStyleString(value).id);
             }
+        }
+
+        // Sets the element name from a pre-interned UniqueStyleString, skipping the per-call
+        // dictionary lookup that the string overload incurs. Use this overload from controls
+        // that always assign the same name string by hoisting that string into a `static
+        // readonly UniqueStyleString` constant.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.HierarchyModule")]
+        internal void SetName(UniqueStyleString uniqueName)
+        {
+            if (m_NameId == uniqueName.id)
+                return;
+            m_Name = uniqueName.value;
+            SetNameId(uniqueName.id);
+        }
+
+        private void SetNameId(int nameId)
+        {
+            m_NameId = nameId;
+            IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Name);
+            NotifyPropertyChanged(nameProperty);
         }
 
         /// <summary>

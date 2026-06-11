@@ -23,24 +23,24 @@ namespace Unity.GraphToolkit.Editor
         Hash128 m_InputPortGuid;
 
         /// <summary>
-        /// The output port GUID for this connection.
+        /// The ID of the output port for this connection.
         /// </summary>
-        public Hash128 OutputPortGuid => m_OutputPortGuid;
+        public Hash128 OutputPortID => m_OutputPortGuid;
 
         /// <summary>
-        /// The input port GUID for this connection.
+        /// The ID of the input port for this connection.
         /// </summary>
-        public Hash128 InputPortGuid => m_InputPortGuid;
+        public Hash128 InputPortID => m_InputPortGuid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Wire"/> class.
         /// </summary>
-        /// <param name="outputPortGuid">The GUID of the output port where the connection starts.</param>
-        /// <param name="inputPortGuid">The GUID of the input port where the connection ends.</param>
-        internal Wire(Hash128 outputPortGuid, Hash128 inputPortGuid)
+        /// <param name="outputPortID">The ID of the output port where the connection starts.</param>
+        /// <param name="inputPortID">The ID of the input port where the connection ends.</param>
+        internal Wire(Hash128 outputPortID, Hash128 inputPortID)
         {
-            m_OutputPortGuid = outputPortGuid;
-            m_InputPortGuid = inputPortGuid;
+            m_OutputPortGuid = outputPortID;
+            m_InputPortGuid = inputPortID;
         }
 
         /// <inheritdoc />
@@ -52,8 +52,8 @@ namespace Unity.GraphToolkit.Editor
             if (ReferenceEquals(this, other))
                 return true;
 
-            return OutputPortGuid == other.OutputPortGuid
-                && InputPortGuid == other.InputPortGuid;
+            return OutputPortID == other.OutputPortID
+                && InputPortID == other.InputPortID;
         }
 
         /// <inheritdoc />
@@ -62,7 +62,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return HashCode.Combine(OutputPortGuid, InputPortGuid);
+            return HashCode.Combine(OutputPortID, InputPortID);
         }
 
         /// <summary>

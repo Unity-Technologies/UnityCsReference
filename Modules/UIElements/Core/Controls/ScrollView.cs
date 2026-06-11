@@ -856,6 +856,9 @@ namespace UnityEngine.UIElements
             get { return m_ContentContainer; }
         }
 
+        // Use for available content height — unlike the viewport, this isn't shrunk by align-self in v+h mode.
+        internal VisualElement contentAndVerticalScrollContainer => m_ContentAndVerticalScrollContainer;
+
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -933,6 +936,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string vScrollerUssClassName = ussClassName + "__vertical-scroller";
         internal static readonly UniqueStyleString vScrollerUssClassNameUnique = new(vScrollerUssClassName);
+
+        /// <summary>
+        /// USS class name applied to the ScrollView when it is in navigation-driven scrolling mode.
+        /// In this mode, directional <see cref="NavigationMoveEvent"/>s scroll the content instead of moving focus.
+        /// This class is toggled by <see cref="NavigationSubmitEvent"/> when the ScrollView itself is focused,
+        /// and is cleared when focus leaves the ScrollView.
+        /// </summary>
+        public static readonly string scrollingUssClassName = ussClassName + "--scrolling";
+        internal static readonly UniqueStyleString scrollingUssClassNameUnique = new(scrollingUssClassName);
 
         /// <summary>
         /// USS class name that's added when the ScrollView is in horizontal mode.
@@ -1042,6 +1054,9 @@ namespace UnityEngine.UIElements
             touchScrollBehavior = TouchScrollBehavior.Clamped;
 
             Callbacks.OnScrollWheel.Register(this);
+            Callbacks.OnNavigationMove.Register(this);
+            Callbacks.OnNavigationSubmit.Register(this);
+            Callbacks.OnFocusOut.Register(this);
             Callbacks.OnScrollerGeometryChanged.Register(verticalScroller);
             Callbacks.OnScrollerGeometryChanged.Register(horizontalScroller);
 
@@ -1894,6 +1909,89 @@ namespace UnityEngine.UIElements
             }
         }
 
+        void OnNavigationMove(NavigationMoveEvent evt)
+        {
+            if (evt.isPropagationStopped)
+                return;
+
+            Scroller targetScroller;
+            bool scrollIncrease;
+            switch (evt.direction)
+            {
+                case NavigationMoveEvent.Direction.Up:
+                    if (mode == ScrollViewMode.Horizontal || scrollableHeight <= 0) return;
+                    targetScroller = verticalScroller;
+                    scrollIncrease = false;
+                    break;
+                case NavigationMoveEvent.Direction.Down:
+                    if (mode == ScrollViewMode.Horizontal || scrollableHeight <= 0) return;
+                    targetScroller = verticalScroller;
+                    scrollIncrease = true;
+                    break;
+                case NavigationMoveEvent.Direction.Left:
+                    if (mode == ScrollViewMode.Vertical || scrollableWidth <= 0) return;
+                    targetScroller = horizontalScroller;
+                    scrollIncrease = false;
+                    break;
+                case NavigationMoveEvent.Direction.Right:
+                    if (mode == ScrollViewMode.Vertical || scrollableWidth <= 0) return;
+                    targetScroller = horizontalScroller;
+                    scrollIncrease = true;
+                    break;
+                default:
+                    return;
+            }
+
+            // When not in scrolling mode, allow focus to move to other focusable elements instead of scrolling.
+            // This prevents the ScrollView from trapping arrow key navigation.
+            //
+            // The search scope depends on the event target:
+            //   - ScrollView itself: Search the entire panel to find siblings (excluding the ScrollView's own
+            //                        children so scrollbars don't interfere).
+            //   - Child element:     Search only within the content area (outer elements are reached when the
+            //                        unconsumed event bubbles up).
+            if (!ClassListContains(scrollingUssClassNameUnique))
+            {
+                var focused = evt.target as VisualElement;
+                var svIsTarget = evt.target == (object)this;
+                var searchRoot = svIsTarget ? panel?.visualTree : contentViewport;
+                var excludeSubtree = svIsTarget ? this : null;
+                if (searchRoot != null && focused != null &&
+                    NavigateFocusRing.HasFocusableInDirection(searchRoot, focused, evt.direction, excludeSubtree))
+                {
+                    return;
+                }
+            }
+
+            var oldValue = targetScroller.value;
+            if (scrollIncrease) targetScroller.ScrollPageDown();
+            else targetScroller.ScrollPageUp();
+
+            // Don't consume the event at scroll boundaries — allow focus traversal to move out of the ScrollView.
+            if (Mathf.Approximately(targetScroller.value, oldValue))
+                return;
+
+            UpdateElasticBehaviour();
+            evt.StopPropagation();
+            focusController?.IgnoreEvent(evt);
+        }
+
+        void OnNavigationSubmit(NavigationSubmitEvent evt)
+        {
+            if (evt.target != (object)this)
+                return;
+            EnableInClassList(scrollingUssClassNameUnique, !ClassListContains(scrollingUssClassNameUnique));
+            evt.StopPropagation();
+            focusController?.IgnoreEvent(evt);
+        }
+
+        void OnFocusOut(FocusOutEvent evt)
+        {
+            if (evt.target != (object)this)
+                return;
+            RemoveFromClassList(scrollingUssClassNameUnique);
+        }
+
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
             // Do not read single line height yet: SV or one of its ancestors might have custom variable values that affect it.
@@ -2000,6 +2098,15 @@ namespace UnityEngine.UIElements
             public static readonly EventCallbackDefinition<ScrollView> OnScrollWheel =
                 EventCallback.Create<WheelEvent, ScrollView>(static (e, self) => self.OnScrollWheel(e),
                     CallbackOptions.IncludeDisabled);
+
+            public static readonly EventCallbackDefinition<ScrollView> OnNavigationMove =
+                EventCallback.Create<NavigationMoveEvent, ScrollView>(static (e, self) => self.OnNavigationMove(e));
+
+            public static readonly EventCallbackDefinition<ScrollView> OnNavigationSubmit =
+                EventCallback.Create<NavigationSubmitEvent, ScrollView>(static (e, self) => self.OnNavigationSubmit(e));
+
+            public static readonly EventCallbackDefinition<ScrollView> OnFocusOut =
+                EventCallback.Create<FocusOutEvent, ScrollView>(static (e, self) => self.OnFocusOut(e));
 
             public static readonly EventCallbackDefinition<ScrollView> OnRootCustomStyleResolved =
                 EventCallback.Create<CustomStyleResolvedEvent, ScrollView>(static (e, self) =>

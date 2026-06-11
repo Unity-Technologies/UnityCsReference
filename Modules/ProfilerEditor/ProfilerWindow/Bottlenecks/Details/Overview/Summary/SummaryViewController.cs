@@ -54,6 +54,15 @@ namespace Unity.Profiling.Editor.UI
             m_DetailsBinder = detailsBinder;
         }
 
+        protected void DeferIfNotCancelled(Action action, CancellationToken cancellationToken)
+        {
+            View.schedule.Execute(() =>
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+                action();
+            });
+        }
+
         protected override VisualElement LoadView()
         {
             var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml("SummaryView.uxml") ?? throw new InvalidViewDefinedInUxmlException();
@@ -136,7 +145,8 @@ namespace Unity.Profiling.Editor.UI
                     {
                         HideContentActivityIndicators();
                         HideContentViewsAndShowNoDataView();
-                        onDetailsProviderReady?.Invoke(null);
+                        if (onDetailsProviderReady != null)
+                            DeferIfNotCancelled(() => onDetailsProviderReady(null), cancellationToken);
                     }
                 }
                 else if (isCurrentBuilder)
@@ -148,7 +158,8 @@ namespace Unity.Profiling.Editor.UI
                     m_DetailsBinder.BindDetailsElement(View, detailsProvider);
 
                     // Invoke callback to notify caller that details provider is ready.
-                    onDetailsProviderReady?.Invoke(detailsProvider);
+                    if (onDetailsProviderReady != null)
+                        DeferIfNotCancelled(() => onDetailsProviderReady(detailsProvider), cancellationToken);
                 }
             }
         }

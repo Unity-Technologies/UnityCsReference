@@ -20,10 +20,12 @@ namespace UnityEngine.UIElements
         [RequiredMember]
         public static void InitializeUIElementsManaged()
         {
-            s_InitializeUIElementsManagedMarker.Begin();
-            RegisterBuiltInPropertyBags();
-            RegisterConverters();
-            s_InitializeUIElementsManagedMarker.End();
+            using (s_InitializeUIElementsManagedMarker.Auto())
+            {
+                RegisterBuiltInPropertyBags();
+                RegisterConverters();
+                ProfilerUIToolkit.RegisterManagedCallbacks();
+            }
         }
 
         internal static void RegisterBuiltInPropertyBags()

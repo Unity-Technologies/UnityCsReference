@@ -2503,6 +2503,10 @@ namespace Unity.GraphToolkit.Editor
             // measure zoom level necessary to fit the canvas rect into the screen rect
             float zoomLevel = Math.Min(identity.width / rectToFit.width, identity.height / rectToFit.height);
 
+            // When layout isn't ready, zero dimensions produce NaN; default to 1f (100%).
+            if (float.IsNaN(zoomLevel))
+                zoomLevel = 1f;
+
             // clamp
             zoomLevel = Mathf.Clamp(zoomLevel, m_MinScale, Math.Min(m_MaxScale, maxZoomLevel > 0 ? maxZoomLevel : m_MaxScaleOnFrame));
 
@@ -4825,6 +4829,7 @@ namespace Unity.GraphToolkit.Editor
                 m_GraphView = graphView;
             }
 
+            public void AppendDeveloperBuildMenuActions(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendDeveloperBuildMenuActions(evt, selection);
             public void AppendInsertBlockItemMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection, bool insertAbove, string itemName = "") => m_GraphView.AppendInsertBlockItemMenuItem(evt, selection, insertAbove, itemName);
             public void AppendFontSizeAndThemeMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendFontSizeAndThemeMenuItem(evt, selection);
             public void AppendCreatePlacematMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendCreatePlacematMenuItem(evt, selection);

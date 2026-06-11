@@ -32,6 +32,9 @@ namespace UnityEditor.IMGUI.Controls
         }
         private static readonly float kBorderThickness = 1f;
         private static readonly float kRightMargin = 13f;
+        // Sentinel used when the window has no explicit size constraint set by the caller. Coming from EditorWindow defaults.
+        private static readonly Vector2 k_MinWindowSize = new Vector2(50, 50);
+        private static readonly Vector2 k_MaxWindowSize = new Vector2(4000, 4000);
 
         private AdvancedDropdownGUI m_Gui = null;
         private AdvancedDropdownDataSource m_DataSource = null;
@@ -48,24 +51,75 @@ namespace UnityEditor.IMGUI.Controls
         private Rect m_ButtonRectScreenPos;
         private Stack<AdvancedDropdownItem> m_ViewsStack = new Stack<AdvancedDropdownItem>();
         private bool m_DirtyList = true;
+        private bool m_NeedsResize = false;
+
+        // Caller-supplied size constraints captured in Init() so the dynamic resize logic can
+        // still respect minimumSize/maximumSize even after they're overwritten by ShowAsDropDown.
+        private Vector2 m_OriginalMinSize;
+        private Vector2 m_OriginalMaxSize;
+
+        // Set by the AdvancedDropdown wrapper before Init runs. null means the caller didn't
+        // supply bounds → fall back to design defaults. Bypasses EditorWindow's minSize/maxSize
+        // so we can distinguish "unset" from "set to the EditorWindow default of (50, 50)".
+        internal Vector2? callerMinSize { get; set; }
+        internal Vector2? callerMaxSize { get; set; }
+
+        // Default minimum content height applied when the caller didn't pass minimumSize.
+        // ~6 items in the default Editor skin — prevents 1–2 item levels from looking cramped.
+        // No default upper bound: tall levels grow to fit; ContainerWindow.FitRectToMouseScreen
+        // already prevents the window from running off-screen.
+        private const float k_DefaultMinContentHeight = 120f;
 
         private string m_Search = "";
         private bool hasSearch { get { return !string.IsNullOrEmpty(m_Search); } }
+
+        // Snapshot of where the user was when search started, so clearing the search box
+        // restores their position instead of dropping them back at the root.
+        private AdvancedDropdownItem m_PreSearchTree;
+        private Stack<AdvancedDropdownItem> m_PreSearchViewsStack;
+
         protected internal string searchString
         {
             get { return m_Search; }
             set
             {
+                bool wasSearching = hasSearch;
                 m_Search = value;
+                bool isSearching = hasSearch;
+
+                // Entering search — remember the user's current level (and views stack) so
+                // we can restore them when the search box is cleared.
+                if (!wasSearching && isSearching)
+                {
+                    m_PreSearchTree = m_CurrentlyRenderedTree;
+                    m_PreSearchViewsStack = new Stack<AdvancedDropdownItem>(new Stack<AdvancedDropdownItem>(m_ViewsStack));
+                }
+
+                // Pass the user's real tree (not searchTree) so contextual search scopes correctly
+                // on first entry. RebuildSearch ignores updates where currentTree == searchTree,
+                // so subsequent keystrokes don't override the context.
                 m_DataSource.RebuildSearch(m_Search, m_CurrentlyRenderedTree);
-                m_CurrentlyRenderedTree = m_DataSource.mainTree;
-                if (hasSearch)
+
+                if (isSearching)
                 {
                     m_CurrentlyRenderedTree = m_DataSource.searchTree;
                     if (state.GetSelectedIndex(m_CurrentlyRenderedTree) < 0)
                     {
                         state.SetSelectedIndex(m_CurrentlyRenderedTree, 0);
                     }
+                }
+                else if (m_PreSearchTree != null)
+                {
+                    // Exiting search — restore the level + stack the user was on when search started.
+                    m_CurrentlyRenderedTree = m_PreSearchTree;
+                    m_ViewsStack = m_PreSearchViewsStack;
+                    m_PreSearchTree = null;
+                    m_PreSearchViewsStack = null;
+                }
+                else
+                {
+                    // searchString set to empty before any search was ever active — default to root.
+                    m_CurrentlyRenderedTree = m_DataSource.mainTree;
                 }
             }
         }
@@ -147,13 +201,46 @@ namespace UnityEditor.IMGUI.Controls
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
             OnDirtyList();
             m_CurrentlyRenderedTree = hasSearch ? m_DataSource.searchTree : m_DataSource.mainTree;
-            ShowAsDropDown(buttonRect, CalculateWindowSize(buttonRect), GetLocationPriority());
+
+            // Apply saved state before calculating size, so if it points to a child level, calculate size for it
+            SetSelectionFromState();
+
+            // Force the GUI to initialise its header/search rects so CalculateDefaultExtraHeight()
+            // returns the real size on the very first call.
+            m_Gui.CalculateContentSize(m_DataSource, m_CurrentlyRenderedTree);
+
+            // If callerMinSize/callerMaxSize weren't set by wrapper, check if window.minSize/maxSize
+            // were set by direct callers before Init(). Only use them if they differ from EditorWindow
+            // defaults (50, 50) to distinguish "explicitly set" from "unset".
+            // Edge case: A direct caller who explicitly wants (50, 50) or (4000, 4000) will be treated as "not set" and get design defaults.
+            // Use the wrapper or set callerMinSize/callerMaxSize directly for exact control.
+            if (!callerMinSize.HasValue && minSize != k_MinWindowSize)
+                callerMinSize = minSize;
+            if (!callerMaxSize.HasValue && maxSize != k_MaxWindowSize)
+                callerMaxSize = maxSize;
+
+            // Apply caller bounds if supplied, otherwise fall back to defaults. The min default
+            // prevents 1-item levels from looking cramped; for max, we use the EditorWindow-level
+            // cap (4000 px) so content drives the window height — screen-fit clamping in
+            // CalculateWindowSize handles the off-screen case.
+            m_OriginalMinSize = callerMinSize ?? new Vector2(0, k_DefaultMinContentHeight + CalculateDefaultExtraHeight());
+            m_OriginalMaxSize = callerMaxSize ?? k_MaxWindowSize;
+
+            // Calculate initial size based on the current level (not entire tree)
+            var initialSize = CalculateWindowSize(buttonRect);
+
+            // Lock the window to the calculated size; a subsequent navigation will widen
+            // the bounds again via ResizeWindowForCurrentLevel.
+            minSize = initialSize;
+            maxSize = initialSize;
+
+            ShowAsDropDown(buttonRect, initialSize, GetLocationPriority());
+
             if (setInitialSelectionPosition)
             {
                 m_InitialSelectionPosition = m_Gui.GetSelectionHeight(m_DataSource, buttonRect);
             }
             wantsMouseMove = true;
-            SetSelectionFromState();
         }
 
         void SetSelectionFromState()
@@ -185,20 +272,18 @@ namespace UnityEditor.IMGUI.Controls
 
         protected virtual Vector2 CalculateWindowSize(Rect buttonRect)
         {
-            var size = m_Gui.CalculateContentSize(m_DataSource);
+            return CalculateWindowSize(buttonRect, m_CurrentlyRenderedTree, m_OriginalMinSize, m_OriginalMaxSize);
+        }
+
+        protected virtual Vector2 CalculateWindowSize(Rect buttonRect, AdvancedDropdownItem currentLevel, Vector2 minBounds, Vector2 maxBounds)
+        {
+            var size = m_Gui.CalculateContentSize(m_DataSource, currentLevel);
             // Add 1 pixel for each border
             size.x += kBorderThickness * 2;
-            size.y += kBorderThickness * 2;
             size.x += kRightMargin;
+            size.y += CalculateDefaultExtraHeight();
 
-            size.y += m_Gui.searchHeight;
-
-            if (showHeader)
-            {
-                size.y += m_Gui.headerHeight;
-            }
-
-            size.y = Mathf.Clamp(size.y, minSize.y, maxSize.y);
+            size.y = Mathf.Clamp(size.y, minBounds.y, maxBounds.y);
 
             var fitRect = ContainerWindow.FitRectToMouseScreen(new Rect(buttonRect.x, buttonRect.y, size.x, size.y), true, null);
             // If the scrollbar is visible, we want to add extra space to compensate it
@@ -210,16 +295,23 @@ namespace UnityEditor.IMGUI.Controls
             {
                 size.x = buttonRect.width;
             }
-            if (size.x < minSize.x)
+            if (size.x < minBounds.x)
             {
-                size.x = minSize.x;
+                size.x = minBounds.x;
             }
-            if (size.y < minSize.y)
+            if (size.y < minBounds.y)
             {
-                size.y = minSize.y;
+                size.y = minBounds.y;
             }
 
             return new Vector2(size.x, size.y);
+        }
+
+        // Height consumed by the search field, header, and top/bottom borders —
+        // i.e. everything around the scrollable content area.
+        private float CalculateDefaultExtraHeight()
+        {
+            return (kBorderThickness * 2) + m_Gui.searchHeight + (showHeader ? m_Gui.headerHeight : 0);
         }
 
         internal void OnGUI()
@@ -229,6 +321,13 @@ namespace UnityEditor.IMGUI.Controls
             if (m_DirtyList)
             {
                 OnDirtyList();
+            }
+
+            // Handle resize request during Layout event (when GUI functions are safe to call)
+            if (m_NeedsResize && Event.current.type == EventType.Layout)
+            {
+                m_NeedsResize = false;
+                ResizeWindowForCurrentLevel();
             }
 
             HandleKeyboard();
@@ -517,6 +616,9 @@ namespace UnityEditor.IMGUI.Controls
                 m_NewAnimTarget = -1;
             m_AnimationTree = m_CurrentlyRenderedTree;
             m_CurrentlyRenderedTree = m_ViewsStack.Pop();
+
+            // Request resize on next Layout event (safe to call GUI functions)
+            m_NeedsResize = true;
         }
 
         private void GoToChild()
@@ -530,6 +632,35 @@ namespace UnityEditor.IMGUI.Controls
                 m_NewAnimTarget = 1;
             m_AnimationTree = m_CurrentlyRenderedTree;
             m_CurrentlyRenderedTree = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
+
+            // Request resize on next Layout event (safe to call GUI functions)
+            m_NeedsResize = true;
+        }
+
+        private void ResizeWindowForCurrentLevel()
+        {
+            // Safety check: don't resize if tree is null
+            if (m_CurrentlyRenderedTree == null)
+            {
+                return;
+            }
+
+            var newSize = CalculateWindowSize(m_ButtonRectScreenPos);
+
+            // Skip if computed size matches current window size — common for subclasses that pin the window to a fixed size
+            const float kEpsilon = 0.5f;
+            if (Mathf.Abs(newSize.x - position.width) < kEpsilon && Mathf.Abs(newSize.y - position.height) < kEpsilon)
+                return;
+
+            // Re-run the popup placement so the window stays attached to the button
+            // even when ShowAsDropDown originally shifted it up/left to fit the screen.
+            var newPos = ShowAsDropDownFitToScreen(m_ButtonRectScreenPos, newSize, GetLocationPriority());
+            position = newPos;
+
+            // Lock to the new size, but do not shrink past or grow beyond caller-supplied limits.
+            var fittedSize = new Vector2(newPos.width, newPos.height);
+            minSize = fittedSize;
+            maxSize = fittedSize;
         }
 
         [DidReloadScripts]

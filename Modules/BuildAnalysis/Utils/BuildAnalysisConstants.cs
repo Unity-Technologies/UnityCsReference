@@ -8,6 +8,12 @@ namespace UnityEditor.Build.Analysis
     {
         public const string k_BuildAnalysisFileName = "BuildAnalysis.json";
         public const string k_BuildReportSummaryFileName = "BuildReportSummary.json";
+        public const string k_ContentLayoutFileName = "ContentLayout.json";
         public const string k_ConsoleLogPrefix = "[Build Analysis]";
+
+        // Subfolder inside a build's metadata folder for regenerable cache files.
+        public const string k_BuildHistoryCacheSubfolder = "cache";
+
+        public const string k_BuildAnalysisRelativePath = k_BuildHistoryCacheSubfolder + "/" + k_BuildAnalysisFileName;
     }
 }

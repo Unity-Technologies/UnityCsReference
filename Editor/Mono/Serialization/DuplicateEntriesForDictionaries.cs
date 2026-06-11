@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 
 namespace UnityEngine
@@ -16,7 +15,7 @@ namespace UnityEngine
     /// (<see cref="DictionarySerialization.SetEntriesFromSerializedData"/> and
     /// <see cref="DictionarySerialization.GetDictionaryEntriesForSerialization"/>) are reachable from worker
     /// threads through the native transfer pipeline, while editor cleanup
-    /// (<see cref="DictionarySerialization.PruneDuplicateDictionaryEntriesWhere"/>) and the public
+    /// (<see cref="DictionarySerialization.PruneDuplicateDictionaryEntriesForUnloadedHosts"/>) and the public
     /// <c>SerializedProperty.GetDictionaryDuplicateEntryIndices</c> API are invoked from the main thread.
     /// </summary>
     internal sealed class DuplicateEntriesForDictionaries : IDuplicateEntriesForDictionaries
@@ -81,51 +80,44 @@ namespace UnityEngine
             }
         }
 
-        public int PruneHostsWhere(Predicate<EntityId> shouldRemoveHost)
+        // Main-thread only. Resources.IsInstanceLoaded resolves via Object::IDToPointer, which is the
+        // non-thread-safe variant and DebugAsserts on the main thread (see Runtime/BaseClasses/BaseObject.h
+        // and Runtime/BaseClasses/EntityIdStore.cpp::GetNativePtr). All current call sites
+        // (ObjectChangeEvents.changesPublished, EditorSceneManager.sceneClosed, SceneManager.sceneUnloaded)
+        // fire on the main thread.
+        public int PruneUnloadedHosts()
         {
-            if (shouldRemoveHost == null)
-                return 0;
-
-            // Snapshot keys under the lock, run the caller-supplied predicate without it,
-            // then remove matched keys under the lock. The predicate can synchronously
-            // re-enter Store/Clear on the same thread; m_Lock is Monitor-based and
-            // recursive, so iterating m_DuplicateEntriesByHost directly would let the
-            // re-entrant mutation bump Dictionary._version and throw InvalidOperationException
-            // on the next MoveNext.
-            EntityId[] snapshot;
+            // m_Lock is held across the whole pass, including the native IsInstanceLoaded calls. That is safe
+            // here for two reasons:
+            //   1. IsInstanceLoaded is lock-free on the native side -- it is a seqlock-style atomic read on
+            //      the entity id slot, so no native mutex is acquired and there is no possibility of lock
+            //      inversion against locks held by worker-thread serialization paths.
+            //   2. The per-host cost is a few atomic loads, so the critical section stays in the microsecond
+            //      range even for large caches and never approaches the worker-thread contention.
+            // A small toRemove list is still required because C# disallows mutating a Dictionary while
+            // enumerating it; it is not a snapshot of the full host set.
             lock (m_Lock)
             {
-                int count = m_DuplicateEntriesByHost.Count;
-                if (count == 0)
+                if (m_DuplicateEntriesByHost.Count == 0)
                     return 0;
-                snapshot = new EntityId[count];
-                m_DuplicateEntriesByHost.Keys.CopyTo(snapshot, 0);
-            }
 
-            List<EntityId> toRemove = null;
-            for (int i = 0; i < snapshot.Length; i++)
-            {
-                if (shouldRemoveHost(snapshot[i]))
+                List<EntityId> toRemove = null;
+                foreach (EntityId hostId in m_DuplicateEntriesByHost.Keys)
                 {
-                    toRemove ??= new List<EntityId>();
-                    toRemove.Add(snapshot[i]);
+                    if (hostId == EntityId.None || !Resources.IsInstanceLoaded(hostId))
+                    {
+                        toRemove ??= new List<EntityId>();
+                        toRemove.Add(hostId);
+                    }
                 }
-            }
-            if (toRemove == null)
-                return 0;
 
-            // Remove may return false if a re-entrant Clear already removed the host;
-            // count only the actual removals.
-            int removed = 0;
-            lock (m_Lock)
-            {
+                if (toRemove == null)
+                    return 0;
+
                 foreach (EntityId id in toRemove)
-                {
-                    if (m_DuplicateEntriesByHost.Remove(id))
-                        removed++;
-                }
+                    m_DuplicateEntriesByHost.Remove(id);
+                return toRemove.Count;
             }
-            return removed;
         }
 
         public bool HostHasDuplicateDictionaryEntries(EntityId hostId)

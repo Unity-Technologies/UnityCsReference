@@ -4,60 +4,78 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct ReorderStyleRulesCommand
+internal sealed class ReorderStyleRulesCommand : Command<ReorderStyleRulesCommand>
 {
     const string CommandUndoName = "Reorder style rules";
 
-    readonly StyleSheet StyleSheet;
-    readonly IReadOnlyList<StyleRule> DraggedRules;
-    readonly int InsertIndex;
-
-    public ReorderStyleRulesCommand(StyleSheet toStyleSheet, IReadOnlyList<StyleRule> rules, int insertIdx)
+    public static ReorderStyleRulesCommand GetPooled(object source, StyleSheet toStyleSheet, IReadOnlyList<StyleRule> rules, int insertIndex)
     {
-        StyleSheet = toStyleSheet;
-        DraggedRules = rules;
-        InsertIndex = insertIdx;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = toStyleSheet;
+        cmd.DraggedRules = rules;
+        cmd.InsertIndex = insertIndex;
+        return cmd;
     }
 
-    public bool Execute()
+    public static void Execute(object source, StyleSheet toStyleSheet, IReadOnlyList<StyleRule> rules, int insertIndex)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(DraggedRules);
+        using var command = GetPooled(source, toStyleSheet, rules, insertIndex);
+        UICommandQueue.Execute(command);
+    }
 
-        if (DraggedRules.Count == 0)
+    public StyleSheet StyleSheet { get; private set; }
+    public IReadOnlyList<StyleRule> DraggedRules { get; private set; }
+    public int InsertIndex { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        DraggedRules = null;
+        InsertIndex = -1;
+    }
+
+    public override bool Validate()
+    {
+        if (StyleSheet == null || DraggedRules == null || DraggedRules.Count == 0)
             return false;
 
         if (InsertIndex != -1 && (InsertIndex < 0 || InsertIndex > StyleSheet.rules.Length))
         {
-            Debug.LogError( $"Target index must be between -1 (append) and {StyleSheet.rules.Length}, but was {InsertIndex}.");
+            Debug.LogError($"Target index must be between -1 (append) and {StyleSheet.rules.Length}, but was {InsertIndex}.");
             return false;
         }
+        return true;
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
 
+    public override CommandExecutionStatus Execute()
+    {
         var targetIndex = InsertIndex == -1 ? StyleSheet.rules.Length : InsertIndex;
 
         // Copy rules data before removing in order to preserve their references
         using var _ = ListPool<(StyleSheet sourceSheet, StyleRule sourceRule)>.Get(out var rulesToCopy);
         foreach (var rule in DraggedRules)
-        {
             rulesToCopy.Add((rule.styleSheet, rule));
-        }
 
         // Remove all rules first since dragging multiple rules within the same stylesheet will drastically change the rules order
         foreach (var rule in DraggedRules)
-        {
             rule.styleSheet.RemoveRule(rule);
-        }
 
         targetIndex = Math.Min(targetIndex, StyleSheet.rules.Length);
         foreach (var (fromStyleSheet, fromRule) in rulesToCopy)
@@ -66,7 +84,6 @@ internal readonly record struct ReorderStyleRulesCommand
             StyleSheetExtensions.SwallowStyleRule(StyleSheet, newRule, fromStyleSheet, fromRule);
         }
 
-        EditorUtility.SetDirty(StyleSheet);
-        return true;
+        return CommandExecutionStatus.Success;
     }
 }

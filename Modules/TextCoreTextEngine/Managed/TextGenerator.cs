@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine.Bindings;
-using UnityEngine.Profiling;
 
 
 namespace UnityEngine.TextCore.Text
@@ -64,6 +64,8 @@ namespace UnityEngine.TextCore.Text
 
         static TextGenerator s_TextGenerator;
 
+        static readonly ProfilerMarker s_GenerateTextMarker = new ProfilerMarker("TextGenerator.GenerateText");
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static bool IsExecutingJob { get; set; }
 
@@ -92,15 +94,16 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
 
-            Profiler.BeginSample("TextGenerator.GenerateText");
-            Prepare(settings, textInfo);
+            using (s_GenerateTextMarker.Auto())
+            {
+                Prepare(settings, textInfo);
 
-            // Update font asset atlas textures and font features.
-            if (canWriteOnAsset)
-                FontAsset.UpdateFontAssetsInUpdateQueue();
+                // Update font asset atlas textures and font features.
+                if (canWriteOnAsset)
+                    FontAsset.UpdateFontAssetsInUpdateQueue();
 
-            GenerateTextMesh(settings, textInfo);
-            Profiler.EndSample();
+                GenerateTextMesh(settings, textInfo);
+            }
         }
 
         /// <summary>

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Transactions;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -73,6 +74,7 @@ namespace UnityEditor.UIElements.Debugger
         record struct CommonOption(string Name, float w, float h);
 
 
+        [NoAutoStaticsCleanup] // immutable ratio presets populated once at startup
         static readonly List<CommonOption> commonOptions = new()
      {
          new CommonOption("auto", 0, 0),

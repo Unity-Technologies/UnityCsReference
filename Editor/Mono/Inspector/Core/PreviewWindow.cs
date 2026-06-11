@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
@@ -23,10 +24,30 @@ namespace UnityEditor
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
         public void SetParentInspector(InspectorWindow inspector)
         {
+            m_SelectedPreview = null;
             m_ParentInspectorWindow = inspector;
+
+            ClearPreviewables();
+            CreatePreviewables();
+
+            // If the parent inspector has a selected preview, we update the preview window accordingly
+            var preview = m_ParentInspectorWindow.selectedPreview;
+            if (preview != null && preview is not Editor)
+            {
+                using var _ = ListPool<IPreviewable>.Get(out var previewsInWindow);
+                GetEditorsWithPreviews(previewsInWindow);
+                var matchedPreview = previewsInWindow.Find(p => ReferenceEquals(p, preview) ||
+                                                                (p.GetType() == preview.GetType() && p.target == preview.target));
+                if (matchedPreview != null)
+                    m_SelectedPreview = matchedPreview;
+            }
 
             // Create tracker after parent inspector window has been set (case 829182, 846156)
             CreateTracker();
+
+            // Deregistering the callback if not used yet to avoid to duplicate the call
+            EditorApplication.update -= RebuildContentsContainers;
+            InitPreview();
         }
 
         // It's important to NOT call the base.OnDestroy() here!
@@ -36,7 +57,10 @@ namespace UnityEditor
         // a perfectly not dead InspectorWindow. Killing the tracker used by a still-alive
         // InspectorWindow cause many problems.
         // case 1119612
-        protected override void OnDestroy() {}
+        protected override void OnDestroy()
+        {
+            ClearPreviewables();
+        }
 
         protected override void OnEnable()
         {
@@ -50,15 +74,23 @@ namespace UnityEditor
             rootVisualElement.hierarchy.Add(container);
 
             rootVisualElement.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");
-            RebuildContentsContainers();
+
+            EditorApplication.update += RebuildContentsContainers;
         }
 
         protected override void OnDisable()
         {
+            // Safeguard if the window is closed before the callback has been unregistered
+            EditorApplication.update -= RebuildContentsContainers;
             base.OnDisable();
+            ClearPreviewables();
             if (m_ParentInspectorWindow != null && GetInspectors().Contains(m_ParentInspectorWindow))
             {
                 m_ParentInspectorWindow.SetPreviewPopOutStateAndRebuild(false);
+                // If the dropdown is displayed, sync the inspector dropdown to the detached one
+                var dropdown = m_PreviewRootElement?.GetDropdown();
+                if(dropdown != null && dropdown.style.display.value == DisplayStyle.Flex)
+                    m_ParentInspectorWindow.SetSelectedPreviewIndex(m_PreviewRootElement.GetDropdown().index);
             }
         }
 
@@ -80,37 +112,35 @@ namespace UnityEditor
 
         internal override void RebuildContentsContainers()
         {
-            Editor.m_AllowMultiObjectAccess = true;
-            var preview = previewElement;
-            if (preview == null)
-                return;
-            preview.Clear();
+            EditorApplication.update -= RebuildContentsContainers;
+
             ClearPreviewables();
+            InitPreview();
+        }
+
+        void InitPreview()
+        {
+            Editor.m_AllowMultiObjectAccess = true;
+
+            var preview = previewElement;
+            preview.Clear();
             CreatePreviewables();
 
             m_PreviewRootElement = new PreviewRootElement();
             IPreviewable editor = m_ParentInspectorWindow != null
-                ? m_ParentInspectorWindow.CachedPreviewEditor
-                : GetEditorThatControlsPreview(tracker.activeEditors);
+                ? m_ParentInspectorWindow.selectedPreview
+                : GetEditorThatControlsPreview();
+            var previewItem = editor?.CreatePreview(m_PreviewRootElement);
 
-            if (editor != null)
-            {
-                // Match by reference first via tracker, fallback to type and target matching
-                var previewsInWindow = new List<IPreviewable>();
-                GetEditorsWithPreviews(tracker.activeEditors, previewsInWindow);
-                m_SelectedPreview = previewsInWindow.Find(p => ReferenceEquals(p, editor) || (p.GetType() == editor.GetType() && p.target == editor.target));
-            }
+            m_HasPreview = editor != null && editor.HasPreviewGUI();
 
-            // Populate the content-container for UITK editors, keeping m_PreviewRootElement valid so the unified toolbar path below is always taken
-            editor?.CreatePreview(m_PreviewRootElement);
-
-            if (m_ParentInspectorWindow != null && editor != null)
+            if (m_ParentInspectorWindow != null && previewItem is PreviewRootElement)
             {
                 PrepareToolbar(true);
-                UpdateLabel(m_PreviewRootElement);
+                UpdateHeader();
+                VisualElement previewPane = m_PreviewRootElement.GetPreviewPane();
 
                 // IMGUI fallback
-                VisualElement previewPane = m_PreviewRootElement.GetPreviewPane();
                 if (previewPane?.childCount == 0)
                 {
                     previewPane.Add(DrawPreview());
@@ -139,30 +169,117 @@ namespace UnityEditor
             element.name = k_PreviewName;
         }
 
+        protected override void ResetPreviewContainer()
+        {
+            InitPreview();
+        }
+
+        protected override void OnPreviewSelected(object userData, string[] options, int selected)
+        {
+            var availablePreviews = (IPreviewable[])userData;
+            m_SelectedPreview = availablePreviews[selected];
+
+            //Only difference with the parent class, the selected preview needs to be updated here
+            if (m_ParentInspectorWindow != null)
+                m_ParentInspectorWindow.SetSelectedPreviewIndex(selected);
+
+            // In case of mixed UITK / IMGUI preview we need to rebuild the review window content
+            ResetPreviewContainer();
+        }
+
+        protected override void OnPreviewDropdownChanged(ChangeEvent<string> evt)
+        {
+            var dropdown = evt.elementTarget as DropdownField;
+            if (dropdown == null)
+                return;
+
+            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
+            GetEditorsWithPreviews(editorsWithPreviews);
+
+            int selectedIndex = dropdown.index;
+            if (selectedIndex >= 0 && selectedIndex < editorsWithPreviews.Count)
+            {
+                m_SelectedPreview = editorsWithPreviews[selectedIndex];
+
+                //Only difference with the parent class, the selected preview needs to be updated here
+                if (m_ParentInspectorWindow != null)
+                    m_ParentInspectorWindow.SetSelectedPreviewIndex(dropdown.index);
+
+                // In case of mixed UITK / IMGUI preview we need to rebuild the review window content
+                ResetPreviewContainer();
+            }
+        }
+
         IMGUIContainer DrawPreview(bool drawToolbar = false)
         {
             return new IMGUIContainer(() =>
             {
-                IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
+                using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
+                GetEditorsWithPreviews(editorsWithPreviews);
+                IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+                if (previewEditor == null)
+                    return;
 
                 if (drawToolbar)
                 {
                     Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar,
                         GUILayout.Height(kBottomToolbarHeight));
                     {
-                        // Label
-                        string label = string.Empty;
-                        if ((editor != null))
+                        //If we have more than one component with Previews, show a DropDown menu.
+                        if (editorsWithPreviews.Count > 1)
                         {
-                            label = editor.GetPreviewTitle().text;
+                            GUIContent pTitle;
+                            if (m_HasPreview)
+                                pTitle = previewEditor.GetPreviewTitle() ?? Styles.preTitle;
+                            else
+                                pTitle = Styles.labelTitle;
+
+                            if (GUILayout.Button(pTitle, Styles.preDropDown))
+                            {
+                                GUIContent[] panelOptions = new GUIContent[editorsWithPreviews.Count];
+                                int selectedPreviewIndex = -1;
+                                for (int index = 0; index < editorsWithPreviews.Count; index++)
+                                {
+                                    IPreviewable currentEditor = editorsWithPreviews[index];
+                                    GUIContent previewTitle = currentEditor.GetPreviewTitle() ?? Styles.preTitle;
+
+                                    string fullTitle;
+                                    if (previewTitle == Styles.preTitle)
+                                    {
+                                        string componentTitle = ObjectNames.GetTypeName(currentEditor.target);
+                                        if (NativeClassExtensionUtilities.ExtendsANativeType(currentEditor.target))
+                                        {
+                                            componentTitle = MonoScript.FromScriptedObject(currentEditor.target).GetClass()
+                                                .Name;
+                                        }
+
+                                        fullTitle = previewTitle.text + " - " + componentTitle;
+                                    }
+                                    else
+                                    {
+                                        fullTitle = previewTitle.text;
+                                    }
+
+                                    panelOptions[index] = new GUIContent(fullTitle);
+                                    if (editorsWithPreviews[index] == previewEditor)
+                                        selectedPreviewIndex = index;
+                                }
+
+                                var foldoutRect = GUILayoutUtility.GetLastRect();
+                                EditorUtility.DisplayCustomMenu(foldoutRect, panelOptions, selectedPreviewIndex,
+                                    OnPreviewSelected, editorsWithPreviews.ToArray());
+                            }
+                            GUILayout.FlexibleSpace();
+                        }
+                        else
+                        {
+                            // Label
+                            GUILayout.Label(previewEditor.GetPreviewTitle(), Styles.preToolbarLabel);
+                            GUILayout.FlexibleSpace();
                         }
 
-                        GUILayout.Label(label, Styles.preToolbarLabel);
-
-                        GUILayout.FlexibleSpace();
-
-                        if (editor != null && editor.HasPreviewGUI())
-                            editor.OnPreviewSettings();
+                        if (previewEditor != null && previewEditor.HasPreviewGUI())
+                            previewEditor.OnPreviewSettings();
                     }
                     EditorGUILayout.EndHorizontal();
                 }
@@ -174,8 +291,8 @@ namespace UnityEditor
                     Styles.preBackground.Draw(previewPosition, false, false, false, false);
 
                 // Draw preview
-                if (editor != null && editor.HasPreviewGUI())
-                    editor.DrawPreview(previewPosition);
+                if (previewEditor != null && previewEditor.HasPreviewGUI())
+                    previewEditor.DrawPreview(previewPosition);
             });
         }
 

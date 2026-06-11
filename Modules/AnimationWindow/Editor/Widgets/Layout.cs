@@ -4,7 +4,6 @@
 
 using System;
 using Unity.IntegerTime;
-using Unity.Timeline.Foundation.Time;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,11 +13,13 @@ using UnityObject = UnityEngine.Object;
 using Unity.Timeline.Foundation.Widgets;
 using UnityEditor.AnimationWindowBuiltin;
 using UnityEditor.Experimental;
+using UnityEditor.Search;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 
 using FrameRate = Unity.Timeline.Foundation.Time.FrameRate;
 using CanvasManager = Unity.Timeline.Foundation.View.Internals.CanvasManager;
+using TimeRange = Unity.Timeline.Foundation.Time.TimeRange;
 
 namespace UnityEditor.Animations.AnimationWindow.Widgets
 {
@@ -29,6 +30,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         const string k_AnimationEditor = "animation-editor";
         const string k_AnimationKeyframeHeader = "animation-keyframeHeader";
         const string k_AnimationPropertyHeader = "animation-propertyHeader";
+        const string k_AnimationSearcher = "animation-searcher";
         const string k_AnimationControls = "animation-controls";
         const string k_AnimationTimeArea = "animation-timeArea";
         const string k_AnimationTimeAreaLeftOverlap = "animation-timeArea-leftOverlap";
@@ -106,6 +108,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         VisualElement m_AnimationEditor;
         VisualElement m_AnimationKeyframeHeader;
         VisualElement m_AnimationPropertyHeader;
+        VisualElement m_AnimationSearcher;
         VisualElement m_AnimationControls;
         ToolbarToggle m_LinkWithSequencerButton;
         ClipDropdownField m_ClipDropdownField;
@@ -128,6 +131,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         Button m_AddEventButton;
         ToolbarToggle m_ModeRippleToggle;
         ToolbarToggle m_FilterBySelectionToggle;
+        Search.SearchFieldElement m_SearchField;
+        AnimationWindowSearchView m_SearchView;
 
         ToggleButtonStrip m_ContentSwitcherButtons;
 
@@ -173,6 +178,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
             UIToolkitUtility.ApplyCommonStyleSheet(this);
 
+            // Load styling for the SearchField + Query Builder.
+            Search.SearchElement.AppendStyleSheets(this);
+
             this.ApplyStyleSheet("StyleSheets/Animation/AnimationWindow.uss");
 
             if (EditorGUIUtility.isProSkin)
@@ -191,6 +199,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
             state.onRefresh += OnRefresh;
             OnRefresh();
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         void InitPlayHead()
@@ -249,6 +260,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_AnimationEditor = this.Q(className: k_AnimationEditor);
             m_AnimationKeyframeHeader = this.Q(className: k_AnimationKeyframeHeader);
             m_AnimationPropertyHeader = this.Q(className: k_AnimationPropertyHeader);
+            m_AnimationSearcher = this.Q(className: k_AnimationSearcher);
             m_AnimationControls = this.Q(className: k_AnimationControls);
 
             m_OnboardingPanel = this.Q<VisualElement>(className: k_AnimationOnboarding);
@@ -340,6 +352,14 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 m_AnimationClipFrameRateField.SetValueWithoutNotify((int)state.frameRate);
 
             });
+
+            // Create search view and configure it
+            m_SearchView = new AnimationWindowSearchView(state);
+            m_SearchView.state.queryBuilderEnabled = state.enableQueryBuilder;
+            m_SearchField = new Search.SearchFieldElement(nameof(Search.SearchFieldElement), m_SearchView, Search.SearchQueryBuilderViewFlags.None);
+            var addNewBlockContent = (Texture2D)EditorGUIUtility.IconContent("search_menu").image;
+            m_SearchField.addNewBlockIcon = addNewBlockContent;
+            m_AnimationSearcher.Add(m_SearchField);
 
             m_FilterBySelectionToggle = this.Q<ToolbarToggle>(className: k_AnimationFilterBySelectionToggle);
             m_FilterBySelectionToggle.tooltip = s_FilterBySelectionContentTooltip;
@@ -446,9 +466,12 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_ClipDropdownField.Dispose();
             m_OptionsButton.Dispose();
 
+            // Cleanup search
+            m_SearchView = null;
+            m_SearchField = null;
+
             m_AnimEditor.OnDisable();
             UnityObject.DestroyImmediate(m_AnimEditor);
-
         }
 
         public void Update()
@@ -458,10 +481,6 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
             if (!customStyle.TryGetValue(k_RecordColorMultiplier, out var recordColorMultiplier))
                 recordColorMultiplier = 1f;
-
-            var mainContentState = MainContentState.DopeSheetEditor;
-            if (state.disabled) mainContentState = MainContentState.OnboardingPanel;
-            else if (state.showCurveEditor) mainContentState = MainContentState.CurveEditor;
 
             // Update ripple mode
             if (m_ModeRippleToggle.value != state.rippleTime)
@@ -496,36 +515,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             // Update clip frame rate
             m_AnimationClipFrameRate.EnableInClassList(k_AnimationFrameRate + "__hidden", !state.showFrameRate);
 
-            // Update time area display range
-            float xmin, xmax;
-            if (mainContentState == MainContentState.OnboardingPanel)
-            {
-                var width = m_TimeArea.layout.width;
-                var widthInsideMargins = width - k_LeftMargin - k_RightMargin;
-
-                xmin = (CanvasTransform.foundationCanvasPixelsBeforeZero - k_LeftMargin) / widthInsideMargins;
-                xmax = Mathf.Max(xmin, (width - k_LeftMargin) / widthInsideMargins);
-            }
-            else
-            {
-                xmin = state.PixelToTime(CanvasTransform.foundationCanvasPixelsBeforeZero);
-                xmax = Mathf.Max(xmin, state.PixelToTime(m_TimeArea.layout.width));
-                xmax = float.IsNaN(xmax) ? xmin : xmax;
-            }
-
-            var displayRange = new TimeRange(xmin, xmax);
-
-            if (m_TimeArea.DisplayRange != displayRange)
-            {
-                m_Canvas.SetDisplayRange(displayRange);
-                m_TimeArea.SetDisplayRange(displayRange);
-            }
-
-            m_TimeAreaLeftOverlap.style.width = m_AnimEditor.state.zeroTimePixel + 1;
-
-            var left = Math.Max(0f, m_AnimEditor.state.TimeToPixel(state.timeRange.y));
-            m_TimeAreaRightOverlap.style.left = left;
-            m_TimeAreaRightOverlap.style.width = m_TimeArea.layout.width - left;
+            // Update TimeArea and Playhead
+            UpdateTimeAreaDisplayRange();
 
             StyleColor color = StyleKeyword.Null;
             if (state.recording)
@@ -536,6 +527,10 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_TimeArea.style.backgroundColor = color;
 
             // Update main content
+            var mainContentState = MainContentState.DopeSheetEditor;
+            if (state.disabled) mainContentState = MainContentState.OnboardingPanel;
+            else if (state.showCurveEditor) mainContentState = MainContentState.CurveEditor;
+
             m_OnboardingPanel.EnableInClassList(k_AnimationOnboarding + "__hidden", mainContentState != MainContentState.OnboardingPanel);
             m_DopeSheetElement.EnableInClassList(DopeSheetElement.ussClassName + "__hidden", mainContentState != MainContentState.DopeSheetEditor);
             m_CurveEditorElement.EnableInClassList(CurveEditorElement.ussClassName + "__hidden", mainContentState != MainContentState.CurveEditor);
@@ -545,11 +540,18 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 bool animatableObject = state.activeGameObject && !EditorUtility.IsPersistent(state.activeGameObject);
                 bool animatorIsOptimized = state.animatorIsOptimized;
 
-                m_OnboardingPanel.EnableInClassList(k_AnimationOnboarding + "__disabled", animatorIsOptimized || !animatableObject);
+                // Selections without a GameObject (UI Toolkit per-element) can still host a working clip
+                // Displays the call-to-action when they canCreateClips.
+                bool onboardingEnabled = !animatorIsOptimized && (animatableObject || (selection != null && selection.canCreateClips));
+                m_OnboardingPanel.EnableInClassList(k_AnimationOnboarding + "__disabled", !onboardingEnabled);
 
                 if (animatorIsOptimized)
                 {
                     m_OnboardingPanelLabel.text = s_AnimatorOptimizedText;
+                }
+                else if (!string.IsNullOrEmpty(selection?.onboardingLabel))
+                {
+                    m_OnboardingPanelLabel.text = selection.onboardingLabel;
                 }
                 else if (animatableObject)
                 {
@@ -563,6 +565,42 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                     m_OnboardingPanelLabel.text = s_NoAnimatableObjectSelectedText;
                 }
             }
+        }
+
+        void UpdateTimeAreaDisplayRange()
+        {
+            float xmin, xmax, start, stop;
+            if (state.disabled)
+            {
+                var width = m_TimeArea.layout.width;
+                var widthInsideMargins = width - k_LeftMargin - k_RightMargin;
+
+                xmin = (CanvasTransform.foundationCanvasPixelsBeforeZero - k_LeftMargin) / widthInsideMargins;
+                xmax = Mathf.Max(xmin, (width - k_LeftMargin) / widthInsideMargins);
+
+                start = k_LeftMargin;
+                stop = k_LeftMargin;
+            }
+            else
+            {
+                xmin = state.PixelToTime(CanvasTransform.foundationCanvasPixelsBeforeZero);
+                xmax = Mathf.Max(xmin, state.PixelToTime(m_TimeArea.layout.width));
+                xmax = float.IsNaN(xmax) ? xmin : xmax;
+
+                start = m_AnimEditor.state.zeroTimePixel;
+                stop = Math.Max(0f, m_AnimEditor.state.TimeToPixel(state.timeRange.y));
+            }
+
+            var displayRange = new TimeRange(xmin, xmax);
+
+            if (m_TimeArea.DisplayRange != displayRange)
+            {
+                m_Canvas.SetDisplayRange(displayRange);
+                m_TimeArea.SetDisplayRange(displayRange);
+            }
+
+            m_TimeAreaLeftOverlap.style.width = start + 1; // shift one pixel to align with time area.
+            m_TimeAreaRightOverlap.style.left = stop;
         }
 
         void OnRefresh()
@@ -609,6 +647,28 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_FilterBySelectionToggle.SetEnabled(!state.disabled);
             m_FilterBySelectionToggle.SetValueWithoutNotify(state.filterBySelection);
 
+            // Update search field
+            if (m_SearchField != null && m_SearchField.panel != null)
+            {
+
+                // Only update search field if value is outdated.
+                if (m_SearchField.queryString != state.searchFilter)
+                    m_SearchField.SetValueWithoutNotify(state.searchFilter);
+                // Force an update if search filter is empty to reinitialize search field.
+                else if (string.IsNullOrEmpty(state.searchFilter))
+                    m_SearchField.SetValueWithoutNotify(string.Empty);
+
+                ((ISearchView)m_SearchView).SetSearchText(state.searchFilter, TextCursorPlacement.Default);
+
+                m_SearchField.SetEnabled(!state.disabled);
+
+                if (state.enableQueryBuilder != m_SearchView.state.queryBuilderEnabled)
+                {
+                    m_SearchView.state.queryBuilderEnabled = state.enableQueryBuilder;
+                    m_SearchField.ToggleQueryBuilder();
+                }
+            }
+
             // Add Property button
             m_AddPropertyButton.SetEnabled(m_AnimEditor.selection.canAddCurves);
 
@@ -621,5 +681,42 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             m_ApplyButton.SetEnabled(hasUnsavedChanges);
             m_RevertButton.SetEnabled(hasUnsavedChanges);
         }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            var root = evt.destinationPanel.visualTree;
+            root.RegisterCallback<ValidateCommandEvent>(OnValidateCommandEvent);
+            root.RegisterCallback<ExecuteCommandEvent>(OnExecuteCommandEvent);
+            root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            var root = evt.originPanel.visualTree;
+            root.UnregisterCallback<ValidateCommandEvent>(OnValidateCommandEvent);
+            root.UnregisterCallback<ExecuteCommandEvent>(OnExecuteCommandEvent);
+            root.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            UpdateTimeAreaDisplayRange();
+        }
+
+        private void OnValidateCommandEvent(ValidateCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Find)
+                evt.StopPropagation();
+        }
+
+        private void OnExecuteCommandEvent(ExecuteCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Find)
+            {
+                m_SearchField?.textField.Focus();
+                evt.StopPropagation();
+            }
+        }
+
     }
 }

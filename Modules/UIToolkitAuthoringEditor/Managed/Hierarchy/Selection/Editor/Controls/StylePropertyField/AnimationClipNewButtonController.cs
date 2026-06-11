@@ -78,6 +78,17 @@ internal static class AnimationClipNewButtonController
 
     static void CreateAndAssignNewUIAnimationClipFromDialog(StyleUIAnimationClipField field, string subjectName)
     {
+        CreateNewUIAnimationClipFromDialog(subjectName, loaded => field.value = new StyleUIAnimationClip(loaded));
+    }
+
+    // Shared entry point for the save-dialog + factory + custom-assignment flow; used by the
+    // inspector "New..." button and the Animation Window staging "Create" call-to-action.
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal static UIAnimationClip CreateNewUIAnimationClipFromDialog(string subjectName, Action<UIAnimationClip> assignToOwner)
+    {
+        if (assignToOwner == null)
+            return null;
+
         var subject = string.IsNullOrEmpty(subjectName) ? k_DefaultMessageSubject : subjectName;
         var message = string.Format(k_SaveDialogMessageFormat, subject);
         var path = EditorUtility.SaveFilePanelInProject(
@@ -87,8 +98,9 @@ internal static class AnimationClipNewButtonController
             message,
             "Assets");
         if (string.IsNullOrEmpty(path))
-            return;
-        CreateAndAssignNewUIAnimationClip(field, path);
+            return null;
+
+        return UIAnimationClipFactory.CreateAssetAndAssignToField(path, assignToOwner);
     }
 
     internal static UIAnimationClip CreateAndAssignNewUIAnimationClip(StyleUIAnimationClipField field, string path)

@@ -1148,8 +1148,8 @@ namespace UnityEditor
             public List<AudioMixerGroupController> shownGroups;
 
             public int numChannels = 0;
-            public float[] vuinfo_level = new float[9];
-            public float[] vuinfo_peak = new float[9];
+            public float[] vuinfo_level = new float[AudioMixerController.kMaxMeteringChannels + 1];
+            public float[] vuinfo_peak = new float[AudioMixerController.kMaxMeteringChannels + 1];
 
             //public int highlightEffectIndex;
             public Dictionary<AudioMixerEffectController, AudioMixerGroupController> effectMap;
@@ -1324,7 +1324,7 @@ namespace UnityEditor
             // Right align db but shown centered (prevents 'db' from jumping around)
             float textWidth = 50f;
             styles.totalVULevel.padding.right = (int)((p.stripRect.width - textWidth) * 0.5f);
-            float vu_level = Mathf.Max(p.vuinfo_level[8], k_MinVULevel);
+            float vu_level = Mathf.Max(p.vuinfo_level[AudioMixerController.kGlobalMeteringChannel], k_MinVULevel);
             Rect rect = p.bgRects[p.kTotalVULevelIndex];
             GUI.Label(rect, string.Format(CultureInfo.InvariantCulture.NumberFormat, "{0:F1} dB", vu_level), styles.totalVULevel);
         }

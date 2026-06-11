@@ -5,10 +5,11 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Unity.Collections;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsTransform::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsTransform_IsValid(PhysicsTransform transform);
         [NativeMethod(Name = "PhysicsTransform::TransformPoint", IsThreadSafe = true)] extern internal static Vector2 PhysicsTransform_TransformPoint(PhysicsTransform transform, Vector2 point);
@@ -52,6 +53,11 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsMath::Atan2", IsThreadSafe = true)] extern internal static float PhysicsMath_Atan2(float y, float x);
         [NativeMethod(Name = "PhysicsMath::CosSin", IsThreadSafe = true)] extern internal static void PhysicsMath_CosSin(float angle, out float cos, out float sin);
         [NativeMethod(Name = "PhysicsMath::SpringDamper", IsThreadSafe = true)] extern internal static float PhysicsMath_SpringDamper(float frequency, float damping, float translation, float speed, float deltaTime);
+
+        [NativeMethod(Name = "PhysicsHandle::Create", IsThreadSafe = true)] extern internal static PhysicsHandle PhysicsHandle_Create();
+        [NativeMethod(Name = "PhysicsHandle::CreateBatch", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsHandle_CreateBatch(int handleCount, Allocator allocator);
+        [NativeMethod(Name = "PhysicsHandle::DestroyBatch", IsThreadSafe = true)] extern internal static void PhysicsHandle_DestroyBatch(ReadOnlySpan<PhysicsHandle> physicsHandles);
+        [NativeMethod(Name = "PhysicsHandle::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsHandle_IsValid(PhysicsHandle physicsHandle);
 
         #region Globals
 

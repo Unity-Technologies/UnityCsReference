@@ -4,6 +4,7 @@
 
 using UnityEditor.Licensing.UI.Data.Events.Base;
 using UnityEditor.Licensing.UI.Helper;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,11 +12,15 @@ namespace UnityEditor.Licensing.UI.Events.Windows;
 
 abstract class TemplateLicenseEventWindow : EditorWindow
 {
+    [NoAutoStaticsCleanup] // injected dependency; set during window init
     protected static INativeApiWrapper s_NativeApiWrapper;
+    [NoAutoStaticsCleanup] // injected dependency; set during window init
     protected static ILicenseLogger s_LicenseLogger;
 
+    [NoAutoStaticsCleanup] // injected dependency; set during window init
     protected static Notification s_Notification;
 
+    [NoAutoStaticsCleanup] // injected dependency; set during window init
     protected static TemplateLicenseEventWindowContents s_Root;
 
     // UX designer fixes the width to preference

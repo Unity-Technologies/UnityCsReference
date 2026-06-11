@@ -77,7 +77,8 @@ namespace Unity.Profiling.Editor.UI
             {
                 HideContentViewsAndShowNoDataView();
                 m_SelectedRange = new Range(0, 0);
-                onDetailsProviderReady?.Invoke(null);
+                if (onDetailsProviderReady != null)
+                    View.schedule.Execute(() => onDetailsProviderReady(null));
                 return;
             }
 
@@ -130,17 +131,18 @@ namespace Unity.Profiling.Editor.UI
                 range);
             await modelBuilder.BuildAsync(
                 cancellationToken,
-                OnRangeBottlenecksBuildCompleted: (model) => {
+                OnRangeBottlenecksBuildCompleted: model => DeferIfNotCancelled(() =>
+                {
                     m_RangeBottlenecksModel = model;
                     m_BottlenecksViewController.ReloadData(model);
-                },
-                OnSystemsImpactBuildCompleted: m_SystemsImpactViewController.ReloadData,
-                OnFrameTimesBuildCompleted: m_FrameTimesSectionViewController.RefreshFrameTimesView,
-                OnTopFrameMarkersBuildCompleted: m_FrameTimesSectionViewController.RefreshTopFrameMarkersView,
-                OnTopRangeMarkersBuildCompleted: m_FrameTimesSectionViewController.RefreshTopRangeMarkersView,
-                OnGCAllocationsBuildCompleted: m_AllocationsSectionViewController.RefreshGCAllocationsView,
-                OnTopGCMarkersBuildCompleted: m_AllocationsSectionViewController.RefreshTopGCMarkersView,
-                OnGCCollectBuildCompleted: m_AllocationsSectionViewController.RefreshGCCollectView
+                }, cancellationToken),
+                OnSystemsImpactBuildCompleted: model => DeferIfNotCancelled(() => m_SystemsImpactViewController.ReloadData(model), cancellationToken),
+                OnFrameTimesBuildCompleted: model => DeferIfNotCancelled(() => m_FrameTimesSectionViewController.RefreshFrameTimesView(model), cancellationToken),
+                OnTopFrameMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_FrameTimesSectionViewController.RefreshTopFrameMarkersView(model), cancellationToken),
+                OnTopRangeMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_FrameTimesSectionViewController.RefreshTopRangeMarkersView(model), cancellationToken),
+                OnGCAllocationsBuildCompleted: model => DeferIfNotCancelled(() => m_AllocationsSectionViewController.RefreshGCAllocationsView(model), cancellationToken),
+                OnTopGCMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_AllocationsSectionViewController.RefreshTopGCMarkersView(model), cancellationToken),
+                OnGCCollectBuildCompleted: model => DeferIfNotCancelled(() => m_AllocationsSectionViewController.RefreshGCCollectView(model), cancellationToken)
             );
         }
 

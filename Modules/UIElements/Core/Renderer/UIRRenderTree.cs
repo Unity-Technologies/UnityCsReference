@@ -255,24 +255,25 @@ namespace UnityEngine.UIElements.UIR
             dirtyFlags = RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy;
             clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Clipping;
-            k_MarkerClipProcessing.Begin();
-            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            using (k_MarkerClipProcessing.Auto())
             {
-                var renderData = m_DirtyTracker.heads[depth];
-                while (renderData != null)
+                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
                 {
-                    var nextRenderData = renderData.nextDirty;
-                    if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                    var renderData = m_DirtyTracker.heads[depth];
+                    while (renderData != null)
                     {
-                        if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                            RenderEvents.ProcessOnClippingChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                        m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        var nextRenderData = renderData.nextDirty;
+                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                        {
+                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
+                                RenderEvents.ProcessOnClippingChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        }
+                        renderData = nextRenderData;
+                        stats.dirtyProcessed++;
                     }
-                    renderData = nextRenderData;
-                    stats.dirtyProcessed++;
                 }
             }
-            k_MarkerClipProcessing.End();
 
 
             m_DirtyTracker.dirtyID++;
@@ -280,72 +281,75 @@ namespace UnityEngine.UIElements.UIR
             dirtyFlags = RenderDataDirtyTypes.Opacity | RenderDataDirtyTypes.OpacityHierarchy;
             clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Opacity;
-            k_MarkerOpacityProcessing.Begin();
-            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            using (k_MarkerOpacityProcessing.Auto())
             {
-                var renderData = m_DirtyTracker.heads[depth];
-                while (renderData != null)
+                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
                 {
-                    var nextRenderData = renderData.nextDirty;
-                    if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                    var renderData = m_DirtyTracker.heads[depth];
+                    while (renderData != null)
                     {
-                        if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                            RenderEvents.ProcessOnOpacityChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                        m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        var nextRenderData = renderData.nextDirty;
+                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                        {
+                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
+                                RenderEvents.ProcessOnOpacityChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        }
+                        renderData = nextRenderData;
+                        stats.dirtyProcessed++;
                     }
-                    renderData = nextRenderData;
-                    stats.dirtyProcessed++;
                 }
             }
-            k_MarkerOpacityProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Color;
             dirtyFlags = RenderDataDirtyTypes.Color;
             clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Color;
-            k_MarkerColorsProcessing.Begin();
-            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            using (k_MarkerColorsProcessing.Auto())
             {
-                var renderData = m_DirtyTracker.heads[depth];
-                while (renderData != null)
+                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
                 {
-                    var nextRenderData = renderData.nextDirty;
-                    if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                    var renderData = m_DirtyTracker.heads[depth];
+                    while (renderData != null)
                     {
-                        if (renderData != null && renderData.dirtyID != m_DirtyTracker.dirtyID)
-                            RenderEvents.ProcessOnColorChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                        m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        var nextRenderData = renderData.nextDirty;
+                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                        {
+                            if (renderData != null && renderData.dirtyID != m_DirtyTracker.dirtyID)
+                                RenderEvents.ProcessOnColorChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        }
+                        renderData = nextRenderData;
+                        stats.dirtyProcessed++;
                     }
-                    renderData = nextRenderData;
-                    stats.dirtyProcessed++;
                 }
             }
-            k_MarkerColorsProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
             dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize;
             clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.TransformSize;
-            k_MarkerTransformProcessing.Begin();
-            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            using (k_MarkerTransformProcessing.Auto())
             {
-                var renderData = m_DirtyTracker.heads[depth];
-                while (renderData != null)
+                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
                 {
-                    var nextRenderData = renderData.nextDirty;
-                    if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                    var renderData = m_DirtyTracker.heads[depth];
+                    while (renderData != null)
                     {
-                        if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                            RenderEvents.ProcessOnTransformOrSizeChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
-                        m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        var nextRenderData = renderData.nextDirty;
+                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                        {
+                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
+                                RenderEvents.ProcessOnTransformOrSizeChanged(m_RenderTreeManager, renderData, m_DirtyTracker.dirtyID, ref stats);
+                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        }
+                        renderData = nextRenderData;
+                        stats.dirtyProcessed++;
                     }
-                    renderData = nextRenderData;
-                    stats.dirtyProcessed++;
                 }
             }
-            k_MarkerTransformProcessing.End();
 
             m_RenderTreeManager.jobManager.CompleteNudgeJobs();
 
@@ -354,41 +358,42 @@ namespace UnityEngine.UIElements.UIR
             dirtyFlags = RenderDataDirtyTypes.AllVisuals;
             clearDirty = ~dirtyFlags;
             m_AllowedDirtyClasses &= ~AllowedClasses.Visuals;
-            k_MarkerVisualsProcessing.Begin();
-            for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
+            using (k_MarkerVisualsProcessing.Auto())
             {
-                var renderData = m_DirtyTracker.heads[depth];
-                while (renderData != null)
+                for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
                 {
-                    var nextRenderData = renderData.nextDirty;
-                    if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                    var renderData = m_DirtyTracker.heads[depth];
+                    while (renderData != null)
                     {
-                        if (renderData.dirtyID != m_DirtyTracker.dirtyID)
-                            m_RenderTreeManager.visualChangesProcessor.ProcessOnVisualsChanged(renderData, m_DirtyTracker.dirtyID, ref stats);
-                        m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        var nextRenderData = renderData.nextDirty;
+                        if ((renderData.dirtiedValues & dirtyFlags) != 0)
+                        {
+                            if (renderData.dirtyID != m_DirtyTracker.dirtyID)
+                                m_RenderTreeManager.visualChangesProcessor.ProcessOnVisualsChanged(renderData, m_DirtyTracker.dirtyID, ref stats);
+                            m_DirtyTracker.ClearDirty(renderData, clearDirty);
+                        }
+                        renderData = nextRenderData;
+                        stats.dirtyProcessed++;
                     }
-                    renderData = nextRenderData;
-                    stats.dirtyProcessed++;
                 }
+
+                m_RenderTreeManager.meshGenerationDeferrer.ProcessDeferredWork(m_RenderTreeManager.visualChangesProcessor.meshGenerationContext);
+
+                // Mesh Generation doesn't currently support multiple rounds of generation, so we must flush all deferred
+                // work and then schedule the MeshGenerationJobs (and process it's associated callback). Once we make it
+                // support multiple rounds, we should move the following call above ProcessDeferredWork and get rid of the
+                // second call to ProcessDeferredWork.
+                m_RenderTreeManager.visualChangesProcessor.ScheduleMeshGenerationJobs();
+                m_RenderTreeManager.meshGenerationDeferrer.ProcessDeferredWork(m_RenderTreeManager.visualChangesProcessor.meshGenerationContext);
+
+                // TODO: Consider postponing this work for later, after each subtrees have been processed.
+                // This will help with parallelism.
+                m_RenderTreeManager.visualChangesProcessor.ConvertEntriesToCommands(ref stats);
+
+                m_RenderTreeManager.jobManager.CompleteConvertMeshJobs();
+                m_RenderTreeManager.jobManager.CompleteCopyMeshJobs();
+                m_RenderTreeManager.opacityIdAccelerator.CompleteJobs();
             }
-
-            m_RenderTreeManager.meshGenerationDeferrer.ProcessDeferredWork(m_RenderTreeManager.visualChangesProcessor.meshGenerationContext);
-
-            // Mesh Generation doesn't currently support multiple rounds of generation, so we must flush all deferred
-            // work and then schedule the MeshGenerationJobs (and process it's associated callback). Once we make it
-            // support multiple rounds, we should move the following call above ProcessDeferredWork and get rid of the
-            // second call to ProcessDeferredWork.
-            m_RenderTreeManager.visualChangesProcessor.ScheduleMeshGenerationJobs();
-            m_RenderTreeManager.meshGenerationDeferrer.ProcessDeferredWork(m_RenderTreeManager.visualChangesProcessor.meshGenerationContext);
-
-            // TODO: Consider postponing this work for later, after each subtrees have been processed.
-            // This will help with parallelism.
-            m_RenderTreeManager.visualChangesProcessor.ConvertEntriesToCommands(ref stats);
-
-            m_RenderTreeManager.jobManager.CompleteConvertMeshJobs();
-            m_RenderTreeManager.jobManager.CompleteCopyMeshJobs();
-            m_RenderTreeManager.opacityIdAccelerator.CompleteJobs();
-            k_MarkerVisualsProcessing.End();
 
             // Done with all dirtied elements
             m_DirtyTracker.Reset();

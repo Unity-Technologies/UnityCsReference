@@ -32,40 +32,33 @@ namespace Unity.ProjectAuditor.Editor
 
         static readonly string k_EditorPrefsPrefix = "ProjectAuditor";
 
-        static readonly GUIContent ProjectAreaSelection =
-            new GUIContent("Project Areas", $"Select project areas to analyze.");
-        static readonly GUIContent PlatformSelection =
-            new GUIContent("Platform", "Select the target platform.");
-        static readonly GUIContent CodeAnalysisFlagsSelection =
-            new GUIContent("Code Analysis Areas", "Select which code Project Auditor analyzes.");
-        static readonly GUIContent CodeOwnersSelection =
-            new GUIContent("Code Owners", "Select whose code Project Auditor analyzes.");
+        private class Styles
+        {
+            public static readonly GUIContent ProjectAreaSelection = EditorGUIUtility.TrTextContent("Project Areas", "Select project areas to analyze.");
+            public static readonly GUIContent Analysis = EditorGUIUtility.TrTextContent("Analysis");
+            public static readonly GUIContent PlatformSelection = EditorGUIUtility.TrTextContent("Platform", "Select the target platform.");
+            public static readonly GUIContent CodeAnalysisFlagsSelection = EditorGUIUtility.TrTextContent("Code Analysis Areas", "Select which code Project Auditor analyzes.");
+            public static readonly GUIContent CodeOwnersSelection = EditorGUIUtility.TrTextContent("Code Owners", "Select whose code Project Auditor analyzes.");
+            public static readonly GUIContent UseRoslynAnalyzers = EditorGUIUtility.TrTextContent("Use Roslyn Analyzers");
+            public static readonly GUIContent LogTimingsInfo = EditorGUIUtility.TrTextContent("Log timing information");
+            public static readonly GUIContent Build = EditorGUIUtility.TrTextContent("Build");
+            public static readonly GUIContent AfterBuild = EditorGUIUtility.TrTextContent("Log number of issues after Build", "Enabling this option will mean that after running a build, Project Auditor will analyze the project and output the total number of issues found to the console.");
+            public static readonly GUIContent FailBuild = EditorGUIUtility.TrTextContent("Log issues as Errors", "Enable this option to output the issues to the Console as Errors (rather than Info).");
+            public static readonly GUIContent Report = EditorGUIUtility.TrTextContent("Report");
+            public static readonly GUIContent PrettifyJSONOutput = EditorGUIUtility.TrTextContent("Prettify saved .projectauditor files");
+            public static readonly GUIContent UseBuildSettings = EditorGUIUtility.TrTextContent("Use Build Settings");
+        }
 
-        static readonly string k_UseRoslynAnalyzersLabel = "Use Roslyn Analyzers";
-        static readonly bool k_UseRoslynAnalyzersDefault = false;
-
-        static readonly string k_LogTimingsInfoLabel = "Log timing information";
-        static readonly bool k_LogTimingsInfoDefault = false;
-
-        static readonly string k_AnalyzeAfterBuildLabel = "Log number of issues after Build";
-        static readonly string k_AnalyzeAfterBuildLabelTooltip = "Enabling this option will mean that after running a build, Project Auditor will analyze the project and output the total number of issues found to the console.";
-        static readonly GUIContent AfterBuildLabelContent = new GUIContent(k_AnalyzeAfterBuildLabel, k_AnalyzeAfterBuildLabelTooltip);
-        static readonly bool k_AnalyzeAfterBuildDefault = false;
-
-        static readonly string k_FailBuildOnIssuesLabel = "Log issues as Errors";
-        static readonly string k_FailBuildOnIssuesLabelTooltip = "Enable this option to output the issues to the Console as Errors (rather than Info).";
-        static readonly GUIContent FailBuildLabelContent = new GUIContent(k_FailBuildOnIssuesLabel, k_FailBuildOnIssuesLabelTooltip);
-        static readonly bool k_FailBuildOnIssuesDefault = false;
-
-        static readonly string k_PrettifyJSONOutputLabel = "Prettify saved .projectauditor files";
-        static readonly bool k_PrettifyJSONOutputDefault = false;
+        const bool k_UseRoslynAnalyzersDefault = false;
+        const bool k_LogTimingsInfoDefault = false;
+        const bool k_AnalyzeAfterBuildDefault = false;
+        const bool k_FailBuildOnIssuesDefault = false;
+        const bool k_PrettifyJSONOutputDefault = false;
 
         internal static string LoadSavePath = string.Empty;
 
         static BuildTarget[] s_SupportedBuildTargets;
         static GUIContent[] s_PlatformContents;
-
-        const string k_UseBuildSettings = "Use Build Settings";
 
         public abstract class Pref<T> where T : unmanaged
         {
@@ -182,7 +175,7 @@ namespace Unity.ProjectAuditor.Editor
             s_SupportedBuildTargets = supportedBuildTargets.ToArray();
 
             s_PlatformContents = Array.ConvertAll(s_SupportedBuildTargets,
-                t => new GUIContent((t == BuildTarget.NoTarget) ? k_UseBuildSettings : Formatting.GetModernBuildTargetName(t)));
+                t => (t == BuildTarget.NoTarget) ? Styles.UseBuildSettings : EditorGUIUtility.TrTextContent(Formatting.GetModernBuildTargetName(t)));
         }
 
         public static EditorWindow OpenPreferencesWindow()
@@ -193,11 +186,16 @@ namespace Unity.ProjectAuditor.Editor
         [SettingsProvider]
         internal static SettingsProvider CreatePreferencesProvider()
         {
+            var keywords = new HashSet<string>(["performance", "optimization", "analysis"]);
+            foreach (var keyword in SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>())
+                keywords.Add(keyword);
+
             var settings = new SettingsProvider(k_PreferencesKey, SettingsScope.User)
             {
                 guiHandler = PreferencesGUI,
-                keywords = new HashSet<string>(["performance", "static", "analysis"])
+                keywords = keywords
             };
+
             return settings;
         }
 
@@ -214,39 +212,39 @@ namespace Unity.ProjectAuditor.Editor
 
             EditorGUIUtility.labelWidth = labelWidth;
 
-            EditorGUILayout.LabelField("Analysis", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(Styles.Analysis, EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
             SharedPreferencesGUI();
 
             GUILayout.Space(10f);
 
-            UseRoslynAnalyzers.Set(EditorGUILayout.Toggle(k_UseRoslynAnalyzersLabel, UseRoslynAnalyzers));
-            LogTimingsInfo.Set(EditorGUILayout.Toggle(k_LogTimingsInfoLabel, LogTimingsInfo));
+            UseRoslynAnalyzers.Set(EditorGUILayout.Toggle(Styles.UseRoslynAnalyzers, UseRoslynAnalyzers));
+            LogTimingsInfo.Set(EditorGUILayout.Toggle(Styles.LogTimingsInfo, LogTimingsInfo));
 
             EditorGUI.indentLevel--;
             GUILayout.Space(10f);
 
-            EditorGUILayout.LabelField("Build", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(Styles.Build, EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            AnalyzeAfterBuild.Set(EditorGUILayout.Toggle(AfterBuildLabelContent, AnalyzeAfterBuild));
+            AnalyzeAfterBuild.Set(EditorGUILayout.Toggle(Styles.AfterBuild, AnalyzeAfterBuild));
             using (new EditorGUI.DisabledScope(!AnalyzeAfterBuild))
             {
                 EditorGUI.indentLevel++;
                 if (!AnalyzeAfterBuild)
                     FailBuildOnIssues.Set(false);
-                FailBuildOnIssues.Set(EditorGUILayout.Toggle(FailBuildLabelContent, FailBuildOnIssues));
+                FailBuildOnIssues.Set(EditorGUILayout.Toggle(Styles.FailBuild, FailBuildOnIssues));
                 EditorGUI.indentLevel--;
             }
 
             EditorGUI.indentLevel--;
             GUILayout.Space(10f);
 
-            EditorGUILayout.LabelField("Report", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(Styles.Report, EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            PrettifyJsonOutput.Set(EditorGUILayout.Toggle(k_PrettifyJSONOutputLabel, PrettifyJsonOutput));
+            PrettifyJsonOutput.Set(EditorGUILayout.Toggle(Styles.PrettifyJSONOutput, PrettifyJsonOutput));
 
             EditorGUI.indentLevel--;
             GUILayout.Space(10f);
@@ -254,7 +252,7 @@ namespace Unity.ProjectAuditor.Editor
 
         internal static void SharedPreferencesGUI()
         {
-            ProjectAreasToAnalyze.Set((ProjectAreaFlags)EditorGUILayout.EnumFlagsField(ProjectAreaSelection, ProjectAreasToAnalyze, GUILayout.ExpandWidth(true)));
+            ProjectAreasToAnalyze.Set((ProjectAreaFlags)EditorGUILayout.EnumFlagsField(Styles.ProjectAreaSelection, ProjectAreasToAnalyze, GUILayout.ExpandWidth(true)));
 
             var selectedTarget = Array.IndexOf(s_SupportedBuildTargets, AnalysisTargetPlatform);
 
@@ -265,7 +263,7 @@ namespace Unity.ProjectAuditor.Editor
                 selectedTarget = 0;
             }
 
-            selectedTarget = EditorGUILayout.Popup(PlatformSelection, selectedTarget, s_PlatformContents);
+            selectedTarget = EditorGUILayout.Popup(Styles.PlatformSelection, selectedTarget, s_PlatformContents);
             AnalysisTargetPlatform.Set(s_SupportedBuildTargets[selectedTarget]);
 
             using (new EditorGUI.DisabledScope((ProjectAreasToAnalyze & ProjectAreaFlags.Code) == 0))
@@ -276,10 +274,10 @@ namespace Unity.ProjectAuditor.Editor
 
         internal static void CodeAnalysisGUI()
         {
-            CodeAnalysisFlags.Set((CodeAnalysisFlags)EditorGUILayout.EnumFlagsField(CodeAnalysisFlagsSelection, CodeAnalysisFlags, GUILayout.ExpandWidth(true)));
+            CodeAnalysisFlags.Set((CodeAnalysisFlags)EditorGUILayout.EnumFlagsField(Styles.CodeAnalysisFlagsSelection, CodeAnalysisFlags, GUILayout.ExpandWidth(true)));
 
             if (Unsupported.IsDeveloperMode())
-                CodeOwnerFlags.Set((CodeOwnerFlags)EditorGUILayout.EnumFlagsField(CodeOwnersSelection, CodeOwnerFlags, GUILayout.ExpandWidth(true)));
+                CodeOwnerFlags.Set((CodeOwnerFlags)EditorGUILayout.EnumFlagsField(Styles.CodeOwnersSelection, CodeOwnerFlags, GUILayout.ExpandWidth(true)));
         }
     }
 }

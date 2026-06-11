@@ -30,6 +30,7 @@ namespace UnityEditor.Build.Analysis
         private Button m_OutputPathOpenButton;
         private Label m_BuildOptionsValue;
         private Label m_ContentOptionsValue;
+        private Label m_BuildProfileValue;
         private string m_CurrentOutputPath = string.Empty;
 
         private BuildStepsElement m_Steps;
@@ -61,6 +62,7 @@ namespace UnityEditor.Build.Analysis
             m_OutputPathOpenButton = m_Root.Q<Button>("output-path-open-button");
             m_BuildOptionsValue = m_Root.Q<Label>("build-options-value");
             m_ContentOptionsValue = m_Root.Q<Label>("content-options-value");
+            m_BuildProfileValue = m_Root.Q<Label>("build-profile-value");
             m_OutputPathOpenButton.clicked += OnOutputPathOpenClicked;
 
             var detailsGrid = m_Root.Q<VisualElement>("overview-details-grid");
@@ -98,6 +100,7 @@ namespace UnityEditor.Build.Analysis
             m_OutputPathOpenButton.SetEnabled(!string.IsNullOrEmpty(m_CurrentOutputPath));
             m_BuildOptionsValue.text = FormatOptions(summary.BuildOptions);
             m_ContentOptionsValue.text = FormatOptions(summary.BuildContentOptions);
+            m_BuildProfileValue.text = FormatBuildProfile(summary.BuildProfilePath);
 
             m_Steps.Bind(analysis);
             m_Messages.Bind(analysis);
@@ -117,6 +120,14 @@ namespace UnityEditor.Build.Analysis
                 return "None";
 
             return string.Join(", ", options);
+        }
+
+        private static string FormatBuildProfile(string buildProfilePath)
+        {
+            if (string.IsNullOrEmpty(buildProfilePath))
+                return "None";
+
+            return Path.GetFileNameWithoutExtension(buildProfilePath);
         }
 
         private void OnOutputPathOpenClicked()

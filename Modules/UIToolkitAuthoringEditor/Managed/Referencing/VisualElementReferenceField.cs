@@ -288,7 +288,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
                     label = k_SceneMismatch;
                 }
                 else
-                { 
+                {
                     label = VisualElementReferenceTools.GenerateVisualElementAssetLabel(resolvedVisualElementAsset);
                     if (resolvedVisualElementAsset.serializedData is VisualElement.UxmlSerializedData veSerializedData)
                         icon = UIResources.GetIconForType(veSerializedData.GetType().DeclaringType, UIResources.RequestSize.Px16).texture;
@@ -393,8 +393,9 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
                         var nodeHandler = hierarchyWindow.View.Source.GetOrCreateNodeTypeHandler<HierarchyVisualElementHandler>();
                         if (nodeHandler.GetMappings().TryGetNode(targetElement, out var node))
                         {
-                            var entityId = ((IHierarchyEntityIdConverter)nodeHandler).GetEntityId(node);
-                            EditorGUIUtility.PingObject(entityId);
+                            var entityId = nodeHandler.GetEntityIdFromNode(node);
+                            if (entityId != EntityId.None)
+                                EditorGUIUtility.PingObject(entityId);
                         }
                     }
                 }

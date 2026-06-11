@@ -339,8 +339,8 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class LayoutOverlayPainter : BaseOverlayPainter
     {
-        internal static PrefColor kBoundColor = new PrefColor("UI Toolkit Debugger/Layout Overlay Outline", 0.5f, 0.5f, 0.5f, 1f, 0.5f, 0.5f, 0.5f, 1f);
-        internal static PrefColor kSelectedBoundColor = new PrefColor("UI Toolkit Debugger/Layout Overlay Outline Selected", 0f, 1f, 0f, 1f, 0f, 1f, 0f, 1f);
+        internal static readonly PrefColor kBoundColor = new PrefColor("UI Toolkit Debugger/Layout Overlay Outline", 0.5f, 0.5f, 0.5f, 1f, 0.5f, 0.5f, 0.5f, 1f);
+        internal static readonly PrefColor kSelectedBoundColor = new PrefColor("UI Toolkit Debugger/Layout Overlay Outline Selected", 0f, 1f, 0f, 1f, 0f, 1f, 0f, 1f);
 
         private static readonly float kDefaultAlpha = 1.0f;
 
@@ -431,10 +431,12 @@ namespace UnityEditor.UIElements.Debugger
                 if (cmd.type == UnityEngine.UIElements.UIR.CommandType.Draw)
                 {
                     var allocPage = cmd.mesh.allocPage;
+                    var indexSlice = allocPage.indices.cpuData.SliceAs<ushort>();
+                    var vertSlice = allocPage.vertices.cpuData.SliceAs<Vertex>();
                     for (int i = 0; i < cmd.indexCount; ++i)
                     {
-                        var index = allocPage.indices.cpuData[(int)cmd.mesh.allocIndices.start + cmd.indexOffset + i];
-                        var vert = allocPage.vertices.cpuData[index];
+                        var index = indexSlice[(int)cmd.mesh.allocIndices.start + cmd.indexOffset + i];
+                        var vert = vertSlice[index];
                         verts.Add(coordinateRelativeTo == null ? vert.position : coordinateRelativeTo.LocalToWorld(vert.position));
                     }
                 }

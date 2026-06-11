@@ -5,40 +5,65 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetStyleSheetsCommand
+internal sealed class SetStyleSheetsCommand : Command<SetStyleSheetsCommand>
 {
     const string CommandUndoName = "Set Stylesheets";
 
-    readonly VisualTreeAsset VisualTreeAsset;
-    readonly IReadOnlyList<StyleSheet> StyleSheets;
-
-    public SetStyleSheetsCommand(VisualTreeAsset visualTreeAsset, IReadOnlyList<StyleSheet> styleSheets)
+    public static SetStyleSheetsCommand GetPooled(object source, VisualTreeAsset visualTreeAsset, IReadOnlyList<StyleSheet> styleSheets)
     {
-        VisualTreeAsset = visualTreeAsset;
-        StyleSheets = styleSheets;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.VisualTreeAsset = visualTreeAsset;
+        cmd.StyleSheets = styleSheets;
+        return cmd;
     }
 
-    public bool Execute()
+    public static void Execute(object source, VisualTreeAsset visualTreeAsset, IReadOnlyList<StyleSheet> styleSheets)
     {
-        Assert.IsNotNull(VisualTreeAsset);
-        Assert.IsNotNull(StyleSheets);
+        using var command = GetPooled(source, visualTreeAsset, styleSheets);
+        UICommandQueue.Execute(command);
+    }
 
-        // Check for cyclic dependencies before applying changes
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
+    public IReadOnlyList<StyleSheet> StyleSheets { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Hierarchy;
+
+    protected override void Init()
+    {
+        base.Init();
+        VisualTreeAsset = null;
+        StyleSheets = null;
+    }
+
+    public override bool Validate()
+    {
+        if (VisualTreeAsset == null || StyleSheets == null)
+            return false;
+
         if (HasCyclicDependencies(StyleSheets, out var cyclicPath))
         {
             Debug.LogError($"Cannot set stylesheets: Cyclic dependency detected in import chain: {cyclicPath}");
             return false;
         }
 
-        var visualTree = VisualTreeAsset.visualTreeNoAlloc;
+        return true;
+    }
 
-        Undo.RegisterCompleteObjectUndo(VisualTreeAsset, CommandUndoName);
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(VisualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
+        var visualTree = VisualTreeAsset.visualTreeNoAlloc;
 
         // Clear and repopulate the stylesheets list with the new order
         visualTree.stylesheets.Clear();
@@ -48,9 +73,7 @@ internal readonly record struct SetStyleSheetsCommand
             EditorUtility.SetDirty(styleSheet);
         }
 
-        EditorUtility.SetDirty(VisualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(VisualTreeAsset);
-        return true;
+        return CommandExecutionStatus.Success;
     }
 
     static bool HasCyclicDependencies(IReadOnlyList<StyleSheet> styleSheets, out string cyclicPath)

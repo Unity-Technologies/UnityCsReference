@@ -970,73 +970,72 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public void ReadFontAssetDefinition()
         {
-            k_ReadFontAssetDefinitionMarker.Begin();
-
-            //Debug.Log("Reading Font Asset Definition for " + this.name + ".");
-
-            // Initialize lookup tables for characters and glyphs.
-            InitializeDictionaryLookupTables();
-
-            // Add synthesized characters and adjust face metrics
-            AddSynthesizedCharactersAndFaceMetrics();
-
-            Character character;
-            // Set Cap Line using the capital letter 'X'
-            if (m_FaceInfo.capLine == 0 && m_CharacterLookupDictionary.TryGetValue('X', out character))
+            using (k_ReadFontAssetDefinitionMarker.Auto())
             {
-                uint glyphIndex = character.glyphIndex;
-                m_FaceInfo.capLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
-            }
+                //Debug.Log("Reading Font Asset Definition for " + this.name + ".");
 
-            // Set Mean Line using the lowercase letter 'x'
-            if (m_FaceInfo.meanLine == 0 && m_CharacterLookupDictionary.TryGetValue('X', out character))
-            {
-                uint glyphIndex = character.glyphIndex;
-                m_FaceInfo.meanLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
-            }
+                // Initialize lookup tables for characters and glyphs.
+                InitializeDictionaryLookupTables();
 
-            // Adjust Font Scale for compatibility reasons
-            if (m_FaceInfo.scale == 0)
-                m_FaceInfo.scale = 1.0f;
+                // Add synthesized characters and adjust face metrics
+                AddSynthesizedCharactersAndFaceMetrics();
 
-            // Set Strikethrough Offset (if needed)
-            if (m_FaceInfo.strikethroughOffset == 0)
-                m_FaceInfo.strikethroughOffset = m_FaceInfo.capLine / 2.5f;
-
-            // Set Padding value for legacy font assets.
-            if (m_AtlasPadding == 0)
-            {
-                if (material.HasProperty(TextShaderUtilities.ID_GradientScale))
-                    m_AtlasPadding = (int)material.GetFloat(TextShaderUtilities.ID_GradientScale) - 1;
-            }
-
-            // Update Units per EM for pre-existing font assets.
-            if (m_FaceInfo.unitsPerEM == 0 && atlasPopulationMode != AtlasPopulationMode.Static)
-            {
-                // Only retrieve Units Per EM if we are on the main thread.
-                if (!JobsUtility.IsExecutingJob)
+                Character character;
+                // Set Cap Line using the capital letter 'X'
+                if (m_FaceInfo.capLine == 0 && m_CharacterLookupDictionary.TryGetValue('X', out character))
                 {
-                    m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
-                    Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.", this);
+                    uint glyphIndex = character.glyphIndex;
+                    m_FaceInfo.capLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
                 }
-                else
-                    Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.", this);
+
+                // Set Mean Line using the lowercase letter 'x'
+                if (m_FaceInfo.meanLine == 0 && m_CharacterLookupDictionary.TryGetValue('X', out character))
+                {
+                    uint glyphIndex = character.glyphIndex;
+                    m_FaceInfo.meanLine = m_GlyphLookupDictionary[glyphIndex].metrics.horizontalBearingY;
+                }
+
+                // Adjust Font Scale for compatibility reasons
+                if (m_FaceInfo.scale == 0)
+                    m_FaceInfo.scale = 1.0f;
+
+                // Set Strikethrough Offset (if needed)
+                if (m_FaceInfo.strikethroughOffset == 0)
+                    m_FaceInfo.strikethroughOffset = m_FaceInfo.capLine / 2.5f;
+
+                // Set Padding value for legacy font assets.
+                if (m_AtlasPadding == 0)
+                {
+                    if (material.HasProperty(TextShaderUtilities.ID_GradientScale))
+                        m_AtlasPadding = (int)material.GetFloat(TextShaderUtilities.ID_GradientScale) - 1;
+                }
+
+                // Update Units per EM for pre-existing font assets.
+                if (m_FaceInfo.unitsPerEM == 0 && atlasPopulationMode != AtlasPopulationMode.Static)
+                {
+                    // Only retrieve Units Per EM if we are on the main thread.
+                    if (!JobsUtility.IsExecutingJob)
+                    {
+                        m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
+                        Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.", this);
+                    }
+                    else
+                        Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.", this);
+                }
+
+                // Compute hash codes for various properties of the font asset used for lookup.
+                hashCode = TextUtilities.GetHashCodeCaseInSensitive(name);
+                familyNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.familyName);
+                styleNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.styleName);
+                materialHashCode = TextUtilities.GetHashCodeCaseInSensitive(this.name + s_DefaultMaterialSuffix);
+
+                // Add reference to font asset in TMP Resource Manager
+                TextResourceManager.AddFontAsset(this);
+
+                IsFontAssetLookupTablesDirty = false;
+
+                RegisterCallbackInstance(this);
             }
-
-            // Compute hash codes for various properties of the font asset used for lookup.
-            hashCode = TextUtilities.GetHashCodeCaseInSensitive(name);
-            familyNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.familyName);
-            styleNameHashCode = TextUtilities.GetHashCodeCaseInSensitive(m_FaceInfo.styleName);
-            materialHashCode = TextUtilities.GetHashCodeCaseInSensitive(this.name + s_DefaultMaterialSuffix);
-
-            // Add reference to font asset in TMP Resource Manager
-            TextResourceManager.AddFontAsset(this);
-
-            IsFontAssetLookupTablesDirty = false;
-
-            RegisterCallbackInstance(this);
-
-            k_ReadFontAssetDefinitionMarker.End();
         }
 
         /// <summary>
@@ -1229,61 +1228,60 @@ namespace UnityEngine.TextCore.Text
 
         internal void AddSynthesizedCharactersAndFaceMetrics()
         {
-            k_AddSynthesizedCharactersMarker.Begin();
-
-            bool isFontFaceLoaded = false;
-
-            if (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS)
+            using (k_AddSynthesizedCharactersMarker.Auto())
             {
-                isFontFaceLoaded = LoadFontFace() == FontEngineError.Success;
+                bool isFontFaceLoaded = false;
 
-                if (!isFontFaceLoaded && !InternalDynamicOS)
-                    Debug.LogWarning("Unable to load font face for [" + this.name + "] font asset.", this);
+                if (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS)
+                {
+                    isFontFaceLoaded = LoadFontFace() == FontEngineError.Success;
+
+                    if (!isFontFaceLoaded && !InternalDynamicOS)
+                        Debug.LogWarning("Unable to load font face for [" + this.name + "] font asset.", this);
+                }
+
+                // Only characters not present in the source font file will be synthesized.
+
+                // Non visible and control characters with no metrics
+                // Add End of Text \u0003
+                AddSynthesizedCharacter(0x03, isFontFaceLoaded, true);
+
+                // Add Tab \u0009
+                AddSynthesizedCharacter(0x09, isFontFaceLoaded, true);
+
+                // Add Line Feed (LF) \u000A
+                AddSynthesizedCharacter(0x0A, isFontFaceLoaded);
+
+                // Add Vertical Tab (VT) \u000B
+                AddSynthesizedCharacter(0x0B, isFontFaceLoaded);
+
+                // Add Carriage Return (CR) \u000D
+                AddSynthesizedCharacter(0x0D, isFontFaceLoaded);
+
+                // Add Arabic Letter Mark \u061C
+                AddSynthesizedCharacter(0x061C, isFontFaceLoaded);
+
+                // Add Zero Width Space <ZWSP> \u2000B
+                AddSynthesizedCharacter(0x200B, isFontFaceLoaded);
+
+                // Add Zero Width Space <ZWJ> \u200D
+                //AddSynthesizedCharacter(0x200D, isFontFaceLoaded);
+
+                // Add Left-To-Right Mark \u200E
+                AddSynthesizedCharacter(0x200E, isFontFaceLoaded);
+
+                // Add Right-To-Left Mark \u200F
+                AddSynthesizedCharacter(0x200F, isFontFaceLoaded);
+
+                // Add Line Separator \u2028
+                AddSynthesizedCharacter(0x2028, isFontFaceLoaded);
+
+                // Add Paragraph Separator \u2029
+                AddSynthesizedCharacter(0x2029, isFontFaceLoaded);
+
+                // Add Word Joiner <WJ> / Zero Width Non-Breaking Space \u2060
+                AddSynthesizedCharacter(0x2060, isFontFaceLoaded);
             }
-
-            // Only characters not present in the source font file will be synthesized.
-
-            // Non visible and control characters with no metrics
-            // Add End of Text \u0003
-            AddSynthesizedCharacter(0x03, isFontFaceLoaded, true);
-
-            // Add Tab \u0009
-            AddSynthesizedCharacter(0x09, isFontFaceLoaded, true);
-
-            // Add Line Feed (LF) \u000A
-            AddSynthesizedCharacter(0x0A, isFontFaceLoaded);
-
-            // Add Vertical Tab (VT) \u000B
-            AddSynthesizedCharacter(0x0B, isFontFaceLoaded);
-
-            // Add Carriage Return (CR) \u000D
-            AddSynthesizedCharacter(0x0D, isFontFaceLoaded);
-
-            // Add Arabic Letter Mark \u061C
-            AddSynthesizedCharacter(0x061C, isFontFaceLoaded);
-
-            // Add Zero Width Space <ZWSP> \u2000B
-            AddSynthesizedCharacter(0x200B, isFontFaceLoaded);
-
-            // Add Zero Width Space <ZWJ> \u200D
-            //AddSynthesizedCharacter(0x200D, isFontFaceLoaded);
-
-            // Add Left-To-Right Mark \u200E
-            AddSynthesizedCharacter(0x200E, isFontFaceLoaded);
-
-            // Add Right-To-Left Mark \u200F
-            AddSynthesizedCharacter(0x200F, isFontFaceLoaded);
-
-            // Add Line Separator \u2028
-            AddSynthesizedCharacter(0x2028, isFontFaceLoaded);
-
-            // Add Paragraph Separator \u2029
-            AddSynthesizedCharacter(0x2029, isFontFaceLoaded);
-
-            // Add Word Joiner <WJ> / Zero Width Non-Breaking Space \u2060
-            AddSynthesizedCharacter(0x2060, isFontFaceLoaded);
-
-            k_AddSynthesizedCharactersMarker.End();
         }
 
         void AddSynthesizedCharacter(uint unicode, bool isFontFaceLoaded, bool addImmediately = false)
@@ -1612,32 +1610,31 @@ namespace UnityEngine.TextCore.Text
 
         internal void UpdateFontAssetData()
         {
-            k_UpdateFontAssetDataMarker.Begin();
+            using (k_UpdateFontAssetDataMarker.Auto())
+            {
+                // Get list of all characters currently contained in the font asset.
+                uint[] unicodeCharacters = new uint[m_CharacterTable.Count];
 
-            // Get list of all characters currently contained in the font asset.
-            uint[] unicodeCharacters = new uint[m_CharacterTable.Count];
+                for (int i = 0; i < m_CharacterTable.Count; i++)
+                    unicodeCharacters[i] = m_CharacterTable[i].unicode;
 
-            for (int i = 0; i < m_CharacterTable.Count; i++)
-                unicodeCharacters[i] = m_CharacterTable[i].unicode;
+                // Clear glyph, character
+                ClearCharacterAndGlyphTables();
 
-            // Clear glyph, character
-            ClearCharacterAndGlyphTables();
+                // Clear font features
+                ClearFontFeaturesTables();
 
-            // Clear font features
-            ClearFontFeaturesTables();
+                // Clear atlas textures
+                ClearAtlasTextures(true);
 
-            // Clear atlas textures
-            ClearAtlasTextures(true);
+                ReadFontAssetDefinition();
 
-            ReadFontAssetDefinition();
+                //TextResourceManager.RebuildFontAssetCache();
 
-            //TextResourceManager.RebuildFontAssetCache();
-
-            // Add existing glyphs and characters back in the font asset (if any)
-            if (unicodeCharacters.Length > 0)
-                TryAddCharacters(unicodeCharacters, m_GetFontFeatures /*&& TMP_Settings.getFontFeaturesAtRuntime*/);
-
-            k_UpdateFontAssetDataMarker.End();
+                // Add existing glyphs and characters back in the font asset (if any)
+                if (unicodeCharacters.Length > 0)
+                    TryAddCharacters(unicodeCharacters, m_GetFontFeatures /*&& TMP_Settings.getFontFeaturesAtRuntime*/);
+            }
         }
 
         /// <summary>

@@ -172,7 +172,6 @@ namespace UnityEditor
         /// <returns>Current selection as a <see cref="ReadOnlySpan{EntityId}"/></returns>
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         [NativeName("GetEntityIds")]
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern static ReadOnlySpan<EntityId> GetEntityIdsUnsafe();
 
         /// <summary>

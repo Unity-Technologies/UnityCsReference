@@ -114,7 +114,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(Bounds lhs, Bounds rhs) =>
             // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            !(lhs.m_Center == rhs.m_Center && lhs.m_Extents == rhs.m_Extents);
 
 
         // Sets the bounds to the /min/ and /max/ value of the box.

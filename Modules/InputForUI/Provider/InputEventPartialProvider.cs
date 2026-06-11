@@ -67,10 +67,15 @@ namespace UnityEngine.InputForUI
                             }
                         }
 
-                        // Send keyDown even if key is empty to update IME (UUM-122283)
+                        // Only KeyDown with keyCode==None and character=='\0' is IME. (UUM-122283)
+                        // KeyDown:None+non-zero character is the IMGUI character event → TextInputEvent.
+                        // Modifier keys (e.g. LeftShift) with '\0' use the branch above and dispatch KeyEvent.
                         else if (_ev.type == EventType.KeyDown)
                         {
-                            EventProvider.Dispatch(Event.From(ToTextInputEvent(_ev)));
+                            if (_ev.character == '\0')
+                                EventProvider.Dispatch(Event.From(ToIMECompositionEvent(_ev)));
+                            else
+                                EventProvider.Dispatch(Event.From(ToTextInputEvent(_ev)));
                         }
                         break;
                     case EventType.ValidateCommand or EventType.ExecuteCommand:
@@ -210,6 +215,18 @@ namespace UnityEngine.InputForUI
             return new TextInputEvent()
             {
                 character = ev.character,
+                timestamp = GetTimestamp(ev),
+                eventSource = EventSource.Keyboard,
+                playerId = kDefaultPlayerId,
+                eventModifiers = _eventModifiers
+            };
+        }
+
+        private IMECompositionEvent ToIMECompositionEvent(in UnityEngine.Event ev)
+        {
+            return new IMECompositionEvent()
+            {
+                compositionString = UnityEngine.Input.compositionString,
                 timestamp = GetTimestamp(ev),
                 eventSource = EventSource.Keyboard,
                 playerId = kDefaultPlayerId,

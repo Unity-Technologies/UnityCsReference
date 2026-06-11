@@ -23,7 +23,7 @@ namespace UnityEngine
 
         internal static NativeTextGenerationSettings nativeSettingsIMGUI = new NativeTextGenerationSettings();
         static string s_IMGUICurrentText;
-        static NativeTextBuffer s_IMGUITextBuffer = NativeTextBuffer.CreateDomainScoped();
+        NativeTextBuffer m_IMGUITextBuffer = NativeTextBuffer.CreateDomainScoped();
 
         internal NativeTextInfo nativeTextInfo;
 
@@ -143,7 +143,7 @@ namespace UnityEngine
             // PreProcessString
         }
 
-        private static void ParseRichText(ref NativeTextGenerationSettings nativeSettings)
+        private void ParseRichText(ref NativeTextGenerationSettings nativeSettings)
         {
             if (!nativeSettings.richTextEnabled)
             {
@@ -157,8 +157,8 @@ namespace UnityEngine
                 TextSettings textSettings = s_EditorTextSettings;
 
                 CreateTextGenerationSettingsArray(ref nativeSettings, ref text, m_TempLinks, GUIUtility.pixelsPerPoint, textSettings, k_UnderlineAllLinksFlag);
-                s_IMGUITextBuffer.CopyFrom(text);
-                nativeSettings.SetTextBuffer(s_IMGUITextBuffer.buffer, s_IMGUITextBuffer.length);
+                m_IMGUITextBuffer.CopyFrom(text);
+                nativeSettings.SetTextBuffer(m_IMGUITextBuffer.buffer, m_IMGUITextBuffer.length);
             }
             else
                 nativeSettings.textSpans = null;
@@ -216,16 +216,6 @@ namespace UnityEngine
             fixed (char* textPtr = content)
             {
                 ConvertGUIStyleToNativeTextGenerationSettings(ref nativeSettingsIMGUI, style, textColor, position, (IntPtr)textPtr, content?.Length ?? 0);
-
-                if (!update)
-                {
-                    // When update is false, UpdateNative() runs after the fixed block ends
-                    // (via AddToPermanentCacheAndGenerateMesh). Copy into a stable native
-                    // buffer so nativeSettingsIMGUI.textBufferPtr remains valid.
-                    s_IMGUITextBuffer.CopyFrom(content);
-                    nativeSettingsIMGUI.SetTextBuffer(s_IMGUITextBuffer.buffer, s_IMGUITextBuffer.length);
-                }
-
                 return GetATGTextHandle(nativeSettingsIMGUI, false, ref isCached, update);
             }
         }
@@ -404,7 +394,7 @@ namespace UnityEngine
 
                 missingGlyphs.Clear();
                 missingGlyphs.AddRange(entry.Value);
-                fa.TryAddGlyphs(missingGlyphs);
+                fa.TryAddGlyphs(missingGlyphs, populateFontFeatures: false);
             }
 
             FontAsset.UpdateFontAssetsInUpdateQueue();
@@ -424,8 +414,16 @@ namespace UnityEngine
             }
         }
 
+        public override void RemoveFromPermanentCacheATG()
+        {
+            m_IMGUITextBuffer.Dispose();
+            base.RemoveFromPermanentCacheATG();
+        }
+
         public void UpdateNative(ref bool isCached)
         {
+            m_IMGUITextBuffer.CopyFrom(s_IMGUICurrentText);
+            nativeSettingsIMGUI.SetTextBuffer(m_IMGUITextBuffer.buffer, m_IMGUITextBuffer.length);
             ParseRichText(ref nativeSettingsIMGUI);
             m_Links = m_TempLinks;
             FontAsset.CreateHbFaceIfNeeded();

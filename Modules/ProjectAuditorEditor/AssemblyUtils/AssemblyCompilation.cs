@@ -295,10 +295,26 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
                 // DEVELOPMENT_BUILD
                 assemblyBuilder.flags = AssemblyBuilderFlags.None;
+                
+#pragma warning disable 618 // disable warning for obsolete DevelopmentBuild
                 if ((CodeAnalysisFlags & CodeAnalysisFlags.DevelopmentBuild) != 0)
                     assemblyBuilder.flags |= AssemblyBuilderFlags.DevelopmentBuild;
                 else
                     additionalDefines.Remove("DEVELOPMENT_BUILD"); // Checking Development Build in the Build Profile, can cause this define to appear in assembly.defines!
+#pragma warning restore 618
+
+                if ((CodeAnalysisFlags & CodeAnalysisFlags.DebugManagedCodeVariant) != 0)
+                {
+                    additionalDefines.Add("DEBUG");
+                    additionalDefines.Add("UNITY_ENABLE_CHECKS");
+                    additionalDefines.Add("UNITY_INCLUDE_INSTRUMENTATION");
+                }
+                else
+                {
+                    additionalDefines.Remove("DEBUG");
+                    additionalDefines.Remove("UNITY_ENABLE_CHECKS");
+                    additionalDefines.Remove("UNITY_INCLUDE_INSTRUMENTATION");
+                }
 
                 // temp fix for UWP compilation error (failing to find references to Windows SDK assemblies)
                 additionalDefines.Remove("ENABLE_WINMD_SUPPORT");

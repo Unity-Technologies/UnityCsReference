@@ -112,6 +112,8 @@ namespace UnityEditor.UIElements
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
+            rootElement.AddToClassList(InspectorElement.ussClassName);
+
             uiToolkitTemplate.CloneTree(rootElement);
 
             var styleSheet = EditorGUIUtility.Load("UIPackageResources/Settings/UIToolkitSettingsView.uss") as StyleSheet;

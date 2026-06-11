@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.AssetPackage
 {
-
 #pragma warning disable 649
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
@@ -44,15 +43,50 @@ namespace UnityEditor.AssetPackage
         public int enabledStatus;
     }
 
+    public static class Package
+    {
+        public static void Export(ExportPackageParameters parameters)
+        {
+            Utility.ExportPackage(parameters.AssetPathNames, parameters.FileName, parameters.OwnerOrgId, parameters.Flags);
+        }
+
+        public static void Import(string packagePath, bool interactive)
+        {
+            Utility.ImportPackage(packagePath, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
+        }
+    }
+
     [NativeHeader("Modules/AssetPackageEditor/AssetPackage.bindings.h")]
     internal class Utility
     {
+        [FreeFunction("::ImportPackageWithOrigin")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        extern private static bool ImportPackageWithOrigin(string packagePath, AssetOrigin origin, ImportPackageOptions options);
+
+        internal static void ImportPackage(string packagePath, AssetOrigin origin, bool interactive)
+        {
+            ImportPackageWithOrigin(packagePath, origin, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
+        }
+
+        internal static bool ImportPackageImmediately(string packagePath)
+        {
+            return ImportPackage(packagePath, ImportPackageOptions.NoGUI);
+        }
+
+        [FreeFunction("AssetPackage::ImportPackage")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        extern internal static bool ImportPackage(string packagePath, ImportPackageOptions options);
+
+        [NativeMethod(ThrowsException = true)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        extern internal static void ExportPackage(string[] assetPathNames, string fileName, string ownerOrgId, ExportPackageOptions flags);
+
         [NativeMethod(ThrowsException = true)]
         public static extern ExportPackageItem[] BuildExportPackageItemsList(string[] guids, bool dependencies);
         [NativeMethod(ThrowsException = true)]
         public static extern ExportPackageItem[] BuildExportPackageItemsListWithPackageManagerWarning(string[] guids, bool dependencies, bool warnPackageManagerDependencies);
         [NativeMethod(ThrowsException = true)]
-        public static extern void ExportPackage(string[] guids, string fileName, string ownerOrgId);
+        public static extern void ExportPackageWithGUIDs(string[] guids, string fileName, string ownerOrgId);
         [NativeMethod(ThrowsException = true)]
         public static extern void ExportPackageAndPackageManagerManifest(string[] guids, string fileName, string ownerOrgId);
 

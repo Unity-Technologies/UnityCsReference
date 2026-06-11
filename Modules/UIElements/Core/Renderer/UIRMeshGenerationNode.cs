@@ -59,6 +59,22 @@ namespace UnityEngine.UIElements
             m_UnsafeNode.DrawMesh(vertices, indices, texture, textureOptions);
         }
 
+        /// <summary>Records a draw command with a <see cref="UIMesh"/> bundle.</summary>
+        /// <remarks>See <see cref="MeshGenerationContext.DrawMesh(ref UIMesh, Texture)"/> for the lifetime contract.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(ref UIMesh mesh, Texture texture = null)
+        {
+            DrawMesh(ref mesh, texture, TextureOptions.None);
+        }
+
+        /// <summary>Records a draw command with a <see cref="UIMesh"/> bundle.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(ref UIMesh mesh, Texture texture, TextureOptions textureOptions)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            m_UnsafeNode.DrawMesh(ref mesh, texture, textureOptions);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Entry GetParentEntry() => m_UnsafeNode.GetParentEntry();
     }
@@ -80,6 +96,12 @@ namespace UnityEngine.UIElements
         public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
         {
             GetManaged().DrawMesh(vertices, indices, texture, textureOptions);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(ref UIMesh mesh, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        {
+            GetManaged().DrawMesh(ref mesh, texture, textureOptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -167,6 +189,14 @@ namespace UnityEngine.UIElements
             m_EntryRecorder.DrawMesh(m_ParentEntry, vertices, indices, texture, textureOptions);
         }
 
+        public void DrawMesh(ref UIMesh mesh, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        {
+            if (mesh.vertices.Length == 0 || mesh.indices.Length == 0)
+                return;
+
+            m_EntryRecorder.DrawMesh(m_ParentEntry, ref mesh, texture, textureOptions);
+        }
+
         public void DrawGradients(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)
         {
             if (vertices.Length == 0 || indices.Length == 0 || gradientsOwner == null)
@@ -213,6 +243,7 @@ namespace UnityEngine.UIElements
 
         public MeshGenerationNodeManager(EntryRecorder entryRecorder)
         {
+            Debug.Assert(entryRecorder != null);
             m_EntryRecorder = entryRecorder;
         }
 

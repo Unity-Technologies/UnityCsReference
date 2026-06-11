@@ -25,8 +25,8 @@ namespace UnityEngine.UIElements.UIR
     {
         VisualElement currentElement { get; set; }
         TextJobSystem textJobSystem { get; set; }
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales);
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales, bool usesPerGlyphTextCoreSettings = false);
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, bool usesPerGlyphTextCoreSettings = false);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font, bool useAdvanced = true);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
@@ -738,7 +738,7 @@ namespace UnityEngine.UIElements.UIR
 
                     var glyphList = new List<uint>();
                     glyphList.AddRange(entry.Value);
-                    fa.TryAddGlyphs(glyphList);
+                    fa.TryAddGlyphs(glyphList, populateFontFeatures: false);
                 }
     
                 FontAsset.UpdateFontAssetsInUpdateQueue();
@@ -910,7 +910,7 @@ namespace UnityEngine.UIElements.UIR
             m_RenderModes.Clear();
         }
 
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, bool usesPerGlyphTextCoreSettings = false)
         {
             for (int i = 0; i < materials.Count; ++i)
             {
@@ -922,13 +922,13 @@ namespace UnityEngine.UIElements.UIR
                 m_SdfScales.Add(sdfScale);
             }
 
-            DrawText(vertices, indices, m_Atlases, renderModes, m_SdfScales);
+            DrawText(vertices, indices, m_Atlases, renderModes, m_SdfScales, usesPerGlyphTextCoreSettings);
 
             m_Atlases.Clear();
             m_SdfScales.Clear();
         }
 
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales)
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales, bool usesPerGlyphTextCoreSettings = false)
         {
             if (vertices == null)
                 return;
@@ -949,7 +949,8 @@ namespace UnityEngine.UIElements.UIR
                         false,
                         0,
                         0,
-                        true);
+                        true,
+                        usesPerGlyphTextCoreSettings);
                 }
                 else
                 {
@@ -968,7 +969,8 @@ namespace UnityEngine.UIElements.UIR
                         true,
                         sdfScales[i],
                         sharpness,
-                        false);
+                        false,
+                        usesPerGlyphTextCoreSettings);
                 }
             }
         }
@@ -1004,12 +1006,12 @@ namespace UnityEngine.UIElements.UIR
             };
         }
 
-        void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness, bool multiChannel)
+        void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness, bool multiChannel, bool usesPerGlyphTextCoreSettings = false)
         {
             if (isSdf)
-                m_MeshGenerationContext.entryRecorder.DrawSdfText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, sdfScale, sharpness);
+                m_MeshGenerationContext.entryRecorder.DrawSdfText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, sdfScale, sharpness, usesPerGlyphTextCoreSettings);
             else
-                m_MeshGenerationContext.entryRecorder.DrawRasterText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, multiChannel);
+                m_MeshGenerationContext.entryRecorder.DrawRasterText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, multiChannel, usesPerGlyphTextCoreSettings);
         }
 
         public void DrawRectangle(RectangleParams rectParams)
@@ -1017,59 +1019,61 @@ namespace UnityEngine.UIElements.UIR
             if (rectParams.rect.width < UIRUtility.k_Epsilon || rectParams.rect.height < UIRUtility.k_Epsilon)
                 return; // Nothing to draw
 
-            k_MarkerDrawRectangle.Begin();
-            if (currentElement.panel.contextType == ContextType.Editor)
-                rectParams.color *= rectParams.playmodeTintColor;
-
-            var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false };
-            rectParams.ToNativeParams(out rectangleJobParameters.rectParams);
-
-            rectangleJobParameters.rectParams.texture = m_GCHandlePool.GetIntPtr(rectParams.texture);
-            rectangleJobParameters.rectParams.sprite = m_GCHandlePool.GetIntPtr(rectParams.sprite);
-            if (rectParams.sprite != null && rectParams.sprite.texture != null)
+            using (k_MarkerDrawRectangle.Auto())
             {
-                rectangleJobParameters.rectParams.spriteTexture = m_GCHandlePool.GetIntPtr(rectParams.sprite.texture);
-                rectangleJobParameters.rectParams.spriteVertices = m_GCHandlePool.GetIntPtr(rectParams.sprite.vertices);
-                rectangleJobParameters.rectParams.spriteUVs = m_GCHandlePool.GetIntPtr(rectParams.sprite.uv);
-                rectangleJobParameters.rectParams.spriteTriangles = m_GCHandlePool.GetIntPtr(rectParams.sprite.triangles);
+                if (currentElement.panel.contextType == ContextType.Editor)
+                    rectParams.color *= rectParams.playmodeTintColor;
+
+                var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false };
+                rectParams.ToNativeParams(out rectangleJobParameters.rectParams);
+
+                rectangleJobParameters.rectParams.texture = m_GCHandlePool.GetIntPtr(rectParams.texture);
+                rectangleJobParameters.rectParams.sprite = m_GCHandlePool.GetIntPtr(rectParams.sprite);
+                if (rectParams.sprite != null && rectParams.sprite.texture != null)
+                {
+                    rectangleJobParameters.rectParams.spriteTexture = m_GCHandlePool.GetIntPtr(rectParams.sprite.texture);
+                    rectangleJobParameters.rectParams.spriteVertices = m_GCHandlePool.GetIntPtr(rectParams.sprite.vertices);
+                    rectangleJobParameters.rectParams.spriteUVs = m_GCHandlePool.GetIntPtr(rectParams.sprite.uv);
+                    rectangleJobParameters.rectParams.spriteTriangles = m_GCHandlePool.GetIntPtr(rectParams.sprite.triangles);
+                }
+
+                if (rectParams.backgroundRepeatInstanceList != null)
+                {
+                    rectangleJobParameters.rectParams.backgroundRepeatInstanceListStartIndex = rectParams.backgroundRepeatInstanceListStartIndex;
+                    rectangleJobParameters.rectParams.backgroundRepeatInstanceListEndIndex = rectParams.backgroundRepeatInstanceListEndIndex;
+                    rectangleJobParameters.rectParams.backgroundRepeatInstanceList = m_GCHandlePool.GetIntPtr(rectParams.backgroundRepeatInstanceList);
+                }
+
+                rectangleJobParameters.rectParams.vectorImage = m_GCHandlePool.GetIntPtr(rectParams.vectorImage);
+
+                bool isUsingGradients = rectParams.vectorImage?.atlas != null;
+                rectangleJobParameters.rectParams.meshFlags |= isUsingGradients ? (int)MeshFlags.IsUsingVectorImageGradients : (int)MeshFlags.None;
+
+                m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+                rectangleJobParameters.node = unsafeNode;
+                m_TesselationJobParameters.Add(rectangleJobParameters);
+
             }
-
-            if (rectParams.backgroundRepeatInstanceList != null)
-            {
-                rectangleJobParameters.rectParams.backgroundRepeatInstanceListStartIndex = rectParams.backgroundRepeatInstanceListStartIndex;
-                rectangleJobParameters.rectParams.backgroundRepeatInstanceListEndIndex = rectParams.backgroundRepeatInstanceListEndIndex;
-                rectangleJobParameters.rectParams.backgroundRepeatInstanceList = m_GCHandlePool.GetIntPtr(rectParams.backgroundRepeatInstanceList);
-            }
-
-            rectangleJobParameters.rectParams.vectorImage = m_GCHandlePool.GetIntPtr(rectParams.vectorImage);
-
-            bool isUsingGradients = rectParams.vectorImage?.atlas != null;
-            rectangleJobParameters.rectParams.meshFlags |= isUsingGradients ? (int)MeshFlags.IsUsingVectorImageGradients : (int)MeshFlags.None;
-
-            m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
-            rectangleJobParameters.node = unsafeNode;
-            m_TesselationJobParameters.Add(rectangleJobParameters);
-
-            k_MarkerDrawRectangle.End();
         }
 
         public void DrawBorder(BorderParams borderParams)
         {
-            k_MarkerDrawBorder.Begin();
-            if (currentElement.panel.contextType == ContextType.Editor)
+            using (k_MarkerDrawBorder.Auto())
             {
-                borderParams.leftColor *= borderParams.playmodeTintColor;
-                borderParams.topColor *= borderParams.playmodeTintColor;
-                borderParams.rightColor *= borderParams.playmodeTintColor;
-                borderParams.bottomColor *= borderParams.playmodeTintColor;
+                if (currentElement.panel.contextType == ContextType.Editor)
+                {
+                    borderParams.leftColor *= borderParams.playmodeTintColor;
+                    borderParams.topColor *= borderParams.playmodeTintColor;
+                    borderParams.rightColor *= borderParams.playmodeTintColor;
+                    borderParams.bottomColor *= borderParams.playmodeTintColor;
+                }
+
+                var borderJobParams = new TessellationJobParameters() { isBorderJob = true, borderParams = borderParams };
+                m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+                borderJobParams.node = unsafeNode;
+                m_TesselationJobParameters.Add(borderJobParams);
+
             }
-
-            var borderJobParams = new TessellationJobParameters() { isBorderJob = true, borderParams = borderParams };
-            m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
-            borderJobParams.node = unsafeNode;
-            m_TesselationJobParameters.Add(borderJobParams);
-
-            k_MarkerDrawBorder.End();
         }
 
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale)
@@ -1077,53 +1081,55 @@ namespace UnityEngine.UIElements.UIR
             if (vectorImage == null || vectorImage.vertices.Length == 0 || vectorImage.indices.Length == 0)
                 return;
 
-            k_MarkerDrawVectorImage.Begin();
-            m_MeshGenerationContext.AllocateTempMesh(vectorImage.vertices.Length, vectorImage.indices.Length, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
-
-            bool hasGradients = vectorImage.atlas != null;
-            if (hasGradients)
-                m_MeshGenerationContext.entryRecorder.DrawGradients(m_MeshGenerationContext.parentEntry, vertices, indices, vectorImage);
-            else
-                m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices);
-
-            var matrix = Matrix4x4.TRS(offset, Quaternion.AngleAxis(rotationAngle.ToDegrees(), Vector3.forward), new Vector3(scale.x, scale.y, 1.0f));
-            bool flipWinding = (scale.x < 0.0f) ^ (scale.y < 0.0f);
-
-            int vertexCount = vectorImage.vertices.Length;
-            for (int i = 0; i < vertexCount; ++i)
+            using (k_MarkerDrawVectorImage.Auto())
             {
-                var v = vectorImage.vertices[i];
-                var p = matrix.MultiplyPoint3x4(v.position);
-                p.z = Vertex.nearZ;
-                vertices[i] = new Vertex {
-                    position = p, tint = v.tint, uv = v.uv,
-                    svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
-                    flags = v.vertexFlags,
-                    circle = v.circle
-                };
-            }
+                m_MeshGenerationContext.AllocateTempMesh(vectorImage.vertices.Length, vectorImage.indices.Length, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
 
-            if (!flipWinding)
-                indices.CopyFrom(vectorImage.indices);
-            else
-            {
-                var srcIndices = vectorImage.indices;
-                for (int i = 0; i < srcIndices.Length; i += 3)
+                bool hasGradients = vectorImage.atlas != null;
+                if (hasGradients)
+                    m_MeshGenerationContext.entryRecorder.DrawGradients(m_MeshGenerationContext.parentEntry, vertices, indices, vectorImage);
+                else
+                    m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices);
+
+                var matrix = Matrix4x4.TRS(offset, Quaternion.AngleAxis(rotationAngle.ToDegrees(), Vector3.forward), new Vector3(scale.x, scale.y, 1.0f));
+                bool flipWinding = (scale.x < 0.0f) ^ (scale.y < 0.0f);
+
+                int vertexCount = vectorImage.vertices.Length;
+                for (int i = 0; i < vertexCount; ++i)
                 {
-                    indices[i + 0] = srcIndices[i + 0];
-                    indices[i + 1] = srcIndices[i + 2];
-                    indices[i + 2] = srcIndices[i + 1];
+                    var v = vectorImage.vertices[i];
+                    var p = matrix.MultiplyPoint3x4(v.position);
+                    p.z = Vertex.nearZ;
+                    vertices[i] = new Vertex {
+                        position = p, tint = v.tint, uv = v.uv,
+                        svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
+                        flags = v.vertexFlags,
+                        circle = v.circle
+                    };
                 }
-            }
 
-            k_MarkerDrawVectorImage.End();
+                if (!flipWinding)
+                    indices.CopyFrom(vectorImage.indices);
+                else
+                {
+                    var srcIndices = vectorImage.indices;
+                    for (int i = 0; i < srcIndices.Length; i += 3)
+                    {
+                        indices[i + 0] = srcIndices[i + 0];
+                        indices[i + 1] = srcIndices[i + 2];
+                        indices[i + 2] = srcIndices[i + 1];
+                    }
+                }
+
+            }
         }
 
         public void DrawRectangleRepeat(RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint)
         {
-            k_MarkerDrawRectangleRepeat.Begin();
-            DoDrawRectangleRepeat(ref rectParams, totalRect, scaledPixelsPerPoint);
-            k_MarkerDrawRectangleRepeat.End();
+            using (k_MarkerDrawRectangleRepeat.Auto())
+            {
+                DoDrawRectangleRepeat(ref rectParams, totalRect, scaledPixelsPerPoint);
+            }
         }
 
         // This method should not be called directly. Use the DrawRectangleRepeat wrapper instead which is properly

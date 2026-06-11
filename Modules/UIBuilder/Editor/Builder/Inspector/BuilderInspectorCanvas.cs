@@ -139,8 +139,8 @@ namespace Unity.UI.Builder
             var backgroundModeType = typeof(BuilderCanvasBackgroundMode);
             m_BackgroundMode = root.Q<ToggleButtonGroup>("background-mode-field");
             m_BackgroundMode.userData = backgroundModeType;
-            m_BackgroundMode.Add(new Button() { name="Color", iconImage = BuilderInspectorUtilities.LoadIcon("color_picker", "Canvas/"), tooltip = "color" });
-            m_BackgroundMode.Add(new Button() { name="Image", iconImage = BuilderInspectorUtilities.LoadIcon("RawImage", "Canvas/"), tooltip = "image" });
+            m_BackgroundMode.Add(new Button() { name="Color", tooltip = "Color" });
+            m_BackgroundMode.Add(new Button() { name="Image", tooltip = "Image" });
             m_BackgroundMode.Add(new Button() { name="Camera", iconImage = EditorGUIUtility.FindTexture("d_SceneViewCamera"), tooltip = "camera" });
             m_BackgroundMode.RegisterValueChangedCallback(OnBackgroundModeChange);
 
@@ -160,7 +160,7 @@ namespace Unity.UI.Builder
                 .OfType<ScaleMode>().Select((v) => StyleSheetUtility.ConvertCamelToDash(v.ToString())).ToList();
             foreach (var value in backgroundScaleModeValues)
             {
-                m_ImageScaleModeField.Add(new Button() { iconImage = BuilderInspectorUtilities.LoadIcon(StyleSheetUtility.ConvertDashToHuman(value), "Background/"), tooltip = value });
+                m_ImageScaleModeField.Add(new Button() { name = value, tooltip = StyleSheetUtility.ConvertDashToHuman(value) });
             }
             m_ImageScaleModeField.RegisterValueChangedCallback(OnBackgroundImageScaleModeChange);
             m_FitCanvasToImageButton = root.Q<Button>("background-image-fit-canvas-button");

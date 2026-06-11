@@ -15,29 +15,22 @@ static class HighlightUtility
 {
     public static void RequestHighlights(StyleRule rule, CommandSources.CommandSource source)
     {
-        using var command = RequestHighlightsCommand.GetPooled(rule);
-        command.Source = source;
-        UICommandQueue.EnqueueCommand(command);
+        RequestHighlightsCommand.Execute(source, rule);
     }
 
     public static void RequestHighlights(VisualElement element, CommandSources.CommandSource source)
     {
-        using var command = RequestHighlightsCommand.GetPooled(element);
-        command.Source = source;
-        UICommandQueue.EnqueueCommand(command);
+        RequestHighlightsCommand.Execute(source, element);
     }
 
     public static void RequestHighlights(int elementId, CommandSources.CommandSource source)
     {
-        using var command = RequestHighlightsCommand.GetPooled(elementId);
-        command.Source = source;
-        UICommandQueue.EnqueueCommand(command);
+        RequestHighlightsCommand.Execute(source, elementId);
     }
 
     public static void ClearHighlights()
     {
-        using var command = HighlightCommand.GetPooled(null, null);
-        UICommandQueue.EnqueueCommand(command);
+        HighlightCommand.Execute(null, null, null);
     }
 
     public static void GetMatchingElementsForSelector(VisualElement root, StyleComplexSelector complexSelector, HashSet<VisualElement> matched)

@@ -9,6 +9,8 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEditor.AssetPackage;
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.UI.Internal;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
@@ -40,12 +42,22 @@ namespace UnityEditor
             public GUIStyle bottomBarBg           = "ProjectBrowserBottomBarBg";
             public GUIStyle topBarBg              = "OT TopBar";
             public GUIStyle textureIconDropShadow = "ProjectBrowserTextureIconDropShadow";
-            public Color    lineColor;
+            public GUIStyle trustInfoOuterBg      = "PI TrustInfoOuterBg";
+            public Color     lineColor;
+            public GUIContent verifiedIcon;
+            public GUIContent errorIcon;
+            public GUIContent infoIcon;
+            public GUIContent warnIcon;
 
             public Constants()
             {
                 lineColor = EditorGUIUtility.isProSkin ? new Color(0.1f, 0.1f, 0.1f) : new Color(0.4f, 0.4f, 0.4f);
                 title.clipping = TextClipping.Ellipsis;
+
+                verifiedIcon   = EditorGUIUtility.IconContent("Verified");
+                errorIcon      = EditorGUIUtility.IconContent("console.erroricon");
+                infoIcon       = EditorGUIUtility.IconContent("console.infoicon");
+                warnIcon       = EditorGUIUtility.IconContent("console.warnicon");
             }
         }
         static Constants ms_Constants;
@@ -132,6 +144,7 @@ namespace UnityEditor
             {
                 TopAssetRestrictedArea();
                 TopArea();
+                TrustInfoArea();
                 TopButtonsArea();
                 m_Tree.OnGUI(GUILayoutUtility.GetRect(1, 9999, 1, 99999));
                 BottomArea();
@@ -168,10 +181,9 @@ namespace UnityEditor
 #pragma warning restore UA2001
             if (restrictedItems.Length > 0)
             {
-                Texture2D warningIcon = EditorGUIUtility.IconContent("console.erroricon").image as Texture2D;
                 GUILayout.BeginHorizontal(EditorStyles.helpBox); // Horizontal layout for icon and text
                 {
-                    GUILayout.Label(warningIcon, GUILayout.Width(32), GUILayout.Height(32));
+                    GUILayout.Label(ms_Constants.errorIcon, GUILayout.Width(32), GUILayout.Height(32));
 
                     GUILayout.BeginVertical();
                     {
@@ -192,56 +204,174 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
         }
+        static TrustAndSignature GetEffectiveTrustAndSignature()
+        {
+            var wizard = PackageImportWizard.instance;
+            var assetPackageInfo = wizard.assetPackageInfo;
+            var trustAndSignature =  assetPackageInfo != null
+                    ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo)
+                    : TrustAndSignature.NotApplicable;
+
+            if (trustAndSignature == TrustAndSignature.UntrustedNoSignature && (PackageTrustLevel.HasBypassPackageTrustEntitlement() || wizard.isAssetStorePackage))
+                return TrustAndSignature.NotApplicable;
+
+            return trustAndSignature;
+        }
+
+        static void DrawTrustBadge(Rect rect, TrustAndSignature trustAndSignature)
+        {
+            var attestation = PackageImportWizard.instance.assetPackageInfo?.signature?.attestation;
+            var signerName = string.IsNullOrEmpty(attestation?.publisherName) ? attestation?.ownerOrgName : attestation.publisherName;
+            if (string.IsNullOrEmpty(signerName))
+                signerName = L10n.Tr("Unknown Publisher");
+            GUIContent icon;
+            string label;
+            switch (trustAndSignature)
+            {
+                case TrustAndSignature.FullTrustUnitySignature:
+                    icon  = ms_Constants.verifiedIcon;
+                    label = L10n.Tr("Signed for Unity Technologies");
+                    break;
+                case TrustAndSignature.FullTrustValidSignature:
+                    icon  = ms_Constants.verifiedIcon;
+                    label = string.Format(L10n.Tr("Signed for {0}"), signerName);
+                    break;
+                case TrustAndSignature.UntrustedInvalidSignature:
+                    icon  = ms_Constants.errorIcon;
+                    label = L10n.Tr("Invalid Signature");
+                    break;
+                case TrustAndSignature.LimitedTrust:
+                    icon  = ms_Constants.infoIcon;
+                    label = string.Format(L10n.Tr("Signed for {0}"), signerName);
+                    break;
+                case TrustAndSignature.UntrustedNoSignature:
+                    icon  = ms_Constants.warnIcon;
+                    label = L10n.Tr("Missing Signature");
+                    break;
+                case TrustAndSignature.FullTrustBuiltInPackage:
+                case TrustAndSignature.FullTrustNoSignature:
+                case TrustAndSignature.NotApplicable:
+                default:
+                    return;
+            }
+
+            GUI.Label(rect, new GUIContent(label, icon.image), ms_Constants.subtitle);
+        }
+
+        void TrustInfoArea()
+        {
+            var trustAndSignature = GetEffectiveTrustAndSignature();
+
+            GUIContent icon;
+            string message;
+
+            switch (trustAndSignature)
+            {
+                case TrustAndSignature.UntrustedInvalidSignature:
+                    icon    = ms_Constants.errorIcon;
+                    message = L10n.Tr("This package has an invalid signature which can indicate unsafe or malicious content. Remove this package to reduce risk to your project.");
+                    break;
+                case TrustAndSignature.LimitedTrust:
+                    icon    = ms_Constants.infoIcon;
+                    message = L10n.Tr("This package is signed and distributed outside of Unity trusted sources. Please ensure you understand where this package originated from.");
+                    break;
+                case TrustAndSignature.UntrustedNoSignature:
+                    icon    = ms_Constants.warnIcon;
+                    message = L10n.Tr("Unity can't verify this package because it doesn't have a signature. Use signed packages to reduce risk to your project.");
+                    break;
+                default:
+                    return;
+            }
+
+            GUILayout.BeginVertical(ms_Constants.trustInfoOuterBg);
+            {
+                GUILayout.Space(10);
+                GUILayout.BeginHorizontal();
+                {
+                    GUILayout.Space(10);
+                    GUILayout.BeginHorizontal(EditorStyles.helpBox);
+                    {
+                        GUILayout.Label(icon, GUILayout.Width(32), GUILayout.Height(32));
+                        GUILayout.Space(4);
+                        GUILayout.Label(message, "WordWrappedLabel");
+                    }
+                    GUILayout.EndHorizontal();
+                    GUILayout.Space(10);
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.Space(10);
+            }
+            GUILayout.EndVertical();
+        }
 
         void TopArea()
         {
             const float margin = 10f;
             const float rightPadding = 10f;
-            const float imageSize = 64;
+            const float imageSize = 64f;
+            const float rowHeight = imageSize / 4;
 
-            if (s_PackageIcon == null && !string.IsNullOrEmpty(m_PackageIconPath))
+            if (s_PackageIcon is null && !string.IsNullOrEmpty(m_PackageIconPath))
                 LoadTexture(m_PackageIconPath, ref s_PackageIcon);
-            bool hasPackageIcon = s_PackageIcon != null;
 
-            float totalTopHeight = hasPackageIcon ? (margin + imageSize + margin) : 52f;
-            Rect r = GUILayoutUtility.GetRect(position.width, totalTopHeight);
+            var hasPackageIcon = s_PackageIcon is not null;
+            var trustAndSignature = GetEffectiveTrustAndSignature();
+            var showTrustBadge = trustAndSignature != TrustAndSignature.NotApplicable && trustAndSignature != TrustAndSignature.FullTrustNoSignature;
+            var packageImportWizard = PackageImportWizard.instance;
+
+            var textAreaHeight = rowHeight;
+            if (showTrustBadge)
+                textAreaHeight += rowHeight;
+            // We use 4 * rowHeight because when there are multi-step wizard information it always takes up 4 rows even if
+            // there are no trust badge (the second row would just be empty in this case)
+            if (packageImportWizard.IsMultiStepWizard)
+                textAreaHeight = 4 * rowHeight;
+
+            // We want the topArea to be at least 2 * rowHeight so it wouldn't show up too small in 1 row case
+            var totalHeightWithoutMargin = hasPackageIcon ? imageSize : Math.Max(textAreaHeight, rowHeight * 2);
+            var r = GUILayoutUtility.GetRect(position.width, totalHeightWithoutMargin + margin * 2);
 
             // Background
             GUI.Label(r, GUIContent.none, ms_Constants.topBarBg);
 
-            Rect titleRect;
+            // The padding is added to keep the text centered
+            var textAreaTopPadding = (totalHeightWithoutMargin - textAreaHeight) * 0.5f;
+            float textAreaX, textAreaY, textContentWidth;
             if (hasPackageIcon)
             {
-                Rect iconRect = new Rect(r.x + margin, r.y + margin, imageSize, imageSize);
+                var iconRect = new Rect(r.x + margin, r.y + margin, imageSize, imageSize);
                 DrawTexture(iconRect, s_PackageIcon, true);
 
-                var textContentWidth = r.width - iconRect.width - rightPadding;
-                var textContentX = iconRect.xMax + margin;
-                var packageImportWizard = PackageImportWizard.instance;
-                if (!packageImportWizard.IsMultiStepWizard)
-                    titleRect = new Rect(textContentX, iconRect.yMin, textContentWidth, iconRect.height);
-                else
-                {
-                    titleRect = new Rect(textContentX, iconRect.yMin, textContentWidth, iconRect.height / 3);
-
-                    // Subtitle
-                    var subtitleRect = new Rect(textContentX + 1f, iconRect.yMin + iconRect.height * 0.50f, textContentWidth, iconRect.height / 4);
-                    var subtitleText = packageImportWizard.IsProjectSettingStep ? "Import Settings Overrides" : "Import Content";
-                    GUI.Label(subtitleRect, EditorGUIUtility.TrTextContent(subtitleText), ms_Constants.subtitle);
-
-                    // "Step x of y" label
-                    var stepInfoRect = new Rect(textContentX, iconRect.yMin + iconRect.height * 0.75f, textContentWidth, iconRect.height / 4);
-                    var stepInfoText = packageImportWizard.IsProjectSettingStep ? "Step 2 of 2" : "Step 1 of 2";
-                    GUI.Label(stepInfoRect, EditorGUIUtility.TrTextContent(stepInfoText), ms_Constants.stepInfo);
-                }
+                textAreaX = iconRect.xMax + margin;
+                textAreaY = iconRect.yMin + textAreaTopPadding;
+                textContentWidth = r.width - rightPadding - iconRect.width;
             }
             else
             {
-                titleRect = new Rect(r.x + 5f, r.yMin, r.width - rightPadding, r.height);
+                textAreaX = r.x + margin;
+                textAreaY = r.y + margin + textAreaTopPadding;
+                textContentWidth = r.width - rightPadding;
             }
 
-            // Title with tooltip
+            var titleRect = new Rect(textAreaX, textAreaY, textContentWidth, rowHeight);
             GUI.Label(titleRect, new GUIContent(m_PackageName, m_PackageName), ms_Constants.title);
+
+            if (showTrustBadge)
+            {
+                var trustRect = new Rect(textAreaX, textAreaY + rowHeight, textContentWidth, rowHeight);
+                DrawTrustBadge(trustRect, trustAndSignature);
+            }
+
+            if (packageImportWizard.IsMultiStepWizard)
+            {
+                var subtitleRect = new Rect(textAreaX + 1f, textAreaY + rowHeight * 2, textContentWidth, rowHeight);
+                var subtitleText = packageImportWizard.IsProjectSettingStep ? "Import Settings Overrides" : "Import Content";
+                GUI.Label(subtitleRect, EditorGUIUtility.TrTextContent(subtitleText), ms_Constants.subtitle);
+
+                var stepInfoRect = new Rect(textAreaX, textAreaY + rowHeight * 3, textContentWidth, rowHeight);
+                var stepInfoText = packageImportWizard.IsProjectSettingStep ? "Step 2 of 2" : "Step 1 of 2";
+                GUI.Label(stepInfoRect, EditorGUIUtility.TrTextContent(stepInfoText), ms_Constants.stepInfo);
+            }
         }
 
         void TopButtonsArea()
@@ -280,6 +410,14 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             var packageImportWizard = PackageImportWizard.instance;
+            var trustAndSignature = GetEffectiveTrustAndSignature();
+            var hasTrustIssue = trustAndSignature is TrustAndSignature.LimitedTrust or TrustAndSignature.UntrustedInvalidSignature or TrustAndSignature.UntrustedNoSignature;
+            if (hasTrustIssue)
+            {
+                if (GUILayout.Button(EditorGUIUtility.TrTextContent("Learn More"), EditorStyles.linkLabel))
+                    Application.OpenURL("https://docs.unity3d.com/Manual/upm-signature.html");
+                EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+            }
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
             {
@@ -298,7 +436,7 @@ namespace UnityEditor
                 packageImportWizard.DoNextStep(m_ImportPackageItems);
             }
             GUI.enabled = anyElementsSelected;
-            if (!hasNextStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Import")))
+            if (!hasNextStep && GUILayout.Button(hasTrustIssue ? EditorGUIUtility.TrTextContent("Import Anyway") : EditorGUIUtility.TrTextContent("Import")))
             {
                 packageImportWizard.DoImportStep(m_ImportPackageItems);
             }
@@ -469,6 +607,8 @@ namespace UnityEditor
         private AssetOrigin m_AssetOrigin;
         private string m_PackageExtractedPath;
         private AssetPackageInfo m_AssetPackageInfo;
+        public AssetPackageInfo assetPackageInfo => m_AssetPackageInfo;
+        public bool isAssetStorePackage => m_AssetOrigin.IsValid();
 
         public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath, AssetOrigin origin, string packageExtractedPath, AssetPackageInfo assetPackageInfo)
         {

@@ -158,6 +158,7 @@ namespace UnityEditor.UIElements
         private void OnCancelButtonClick()
         {
             ClearTextField();
+            m_TextField.Focus();
         }
 
         /// <summary>

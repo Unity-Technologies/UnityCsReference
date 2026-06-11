@@ -4,20 +4,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
-    // This collection is designed to allocate ranges of memory. The ranges are allocated within the pool,
-    // within the excess pages, or as dedicated pages if their size is excessive. On reset, only the pool is
-    // preserved: all excess pages and dedicated pages are pruned.
-    class TempAllocator<T> : IDisposable where T : struct
+    // This collection is designed to allocate ranges of unmanaged elements. The ranges are allocated within the
+    // pool, within the excess pages, or as dedicated pages if their size is excessive. On reset, only the pool
+    // is preserved: all excess pages and dedicated pages are pruned. Internally the backing storage is a pool of
+    // bytes; each allocation is aligned to the natural alignment of T.
+    class TempAllocator : IDisposable
     {
         static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), "Renderer.TempAllocator");
         struct Page
         {
-            public NativeArray<T> array;
+            public NativeArray<byte> array;
             public int used;
         }
 
@@ -26,19 +28,26 @@ namespace UnityEngine.UIElements.UIR
 
         Page m_Pool;
         List<Page> m_Excess;
+        List<Page> m_Dedicated; // Always full
         int m_NextExcessSize;
 
-        static int s_StaticSafetyId;
-
-        static void InitStaticSafetyId(ref AtomicSafetyHandle handle)
+        static class StaticSafetyIds<T> where T : struct
         {
-            if (s_StaticSafetyId == 0)
-                s_StaticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeSlice<T>>();
-            AtomicSafetyHandle.SetStaticSafetyId(ref handle, s_StaticSafetyId);
+            public static int id;
+        }
+
+        static void InitStaticSafetyId<T>(ref AtomicSafetyHandle handle) where T : struct
+        {
+            if (StaticSafetyIds<T>.id == 0)
+                StaticSafetyIds<T>.id = AtomicSafetyHandle.NewStaticSafetyId<NativeSlice<T>>();
+            AtomicSafetyHandle.SetStaticSafetyId(ref handle, StaticSafetyIds<T>.id);
         }
 
         List<AtomicSafetyHandle> m_SafetyHandles = new();
 
+        /// <param name="poolCapacity">Size of the persistent alloc</param>
+        /// <param name="excessMinCapacity">Minimum size of the first excess page (actual size can be larger if the current alloc is larger than this minimum)</param>
+        /// <param name="excessMaxCapacity">Maximum size of an excess page. Also defines the threshold from which dedicated pages are allocated for large allocs.</param>
         public TempAllocator(int poolCapacity, int excessMinCapacity, int excessMaxCapacity)
         {
             Debug.Assert(poolCapacity >= 1);
@@ -50,8 +59,9 @@ namespace UnityEngine.UIElements.UIR
             m_NextExcessSize = m_ExcessMinCapacity;
 
             m_Pool = new Page();
-            m_Pool.array = new NativeArray<T>(poolCapacity, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
+            m_Pool.array = new NativeArray<byte>(poolCapacity, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
             m_Excess = new List<Page>(8);
+            m_Dedicated = new List<Page>(4);
         }
 
         #region Dispose Pattern
@@ -84,55 +94,61 @@ namespace UnityEngine.UIElements.UIR
 
         #endregion // Dispose Pattern
 
-        public NativeSlice<T> Alloc(int count)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int AlignUp(int value, int alignmentPo2) => (value + alignmentPo2 - 1) & ~(alignmentPo2 - 1);
+
+        public NativeSlice<T> Alloc<T>(int count) where T : unmanaged
         {
-            if (count > 0)
+            Debug.Assert(!disposed);
+
+            if (count <= 0)
+                return new NativeSlice<T>();
+
+            int byteCount = count * UnsafeUtility.SizeOf<T>();
+            NativeSlice<T> slice;
+
+            if (byteCount <= m_ExcessMaxCapacity)
             {
-                NativeSlice<T> slice = DoAlloc(count);
+                int alignment = UnsafeUtility.AlignOf<T>();
+                slice = DoSubAlloc(byteCount, alignment).SliceConvert<T>();
                 var safety = AtomicSafetyHandle.Create();
-                InitStaticSafetyId(ref safety);
+                InitStaticSafetyId<T>(ref safety);
                 NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, safety);
                 m_SafetyHandles.Add(safety);
-                return slice;
+            }
+            else
+            {
+                // No per-slice safety handle: the slice inherits the dedicated NativeArray's safety
+                slice = AllocDedicated(byteCount).SliceConvert<T>();
             }
 
-            return new NativeSlice<T>();
+            return slice;
         }
 
-        NativeSlice<T> DoAlloc(int count)
+        NativeSlice<byte> DoSubAlloc(int byteCount, int alignment)
         {
             Debug.Assert(!disposed);
 
             // Look at the pool first since its capacity is supposed to be sufficient most of the time
-            int nextCount = m_Pool.used + count;
-            if (nextCount <= m_Pool.array.Length)
+            int poolStart = AlignUp(m_Pool.used, alignment);
+            int poolEnd = poolStart + byteCount;
+            if (poolEnd <= m_Pool.array.Length)
             {
-                NativeSlice<T> slice = m_Pool.array.Slice(m_Pool.used, count);
-                m_Pool.used = nextCount;
+                NativeSlice<byte> slice = m_Pool.array.Slice(poolStart, byteCount);
+                m_Pool.used = poolEnd;
                 return slice;
-            }
-
-            // Very large allocs get a dedicated page
-            if (count > m_ExcessMaxCapacity)
-            {
-                var p = new Page
-                {
-                    array = new NativeArray<T>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
-                    used = count
-                };
-                m_Excess.Add(p);
-                return p.array.Slice(0, count);
             }
 
             // Reverse search
             for (int i = m_Excess.Count - 1; i >= 0; --i)
             {
                 Page p = m_Excess[i];
-                nextCount = p.used + count;
-                if (nextCount <= p.array.Length)
+                int start = AlignUp(p.used, alignment);
+                int end = start + byteCount;
+                if (end <= p.array.Length)
                 {
-                    NativeSlice<T> slice = p.array.Slice(p.used, count);
-                    p.used = nextCount;
+                    NativeSlice<byte> slice = p.array.Slice(start, byteCount);
+                    p.used = end;
                     m_Excess[i] = p;
                     return slice;
                 }
@@ -140,24 +156,36 @@ namespace UnityEngine.UIElements.UIR
 
             // Create a new excess page
             {
-                while (count > m_NextExcessSize)
+                while (byteCount > m_NextExcessSize)
                     m_NextExcessSize <<= 1;
 
                 var p = new Page
                 {
-                    array = new NativeArray<T>(m_NextExcessSize, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
-                    used = count
+                    array = new NativeArray<byte>(m_NextExcessSize, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
+                    used = byteCount
                 };
                 m_Excess.Add(p);
                 m_NextExcessSize = Mathf.Min(m_NextExcessSize << 1, m_ExcessMaxCapacity);
 
-                return p.array.Slice(0, count);
+                return p.array.Slice(0, byteCount);
             }
+        }
+
+        NativeSlice<byte> AllocDedicated(int byteCount)
+        {
+            var p = new Page
+            {
+                array = new NativeArray<byte>(byteCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
+                used = byteCount
+            };
+            m_Dedicated.Add(p);
+            return p.array.Slice(0, byteCount);
         }
 
         public void Reset()
         {
             ReleaseExcess();
+            ReleaseDedicated();
             m_Pool.used = 0;
             m_NextExcessSize = m_ExcessMinCapacity;
             for (int i = 0; i < m_SafetyHandles.Count; ++i)
@@ -177,10 +205,18 @@ namespace UnityEngine.UIElements.UIR
             m_Excess.Clear();
         }
 
+        void ReleaseDedicated()
+        {
+            foreach (Page p in m_Dedicated)
+                p.array.Dispose();
+            m_Dedicated.Clear();
+        }
+
         public struct Statistics
         {
             public PageStatistics pool;
             public PageStatistics[] excess;
+            public PageStatistics[] dedicated;
         }
 
         public struct PageStatistics
@@ -198,7 +234,8 @@ namespace UnityEngine.UIElements.UIR
                     size = m_Pool.array.Length,
                     used = m_Pool.used
                 },
-                excess = new PageStatistics[m_Excess.Count]
+                excess = new PageStatistics[m_Excess.Count],
+                dedicated = new PageStatistics[m_Dedicated.Count]
             };
 
             for (int i = 0; i < m_Excess.Count; ++i)
@@ -207,6 +244,15 @@ namespace UnityEngine.UIElements.UIR
                 {
                     size = m_Excess[i].array.Length,
                     used = m_Excess[i].used
+                };
+            }
+
+            for (int i = 0; i < m_Dedicated.Count; ++i)
+            {
+                stats.dedicated[i] = new PageStatistics()
+                {
+                    size = m_Dedicated[i].array.Length,
+                    used = m_Dedicated[i].used
                 };
             }
 

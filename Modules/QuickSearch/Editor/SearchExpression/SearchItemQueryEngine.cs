@@ -414,6 +414,11 @@ namespace UnityEditor.Search
                         var obj = UnityEditor.LoadableObjectIdEditorUtility.LoadableObjectIdToObject(sp.loadableObjectIdValue);
                         return new SearchValue(obj);
                     }
+                case SerializedPropertyType.LoadableSceneId:
+                    {
+                        var sceneAsset = LoadableSceneIdEditorUtility.LoadableSceneIdToScene(sp.loadableSceneIdValue);
+                        return new SearchValue(sceneAsset);
+                    }
             }
 
             if (sp.isArray)

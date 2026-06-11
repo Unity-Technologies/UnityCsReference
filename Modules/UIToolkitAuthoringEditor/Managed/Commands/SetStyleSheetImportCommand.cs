@@ -2,38 +2,55 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetStyleSheetImportCommand
+internal sealed class SetStyleSheetImportCommand : Command<SetStyleSheetImportCommand>
 {
     const string CommandUndoName = "Change stylesheet import";
 
-    readonly StyleSheet StyleSheet;
-    readonly int Index;
-    readonly StyleSheet ImportedStyleSheet;
-
-    public SetStyleSheetImportCommand(StyleSheet styleSheet, int index, StyleSheet importedStyleSheet)
+    public static SetStyleSheetImportCommand GetPooled(object source, StyleSheet styleSheet, int index, StyleSheet importedStyleSheet)
     {
-        StyleSheet = styleSheet;
-        Index = index;
-        ImportedStyleSheet = importedStyleSheet;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Index = index;
+        cmd.ImportedStyleSheet = importedStyleSheet;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, StyleSheet styleSheet, int index, StyleSheet importedStyleSheet)
     {
-        Assert.IsNotNull(StyleSheet);
+        using var command = GetPooled(source, styleSheet, index, importedStyleSheet);
+        UICommandQueue.Execute(command);
+    }
 
-        if (ImportedStyleSheet == null)
-            return;
+    public StyleSheet StyleSheet { get; private set; }
+    public int Index { get; private set; }
+    public StyleSheet ImportedStyleSheet { get; private set; }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
 
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Index = -1;
+        ImportedStyleSheet = null;
+    }
+
+    public override bool Validate() => StyleSheet != null && ImportedStyleSheet != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         StyleSheet.SetStyleSheetImportAtIndex(Index, ImportedStyleSheet);
-
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

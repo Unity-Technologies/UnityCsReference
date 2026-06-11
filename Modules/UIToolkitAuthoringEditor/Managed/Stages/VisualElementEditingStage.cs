@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Unity.Hierarchy.Editor;
 using UnityEditor;
@@ -11,7 +10,6 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -25,10 +23,10 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private SubDocumentOptions m_Options;
     private GlobalObjectId m_PanelSettings;
     private Clipboard m_Clipboard;
+    private bool m_FrameUpdateRequested;
+    private bool m_InsideGroup;
 
     private GUIContent m_HeaderContent;
-
-    private ScopedMenuItemGenerator m_MenuScope;
 
     private VisualTreeAssetEditingContext m_Context;
 
@@ -85,8 +83,10 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         m_HeaderContent = new GUIContent();
     }
 
-    public void RequestRefresh()
+    internal void RequestRefresh()
     {
+        // Process whatever changes we previously add before cloning to ensure everything is up to date.
+        PanelElement.FrameUpdate();
         CloneTree();
         PanelElement.FrameUpdate();
     }
@@ -162,12 +162,14 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         StageNavigationManager.instance.beforeSwitchingAwayFromStage += BeforeLeavingStage;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
         m_Clipboard = new Clipboard();
-        m_MenuScope = new ScopedMenuItemGenerator();
 
         // This is temporary fix for domain issues that are very specific to timings.
         // TODO: [MP] Remove once we have the proper reload attributes for managed objects.
         HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
         UICommandQueue.RegisterHandler<RequestHighlightsCommand>(OnHighlightsRequested);
+        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Styling, OnStylingChanged);
+        UICommandQueue.GroupBegan += OnGroupBegan;
+        UICommandQueue.GroupEnded += OnGroupEnded;
     }
 
     protected override void OnDisable()
@@ -180,16 +182,16 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         m_PanelElement.OnAfterRepaint -= OnPanelRepainted;
         m_Clipboard.Dispose();
         m_Clipboard = null;
-        m_MenuScope?.Dispose();
-        m_MenuScope = null;
         UICommandQueue.UnregisterHandler<RequestHighlightsCommand>(OnHighlightsRequested);
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Styling, OnStylingChanged);
+        UICommandQueue.GroupBegan -= OnGroupBegan;
+        UICommandQueue.GroupEnded -= OnGroupEnded;
     }
 
     protected internal override bool OnOpenStage()
     {
         m_PanelElement.PanelSettings = Context.PanelSettings;
         RequestRefresh();
-        m_MenuScope ??= new ScopedMenuItemGenerator();
         return true;
     }
 
@@ -214,8 +216,6 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         m_PanelElement?.DestroyPanelPermanently();
         m_PanelElement = null;
-        m_MenuScope?.Dispose();
-        m_MenuScope = null;
         base.OnCloseStage();
     }
 
@@ -547,15 +547,41 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
                 HighlightUtility.GetMatchingElementsForSelector(m_PanelElement.SubPanel.visualTree, selector, elementSet);
         }
 
-        using (var highlightCommand = HighlightCommand.GetPooled(elementSet, ruleSet))
-        {
-            highlightCommand.Source = command.Source;
-            UICommandQueue.EnqueueCommand(highlightCommand);
-        }
+        HighlightCommand.Execute(command.Source, elementSet, ruleSet);
     }
 
     static VisualElement FindElementById(VisualElement root, int veaId)
     {
         return root.Query().Where(e => e.visualElementAsset?.id == veaId).First();
+    }
+
+    void OnStylingChanged(in CommandContext context)
+    {
+        m_FrameUpdateRequested = true;
+        if (m_InsideGroup)
+            return;
+
+        ProcessDelayedCommands();
+    }
+
+    void OnGroupBegan(string undoGroup)
+    {
+        m_InsideGroup = true;
+    }
+
+    void OnGroupEnded(string undoGroup)
+    {
+        m_InsideGroup = false;
+        ProcessDelayedCommands();
+    }
+
+    void ProcessDelayedCommands()
+    {
+        if (m_FrameUpdateRequested)
+        {
+            PanelElement.FrameUpdate();
+            m_FrameUpdateRequested = false;
+        }
+
     }
 }

@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Profiling;
 using UnityEngine;
-using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
@@ -31,6 +31,17 @@ namespace Unity.U2D.Physics
         static int s_TransformPlaneMatrixShaderProperty = Shader.PropertyToID("transform_plane_matrix");
         static int s_ThicknessShaderProperty = Shader.PropertyToID("thickness");
         static int s_FillAlphaShaderProperty = Shader.PropertyToID("fillAlpha");
+
+        static readonly ProfilerMarker s_DrawWorldsMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds");
+        static readonly ProfilerMarker s_DrawWorldsExecuteRenderCommandsBIRPMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (BIRP)");
+        static readonly ProfilerMarker s_DrawWorldsExecuteRenderCommandsSRPMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (SRP)");
+        static readonly ProfilerMarker s_DrawWorldsAddRenderCommandsMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.AddRenderCommands");
+        static readonly ProfilerMarker s_DrawWorldsWorldDrawEventMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.WorldDrawEvent");
+        static readonly ProfilerMarker s_DrawWorldsPolygonCommandMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.PolygonCommand");
+        static readonly ProfilerMarker s_DrawWorldsCircleCommandMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.CircleCommand");
+        static readonly ProfilerMarker s_DrawWorldsCapsuleCommandMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.CapsuleCommand");
+        static readonly ProfilerMarker s_DrawWorldsLineCommandMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.LineCommand");
+        static readonly ProfilerMarker s_DrawWorldsPointCommandMarker = new ProfilerMarker("PhysicsCore2D.DrawWorlds.PointCommand");
 
         /// <undoc/>
         [RequiredByNativeCode]
@@ -158,26 +169,28 @@ namespace Unity.U2D.Physics
             if (!isRenderingAllowed && !alwaysDrawWorlds)
                 return;
 
-            Profiler.BeginSample("PhysicsCore2D.DrawWorlds");
-
-            // Draw all the worlds.
-            PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
-
-            // Render if allowed.
-            if (isRenderingAllowed && s_RendererCommandBuffer != null)
+            using (s_DrawWorldsMarker.Auto())
             {
-                Profiler.BeginSample("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (BIRP)");
 
-                // We're not custom rendering so render the final command buffer.
-                Graphics.ExecuteCommandBuffer(s_RendererCommandBuffer);
+                // Draw all the worlds.
+                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
 
-                // Clear the render command buffer.
-                s_RendererCommandBuffer.Clear();
+                // Render if allowed.
+                if (isRenderingAllowed && s_RendererCommandBuffer != null)
+                {
+                    using (s_DrawWorldsExecuteRenderCommandsBIRPMarker.Auto())
+                    {
 
-                Profiler.EndSample();
+                        // We're not custom rendering so render the final command buffer.
+                        Graphics.ExecuteCommandBuffer(s_RendererCommandBuffer);
+
+                        // Clear the render command buffer.
+                        s_RendererCommandBuffer.Clear();
+
+                    }
+                }
+
             }
-
-            Profiler.EndSample();
         }
 
         /// <undoc/>
@@ -201,27 +214,29 @@ namespace Unity.U2D.Physics
                 return;
 
             {
-                Profiler.BeginSample("PhysicsCore2D.DrawWorlds");
-
-                // Draw all the worlds.
-                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
-
-                // Render if allowed.
-                if (isRenderingAllowed && s_RendererCommandBuffer != null)
+                using (s_DrawWorldsMarker.Auto())
                 {
-                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.ExecuteRenderCommands (SRP)");
 
-                    // Render the final command buffer.
-                    context.ExecuteCommandBuffer(s_RendererCommandBuffer);
-                    context.Submit();
+                    // Draw all the worlds.
+                    PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
 
-                    // Clear the render command buffer.
-                    s_RendererCommandBuffer.Clear();
+                    // Render if allowed.
+                    if (isRenderingAllowed && s_RendererCommandBuffer != null)
+                    {
+                        using (s_DrawWorldsExecuteRenderCommandsSRPMarker.Auto())
+                        {
 
-                    Profiler.EndSample();
+                            // Render the final command buffer.
+                            context.ExecuteCommandBuffer(s_RendererCommandBuffer);
+                            context.Submit();
+
+                            // Clear the render command buffer.
+                            s_RendererCommandBuffer.Clear();
+
+                        }
+                    }
+
                 }
-
-                Profiler.EndSample();
             }
         }
 
@@ -232,37 +247,39 @@ namespace Unity.U2D.Physics
             // Is rendering allowed?
             if (isRenderingAllowed)
             {
-                Profiler.BeginSample("PhysicsCore2D.DrawWorlds.AddRenderCommands");
-
-                // Yes, so create the drawer groups.
-                s_DrawerGroups ??= new DrawerGroup[PhysicsWorld.maximumWorldsAllocated];
-
-                // Create the renderer command buffer.
-                s_RendererCommandBuffer ??= new CommandBuffer { name = s_RenderCommandBufferName };
-
-                // Only draw the results if they're valid.
-                if (drawResults.isValid)
+                using (s_DrawWorldsAddRenderCommandsMarker.Auto())
                 {
-                    // Fetch/Initialize the drawer group.
-                    var drawerGroup = s_DrawerGroups[physicsWorld.m_Index1 - 1];
-                    drawerGroup ??= s_DrawerGroups[physicsWorld.m_Index1 - 1] = new DrawerGroup();
 
-                    // Draw the drawer group.
-                    drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: ref transformPlaneCustomMatrix);
+                    // Yes, so create the drawer groups.
+                    s_DrawerGroups ??= new DrawerGroup[PhysicsWorld.maximumWorldsAllocated];
+
+                    // Create the renderer command buffer.
+                    s_RendererCommandBuffer ??= new CommandBuffer { name = s_RenderCommandBufferName };
+
+                    // Only draw the results if they're valid.
+                    if (drawResults.isValid)
+                    {
+                        // Fetch/Initialize the drawer group.
+                        var drawerGroup = s_DrawerGroups[physicsWorld.m_Index1 - 1];
+                        drawerGroup ??= s_DrawerGroups[physicsWorld.m_Index1 - 1] = new DrawerGroup();
+
+                        // Draw the drawer group.
+                        drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: ref transformPlaneCustomMatrix);
+                    }
+
                 }
-
-                Profiler.EndSample();
             }
 
             // Is rendering allowed or are we always drawing worlds?
             if (isRenderingAllowed || alwaysDrawWorlds)
             { 
-                Profiler.BeginSample("PhysicsCore2D.DrawWorlds.WorldDrawEvent");
+                using (s_DrawWorldsWorldDrawEventMarker.Auto())
+                {
 
-                // Yes, so call the world draw results event.
-                PhysicsEvents.InvokeWorldDrawResultsEvent(physicsWorld, ref drawResults);
+                    // Yes, so call the world draw results event.
+                    PhysicsEvents.InvokeWorldDrawResultsEvent(physicsWorld, ref drawResults);
 
-                Profiler.EndSample();
+                }
             }
         }
 
@@ -373,36 +390,37 @@ namespace Unity.U2D.Physics
                     if (count == 0)
                         return;
 
-                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.PolygonCommand");
-
-                    // Set-up command buffer.
-                    m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
-                    m_CommandData[0].instanceCount = (uint)count;
-                    m_GraphicsBuffer.SetData(m_CommandData);
-
-                    // Set-up compute buffer.
-                    if (m_ElementBuffer == null)
+                    using (s_DrawWorldsPolygonCommandMarker.Auto())
                     {
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PolygonGeometryElement.Size());
+
+                        // Set-up command buffer.
+                        m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
+                        m_CommandData[0].instanceCount = (uint)count;
+                        m_GraphicsBuffer.SetData(m_CommandData);
+
+                        // Set-up compute buffer.
+                        if (m_ElementBuffer == null)
+                        {
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PolygonGeometryElement.Size());
+                        }
+                        else if (m_ElementBuffer.count < count)
+                        {
+                            m_ElementBuffer.Release();
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PolygonGeometryElement.Size());
+                        }
+                        m_ElementBuffer.SetData(polygonGeometryElements);
+
+                        // Set up the material property block.
+                        m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
+                        m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
+                        m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_FillAlphaShaderProperty, fillAlpha);
+
+                        // Draw to the renderer command buffer.
+                        rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
+
                     }
-                    else if (m_ElementBuffer.count < count)
-                    {
-                        m_ElementBuffer.Release();
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PolygonGeometryElement.Size());
-                    }
-                    m_ElementBuffer.SetData(polygonGeometryElements);
-
-                    // Set up the material property block.
-                    m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
-                    m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
-                    m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_FillAlphaShaderProperty, fillAlpha);
-
-                    // Draw to the renderer command buffer.
-                    rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
-                    Profiler.EndSample();
                 }
             }
 
@@ -426,36 +444,37 @@ namespace Unity.U2D.Physics
                     if (count == 0)
                         return;
 
-                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.CircleCommand");
-
-                    // Set-up command buffer.
-                    m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
-                    m_CommandData[0].instanceCount = (uint)count;
-                    m_GraphicsBuffer.SetData(m_CommandData);
-
-                    // Set-up compute buffer.
-                    if (m_ElementBuffer == null)
+                    using (s_DrawWorldsCircleCommandMarker.Auto())
                     {
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CircleGeometryElement.Size());
+
+                        // Set-up command buffer.
+                        m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
+                        m_CommandData[0].instanceCount = (uint)count;
+                        m_GraphicsBuffer.SetData(m_CommandData);
+
+                        // Set-up compute buffer.
+                        if (m_ElementBuffer == null)
+                        {
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CircleGeometryElement.Size());
+                        }
+                        else if (m_ElementBuffer.count < count)
+                        {
+                            m_ElementBuffer.Release();
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CircleGeometryElement.Size());
+                        }
+                        m_ElementBuffer.SetData(circleGeometryElements);
+
+                        // Set up the material property block.
+                        m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
+                        m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
+                        m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_FillAlphaShaderProperty, fillAlpha);
+
+                        // Draw to the renderer command buffer.
+                        rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
+
                     }
-                    else if (m_ElementBuffer.count < count)
-                    {
-                        m_ElementBuffer.Release();
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CircleGeometryElement.Size());
-                    }
-                    m_ElementBuffer.SetData(circleGeometryElements);
-
-                    // Set up the material property block.
-                    m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
-                    m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
-                    m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_FillAlphaShaderProperty, fillAlpha);
-
-                    // Draw to the renderer command buffer.
-                    rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
-                    Profiler.EndSample();
                 }
             }
 
@@ -479,36 +498,37 @@ namespace Unity.U2D.Physics
                     if (count == 0)
                         return;
 
-                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.CapsuleCommand");
-
-                    // Set-up command buffer.
-                    m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
-                    m_CommandData[0].instanceCount = (uint)count;
-                    m_GraphicsBuffer.SetData(m_CommandData);
-
-                    // Set-up compute buffer.
-                    if (m_ElementBuffer == null)
+                    using (s_DrawWorldsCapsuleCommandMarker.Auto())
                     {
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CapsuleGeometryElement.Size());
+
+                        // Set-up command buffer.
+                        m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
+                        m_CommandData[0].instanceCount = (uint)count;
+                        m_GraphicsBuffer.SetData(m_CommandData);
+
+                        // Set-up compute buffer.
+                        if (m_ElementBuffer == null)
+                        {
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CapsuleGeometryElement.Size());
+                        }
+                        else if (m_ElementBuffer.count < count)
+                        {
+                            m_ElementBuffer.Release();
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CapsuleGeometryElement.Size());
+                        }
+                        m_ElementBuffer.SetData(capsuleGeometryElements);
+
+                        // Set up the material property block.
+                        m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
+                        m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
+                        m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_FillAlphaShaderProperty, fillAlpha);
+
+                        // Draw to the renderer command buffer.
+                        rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
+
                     }
-                    else if (m_ElementBuffer.count < count)
-                    {
-                        m_ElementBuffer.Release();
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.CapsuleGeometryElement.Size());
-                    }
-                    m_ElementBuffer.SetData(capsuleGeometryElements);
-
-                    // Set up the material property block.
-                    m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
-                    m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
-                    m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_FillAlphaShaderProperty, fillAlpha);
-
-                    // Draw to the renderer command buffer.
-                    rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
-                    Profiler.EndSample();
                 }
             }
 
@@ -532,35 +552,36 @@ namespace Unity.U2D.Physics
                     if (count == 0)
                         return;
 
-                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.LineCommand");
-
-                    // Set-up command buffer.
-                    m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
-                    m_CommandData[0].instanceCount = (uint)count;
-                    m_GraphicsBuffer.SetData(m_CommandData);
-
-                    // Set-up compute buffer.
-                    if (m_ElementBuffer == null)
+                    using (s_DrawWorldsLineCommandMarker.Auto())
                     {
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.LineElement.Size());
+
+                        // Set-up command buffer.
+                        m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
+                        m_CommandData[0].instanceCount = (uint)count;
+                        m_GraphicsBuffer.SetData(m_CommandData);
+
+                        // Set-up compute buffer.
+                        if (m_ElementBuffer == null)
+                        {
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.LineElement.Size());
+                        }
+                        else if (m_ElementBuffer.count < count)
+                        {
+                            m_ElementBuffer.Release();
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.LineElement.Size());
+                        }
+                        m_ElementBuffer.SetData(lineElements);
+
+                        // Set up the material property block.
+                        m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
+                        m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
+                        m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
+                        m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
+
+                        // Draw to the renderer command buffer.
+                        rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
+
                     }
-                    else if (m_ElementBuffer.count < count)
-                    {
-                        m_ElementBuffer.Release();
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.LineElement.Size());
-                    }
-                    m_ElementBuffer.SetData(lineElements);
-
-                    // Set up the material property block.
-                    m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
-                    m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
-                    m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
-                    m_ShaderMaterialPropertyBlock.SetFloat(s_ThicknessShaderProperty, thickness);
-
-                    // Draw to the renderer command buffer.
-                    rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
-                    Profiler.EndSample();
                 }
             }
 
@@ -584,34 +605,35 @@ namespace Unity.U2D.Physics
                     if (count == 0)
                         return;
 
-                    Profiler.BeginSample("PhysicsCore2D.DrawWorlds.PointCommand");
-
-                    // Set-up command buffer.
-                    m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
-                    m_CommandData[0].instanceCount = (uint)count;
-                    m_GraphicsBuffer.SetData(m_CommandData);
-
-                    // Set-up compute buffer.
-                    if (m_ElementBuffer == null)
+                    using (s_DrawWorldsPointCommandMarker.Auto())
                     {
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PointElement.Size());
+
+                        // Set-up command buffer.
+                        m_CommandData[0].indexCountPerInstance = GetMesh().GetIndexCount(0);
+                        m_CommandData[0].instanceCount = (uint)count;
+                        m_GraphicsBuffer.SetData(m_CommandData);
+
+                        // Set-up compute buffer.
+                        if (m_ElementBuffer == null)
+                        {
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PointElement.Size());
+                        }
+                        else if (m_ElementBuffer.count < count)
+                        {
+                            m_ElementBuffer.Release();
+                            m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PointElement.Size());
+                        }
+                        m_ElementBuffer.SetData(pointElements);
+
+                        // Set up the material property block.
+                        m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
+                        m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
+                        m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
+
+                        // Draw to the renderer command buffer.
+                        rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
+
                     }
-                    else if (m_ElementBuffer.count < count)
-                    {
-                        m_ElementBuffer.Release();
-                        m_ElementBuffer = new ComputeBuffer(count, PhysicsWorld.DrawResults.PointElement.Size());
-                    }
-                    m_ElementBuffer.SetData(pointElements);
-
-                    // Set up the material property block.
-                    m_ShaderMaterialPropertyBlock.SetBuffer(s_ElementBufferShaderProperty, m_ElementBuffer);
-                    m_ShaderMaterialPropertyBlock.SetInteger(s_TransformPlaneShaderProperty, (int)transformPlane);
-                    m_ShaderMaterialPropertyBlock.SetMatrix(s_TransformPlaneMatrixShaderProperty, transformPlaneCustomMatrix);
-
-                    // Draw to the renderer command buffer.
-                    rendererCommandBuffer.DrawMeshInstancedIndirect(GetMesh(), 0, m_ShaderMaterial, 0, m_GraphicsBuffer, 0, m_ShaderMaterialPropertyBlock);
-
-                    Profiler.EndSample();
                 }
             }
         }

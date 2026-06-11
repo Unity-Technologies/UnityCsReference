@@ -18,7 +18,7 @@ internal class ReimportSampleFoldoutGroup : SampleMultiSelectFoldoutGroup
 
     public override bool AddItem(Sample item)
     {
-        if (!item.isImported)
+        if (!item.isImported || !string.IsNullOrEmpty(item.assetPackagePath))
             return false;
         return base.AddItem(item);
     }

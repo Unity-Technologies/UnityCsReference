@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using LibTessDotNet;
 
@@ -11,6 +12,14 @@ namespace Unity.VectorGraphics
 {
     public static partial class VectorUtils
     {
+        static readonly ProfilerMarker s_TessellateVectorSceneMarker = new ProfilerMarker("TessellateVectorScene");
+        static readonly ProfilerMarker s_TessellateShapeMarker = new ProfilerMarker("TessellateShape");
+        static readonly ProfilerMarker s_TessellateConvexContourMarker = new ProfilerMarker("TessellateConvexContour");
+        static readonly ProfilerMarker s_LibTessMarker = new ProfilerMarker("LibTess");
+        static readonly ProfilerMarker s_GenerateShapeUVsMarker = new ProfilerMarker("GenerateShapeUVs");
+        static readonly ProfilerMarker s_GenerateAtlasMarker = new ProfilerMarker("GenerateAtlas");
+        static readonly ProfilerMarker s_FillUVsMarker = new ProfilerMarker("FillUVs");
+
         /// <summary>Holds the tessellated Scene geometry and associated data.</summary>
         public class Geometry
         {
@@ -53,14 +62,11 @@ namespace Unity.VectorGraphics
         /// <returns>A list of tesselated geometry</returns>
         public static List<Geometry> TessellateScene(Scene scene, TessellationOptions tessellationOptions, Dictionary<SceneNode, float> nodeOpacities = null)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("TessellateVectorScene");
-
-            VectorClip.ResetClip();
-            var geoms = TessellateNodeHierarchyRecursive(scene.Root, tessellationOptions, scene.Root.Transform, 1.0f, nodeOpacities);
-
-            UnityEngine.Profiling.Profiler.EndSample();
-
-            return geoms;
+            using (s_TessellateVectorSceneMarker.Auto())
+            {
+                VectorClip.ResetClip();
+                return TessellateNodeHierarchyRecursive(scene.Root, tessellationOptions, scene.Root.Transform, 1.0f, nodeOpacities);
+            }
         }
 
         #pragma warning disable 612, 618 // Silence use of deprecated IDrawable
@@ -145,52 +151,51 @@ namespace Unity.VectorGraphics
 
         private static void TessellateShape(Shape vectorShape, List<Geometry> geoms, TessellationOptions tessellationOptions, bool isConvex)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("TessellateShape");
-
-            // Don't generate any geometry for pattern fills since these are generated from another SceneNode
-            if (vectorShape.Fill != null && !(vectorShape.Fill is PatternFill))
+            using (s_TessellateShapeMarker.Auto())
             {
-                Color shapeColor = Color.white;
-                if (vectorShape.Fill is SolidFill)
-                    shapeColor = ((SolidFill)vectorShape.Fill).Color;
-
-                shapeColor.a *= vectorShape.Fill.Opacity;
-
-                if (isConvex && vectorShape.Contours.Length == 1)
+                // Don't generate any geometry for pattern fills since these are generated from another SceneNode
+                if (vectorShape.Fill != null && !(vectorShape.Fill is PatternFill))
                 {
-                    TessellateConvexContour(vectorShape, vectorShape.PathProps.Stroke, shapeColor, geoms, tessellationOptions);
-                }
-                else
-                {
-                    TessellateShapeLibTess(vectorShape, shapeColor, geoms, tessellationOptions);
-                }
-            }
+                    Color shapeColor = Color.white;
+                    if (vectorShape.Fill is SolidFill)
+                        shapeColor = ((SolidFill)vectorShape.Fill).Color;
 
-            var stroke = vectorShape.PathProps.Stroke;
-            if (stroke != null && stroke.HalfThickness > VectorUtils.Epsilon)
-            {
-                var strokeFill = stroke.Fill;
-                Color strokeColor = Color.white;
-                if (strokeFill is SolidFill)
-                {
-                    strokeColor = ((SolidFill)strokeFill).Color;
-                    strokeFill = null;
-                }
+                    shapeColor.a *= vectorShape.Fill.Opacity;
 
-                foreach (var c in vectorShape.Contours)
-                {
-                    Vector2[] strokeVerts;
-                    UInt16[] strokeIndices;
-                    VectorUtils.TessellatePath(c, vectorShape.PathProps, tessellationOptions, out strokeVerts, out strokeIndices);
-                    VectorUtils.AdjustWinding(strokeVerts, strokeIndices, VectorUtils.WindingDir.CCW);
-                    if (strokeIndices.Length > 0)
+                    if (isConvex && vectorShape.Contours.Length == 1)
                     {
-                        geoms.Add(new Geometry() { Vertices = strokeVerts, Indices = strokeIndices, Color = strokeColor, Fill = strokeFill, FillTransform = stroke.FillTransform });
+                        TessellateConvexContour(vectorShape, vectorShape.PathProps.Stroke, shapeColor, geoms, tessellationOptions);
+                    }
+                    else
+                    {
+                        TessellateShapeLibTess(vectorShape, shapeColor, geoms, tessellationOptions);
+                    }
+                }
+
+                var stroke = vectorShape.PathProps.Stroke;
+                if (stroke != null && stroke.HalfThickness > VectorUtils.Epsilon)
+                {
+                    var strokeFill = stroke.Fill;
+                    Color strokeColor = Color.white;
+                    if (strokeFill is SolidFill)
+                    {
+                        strokeColor = ((SolidFill)strokeFill).Color;
+                        strokeFill = null;
+                    }
+
+                    foreach (var c in vectorShape.Contours)
+                    {
+                        Vector2[] strokeVerts;
+                        UInt16[] strokeIndices;
+                        VectorUtils.TessellatePath(c, vectorShape.PathProps, tessellationOptions, out strokeVerts, out strokeIndices);
+                        VectorUtils.AdjustWinding(strokeVerts, strokeIndices, VectorUtils.WindingDir.CCW);
+                        if (strokeIndices.Length > 0)
+                        {
+                            geoms.Add(new Geometry() { Vertices = strokeVerts, Indices = strokeIndices, Color = strokeColor, Fill = strokeFill, FillTransform = stroke.FillTransform });
+                        }
                     }
                 }
             }
-
-            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         private static void TessellateConvexContour(Shape shape, Stroke stroke, Color color, List<Geometry> geoms, TessellationOptions tessellationOptions)
@@ -198,107 +203,103 @@ namespace Unity.VectorGraphics
             if (shape.Contours.Length != 1 || shape.Contours[0].Segments.Length == 0)
                 return;
 
-            UnityEngine.Profiling.Profiler.BeginSample("TessellateConvexContour");
-
-            // Compute geometric mean
-            var contour = shape.Contours[0];
-            var mean = Vector2.zero;
-            foreach (var seg in contour.Segments)
-                mean += seg.P0;
-            mean /= contour.Segments.Length;
-
-            // Trace the shape and build triangle fan
-            var tracedShape = VectorUtils.TraceShape(contour, stroke, tessellationOptions);
-            var vertices = new Vector2[tracedShape.Length + 1];
-            var indices = new UInt16[tracedShape.Length * 3];
-
-            vertices[0] = mean;
-            for (int i = 0; i < tracedShape.Length; ++i)
+            using (s_TessellateConvexContourMarker.Auto())
             {
-                vertices[i + 1] = tracedShape[i];
-                indices[i * 3] = 0;
-                indices[i * 3 + 1] = (UInt16)(i + 1);
-                indices[i * 3 + 2] = ((i + 2) >= vertices.Length) ? (UInt16)1 : (UInt16)(i + 2);
+                // Compute geometric mean
+                var contour = shape.Contours[0];
+                var mean = Vector2.zero;
+                foreach (var seg in contour.Segments)
+                    mean += seg.P0;
+                mean /= contour.Segments.Length;
+
+                // Trace the shape and build triangle fan
+                var tracedShape = VectorUtils.TraceShape(contour, stroke, tessellationOptions);
+                var vertices = new Vector2[tracedShape.Length + 1];
+                var indices = new UInt16[tracedShape.Length * 3];
+
+                vertices[0] = mean;
+                for (int i = 0; i < tracedShape.Length; ++i)
+                {
+                    vertices[i + 1] = tracedShape[i];
+                    indices[i * 3] = 0;
+                    indices[i * 3 + 1] = (UInt16)(i + 1);
+                    indices[i * 3 + 2] = ((i + 2) >= vertices.Length) ? (UInt16)1 : (UInt16)(i + 2);
+                }
+
+                geoms.Add(new Geometry() { Vertices = vertices, Indices = indices, Color = color, Fill = shape.Fill, FillTransform = shape.FillTransform });
             }
-
-            geoms.Add(new Geometry() { Vertices = vertices, Indices = indices, Color = color, Fill = shape.Fill, FillTransform = shape.FillTransform });
-
-            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         private static void TessellateShapeLibTess(Shape vectorShape, Color color, List<Geometry> geoms, TessellationOptions tessellationOptions)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("LibTess");
-
-            var tess = new Tess();
-
-            var angle = 45.0f * Mathf.Deg2Rad;
-            var mat = Matrix2D.RotateLH(angle);
-            var invMat = Matrix2D.RotateLH(-angle);
-
-            foreach (var c in vectorShape.Contours)
+            using (s_LibTessMarker.Auto())
             {
-                var contour = new List<Vector2>(100);
-                foreach (var v in VectorUtils.TraceShape(c, vectorShape.PathProps.Stroke, tessellationOptions))
-                    contour.Add(mat.MultiplyPoint(v));
+                var tess = new Tess();
 
-                var contourArray = new ContourVertex[contour.Count];
-                for (int i = 0; i < contour.Count; ++i)
+                var angle = 45.0f * Mathf.Deg2Rad;
+                var mat = Matrix2D.RotateLH(angle);
+                var invMat = Matrix2D.RotateLH(-angle);
+
+                foreach (var c in vectorShape.Contours)
                 {
-                    var v = contour[i];
-                    contourArray[i] = new ContourVertex() { Position = new Vec3() { X = v.x, Y = v.y } };
+                    var contour = new List<Vector2>(100);
+                    foreach (var v in VectorUtils.TraceShape(c, vectorShape.PathProps.Stroke, tessellationOptions))
+                        contour.Add(mat.MultiplyPoint(v));
+
+                    var contourArray = new ContourVertex[contour.Count];
+                    for (int i = 0; i < contour.Count; ++i)
+                    {
+                        var v = contour[i];
+                        contourArray[i] = new ContourVertex() { Position = new Vec3() { X = v.x, Y = v.y } };
+                    }
+
+                    tess.AddContour(contourArray, ContourOrientation.Original);
                 }
 
-                tess.AddContour(contourArray, ContourOrientation.Original);
-            }
+                var windingRule = (vectorShape.Fill.Mode == FillMode.OddEven) ? WindingRule.EvenOdd : WindingRule.NonZero;
+                try
+                {
+                    tess.Tessellate(windingRule, ElementType.Polygons, 3);
+                }
+                catch (System.Exception)
+                {
+                    Debug.LogWarning("Shape tessellation failed, skipping...");
+                    return;
+                }
 
-            var windingRule = (vectorShape.Fill.Mode == FillMode.OddEven) ? WindingRule.EvenOdd : WindingRule.NonZero;
-            try
-            {
-                tess.Tessellate(windingRule, ElementType.Polygons, 3);
-            }
-            catch (System.Exception)
-            {
-                Debug.LogWarning("Shape tessellation failed, skipping...");
-                UnityEngine.Profiling.Profiler.EndSample();
-                return;
-            }
+                var indices = new UInt16[tess.Elements.Length];
+                for (int i = 0; i < tess.Elements.Length; ++i)
+                    indices[i] = (UInt16)tess.Elements[i];
 
-            var indices = new UInt16[tess.Elements.Length];
-            for (int i = 0; i < tess.Elements.Length; ++i)
-                indices[i] = (UInt16)tess.Elements[i];
+                var vertices = new Vector2[tess.Vertices.Length];
+                for (int i = 0; i < tess.Vertices.Length; ++i)
+                {
+                    var cv = tess.Vertices[i];
+                    vertices[i] = invMat.MultiplyPoint(new Vector2(cv.Position.X, cv.Position.Y));
+                }
 
-            var vertices = new Vector2[tess.Vertices.Length];
-            for (int i = 0; i < tess.Vertices.Length; ++i)
-            {
-                var cv = tess.Vertices[i];
-                vertices[i] = invMat.MultiplyPoint(new Vector2(cv.Position.X, cv.Position.Y));
+                if (indices.Length > 0)
+                {
+                    geoms.Add(new Geometry() { Vertices = vertices, Indices = indices, Color = color, Fill = vectorShape.Fill, FillTransform = vectorShape.FillTransform });
+                }
             }
-
-            if (indices.Length > 0)
-            {
-                geoms.Add(new Geometry() { Vertices = vertices, Indices = indices, Color = color, Fill = vectorShape.Fill, FillTransform = vectorShape.FillTransform });
-            }
-
-            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         internal static Vector2[] GenerateShapeUVs(Vector2[] verts, Rect bounds, Matrix2D uvTransform)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("GenerateShapeUVs");
+            using (s_GenerateShapeUVsMarker.Auto())
+            {
+                uvTransform =
+                    Matrix2D.Translate(new Vector2(0, 1)) * Matrix2D.Scale(new Vector2(1.0f, -1.0f)) * // Do 1-uv.y
+                    uvTransform *
+                    Matrix2D.Scale(new Vector2(1.0f / bounds.width, 1.0f / bounds.height)) * Matrix2D.Translate(-bounds.position);
+                var uvs = new Vector2[verts.Length];
+                int vertCount = verts.Length;
+                for (int i = 0; i < vertCount; i++)
+                    uvs[i] = uvTransform * verts[i];
 
-            uvTransform =
-                Matrix2D.Translate(new Vector2(0, 1)) * Matrix2D.Scale(new Vector2(1.0f, -1.0f)) * // Do 1-uv.y
-                uvTransform *
-                Matrix2D.Scale(new Vector2(1.0f / bounds.width, 1.0f / bounds.height)) * Matrix2D.Translate(-bounds.position);
-            var uvs = new Vector2[verts.Length];
-            int vertCount = verts.Length;
-            for (int i = 0; i < vertCount; i++)
-                uvs[i] = uvTransform * verts[i];
-
-            UnityEngine.Profiling.Profiler.EndSample();
-
-            return uvs;
+                return uvs;
+            }
         }
 
         static void SwapXY(ref Vector2 v)
@@ -391,9 +392,9 @@ namespace Unity.VectorGraphics
             if (fills.Count == 0)
                 return null;
 
-            UnityEngine.Profiling.Profiler.BeginSample("GenerateAtlas");
-
-            Vector2 atlasSize;
+            using (s_GenerateAtlasMarker.Auto())
+            {
+                Vector2 atlasSize;
 
             var rectsToPack = new List<KeyValuePair<IFill, Vector2>>(fills.Count);
             foreach (var fill in fills)
@@ -461,9 +462,8 @@ namespace Unity.VectorGraphics
             atlasTex.SetPixels32(atlasColors);
             atlasTex.Apply(false, true);
 
-            UnityEngine.Profiling.Profiler.EndSample();
-
-            return new TextureAtlas() { Texture = atlasTex, Entries = pack };
+                return new TextureAtlas() { Texture = atlasTex, Entries = pack };
+            }
         }
 
         private static void EncodeSettings(IEnumerable<Geometry> geoms, Dictionary<IFill, AtlasEntry> fills, RawTexture rawAtlasTex, Vector2 whiteTexelsScreenPos)
@@ -522,27 +522,26 @@ namespace Unity.VectorGraphics
         /// <param name="texAtlas">The texture atlas used for the UV generation</param>
         public static void FillUVs(IEnumerable<Geometry> geoms, TextureAtlas texAtlas)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("FillUVs");
-
-            var fills = new Dictionary<IFill, PackRectItem>();
-            foreach (var entry in texAtlas.Entries)
+            using (s_FillUVsMarker.Auto())
             {
-                if (entry.Fill != null)
-                    fills[entry.Fill] = entry;
+                var fills = new Dictionary<IFill, PackRectItem>();
+                foreach (var entry in texAtlas.Entries)
+                {
+                    if (entry.Fill != null)
+                        fills[entry.Fill] = entry;
+                }
+
+                var item = new PackRectItem();
+                foreach (var g in geoms)
+                {
+                    int settingIndex = 0;
+                    if ((g.Fill != null) && fills.TryGetValue(g.Fill, out item))
+                        settingIndex = item.SettingIndex;
+
+                    g.UVs = GenerateShapeUVs(g.Vertices, g.UnclippedBounds, g.FillTransform);
+                    g.SettingIndex = settingIndex;
+                }
             }
-
-            var item = new PackRectItem();
-            foreach (var g in geoms)
-            {
-                int settingIndex = 0;
-                if ((g.Fill != null) && fills.TryGetValue(g.Fill, out item))
-                    settingIndex = item.SettingIndex;
-
-                g.UVs = GenerateShapeUVs(g.Vertices, g.UnclippedBounds, g.FillTransform);
-                g.SettingIndex = settingIndex;
-            }
-
-            UnityEngine.Profiling.Profiler.EndSample();
         }
     }
 }

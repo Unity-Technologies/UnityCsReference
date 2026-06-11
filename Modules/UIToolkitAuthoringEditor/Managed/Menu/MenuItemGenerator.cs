@@ -4,9 +4,7 @@
 
 using System.Collections.Generic;
 using System;
-using System.Threading;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Menu = UnityEditor.Menu;
@@ -33,29 +31,9 @@ readonly struct ControlTypeInfo
         : $"{k_ContextMenuPrefix}/{libraryPath}/{libraryType.name}";
 }
 
-class ScopedMenuItemGenerator : IDisposable
-{
-    static int s_ReferenceCount = 0;
-    public ScopedMenuItemGenerator()
-    {
-        if (Interlocked.Increment(ref s_ReferenceCount) == 1)
-        {
-            MenuItemGenerator.RegisterMenuItems();
-        }
-    }
-
-    public void Dispose()
-    {
-        if (Interlocked.Decrement(ref s_ReferenceCount) == 0)
-        {
-            MenuItemGenerator.UnregisterMenuItems();
-        }
-    }
-}
-
 internal static class MenuItemGenerator
 {
-    static readonly List<ControlTypeInfo> s_AvailableControlTypes;
+    static List<ControlTypeInfo> s_AvailableControlTypes;
     static int s_HighestItemPriority;
 
     // The current value represents the first item of the "GameObject/UI Toolkit" menu item. Update this value to change the position within the menu item.
@@ -105,35 +83,52 @@ internal static class MenuItemGenerator
         ]
     };
 
-    static MenuItemGenerator()
+    [InitializeOnLoadMethod]
+    static void Initialize()
     {
-        s_AvailableControlTypes = GetControlElements();
+        // Defer to the first idle tick so UxmlSerializedDataRegistry (which feeds GetControlElements) is fully populated.
+        EditorApplication.delayCall += RegisterMenuItems;
+        AssemblyReloadEvents.beforeAssemblyReload += UnregisterMenuItems;
     }
 
     public static List<ControlTypeInfo> GetAvailableControlTypes()
     {
-        return s_AvailableControlTypes;
+        return s_AvailableControlTypes ??= GetControlElements();
+    }
+
+    public static bool TryGetTypeForMenuPath(string fullMenuPath, out Type type)
+    {
+        foreach (var control in GetAvailableControlTypes())
+        {
+            if ($"{k_MenuPrefix}/{control.GetMenuPath()}" == fullMenuPath)
+            {
+                type = control.libraryType.type;
+                return true;
+            }
+        }
+        type = null;
+        return false;
     }
 
     public static void RegisterMenuItems()
     {
-        foreach (var control in s_AvailableControlTypes)
+        var availableControlTypes = GetAvailableControlTypes();
+        foreach (var control in availableControlTypes)
         {
+            var elementType = control.libraryType.type;
+            var menuPath = $"{k_MenuPrefix}/{control.GetMenuPath()}";
             Menu.AddMenuItem(
-                $"{k_MenuPrefix}/{control.GetMenuPath()}",
+                menuPath,
                 "",
                 false,
                 control.priority,
                 () =>
                 {
-                    var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-                    var cmd = new AddElementCommand(
-                        control.libraryType.type,
-                        stage.EditedVisualTreeAsset,
-                        (Selection.activeObject as VisualElementSelection)?.Element?.visualElementAsset
-                    );
-                    cmd.Execute();
-                    stage.RequestRefresh();
+                    var fromHierarchyContextMenu = Menu.HasContext(menuPath);
+                    if (fromHierarchyContextMenu)
+                        MenuUtility.AddElementAsLastChild(elementType);
+                    else
+                        MenuUtility.AddElementAsSibling(elementType);
                 },
                 null
             );
@@ -174,6 +169,9 @@ internal static class MenuItemGenerator
 
     public static void UnregisterMenuItems()
     {
+        if (s_AvailableControlTypes == null)
+            return;
+
         foreach (var control in s_AvailableControlTypes)
         {
             Menu.RemoveMenuItem($"{k_MenuPrefix}/{control.GetMenuPath()}");

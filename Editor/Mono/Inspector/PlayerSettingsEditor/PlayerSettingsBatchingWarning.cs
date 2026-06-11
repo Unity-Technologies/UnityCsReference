@@ -18,6 +18,9 @@ namespace UnityEditor
             if (!InternalEditorUtility.isHumanControllingUs)
                 return;
 
+            if (EditorUtility.isInSafeMode)
+                return;
+
             EditorApplication.update += WarnIfDynamicBatchingEnabled;
         }
 

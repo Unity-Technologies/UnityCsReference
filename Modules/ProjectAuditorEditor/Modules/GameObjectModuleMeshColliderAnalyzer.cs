@@ -20,7 +20,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         internal static readonly Descriptor k_MeshColliderReadWriteDescriptor = new Descriptor
             (
             PAA6010,
-            "MeshCollider: Mesh not Read/Write",
+            "MeshCollider: Mesh requires Read/Write",
             Areas.Quality | Areas.Upgrade,
             "A MeshCollider requires CPU access to mesh data due to non-uniform or negative scale. In future versions of Unity, the build process will no longer automatically enable Read/Write for Meshes referenced by Mesh Colliders.",
             "Enable Read/Write in the Mesh's import settings, or use uniform positive scale on the GameObject."
@@ -80,11 +80,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
+        readonly HashSet<EntityId> m_VisitedAssets = new HashSet<EntityId>(512);
+
         public override void Initialize(Action<Descriptor> registerDescriptor)
         {
             registerDescriptor(k_MeshColliderReadWriteDescriptor);
             registerDescriptor(k_MeshColliderConvexBakingDescriptor);
             registerDescriptor(k_MeshColliderTriangleBakingDescriptor);
+        }
+
+        internal override void OnAnalysisStarted()
+        {
+            m_VisitedAssets.Clear();
         }
 
         public override IEnumerable<ReportItemBuilder> Analyze(GameObjectAnalysisContext context)
@@ -97,45 +104,40 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (mesh == null)
                 yield break;
 
-            // Validation 1: Scale baking requires Read/Write
+            // Only add one issue per mesh
+            if (m_VisitedAssets.Contains(mesh.GetEntityId()))
+                yield break;
+
+            // Scale baking requires Read/Write
             if (meshCollider.IsScaleBakingRequired())
             {
                 if (!mesh.isReadable)
-                {
-                    yield return context.CreateIssue
-                    (
-                        IssueCategory.GameObject,
-                        k_MeshColliderReadWriteDescriptor.Id,
-                        mesh.name,
-                        context.GameObject.name
-                    )
-                        .WithLocation(AssetDatabase.GetAssetPath(mesh));
-                }
+                    yield return CreateIssue(context, mesh, k_MeshColliderReadWriteDescriptor);
             }
-            // Validation 2: Convex collider needs BakeConvex
+            // Convex collider needs BakeConvex
             else if (meshCollider.convex && !mesh.HasPreBakeCollisionMesh(true))
             {
-                yield return context.CreateIssue
-                (
-                    IssueCategory.GameObject,
-                    k_MeshColliderConvexBakingDescriptor.Id,
-                    mesh.name,
-                    context.GameObject.name
-                )
-                .WithLocation(AssetDatabase.GetAssetPath(mesh));
+                yield return CreateIssue(context, mesh, k_MeshColliderConvexBakingDescriptor);
             }
-            // Validation 3: Non-convex collider needs BakeTriangle
+            // Non-convex collider needs BakeTriangle
             else if (!meshCollider.convex && !mesh.HasPreBakeCollisionMesh(false))
             {
-                yield return context.CreateIssue
-                (
-                    IssueCategory.GameObject,
-                    k_MeshColliderTriangleBakingDescriptor.Id,
-                    mesh.name,
-                    context.GameObject.name
-                )
-                .WithLocation(AssetDatabase.GetAssetPath(mesh));
+                yield return CreateIssue(context, mesh, k_MeshColliderTriangleBakingDescriptor);
             }
+        }
+
+        private ReportItemBuilder CreateIssue(GameObjectAnalysisContext context, Mesh mesh, Descriptor descriptor)
+        {
+            m_VisitedAssets.Add(mesh.GetEntityId());
+
+            return context.CreateIssue
+            (
+                IssueCategory.GameObject,
+                descriptor.Id,
+                mesh.name,
+                context.GameObject.name
+            )
+            .WithLocation(AssetDatabase.GetAssetPath(mesh));
         }
     }
 }

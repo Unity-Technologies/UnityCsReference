@@ -13,11 +13,13 @@ namespace UnityEditorInternal
         const string k_FilterBySelection = "AnimationWindow.FilterBySelection";
         const string k_ShowReadOnly = "AnimationWindow.ShowReadOnly";
         const string k_ShowFrameRate = "AnimationWindow.ShowFrameRate";
+        const string k_EnableQueryBuilder = "AnimationWindow.EnableQueryBuilder";
 
         private static TimeFormat m_TimeFormat;
         private static bool m_FilterBySelection;
         private static bool m_ShowReadOnly;
         private static bool m_ShowFrameRate;
+        private static bool m_EnableQueryBuilder;
 
         static AnimationWindowOptions()
         {
@@ -25,6 +27,7 @@ namespace UnityEditorInternal
             m_FilterBySelection = EditorPrefs.GetBool(k_FilterBySelection, false);
             m_ShowReadOnly = EditorPrefs.GetBool(k_ShowReadOnly, false);
             m_ShowFrameRate = EditorPrefs.GetBool(k_ShowFrameRate, false);
+            m_EnableQueryBuilder = EditorPrefs.GetBool(k_EnableQueryBuilder, true);
         }
 
         public static TimeFormat timeFormat
@@ -54,6 +57,16 @@ namespace UnityEditorInternal
             {
                 m_ShowReadOnly = value;
                 EditorPrefs.SetBool(k_ShowReadOnly, value);
+            }
+        }
+
+        public static bool enableQueryBuilder
+        {
+            get => m_EnableQueryBuilder;
+            set
+            {
+                m_EnableQueryBuilder = value;
+                EditorPrefs.SetBool(k_EnableQueryBuilder, value);
             }
         }
 

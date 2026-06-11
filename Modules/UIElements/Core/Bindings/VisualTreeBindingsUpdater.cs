@@ -316,43 +316,7 @@ namespace UnityEngine.UIElements
         private List<IBinding> updatedBindings = new List<IBinding>();
         private void UpdateBindings()
         {
-            s_MarkerUpdate.Begin();
-            foreach (VisualElement element in m_ElementsWithBindings)
-            {
-                var updater = GetBindingObjectFromElement(element);
-
-                if (updater == null || element.elementPanel != panel)
-                {
-                    updater?.Release();
-                    StopTracking(element);
-                }
-                else
-                {
-                    updatedBindings.Add(updater);
-                }
-            }
-
-            foreach (var u in updatedBindings)
-            {
-                u.PreUpdate();
-            }
-
-            foreach (var u in updatedBindings)
-            {
-                u.Update();
-            }
-
-            updatedBindings.Clear();
-            s_MarkerUpdate.End();
-        }
-
-        internal override void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
-        {
-            s_MarkerPoll.Begin();
-
-            PerformTrackingOperations();
-
-            if (m_ElementsWithBindings.Count > 0)
+            using (s_MarkerUpdate.Auto())
             {
                 foreach (VisualElement element in m_ElementsWithBindings)
                 {
@@ -365,12 +329,50 @@ namespace UnityEngine.UIElements
                     }
                     else
                     {
-                        callback(element, updater);
+                        updatedBindings.Add(updater);
                     }
                 }
-            }
 
-            s_MarkerPoll.End();
+                foreach (var u in updatedBindings)
+                {
+                    u.PreUpdate();
+                }
+
+                foreach (var u in updatedBindings)
+                {
+                    u.Update();
+                }
+
+                updatedBindings.Clear();
+            }
+        }
+
+        internal override void PollElementsWithBindings(Action<VisualElement, IBinding> callback)
+        {
+            using (s_MarkerPoll.Auto())
+            {
+
+                PerformTrackingOperations();
+
+                if (m_ElementsWithBindings.Count > 0)
+                {
+                    foreach (VisualElement element in m_ElementsWithBindings)
+                    {
+                        var updater = GetBindingObjectFromElement(element);
+
+                        if (updater == null || element.elementPanel != panel)
+                        {
+                            updater?.Release();
+                            StopTracking(element);
+                        }
+                        else
+                        {
+                            callback(element, updater);
+                        }
+                    }
+                }
+
+            }
         }
 
         protected override void Dispose(bool disposing)

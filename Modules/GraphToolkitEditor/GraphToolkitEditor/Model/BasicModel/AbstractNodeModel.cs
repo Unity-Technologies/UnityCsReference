@@ -31,6 +31,7 @@ namespace Unity.GraphToolkit.Editor
         protected string m_Tooltip;
 
         protected Color m_DefaultColor;
+        protected float m_FillAmount;
 
         SpawnFlags m_SpawnFlags = SpawnFlags.Default;
 
@@ -83,6 +84,20 @@ namespace Unity.GraphToolkit.Editor
                 if (m_DefaultColor == value)
                     return;
                 m_DefaultColor = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
+        }
+
+        public float FillAmount
+        {
+            get => m_FillAmount;
+            set
+            {
+                float clampedValue = Mathf.Clamp(value, -100f, 100f);
+                if (m_FillAmount == clampedValue)
+                    return;
+
+                m_FillAmount = clampedValue;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }

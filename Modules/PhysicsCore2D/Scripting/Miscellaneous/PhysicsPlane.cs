@@ -46,6 +46,20 @@ namespace Unity.U2D.Physics
         /// <returns>The signed separation of the point from the plan.</returns>
         public readonly float GetSeparation(Vector2 point) => PhysicsPlane_GetSeparation(this, point);
 
+        /// <summary>
+        /// Decompose the plane into a point lying on the plane and the plane's normal direction.
+        /// The returned position is the foot of the perpendicular from the world origin to the plane, computed as normal * offset.
+        /// This is the unique closest-to-origin point on the plane; any other point on the plane would describe the same plane equation but be non-deterministic.
+        /// Useful for feeding a plane into APIs that take a (position, normal) pair such as <see cref="PhysicsBody.BuoyancyInput.surfacePosition"/> and <see cref="PhysicsBody.BuoyancyInput.surfaceNormal"/>.
+        /// </summary>
+        /// <param name="position">A point lying on the plane (the foot of the perpendicular from the origin).</param>
+        /// <param name="normal">The plane's outward normal, as stored.</param>
+        public readonly void ToPositionAndNormal(out Vector2 position, out Vector2 normal)
+        {
+            normal = this.normal;
+            position = normal * offset;
+        }
+
         /// <undoc/>
         public override readonly string ToString() => $"normal={normal}, offset={offset}";
 

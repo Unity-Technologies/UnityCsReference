@@ -23,6 +23,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         protected internal virtual VisualElement CreateControllerUI(Instance instance) => null;
         protected internal virtual VisualElement CreateTitleBarUI(Instance instance) => null;
 
+        // Returns controller-type-specific analytics data for the OnPlayFromScenario event,
+        // or null when the controller has no extra data to report. 
+        protected internal virtual ICustomInstanceAnalyticsData GetCustomAnalyticsData(ExecutionGraph graph) => null;
+
         internal T GetUserSettings<T>(T defaultValue = default) where T : struct
             => OrchestratedScenarioUserSettings.GetSettings<T>(m_Owner, m_InstanceItem, defaultValue);
 

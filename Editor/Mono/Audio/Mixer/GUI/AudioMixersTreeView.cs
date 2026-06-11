@@ -581,9 +581,18 @@ namespace UnityEditor
             if (node != null)
             {
                 GenericMenu pm = new GenericMenu();
+                pm.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameAudioMixerCallback, node);
+                pm.AddSeparator("");
                 pm.AddItem(EditorGUIUtility.TrTextContent("Delete AudioMixer"), false, DeleteAudioMixerCallback, node.mixer);
                 pm.ShowAsContext();
             }
+        }
+
+        void RenameAudioMixerCallback(object obj)
+        {
+            AudioMixerItem item = (AudioMixerItem)obj;
+            m_TreeView.SetSelection(new[] { item.id }, false);
+            m_TreeView.BeginNameEditing(0f);
         }
 
         public void OnTreeSelectionChanged(EntityId[] selection)

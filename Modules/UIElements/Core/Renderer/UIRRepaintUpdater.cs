@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
         bool forceGammaRendering { get; set; }
         uint vertexBudget { get; set; }
         TextureSlotCount textureSlotCount { get; set; }
+        ExtraVertexChannels extraVertexChannels { get; set; }
         void Reset();
         void Render();
     }
@@ -74,6 +75,21 @@ namespace UnityEngine.UIElements
         {
             get => m_TextureSlotCount;
             set => m_TextureSlotCount = value;
+        }
+
+        ExtraVertexChannels m_ExtraVertexChannels;
+
+        public ExtraVertexChannels extraVertexChannels
+        {
+            get => m_ExtraVertexChannels;
+            set
+            {
+                if (m_ExtraVertexChannels == value)
+                    return;
+
+                m_ExtraVertexChannels = value;
+                DestroyRenderChain();
+            }
         }
 
         public bool drawStats { get; set; }

@@ -12,6 +12,7 @@ namespace Unity.UIToolkit.Editor;
 class StyleRuleSelectionEditor : UnityEditor.Editor
 {
     StyleRuleInspector m_Inspector;
+    StyleRuleHeader m_Header;
 
     private StyleRuleSelection Target => (StyleRuleSelection)target;
 
@@ -21,26 +22,37 @@ class StyleRuleSelectionEditor : UnityEditor.Editor
 
     void OnStageChanged(Stage _) => m_Inspector?.ResetSearch();
 
-    protected override void OnHeaderGUI()
-    {
-        // Intentionally left empty to override the header.
-    }
-
     public override bool UseDefaultMargins()
     {
         // We don't want to have an artificial padding
         return false;
     }
 
+    internal override bool isHeaderSticky => true;
+
+    internal override VisualElement CreateInspectorHeaderGUI()
+    {
+        m_Header = new StyleRuleHeader { name = "Header" };
+        m_Header.Rule = Target.StyleRule;
+        m_Header.SetBinding(StyleRuleHeader.RuleProperty, new DataBinding
+        {
+            dataSource = Target,
+            dataSourcePath = StyleRuleSelection.StyleRuleProperty,
+            bindingMode = BindingMode.ToTarget
+        });
+        return m_Header;
+    }
+
     public override VisualElement CreateInspectorGUI()
     {
-        m_Inspector = new StyleRuleInspector() { StyleRule = Target.StyleRule };
+        m_Inspector = new StyleRuleInspector { StyleRule = Target.StyleRule };
         m_Inspector.SetBinding(StyleRuleInspector.StyleRuleProperty, new DataBinding
         {
             dataSource = Target,
             dataSourcePath = StyleRuleSelection.StyleRuleProperty,
             bindingMode = BindingMode.ToTarget
         });
+        m_Inspector.InitializeSearchField(m_Header.SearchField);
         return m_Inspector;
     }
 

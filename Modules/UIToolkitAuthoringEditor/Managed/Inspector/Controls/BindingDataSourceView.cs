@@ -238,10 +238,10 @@ internal partial class BindingDataSourceView : BindableElement
     {
         bool isOnObjectTab = m_DataSourceButtonStrip.value == new ToggleButtonGroupState(0b01, 2);
 
-        var typeValue = m_DataSourceTypeField.boundProperty?.stringValue;
+        var typeValue = m_DataSourceTypeField.boundProperty is { isValid: true } typeProperty ? typeProperty.stringValue : null;
         bool typeHasValue = !string.IsNullOrEmpty(typeValue) || GetInheritedDataSourceType() != null;
 
-        var objectValue = m_DataSourceObjectField.boundProperty?.boxedValue;
+        var objectValue = m_DataSourceObjectField.boundProperty is { isValid: true } objectProperty ? objectProperty.boxedValue : null;
         bool objectHasValue = objectValue != null || GetInheritedDataSourceObject() != null;
 
         m_DataSourceObjectTabStatusIndicator.style.visibility =
@@ -319,9 +319,12 @@ internal partial class BindingDataSourceView : BindableElement
         if (field == null)
             return;
 
+        if (m_DataSourceObjectField.boundProperty is not { isValid: true } property)
+            return;
+
         // Get the actual value of the data source object serialized property, which may be
         // different from the field value if it is inherited.
-        var dataSourceObj = m_DataSourceObjectField.boundProperty?.boxedValue;
+        var dataSourceObj = property.boxedValue;
 
         // If there is no data source object set, try to get an inherited one
         if (dataSourceObj == null)
@@ -349,9 +352,12 @@ internal partial class BindingDataSourceView : BindableElement
         if (field == null)
             return;
 
+        if (m_DataSourceTypeField.boundProperty is not { isValid: true } property)
+            return;
+
         // Get the actual value of the data source type serialized property, which may be
         // different from the field value if it is inherited
-        var sourceTypeValue = m_DataSourceTypeField.boundProperty?.stringValue;
+        var sourceTypeValue = property.stringValue;
 
         if (string.IsNullOrEmpty(sourceTypeValue))
         {
@@ -391,7 +397,7 @@ internal partial class BindingDataSourceView : BindableElement
     void UpdateCompleter()
     {
         if (m_DataSourcePathCompleter == null || m_DataSourceObjectField == null || m_DataSourceTypeField == null
-            || m_DataSourcePathField?.Context == null || m_DataSourcePathField?.boundProperty == null)
+            || m_DataSourcePathField?.Context == null || m_DataSourcePathField?.boundProperty is not { isValid: true })
             return;
 
         var context = m_DataSourcePathField.Context;

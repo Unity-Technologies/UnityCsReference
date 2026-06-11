@@ -41,19 +41,23 @@ namespace UnityEngine.UIElements
             }
 
             if (e.eventTypeId == NavigationMoveEvent.TypeId())
-            {
-                switch (((NavigationMoveEvent)e).direction)
-                {
-                    case NavigationMoveEvent.Direction.Left: return Left;
-                    case NavigationMoveEvent.Direction.Up: return Up;
-                    case NavigationMoveEvent.Direction.Right: return Right;
-                    case NavigationMoveEvent.Direction.Down: return Down;
-                    case NavigationMoveEvent.Direction.Next: return Next;
-                    case NavigationMoveEvent.Direction.Previous: return Previous;
-                }
-            }
+                return GetNavigationChangeDirection(((NavigationMoveEvent)e).direction);
 
             return FocusChangeDirection.none;
+        }
+
+        static FocusChangeDirection GetNavigationChangeDirection(NavigationMoveEvent.Direction direction)
+        {
+            switch (direction)
+            {
+                case NavigationMoveEvent.Direction.Up: return Up;
+                case NavigationMoveEvent.Direction.Down: return Down;
+                case NavigationMoveEvent.Direction.Left: return Left;
+                case NavigationMoveEvent.Direction.Right: return Right;
+                case NavigationMoveEvent.Direction.Next: return Next;
+                case NavigationMoveEvent.Direction.Previous: return Previous;
+                default: return FocusChangeDirection.none;
+            }
         }
 
         public virtual Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction)
@@ -125,46 +129,68 @@ namespace UnityEngine.UIElements
             if (!(currentFocusable is VisualElement ve))
                 ve = root;
 
-            Rect panelBounds = root.boundingBox;
-            Rect panelRect = new Rect(panelBounds.position - Vector2.one, panelBounds.size + Vector2.one * 2);
-            Rect rect = ve.ChangeCoordinatesTo(root, ve.rect);
-            Rect validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
-            if (direction == Up) validRect.yMin = panelRect.yMin;
-            else if (direction == Down) validRect.yMax = panelRect.yMax;
-            else if (direction == Left) validRect.xMin = panelRect.xMin;
-            else if (direction == Right) validRect.xMax = panelRect.xMax;
+            var best = FindBestInDirection(root, ve, direction, firstPass: true, excludeSubtree: null)
+                    ?? FindBestInDirection(root, ve, direction, firstPass: false, excludeSubtree: null);
+            return (Focusable)best ?? currentFocusable;
+        }
 
-            var best = new FocusableHierarchyTraversal
+        /// <summary>
+        /// Determines whether a focusable element exists in the specified direction from the current element.
+        /// </summary>
+        /// <param name="searchRoot">The root element within which to search for focusable elements.</param>
+        /// <param name="current">The current element from which to search.</param>
+        /// <param name="direction">The direction in which to search for focusable elements.</param>
+        /// <returns>
+        /// <see langword="true"/> if a focusable element exists strictly beyond <paramref name="current"/> in the specified direction;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <remarks>
+        /// This method helps containers decide between handling input themselves (e.g. <see cref="ScrollView"/> scrolling) or
+        /// deferring to focus traversal. Only elements strictly past <paramref name="current"/> are considered;
+        /// wrap-around is not performed.
+        /// </remarks>
+        internal static bool HasFocusableInDirection(VisualElement searchRoot, VisualElement current,
+            NavigationMoveEvent.Direction direction, VisualElement excludeSubtree = null)
+        {
+            if (searchRoot == null || current == null)
+                return false;
+
+            return GetNavigationChangeDirection(direction) is ChangeDirection cd &&
+                   FindBestInDirection(searchRoot, current, cd, firstPass: true, excludeSubtree) != null;
+        }
+
+        static VisualElement FindBestInDirection(VisualElement searchRoot, VisualElement current,
+            ChangeDirection direction, bool firstPass, VisualElement excludeSubtree)
+        {
+            var panelBounds = searchRoot.boundingBox;
+            var panelRect = new Rect(panelBounds.position - Vector2.one, panelBounds.size + Vector2.one * 2);
+            var rect = current.ChangeCoordinatesTo(searchRoot, current.rect);
+            var validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
+
+            // On the wrap-around pass (firstPass=false) extend the rect opposite the search direction.
+            var extendDirection = firstPass ? direction : Opposite(direction);
+            if (extendDirection == Up) validRect.yMin = panelRect.yMin;
+            else if (extendDirection == Down) validRect.yMax = panelRect.yMax;
+            else if (extendDirection == Left) validRect.xMin = panelRect.xMin;
+            else if (extendDirection == Right) validRect.xMax = panelRect.xMax;
+
+            return new FocusableHierarchyTraversal
             {
-                root = root,
-                currentFocusable = ve,
+                root = searchRoot,
+                currentFocusable = current,
                 direction = direction,
                 validRect = validRect,
-                firstPass = true
-            }.GetBestOverall(root);
+                firstPass = firstPass,
+                excludeSubtree = excludeSubtree
+            }.GetBestOverall(searchRoot);
+        }
 
-            if (best != null)
-                return best;
-
-            validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
-            if (direction == Down) validRect.yMin = panelRect.yMin;
-            else if (direction == Up) validRect.yMax = panelRect.yMax;
-            else if (direction == Right) validRect.xMin = panelRect.xMin;
-            else if (direction == Left) validRect.xMax = panelRect.xMax;
-
-            best = new FocusableHierarchyTraversal
-            {
-                root = root,
-                currentFocusable = ve,
-                direction = direction,
-                validRect = validRect,
-                firstPass = false
-            }.GetBestOverall(root);
-
-            if (best != null)
-                return best;
-
-            return currentFocusable;
+        static ChangeDirection Opposite(ChangeDirection direction)
+        {
+            if (direction == Up) return Down;
+            if (direction == Down) return Up;
+            if (direction == Left) return Right;
+            return Left;
         }
 
         static bool IsActive(VisualElement v)
@@ -185,6 +211,7 @@ namespace UnityEngine.UIElements
         {
             public VisualElement root;
             public VisualElement currentFocusable;
+            public VisualElement excludeSubtree;
             public Rect validRect;
             public bool firstPass;
             public ChangeDirection direction;
@@ -238,6 +265,9 @@ namespace UnityEngine.UIElements
 
             public VisualElement GetBestOverall(VisualElement candidate, VisualElement bestSoFar = null)
             {
+                if (candidate == excludeSubtree)
+                    return bestSoFar;
+
                 if (!ValidateHierarchyTraversal(candidate))
                     return bestSoFar;
 

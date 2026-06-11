@@ -12,6 +12,8 @@ namespace Unity.Hierarchy
     /// </summary>
     public sealed class HierarchyViewCell : VisualElement
     {
+        static readonly UniqueStyleString k_HierarchyViewCellName = new("HierarchyViewCell");
+
         bool m_IsCellBound;
         bool m_IsDefaultValue;
 
@@ -108,7 +110,7 @@ namespace Unity.Hierarchy
         {
             View = view;
             Column = column;
-            name = "HierarchyViewCell";
+            SetName(k_HierarchyViewCellName);
         }
 
         public override string ToString()

@@ -49,7 +49,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
         ParallelFor = 1
     }
 
-    [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindings.h")]
+    [NativeHeader("ManagedKernel/Jobs/ScriptBindings/JobsBindings.h")]
     [NativeHeader("NativeJobs/JobSystem.h")]
     public static class JobsUtility
     {

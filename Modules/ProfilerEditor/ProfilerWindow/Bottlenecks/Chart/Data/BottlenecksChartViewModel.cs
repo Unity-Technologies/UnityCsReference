@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using Unity.Collections;
 using UnityEditor;
+using UnityEditor.Accessibility;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
@@ -61,12 +62,39 @@ namespace Unity.Profiling.Editor.UI
         // How many frames are over the BottleneckThreshold?
         public float[] PercentOverThreshold { get; private set; }
 
-        // The colors for each data series.
+        // CPU and GPU data series indices (matches the order of Colors / ColorBlindSafeColors).
+        public const int CpuDataSeriesIndex = 0;
+        public const int GpuDataSeriesIndex = 1;
+
+        // The default colors for each data series.
         public static readonly Color[] Colors = new[]
         {
             new Color(0.929f, 0.337f, 0.337f), // #ED5656
             new Color(0.929f, 0.906f, 0.337f), // #EDE756
         };
+
+        // The color-blind safe colors for each data series, used when the user has
+        // enabled the accessibility colour-blind option.
+        public static readonly Color[] ColorBlindSafeColors = new[]
+        {
+            new Color(0.863f, 0.149f, 0.494f), // #DC267E
+            new Color(1.000f, 0.690f, 0.000f), // #FFB000
+        };
+
+        // Returns the appropriate colour for the given data series, taking the user's
+        // current colour-blind accessibility setting into account.
+        public static Color GetColorForDataSeries(int dataSeriesIndex)
+        {
+            var palette = (UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default)
+                ? Colors
+                : ColorBlindSafeColors;
+            if (dataSeriesIndex < 0 || dataSeriesIndex >= palette.Length)
+            {
+                Debug.LogWarning($"{nameof(BottlenecksChartViewModel)}.{nameof(GetColorForDataSeries)}: invalid data series index {dataSeriesIndex}.");
+                return Color.magenta;
+            }
+            return palette[dataSeriesIndex];
+        }
 
         static readonly Color k_InvalidColorPro = new Color(0.078f, 0.078f, 0.078f);
         static readonly Color k_InvalidColorNonPro = new Color(0.247f, 0.247f, 0.247f);

@@ -4,37 +4,43 @@
 
 using System;
 using UnityEditor;
-using UnityEditor.AnimationWindowBuiltin;
+using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor
 {
     /// <summary>
     /// Animation Window selection item for per-element <see cref="UIAnimationClip"/>s.
     /// There is no scene proxy: the "Add Property" menu is populated directly from the
-    /// per-element <see cref="UIAnimationBinder"/>'s channel set.
+    /// per-element <see cref="UIAnimationBinder"/>'s channel set. Clip-state plumbing
+    /// (the <see cref="UIAnimationClip"/> / inner <see cref="AnimationClip"/> wrappers,
+    /// the Create call-to-action pipeline, the GameObject-less IAnimationWindowSelectionItem surface)
+    /// is inherited from <see cref="UIToolkitAnimationSelectionItemBase"/>; this subclass
+    /// only carries the VE/PanelRenderer-specific bits.
     /// </summary>
-    internal sealed class VisualElementAnimationSelectionItem : IAnimationWindowSelectionItem
+    internal sealed class VisualElementAnimationSelectionItem : UIToolkitAnimationSelectionItemBase
     {
-        readonly AnimationWindow m_Window;
+        static readonly string k_OnboardingLabelFormat = L10n.Tr("To begin animating {0}, create a UI Animation Clip.");
+        static readonly string k_OnboardingLabelUnnamedSubject = L10n.Tr("this VisualElement");
+
         readonly PanelRenderer m_PanelRenderer;
         readonly VisualElement m_ClipOwner;
-        UIAnimationClip m_UIClip;
-        AnimationWindowClip m_Clip;
-        IAnimationWindowController m_Controller;
 
         VisualElementAnimationSelectionItem(
             AnimationWindow window,
             PanelRenderer panelRenderer,
             VisualElement clipOwner,
             UIAnimationClip uiClip)
+            : base(window)
         {
-            m_Window = window;
             m_PanelRenderer = panelRenderer;
             m_ClipOwner = clipOwner;
             SetUIClip(uiClip);
+
+            AnimationUtility.onCurveWasModified += CurveWasModified;
         }
 
         internal static VisualElementAnimationSelectionItem Create(
@@ -48,39 +54,8 @@ namespace Unity.UIToolkit.Editor
             return item;
         }
 
-        void SetUIClip(UIAnimationClip uiClip)
-        {
-            if (uiClip != null && uiClip.animationClip == null)
-                EnsureInnerAnimationClip(uiClip);
-
-            m_UIClip = uiClip;
-            var inner = uiClip != null ? uiClip.animationClip : null;
-            m_Clip = inner != null ? new VisualElementAnimationWindowClip(inner) : null;
-        }
-
-        // Without an inner AnimationClip, IAnimationWindowSelectionItem.disabled reports
-        // true and the Animation Window paints "No animatable object selected".
-        static void EnsureInnerAnimationClip(UIAnimationClip uiClip)
-        {
-            var innerClip = new AnimationClip();
-            var settings = AnimationUtility.GetAnimationClipSettings(innerClip);
-            settings.loopTime = true;
-            AnimationUtility.SetAnimationClipSettings(innerClip, settings);
-
-            uiClip.animationClip = innerClip;
-
-            if (AssetDatabase.IsMainAsset(uiClip))
-            {
-                innerClip.name = uiClip.name;
-                AssetDatabase.AddObjectToAsset(innerClip, uiClip);
-                AssetDatabase.SaveAssetIfDirty(uiClip);
-            }
-        }
-
         internal VisualElement clipOwner => m_ClipOwner;
         internal PanelRenderer panelRenderer => m_PanelRenderer;
-        internal AnimationWindow animationWindow => m_Window;
-        internal UIAnimationClip uiAnimationClip => m_UIClip;
 
         internal UIAnimationBinder GetOrCreateElementBinder()
         {
@@ -88,75 +63,79 @@ namespace Unity.UIToolkit.Editor
             return concretePanel?.GetOrCreateElementBinder(m_ClipOwner);
         }
 
-        // The VE path is GameObject-less - returning null engages the Animation Window's
-        // curve-display fallbacks (evaluate curves directly, no AnimationUtility lookup).
-        public GameObject gameObject => null;
-        public GameObject rootGameObject => null;
-        public Component animationPlayer => null;
+        // We currently avoid creating clips or modifying VisualTreeAssets in the Main stage.
+        public override bool canCreateClips => m_ClipOwner != null && IsInVisualElementEditingStage();
 
-        public IAnimationWindowClip clip
+        static bool IsInVisualElementEditingStage() => StageUtility.GetCurrentStage() is VisualElementEditingStage;
+
+        protected override string DialogSubjectName
         {
-            get => m_Clip;
-            set => m_Clip = value as AnimationWindowClip;
+            get
+            {
+                if (m_ClipOwner == null)
+                    return "VisualElement";
+                if (!string.IsNullOrEmpty(m_ClipOwner.name))
+                    return m_ClipOwner.name;
+                return m_PanelRenderer != null ? m_PanelRenderer.gameObject.name : "VisualElement";
+            }
         }
 
-        public IAnimationWindowController controller => m_Controller;
-
-        public bool disabled => m_Clip == null || !m_Clip.isValid;
-        public bool isReadOnly => m_Clip != null && m_Clip.isReadOnly;
-        public bool canChangeClip => true;
-        // Gating on `disabled` keeps the toolbar "+" popup and the inline tree-row "Add
-        // Property" button in sync; otherwise the popup lists properties that
-        // CreateDefaultCurves would silently drop because selection.clip is null.
-        public bool canAddCurves => !disabled && !isReadOnly;
-        public bool canCreateClips => m_ClipOwner != null;
-        public bool canSyncSceneSelection => true;
-
-        public IAnimationWindowClip[] GetClips()
+        // Persists unityAnimationClip via the same inline-sheet command the inspector "New..." button uses
+        // when the element is VTA-backed (staging or VTA-cloned scene); falls back to runtime-only otherwise.
+        protected override void AssignClipToTarget(UIAnimationClip newClip)
         {
-            if (m_Clip == null || !m_Clip.isValid)
-                return Array.Empty<IAnimationWindowClip>();
-            return new IAnimationWindowClip[] { m_Clip };
+            var styleValue = new StyleUIAnimationClip(newClip);
+
+            if (m_ClipOwner.visualElementAsset != null && m_ClipOwner.visualTreeAssetSource != null)
+            {
+                SetInlineStylePropertyCommand<StyleUIAnimationClip>.Execute(CommandSources.Inspector,
+                    m_ClipOwner,
+                    StylePropertyId.UnityAnimationClip,
+                    StylePropertyBinding.SetUIAnimationClip,
+                    styleValue);
+                return;
+            }
+
+            m_ClipOwner.style.unityAnimationClip = styleValue;
         }
 
-        public IAnimationWindowClip CreateNewClip()
+        // The VE controller drives preview / record on m_ClipOwner; stop it before dropping the clip
+        // so the next selection-change event starts from a clean slate.
+        protected override void OnClipCleared()
         {
-            if (m_ClipOwner == null)
-                return null;
-
-            string elementName = string.IsNullOrEmpty(m_ClipOwner.name)
-                ? (m_PanelRenderer != null ? m_PanelRenderer.gameObject.name : "VisualElement")
-                : m_ClipOwner.name;
-
-            string message = $"Create a new animation for element '{elementName}':";
-            string path = EditorUtility.SaveFilePanelInProject(
-                "Create New Animation", "New Animation", "asset", message, "Assets");
-
-            if (string.IsNullOrEmpty(path))
-                return null;
-
-            var innerClip = new AnimationClip();
-            var settings = AnimationUtility.GetAnimationClipSettings(innerClip);
-            settings.loopTime = true;
-            AnimationUtility.SetAnimationClipSettings(innerClip, settings);
-
-            var newUIClip = new UIAnimationClip { animationClip = innerClip };
-            AssetDatabase.CreateAsset(newUIClip, path);
-            AssetDatabase.AddObjectToAsset(innerClip, newUIClip);
-            AssetDatabase.SaveAssets();
-
-            var loaded = AssetDatabase.LoadAssetAtPath<UIAnimationClip>(path);
-            if (loaded != null)
-                newUIClip = loaded;
-
-            m_ClipOwner.style.unityAnimationClip = new StyleUIAnimationClip(newUIClip);
-            SetUIClip(newUIClip);
-            return m_Clip;
+            (m_Controller as VisualElementAnimationWindowController)?.StopImmediately();
         }
 
-        public bool InitializeSelection() => CreateNewClip() != null;
+        string m_CachedOnboardingLabel;
+        bool m_IsOnboardingLabelCached;
 
-        public int GetRefreshHash()
+        public override string onboardingLabel
+        {
+            get
+            {
+                if (!m_IsOnboardingLabelCached)
+                {
+                    if (!IsInVisualElementEditingStage())
+                    {
+                        m_CachedOnboardingLabel = null;
+                    }
+                    else
+                    {
+                        var subject = (m_ClipOwner != null && !string.IsNullOrEmpty(m_ClipOwner.name))
+                            ? $"'#{m_ClipOwner.name}'"
+                            : k_OnboardingLabelUnnamedSubject;
+                        m_CachedOnboardingLabel = string.Format(k_OnboardingLabelFormat, subject);
+                    }
+
+                    // The cached text might become stale if the VisualElement name changes;
+                    // changing the selection refreshes it by creating a new selection item.
+                    m_IsOnboardingLabelCached = true;
+                }
+                return m_CachedOnboardingLabel;
+            }
+        }
+
+        public override int GetRefreshHash()
         {
             var animClip = m_Clip?.animationClip;
             uint dirtyCount = animClip != null ? (uint)EditorUtility.GetDirtyCount(animClip) : 0;
@@ -167,12 +146,11 @@ namespace Unity.UIToolkit.Editor
                 dirtyCount).GetHashCode();
         }
 
-        public void Synchronize()
+        public override void Synchronize()
         {
-            // Treat a released or detached owner as "no clip" - reading resolvedStyle on a
-            // recycled layout node throws from LayoutDataAccess. The responder will pick
-            // up a fresh selection on the next selection-change event (Animator-deletion
-            // behavior).
+            // Treat a released or detached owner as "no clip" - reading resolvedStyle on a recycled
+            // layout node throws from LayoutDataAccess. The responder picks up a fresh selection on
+            // the next selection-change event (Animator-deletion behavior).
             if (m_ClipOwner == null || m_ClipOwner.resourcesReleased)
             {
                 ClearClip();
@@ -190,16 +168,7 @@ namespace Unity.UIToolkit.Editor
                 SetUIClip(resolvedClip);
         }
 
-        void ClearClip()
-        {
-            if (m_Clip == null)
-                return;
-
-            (m_Controller as VisualElementAnimationWindowController)?.StopImmediately();
-            SetUIClip(null);
-        }
-
-        public bool IsCompatibleWith(UnityEngine.Object selectedObject)
+        public override bool IsCompatibleWith(UnityEngine.Object selectedObject)
         {
             if (selectedObject is VisualElementSelection veSelection && veSelection.Element != null)
             {
@@ -209,9 +178,9 @@ namespace Unity.UIToolkit.Editor
             return false;
         }
 
-        public EditorCurveBinding[] GetAnimatableBindings(GameObject go) => GetAnimatableBindings();
+        public override EditorCurveBinding[] GetAnimatableBindings(GameObject go) => GetAnimatableBindings();
 
-        public EditorCurveBinding[] GetAnimatableBindings()
+        public override EditorCurveBinding[] GetAnimatableBindings()
         {
             if (m_ClipOwner == null)
                 return Array.Empty<EditorCurveBinding>();
@@ -238,11 +207,11 @@ namespace Unity.UIToolkit.Editor
             return bindings;
         }
 
-        public Type GetValueType(EditorCurveBinding binding)
+        public override Type GetValueType(EditorCurveBinding binding)
         {
-            // Per-element clips have no GameObject root; rely on the binding's
-            // self-description (set by the native channel walk) so style-enum
-            // rows render as discrete int curves instead of continuous floats.
+            // Per-element clips have no GameObject root; rely on the binding's self-description
+            // (set by the native channel walk) so style-enum rows render as discrete int curves
+            // instead of continuous floats.
             if (binding.isPPtrCurve)
                 return null;
             if (binding.isDiscreteCurve)
@@ -250,20 +219,38 @@ namespace Unity.UIToolkit.Editor
             return typeof(float);
         }
 
-        public bool isImported => false;
-        public bool hasUnsavedChanges => false;
-        public void SaveChanges() { }
-        public void DiscardChanges() { }
-
-        public void OnPlayModeStateChanged(PlayModeStateChange state)
+        // UI refresh hook, mirroring AnimationWindowSelectionItem.CurveWasModified. The per-element
+        // deltas (binder housekeeping) replace what DrivenPropertyManager pruning does automatically
+        // for GameObject paths.
+        void CurveWasModified(AnimationClip clip, EditorCurveBinding binding, AnimationUtility.CurveModifiedType type)
         {
-            m_Controller?.OnPlayModeStateChanged(state);
+            if (clip == null || m_UIClip == null || clip != m_UIClip.animationClip)
+                return;
+
+            var binder = GetOrCreateElementBinder();
+            if (binder != null)
+            {
+                // Drop stale entries for removed curves so binder.IsBound - the inspector affordance
+                // signal - reflects the clip's current curves; the next sample re-populates surviving bindings.
+                if (type != AnimationUtility.CurveModifiedType.CurveModified)
+                    binder.ClearBindings();
+                binder.IncrementBoundElementsStyleVersion();
+            }
+
+            if (m_Window == null)
+                return;
+
+            if (type == AnimationUtility.CurveModifiedType.CurveModified)
+                m_Window.RefreshCurve(binding);
+            else
+                m_Window.RefreshClip();
+            m_Window.Repaint();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
-            m_Controller?.Dispose();
-            m_Controller = null;
+            AnimationUtility.onCurveWasModified -= CurveWasModified;
+            base.Dispose();
         }
     }
 }

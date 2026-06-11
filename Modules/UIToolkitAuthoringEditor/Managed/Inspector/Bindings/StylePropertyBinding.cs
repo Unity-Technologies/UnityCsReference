@@ -328,16 +328,14 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 Debug.Assert(!AnimationMode.InAnimationRecording(),
                     "AnimationMode is recording but AnimationController is null. Refresh must run before ProcessChange.");
 
-                var command = new SetInlineStylePropertyCommand<T>(styleDiff.currentTarget, binding.stylePropertyId, setter, value);
-                command.Execute();
+                SetInlineStylePropertyCommand<T>.Execute(CommandSources.Inspector, styleDiff.currentTarget, binding.stylePropertyId, setter, value);
                 break;
             }
             case StyleDiff.ContextType.StyleSheet:
             {
                 Debug.Assert(authoringContext.AnimationController == null,
                     "AnimationController must be null in StyleSheet context.");
-                var command = new SetStyleSheetPropertyCommand<T>(styleDiff.currentStyleSheet, styleDiff.currentRule, binding.stylePropertyId, setter, value);
-                command.Execute();
+                SetStyleSheetPropertyCommand<T>.Execute(CommandSources.Inspector, styleDiff.currentStyleSheet, styleDiff.currentRule, binding.stylePropertyId, setter, value);
 
                 // Update selector element
                 styleDiff.currentTarget?.UpdateInlineRule(styleDiff.currentStyleSheet, styleDiff.currentRule, styleDiff.currentTarget.variableContext);
@@ -488,8 +486,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                             this);
 
                         menu.AppendAction(k_RemoveBindingText, (a) => {
-                            var cmd = new RemoveBindingCommand(ve, stylePropertyId);
-                            cmd.Execute();
+                            RemoveBindingCommand.Execute(CommandSources.Inspector, ve, stylePropertyId);
                         }, (a) => DropdownMenuAction.Status.Normal, this);
                     }
                 }
@@ -533,6 +530,10 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                     a => VariableActionStatus(a, authoringContext.IsReadOnly),
                     field);
             }
+
+            // Animation Window contextual items - no-op when no responder is active so the
+            // menu is unchanged outside of preview/recording sessions.
+            VisualElementContextualPropertyMenu.Populate(menu, ve, stylePropertyId);
         };
     }
 
@@ -559,7 +560,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     void RemoveVariableViaContextMenu(StyleInspectorElement.AuthoringContext authoringContext)
     {
         var styleDiff = authoringContext.StyleDiff;
-        new RemoveVariableCommand(styleDiff.currentStyleSheet, styleDiff.currentRule, stylePropertyId).Execute();
+        RemoveVariableCommand.Execute(CommandSources.Inspector, styleDiff.currentStyleSheet, styleDiff.currentRule, stylePropertyId);
 
         // Update selector element
         var element = styleDiff.currentTarget;
@@ -582,14 +583,12 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
     void UnsetInlineStyleProperty(VisualElement element)
     {
-        var command = new UnsetInlineStylePropertyCommand(element, stylePropertyId);
-        command.Execute();
+        UnsetInlineStylePropertyCommand.Execute(CommandSources.Inspector, element, stylePropertyId);
     }
 
     void UnsetStyleSheetProperty(StyleSheet styleSheet, StyleRule rule, VisualElement element)
     {
-        var command = new UnsetStyleSheetPropertyCommand(styleSheet, rule, stylePropertyId);
-        command.Execute();
+        UnsetStyleSheetPropertyCommand.Execute(CommandSources.Inspector, styleSheet, rule, stylePropertyId);
 
         element?.UpdateInlineRule(styleSheet, rule, element.variableContext);
         element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
@@ -642,14 +641,12 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
     void UnsetAllInlineStyleProperties(VisualElement element)
     {
-        var command = new UnsetAllInlineStylePropertiesCommand(element);
-        command.Execute();
+        UnsetAllInlineStylePropertiesCommand.Execute(CommandSources.Inspector, element);
     }
 
     void UnsetAllStyleSheetProperties(StyleSheet styleSheet, StyleRule rule, VisualElement element)
     {
-        var command = new UnsetAllStyleSheetPropertiesCommand(styleSheet, rule);
-        command.Execute();
+        UnsetAllStyleSheetPropertiesCommand.Execute(CommandSources.Inspector, styleSheet, rule);
 
         // Update selector element
         element?.UpdateInlineRule(styleSheet, rule, element.variableContext);

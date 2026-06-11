@@ -45,7 +45,8 @@ namespace Unity.Profiling.Editor.UI
             {
                 HideContentViewsAndShowNoDataView();
                 m_SelectedRange = new Range(0, 0);
-                onDetailsProviderReady?.Invoke(null);
+                if (onDetailsProviderReady != null)
+                    View.schedule.Execute(() => onDetailsProviderReady(null));
                 return;
             }
 
@@ -65,7 +66,9 @@ namespace Unity.Profiling.Editor.UI
             m_NoDataLabel.text = Content.k_NoDataText;
 
             // Embed child view controllers.
-            m_MainThreadUtilizationViewController = new PieChartViewController(Content.k_MainThreadUtilizationTitle);
+            m_MainThreadUtilizationViewController = new PieChartViewController(
+                Content.k_MainThreadUtilizationTitle,
+                MainThreadUtilizationPieChartModelBuilder.GetColorForDataSeries);
             m_BottlenecksContainer.Add(m_MainThreadUtilizationViewController.View);
             AddChild(m_MainThreadUtilizationViewController);
 
@@ -94,16 +97,17 @@ namespace Unity.Profiling.Editor.UI
                 frameIndex);
             await modelBuilder.BuildAsync(
                 cancellationToken,
-                OnMainThreadUtilizationCompleted: m_MainThreadUtilizationViewController.RefreshView,
-                OnSystemsImpactBuildCompleted: m_SystemsImpactViewController.ReloadData,
-                OnFrameBottlenecksBuildCompleted: (model) => {
+                OnMainThreadUtilizationCompleted: model => DeferIfNotCancelled(() => m_MainThreadUtilizationViewController.RefreshView(model), cancellationToken),
+                OnSystemsImpactBuildCompleted: model => DeferIfNotCancelled(() => m_SystemsImpactViewController.ReloadData(model), cancellationToken),
+                OnFrameBottlenecksBuildCompleted: model => DeferIfNotCancelled(() =>
+                {
                     m_FrameBottlenecksModel = model;
                     m_SingleFrameTimesSectionViewController.RefreshFrameBottlenecksView(model);
-                },
-                OnTopFrameMarkersBuildCompleted: m_SingleFrameTimesSectionViewController.RefreshTopFrameMarkersView,
-                OnFrameGCAllocationsBuildCompleted: m_FrameAllocationsSectionViewController.RefreshFrameGCAllocationsView,
-                OnTopGCMarkersBuildCompleted: m_FrameAllocationsSectionViewController.RefreshTopGCMarkersView,
-                OnFrameGCCollectBuildCompleted: m_FrameAllocationsSectionViewController.RefreshFrameGCCollectView
+                }, cancellationToken),
+                OnTopFrameMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_SingleFrameTimesSectionViewController.RefreshTopFrameMarkersView(model), cancellationToken),
+                OnFrameGCAllocationsBuildCompleted: model => DeferIfNotCancelled(() => m_FrameAllocationsSectionViewController.RefreshFrameGCAllocationsView(model), cancellationToken),
+                OnTopGCMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_FrameAllocationsSectionViewController.RefreshTopGCMarkersView(model), cancellationToken),
+                OnFrameGCCollectBuildCompleted: model => DeferIfNotCancelled(() => m_FrameAllocationsSectionViewController.RefreshFrameGCCollectView(model), cancellationToken)
             );
         }
 

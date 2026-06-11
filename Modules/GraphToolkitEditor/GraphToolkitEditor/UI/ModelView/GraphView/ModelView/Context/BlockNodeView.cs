@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -63,6 +64,8 @@ namespace Unity.GraphToolkit.Editor
         /// The color line element on the block.
         /// </summary>
         protected VisualElement m_ColorLine;
+
+        NodeColorLinePainterAnimator m_GradientAnimator = new();
 
         protected internal override int NodeTitleOptions => EditableTitlePart.Options.ClickToEditDisabled;
 
@@ -262,8 +265,27 @@ namespace Unity.GraphToolkit.Editor
                 m_ColorLine.AddToClassList(ussClassName.WithUssElement("color-line"));
                 m_ColorLine.generateVisualContent = OnGenerateColorLineVisualContent;
                 hierarchy.Add(m_ColorLine);
+
+                m_ColorLine.RegisterCallbackOnce<GeometryChangedEvent>(ColorLineOnGeometryChanged);
             }
         }
+
+        void ColorLineOnGeometryChanged(GeometryChangedEvent e)
+        {
+            if (BlockNodeModel.FillAmount != 0.0f)
+                m_GradientAnimator.SetFillAmount(BlockNodeModel.FillAmount, m_ColorLine.MarkDirtyRepaint);
+        }
+
+        public override void SetFillAmount(float percentage)
+        {
+            float effective = percentage == 0f ? BlockNodeModel.FillAmount : percentage;
+            m_GradientAnimator.SetFillAmount(effective, m_ColorLine.MarkDirtyRepaint);
+        }
+        public override void BeginAnimating(float animationSpeed) => m_GradientAnimator.Play(animationSpeed);
+
+        public override void AnimationUpdate(double deltaTime) => m_GradientAnimator.Update(deltaTime, m_ColorLine.MarkDirtyRepaint);
+
+        public override void StopAnimating() => m_GradientAnimator.Stop(m_ColorLine.MarkDirtyRepaint);
 
         /// <inheritdoc/>
         protected override void PostBuildUI()
@@ -421,6 +443,8 @@ namespace Unity.GraphToolkit.Editor
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Style) && BlockNodeModel.IsColorable() && m_ColorLine != null)
             {
+                if (BlockNodeModel.FillAmount != 0.0f)
+                    m_GradientAnimator.SetFillAmount(BlockNodeModel.FillAmount, null);
                 m_ColorLine.MarkDirtyRepaint();
             }
         }
@@ -582,6 +606,7 @@ namespace Unity.GraphToolkit.Editor
             // Draw Stroke
             p2d.lineWidth = m_Border;
             p2d.strokeColor = resolvedStyle.borderLeftColor;
+
             DrawBlock(ref bounds, p2d, m_DisplayEtch, m_DisplayEtch, isFirst, false, ref actualParams);
             p2d.Stroke();
         }
@@ -619,9 +644,20 @@ namespace Unity.GraphToolkit.Editor
 
             p2d.lineWidth = m_Border;
 
-            DrawBlock(ref colorLineBound, p2d, m_DisplayEtch, false, isFirst, true, ref actualParams);
+            if (BlockNodeModel.ElementColor.Color == Color.clear)
+            {
+                p2d.fillColor = BlockNodeModel.ElementColor.Color;
+            }
+            else
+            {
+                var fillGradient = new FillGradient();
+                fillGradient.start = new Vector2(colorLineBound.xMin, colorLineBound.yMin);
+                fillGradient.end = new Vector2(colorLineBound.xMax, colorLineBound.yMax);
+                fillGradient.gradient = m_GradientAnimator.BuildGradient(BlockNodeModel.ElementColor.Color);
+                p2d.fillGradient = fillGradient;
+            }
 
-            p2d.fillColor = BlockNodeModel.ElementColor.Color;
+            DrawBlock(ref colorLineBound, p2d, m_DisplayEtch, false, isFirst, true, ref actualParams);
             p2d.Fill(FillRule.OddEven);
         }
 
@@ -725,6 +761,14 @@ namespace Unity.GraphToolkit.Editor
                 new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax),
                 new Vector2(r.xMin + drawParams.bottomEtchMargin - colorLineWidth - borderWidth, r.yMax),
                 new Vector2(r.xMin + drawParams.bottomEtchMargin - drawParams.etchInnerRadius - colorLineWidth - borderWidth, r.yMax));
+        }
+
+        internal class TestAccess
+        {
+            readonly BlockNodeView m_View;
+            public TestAccess(BlockNodeView view) => m_View = view;
+            public bool IsGradientAnimating => m_View.m_GradientAnimator.isAnimating;
+            public float GradientFillAmount => m_View.m_GradientAnimator.fillAmount;
         }
 
         public override bool ContainsPoint(Vector2 localPoint)

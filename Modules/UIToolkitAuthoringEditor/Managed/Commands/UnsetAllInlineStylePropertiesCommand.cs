@@ -2,53 +2,70 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct UnsetAllInlineStylePropertiesCommand
+internal sealed class UnsetAllInlineStylePropertiesCommand : Command<UnsetAllInlineStylePropertiesCommand>
 {
     const string CommandUndoName = "Unset all inline style properties";
 
-    readonly VisualElement Element;
-
-    public UnsetAllInlineStylePropertiesCommand(VisualElement element)
+    public static UnsetAllInlineStylePropertiesCommand GetPooled(object source, VisualElement element)
     {
-        Element = element;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.Element = element;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElement element)
     {
-        Assert.IsNotNull(Element);
-        Assert.IsNotNull(Element.visualElementAsset);
-        Assert.IsNotNull(Element.visualTreeAssetSource);
+        using var command = GetPooled(source, element);
+        UICommandQueue.Execute(command);
+    }
 
+    public VisualElement Element { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling;
+
+    protected override void Init()
+    {
+        base.Init();
+        Element = null;
+    }
+
+    public override bool Validate() =>
+        Element != null
+        && Element.visualElementAsset != null
+        && Element.visualTreeAssetSource != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
         var visualTreeAsset = Element.visualTreeAssetSource;
-        Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
+        context.RecordUndo(visualTreeAsset);
+        context.RecordUndo(visualTreeAsset.inlineSheet);
+    }
 
+    public override CommandExecutionStatus Execute()
+    {
+        var visualTreeAsset = Element.visualTreeAssetSource;
         var inlineStyleSheet = visualTreeAsset.inlineSheet;
         if (inlineStyleSheet == null)
-            return;
-
-        Undo.RegisterCompleteObjectUndo(inlineStyleSheet, CommandUndoName);
+            return CommandExecutionStatus.Success;
 
         var vea = Element.visualElementAsset;
         if (vea.ruleIndex < 0)
-            return;
+            return CommandExecutionStatus.Success;
 
         var rule = inlineStyleSheet.rules[vea.ruleIndex];
         rule.ClearProperties();
 
-        var clearAllStylePropertyBindingsCommand = new ClearAllStylePropertyBindingsCommand(Element);
-        clearAllStylePropertyBindingsCommand.Execute();
+        ClearAllStylePropertyBindingsCommand.Execute(Source, Element);
 
         Element.UpdateInlineRule(inlineStyleSheet, rule);
         Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
 
-        EditorUtility.SetDirty(visualTreeAsset);
-        EditorUtility.SetDirty(inlineStyleSheet);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
+        return CommandExecutionStatus.Success;
     }
 }

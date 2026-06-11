@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.Profiling;
@@ -35,6 +36,31 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(maskDepth == stencilRef || maskDepth == stencilRef + 1);
             return maskDepth == stencilRef;
+        }
+
+        // Per-channel size of every extras attribute.
+        public const int k_ExtrasChannelBytes = 16;
+
+        // Modifying the order is a breaking change
+        internal static readonly ExtraVertexChannels[] k_ExtrasChannelOrder =
+        {
+            ExtraVertexChannels.TexCoord1,
+            ExtraVertexChannels.TexCoord2,
+            ExtraVertexChannels.TexCoord3,
+            ExtraVertexChannels.Normal,
+            ExtraVertexChannels.Tangent,
+        };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int ExtrasStride(ExtraVertexChannels mask) => k_ExtrasChannelBytes * PopCount((uint)mask);
+
+        // TODO: Replace with System.Numerics.BitOperations.PopCount
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int PopCount(uint v)
+        {
+            v = v - ((v >> 1) & 0x55555555u);
+            v = (v & 0x33333333u) + ((v >> 2) & 0x33333333u);
+            return (int)((((v + (v >> 4)) & 0x0F0F0F0Fu) * 0x01010101u) >> 24);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -119,40 +145,36 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(renderData.renderTree == ancestor.renderTree);
 
-            k_ComputeTransformMatrixMarker.Begin();
-
-            // TODO: Adjust this matrix for nested RenderTrees
-            renderData.owner.GetPivotedMatrixWithLayout(out result);
-            var currentAncestor = renderData.parent;
-            if ((currentAncestor == null) || (ancestor == currentAncestor))
-            {
-                k_ComputeTransformMatrixMarker.End();
-                return;
-            }
-
-            // We need to proceed recursively
-            Matrix4x4 temp = new Matrix4x4();
-            bool destIsTemp = true;
-
-            do
+            using (k_ComputeTransformMatrixMarker.Auto())
             {
                 // TODO: Adjust this matrix for nested RenderTrees
-                currentAncestor.owner.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
-                if (destIsTemp)
-                    VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref result, out temp);
-                else
-                    VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref temp, out result);
+                renderData.owner.GetPivotedMatrixWithLayout(out result);
+                var currentAncestor = renderData.parent;
+                if ((currentAncestor == null) || (ancestor == currentAncestor))
+                    return;
 
-                currentAncestor = currentAncestor.parent;
+                // We need to proceed recursively
+                Matrix4x4 temp = new Matrix4x4();
+                bool destIsTemp = true;
 
-                destIsTemp = !destIsTemp;
-            } while ((currentAncestor != null) && (ancestor != currentAncestor));
+                do
+                {
+                    // TODO: Adjust this matrix for nested RenderTrees
+                    currentAncestor.owner.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
+                    if (destIsTemp)
+                        VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref result, out temp);
+                    else
+                        VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref temp, out result);
 
-            // Invert logic as destIsTemp is changed each iteration
-            if (!destIsTemp)
-                result = temp;
+                    currentAncestor = currentAncestor.parent;
 
-            k_ComputeTransformMatrixMarker.End();
+                    destIsTemp = !destIsTemp;
+                } while ((currentAncestor != null) && (ancestor != currentAncestor));
+
+                // Invert logic as destIsTemp is changed each iteration
+                if (!destIsTemp)
+                    result = temp;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

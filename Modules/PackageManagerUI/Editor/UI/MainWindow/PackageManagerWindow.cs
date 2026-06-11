@@ -228,7 +228,11 @@ namespace UnityEditor.PackageManager.UI
 
         public static void OpenSamplesPage(IReadOnlyList<string> packagesToSelect)
         {
-            ShowWindow(() => ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect));
+            ShowWindow(() =>
+            {
+                ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectSamplePageWithPackageFilters(packagesToSelect);
+                PackageManagerWindowAnalytics.SendEvent("openSamplesPage");
+            });
         }
 
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]

@@ -451,6 +451,7 @@ namespace Unity.U2D.Physics
         /// <param name="transformPlane">The transform plane to use.</param>
         /// <returns>The transformed position.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 ToPosition2D(Vector3 position, PhysicsWorld.TransformPlane transformPlane = PhysicsWorld.TransformPlane.XY)
         {
@@ -459,7 +460,7 @@ namespace Unity.U2D.Physics
                 PhysicsWorld.TransformPlane.XY => position,
                 PhysicsWorld.TransformPlane.XZ => new Vector2(position.x, position.z),
                 PhysicsWorld.TransformPlane.ZY => new Vector2(position.z, position.y),
-                PhysicsWorld.TransformPlane.Custom => position,
+                PhysicsWorld.TransformPlane.Custom => throw new NotSupportedException("TransformPlane.Custom is not supported by this method."),
                 _ => throw new InvalidOperationException("Invalid Transform Plane."),
             };
         }
@@ -473,6 +474,7 @@ namespace Unity.U2D.Physics
         /// <param name="transformPlaneCustom">The custom transform plane (if required).</param>
         /// <returns>The transformed position.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 ToPosition2D(Vector3 position, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
         {
@@ -492,6 +494,7 @@ namespace Unity.U2D.Physics
         /// <param name="transformPlane">The transform plane to use.</param>
         /// <returns>The transformed rotation in radians.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ToRotation2D(Quaternion quaternion, PhysicsWorld.TransformPlane transformPlane = PhysicsWorld.TransformPlane.XY)
         {
@@ -504,7 +507,7 @@ namespace Unity.U2D.Physics
                 PhysicsWorld.TransformPlane.XY => 2.0f * Atan2(quaternion.z, quaternion.w),
                 PhysicsWorld.TransformPlane.XZ => -2.0f * Atan2(quaternion.y, quaternion.w),
                 PhysicsWorld.TransformPlane.ZY => -2.0f * Atan2(quaternion.x, quaternion.w),
-                PhysicsWorld.TransformPlane.Custom => 2.0f * Atan2(quaternion.z, quaternion.w),
+                PhysicsWorld.TransformPlane.Custom => throw new NotSupportedException("TransformPlane.Custom is not supported by this method."),
                 _ => throw new InvalidOperationException("Invalid Transform Plane."),
             };
         }
@@ -517,6 +520,7 @@ namespace Unity.U2D.Physics
         /// <param name="transformPlaneCustom"></param>
         /// <returns>The transformed rotation in radians.</returns>
         /// <exception cref="System.InvalidOperationException">Thrown if the TransformPlane is unknown.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown if TransformPlane.Custom is used.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ToRotation2D(Quaternion rotation, PhysicsWorld.TransformPlane transformPlane, in PhysicsWorld.TransformPlaneCustom transformPlaneCustom)
         {

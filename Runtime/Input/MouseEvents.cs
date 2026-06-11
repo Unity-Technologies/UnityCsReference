@@ -10,11 +10,12 @@ using UnityEngine.Scripting;
 using UnityEngine;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
 {
     [VisibleToOtherModules("UnityEngine.InputModule")]
-    internal class SendMouseEvents
+    internal partial class SendMouseEvents
     {
         struct HitInfo
         {
@@ -40,11 +41,31 @@ namespace UnityEngine
         private const int m_HitIndexGUI = 0;
         private const int m_HitIndexPhysics3D = 1;
         private const int m_HitIndexPhysics2D = 2;
+        [AutoStaticsCleanupOnCodeReload]
         private static bool s_MouseUsed = false;
 
+        [NoAutoStaticsCleanup] // arrays are cleared element-by-element in ResetHitArrays below
         static readonly HitInfo[] m_LastHit = { new HitInfo(), new HitInfo(), new HitInfo() };
+        [NoAutoStaticsCleanup] // arrays are cleared element-by-element in ResetHitArrays below
         static readonly HitInfo[] m_MouseDownHit = { new HitInfo(), new HitInfo(), new HitInfo() };
+        [NoAutoStaticsCleanup] // arrays are cleared element-by-element in ResetHitArrays below
         static readonly HitInfo[] m_CurrentHit = { new HitInfo(), new HitInfo(), new HitInfo() };
+
+        [OnCodeUnloading]
+        static void ResetHitArrays()
+        {
+            ResetHitInfoArray(m_LastHit);
+            ResetHitInfoArray(m_MouseDownHit);
+            ResetHitInfoArray(m_CurrentHit);
+        }
+
+        static void ResetHitInfoArray(HitInfo[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+                array[i] = new HitInfo();
+        }
+
+        [AutoStaticsCleanupOnCodeReload]
         static Camera[] m_Cameras;
 
         public enum LeftMouseButtonState
@@ -54,10 +75,14 @@ namespace UnityEngine
             PressedThisFrame = 2,
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static Func<KeyValuePair<int, Vector2>> s_GetMouseState;
 
+        [AutoStaticsCleanupOnCodeReload]
         private static Vector2 s_MousePosition;
+        [AutoStaticsCleanupOnCodeReload]
         private static bool s_MouseButtonPressedThisFrame;
+        [AutoStaticsCleanupOnCodeReload]
         private static bool s_MouseButtonIsPressed;
 
         private static void UpdateMouse()

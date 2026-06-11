@@ -137,6 +137,13 @@ namespace Unity.GraphToolkit.Editor
             return ui;
         }
 
+        public static ModelView CreatePortPreview(this ElementBuilder elementBuilder, PortPreviewModel model)
+        {
+            var marker = new PortPreview();
+            marker.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
+            return marker;
+        }
+
         public static ModelView CreateErrorMarkerModelView(this ElementBuilder elementBuilder, ErrorMarkerModel model)
         {
             var marker = new ErrorMarker();

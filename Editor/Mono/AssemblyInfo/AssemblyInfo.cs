@@ -197,6 +197,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Testing.VisualEffectGraph.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.VisualEffectGraph.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Multiple_SRP.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.Testing.SRP.Universal.Foundation.Editor")]
 

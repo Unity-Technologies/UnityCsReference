@@ -52,6 +52,11 @@ namespace Unity.U2D.Physics
 
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorldDefinition.simulateType is deprecated, please use PhysicsWorldDefinition.simulationType instead. (UnityUpgradable) -> simulationType", false)]
+        public PhysicsWorld.SimulationType simulateType { readonly get => simulationType; set => simulationType = value; }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorldDefinition.drawImpulseScale is deprecated, please use PhysicsWorldDefinition.drawForceScale instead. (UnityUpgradable) -> drawForceScale", false)]
         public float drawImpulseScale { readonly get => drawForceScale; set => drawForceScale = value; }
 
@@ -113,6 +118,15 @@ namespace Unity.U2D.Physics
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsShape.bouncinessCombine is obsolete. Please use PhysicsShape.bouncinessMixing instead.", true)]
         public readonly PhysicsMaterialCombine2D bouncinessCombine { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsShape.ApplyWind(force, drag, lift, wake) is deprecated, please use PhysicsShape.ApplyWind(PhysicsBody.WindInput) instead.", false)]
+        public readonly void ApplyWind(Vector2 force, float drag, float lift, bool wake = true)
+        {
+            var input = new PhysicsBody.WindInput { force = force, drag = drag, lift = lift, mask = PhysicsMask.All, useTriggers = true };
+            ApplyWind(input);
+        }
 
         public partial struct SurfaceMaterial
         {
@@ -197,6 +211,33 @@ namespace Unity.U2D.Physics
             [Obsolete("CastResult.hit is deprecated, please use CastResult.isValid instead. (UnityUpgradable) -> isValid", false)]
             public readonly bool hit => isValid;
         }
+    }
+
+    public readonly partial struct PhysicsEvents
+    {
+        public readonly partial struct TransformWriteEvent
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsEvents.TransformWriteEvent.transfomPlaneCustom is deprecated, please use PhysicsEvents.TransformWriteEvent.transformPlaneCustom instead. (UnityUpgradable) -> transformPlaneCustom", false)]
+            public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => transformPlaneCustom;
+        }
+
+        public readonly partial struct TransformTweenWriteEvent
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsEvents.TransformTweenWriteEvent.transfomPlaneCustom is deprecated, please use PhysicsEvents.TransformTweenWriteEvent.transformPlaneCustom instead. (UnityUpgradable) -> transformPlaneCustom", false)]
+            public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => transformPlaneCustom;
+        }
+    }
+
+    public partial struct PhysicsAABB
+    {
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsAABB.Normalized() is deprecated, please use PhysicsAABB.Normalize() instead. (UnityUpgradable) -> Normalize()", false)]
+        public void Normalized() => Normalize();
     }
 
     public readonly partial struct PhysicsConstants

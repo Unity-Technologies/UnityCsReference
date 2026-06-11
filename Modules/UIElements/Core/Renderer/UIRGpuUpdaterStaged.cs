@@ -19,24 +19,25 @@ namespace UnityEngine.UIElements.UIR
         GpuOnly // We allocate a GPU staging buffer only (Actual mapping must be supported OR GfxDevice implementation must create a CPU staging buffer)
     }
 
-    class GpuUpdaterStaged<T> : GpuUpdater<T> where T : unmanaged
+    class GpuUpdaterStaged : GpuUpdater
     {
-        public GpuUpdaterStaged(Utility.GPUBufferType bufferType, StagingMode stagingMode)
+        public GpuUpdaterStaged(Utility.GPUBufferType bufferType, StagingMode stagingMode, int elementStride)
         {
             m_BufferType = bufferType;
+            m_StagingElementStride = elementStride;
 
             // Note that Vertex/Index have to be specified because some DX11 drivers reject Dynamic usage with bind flags set to 0.
             if (bufferType == Utility.GPUBufferType.Vertex)
             {
+                Debug.Assert((elementStride & 3) == 0, "Vertex buffer element size must be a multiple of 4 bytes");
                 m_StagingBufferFlags = GpuBufferFlags.BufferFlags_Target_Vertex | GpuBufferFlags.BufferFlags_Target_CopySrc | GpuBufferFlags.BufferFlags_Mode_SubUpdates;
-                m_SupportedBufferLengths = [1 << 13, 1 << 16];
-                Debug.Assert((UnsafeUtility.SizeOf<T>() & 3) == 0, "Vertex buffer element size must be a multiple of 4 bytes");
+                m_SupportedBufferLengths = [1u << 13, 1u << 16];
             }
             else
             {
+                Debug.Assert(elementStride == sizeof(ushort), "Index buffer element size must be 2 bytes");
                 m_StagingBufferFlags = GpuBufferFlags.BufferFlags_Target_Index | GpuBufferFlags.BufferFlags_Target_CopySrc | GpuBufferFlags.BufferFlags_Mode_SubUpdates;
-                m_SupportedBufferLengths = [1 << 13, 1 << 18];
-                Debug.Assert(UnsafeUtility.SizeOf<T>() == 2, "Index buffer element size must be 2 bytes");
+                m_SupportedBufferLengths = [1u << 13, 1u << 18];
             }
 
             if (stagingMode == StagingMode.GpuOnly && !Utility.HasMappedBufferRange())
@@ -48,12 +49,13 @@ namespace UnityEngine.UIElements.UIR
             this.stagingMode = stagingMode;
         }
 
-        static readonly MemoryLabel k_MemoryLabel = new(nameof(UIElements), $"Renderer.{nameof(GpuUpdaterStaged<T>)}");
+        static readonly MemoryLabel k_MemoryLabel = new(nameof(UIElements), $"Renderer.{nameof(GpuUpdaterStaged)}");
         static ProfilerMarker s_MarkerGpuMappingFence = new ProfilerMarker("UIR.WaitOnGpuMappingFence");
 
         readonly Utility.GPUBufferType m_BufferType;
         readonly GpuBufferFlags m_StagingBufferFlags;
-        readonly uint[] m_SupportedBufferLengths; // Must be sorted in ascending order
+        readonly int m_StagingElementStride;
+        readonly uint[] m_SupportedBufferLengths; // Element counts, sorted in ascending order.
 
         // When true, the GPU staging buffer is updated directly from the CPU buffer.
         // When false, the source CPU data will be packed into the staging buffer CPU data, which will then be used as
@@ -100,7 +102,7 @@ namespace UnityEngine.UIElements.UIR
         unsafe struct CopyInfo
         {
             public void* srcCpuBuffer; // The DataSet CPU buffer
-            public Utility.GPUBuffer<T> dstGpuBuffer; // The DataSet GPU buffer
+            public Utility.GPUBuffer dstGpuBuffer; // The DataSet GPU buffer
             public NativeSlice<GfxCopyBufferRange> pendingGpuCopies; // GPU copy ranges (from staging to destination)
         }
 
@@ -112,8 +114,8 @@ namespace UnityEngine.UIElements.UIR
             public int capacity;
 
             // The data from the modified DataSets is staged here
-            public NativeArray<T> cpuData;
-            public Utility.GPUBuffer<T> gpuData;
+            public RawArray cpuData;
+            public Utility.GPUBuffer gpuData;
 
             public List<CopyInfo> pendingDataSets = new List<CopyInfo>(4);
         }
@@ -121,7 +123,7 @@ namespace UnityEngine.UIElements.UIR
         List<StagingBufferInfo> m_StagingBuffers = new List<StagingBufferInfo>(4);
         List<StagingBufferInfo> m_AvailableStagingBuffers = new List<StagingBufferInfo>(4);
 
-        List<DataSet<T>> m_DirtyDataSets = new List<DataSet<T>>(4);
+        List<DataSet> m_DirtyDataSets = new List<DataSet>(4);
 
         // When negative, it means the number of frames since last used (decrements every unused frame)
         // When [0,1,2,...,k_MaxQueuedFrameCount[ it means the frame index where it is being used
@@ -145,8 +147,11 @@ namespace UnityEngine.UIElements.UIR
             get => ref m_FrameDataArray[m_CurrentFrameIndex];
         }
 
-        public override void ProcessDataSet(DataSet<T> dataSet)
+        public override void ProcessDataSet(DataSet dataSet)
         {
+            Debug.Assert(dataSet.bufferType == m_BufferType);
+            Debug.Assert(dataSet.cpuData.Stride == m_StagingElementStride, "DataSet stride must match the updater's element stride");
+
             int dirtyCount = dataSet.dirtyRanges.Count;
 
             if (dirtyCount > 0)
@@ -180,9 +185,8 @@ namespace UnityEngine.UIElements.UIR
             m_TotalCpuCopyRanges = 0;
 
             // Process data sets, packing them into available buffers
-            foreach (DataSet<T> dataSet in m_DirtyDataSets)
+            foreach (DataSet dataSet in m_DirtyDataSets)
             {
-                // Find or allocate a suitable staging buffer
                 StagingBufferInfo targetBuffer = FindOrAllocateBuffer(m_AvailableStagingBuffers, (int)dataSet.totalDirtyCount);
                 targetBuffer.frameUsed = m_CurrentFrameIndex;
 
@@ -236,7 +240,7 @@ namespace UnityEngine.UIElements.UIR
             // Track ranges to free in future frames
             currentFrameData.gpuCopyRangesToFree = totalRangesUsed;
 
-            foreach (DataSet<T> dataSet in m_DirtyDataSets)
+            foreach (DataSet dataSet in m_DirtyDataSets)
                 dataSet.ResetDirtyRanges();
             m_DirtyDataSets.Clear();
 
@@ -270,7 +274,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static readonly Comparison<DataSet<T>> k_DataSetSort = (a, b) =>
+        static readonly Comparison<DataSet> k_DataSetSort = (a, b) =>
         {
             uint countA = a.totalDirtyCount;
             uint countB = b.totalDirtyCount;
@@ -358,15 +362,15 @@ namespace UnityEngine.UIElements.UIR
                 capacity = capacity,
                 usedCount = 0,
                 frameUsed = -1,
-                cpuData = new NativeArray<T>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory),
-                gpuData = new Utility.GPUBuffer<T>(capacity, m_StagingBufferFlags)
+                cpuData = new RawArray(capacity, m_StagingElementStride, k_MemoryLabel),
+                gpuData = new Utility.GPUBuffer(capacity, m_StagingElementStride, m_StagingBufferFlags)
             };
 
             m_StagingBuffers.Add(stagingBuffer);
             return stagingBuffer;
         }
 
-        unsafe void PrepareCopyRanges(DataSet<T> dataSet, StagingBufferInfo stagingBuffer)
+        unsafe void PrepareCopyRanges(DataSet dataSet, StagingBufferInfo stagingBuffer)
         {
             // Allocate ranges for this destination
             dataSet.ConsolidateRanges();
@@ -374,7 +378,7 @@ namespace UnityEngine.UIElements.UIR
             int rangeCount = dirtyRanges.Count;
             NativeSlice<GfxCopyBufferRange> copyRanges = m_GpuCopyRangesPool.Allocate(rangeCount);
 
-            int elementStride = stagingBuffer.gpuData.ElementStride;
+            uint elementStride = (uint)m_StagingElementStride;
             int rangeIndex = 0;
 
             foreach (var dirtyRange in dirtyRanges)
@@ -390,9 +394,9 @@ namespace UnityEngine.UIElements.UIR
                 // These ranges will also be used in reverse for CPU-to-CPU copies (if not using sub-updates)
                 copyRanges[rangeIndex] = new GfxCopyBufferRange
                 {
-                    srcOffset = (uint)(stagingBufferOffset * elementStride),
-                    dstOffset = (uint)((int)start * elementStride),
-                    size = (uint)((int)count * elementStride)
+                    srcOffset = (uint)stagingBufferOffset * elementStride,
+                    dstOffset = start * elementStride,
+                    size = count * elementStride
                 };
 
                 stagingBuffer.usedCount += (int)count;
@@ -400,11 +404,10 @@ namespace UnityEngine.UIElements.UIR
             }
 
             Debug.Assert(dataSet.gpuData != null);
-            Debug.Assert(dataSet.cpuData != null);
 
             var copyInfo = new CopyInfo
             {
-                srcCpuBuffer = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(dataSet.cpuData),
+                srcCpuBuffer = (void*)dataSet.cpuData.GetUnsafePtr(),
                 dstGpuBuffer = dataSet.gpuData,
                 pendingGpuCopies = copyRanges
             };
@@ -429,7 +432,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (stagingBuffer.usedCount > 0)
                 {
-                    byte* stagingCpuPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(stagingBuffer.cpuData);
+                    byte* stagingCpuPtr = (byte*)stagingBuffer.cpuData.GetUnsafePtr();
 
                     // Copy data from each source DataSet CPU buffer to the staging CPU buffer
                     foreach (CopyInfo copyInfo in stagingBuffer.pendingDataSets)
@@ -477,20 +480,17 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (stagingBuffer.usedCount > 0)
                 {
-                    int elementStride = stagingBuffer.gpuData.ElementStride;
-
                     // Allocate a single range to upload all the data from the beginning of the buffer
                     NativeSlice<GfxUpdateBufferRange> uploadRangeArray = m_UpdateRangesPool.Allocate(1);
-                    T* source = (T*)NativeArrayUnsafeUtility.GetUnsafePtr(stagingBuffer.cpuData);
+                    byte* source = (byte*)stagingBuffer.cpuData.GetUnsafePtr();
+                    int mappingEnd = stagingBuffer.usedCount * m_StagingElementStride;
                     uploadRangeArray[0] = new GfxUpdateBufferRange
                     {
                         offsetFromWriteStart = 0, // Always write from the beginning
-                        size = (uint)(stagingBuffer.usedCount * elementStride),
+                        size = (uint)mappingEnd,
                         source = new UIntPtr(source)
                     };
 
-                    // Update the GPU buffer from offset 0 to usedSize
-                    int mappingEnd = stagingBuffer.usedCount * elementStride;
                     stagingBuffer.gpuData.UpdateRanges(uploadRangeArray.Slice(0, 1), 0, mappingEnd);
 
                     totalUpdateRangesUsed++;
@@ -520,8 +520,6 @@ namespace UnityEngine.UIElements.UIR
                     // Allocate a single array to hold all update ranges from this staging buffer
                     NativeSlice<GfxUpdateBufferRange> allUpdateRanges = m_UpdateRangesPool.Allocate(totalRangeCount);
 
-                    // Build all update ranges from each dataset
-                    int elementStride = stagingBuffer.gpuData.ElementStride;
                     int writeIndex = 0;
 
                     foreach (var dataSetInfo in stagingBuffer.pendingDataSets)
@@ -545,7 +543,7 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(writeIndex == totalRangeCount);
 
                     // Single call to UpdateRanges for the entire staging buffer
-                    int mappingEnd = stagingBuffer.usedCount * elementStride;
+                    int mappingEnd = stagingBuffer.usedCount * m_StagingElementStride;
                     stagingBuffer.gpuData.UpdateRanges(allUpdateRanges, 0, mappingEnd);
 
                     totalUpdateRangesUsed += totalRangeCount;
@@ -575,9 +573,10 @@ namespace UnityEngine.UIElements.UIR
                 // before advancing the frame, as source CPU buffers may be modified after this point
                 if (m_UpdateFence != 0 && !Utility.CPUFencePassed(m_UpdateFence))
                 {
-                    s_MarkerGpuMappingFence.Begin();
-                    Utility.WaitForCPUFencePassed(m_UpdateFence);
-                    s_MarkerGpuMappingFence.End();
+                    using (s_MarkerGpuMappingFence.Auto())
+                    {
+                        Utility.WaitForCPUFencePassed(m_UpdateFence);
+                    }
                 }
                 m_UpdateFence = 0;
             }

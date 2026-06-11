@@ -53,7 +53,7 @@ namespace Unity.GraphToolkit.Editor
             ParentModelGuid = error.SourceModelGuid;
             ErrorMessage = error.Description;
             ErrorType = error.ErrorType;
-            Action = error.Fix;
+            Action = error.Action;
             SourceGraphReference = error.SourceGraphReference;
             Context = error.Context;
             UserData = error.UserData;

@@ -27,14 +27,13 @@ namespace UnityEditor
     {
         internal static class GraphicsSettingsData
         {
+            internal static GUIContent builtInWarningText =
+                EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
             internal const string builtIn = "Built-In";
             internal const string bodyTemplateBuiltInOnly = "UXML/ProjectSettings/GraphicsSettingsEditor-Builtin.uxml";
             internal const string bodyTemplateSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-SRP.uxml";
             internal const string helpBoxesTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-HelpBoxes.uxml";
             internal const string builtInTabContent = "UXML/ProjectSettings/GraphicsSettingsEditor-BuiltInTab.uxml";
-
-            internal static GUIContent builtInWarningText =
-                EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
             internal static readonly string k_BuildProfileGraphicsSettingsOverrideWarning =
                 L10n.Tr("The current active build profile has overridden certain Graphics settings. To ensure that the correct settings are included in your build, see the Build Profiles...");
             internal static readonly string k_GraphicsSettingsBuiltinInfo =

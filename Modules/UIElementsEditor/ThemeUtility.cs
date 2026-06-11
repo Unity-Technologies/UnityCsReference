@@ -29,7 +29,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Utility class for theme-related operations shared between UI Builder and UI Toolkit settings.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class ThemeUtility
     {
         public static event Action themeFilesChanged;
@@ -112,7 +112,7 @@ namespace UnityEditor.UIElements
         }
 
         // Refresh the available theme files in the project.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static void RefreshRuntimeThemeFiles()
         {
             // Explicitly create a new collection and rebuild it
@@ -365,7 +365,7 @@ namespace UnityEditor.UIElements
             return (runtimeCanvasTheme, runtimeTheme);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static string NicifyThemeName(ThemeStyleSheet theme)
         {
             if (theme == null) return string.Empty;
@@ -389,7 +389,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Returns runtime theme options to display names.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static Dictionary<ThemeStyleSheet, string> GetRuntimeThemesToDisplayName()
         {
             // Return cached value if available
@@ -439,6 +439,26 @@ namespace UnityEditor.UIElements
                     return EditorGUIUtility.isProSkin
                         ? UIElementsEditorUtility.GetCommonDarkStyleSheet()
                         : UIElementsEditorUtility.GetCommonLightStyleSheet();
+            }
+        }
+
+        class ThemePostprocessor : AssetPostprocessor
+        {
+            const string k_TssExtension = ".tss";
+
+            static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
+                string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                if (ContainsTss(importedAssets) || ContainsTss(deletedAssets) || ContainsTss(movedAssets) || ContainsTss(movedFromAssetPaths))
+                    RefreshRuntimeThemeFiles();
+            }
+
+            static bool ContainsTss(string[] paths)
+            {
+                foreach (var path in paths)
+                    if (path.EndsWith(k_TssExtension, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                return false;
             }
         }
     }

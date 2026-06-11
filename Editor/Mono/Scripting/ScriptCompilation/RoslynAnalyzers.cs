@@ -35,6 +35,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths;
             }
 
+            // Build HashSet of reference filenames once to avoid unnecessary Path.GetFileName calls
+            HashSet<string> referenceFileNames = null;
+            if (scanPrecompiledReferences && scriptAssembly.References != null && scriptAssembly.References.Length > 0)
+            {
+                referenceFileNames = new HashSet<string>(scriptAssembly.References.Length);
+                foreach (var reference in scriptAssembly.References)
+                {
+                    referenceFileNames.Add(Path.GetFileName(reference));
+                }
+            }
+
             scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths =
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 scriptAssembly.ScriptAssemblyReferences
@@ -45,7 +56,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning restore UA2001
                         .Where(a => a.scriptAssemblyFileName == null ||
                                     a.scriptAssemblyFileName == scriptAssembly.Filename ||
-                                    scanPrecompiledReferences && Array.Exists(scriptAssembly.References, b => Path.GetFileName(b) == a.scriptAssemblyFileName))
+                                    (referenceFileNames != null && referenceFileNames.Contains(a.scriptAssemblyFileName)))
                         .Select(a => a.analyzerDll))
                     .Distinct()
                     .ToArray();

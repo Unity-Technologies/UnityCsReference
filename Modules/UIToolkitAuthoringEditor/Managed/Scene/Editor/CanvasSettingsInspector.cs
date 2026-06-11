@@ -77,9 +77,6 @@ sealed partial class CanvasSettingsInspector : VisualElement
         yInput.isDelayed = true;
 
         m_CanvasBackgroundToggle = this.Q<ToggleButtonGroup>(className: BackgroundToggleUssClass);
-        m_CanvasBackgroundToggle.GetButton(0).iconImage = EditorGUIUtility.Load("UIToolkitAuthoring/UIViewportWindow/checkerboard_16x16.png") as Texture2D;
-        m_CanvasBackgroundToggle.GetButton(1).iconImage = EditorGUIUtility.Load("UIToolkitAuthoring/UIViewportWindow/ColorPicker.png") as Texture2D;
-        m_CanvasBackgroundToggle.GetButton(2).iconImage = EditorGUIUtility.Load("UIToolkitAuthoring/UIViewportWindow/RawImage.png") as Texture2D;
 
         m_CheckerboardMessage = this.Q<HelpBox>(className:CheckerboardMessageUssClass);
 
@@ -89,9 +86,6 @@ sealed partial class CanvasSettingsInspector : VisualElement
         m_ImageField.objectType = typeof(Texture2D);
         m_ImageOpacityField = this.Q<Slider>(className:BackgroundImageOpacityUssClass);
         m_ImageStrechMode = this.Q<ToggleButtonGroup>(className: ImageStretchModeUssClass);
-        m_ImageStrechMode.GetButton(0).iconImage = EditorGUIUtility.Load("UIToolkitAuthoring/UIViewportWindow/Stretch To Fill.png") as Texture2D;
-        m_ImageStrechMode.GetButton(1).iconImage = EditorGUIUtility.Load("UIToolkitAuthoring/UIViewportWindow/Scale And Crop.png") as Texture2D;
-        m_ImageStrechMode.GetButton(2).iconImage = EditorGUIUtility.Load("UIToolkitAuthoring/UIViewportWindow/Scale To Fit.png") as Texture2D;
         m_FitCanvasToImageButton = this.Q<Button>(className:FitCanvasToButtonUssClass);
 
     }

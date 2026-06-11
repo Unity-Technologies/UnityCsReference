@@ -119,14 +119,17 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool CanAssignTo(PortModel destination, PortModel source)
         {
-            if(destination.PortDataType == typeof(Untyped))
+            if (m_Graph != null)
+                return m_Graph.IsConnectionAllowed(source, destination);
+
+            if (destination.PortDataType == typeof(Untyped))
                 return source.PortDataType == typeof(Untyped);
+
             return destination.PortDataType.IsAssignableFrom(source.PortDataType);
         }
 
         public NodeModel CreateNodeModel(Node node, Vector2 position)
         {
-
             if (node is ContextNode contextNode)
             {
                 return CreateNode<UserContextNodeModelImp>(position : position, initializationCallback:n =>n.InitCustomNode(contextNode));
@@ -592,7 +595,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             var inputModel = (PortModel)input;
 
             if (VirtualWireBuilder.TryGetVirtualWire(outputModel, inputModel, out _))
-                return new Wire(output.Guid, input.Guid);
+                return new Wire(output.ID, input.ID);
 
             return null;
         }
@@ -1036,6 +1039,25 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             // Clear the nodes list so that it is rebuilt next time it is accessed
             m_Nodes = null;
+
+            // Nodes that are re-created by undo/redo (eg: create, duplicate) lose all their non-serialized state (custom title, tooltip, subtitle, color).
+            // To prevent this, we call OnEnable on undo/redo to restore their customization.
+            LockForModification = true;
+            try
+            {
+                foreach (var nodeModel in NodeAndBlockModels)
+                {
+                    // Skip nodes that weren't recreated by undo/redo. They haven't lost their non-serialized state, so we don't need to call OnEnable on them.
+                    if (nodeModel is not IUserNodeModelImp userNodeModelImp || userNodeModelImp.OnEnableCalled)
+                        continue;
+
+                    userNodeModelImp.CallOnEnable();
+                }
+            }
+            finally
+            {
+                LockForModification = false;
+            }
         }
     }
 }

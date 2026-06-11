@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements.UIR
 
         NativePagedList<NudgeJobData> m_NudgeJobs = new NativePagedList<NudgeJobData>(64, k_JobManagerName);
         NativePagedList<ConvertMeshJobData> m_ConvertMeshJobs = new NativePagedList<ConvertMeshJobData>(64, k_JobManagerName);
+        NativePagedList<ConvertMeshExtrasData> m_ConvertMeshExtras = new NativePagedList<ConvertMeshExtrasData>(16, k_JobManagerName);
         NativePagedList<CopyMeshJobData> m_CopyMeshJobs = new NativePagedList<CopyMeshJobData>(64, k_JobManagerName);
 
         JobMerger m_JobMerger = new JobMerger(128);
@@ -34,6 +35,12 @@ namespace UnityEngine.UIElements.UIR
             m_CopyMeshJobs.Add(ref job);
         }
 
+        // Pointer is valid until CompleteConvertMeshJobs resets the underlying list.
+        public unsafe ConvertMeshExtrasData* AllocConvertMeshExtras()
+        {
+            return m_ConvertMeshExtras.AllocLast();
+        }
+
         public unsafe void CompleteNudgeJobs()
         {
             foreach (NativeSlice<NudgeJobData> page in m_NudgeJobs.GetPages())
@@ -48,6 +55,7 @@ namespace UnityEngine.UIElements.UIR
                 m_JobMerger.Add(JobProcessor.ScheduleConvertMeshJobs((IntPtr)page.GetUnsafePtr(), page.Length));
             m_JobMerger.MergeAndReset().Complete();
             m_ConvertMeshJobs.Reset();
+            m_ConvertMeshExtras.Reset();
         }
 
         public unsafe void CompleteCopyMeshJobs()
@@ -78,6 +86,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_NudgeJobs.Dispose();
                 m_ConvertMeshJobs.Dispose();
+                m_ConvertMeshExtras.Dispose();
                 m_CopyMeshJobs.Dispose();
 
                 m_JobMerger.Dispose();
@@ -88,6 +97,13 @@ namespace UnityEngine.UIElements.UIR
         }
 
         #endregion // Dispose Pattern
+    }
+
+    enum TextCoreSettingsMode
+    {
+        None = 0,
+        PerElement = 1,
+        PerGlyph = 2,
     }
 
     // *** The following structs must remain in sync with those defined in UIRendererJobProcessor ***
@@ -102,6 +118,8 @@ namespace UnityEngine.UIElements.UIR
         public IntPtr tailDst;
         public int tailCount;
 
+        public int vertStride; // Vertex + Extra (bytes)
+
         public Matrix4x4 transform;
 
         public int keepZ;
@@ -113,6 +131,7 @@ namespace UnityEngine.UIElements.UIR
         public IntPtr vertSrc;
         public IntPtr vertDst;
         public int vertCount;
+        public int vertStride; // Vertex + Extra (bytes)
         public Matrix4x4 transform;
         public ushort clipRectId;
         public ushort transformId;
@@ -121,7 +140,7 @@ namespace UnityEngine.UIElements.UIR
         public VertexFlags flags;
         public ushort textureId;
         public ushort gradientSettingsIndexOffset;
-        public int usesTextCoreSettings;
+        public TextCoreSettingsMode usesTextCoreSettings;
 
         public IntPtr indexSrc;
         public IntPtr indexDst;
@@ -135,6 +154,19 @@ namespace UnityEngine.UIElements.UIR
         public int remapUVs;
         public Rect atlasRect;
         public Vector2 layoutSize;
+
+        public IntPtr extras; // Can be null
+    }
+
+    // Side struct referenced by ConvertMeshJobData.extras. Allocated once per draw that carries extras
+    [StructLayout(LayoutKind.Sequential)]
+    struct ConvertMeshExtrasData
+    {
+        public IntPtr texCoord1Src;  public int texCoord1SrcStride;  public int texCoord1DstOffset;
+        public IntPtr texCoord2Src;  public int texCoord2SrcStride;  public int texCoord2DstOffset;
+        public IntPtr texCoord3Src;  public int texCoord3SrcStride;  public int texCoord3DstOffset;
+        public IntPtr normalSrc;     public int normalSrcStride;     public int normalDstOffset;
+        public IntPtr tangentSrc;    public int tangentSrcStride;    public int tangentDstOffset;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -143,6 +175,7 @@ namespace UnityEngine.UIElements.UIR
         public IntPtr vertSrc;
         public IntPtr vertDst;
         public int vertCount;
+        public int vertStride; // Vertex + Extra (bytes)
 
         public IntPtr indexSrc;
         public IntPtr indexDst;

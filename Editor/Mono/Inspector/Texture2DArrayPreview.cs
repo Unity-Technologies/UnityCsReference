@@ -49,11 +49,17 @@ namespace UnityEditor
 
             if (texture2DArray != null)
             {
-                m_Slice = (int)TextureInspector.PreviewSettingsSlider(Styles.arrayIcon, m_Slice, 0, texture2DArray.depth - 1, 60, 30, isInteger: true);
+                using (new EditorGUI.DisabledScope(texture2DArray.depth <= 1))
+                {
+                    m_Slice = (int)TextureInspector.PreviewSettingsSlider(Styles.arrayIcon, m_Slice, 0, texture2DArray.depth - 1, 60, 30, isInteger: true);
+                }
             }
             else
             {
-                m_Slice = (int)TextureInspector.PreviewSettingsSlider(Styles.arrayIcon, m_Slice, 0, renderTexture.volumeDepth - 1, 60, 30, isInteger: true);
+                using (new EditorGUI.DisabledScope(renderTexture.volumeDepth <= 1))
+                {
+                    m_Slice = (int)TextureInspector.PreviewSettingsSlider(Styles.arrayIcon, m_Slice, 0, renderTexture.volumeDepth - 1, 60, 30, isInteger: true);
+                }
             }
         }
 

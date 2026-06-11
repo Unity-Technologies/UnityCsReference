@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.AssetPackage;
 using UnityEditorInternal;
 using System;
 using System.Collections;
@@ -118,7 +119,7 @@ namespace UnityEditor
             Match match = s_GeneratedIDRegExp.Match(id);
             if (match.Success && File.Exists(match.Groups[1].Value)) // If id looks like a path name, just try to open that
             {
-                AssetDatabase.ImportPackage(match.Groups[1].Value, true);
+                AssetPackage.Package.Import(match.Groups[1].Value, true);
                 return true;
             }
             else
@@ -131,7 +132,7 @@ namespace UnityEditor
                         string itemID = item.Get("id").IsNull() ? null : item["id"].AsString(true);
                         if (itemID != null && itemID == id && File.Exists(package.packagePath))
                         {
-                            AssetDatabase.ImportPackage(package.packagePath, true);
+                            AssetPackage.Package.Import(package.packagePath, true);
                             return true;
                         }
                     }

@@ -181,7 +181,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        private extern void GetComponentsForListInternal(Type searchType, [Out] List<Component> resultList);
+        private extern void GetComponentsForListInternal(Type searchType, object resultList);
 
         public void GetComponents(Type type, List<Component> results)
         {

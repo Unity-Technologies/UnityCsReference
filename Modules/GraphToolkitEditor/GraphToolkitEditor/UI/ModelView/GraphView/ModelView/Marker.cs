@@ -108,6 +108,17 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        // Unregisters the re-attach callback from the target and calls Detach() to null m_Target.
+        // This must be called instead of RemoveFromRootView() when removing a culled marker, so that
+        // OnTargetAttachedToPanel (registered by OnTargetDetachedFromPanel) becomes a no-op when the
+        // port re-attaches, preventing the marker from ghosting back into the hierarchy.
+        internal void DisconnectFromTarget()
+        {
+            if (m_Target != null)
+                m_Target.UnregisterCallback<AttachToPanelEvent>(OnTargetAttachedToPanel);
+            Detach();
+        }
+
         protected void CreateAttacher()
         {
             Attacher = new Attacher(this, m_Target, Alignment) { Distance = m_Distance, Offset = m_Offset, ReferenceElement = m_ReferenceElement };
@@ -118,7 +129,11 @@ namespace Unity.GraphToolkit.Editor
             base.OnCustomStyleResolved(e);
 
             if (e.customStyle.TryGetValue(k_HorizontalDistanceProperty, out var distX) && e.customStyle.TryGetValue(k_VerticalDistanceProperty, out var distY))
+            {
                 m_Distance = new Vector2(distX, distY);
+                if (Attacher != null)
+                    Attacher.Distance = m_Distance;
+            }
         }
 
         protected void OnAttachToPanel(AttachToPanelEvent evt)

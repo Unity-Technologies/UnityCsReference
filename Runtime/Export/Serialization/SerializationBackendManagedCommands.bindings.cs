@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Serialization;
@@ -70,6 +71,22 @@ internal enum RttiDataType : byte
     // Write-path metadata header emitted at the start of each fixed segment.
     FixedBlockPrefix        = 25,
 
+    // Inline fixed-size buffer field (C# `unsafe fixed T buf[N]`).
+    // See ManagedCommandFixedBuffer in SerializationCommands.h for the wire format.
+    FixedBuffer             = 26,
+
+    // Build-time-only (native side); never in the byte stream. Mirrored here only to keep the enum in sync.
+    Matrix4x4               = 27,
+
+    // ISerializationCallbackReceiver dispatch (see ManagedCommandCallback in
+    // SerializationCommands.h). Class variants cast to the interface and call
+    // it directly; struct variants invoke via `delegate*<ref byte, void>` calli
+    // through a cached entry-point pointer.
+    CallOnBeforeSerializeClass   = 28,
+    CallOnBeforeSerializeStruct  = 29,
+    CallOnAfterDeserializeClass  = 30,
+    CallOnAfterDeserializeStruct = 31,
+
     Unknown                 = 0xFF,
 }
 
@@ -95,6 +112,45 @@ internal struct DirectCopyLargeEntry // 8 bytes
 {
     public uint fieldOffset;
     public uint destOffset;
+}
+
+// Mirrors ManagedCommandUnityObjectEntry in SerializationCommands.h. The
+// write entry doesn't carry klass — WriteUnityObjectToBuffer only needs the
+// source field's runtime pointer, which the executor reads from the host
+// instance via fieldOffset. Layout coincides with DirectCopyLargeEntry (two
+// uint32s), but stays a distinct type so the write-side dispatch reads as
+// UnityObject rather than DirectCopyLarge.
+internal struct UnityObjectWriteEntry // 8 bytes
+{
+    public uint fieldOffset;
+    public uint destOffset;
+}
+
+// Mirrors ManagedCommandUnityObjectReadEntry in SerializationCommands.h. The
+// read entry carries klass per-entry so a single group can span PPtr fields
+// of differing types. Wire size = 8 + sizeof(IntPtr) — 12B on 32-bit, 16B on
+// 64-bit — and matches the native struct exactly because klass is the
+// trailing field.
+//
+// Pack = 4 because entries sit immediately after a 4B FBP header in the
+// entry stream; without it, the runtime would assume the 8B alignment
+// IntPtr requires on 64-bit and read past the actual buffer alignment.
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+internal struct UnityObjectReadEntry
+{
+    public uint fieldOffset;
+    public uint destOffset;
+    public IntPtr klass;
+}
+
+// Mirrors UnityObjectTransferFlags in ReadUnityObjectFromBuffer.h. Used by
+// both the read and write paths.
+internal static class UnityObjectTransferFlags
+{
+    public const int IsThreadedSerialization              = 1 << 0;
+    public const int DontCreateMonoBehaviourScriptWrapper = 1 << 1;
+    public const int AllowPPtrRead                        = 1 << 2;
+    public const int PackEntityIdInLSOI                   = 1 << 3;
 }
 
 // Mirrors ManagedCommandStringEntry in SerializationCommands.h (8 bytes).
@@ -133,6 +189,36 @@ internal struct ValueReferenceHeader  // 16 + 2*sizeof(IntPtr) bytes
     public IntPtr       ctorFunctionPtr;   // Encoding picked by GetConstructorMethodFunctionPointer; zero means no parameterless ctor.
 }
 
+// Mirrors ManagedCommandSimpleNativeTypeEntry in SerializationCommands.h.
+// 24 bytes on 64-bit (8 + 2*sizeof(IntPtr)). Sequential layout matches the
+// native side exactly: no padding inserted.
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct ManagedCommandSimpleNativeTypeEntry  // 24 bytes (64-bit)
+{
+    public RttiDataType opCode;
+    public byte         reserved;
+    public ushort       reserved2;
+    public uint         fieldOffset;
+    public IntPtr       fnPtr;
+    public IntPtr       userData;
+}
+
+// Mirrors ManagedCommandCallback in SerializationCommands.h. Emitted at the
+// parent command-stream level; fieldOffset locates the inner object reference
+// (class variants) or struct data (struct variants) on the parent's base.
+// methodFnPtr is the JIT/AOT entry-point pointer the executor invokes via
+// `delegate*<ref byte, void>` calli for the struct opcodes; ignored for the
+// class opcodes (which dispatch via interface cast).
+internal struct CallbackHeader  // 8 + sizeof(IntPtr) bytes
+{
+    public RttiDataType opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public IntPtr       methodFnPtr;
+}
+
 // Mirrors ManagedCommandLinearCollection in SerializationCommands.h. See the
 // native header for the wire / executor contract. Body of nestedByteCount
 // bytes immediately follows (empty when flags has bit 0 set).
@@ -154,6 +240,17 @@ internal static class LinearCollectionKind
 {
     public const byte Array = 0;
     public const byte List  = 1;
+}
+
+// Mirrors ManagedCommandFixedBuffer in SerializationCommands.h — see that
+// header for the wire / executor contract.
+internal struct FixedBufferHeader  // 12 bytes
+{
+    public RttiDataType opCode;       // = RttiDataType.FixedBuffer
+    public byte         reserved;
+    public ushort       elementSize;  // 1 / 2 / 4 / 8 — element width
+    public uint         fieldOffset;  // post-header offset of the buffer struct on the parent
+    public uint         elementCount; // compile-time count; total payload bytes = elementCount * elementSize
 }
 
 internal static class LinearCollectionFlags
@@ -183,22 +280,15 @@ internal static class LinearCollectionFlags
 //   - C# can therefore write up to writerAvailable bytes into writerPtr
 //     unconditionally, with no per-site stack-vs-writer branching.
 //
-// flushBuffer is stored as IntPtr rather than a typed function-pointer field.
-// UWP / .NET Native reference rewriting and netstandard2.0 player builds cannot
-// represent `delegate* unmanaged[Cdecl]` in metadata (neither as a struct field
-// nor as a call-site cast — the latter emits a `method System.Void *(...)` type
-// reference into TestAssembly.dll that the rewriter rejects). We dispatch
-// through an [UnmanagedFunctionPointer] delegate + Marshal.GetDelegateForFunctionPointer
-// instead (no IL calli). The lookup is cached per function pointer per thread
-// (see s_FlushBufferFnPtr below) because native passes the same static address
-// on every call (ExecuteManagedCommands.cpp).
 internal unsafe struct NativeBufferContext
 {
     public void*  writer;            // native CachedWriter* — opaque to C#
     public byte*  stackBuffer;       // native-side spill buffer (size = kManagedBlockSpillBufferSize); stable for the lifetime of the call
     public byte*  writerPtr;         // current write destination — writer's tail or stackBuffer; updated by flushBuffer
     public int    writerAvailable;   // bytes available at writerPtr; updated by flushBuffer; always >= kManagedBlockMaxPayloadSize after a flush / initial setup
-    public IntPtr flushBuffer;       // unmanaged[Cdecl] void(NativeBufferContext*, byte*, int)
+    public delegate* unmanaged[Cdecl]<NativeBufferContext*, byte*, int, void> flushBuffer;
+    public IntPtr resolverHandle;    // ILSOIResolver*; forwarded to WriteUnityObjectToBuffer. Null falls back to the global PersistentManager path.
+    public int    flags;             // UnityObjectTransferFlags bits (write path consults PackEntityIdInLSOI).
 }
 
 // Read-side mirror of NativeBufferContext. The C++ dispatcher
@@ -218,12 +308,47 @@ internal unsafe struct NativeReadBufferContext
     public byte*  readerPtr;         // current read source — reader's cache or stackBuffer; updated by ensureReadable
     public int    readerAvailable;   // bytes available at readerPtr; decremented by C# as it consumes; refilled by ensureReadable
     public int    stackBufferSize;   // size of stackBuffer; cap on a single ensureReadable request
-    public IntPtr ensureReadable;    // unmanaged[Cdecl] void(NativeReadBufferContext*, int)
-    public IntPtr readBytesDirect;   // unmanaged[Cdecl] void(NativeReadBufferContext*, byte* dst, int n)
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, int, void> ensureReadable;
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, byte*, int, void> readBytesDirect;
+    public IntPtr resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
+    public int    flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
 }
 
+[NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/WriteUnityObjectToBuffer.h")]
+[NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/ReadUnityObjectFromBuffer.h")]
 internal static unsafe class SerializationBackendManagedCommands
 {
+    // IsThreadSafe disables the default serialization-thread guard (the icall
+    // is safe — _NoThreadCheck lookup on the native side).
+    //
+    // [MethodImpl(InternalCall)] is required so the extern resolves in builds
+    // where the bindings IL injector does NOT run — specifically the native
+    // test image (ExternalCSharpResource compilation). The production IL
+    // injector strips this flag and rewrites the body, so it has no effect
+    // there.
+    // fieldValueRaw is the raw MonoObject* / managed-object pointer loaded
+    // from the host's PPtr field. It must be marshalled as IntPtr, not
+    // `object`: on Linux Mono, a value obtained from Unsafe.As<byte, object>
+    // over pinned-native memory is mangled (replaced with a metadata
+    // pointer) when passed through an `object` icall parameter. IntPtr
+    // preserves the bits verbatim. The native side reconstructs the
+    // ScriptingObjectPtr — see WriteUnityObjectToBuffer.cpp.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern void WriteUnityObjectToBuffer(
+        IntPtr fieldValueRaw,
+        IntPtr resolverHandle,
+        IntPtr outputPtr,
+        int flags);
+
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern object ReadUnityObjectFromBuffer(
+        IntPtr resolverHandle,
+        IntPtr inputPtr,
+        IntPtr klass,
+        int flags);
+
     // Must match the C++ constants in SerializationCommands.h.
     //
     // kManagedBlockMaxPayloadSize: cap on a single FBP-bracketed segment, and
@@ -233,9 +358,9 @@ internal static unsafe class SerializationBackendManagedCommands
     // kManagedBlockSpillBufferSize: size of the stack-allocated spill buffer
     //   on the native side (NativeBufferContext.stackBuffer). FlushBuffer hands
     //   this back as the writable region whenever the cache writer's tail has
-    //   < kManagedBlockMaxPayloadSize bytes remaining. Larger than the segment
-    //   cap so multiple segments can accumulate into it before the next memcpy.
-    private const int kManagedBlockMaxPayloadSize  = 256;
+    //   < kManagedBlockMaxPayloadSize bytes remaining. Sized equal to the
+    //   segment cap: exactly one segment per spill flush.
+    private const int kManagedBlockMaxPayloadSize  = 1024;
     private const int kManagedBlockSpillBufferSize = 1024;
 
     // Cached UTF-8 encoder used by ConsumeString's chunked-flush path. Allocated
@@ -246,108 +371,24 @@ internal static unsafe class SerializationBackendManagedCommands
     [ThreadStatic]
     private static Encoder s_Utf8Encoder;
 
-    [ThreadStatic]
-    private static IntPtr s_FlushBufferFnPtr;
-    [ThreadStatic]
-    private static FlushBufferDelegate s_FlushBufferDel;
-
-    // First arg typed `void*` (not `NativeBufferContext*`) to match the same
-    // choice upstream made for the original GetBuffer/FlushBuffer delegates.
-    // Marshal.GetDelegateForFunctionPointer<T> builds a thunk from the delegate
-    // signature at first call; on netstandard2.0 / x86 / x64 player runtimes
-    // the validator applies struct-marshalling rules to typed pointers to
-    // managed structs and either throws or builds a wrong thunk. `void*` is
-    // treated as opaque pass-through and works on every runtime. The bug only
-    // shows up at test runtime, not at C# compile time.
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private unsafe delegate void FlushBufferDelegate(void* ctx,
-        byte* bufferUsed, int writtenBytes);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static FlushBufferDelegate GetOrCreateFlushBufferDelegate(IntPtr fnPtr)
-    {
-        if (s_FlushBufferFnPtr != fnPtr || s_FlushBufferDel == null)
-        {
-            s_FlushBufferFnPtr = fnPtr;
-            s_FlushBufferDel = Marshal.GetDelegateForFunctionPointer<FlushBufferDelegate>(fnPtr);
-        }
-        return s_FlushBufferDel;
-    }
-
-    // Dispatches through the cached [UnmanagedFunctionPointer] delegate so the
-    // struct itself stays free of `delegate*` metadata the UWP / .NET Native
-    // ReferenceRewriter cannot transform — see comment on NativeBufferContext.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void InvokeFlushBuffer(NativeBufferContext* ctx,
         byte* bufferUsed, int writtenBytes)
-    {
-        // Cast to void* to match the delegate signature; see comment on
-        // FlushBufferDelegate for why the delegate uses void* instead of
-        // NativeBufferContext*.
-        GetOrCreateFlushBufferDelegate(ctx->flushBuffer)((void*)ctx, bufferUsed, writtenBytes);
-    }
+        => ctx->flushBuffer(ctx, bufferUsed, writtenBytes);
 
-    [ThreadStatic]
-    private static IntPtr s_EnsureReadableFnPtr;
-    [ThreadStatic]
-    private static EnsureReadableDelegate s_EnsureReadableDel;
-    [ThreadStatic]
-    private static IntPtr s_ReadBytesDirectFnPtr;
-    [ThreadStatic]
-    private static ReadBytesDirectDelegate s_ReadBytesDirectDel;
-
-    // void*-typed first parameter for the same player-runtime marshal-thunk
-    // reasons as FlushBufferDelegate. Behaviour mirrors the write side.
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private unsafe delegate void EnsureReadableDelegate(void* ctx, int needed);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private unsafe delegate void ReadBytesDirectDelegate(void* ctx,
-        byte* dst, int n);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static EnsureReadableDelegate GetOrCreateEnsureReadableDelegate(IntPtr fnPtr)
-    {
-        if (s_EnsureReadableFnPtr != fnPtr || s_EnsureReadableDel == null)
-        {
-            s_EnsureReadableFnPtr = fnPtr;
-            s_EnsureReadableDel = Marshal.GetDelegateForFunctionPointer<EnsureReadableDelegate>(fnPtr);
-        }
-        return s_EnsureReadableDel;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ReadBytesDirectDelegate GetOrCreateReadBytesDirectDelegate(IntPtr fnPtr)
-    {
-        if (s_ReadBytesDirectFnPtr != fnPtr || s_ReadBytesDirectDel == null)
-        {
-            s_ReadBytesDirectFnPtr = fnPtr;
-            s_ReadBytesDirectDel = Marshal.GetDelegateForFunctionPointer<ReadBytesDirectDelegate>(fnPtr);
-        }
-        return s_ReadBytesDirectDel;
-    }
-
-    // Read-side mirror of InvokeFlushBuffer. Refills ctx->readerPtr /
-    // ctx->readerAvailable so at least `needed` bytes are addressable
-    // contiguously starting at the new readerPtr. Caller invariant: only
-    // call when ctx->readerAvailable < needed (the C++ side no-ops when
-    // capacity already covers the request, but skipping the call avoids the
-    // P/Invoke transition altogether).
+    // Refills ctx->readerPtr / ctx->readerAvailable so at least `needed` bytes
+    // are addressable contiguously at the new readerPtr. Caller invariant: only
+    // call when ctx->readerAvailable < needed.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void InvokeEnsureReadable(NativeReadBufferContext* ctx, int needed)
-    {
-        GetOrCreateEnsureReadableDelegate(ctx->ensureReadable)((void*)ctx, needed);
-    }
+        => ctx->ensureReadable(ctx, needed);
 
-    // Bulk-stream `n` bytes into `dst` (typically a pinned managed array)
-    // bypassing the spill buffer. Used by linear-collection trivial bodies
-    // so an int[1_000_000] doesn't have to chunk through the spill buffer.
+    // Bulk-stream `n` bytes into `dst` bypassing the spill buffer. Used by
+    // linear-collection trivial bodies so large arrays don't chunk through it.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void InvokeReadBytesDirect(NativeReadBufferContext* ctx,
         byte* dst, int n)
-    {
-        GetOrCreateReadBytesDirectDelegate(ctx->readBytesDirect)((void*)ctx, dst, n);
-    }
+        => ctx->readBytesDirect(ctx, dst, n);
 
     // Mirrors the layout of System.Collections.Generic.List<T>'s leading
     // instance fields. List<T> uses LayoutKind.Auto, but the CLR (and Mono)
@@ -433,7 +474,8 @@ internal static unsafe class SerializationBackendManagedCommands
         IntPtr pinnedBase,
         IntPtr entriesPtr,
         int    entryBufferSize,
-        IntPtr bufferContext)
+        IntPtr bufferContext,
+        IntPtr transfer)
     {
         var ctx = (NativeBufferContext*)bufferContext;
 
@@ -447,7 +489,7 @@ internal static unsafe class SerializationBackendManagedCommands
         // into pendingAdvance, so by the time we return here pendingAdvance carries
         // every closed-but-uncommitted segment from the entire stream.
         int   pendingAdvance = 0;
-        ExecuteWriteCommands(ctx, pinnedBase, entriesPtr, entryBufferSize,
+        ExecuteWriteCommands(ctx, pinnedBase, entriesPtr, entryBufferSize, transfer,
             ref output, ref dstSize, ref pendingAdvance);
 
         // Single trailing commit. pendingAdvance is the common case; dstSize > 0
@@ -480,6 +522,7 @@ internal static unsafe class SerializationBackendManagedCommands
         IntPtr pinnedBase,
         IntPtr entriesPtr,
         int    entryBufferSize,
+        IntPtr transfer,
         ref byte* output,
         ref int   dstSize,
         ref int   pendingAdvance)
@@ -545,7 +588,12 @@ internal static unsafe class SerializationBackendManagedCommands
                     {
                         nint fieldOffset = (nint)entry->fieldOffset * 8;
                         nint destOffset = (nint)entry->destOffset * 8;
-                        *(long*)(output + destOffset) = Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, fieldOffset));
+                        // Unaligned: SelectDirectCopyOpCode's destOffset%8 gate only proves
+                        // segment-relative alignment, not absolute address alignment. The
+                        // segment base (output) can be 4-byte aligned (e.g. inside per-element
+                        // bodies after a linear collection's 4B count prefix), which would
+                        // SIGBUS on armv7 with a typed 8B store. Build-side fix pending.
+                        Unsafe.WriteUnaligned(output + destOffset, Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, fieldOffset)));
                         entry++;
                     }
                     while (entry < end);
@@ -632,7 +680,8 @@ internal static unsafe class SerializationBackendManagedCommands
                     {
                         uint fieldOffset = entry->fieldOffset * 8;
                         uint destOffset = entry->destOffset * 8;
-                        *(long*)(output + destOffset) = Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+                        // Unaligned: see DirectCopy8 above for the segment-base alignment caveat.
+                        Unsafe.WriteUnaligned(output + destOffset, Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset)));
                         entry++;
                     }
                     while (entry < end);
@@ -711,6 +760,35 @@ internal static unsafe class SerializationBackendManagedCommands
                     break;
                 }
 
+                // dst is 4-byte aligned but not 8-byte, so the null-LSOI
+                // pathID write below uses WriteUnaligned to stay UB-free.
+                case RttiDataType.UnityObject:
+                {
+                    var entry = ConsumeDirectCopyGroup<UnityObjectWriteEntry>(ref pos, out var end);
+                    do
+                    {
+                        // Read the field as a raw pointer rather than going through
+                        // `object`. See the WriteUnityObjectToBuffer declaration above
+                        // for why `object` marshalling is unsafe here on Linux Mono.
+                        ref byte fieldByteRef = ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset);
+                        IntPtr fieldValueRaw = Unsafe.ReadUnaligned<IntPtr>(ref fieldByteRef);
+                        byte* dst = output + entry->destOffset;
+
+                        if (fieldValueRaw == IntPtr.Zero)
+                        {
+                            Unsafe.As<byte, int>(ref *dst) = 0;
+                            Unsafe.WriteUnaligned<long>(ref *(dst + 4), 0L);
+                        }
+                        else
+                        {
+                            WriteUnityObjectToBuffer(fieldValueRaw, ctx->resolverHandle, (IntPtr)dst, ctx->flags);
+                        }
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
                 case RttiDataType.DirectCopyBlock:
                     // DirectCopyBlock is a build-time-only opcode: the accumulator
                     // (AppendToManagedBlock in ManagedBlockAccumulator.h) decomposes it
@@ -746,8 +824,70 @@ internal static unsafe class SerializationBackendManagedCommands
                     // at writerPtr + pendingAdvance and only flushes when the
                     // combined region wouldn't fit. Net result: a class with
                     // many small VRT children coalesces into a single flush.
-                    ConsumeValueReference(ctx, ref baseAddr, ref output, ref dstSize, ref pendingAdvance, ref pos);
+                    ConsumeValueReference(ctx, ref baseAddr, transfer, ref output, ref dstSize, ref pendingAdvance, ref pos);
                     break;
+
+                case RttiDataType.SimpleNativeType:
+                {
+                    var entry = (ManagedCommandSimpleNativeTypeEntry*)pos;
+                    pos += sizeof(ManagedCommandSimpleNativeTypeEntry);
+
+                    if (pendingAdvance > 0)
+                    {
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                        pendingAdvance = 0;
+                    }
+                    if (dstSize > 0)
+                    {
+                        InvokeFlushBuffer(ctx, output, dstSize);
+                        dstSize = 0;
+                    }
+
+                    ref byte field = ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset);
+
+                    // entry->userData holds the post-header byte offset of m_Ptr within the
+                    // wrapper, computed by the C++ initialiser via scripting_field_get_offset so
+                    // it is correct for the active scripting backend (Mono preserves declaration
+                    // order; CoreCLR may reorder fields, e.g. placing m_SourceStyle before m_Ptr).
+                    object wrapper = Unsafe.As<byte, object>(ref field);
+
+                    IntPtr nativePtr = wrapper != null
+                        ? Unsafe.ReadUnaligned<IntPtr>(ref Unsafe.AddByteOffset(
+                            ref Unsafe.As<ObjectWrapper>(wrapper).Data,
+                            entry->userData))
+                        : IntPtr.Zero;
+
+                    ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)entry->fnPtr)(nativePtr, transfer, entry->userData);
+
+                    InvokeFlushBuffer(ctx, ctx->writerPtr, 0);
+                    break;
+                }
+
+                // Callbacks emit no wire bytes; their wrapping FBP(0)..FBP(0)
+                // makes the surrounding payload-size budget trivial, so no
+                // flush/buffer bookkeeping is needed here.
+                case RttiDataType.CallOnBeforeSerializeClass:
+                {
+                    var header = (CallbackHeader*)pos;
+                    pos += sizeof(CallbackHeader);
+                    object target = Unsafe.As<byte, object>(
+                        ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset));
+                    if (target is ISerializationCallbackReceiver receiver)
+                        receiver.OnBeforeSerialize();
+                    break;
+                }
+
+                case RttiDataType.CallOnBeforeSerializeStruct:
+                {
+                    var header = (CallbackHeader*)pos;
+                    pos += sizeof(CallbackHeader);
+                    if (header->methodFnPtr != IntPtr.Zero)
+                    {
+                        ref byte structData = ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset);
+                        ((delegate*<ref byte, void>)header->methodFnPtr)(ref structData);
+                    }
+                    break;
+                }
 
                 case RttiDataType.Array:
                 case RttiDataType.List:
@@ -763,15 +903,26 @@ internal static unsafe class SerializationBackendManagedCommands
                         InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
                         pendingAdvance = 0;
                     }
-                    ConsumeLinearCollection(ctx, ref baseAddr, ref output, ref dstSize, ref pendingAdvance, ref pos);
+                    ConsumeLinearCollection(ctx, ref baseAddr, transfer, ref output, ref dstSize, ref pendingAdvance, ref pos);
+                    break;
+
+                case RttiDataType.FixedBuffer:
+                    // Build emits FBP(0) before every FixedBuffer header, so dstSize == 0
+                    if (dstSize != 0)
+                        throw new InvalidOperationException("FixedBuffer must be preceded by FBP(0) — see AppendFixedBufferToManagedBlock.");
+                    // Flush deferred bytes before the consumer writes through writerPtr.
+                    if (pendingAdvance > 0)
+                    {
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                        pendingAdvance = 0;
+                    }
+                    ConsumeFixedBuffer(ctx, ref baseAddr, ref pos);
                     break;
 
                 case RttiDataType.Reference:
-                case RttiDataType.UnityObject:
                 case RttiDataType.EntityId:
                 case RttiDataType.DynamicBuffer:
                 case RttiDataType.PropertyNameId:
-                case RttiDataType.SimpleNativeType:
                 case RttiDataType.Unknown:
                     throw new NotSupportedException(
                         $"OpCode {(RttiDataType)pos[0]} is not implemented for managed command blocks.");
@@ -815,9 +966,17 @@ internal static unsafe class SerializationBackendManagedCommands
         // Unsafe.As<byte, string> reinterprets that ref as a string ref.
         string str = Unsafe.As<byte, string>(ref Unsafe.AddByteOffset(ref baseAddr, entry->fieldOffset)) ?? string.Empty;
 
+        // Truncate at first '\0' before byte counting so the length prefix,
+        // body, and padding agree on the same effective string. Matches the
+        // strlen-based write contract: bytes past an embedded null are dropped.
+        ReadOnlySpan<char> chars = str.AsSpan();
+        int nullIdx = chars.IndexOf('\0');
+        if (nullIdx >= 0)
+            chars = chars.Slice(0, nullIdx);
+
         // Computed up front because it goes into the 4-byte SInt32 length prefix and
         // also drives the fast-path / chunked-path decision.
-        int totalByteCount = Encoding.UTF8.GetByteCount(str);
+        int totalByteCount = Encoding.UTF8.GetByteCount(chars);
         int padBytes = (4 - (totalByteCount & 3)) & 3;
         int totalFramedSize = 4 + totalByteCount + padBytes;
 
@@ -827,7 +986,7 @@ internal static unsafe class SerializationBackendManagedCommands
             byte* dst = ctx->writerPtr;
             Unsafe.WriteUnaligned(dst, totalByteCount);
             if (totalByteCount > 0)
-                Encoding.UTF8.GetBytes(str.AsSpan(), new Span<byte>(dst + 4, totalByteCount));
+                Encoding.UTF8.GetBytes(chars, new Span<byte>(dst + 4, totalByteCount));
             if (padBytes > 0)
                 Unsafe.InitBlockUnaligned(dst + 4 + totalByteCount, 0, (uint)padBytes);
             InvokeFlushBuffer(ctx, dst, totalFramedSize);
@@ -851,7 +1010,7 @@ internal static unsafe class SerializationBackendManagedCommands
             // corrupting any surrogate pair that happens to straddle a chunk.
             Encoder encoder = s_Utf8Encoder ??= Encoding.UTF8.GetEncoder();
             encoder.Reset();
-            ReadOnlySpan<char> remaining = str.AsSpan();
+            ReadOnlySpan<char> remaining = chars;
 
             while (!remaining.IsEmpty)
             {
@@ -896,9 +1055,6 @@ internal static unsafe class SerializationBackendManagedCommands
         InvokeFlushBuffer(ctx, ctx->writerPtr, 4);
     }
 
-    // UWP routes ctor invocation through a GCHandle'd Action<object> instead
-    // of the delegate*<object,void> calli used elsewhere: Tools/rrw's IL
-    // rewriter rejects the calli's standalone-signature operand at load time.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe object GetOrCreateVrtInstance(
         ref byte baseAddr, ValueReferenceHeader* header)
@@ -931,7 +1087,7 @@ internal static unsafe class SerializationBackendManagedCommands
     // instance pinned as the source. The body's own FBP(N)..FBP(0)
     // bracketing drives buffer claims and flushes.
     private static unsafe void ConsumeValueReference(
-        NativeBufferContext* ctx, ref byte baseAddr,
+        NativeBufferContext* ctx, ref byte baseAddr, IntPtr transfer,
         ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
     {
         var header = (ValueReferenceHeader*)pos;
@@ -952,22 +1108,28 @@ internal static unsafe class SerializationBackendManagedCommands
         fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
         {
             ExecuteWriteCommands(ctx, (IntPtr)nestedBase,
-                (IntPtr)nestedStart, nestedBytes, ref output, ref dstSize, ref pendingAdvance);
+                (IntPtr)nestedStart, nestedBytes, transfer, ref output, ref dstSize, ref pendingAdvance);
         }
 
         pos = nestedStart + nestedBytes;
     }
 
-
-    // Returns the encoding GetOrCreateVrtInstance decodes for ctorFunctionPtr:
-    // a GCHandle to a pinned Action<object> on UWP (Tools/rrw rejects the
-    // delegate*<object,void> calli used elsewhere — see GetOrCreateVrtInstance),
-    // or the JIT/AOT entry-point address on every other backend.
     // TODO: replace the reinterpret with RuntimeMethodHandle.FromIntPtr
     // (.NET 5+) once UnityEngine.dll's reference assembly moves past
     // netstandard2.1.
     [RequiredByNativeCode]
     internal static IntPtr GetConstructorMethodFunctionPointer(IntPtr methodHandleValue)
+    {
+        var handle = Unsafe.As<IntPtr, RuntimeMethodHandle>(ref methodHandleValue);
+        RuntimeHelpers.PrepareMethod(handle);
+        return handle.GetFunctionPointer();
+    }
+
+    // Generic method-handle to function-pointer resolver used by callsites that
+    // dispatch any method (not just ctors) via calli — currently the interface
+    // method lookup behind CallOn{Before,After}{Class,Struct} struct callbacks.
+    [RequiredByNativeCode]
+    internal static IntPtr GetMethodFunctionPointer(IntPtr methodHandleValue)
     {
         var handle = Unsafe.As<IntPtr, RuntimeMethodHandle>(ref methodHandleValue);
         RuntimeHelpers.PrepareMethod(handle);
@@ -992,7 +1154,7 @@ internal static unsafe class SerializationBackendManagedCommands
     // Null array / null List → write a 0 length prefix and return; matches
     // the legacy auto-empty-on-write behavior in TransferField_LinearCollection.
     private static unsafe void ConsumeLinearCollection(
-        NativeBufferContext* ctx, ref byte baseAddr,
+        NativeBufferContext* ctx, ref byte baseAddr, IntPtr transfer,
         ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
     {
         var header = (LinearCollectionHeader*)pos;
@@ -1122,12 +1284,106 @@ internal static unsafe class SerializationBackendManagedCommands
                     // array of small structs coalesces into ceil(N*body/cap)
                     // flushes instead of N.
                     ExecuteWriteCommands(ctx, (IntPtr)elementPtr,
-                        (IntPtr)nestedStart, nestedBytes, ref output, ref dstSize, ref pendingAdvance);
+                        (IntPtr)nestedStart, nestedBytes, transfer, ref output, ref dstSize, ref pendingAdvance);
                 }
             }
         }
 
+        // Commit bytes deferred by per-element coalescing before the tail pad
+        // — the loop leaves pendingAdvance non-zero because the last element's
+        // closing FBP(0) rolls into it instead of flushing.
+        if (pendingAdvance > 0)
+        {
+            InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+            pendingAdvance = 0;
+        }
+
+        // Pad total wire output to 4-byte alignment, matching the trivially-
+        // copyable path and the legacy ArrayOfManagedObjectsTransferer (which
+        // pads every field to 4 bytes individually). elementWireSize is 0 for
+        // variable-length element types (strings); those are already 4-byte
+        // aligned, no aggregate pad needed.
+        int elementWireSize = (int)header->elementWireSize;
+        if (elementWireSize > 0)
+        {
+            int totalWritten = count * elementWireSize;
+            int padBytes     = (4 - (totalWritten & 3)) & 3;
+            if (padBytes > 0)
+            {
+                // FlushBuffer guarantees writerAvailable >= kManagedBlockMaxPayloadSize >= 3.
+                Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
+                InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
+            }
+        }
+
         pos = nestedStart + nestedBytes;
+    }
+
+    // Mirrors ConsumeLinearCollection's trivially-copyable arm, but sourced from
+    // an inline buffer at baseAddr + fieldOffset — no array reference, null check,
+    // or reflection.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ConsumeFixedBuffer(
+        NativeBufferContext* ctx, ref byte baseAddr, ref byte* pos)
+    {
+        var header = (FixedBufferHeader*)pos;
+        pos += sizeof(FixedBufferHeader);
+
+        // checked() is defense-in-depth: a corrupted header throws instead of
+        // wrapping into a negative MemoryCopy length.
+        int count       = checked((int)header->elementCount);
+        int totalBytes  = checked(count * (int)header->elementSize);
+        int padBytes    = (4 - (totalBytes & 3)) & 3;
+
+        // baseAddr is pinned by the outer ExecuteWriteCommands caller, so the
+        // inline buffer address is stable for the duration of this entry.
+        byte* dataPtr = (byte*)Unsafe.AsPointer(
+            ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset));
+
+        // totalBytes == 0 is unreachable: C# forbids `fixed T buf[0]` (CS1665) and
+        // the build side rejects zero-sized inline structs. Throw if a regression
+        // emits elementCount=0 rather than writing a malformed zero-length record.
+        if (totalBytes <= 0)
+            throw new InvalidOperationException("FixedBuffer wire payload must be non-zero; build side enforces elementCount > 0.");
+
+        int needed = 4 + totalBytes;
+        if (ctx->writerAvailable >= needed + padBytes)
+        {
+            // Single-flush fast path: count + payload + pad in one P/Invoke. FBP(0)
+            // bracketing gives full capacity on entry and the build side caps an
+            // in-segment FixedBuffer at kManagedBlockMaxPayloadSize - 4 payload
+            // bytes, so only buffers in the top 3-byte size sliver fall through to
+            // the two-flush arm below.
+            Unsafe.WriteUnaligned(ctx->writerPtr, count);
+            Buffer.MemoryCopy(dataPtr, ctx->writerPtr + 4, totalBytes, totalBytes);
+            if (padBytes > 0)
+                Unsafe.InitBlockUnaligned(ctx->writerPtr + needed, 0, (uint)padBytes);
+            InvokeFlushBuffer(ctx, ctx->writerPtr, needed + padBytes);
+            return;
+        }
+
+        if (ctx->writerAvailable >= needed)
+        {
+            Unsafe.WriteUnaligned(ctx->writerPtr, count);
+            Buffer.MemoryCopy(dataPtr, ctx->writerPtr + 4, totalBytes, totalBytes);
+            InvokeFlushBuffer(ctx, ctx->writerPtr, needed);
+        }
+        else
+        {
+            // Hand the inline source straight to FlushBuffer's spill arm so
+            // an arbitrarily large buffer crosses any number of cache-writer
+            // blocks in a single P/Invoke.
+            WriteFramedInt32(ctx, count);
+            InvokeFlushBuffer(ctx, dataPtr, totalBytes);
+        }
+
+        if (padBytes > 0)
+        {
+            // Post-flush writerAvailable >= kManagedBlockMaxPayloadSize (>= 3),
+            // so the 0..3-byte pad always fits without a fresh refill check.
+            Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
+            InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
+        }
     }
 
     // Shuffle-path consumer for linear collections of value-type elements
@@ -1472,6 +1728,101 @@ internal static unsafe class SerializationBackendManagedCommands
         }
     }
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe string DecodeStringBody(byte* bytes, int length)
+    {
+        int firstZero = new ReadOnlySpan<byte>(bytes, length).IndexOf((byte)0);
+        int effective = firstZero < 0 ? length : firstZero;
+
+        if (effective == 0)
+            return string.Empty;
+
+        // Default replacement fallback: malformed subsequences become U+FFFD.
+        return Encoding.UTF8.GetString(bytes, effective);
+    }
+
+    // Read-path mirror of ConsumeString. Consumes a ManagedCommandStringEntry
+    // header from the entry stream, reads the framed wire payload (SInt32 length
+    // prefix + UTF-8 body + 4-byte alignment padding), decodes the body via
+    // DecodeStringBody, and assigns the result to the field at entry->fieldOffset.
+    //
+    // Two body paths:
+    //   - Spill-buffer path (length <= ctx->stackBufferSize): EnsureReadable
+    //     makes 'length' bytes contiguous at ctx->readerPtr (either already in
+    //     the CachedReader's window or copied into the native stackBuffer).
+    //     Decode happens in-place — zero managed allocation.
+    //   - Large-string path (length > ctx->stackBufferSize): allocate byte[length],
+    //     bulk-read via InvokeReadBytesDirect, then decode. The allocation is
+    //     immediately collectible after the fixed block exits.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ConsumeStringRead(
+        NativeReadBufferContext* ctx, ref byte baseAddr, ref byte* pos)
+    {
+        var entry = (ManagedCommandStringEntry*)pos;
+        pos += sizeof(ManagedCommandStringEntry);
+
+        // Length prefix: 4-byte SInt32, little-endian.
+        if (ctx->readerAvailable < 4)
+            InvokeEnsureReadable(ctx, 4);
+        int length = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+        ctx->readerPtr      += 4;
+        ctx->readerAvailable -= 4;
+
+        // Reject negative wire lengths explicitly. Without this guard the
+        // downstream ReadOnlySpan ctor in DecodeStringBody throws an opaque
+        // ArgumentOutOfRangeException; this surfaces corruption at the
+        // detection site with a meaningful message.
+        if (length < 0)
+            throw new InvalidOperationException(
+                $"Managed string deserialization read a negative length prefix ({length}). The serialized data is corrupted.");
+
+        int padBytes = (4 - (length & 3)) & 3;
+
+        string result;
+        if (length == 0)
+        {
+            // Wire-format invariant: length=0 → string.Empty (matches how the
+            // writer encodes both null and empty source strings).
+            result = string.Empty;
+        }
+        else if (length <= ctx->stackBufferSize)
+        {
+            // Spill-buffer path: decode in place. Zero allocation; zero P/Invoke
+            // when the refill window already covers 'length' bytes (ensureReadable
+            // no-ops).
+            if (ctx->readerAvailable < length)
+                InvokeEnsureReadable(ctx, length);
+            result = DecodeStringBody(ctx->readerPtr, length);
+            ctx->readerPtr      += length;
+            ctx->readerAvailable -= length;
+        }
+        else
+        {
+            // Large-string path: body exceeds the spill buffer, so allocate a
+            // one-shot byte[] sized to this string. GC'd when the local exits —
+            // no pooling, no retention.
+            byte[] buf = new byte[length];
+            fixed (byte* bufPtr = buf)
+            {
+                InvokeReadBytesDirect(ctx, bufPtr, length);
+                result = DecodeStringBody(bufPtr, length);
+            }
+        }
+
+        Unsafe.As<byte, string>(
+            ref Unsafe.AddByteOffset(ref baseAddr, entry->fieldOffset)) = result;
+
+        // Skip 0-3 bytes of alignment padding.
+        if (padBytes > 0)
+        {
+            if (ctx->readerAvailable < padBytes)
+                InvokeEnsureReadable(ctx, padBytes);
+            ctx->readerPtr      += padBytes;
+            ctx->readerAvailable -= padBytes;
+        }
+    }
+
     // Read-path mirror of ConsumeLinearCollection. Reads the count prefix, then
     // routes on the same flag set the writer used:
     //   - Trivially-copyable: bulk memcpy count*elementStride from input into
@@ -1534,7 +1885,31 @@ internal static unsafe class SerializationBackendManagedCommands
         // a direct reinterpret can't be used on CoreCLR (RuntimeTypeHandle
         // is a managed-reference struct there, not a raw IntPtr).
         Type elementType = UnmarshalSystemType(header->elementTypeHandle);
-        Array arr = Array.CreateInstance(elementType, count);
+        // Reuse the existing backing store when it already holds exactly `count`
+        // elements, so [NonSerialized] bytes in struct elements survive the read
+        // (e.g. undo restoring a same-length array). Mirrors the short-circuit in
+        // ResizeSTLStyleArray / the legacy ArrayOfManagedObjectsTransferer path,
+        // which checks element count (not byte capacity) for both arrays and lists.
+        Array arr;
+        if (header->kind == LinearCollectionKind.Array)
+        {
+            Array existingArr = Unsafe.As<byte, Array>(
+                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+            arr = (existingArr != null && existingArr.Length == count)
+                ? existingArr
+                : Array.CreateInstance(elementType, count);
+        }
+        else
+        {
+            ListLayout existingList = Unsafe.As<byte, ListLayout>(
+                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+            arr = (existingList != null
+                && existingList._size == count
+                && existingList._items != null
+                && existingList._items.Length >= count)
+                ? Unsafe.As<byte[], Array>(ref existingList._items)
+                : Array.CreateInstance(elementType, count);
+        }
         byte[] dataAsBytes = Unsafe.As<Array, byte[]>(ref arr);
 
         if (count > 0)
@@ -1641,6 +2016,24 @@ internal static unsafe class SerializationBackendManagedCommands
                             ref segSize);
                     }
                 }
+
+                // Skip the 0..3-byte tail pad the write side emitted after
+                // the per-element loop. Mirrors the trivially-copyable path.
+                // elementWireSize is 0 for variable-length elements (strings)
+                // — already 4-byte aligned, no pad written.
+                int elementWireSize = (int)header->elementWireSize;
+                if (elementWireSize > 0)
+                {
+                    int totalBytes = count * elementWireSize;
+                    int padBytes   = (4 - (totalBytes & 3)) & 3;
+                    if (padBytes > 0)
+                    {
+                        if (ctx->readerAvailable < padBytes)
+                            InvokeEnsureReadable(ctx, padBytes);
+                        ctx->readerPtr      += padBytes;
+                        ctx->readerAvailable -= padBytes;
+                    }
+                }
             }
         }
 
@@ -1661,6 +2054,86 @@ internal static unsafe class SerializationBackendManagedCommands
         }
 
         pos = nestedStart + nestedBytes;
+    }
+
+    // Read-path mirror of ConsumeFixedBuffer. Truncating on overflow and leaving
+    // trailing inline bytes untouched on underflow matches the native
+    // Transfer_Blittable_FixedBufferField semantic (Blittable.h), so wire bytes
+    // round-trip even when the inline buffer width changed between the asset and
+    // the current class.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ConsumeFixedBufferRead(
+        NativeReadBufferContext* ctx,
+        ref byte baseAddr,
+        ref byte* pos)
+    {
+        var header = (FixedBufferHeader*)pos;
+        pos += sizeof(FixedBufferHeader);
+
+        if (ctx->readerAvailable < 4)
+            InvokeEnsureReadable(ctx, 4);
+        int wireCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+        ctx->readerPtr      += 4;
+        ctx->readerAvailable -= 4;
+
+        // Without this guard a negative length would make copyBytes negative;
+        // InvokeReadBytesDirect would then sign-extend to size_t and over-read the
+        // stream. Surface the corruption here instead of crashing deeper down.
+        if (wireCount < 0)
+            throw new InvalidOperationException(
+                $"Managed fixed-buffer deserialization read a negative length prefix ({wireCount}). The serialized data is corrupted.");
+
+        // Validate elementSize before any arithmetic uses it: the build side only
+        // asserts elementSize ∈ {1, 2, 4, 8} in debug, which the read path can't
+        // rely on for a stream that may have been corrupted in transit.
+        int elementSize = header->elementSize;
+        if (elementSize != 1 && elementSize != 2 && elementSize != 4 && elementSize != 8)
+            throw new InvalidOperationException(
+                $"Managed fixed-buffer header has invalid elementSize {elementSize}; expected 1, 2, 4, or 8.");
+
+        // checked() rationale: see ConsumeFixedBuffer. The read path can't rely on
+        // the build side's debug-only int32 bound, so a wrap throws instead of
+        // producing a negative copyBytes that InvokeReadBytesDirect would
+        // sign-extend into an over-read.
+        int capacity    = checked((int)header->elementCount);
+        int copyCount   = wireCount < capacity ? wireCount : capacity;
+        int copyBytes   = checked(copyCount * elementSize);
+        long wireBytesL = (long)wireCount * (long)elementSize;
+        int  alignBytes = (int)((4 - (wireBytesL & 3)) & 3);
+
+        if (copyBytes > 0)
+        {
+            // Bulk-stream straight into the inline buffer, bypassing the
+            // spill buffer (same direct-pin pattern as the trivially-
+            // copyable arm of ConsumeLinearCollectionRead).
+            byte* dstPtr = (byte*)Unsafe.AsPointer(
+                ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset));
+            InvokeReadBytesDirect(ctx, dstPtr, copyBytes);
+        }
+
+        // Discard any wire overflow (assets where the buffer shrunk between
+        // versions). Chunked because a single ensureReadable refill is capped at
+        // stackBufferSize and a long buffer can exceed it.
+        long discardBytes = wireBytesL - copyBytes;
+        while (discardBytes > 0)
+        {
+            int chunk = discardBytes > ctx->stackBufferSize
+                ? ctx->stackBufferSize
+                : (int)discardBytes;
+            if (ctx->readerAvailable < chunk)
+                InvokeEnsureReadable(ctx, chunk);
+            ctx->readerPtr      += chunk;
+            ctx->readerAvailable -= chunk;
+            discardBytes        -= chunk;
+        }
+
+        if (alignBytes > 0)
+        {
+            if (ctx->readerAvailable < alignBytes)
+                InvokeEnsureReadable(ctx, alignBytes);
+            ctx->readerPtr      += alignBytes;
+            ctx->readerAvailable -= alignBytes;
+        }
     }
 
     // Read mirror of ExecuteShuffleBatch. Walks the FBP-bracketed DC-only
@@ -2055,7 +2528,13 @@ internal static unsafe class SerializationBackendManagedCommands
                     {
                         nint fieldOffset = (nint)entry->fieldOffset * 8;
                         nint destOffset = (nint)entry->destOffset * 8;
-                        Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, fieldOffset)) = *(long*)(input + destOffset);
+                        // Unaligned: SelectDirectCopyOpCode's destOffset%8 gate only proves
+                        // segment-relative alignment, not absolute address alignment. The
+                        // segment base (input = ctx->readerPtr) can be 4-byte aligned (e.g.
+                        // inside per-element bodies after a linear collection's 4B count
+                        // prefix), which SIGBUS'd on armv7 with a typed 8B load. Build-side
+                        // fix pending.
+                        Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, fieldOffset)) = Unsafe.ReadUnaligned<long>(input + destOffset);
                         entry++;
                     }
                     while (entry < end);
@@ -2142,7 +2621,8 @@ internal static unsafe class SerializationBackendManagedCommands
                     {
                         uint fieldOffset = entry->fieldOffset * 8;
                         uint destOffset = entry->destOffset * 8;
-                        Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset)) = *(long*)(input + destOffset);
+                        // Unaligned: see DirectCopy8 above for the segment-base alignment caveat.
+                        Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset)) = Unsafe.ReadUnaligned<long>(input + destOffset);
                         entry++;
                     }
                     while (entry < end);
@@ -2213,10 +2693,33 @@ internal static unsafe class SerializationBackendManagedCommands
                     break;
                 }
 
+                // 16B read entry carries klass per-entry. We always invoke the
+                // icall — fake-null / EntityId_None handling lives in
+                // TransferPPtrToMonoObject.
+                case RttiDataType.UnityObject:
+                {
+                    var entry = ConsumeDirectCopyGroup<UnityObjectReadEntry>(ref pos, out var end);
+                    do
+                    {
+                        ref object fieldRef = ref Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset));
+                        byte* src = input + entry->destOffset;
+                        fieldRef = ReadUnityObjectFromBuffer(ctx->resolverHandle, (IntPtr)src, entry->klass, ctx->flags);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
                 case RttiDataType.Array:
                 case RttiDataType.List:
                 {
                     ConsumeLinearCollectionRead(ctx, ref baseAddr, ref pos);
+                    break;
+                }
+
+                case RttiDataType.FixedBuffer:
+                {
+                    ConsumeFixedBufferRead(ctx, ref baseAddr, ref pos);
                     break;
                 }
 
@@ -2226,10 +2729,37 @@ internal static unsafe class SerializationBackendManagedCommands
                     break;
                 }
 
-                case RttiDataType.DirectCopyBlock:
+                case RttiDataType.CallOnAfterDeserializeClass:
+                {
+                    var header = (CallbackHeader*)pos;
+                    pos += sizeof(CallbackHeader);
+                    object target = Unsafe.As<byte, object>(
+                        ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset));
+                    if (target is ISerializationCallbackReceiver receiver)
+                        receiver.OnAfterDeserialize();
+                    break;
+                }
+
+                case RttiDataType.CallOnAfterDeserializeStruct:
+                {
+                    var header = (CallbackHeader*)pos;
+                    pos += sizeof(CallbackHeader);
+                    if (header->methodFnPtr != IntPtr.Zero)
+                    {
+                        ref byte structData = ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset);
+                        ((delegate*<ref byte, void>)header->methodFnPtr)(ref structData);
+                    }
+                    break;
+                }
+
                 case RttiDataType.String:
+                {
+                    ConsumeStringRead(ctx, ref baseAddr, ref pos);
+                    break;
+                }
+
+                case RttiDataType.DirectCopyBlock:
                 case RttiDataType.Reference:
-                case RttiDataType.UnityObject:
                 case RttiDataType.EntityId:
                 case RttiDataType.DynamicBuffer:
                 case RttiDataType.PropertyNameId:

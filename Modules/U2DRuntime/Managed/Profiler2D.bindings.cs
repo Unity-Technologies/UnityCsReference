@@ -30,7 +30,7 @@ namespace UnityEngine.U2D
         {
             if (tag > 7)
             {
-                Profiler.EmitFrameMetaData<T>(kProfilerU2D, tag, data);
+                Profiler.EmitFrameMetaDataInternal<T>(kProfilerU2D, tag, data);
             }
             Debug.Assert(tag > 7, "Invalid tag " + tag + " was passed. Tag 0 - 7 are reserved for internal use. Please use Tag > 7");
         }

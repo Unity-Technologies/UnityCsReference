@@ -14,6 +14,7 @@ namespace UnityEditor.Build.Analysis
 
         private readonly IBuildHistoryProvider m_BuildHistory;
         private int m_LastRevision;
+        private int m_LastBuildHistoryLimit;
         private bool m_IsRefreshing;
         private DateTime m_LastDirectoryWriteTime;
         private DateTime m_LastPollTime;
@@ -24,6 +25,7 @@ namespace UnityEditor.Build.Analysis
         {
             m_BuildHistory = buildHistory;
             m_LastRevision = 0;
+            m_LastBuildHistoryLimit = buildHistory.GetBuildHistoryLimit();
         }
 
         public void Enable()
@@ -32,6 +34,7 @@ namespace UnityEditor.Build.Analysis
             EditorApplication.update += CheckForChanges;
 #pragma warning restore UDR0004
             m_LastDirectoryWriteTime = GetBuildHistoryWriteTime();
+            m_LastBuildHistoryLimit = m_BuildHistory.GetBuildHistoryLimit();
             m_LastPollTime = DateTime.UtcNow;
         }
 
@@ -69,18 +72,20 @@ namespace UnityEditor.Build.Analysis
                 }
 
                 var revision = m_BuildHistory.GetRevision();
-                if (revision != m_LastRevision)
+                var limit = m_BuildHistory.GetBuildHistoryLimit();
+                if (revision == m_LastRevision && limit == m_LastBuildHistoryLimit)
+                    return;
+
+                m_LastRevision = revision;
+                m_LastBuildHistoryLimit = limit;
+                m_IsRefreshing = true;
+                try
                 {
-                    m_LastRevision = revision;
-                    m_IsRefreshing = true;
-                    try
-                    {
-                        BuildHistoryChanged?.Invoke();
-                    }
-                    finally
-                    {
-                        m_IsRefreshing = false;
-                    }
+                    BuildHistoryChanged?.Invoke();
+                }
+                finally
+                {
+                    m_IsRefreshing = false;
                 }
             }
             catch (Exception e)

@@ -14,6 +14,7 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextEditingService::GetText")]
         internal static extern string GetText(IntPtr textGenerationInfo);
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NativeMethod(Name = "TextEditingService::SetText")]
         internal static extern bool SetText(IntPtr textGenerationInfo, string text);
 

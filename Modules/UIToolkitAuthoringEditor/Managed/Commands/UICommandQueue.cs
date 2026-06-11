@@ -60,11 +60,13 @@ static class UICommandQueue
         => s_CommandSystem.UnregisterHandlerForCategory(category, handler);
 
     /// <summary>
-    /// Enqueues a command for execution. The command will be automatically disposed after execution completes.
+    /// Executes a command immediately and returns the resulting <see cref="CommandContext"/>.
+    /// The caller retains ownership of the command and is responsible for disposing it.
     /// </summary>
     /// <param name="command">The command to execute.</param>
-    public static void EnqueueCommand(Command command)
-        => s_CommandSystem.EnqueueCommand(command);
+    /// <returns>The <see cref="CommandContext"/> describing the executed command and its final status.</returns>
+    public static CommandContext Execute(Command command)
+        => s_CommandSystem.Execute(command);
 
     /// <summary>
     /// Begins a new command group. Commands enqueued while the group is active will use the group's
@@ -74,6 +76,28 @@ static class UICommandQueue
     /// <returns>An IDisposable that, when disposed, ends the command group.</returns>
     public static IDisposable BeginGroup(string undoName)
         => s_CommandSystem.BeginGroup(undoName);
+
+    /// <summary>
+    /// Raised when the outermost command group opens. Nested groups do not raise this event.
+    /// The undo name passed to the outermost <see cref="BeginGroup"/> is provided.
+    /// Listeners can use this signal to begin batching expensive operations across the group's commands.
+    /// </summary>
+    public static event Action<string> GroupBegan
+    {
+        add => s_CommandSystem.GroupBegan += value;
+        remove => s_CommandSystem.GroupBegan -= value;
+    }
+
+    /// <summary>
+    /// Raised after the outermost command group closes and dirty marking has been applied.
+    /// Nested groups do not raise this event. The outermost group's undo name is provided.
+    /// Listeners can use this signal to flush any batched work started in <see cref="GroupBegan"/>.
+    /// </summary>
+    public static event Action<string> GroupEnded
+    {
+        add => s_CommandSystem.GroupEnded += value;
+        remove => s_CommandSystem.GroupEnded -= value;
+    }
 
     /// <summary>
     /// Gets the number of pooled instances for a specific command type.

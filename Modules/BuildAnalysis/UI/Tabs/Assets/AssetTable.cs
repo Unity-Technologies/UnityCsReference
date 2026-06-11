@@ -42,7 +42,7 @@ namespace UnityEditor.Build.Analysis
 
         public AssetTable()
         {
-            AddToClassList("overview-section");
+            AddToClassList("section");
 
             var template = EditorGUIUtility.LoadRequired(k_UxmlPath) as VisualTreeAsset;
             template.CloneTree(this);
@@ -109,10 +109,8 @@ namespace UnityEditor.Build.Analysis
             var n = m_Assets.Length;
 
             // Reuse parallel arrays across binds when possible; only grow when capacity is exceeded.
-            if (m_Names.Length < n)
-                m_Names = new string[n];
-            if (m_FormattedSizes.Length < n)
-                m_FormattedSizes = new string[n];
+            EnsureCapacity(ref m_Names, n);
+            EnsureCapacity(ref m_FormattedSizes, n);
             if (m_ExtensionIds.Length < n)
                 m_ExtensionIds = new int[n];
 
@@ -122,6 +120,15 @@ namespace UnityEditor.Build.Analysis
             BuildViewDropdownChoices();
             ResetFilterState();
             ApplyFilters();
+        }
+
+        private static void EnsureCapacity(ref string[] array, int min)
+        {
+            if (array.Length < min)
+                array = new string[min];
+            else
+                // Drop strong refs to strings from a previous larger bind so they can be GC'd.
+                Array.Clear(array, min, array.Length - min);
         }
 
         private void BuildExtensionPoolAndNames(int n)
@@ -202,6 +209,7 @@ namespace UnityEditor.Build.Analysis
 
         private void ResetFilterState()
         {
+            m_SearchDebounce?.Pause();
             m_ViewFilterId = k_NoExtensionId;
             m_SearchText = string.Empty;
             m_SearchField.SetValueWithoutNotify(string.Empty);

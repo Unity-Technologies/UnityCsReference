@@ -4,18 +4,23 @@
 
 using UnityEditor.Licensing.UI.Events;
 using UnityEditor.Licensing.UI.Helper;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Licensing.UI;
 
-class LicenseManagedWrapper
+partial class LicenseManagedWrapper
 {
-    static readonly ILicenseLogger k_LicenseLogger = new LicenseLogger();
-    static readonly INativeApiWrapper k_NativeApiWrapper = new NativeApiWrapper(k_LicenseLogger);
-    static readonly IModalWrapper k_ModalWrapper = new ModalWrapper();
+    [AutoStaticsCleanupOnCodeReload]
+    static ILicenseLogger k_LicenseLogger = new LicenseLogger();
+    [AutoStaticsCleanupOnCodeReload]
+    static INativeApiWrapper k_NativeApiWrapper = new NativeApiWrapper(k_LicenseLogger);
+    [AutoStaticsCleanupOnCodeReload]
+    static IModalWrapper k_ModalWrapper = new ModalWrapper();
 
     // made it public for testing purposes
+    [AutoStaticsCleanupOnCodeReload]
     public static INotificationDispatcher notificationDispatcher =
         new LicenseNotificationDispatcher(
             new LicenseNotificationHandlerFactory(k_LicenseLogger, k_NativeApiWrapper, k_ModalWrapper),

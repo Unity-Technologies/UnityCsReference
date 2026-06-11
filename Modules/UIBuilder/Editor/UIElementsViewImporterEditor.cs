@@ -50,8 +50,8 @@ namespace UnityEditor.UIElements
             { 
                 text = L10n.Tr("UXML Upgrades"), 
                 viewDataKey = "uxml-upgrades",
-                tooltip = L10n.Tr("Apply upgrades to maintain or modernize UXML assets.")
             };
+            section.toggle.tooltip = L10n.Tr("Apply upgrades to maintain or modernize UXML assets.");
 
             // Show informational message about upgrades
             section.Add(new HelpBox(L10n.Tr(

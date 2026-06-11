@@ -114,12 +114,13 @@ namespace UnityEngine.UIElements.UIR
             if (m_PendingBlits.Count == 0)
                 return;
 
-            s_CommitSampler.Begin();
-            BeginBlit(dst);
-            for (int i = 0; i < m_PendingBlits.Count; i += k_TextureSlotCount)
-                DoBlit(m_PendingBlits, i);
-            EndBlit();
-            s_CommitSampler.End();
+            using (s_CommitSampler.Auto())
+            {
+                BeginBlit(dst);
+                for (int i = 0; i < m_PendingBlits.Count; i += k_TextureSlotCount)
+                    DoBlit(m_PendingBlits, i);
+                EndBlit();
+            }
 
             m_PendingBlits.Clear();
         }

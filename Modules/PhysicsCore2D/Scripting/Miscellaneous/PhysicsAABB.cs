@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsAABB
+    public partial struct PhysicsAABB
     {
         /// <summary>
         /// Create an axis-aligned bounding-box with the specified bounds.
@@ -29,6 +29,16 @@ namespace Unity.U2D.Physics
         {
             m_LowerBound = lowerBound;
             m_UpperBound = upperBound;
+        }
+
+        /// <summary>
+        /// Create an axis-aligned bounding-box that encapsulates the specified point.
+        /// </summary>
+        /// <param name="point">The point which the AABB should encapsulate.</param>
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public PhysicsAABB(Vector2 point)
+        {
+            m_LowerBound = m_UpperBound = point;
         }
 
         /// <summary>
@@ -65,7 +75,7 @@ namespace Unity.U2D.Physics
         /// Normalize the AABB ensuring that <see cref="PhysicsAABB.lowerBound"/> is lower than or equal to <see cref="PhysicsAABB.upperBound"/>.
         /// </summary>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Normalized() => this = normalized;
+        public void Normalize() => this = normalized;
 
         /// <summary>
         /// Check if the specified point overlaps this AABB.
@@ -104,6 +114,14 @@ namespace Unity.U2D.Physics
         /// <param name="aabb">The AABB to create a union with.</param>
         /// <returns>The results of the union.</returns>
         public readonly PhysicsAABB Union(PhysicsAABB aabb) => PhysicsAABB_Union(this, aabb);
+
+        /// <summary>
+        /// Create an AABB as a translated version of the current AABB.
+        /// </summary>
+        /// <param name="translation">The translation to use.</param>
+        /// <returns>The translated AABB.</returns>
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly PhysicsAABB Translate(Vector2 translation) => new(lowerBound + translation, upperBound + translation);
 
         /// <summary>
         /// Checks if the AABB contains (completely encapsulates) the specified AABB.

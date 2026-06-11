@@ -18,6 +18,16 @@ internal readonly record struct VisualTreeAssetEditingContext
     public readonly SubDocumentOptions SubDocumentOptions;
     public readonly PanelSettings PanelSettings;
 
+    public VisualTreeAsset EditedVisualTreeAsset
+    {
+        get
+        {
+            if (SubDocumentPath == null || SubDocumentPath.Length == 0)
+                return RootVisualTreeAsset;
+            return SubDocumentPath[^1]?.ResolveTemplate();
+        }
+    }
+
     /// <summary>
     /// Creates an isolation editing context for the main <see cref="VisualTreeAsset"/> asset.
     /// </summary>

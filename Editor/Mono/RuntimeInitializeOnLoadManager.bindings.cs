@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using UnityEditor;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -41,7 +42,6 @@ namespace UnityEngine
     {
         extern internal static string[] dontStripClassNames { get; }
 
-        [RequiredByNativeCode]
         internal static bool ValidateRuntimeInitializeOnLoadMethod(MethodInfo methodInfo)
         {
             if (!methodInfo.IsStatic)
@@ -58,7 +58,7 @@ namespace UnityEngine
                 Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' has arguments, but [RuntimeInitializeOnLoadMethod] methods cannot have arguments");
                 return false;
             }
-            if (methodInfo.DeclaringType != null && methodInfo.DeclaringType.IsGenericType)
+            if (methodInfo.DeclaringType?.IsGenericType == true)
             {
                 Debug.LogError($"Method '{methodInfo.DeclaringType?.FullName ?? "Global"}.{methodInfo.Name}' is in a generic type, but [RuntimeInitializeOnLoadMethod] methods cannot be in generic types");
                 return false;
@@ -70,6 +70,29 @@ namespace UnityEngine
             }
 
             return true;
+        }
+
+        [RequiredByNativeCode]
+        internal static MethodInfo[] GetAllValidRuntimeInitializeOnLoadMethods()
+        {
+            var methods = TypeCache.GetMethodsWithAttribute<RuntimeInitializeOnLoadMethodAttribute>();
+            var validMethods = new MethodInfo[methods.Count];
+
+            int validCount = 0;
+            foreach (var method in methods)
+            {
+                if (ValidateRuntimeInitializeOnLoadMethod(method))
+                {
+                    validMethods[validCount++] = method;
+                }
+            }
+
+            if (validCount != methods.Count)
+            {
+                Array.Resize(ref validMethods, validCount);
+            }
+
+            return validMethods;
         }
     }
 }

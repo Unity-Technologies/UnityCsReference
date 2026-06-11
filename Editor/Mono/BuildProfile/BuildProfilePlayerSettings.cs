@@ -128,6 +128,12 @@ namespace UnityEditor.Build.Profile
             m_PlayerSettings = newPlayerSettings;
             s_LoadedPlayerSettings.Add(m_PlayerSettings);
 
+            // Mark the profile dirty so the serialized YAML is persisted to disk.
+            // Without this, the asset is not flagged for save and a subsequent
+            // AssetDatabase.CopyAsset (Duplicate) would copy a stale on-disk file
+            // that does not include the player settings the user just added.
+            EditorUtility.SetDirty(this);
+
             UpdateGlobalManagerPlayerSettings();
         }
 

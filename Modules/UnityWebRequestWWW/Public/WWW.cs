@@ -147,11 +147,6 @@ namespace UnityEngine
             }
         }
 
-        // Returns a [[AudioClip]] generated from the downloaded data (RO).
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWW.GetAudioClip()", true)]
-        public Object audioClip { get { return null; } }
-
         public byte[] bytes
         {
             get
@@ -197,10 +192,6 @@ namespace UnityEngine
         }
 
         public bool isDone { get { return _uwr.isDone; } }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWW.GetAudioClip()", true)]
-        public Object oggVorbis { get { return null; } }
 
         public float progress
         {

@@ -774,6 +774,7 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern public static string[] GetDependencies(string[] pathNames, bool recursive);
 
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Export(ExportPackageParameters) instead.", false)]
         public static void ExportPackage(string assetPathName, string fileName)
         {
             string[] input = new string[1];
@@ -781,6 +782,7 @@ namespace UnityEditor
             ExportPackage(input, fileName, ExportPackageOptions.Default);
         }
 
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Export(ExportPackageParameters) instead.", false)]
         public static void ExportPackage(string assetPathName, string fileName, ExportPackageOptions flags)
         {
             string[] input = new string[1];
@@ -788,11 +790,13 @@ namespace UnityEditor
             ExportPackage(input, fileName, flags);
         }
 
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Export(ExportPackageParameters) instead.", false)]
         public static void ExportPackage(string[] assetPathNames, string fileName, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags)
         {
             ExportPackage(assetPathNames, fileName, "", flags);
         }
 
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Export(ExportPackageParameters) instead.", false)]
         public static void ExportPackage(string assetPathName, string fileName, string ownerOrgId, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags)
         {
             string[] input = new string[1];
@@ -800,11 +804,15 @@ namespace UnityEditor
             ExportPackage(input, fileName, ownerOrgId, flags);
         }
 
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Export(ExportPackageParameters) instead.", false)]
         [uei.ExcludeFromDocs] public static void ExportPackage(string[] assetPathNames, string fileName) { ExportPackage(assetPathNames, fileName, ExportPackageOptions.Default); }
-        [NativeMethod(ThrowsException = true)]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        extern public static void ExportPackage(string[] assetPathNames, string fileName, string ownerOrgId, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags);
-        
+
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Export(ExportPackageParameters) instead.", false)]
+        public static void ExportPackage(string[] assetPathNames, string fileName, string ownerOrgId, [uei.DefaultValue("ExportPackageOptions.Default")] ExportPackageOptions flags)
+        {
+            UnityEditor.AssetPackage.Package.Export(new UnityEditor.AssetPackage.ExportPackageParameters(assetPathNames, fileName, ownerOrgId, flags));
+        }
+
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string GetUniquePathNameAtSelectedPath(string fileName);
 
@@ -1068,28 +1076,10 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static GUID GUIDFromExistingAssetPath(string path);
 
-        [FreeFunction("::ImportPackage")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        extern private static bool ImportPackage(string packagePath, ImportPackageOptions options);
-
-        [FreeFunction("::ImportPackageWithOrigin")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
-        extern private static bool ImportPackageWithOrigin(string packagePath, AssetOrigin origin, ImportPackageOptions options);
-
-        //TODO: This API should be Obsoleted when there is time available to update all the uses of it in Package Manager packages
+        [Obsolete("Use UnityEditor.AssetPackage.Package.Import(string packagePath, bool interactive) instead.", false)]
         public static void ImportPackage(string packagePath, bool interactive)
         {
-            ImportPackage(packagePath, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
-        }
-
-        internal static void ImportPackage(string packagePath, AssetOrigin origin, bool interactive)
-        {
-            ImportPackageWithOrigin(packagePath, origin, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
-        }
-
-        internal static bool ImportPackageImmediately(string packagePath)
-        {
-            return ImportPackage(packagePath, ImportPackageOptions.NoGUI);
+            UnityEditor.AssetPackage.Package.Import(packagePath, interactive);
         }
 
         [FreeFunction("ApplicationDisallowAutoRefresh")]

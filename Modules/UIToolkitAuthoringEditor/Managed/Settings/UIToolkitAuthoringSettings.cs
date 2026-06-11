@@ -6,6 +6,7 @@ using System;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
+using UnityEngine;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -17,12 +18,40 @@ internal enum UIHierarchyDisplayOptions
     UssClasses = 2
 }
 
+internal enum NewVisualTreeAssetLocation
+{
+    [InspectorName("Ask for location")] AskForLocation,
+    [InspectorName("Use current folder")] UseCurrentFolder,
+}
+
+internal enum AutoOpenMode
+{
+    Never,
+    FromMainStage,
+    Always
+}
+
+internal enum RectangleSelectionMode
+{
+    // An element is picked if its bounds overlap the marquee at all (default).
+    AnyOverlap = 0,
+    // An element is picked only if its bounds are entirely inside the marquee.
+    FullyContained = 1,
+}
+
 internal static class UIToolkitAuthoringSettings
 {
     private const string k_EnableHierarchyIntegration = "UIAuthoring.EnableHierarchyIntegration";
     private const string k_EnableUIStages = "UIAuthoring.EnableUIStages";
     private const string k_DisplayOptions = "UIAuthoring.DisplayOptions";
+    private const string k_NewVisualTreeAssetLocation = "UIAuthoring.NewVisualTreeAssetLocation";
     private const UIHierarchyDisplayOptions DefaultDisplayOptions = UIHierarchyDisplayOptions.Typename | UIHierarchyDisplayOptions.UssClasses;
+    private const NewVisualTreeAssetLocation DefaultNewVisualTreeAssetLocation = NewVisualTreeAssetLocation.AskForLocation;
+    private const string k_AutoOpenUIViewportWindow = "UIAuthoring.AutoOpenUIViewportWindow";
+    private const string k_AutoOpenStyleSheetsWindow = "UIAuthoring.AutoOpenStyleSheetsWindow";
+    private const AutoOpenMode DefaultAutoOpenMode = AutoOpenMode.FromMainStage;
+    private const string k_RectangleSelectionMode = "UIAuthoring.RectangleSelectionMode";
+    private const RectangleSelectionMode DefaultRectangleSelectionMode = RectangleSelectionMode.AnyOverlap;
 
     [NoAutoStaticsCleanup]
     internal static event Action<bool> HierarchyIntegrationChanged;
@@ -32,6 +61,15 @@ internal static class UIToolkitAuthoringSettings
 
     [NoAutoStaticsCleanup]
     internal static event Action<UIHierarchyDisplayOptions> DisplayOptionsChanged;
+
+    [NoAutoStaticsCleanup]
+    internal static event Action<AutoOpenMode> AutoOpenUIViewportWindowChanged;
+
+    [NoAutoStaticsCleanup]
+    internal static event Action<AutoOpenMode> AutoOpenStyleSheetsWindowChanged;
+
+    [NoAutoStaticsCleanup]
+    internal static event Action<RectangleSelectionMode> RectangleSelectionModeChanged;
 
     [NoAutoStaticsCleanup]
     public static bool EnableHierarchyIntegration
@@ -87,6 +125,79 @@ internal static class UIToolkitAuthoringSettings
                 return;
             EditorUserSettings.SetConfigValue(k_DisplayOptions, value.ToString());
             DisplayOptionsChanged?.Invoke(value);
+        }
+    }
+
+    [NoAutoStaticsCleanup]
+    public static NewVisualTreeAssetLocation NewVisualTreeAssetLocation
+    {
+        get
+        {
+            var value = EditorUserSettings.GetConfigValue(k_NewVisualTreeAssetLocation);
+            if (string.IsNullOrEmpty(value) || !Enum.TryParse<NewVisualTreeAssetLocation>(value, out var location))
+                return DefaultNewVisualTreeAssetLocation;
+            return location;
+        }
+        set
+        {
+            if (NewVisualTreeAssetLocation == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_NewVisualTreeAssetLocation, value.ToString());
+        }
+    }
+
+    public static AutoOpenMode AutoOpenUIViewportWindow
+    {
+        get => GetAutoOpenMode(k_AutoOpenUIViewportWindow);
+        set
+        {
+            var currentValue = AutoOpenUIViewportWindow;
+            if (currentValue == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_AutoOpenUIViewportWindow, value.ToString());
+            AutoOpenUIViewportWindowChanged?.Invoke(value);
+        }
+    }
+
+    [NoAutoStaticsCleanup]
+    public static AutoOpenMode AutoOpenStyleSheetsWindow
+    {
+        get => GetAutoOpenMode(k_AutoOpenStyleSheetsWindow);
+        set
+        {
+            var currentValue = AutoOpenStyleSheetsWindow;
+            if (currentValue == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_AutoOpenStyleSheetsWindow, value.ToString());
+            AutoOpenStyleSheetsWindowChanged?.Invoke(value);
+        }
+    }
+
+    private static AutoOpenMode GetAutoOpenMode(string key)
+    {
+        var value = EditorUserSettings.GetConfigValue(key);
+        if (string.IsNullOrEmpty(value) || !Enum.TryParse<AutoOpenMode>(value, out var mode))
+            return DefaultAutoOpenMode;
+        return mode;
+    }
+
+    public static RectangleSelectionMode RectangleSelectionMode
+    {
+        get
+        {
+            var value = EditorUserSettings.GetConfigValue(k_RectangleSelectionMode);
+            if (string.IsNullOrEmpty(value) || !Enum.TryParse(typeof(RectangleSelectionMode), value, out var mode))
+                return DefaultRectangleSelectionMode;
+
+            return (RectangleSelectionMode)mode;
+        }
+        set
+        {
+            var currentValue = RectangleSelectionMode;
+            if (currentValue == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_RectangleSelectionMode, value.ToString());
+            RectangleSelectionModeChanged?.Invoke(value);
         }
     }
 }

@@ -67,7 +67,7 @@ namespace UnityEngine
     /// callbacks (<see cref="DictionarySerialization.SetEntriesFromSerializedData"/> and
     /// <see cref="DictionarySerialization.GetDictionaryEntriesForSerialization"/>) are reachable from worker
     /// threads through the native transfer pipeline, while editor cleanup
-    /// (<see cref="DictionarySerialization.PruneDuplicateDictionaryEntriesWhere"/>) and the public
+    /// (<see cref="DictionarySerialization.PruneDuplicateDictionaryEntriesForUnloadedHosts"/>) and the public
     /// <c>SerializedProperty.GetDictionaryDuplicateEntryIndices</c> API are invoked from the main thread.
     /// </summary>
     internal interface IDuplicateEntriesForDictionaries
@@ -80,7 +80,7 @@ namespace UnityEngine
 
         void Clear(EntityId hostId, string dictionaryPath);
 
-        int PruneHostsWhere(Predicate<EntityId> shouldRemoveHost);
+        int PruneUnloadedHosts();
 
         bool HostHasDuplicateDictionaryEntries(EntityId hostId);
     }

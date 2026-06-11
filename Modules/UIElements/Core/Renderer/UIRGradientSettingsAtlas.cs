@@ -125,44 +125,45 @@ namespace UnityEngine.UIElements.UIR
                     m_RawAtlas.rgba[i] = Color.black;
             }
 
-            s_MarkerWrite.Begin();
-
-            int destY = (int)alloc.start;
-            for (int i = 0, settingsCount = settings.Length; i < settingsCount; ++i)
+            using (s_MarkerWrite.Auto())
             {
-                int destX = 0;
-                GradientSettings entry = settings[i];
-                Debug.Assert(remap == null || destY == remap.destIndex);
-                if (entry.gradientType == GradientType.Radial)
+
+                int destY = (int)alloc.start;
+                for (int i = 0, settingsCount = settings.Length; i < settingsCount; ++i)
                 {
-                    var focus = entry.radialFocus;
-                    focus += Vector2.one;
-                    focus /= 2.0f;
-                    focus.y = 1.0f - focus.y;
-                    m_RawAtlas.WriteRawFloat4Packed((float)GradientType.Radial / 255, (float)entry.addressMode / 255, focus.x, focus.y, destX++, destY);
-                }
-                else if (entry.gradientType == GradientType.Linear)
-                {
-                    m_RawAtlas.WriteRawFloat4Packed(0.0f, (float)entry.addressMode / 255, 0.0f, 0.0f, destX++, destY);
+                    int destX = 0;
+                    GradientSettings entry = settings[i];
+                    Debug.Assert(remap == null || destY == remap.destIndex);
+                    if (entry.gradientType == GradientType.Radial)
+                    {
+                        var focus = entry.radialFocus;
+                        focus += Vector2.one;
+                        focus /= 2.0f;
+                        focus.y = 1.0f - focus.y;
+                        m_RawAtlas.WriteRawFloat4Packed((float)GradientType.Radial / 255, (float)entry.addressMode / 255, focus.x, focus.y, destX++, destY);
+                    }
+                    else if (entry.gradientType == GradientType.Linear)
+                    {
+                        m_RawAtlas.WriteRawFloat4Packed(0.0f, (float)entry.addressMode / 255, 0.0f, 0.0f, destX++, destY);
+                    }
+
+                    Vector2Int pos = new Vector2Int(entry.location.x, entry.location.y);
+                    var size = new Vector2(entry.location.width - 1, entry.location.height - 1);
+                    if (remap != null)
+                    {
+                        pos = new Vector2Int(remap.location.x, remap.location.y);
+                        size = new Vector2(remap.location.width - 1, remap.location.height - 1);
+                    }
+                    m_RawAtlas.WriteRawInt2Packed(pos.x, pos.y, destX++, destY);
+                    m_RawAtlas.WriteRawInt2Packed((int)size.x, (int)size.y, destX++, destY);
+
+                    remap = remap?.next;
+                    ++destY;
                 }
 
-                Vector2Int pos = new Vector2Int(entry.location.x, entry.location.y);
-                var size = new Vector2(entry.location.width - 1, entry.location.height - 1);
-                if (remap != null)
-                {
-                    pos = new Vector2Int(remap.location.x, remap.location.y);
-                    size = new Vector2(remap.location.width - 1, remap.location.height - 1);
-                }
-                m_RawAtlas.WriteRawInt2Packed(pos.x, pos.y, destX++, destY);
-                m_RawAtlas.WriteRawInt2Packed((int)size.x, (int)size.y, destX++, destY);
+                MustCommit = true;
 
-                remap = remap?.next;
-                ++destY;
             }
-
-            MustCommit = true;
-
-            s_MarkerWrite.End();
         }
 
         public bool MustCommit { get; private set; }
@@ -180,11 +181,12 @@ namespace UnityEngine.UIElements.UIR
 
             PrepareAtlas();
 
-            s_MarkerCommit.Begin();
-            // TODO: This way of transferring is costly since it is a synchronous operation that flushes the pipeline.
-            m_Atlas.SetPixels32(m_RawAtlas.rgba);
-            m_Atlas.Apply();
-            s_MarkerCommit.End();
+            using (s_MarkerCommit.Auto())
+            {
+                // TODO: This way of transferring is costly since it is a synchronous operation that flushes the pipeline.
+                m_Atlas.SetPixels32(m_RawAtlas.rgba);
+                m_Atlas.Apply();
+            }
 
             MustCommit = false;
         }

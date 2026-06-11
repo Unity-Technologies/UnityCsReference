@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
@@ -20,6 +21,9 @@ namespace UnityEngine
 
         private static readonly Collision s_ReusableCollision = new Collision();
 
+        static readonly ProfilerMarker s_ContactEventMarker = new ProfilerMarker("Physics.ContactEvent");
+        static readonly ProfilerMarker s_InvokeOnCollisionEventsMarker = new ProfilerMarker("Physics.InvokeOnCollisionEvents");
+
         [RequiredByNativeCode]
         private static unsafe void OnSceneContact(PhysicsScene scene, IntPtr buffer, int count)
         {
@@ -31,11 +35,12 @@ namespace UnityEngine
             var safety = AtomicSafetyHandle.Create();
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, safety);
 
-            Profiling.Profiler.BeginSample("Physics.ContactEvent");
-
             try
             {
-                ContactEvent?.Invoke(scene, array.AsReadOnly());
+                using (s_ContactEventMarker.Auto())
+                {
+                    ContactEvent?.Invoke(scene, array.AsReadOnly());
+                }
             }
             catch(Exception e)
             {
@@ -43,7 +48,6 @@ namespace UnityEngine
             }
             finally
             {
-                Profiling.Profiler.EndSample();
                 ReportContacts(array.AsReadOnly());
             }
 
@@ -55,49 +59,48 @@ namespace UnityEngine
             if (!Physics.invokeCollisionCallbacks)
                 return;
 
-            Profiling.Profiler.BeginSample("Physics.InvokeOnCollisionEvents");
-
-            for (int i = 0; i < array.Length; i++)
+            using (s_InvokeOnCollisionEventsMarker.Auto())
             {
-                ContactPairHeader header = array[i];
-
-                if (header.hasRemovedBody)
-                    continue;
-
-                for (int j = 0; j < header.m_NbPairs; j++)
+                for (int i = 0; i < array.Length; i++)
                 {
-                    ref readonly ContactPair pair = ref header.GetContactPair(j);
+                    ContactPairHeader header = array[i];
 
-                    if (pair.hasRemovedCollider)
+                    if (header.hasRemovedBody)
                         continue;
 
-                    var actor = header.body;
-                    var otherActor = header.otherBody;
-                    var component = actor != null ? actor : pair.collider;
-                    var otherComponent = otherActor != null ? otherActor : pair.otherCollider;
+                    for (int j = 0; j < header.m_NbPairs; j++)
+                    {
+                        ref readonly ContactPair pair = ref header.GetContactPair(j);
 
-                    if(!component || !otherComponent)
-                        continue;
+                        if (pair.hasRemovedCollider)
+                            continue;
 
-                    if (pair.isCollisionEnter)
-                    {
-                        Physics.SendOnCollisionEnter(component, GetCollisionToReport(in header, in pair, false));
-                        Physics.SendOnCollisionEnter(otherComponent, GetCollisionToReport(in header, in pair, true));
-                    }
-                    if (pair.isCollisionStay)
-                    {
-                        Physics.SendOnCollisionStay(component, GetCollisionToReport(in header, in pair, false));
-                        Physics.SendOnCollisionStay(otherComponent, GetCollisionToReport(in header, in pair, true));
-                    }
-                    if (pair.isCollisionExit)
-                    {
-                        Physics.SendOnCollisionExit(component, GetCollisionToReport(in header, in pair, false));
-                        Physics.SendOnCollisionExit(otherComponent, GetCollisionToReport(in header, in pair, true));
+                        var actor = header.body;
+                        var otherActor = header.otherBody;
+                        var component = actor != null ? actor : pair.collider;
+                        var otherComponent = otherActor != null ? otherActor : pair.otherCollider;
+
+                        if(!component || !otherComponent)
+                            continue;
+
+                        if (pair.isCollisionEnter)
+                        {
+                            Physics.SendOnCollisionEnter(component, GetCollisionToReport(in header, in pair, false));
+                            Physics.SendOnCollisionEnter(otherComponent, GetCollisionToReport(in header, in pair, true));
+                        }
+                        if (pair.isCollisionStay)
+                        {
+                            Physics.SendOnCollisionStay(component, GetCollisionToReport(in header, in pair, false));
+                            Physics.SendOnCollisionStay(otherComponent, GetCollisionToReport(in header, in pair, true));
+                        }
+                        if (pair.isCollisionExit)
+                        {
+                            Physics.SendOnCollisionExit(component, GetCollisionToReport(in header, in pair, false));
+                            Physics.SendOnCollisionExit(otherComponent, GetCollisionToReport(in header, in pair, true));
+                        }
                     }
                 }
             }
-
-            Profiling.Profiler.EndSample();
         }
 
         private static Collision GetCollisionToReport(in ContactPairHeader header, in ContactPair pair, bool flipped)

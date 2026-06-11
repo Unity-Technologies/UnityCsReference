@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
                     throw new ArgumentException(nameof(value));
                 m_Id = value;
                 m_CustomName = null;
+                customNameId = -1;
             }
         }
 
@@ -98,6 +99,13 @@ namespace UnityEngine.UIElements
         [NonSerialized]
         internal bool requireVariableResolve;
 
+        // Cached UniqueStyleString id for m_CustomName. -1 = not custom / not yet computed.
+        // Populated eagerly: by CacheId when a custom name is set, and by StyleSheet.SetupReferences
+        // for properties deserialized from a stylesheet. Reset to -1 wherever m_CustomName clears.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [NonSerialized]
+        internal int customNameId = -1;
+
         internal StyleProperty()
         {
         }
@@ -106,6 +114,7 @@ namespace UnityEngine.UIElements
         {
             m_Id = StylePropertyId.Unknown;
             m_CustomName = value;
+            customNameId = -1;
             if (string.IsNullOrEmpty(value))
             {
                 m_Id = StylePropertyId.Unknown;
@@ -113,6 +122,7 @@ namespace UnityEngine.UIElements
             else if (StringUtils.StartsWith(value, "--"))
             {
                 m_Id = StylePropertyId.Custom;
+                customNameId = new UniqueStyleString(value).id;
             }
             else if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(value, out var valueId))
             {

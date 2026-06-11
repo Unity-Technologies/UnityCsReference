@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         VisualElement m_Container;
         VisualElement m_ContainerClip;
         VisualElement m_StickyRowContainer;
+        VisualElement m_BackgroundFill;
         RecycledItem m_StickyRow;
         ScrollContainer m_ScrollView;
         CollectionViewScroller m_VerticalScroller;
@@ -76,6 +77,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         internal double scrollValue => m_ScrollValue;
         internal VisualElement itemContainer => m_Container;
+        internal VisualElement backgroundFill => m_BackgroundFill;
         internal RecycledItem currentStickyRow => m_StickyRow;
         internal bool hasActiveStickyRow => m_StickyRow != null && m_StickyRow.index != -1;
         internal CollectionViewDragger dragger => m_Dragger;
@@ -86,6 +88,61 @@ namespace UnityEngine.UIElements.HierarchyV2
         internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
         // The list of items being displayed in the CollectionView. Note, this list does not contain ghost items.
         internal LinkedList<RecycledItem> m_DisplayedList = new();
+
+        ICollectionViewAnimation m_Animation;
+        ItemAnimationInfo? m_ActiveAnimationBatch;
+        // Extra items bound below the viewport during animation; cleared by the strategy.
+        int m_ExtraBindCount;
+
+        /// <summary>
+        /// True when <paramref name="index"/> is the currently-pinned sticky row (its data
+        /// position is scrolled past the top of the viewport).
+        /// </summary>
+        public bool IsStickyPinned(int index) => m_StickyRow != null && m_StickyRow.index == index;
+
+        /// <summary>
+        /// Approximate number of items that fit in the viewport. Used to cap animation-related
+        /// force-binding so it does not scale with batch size on large hierarchies.
+        /// </summary>
+        public int visibleViewportCount => (m_LastHeight > 0 && fixedItemHeight > 0)
+            ? Math.Max(1, (int)Mathf.Ceil(m_LastHeight / fixedItemHeight))
+            : 1;
+
+        /// <summary>Fired on every terminal state of the active animation (completion, skip, reversal end).</summary>
+        public event Action animationCompleted;
+
+        /// <summary>
+        /// Strategy that drives appear/disappear animations. <c>null</c> = instant.
+        /// </summary>
+        public ICollectionViewAnimation animation
+        {
+            get => m_Animation;
+            set
+            {
+                if (m_Animation == value)
+                    return;
+
+                m_Animation?.SkipAnimation();
+                m_Animation = value;
+                if (m_Animation == null)
+                    return;
+
+                var context = new CollectionViewAnimationContext
+                {
+                    recycledItemForIndex = GetRecycledItemForIndex,
+                    itemContainer = m_Container,
+                    clipParent = m_ScrollView.contentContainer,
+                    scheduleRefresh = ScheduleRefreshItems,
+                    clearBindWindow = ClearAnimationBindWindow,
+                    onAnimationCompleted = RaiseAnimationCompleted,
+                    getVisibleViewportCount = () => visibleViewportCount,
+                };
+                m_Animation.Initialize(in context);
+            }
+        }
+
+        void RaiseAnimationCompleted() => animationCompleted?.Invoke();
+
         /// <summary>
         /// Enum for current pointer processing state.
         /// </summary>
@@ -412,6 +469,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_StickyRowContainer = new VisualElement
             {
                 name = "sticky-row-container",
+                pickingMode = PickingMode.Ignore,
                 style = { position = Position.Absolute, top = 0, left = 0, right = 0 }
             };
             m_ScrollView.contentContainer.Add(m_ContainerClip);
@@ -629,12 +687,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_IndexToItemDictionary.TryGetValue(index, out var existing) && ReferenceEquals(existing, item))
                 m_IndexToItemDictionary.Remove(index);
 
-            layoutConfiguration.unbindCell?.Invoke(item.element, index);
+            layoutConfiguration?.unbindCell?.Invoke(item.element, index);
         }
 
         internal void OnDestroyItem(RecycledItem item)
         {
-            layoutConfiguration.destroyCell?.Invoke(item.element);
+            layoutConfiguration?.destroyCell?.Invoke(item.element);
         }
 
         void BindItem(RecycledItem item, int index)
@@ -704,6 +762,122 @@ namespace UnityEngine.UIElements.HierarchyV2
         }
 
         /// <summary>
+        /// Notifies the strategy that a batch is about to appear. Call BEFORE the data update.
+        /// The visual reveal happens in <see cref="NotifyItemsAppeared"/>, after items are bound.
+        /// </summary>
+        public void NotifyItemsAppearing(ItemAnimationInfo info)
+        {
+            if (m_Animation == null)
+                return;
+
+            var preservedCap = m_ExtraBindCount;
+            var hadPriorAnimation = m_Animation.isAnimating;
+            m_Animation.SkipAnimation();
+            m_ActiveAnimationBatch = info;
+            var newCap = Math.Min(info.count, visibleViewportCount);
+            m_ExtraBindCount = newCap;
+
+            if (hadPriorAnimation || preservedCap < newCap)
+                RefreshItems();
+            m_Animation.OnItemsAppearing(info);
+        }
+
+        /// <summary>
+        /// Notifies the strategy that the appearing items are bound and visible. Call AFTER refresh.
+        /// </summary>
+        public void NotifyItemsAppeared(ItemAnimationInfo info)
+        {
+            m_Animation?.OnItemsAppeared(info);
+        }
+
+        /// <summary>
+        /// Notifies the strategy that a batch is about to disappear. The strategy MUST call
+        /// <paramref name="onComplete"/> on completion (or immediately if not animating).
+        /// <paramref name="prepareBatch"/> runs after the internal <see cref="RefreshItems"/>
+        /// but before the strategy starts — use it to force-bind items that the refresh would
+        /// otherwise trim to the FreeList.
+        /// </summary>
+        public void NotifyItemsDisappearing(ItemAnimationInfo info, Action onComplete, Action prepareBatch = null)
+        {
+            if (m_Animation == null)
+            {
+                onComplete();
+                return;
+            }
+
+            m_Animation.SkipAnimation();
+            m_ExtraBindCount = Math.Min(info.count, visibleViewportCount);
+            RefreshItems();
+            prepareBatch?.Invoke();
+            m_Animation.OnItemsDisappearing(info, onComplete);
+        }
+
+        /// <summary>
+        /// Reverses the in-flight animation when <paramref name="info"/> matches the active batch
+        /// with the opposite direction. Avoids the SkipAnimation+RefreshItems teardown path.
+        /// </summary>
+        public bool TryReverseAnimation(ItemAnimationInfo info, Action onComplete)
+        {
+            return m_Animation?.TryReverseAnimation(info, onComplete) ?? false;
+        }
+
+        /// <summary>
+        /// Clears the extra-bind window opened by NotifyItemsAppearing/Disappearing. Strategies
+        /// MUST call this on completion so the virtualizer trims back to the viewport.
+        /// Callers using <see cref="PrepareBindWindowForAnimation"/> should call this in
+        /// early-return paths so the widened window doesn't leak into subsequent operations.
+        /// </summary>
+        public void ClearAnimationBindWindow()
+        {
+            m_ExtraBindCount = 0;
+            m_ActiveAnimationBatch = null;
+        }
+
+        /// <summary>
+        /// Widens the bind window so the next <see cref="RefreshItems"/> covers the animation range
+        /// in one pass and invalidates stale FreeList bindings up front. Pair with
+        /// <see cref="ClearAnimationBindWindow"/> on early-return paths.
+        /// </summary>
+        public void PrepareBindWindowForAnimation()
+        {
+            foreach (var item in m_FreeList)
+            {
+                if (item.index >= 0)
+                    UnbindItem(item);
+            }
+            m_ExtraBindCount = visibleViewportCount;
+        }
+
+        /// <summary>
+        /// Force-binds a contiguous range so the items exist in m_DisplayedList /
+        /// m_IndexToItemDictionary before an animation starts.
+        /// </summary>
+        public void EnsureItemsBound(int firstIndex, int count)
+        {
+            if (itemsSource == null || count <= 0)
+                return;
+
+            for (var i = 0; i < count; i++)
+            {
+                var index = firstIndex + i;
+                if (index < 0 || index >= itemsSource.Count)
+                    continue;
+
+                // Skip only when in m_DisplayedList — dict entries in m_FreeList (display:None)
+                // need to be re-promoted, not skipped.
+                if (m_IndexToItemDictionary.TryGetValue(index, out var existing)
+                    && ReferenceEquals(existing.node.List, m_DisplayedList))
+                    continue;
+
+                AddElementFromIndex(index);
+
+                // Position arithmetically; write through verticalOffset to keep the cache in sync.
+                if (m_IndexToItemDictionary.TryGetValue(index, out var bound))
+                    bound.verticalOffset = index * fixedItemHeight - (float)m_ScrollValue;
+            }
+        }
+
+        /// <summary>
         /// Event fired at the beginning of <see cref="RefreshItems"/> to allow users to make sure the underlying data is ready to be iterated on.
         /// </summary>
         public event Action BeforeRefreshingItems;
@@ -713,6 +887,13 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// </summary>
         public void RefreshItems()
         {
+            // Defer mid-animation refreshes — items are reparented in the clip container.
+            if (m_Animation is { isAnimating: true })
+            {
+                ScheduleRefreshItems();
+                return;
+            }
+
             BeforeRefreshingItems?.Invoke();
             m_RefreshScheduled?.Pause();
 
@@ -746,6 +927,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_VerticalScroller.style.display = rangeEstimate > height - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
             SetScrollingParameters(m_ScrollValue, maxScrollRange);
             BindVisibleItems(true);
+            UpdateBackgroundFill();
             ApplyHoverStateFromPointerPosition();
         }
 
@@ -785,6 +967,55 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
 
             RecycledItem.ClearItemPool();
+            m_BackgroundFill?.RemoveFromHierarchy();
+        }
+
+        // Fills empty space below the last item with alternating bands for AlternatingRowBackground.All.
+        void UpdateBackgroundFill()
+        {
+            var itemHeight = fixedItemHeight;
+            var count = itemsSource?.Count ?? 0;
+            var availableHeight = m_ContainerClip.resolvedStyle.height;
+            var contentBottom = m_StickyHeight + count * itemHeight;
+            var fillHeight = availableHeight - contentBottom;
+
+            if (showAlternatingRowBackgrounds != AlternatingRowBackground.All || count == 0 || float.IsNaN(itemHeight) || itemHeight <= 0f || float.IsNaN(availableHeight) || fillHeight <= 0f)
+            {
+                m_BackgroundFill?.RemoveFromHierarchy();
+                return;
+            }
+
+            m_BackgroundFill ??= new VisualElement
+            {
+                name = "unity-collection-view__background-fill",
+                pickingMode = PickingMode.Ignore,
+                style = { position = Position.Absolute, left = 0, right = 0, overflow = Overflow.Hidden }
+            };
+
+            if (m_BackgroundFill.parent != m_ContainerClip)
+                m_ContainerClip.Add(m_BackgroundFill);
+
+            m_BackgroundFill.style.top = contentBottom;
+            m_BackgroundFill.style.height = fillHeight;
+
+            var rowCount = Mathf.FloorToInt(fillHeight / itemHeight) + 1;
+            while (m_BackgroundFill.hierarchy.childCount < rowCount)
+                m_BackgroundFill.Add(new VisualElement { pickingMode = PickingMode.Ignore, style = { flexShrink = 0 } });
+
+            var childCount = m_BackgroundFill.hierarchy.childCount;
+            for (var i = 0; i < childCount; i++)
+            {
+                var row = m_BackgroundFill.hierarchy[i];
+                if (i >= rowCount)
+                {
+                    row.style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                row.style.display = DisplayStyle.Flex;
+                row.style.height = itemHeight;
+                row.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassNameUnique, (count + i) % 2 == 1);
+            }
         }
 
         [EventInterest(typeof(PointerUpEvent), typeof(FocusInEvent), typeof(FocusOutEvent), typeof(NavigationSubmitEvent))]
@@ -972,8 +1203,16 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void BindVisibleItems(bool forceBindItem = false)
         {
+            // Defer mid-animation rebinds — see RefreshItems above.
+            if (m_Animation is { isAnimating: true })
+            {
+                ScheduleRefreshItems();
+                return;
+            }
+
             var height = m_LastHeight;
-            var visibleCount = (int)Mathf.Ceil(height / fixedItemHeight) + 3;
+            // m_ExtraBindCount widens the range during an animation so below-viewport items exist.
+            var visibleCount = (int)Mathf.Ceil(height / fixedItemHeight) + 3 + m_ExtraBindCount;
             var animatedStickyRow = -1;
 
             m_FirstVisibleItemIndex = (int)(m_ScrollValue / fixedItemHeight);
@@ -1054,7 +1293,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             foreach (var item in m_FreeList)
             {
                 item.element.style.display = DisplayStyle.None;
+                // Unbind potentially-stale entries so the next promotion rebinds against current data.
+                if (forceBindItem && m_ExtraBindCount == 0 && item.index >= 0)
+                    UnbindItem(item);
             }
+
+            m_Animation?.OnRefreshCompleted();
         }
 
         void AddElementsFromIndex(int firstIndex, int itemCount, bool forceBindItem = false)
@@ -1115,6 +1359,22 @@ namespace UnityEngine.UIElements.HierarchyV2
             itemWrapper.element.style.display = DisplayStyle.Flex;
 
             m_DisplayedList.AddLast(itemWrapper.node);
+
+            if (m_Animation != null)
+            {
+                ItemAnimationContext? context = null;
+                if (m_ActiveAnimationBatch is { } batch
+                    && index >= batch.firstIndex
+                    && index < batch.firstIndex + batch.count)
+                {
+                    context = new ItemAnimationContext
+                    {
+                        batchInfo = batch,
+                        indexInBatch = index - batch.firstIndex,
+                    };
+                }
+                m_Animation.OnItemBound(itemWrapper, index, context);
+            }
         }
 
         void UpdateContainerOffset()
@@ -1242,6 +1502,15 @@ namespace UnityEngine.UIElements.HierarchyV2
                     return item.element;
             }
             return null;
+        }
+
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal RecycledItem GetRecycledItemForIndex(int index)
+        {
+            if (m_StickyRow != null && m_StickyRow.index == index)
+                return m_StickyRow;
+
+            return m_IndexToItemDictionary.TryGetValue(index, out var item) ? item : null;
         }
 
         public bool hasSelection => m_Selection.indexCount > 0;

@@ -15,7 +15,8 @@ sealed partial class PanelElement
     static readonly Vector2Int k_InitialSize = new (100, 100);
 
     PanelSettings m_PanelSettings;
-    ThemeStyleSheet m_Theme;
+    ThemeStyleSheet m_ThemeOverride;
+    ThemeStyleSheet m_AppliedTheme;
 
     Vector2Int m_SubPanelSize = k_InitialSize;
     Vector2 m_Offset = Vector2.zero;
@@ -40,23 +41,32 @@ sealed partial class PanelElement
 
     public ThemeStyleSheet ThemeStyleSheet
     {
-        get => m_Theme;
+        get => m_ThemeOverride;
         set
         {
-            if (m_Theme != value)
-            {
-                if (m_Theme && subRootVisualElement != null)
-                {
-                    subRootVisualElement.styleSheets.Remove(m_Theme);
-                }
-
-                m_Theme = value;
-                if (m_Theme && subRootVisualElement != null)
-                {
-                    subRootVisualElement.styleSheets.Insert(0, m_Theme);
-                }
-            }
+            // Use ReferenceEquals instead of Unity's == so that assigning actual null when
+            // m_ThemeOverride holds a destroyed (fake-null) asset is not swallowed by the
+            // early-return guard — Unity's == treats destroyed objects as equal to null.
+            if (ReferenceEquals(m_ThemeOverride, value))
+                return;
+            m_ThemeOverride = value;
+            UpdateAppliedTheme();
         }
+    }
+
+    void UpdateAppliedTheme()
+    {
+        var resolved = m_ThemeOverride ?? (m_PanelSettings ? m_PanelSettings.themeStyleSheet : null);
+        if (m_AppliedTheme == resolved)
+            return;
+
+        if (m_AppliedTheme && subRootVisualElement != null)
+            subRootVisualElement.styleSheets.Remove(m_AppliedTheme);
+
+        m_AppliedTheme = resolved;
+
+        if (m_AppliedTheme && subRootVisualElement != null)
+            subRootVisualElement.styleSheets.Insert(0, m_AppliedTheme);
     }
 
     public Vector2Int SubPanelSize
@@ -210,7 +220,7 @@ sealed partial class PanelElement
             panelSettings.renderMode = actualRenderMode;
         }
 
-        ThemeStyleSheet = panelSettings.themeStyleSheet;
+        UpdateAppliedTheme();
     }
 
     void ApplyDefaultSettingsToRuntimePanel(RuntimePanel runtimePanel)
@@ -228,7 +238,7 @@ sealed partial class PanelElement
 
         runtimePanel.targetTexture = m_RenderTexture;
         runtimePanel.targetDisplay = 0;
-        runtimePanel.drawsInCameras = false;
+        runtimePanel.SetDrawsInCameras(false);
         runtimePanel.pixelsPerUnit = 100;
         runtimePanel.isFlat = true;
         runtimePanel.clearSettings = new PanelClearSettings { clearDepthStencil = true, clearColor = true, color = Color.clear };
@@ -244,7 +254,7 @@ sealed partial class PanelElement
             atlas.activeFilters = DynamicAtlasFilters.None;
             atlas.customFilter = null;
         }
-        ThemeStyleSheet = null;
+        UpdateAppliedTheme();
     }
 
     void ApplyPanelSettings(PanelSettings panelSettings)

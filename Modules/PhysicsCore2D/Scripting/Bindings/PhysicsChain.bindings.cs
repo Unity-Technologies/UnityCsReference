@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsChain::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsChainDefinition PhysicsChain_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsChain::Create", IsThreadSafe = true)] extern internal static PhysicsChain PhysicsChain_Create(PhysicsBody body, ReadOnlySpan<Vector2> vertices, PhysicsChainDefinition definition);

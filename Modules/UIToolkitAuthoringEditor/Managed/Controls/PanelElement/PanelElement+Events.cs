@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -150,22 +151,23 @@ sealed partial class PanelElement
         if (evt is not IPointerEvent pEvt)
             return Vector3.zero;
 
-        var position = pEvt.localPosition;
+        return LocalToPanelPosition(pEvt.localPosition);
+    }
 
-        var panelPos = new Vector3(
-            position.x,
-            position.y,
-            0);
+    internal Vector2 LocalToPanelPosition(Vector2 localPosition)
+    {
+        var scaledPos = localPosition * SubPanel.pixelsPerPoint;
+        return SubPanel is RuntimePanel runtimePanel
+            ? (Vector2)runtimePanel.ScreenToPanel(scaledPos)
+            : scaledPos;
+    }
 
-        switch (SubPanel)
-        {
-            case RuntimePanel runtimePanel:
-                return runtimePanel.ScreenToPanel(panelPos * SubPanel.pixelsPerPoint);
-            // case EditorPanel editorPanel:
-            //     return panelPos;
-        }
+    internal void PickAll(Vector2 localPosition, List<VisualElement> results)
+    {
+        if (SubPanel == null)
+            return;
 
-        return panelPos;
+        SubPanel.PickAll(LocalToPanelPosition(localPosition), results);
     }
 
     void DispatchNestedPointerEvent<T>(

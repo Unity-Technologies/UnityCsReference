@@ -420,7 +420,7 @@ namespace UnityEditor
         internal bool ExportPackage (string[] guids, string fileName)
         {
             if (m_OrganizationInfos.Length == 0)
-                m_UtilityAdapter.ExportPackage(guids, fileName, null);
+                m_UtilityAdapter.ExportPackageWithGUIDs(guids, fileName, null);
             else
             {
                 if (!isOrgSelected)
@@ -428,7 +428,7 @@ namespace UnityEditor
                     Debug.Log(L10n.Tr("Package export failed because of an incorrect organization name. Please try again."));
                     return false;
                 }
-                m_UtilityAdapter.ExportPackage(guids, fileName, m_OrganizationInfos[m_SelectedOrgIndex].foreignKey);
+                m_UtilityAdapter.ExportPackageWithGUIDs(guids, fileName, m_OrganizationInfos[m_SelectedOrgIndex].foreignKey);
             }
 
             return true;

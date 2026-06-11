@@ -15,7 +15,7 @@ namespace Unity.UI.Builder
     {
         public static bool HasOverriddenField(VisualElement ve)
         {
-            return ve.Q(className: BuilderConstants.InspectorLocalStyleOverrideClassName) != null;
+            return ve.Q(className: BuilderConstants.InspectorLocalStyleOverrideClassName.value) != null;
         }
 
 

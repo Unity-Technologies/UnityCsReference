@@ -24,6 +24,7 @@ namespace Unity.Profiling.Editor.UI
         const string k_FileExtensionData = ".data";
         const string k_FileExtensionRaw = ".raw";
         const int k_MaxFilenameLengthBytes = 255; // Limit on Mac/Linux
+        const int k_MaxPathLengthWindows = 260;   // MAX_PATH on Windows
 
         readonly ProfilerWindow m_ProfilerWindow;
         CaptureFileListModel m_CaptureFileListModel;
@@ -156,12 +157,14 @@ namespace Unity.Profiling.Editor.UI
             if (System.Text.Encoding.UTF8.GetByteCount(filenameWithExtension) > k_MaxFilenameLengthBytes)
                 return false;
 
-            // Then test the full path:
+            // Then test the full path. Modern .NET no longer throws PathTooLongException
+            // from Path.GetFullPath based on length, so we explicitly check the resolved
+            // path length on Windows where MAX_PATH (260) is the bottleneck (UUM-143353).
+            string targetFilePath;
             try
             {
-                var targetFilePath = Path.Combine(Path.GetDirectoryName(sourceFilePath), filenameWithExtension);
-                Path.GetFullPath(targetFilePath);
-                return true;
+                targetFilePath = Path.Combine(Path.GetDirectoryName(sourceFilePath), filenameWithExtension);
+                targetFilePath = Path.GetFullPath(targetFilePath);
             }
             catch (PathTooLongException)
             {
@@ -171,6 +174,9 @@ namespace Unity.Profiling.Editor.UI
             {
                 return true; // Different exception, but the path wasn't too long!
             }
+
+
+            return true;
         }
 
         public bool CanRename(string sourceFilePath, string targetFileName)

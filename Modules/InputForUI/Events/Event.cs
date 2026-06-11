@@ -49,7 +49,7 @@ namespace UnityEngine.InputForUI
             return aType.CompareTo(bType); // normal order
         }
 
-        public static Type[] TypesWithState = new[]
+        public static readonly Type[] TypesWithState = new[]
         {
             Type.KeyEvent,
             Type.PointerEvent,

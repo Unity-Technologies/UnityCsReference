@@ -23,13 +23,13 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a PhysicsMask by specifying multiple bits to set (1).
         /// </summary>
-        /// <param name="bitIndicies">The indices of the bits to set in the mask. An index must be in the range [0, 63].</param>
+        /// <param name="bitIndices">The indices of the bits to set in the mask. An index must be in the range [0, 63].</param>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown if any of the provided bits are out of the range [0, 63].</exception>
-        public PhysicsMask(params int[] bitIndicies)
+        public PhysicsMask(params int[] bitIndices)
         {
             UInt64 mask = 0;
 
-            foreach (var bitIndex in bitIndicies)
+            foreach (var bitIndex in bitIndices)
             {
                 if (bitIndex >= 0 && bitIndex <= 63)
                 {

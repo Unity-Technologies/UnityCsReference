@@ -107,7 +107,7 @@ namespace UnityEngine.Audio
         {
             return GetClipPositionSecInternal(ref m_Handle);
         }
-        
+
         internal float GetStereoPan()
         {
             return GetStereoPanInternal(ref m_Handle);
@@ -132,13 +132,6 @@ namespace UnityEngine.Audio
                 throw new ArgumentException("Trying to set AudioClipPlayable spatial blend outside of range (0.0 - 1.0): " + value);
 
             SetSpatialBlendInternal(ref m_Handle, value);
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("IsPlaying() has been deprecated. Use IsChannelPlaying() instead (UnityUpgradable) -> IsChannelPlaying()", true)]
-        public bool IsPlaying()
-        {
-            return IsChannelPlaying();
         }
 
         public bool IsChannelPlaying()
@@ -225,7 +218,7 @@ namespace UnityEngine.Audio
 
         [NativeMethod(ThrowsException = true)]
         extern private static float GetClipPositionSecInternal(ref PlayableHandle hdl);
-        
+
         [NativeMethod(ThrowsException = true)]
         extern private static float GetStereoPanInternal(ref PlayableHandle hdl);
 

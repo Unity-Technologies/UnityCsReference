@@ -150,7 +150,7 @@ internal class InstanceStatusElement : VisualElement
             ExecutionState.Idle => Icons.ImageName.Idle,
             ExecutionState.Running => status.IsExecutingRunningStage() ? Icons.ImageName.CompletedTask : Icons.ImageName.Loading,
             ExecutionState.Completed => Icons.ImageName.Idle,
-            ExecutionState.Aborted => Icons.ImageName.Warning,
+            ExecutionState.Aborted => Icons.ImageName.Idle,
             ExecutionState.Failed => Icons.ImageName.Error,
             ExecutionState.Invalid => Icons.ImageName.Error,
             _ => Icons.ImageName.Error
@@ -159,7 +159,7 @@ internal class InstanceStatusElement : VisualElement
         m_FreeRunIcon.EnableClassToggle(k_InstanceFoldoutTitleFreeRunIconActiveClass, k_InstanceFoldoutTitleFreeRunIconInactiveClass, m_Instance.IsFreeRunMode());
         m_DriftIcon.visible = instance.Drifted;
 
-        if (state is ExecutionState.Idle or ExecutionState.Completed)
+        if (state is ExecutionState.Idle or ExecutionState.Completed or ExecutionState.Aborted)
         {
             m_StatusLabel.text = "Idle";
             return;

@@ -27,32 +27,39 @@ namespace UnityEditor.Build
 
         // Streaming Assets
         private Dictionary<NPath, NPath> StreamingAssetFiles { get; } = new Dictionary<NPath, NPath>();
-        private List<string> AdditionalMetadataLocations = new List<string>();
+        private List<string> AdditionalBuildReportDirectories = new List<string>();
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal IEnumerable<(NPath dst, NPath src)> StreamingAssets => StreamingAssetFiles.Select(e => (e.Key, e.Value));
 #pragma warning restore UA2001
 
-        ///<summary>Adds an additional build metadata path to the BuildPlayerOptions.previousBuildMetadataLocations array passed in as part of the build.
+        ///<summary>Adds a build report directory to <see cref="BuildPlayerOptions.previousBuildReportDirectories"/> for this build.
         ///</summary>
         ///<remarks>
         /// This is useful if you want the player build
         /// to retrieve type stripping information from content-only builds you do prior to the player build.
         ///
-        /// If this method is called on the same path multiple times, it will only be called once.
+        /// If this method is called on the same path multiple times, the path is only added once.
         ///
-        /// If the path passed into this method is not a valid build metadata directory, at build time an error will be thrown.
+        /// If the path passed into this method is not a valid build report directory, at build time an error will be thrown.
         ///
-        /// For more information on locating the build metadata directory for a build, refer to <see cref="UnityEditor.Build.BuildHistory"/>.</remarks>
-        ///<param name="metadataPath">The path to a build metadata directory. If the path is invalid, an error will be thrown during the build process.</param>
-        public void AddAdditionalMetadataPathToPlayerOptions(string metadataPath)
+        /// For more information on locating the build report directory for a build, refer to <see cref="UnityEditor.Build.BuildHistory"/>.</remarks>
+        ///<param name="directory">The path to a build report directory. If the path is invalid, an error will be thrown during the build process.</param>
+        public void AddPreviousBuildReportDirectory(string directory)
         {
-            if (!AdditionalMetadataLocations.Contains(metadataPath))
-                AdditionalMetadataLocations.Add(metadataPath);
+            if (!AdditionalBuildReportDirectories.Contains(directory))
+                AdditionalBuildReportDirectories.Add(directory);
         }
 
-        internal string[] RetrieveAdditionalMetadataLocations()
+        /// <undoc/>
+        [Obsolete("AddAdditionalMetadataPathToPlayerOptions has been renamed to AddPreviousBuildReportDirectory. (UnityUpgradable) -> AddPreviousBuildReportDirectory(*)", true)]
+        public void AddAdditionalMetadataPathToPlayerOptions(string metadataPath)
         {
-            return AdditionalMetadataLocations.ToArray();
+            AddPreviousBuildReportDirectory(metadataPath);
+        }
+
+        internal string[] RetrieveAdditionalBuildReportDirectories()
+        {
+            return AdditionalBuildReportDirectories.ToArray();
         }
 
         ///<summary>Add additional streaming assets to the built player data. For example, you can include AssetBundles or other streaming assets without first putting them in the project StreamingAssets folder.</summary>

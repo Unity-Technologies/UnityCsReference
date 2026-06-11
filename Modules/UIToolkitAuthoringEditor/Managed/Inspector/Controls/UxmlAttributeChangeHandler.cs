@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditor.UIElements.Bindings;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -95,20 +97,25 @@ class UxmlAttributeChangeHandler
                     var uxmlAsset = isTemplateInstance ? null : syncPathResults.uxmlAsset;
                     var value = property.boxedValue;
 
-                    // Convert the value to an enum if needed as enums are stored as ints in the serialized data but we want to set them as enums on the attribute description.
-                    if (syncPathResults.attributeDescription != null && syncPathResults.attributeDescription.type.IsEnum)
+                    var serializedData = syncPathResults.serializedData as UxmlSerializedData;
+                    if (syncPathResults.attributeDescription != null)
                     {
-                        value = Enum.ToObject(syncPathResults.attributeDescription.type, value);
+                        if (syncPathResults.attributeDescription.type.IsEnum)
+                        {
+                            // Convert the value to an enum if needed as enums are stored as ints in the serialized data but we want to set them as enums on the attribute description.
+                            value = Enum.ToObject(syncPathResults.attributeDescription.type, value);
+                        }
+                        else if (syncPathResults.attributeDescription.isList && value is not IList && syncPathResults.attributeDescription is not UxmlSerializedUxmlObjectAttributeDescription)
+                        {
+                            // For list elements, property.boxedValue is just the edited item, but we need the full list.
+                            value = syncPathResults.attributeDescription.GetSerializedValue(serializedData);
+                        }
                     }
 
-                    var cmd = new SetAttributeCommand(vta, uxmlAsset, syncPathResults.serializedData as UxmlSerializedData, syncPathResults.attributeDescription, value);
-                    cmd.Execute();
+                    SetAttributeCommand.Execute(CommandSources.Inspector, vta, uxmlAsset, serializedData, syncPathResults.attributeDescription, value);
 
                     if (isTemplateInstance)
-                    {
-                        using var cmdOverride = SetAttributeOverrideCommand.GetPooled(this, Context.editedVisualTreeAsset, syncPathResults.attributeDescription, Context.element, value);
-                        UICommandQueue.EnqueueCommand(cmdOverride);
-                    }
+                        SetAttributeOverrideCommand.Execute(CommandSources.Inspector, Context.editedVisualTreeAsset, syncPathResults.attributeDescription, Context.element, value);
                 }
 
                 try

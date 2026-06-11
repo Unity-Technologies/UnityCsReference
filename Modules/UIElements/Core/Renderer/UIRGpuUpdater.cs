@@ -9,9 +9,9 @@ namespace UnityEngine.UIElements.UIR
     enum GpuUpdaterType
     {
         // The vertex/index GPU buffers are updated directly through mapped updates. This typically requires some
-        // synchronization to avoid updating data that is being used by the GPU. 
+        // synchronization to avoid updating data that is being used by the GPU.
         Mapped,
-        
+
         // A GPU staging buffer is mapped and updated with all the changes of the frame. Then, GPU copies are performed
         // from this buffer to the vertex/index GPU buffers. The staging buffer cannot be immediately be reused. This is
         // equivalent to StagedFull with the exception that there is no CPU staging buffer.
@@ -23,13 +23,13 @@ namespace UnityEngine.UIElements.UIR
         StagedCpuGpu,
     }
 
-    abstract class GpuUpdater<T> : IDisposable where T : unmanaged
+    abstract class GpuUpdater : IDisposable
     {
         // Called before the data can be modified
         public abstract void AdvanceFrame();
 
         // Queues the changes from the DataSet to be sent to the GPU
-        public abstract void ProcessDataSet(DataSet<T> dataSet);
+        public abstract void ProcessDataSet(DataSet dataSet);
 
         // Completes the update process, ensuring all data has been sent to the GPU
         public abstract void CompleteUpdate();

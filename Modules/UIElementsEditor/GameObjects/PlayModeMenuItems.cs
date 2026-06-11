@@ -6,10 +6,12 @@ using System;
 using System.IO;
 using UnityEngine;
 using UnityEditor.SceneManagement;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class PlayModeMenuItems
     {
         internal static readonly string k_UITKEssentialResourcesFolderPath = Path.Combine(k_AssetsFolder, k_UITKEssentialResourcesFolderName);
@@ -30,6 +32,7 @@ namespace UnityEditor.UIElements
         /// 2. An existing ThemeStyleSheet asset in the project.
         /// 3. A newly created default theme file (project-local .tss that is included in builds).
         /// </remarks>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static PanelSettings GetPanelSettingsFromProjectOrCreate()
         {
             var guids = AssetDatabase.FindAssets(k_AssetSearchByTypePanelSettings, k_AssetsFolderFilter);

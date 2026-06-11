@@ -66,17 +66,17 @@ namespace UnityEngine.UIElements.UIR
     unsafe partial class Utility
     {
         internal enum GPUBufferType { Vertex, Index }
-        unsafe public class GPUBuffer<T> : IDisposable where T : unmanaged
+        unsafe public class GPUBuffer : IDisposable
         {
             IntPtr buffer;
-            int elemCount;
-            int elemStride;
+            int elementCount;
+            int elementStride;
 
-            unsafe public GPUBuffer(int elementCount, GpuBufferFlags bufferFlags)
+            unsafe public GPUBuffer(int elementCount, int elementStride, GpuBufferFlags bufferFlags)
             {
-                elemCount = elementCount;
-                elemStride = UnsafeUtility.SizeOf<T>();
-                buffer = AllocateBuffer(elementCount, elemStride, (int)bufferFlags);
+                this.elementCount = elementCount;
+                this.elementStride = elementStride;
+                buffer = AllocateBuffer(elementCount, elementStride, (int)bufferFlags);
             }
 
             public void Dispose()
@@ -91,8 +91,8 @@ namespace UnityEngine.UIElements.UIR
                 UpdateBufferRanges(buffer, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, writeStart, writeEnd);
             }
 
-            public int ElementStride { get { return elemStride; } }
-            public int Count { get { return elemCount; } }
+            public int ElementStride { get { return elementStride; } }
+            public int ByteCount { get { return elementCount * elementStride; } }
             internal IntPtr BufferPointer { get { return buffer; } }
         }
 
@@ -118,9 +118,10 @@ namespace UnityEngine.UIElements.UIR
         {
             if (EngineUpdate != null)
             {
-                s_MarkerRaiseEngineUpdate.Begin();
-                EngineUpdate.Invoke();
-                s_MarkerRaiseEngineUpdate.End();
+                using (s_MarkerRaiseEngineUpdate.Auto())
+                {
+                    EngineUpdate.Invoke();
+                }
             }
         }
 
@@ -137,7 +138,7 @@ namespace UnityEngine.UIElements.UIR
         public extern static void SyncJobFence(JobHandle fence);
         [NativeMethod(IsThreadSafe = true)] extern static void SetVectorArray(IntPtr shaderPropertySheet, int name, Vector4[] values, int count);
         [NativeMethod(IsThreadSafe = true)] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
-        [NativeMethod(IsThreadSafe = true)] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
+        [NativeMethod(IsThreadSafe = true)] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl, KickRangesReason kickReason);
         [NativeMethod(IsThreadSafe = true)] public extern static IntPtr AllocateShaderPropertySheet();
         [NativeMethod(IsThreadSafe = true)] public extern static void SetAllTextures(IntPtr shaderPropertySheet, IntPtr textureNames, IntPtr texturePtrs, int count);
         [NativeMethod(IsThreadSafe = true)] public extern static void SetPropertyBlock(MaterialPropertyBlock props);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.Accessibility;
 using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
@@ -26,6 +27,7 @@ namespace Unity.Profiling.Editor.UI
             m_SettingsService = settingsService;
 
             m_SettingsService.TargetFrameDurationChanged += OnTargetFrameDurationChanged;
+            UserAccessiblitySettings.colorBlindConditionChanged += OnColorBlindSettingChanged;
         }
 
         public void ReloadData(RangeBottlenecksModel model)
@@ -77,6 +79,7 @@ namespace Unity.Profiling.Editor.UI
         {
             if (disposing)
             {
+                UserAccessiblitySettings.colorBlindConditionChanged -= OnColorBlindSettingChanged;
                 m_SettingsService.TargetFrameDurationChanged -= OnTargetFrameDurationChanged;
             }
 
@@ -104,6 +107,14 @@ namespace Unity.Profiling.Editor.UI
             RefreshView();
         }
 
+        void OnColorBlindSettingChanged()
+        {
+            if (IsViewLoaded == false)
+                return;
+
+            ApplyBarColors();
+        }
+
         void RefreshView()
         {
             if (m_Model.HasValue == false)
@@ -117,8 +128,15 @@ namespace Unity.Profiling.Editor.UI
             m_GpuLabel.text = $"GPU ({gpuOverBudgetPercentage}% of frames over target)";
             m_CpuBar.style.width = new StyleLength(new Length(cpuOverBudgetPercentage, LengthUnit.Percent));
             m_GpuBar.style.width = new StyleLength(new Length(gpuOverBudgetPercentage, LengthUnit.Percent));
+            ApplyBarColors();
 
             SetActivityIndicatorVisible(false);
+        }
+
+        void ApplyBarColors()
+        {
+            m_CpuBar.style.backgroundColor = BottlenecksChartViewModel.GetColorForDataSeries(BottlenecksChartViewModel.CpuDataSeriesIndex);
+            m_GpuBar.style.backgroundColor = BottlenecksChartViewModel.GetColorForDataSeries(BottlenecksChartViewModel.GpuDataSeriesIndex);
         }
     }
 }

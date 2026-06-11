@@ -63,7 +63,7 @@ namespace UnityEditor.Build.Analysis
 
         public MessagesConsole()
         {
-            AddToClassList("overview-section");
+            AddToClassList("section");
 
             var template = EditorGUIUtility.LoadRequired(k_UxmlPath) as VisualTreeAsset;
             template.CloneTree(this);
@@ -259,6 +259,7 @@ namespace UnityEditor.Build.Analysis
 
         private void ResetFilterState()
         {
+            m_SearchDebounce?.Pause();
             m_ShowErrors = true;
             m_ShowWarnings = true;
             m_ShowInfo = true;

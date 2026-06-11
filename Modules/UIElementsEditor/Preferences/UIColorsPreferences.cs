@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements;
 
 class UIColorsPreferences(IEnumerable<string> keywords = null)
-    : SettingsProvider("Preferences/Colors/UI", SettingsScope.User, keywords)
+    : SettingsProvider("Preferences/Colors/UI Authoring", SettingsScope.User, keywords)
 {
     [SettingsProvider]
     internal static SettingsProvider CreateUIColorsPreferences()

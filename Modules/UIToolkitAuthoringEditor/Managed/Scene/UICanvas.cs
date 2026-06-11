@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -125,6 +124,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     EntityId m_SettingsKey;
     bool m_PreviewMode;
     int m_ScopeLevel = 0;
+    uint m_LastSeenSubPanelVersion = uint.MaxValue;
 
     string m_StorageKey;
 
@@ -447,6 +447,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     void OnPanelElementWasRepainted(PanelElement panelElement)
     {
+        // Do NOT MarkDirtyRepaint here, as it will be handled in ForceRuntimePanelUpdate if the panel's version
+        // has changed since last tick.
         m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.RenderTexture);
     }
 
@@ -575,12 +577,38 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
             BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(scaleMode);
     }
 
+    internal Vector2 WorldToSubPanel(Vector2 worldPosition)
+    {
+        if (m_PanelElement?.SubPanel == null)
+            return worldPosition;
+
+        return m_PanelElement.LocalToPanelPosition(m_DocumentRoot.WorldToLocal(worldPosition));
+    }
+
+    internal void PickAll(Vector2 worldPosition, List<VisualElement> results)
+    {
+        if (m_PanelElement?.SubPanel == null)
+            return;
+
+        m_PanelElement.PickAll(m_DocumentRoot.WorldToLocal(worldPosition), results);
+    }
+
     void ForceRuntimePanelUpdate(Panel p)
     {
         if (p != panel)
             return;
 
         m_PanelElement?.FrameUpdate();
+
+        var subPanel = m_PanelElement?.SubPanel;
+        if (subPanel == null)
+            return;
+
+        if (subPanel.version == m_LastSeenSubPanelVersion)
+            return;
+
+        m_LastSeenSubPanelVersion = subPanel.version;
+        m_DocumentRoot?.MarkDirtyRepaint();
     }
 
     void OnHighlight(in CommandContext context)

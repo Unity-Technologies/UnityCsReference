@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace UnityEditor.Build.Analysis
@@ -43,25 +44,56 @@ namespace UnityEditor.Build.Analysis
                 throw new InvalidDataException($"Missing build report for build '{entry.BuildSessionGUID}'.");
             var reportData = m_BuildReportConverter.Convert(buildReport);
 
-            if (!m_BuildHistory.TryGetMetadataPath(entry.BuildSessionGUID, out var metadataPath))
-                throw new InvalidDataException($"No metadata path available for build '{entry.BuildSessionGUID}'.");
+            if (!m_BuildHistory.TryGetBuildReportDirectory(entry.BuildSessionGUID, out var metadataPath))
+                throw new InvalidDataException($"No build report directory available for build '{entry.BuildSessionGUID}'.");
 
-            var analysis = BuildAnalysisFrom(reportSummary, reportData);
+            var rootStats = reportSummary.BuildType == BuildType.ContentDirectory
+                ? LoadRootAssetStats(metadataPath)
+                : Array.Empty<RootAssetStats>();
 
-            var analysisPath = Path.Combine(metadataPath, BuildAnalysisConstants.k_BuildAnalysisFileName);
+            var analysis = BuildAnalysisFrom(reportSummary, reportData, rootStats);
+
+            var analysisPath = Path.Combine(metadataPath, BuildAnalysisConstants.k_BuildAnalysisRelativePath);
             var json = JsonUtility.ToJson(analysis, true);
             m_FileSystem.WriteAllText(analysisPath, json);
 
             return analysis;
         }
 
-        private static BuildAnalysis BuildAnalysisFrom(BuildReportSummary reportSummary, BuildReportData reportData)
+        private RootAssetStats[] LoadRootAssetStats(string metadataPath)
+        {
+            var contentLayoutPath = Path.Combine(metadataPath, BuildAnalysisConstants.k_ContentLayoutFileName);
+            if (!m_FileSystem.Exists(contentLayoutPath))
+            {
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} ContentLayout.json not found at '{contentLayoutPath}'. RootAssets will be empty.");
+                return Array.Empty<RootAssetStats>();
+            }
+
+            try
+            {
+                // FromJson is preferred over ContentLayout.Load so all I/O stays behind
+                // IBuildAnalysisFileSystem (testable). FromJson still emits the version-mismatch warning.
+                var layout = ContentLayout.FromJson(m_FileSystem.ReadAllText(contentLayoutPath));
+                if (layout == null)
+                    return Array.Empty<RootAssetStats>();
+                return RootAssetStatsCalculator.Calculate(layout);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Failed to read or parse ContentLayout.json at '{contentLayoutPath}': {e.Message}");
+                return Array.Empty<RootAssetStats>();
+            }
+        }
+
+        private static BuildAnalysis BuildAnalysisFrom(BuildReportSummary reportSummary, BuildReportData reportData, RootAssetStats[] rootStats)
         {
             var stepTable = ConvertSteps(reportData.Steps);
             var analysisMessages = ConvertMessages(reportData.Messages, stepTable.Length);
             ConvertAssets(reportData.Assets, out var assetTable, out var importerTypeTable);
+            var rootAssetTable = ConvertRootAssets(rootStats, assetTable);
             var computed = BuildComputed(
                 assetTable,
+                rootAssetTable,
                 analysisMessages,
                 reportData.CachedReusePercent);
 
@@ -73,6 +105,7 @@ namespace UnityEditor.Build.Analysis
                 {
                     BuildSessionGUID = reportSummary.BuildSessionGUID.ToString(),
                     BuildName = reportSummary.BuildName ?? string.Empty,
+                    BuildProfilePath = reportSummary.BuildProfilePath ?? string.Empty,
                     Platform = reportSummary.Platform.ToString(),
                     BuildResult = reportSummary.BuildResult.ToString(),
                     BuildStartedAtUtc = reportSummary.BuildStartedAt ?? string.Empty,
@@ -91,6 +124,7 @@ namespace UnityEditor.Build.Analysis
                     Steps = stepTable,
                     Assets = assetTable,
                     ImporterTypes = importerTypeTable,
+                    RootAssets = rootAssetTable,
                 },
                 Messages = analysisMessages,
                 Computed = computed,
@@ -170,7 +204,7 @@ namespace UnityEditor.Build.Analysis
                 {
                     Id = i,
                     Path = src.Path ?? string.Empty,
-                    GUID = src.GUID ?? string.Empty,
+                    GUID = src.GUID,
                     OutputSizeBytes = src.OutputSizeBytes,
                     ObjectCount = src.ObjectCount,
                     ResourceCount = src.ResourceCount,
@@ -181,14 +215,53 @@ namespace UnityEditor.Build.Analysis
             importerTypes = importerList.ToArray();
         }
 
+        private static BuildAnalysisRootAsset[] ConvertRootAssets(
+            RootAssetStats[] rootStats,
+            BuildAnalysisAsset[] assets)
+        {
+            if (rootStats.Length == 0)
+                return Array.Empty<BuildAnalysisRootAsset>();
+
+            var pathToAssetId = new Dictionary<string, int>(assets.Length, StringComparer.Ordinal);
+            foreach (var a in assets)
+            {
+                if (!string.IsNullOrEmpty(a.Path))
+                    pathToAssetId[a.Path] = a.Id;
+            }
+
+            var result = new List<BuildAnalysisRootAsset>(rootStats.Length);
+            foreach (var s in rootStats)
+            {
+                if (string.IsNullOrEmpty(s.AssetPath) || !pathToAssetId.TryGetValue(s.AssetPath, out var assetId))
+                {
+                    // Root assets are project source assets that should appear in BuildReport.assetStats.
+                    // Skip on the rare miss rather than emit a sentinel AssetId.
+                    Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Root asset '{s.AssetPath}' not found in Assets table.");
+                    continue;
+                }
+                result.Add(new BuildAnalysisRootAsset
+                {
+                    Id = result.Count,
+                    AssetId = assetId,
+                    DirectAssetCount = s.DirectAssets,
+                    DirectSizeBytes = s.DirectSize,
+                    TotalAssetCount = s.TotalAssets,
+                    TotalSizeBytes = s.TotalSize,
+                });
+            }
+            return result.ToArray();
+        }
+
         private static BuildAnalysisComputed BuildComputed(
             BuildAnalysisAsset[] assets,
+            BuildAnalysisRootAsset[] rootAssets,
             BuildAnalysisMessage[] messages,
             float cacheReusePercent)
         {
             var counts = new BuildAnalysisCounts
             {
                 AssetCount = assets.Length,
+                RootAssetCount = rootAssets.Length,
             };
 
             foreach (var asset in assets)

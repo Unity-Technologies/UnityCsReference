@@ -120,7 +120,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(Quaternion lhs, Quaternion rhs) =>
             // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            !(IsEqualUsingDot(Dot(in lhs, in rhs)));
 
 
         // *undocumented*

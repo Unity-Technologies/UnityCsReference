@@ -126,6 +126,8 @@ namespace Unity.GraphToolkit.Editor
         // Used to limit the hit box size when there is an expand toggle.
         internal VisualElement HitBoxLimitElement => m_HitBoxLimitElement ?? m_ExpandToggle;
 
+        internal VisualElement CreateFromPortHitBoxElement => m_CreateFromPortHitBox;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PortConnectorPart"/> class.
         /// </summary>

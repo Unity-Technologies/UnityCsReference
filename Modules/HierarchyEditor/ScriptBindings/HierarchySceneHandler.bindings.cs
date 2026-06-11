@@ -26,15 +26,14 @@ namespace Unity.Hierarchy.Editor
     [NativeHeader("Modules/HierarchyEditor/HierarchySceneHandlerBindings.h")]
     public sealed class HierarchySceneHandler :
         HierarchyNodeTypeHandler,
-        IHierarchyEntityIdConverter,
         IHierarchyEditorNodeTypeHandler
     {
-        const string k_SceneNodeUssClass = "hierarchy-item__scene-node";
-        const string k_NonMainStageSceneNodeUssClass = "hierarchy-item__scene-node--stage";
-        const string k_NonMainStageSceneNodeToggleUssClass = "hierarchy-item__scene-node__toggle--stage";
-        const string k_SceneNodeContainerUssClass = "hierarchy-item__scene-node-container";
-        const string k_ActiveSceneNodeUssClass = "hierarchy-item__active-scene-node";
-        const string k_SceneUnloadedUssClass = "unity-disabled";
+        static readonly UniqueStyleString k_SceneNodeUssClass = new("hierarchy-item__scene-node");
+        static readonly UniqueStyleString k_NonMainStageSceneNodeUssClass = new("hierarchy-item__scene-node--stage");
+        static readonly UniqueStyleString k_NonMainStageSceneNodeToggleUssClass = new("hierarchy-item__scene-node__toggle--stage");
+        static readonly UniqueStyleString k_SceneNodeContainerUssClass = new("hierarchy-item__scene-node-container");
+        static readonly UniqueStyleString k_ActiveSceneNodeUssClass = new("hierarchy-item__active-scene-node");
+        static readonly UniqueStyleString k_SceneUnloadedUssClass = new("unity-disabled");
 
         internal new static class BindingsMarshaller
         {
@@ -259,7 +258,7 @@ namespace Unity.Hierarchy.Editor
                     Scene scene = handler switch
                     {
                         HierarchySceneHandler sceneHandler => sceneHandler.GetScene(in node),
-                        HierarchySubSceneHandler subSceneHandler => subSceneHandler.GetScene(in node),
+                        HierarchySubSceneAuthoringHandler subSceneHandler => subSceneHandler.GetScene(in node),
                         _ => default
                     };
 
@@ -287,7 +286,7 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
         {
             var gameObjectNodeType = Hierarchy.GetNodeType<HierarchyGameObjectHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var childNodeType = view.ViewModel.GetNodeType(in child);
             return childNodeType == gameObjectNodeType || childNodeType == subSceneNodeType;
         }
@@ -675,9 +674,9 @@ namespace Unity.Hierarchy.Editor
                 if (go != null)
                     return go.scene;
             }
-            else if (nodeType == Hierarchy.GetNodeType<HierarchySubSceneHandler>())
+            else if (nodeType == Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>())
             {
-                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneHandler>();
+                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneAuthoringHandler>();
                 var go = subSceneHandler.GetGameObject(in node);
                 if (go != null)
                     return go.scene;
@@ -685,14 +684,6 @@ namespace Unity.Hierarchy.Editor
 
             return new Scene();
         }
-
-        HierarchyNode IHierarchyEntityIdConverter.GetNode(EntityId entityId) => GetNodeFromEntityId(entityId);
-
-        void IHierarchyEntityIdConverter.GetNodes(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes) => GetNodesFromEntityIds(entityIds, outNodes);
-
-        EntityId IHierarchyEntityIdConverter.GetEntityId(in HierarchyNode node) => GetEntityIdFromNode(in node);
-
-        void IHierarchyEntityIdConverter.GetEntityIds(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds) => GetEntityIdsFromNodes(nodes, outEntityIds);
 
         [FreeFunction("HierarchySceneHandlerBindings::GetStaticNodeType", IsThreadSafe = true)]
         static extern int GetStaticNodeType();
@@ -702,18 +693,6 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchySceneHandlerBindings::OpenSceneUnloaded", HasExplicitThis = true, IsThreadSafe = true)]
         extern void OpenSceneUnloaded(Scene scene);
-
-        [NativeMethod(IsThreadSafe = true)]
-        extern HierarchyNode GetNodeFromEntityId(EntityId entityId);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        extern void GetNodesFromEntityIds(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes);
-
-        [NativeMethod(IsThreadSafe = true)]
-        extern EntityId GetEntityIdFromNode(in HierarchyNode node);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        extern void GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

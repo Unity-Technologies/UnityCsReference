@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -496,6 +497,40 @@ namespace Unity.Hierarchy
         /// <returns>The path of the node.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern string GetPath(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the hierarchy node corresponding to the given entity id.
+        /// </summary>
+        /// <param name="entityId">The entity id.</param>
+        /// <returns>The hierarchy node, or <see cref="HierarchyNode.Null"/> if not found.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern HierarchyNode GetNodeFromEntityId(EntityId entityId);
+
+        /// <summary>
+        /// Gets the hierarchy nodes corresponding to the given entity ids.
+        /// </summary>
+        /// <param name="entityIds">The entity ids to look up.</param>
+        /// <param name="outNodes">The span to fill with hierarchy nodes. Must have the same length as <paramref name="entityIds"/>.</param>
+        /// <returns>The number of slots that could not be resolved by any handler.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetNodesFromEntityIds(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes);
+
+        /// <summary>
+        /// Gets the entity id corresponding to the given hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The entity id, or <see cref="EntityId.None"/> if not found.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern EntityId GetEntityIdFromNode(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the entity ids corresponding to the given hierarchy nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes to look up.</param>
+        /// <param name="outEntityIds">The span to fill with entity ids. Must have the same length as <paramref name="nodes"/>.</param>
+        /// <returns>The number of slots that could not be resolved by any handler.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
 
         /// <summary>
         /// Force an update of the hierarchy, even if no changes are pending.

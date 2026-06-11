@@ -33,7 +33,7 @@ namespace UnityEditor.UIElements.Debugger
         private int m_SelectedPanelDropDownIndex;
         private bool m_TryAutoSelect;
 
-        private static int s_PopupHash = "EditorPopup".GetHashCode();
+        private static readonly int s_PopupHash = "EditorPopup".GetHashCode();
         private const float kSingleLineHeight = 16;
         private const float kDropDownWidth = 300;
 

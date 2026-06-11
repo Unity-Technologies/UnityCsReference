@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -13,7 +14,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.PlayModeModule")]
+    [VisibleToOtherModules("UnityEditor.PlayModeModule", "UnityEditor.UIToolkitAuthoringModule")]
     [EditorWindowTitle(title = k_InspectorWindowTitle, useTypeNameAsIconName = true)]
     internal class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
     {
@@ -199,12 +200,13 @@ namespace UnityEditor
                 return;
 
             RebuildContentsContainers();
-            m_PreviewWindow?.RebuildContentsContainers();
-
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
+
+            if (m_PreviewWindow != null)
+                m_PreviewWindow.SetParentInspector(this);
 
             UpdateSupportedDataModesList();
         }
@@ -225,6 +227,7 @@ namespace UnityEditor
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         static internal void RepaintAllInspectors()
         {
             foreach (var win in m_AllInspectors)
@@ -236,15 +239,35 @@ namespace UnityEditor
             return m_AllInspectors;
         }
 
+        protected override void Update()
+        {
+            var lastRenderTimeBefore = m_lastRenderedTime;
+            base.Update();
+            // The render time has changed, so a repaint has been triggered on the main inspector window
+            // We should also trigger it on the associated preview if the preview is in a separated window
+            if (m_PreviewWindow != null && (m_lastRenderedTime - lastRenderTimeBefore) > 0f)
+            {
+                m_PreviewWindow.Repaint();
+            }
+        }
+
         [UsedByNativeCode]
         internal static void RedrawFromNative()
         {
             // This method could be called before `OnEnable` is being called on an editor window.
             // Therefore it is important to make sure your editor window is enabled/active/alive first,
             // which means it have to be contained in `activeEditorWindows` list.
-            foreach (var editorWindow in activeEditorWindows)
+
+            // Acquire a snapshot instead of directly iterating over activeEditorWindows as calling
+            // RebuildContentsContainers can mutate activeEditorWindows.
+            var activeWindowCount = activeEditorWindows.Count;
+            using var windowsSnapshot = new RentSpan<EditorWindow>(activeWindowCount);
+            for (int i = 0; i < activeWindowCount; ++i)
+                windowsSnapshot.Span[i] = activeEditorWindows[i];
+
+            foreach (var editorWindow in windowsSnapshot)
             {
-                if (editorWindow is PropertyEditor propertyEditor)
+                if (editorWindow != null && editorWindow is PropertyEditor propertyEditor)
                     propertyEditor.RebuildContentsContainers();
             }
         }
@@ -465,7 +488,6 @@ namespace UnityEditor
                 Event.current.Use();
             m_PreviewWindow = CreateInstance(typeof(PreviewWindow)) as PreviewWindow;
             m_PreviewWindow.SetParentInspector(this);
-            m_PreviewWindow.RebuildContentsContainers();
             m_PreviewWindow.Show();
             Repaint();
             IMGUIContainer.MakeCurrentIMGUIContainerDirty();

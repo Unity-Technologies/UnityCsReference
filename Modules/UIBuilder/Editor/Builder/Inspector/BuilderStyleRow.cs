@@ -9,7 +9,7 @@ namespace Unity.UI.Builder
     [UxmlElement]
     internal partial class BuilderStyleRow : BindableElement
     {
-        internal static readonly string ussClassName = "unity-builder-style-row";
+        internal static readonly UniqueStyleString ussClassName = new("unity-builder-style-row");
 
         VisualElement m_Container;
 

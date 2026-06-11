@@ -12,12 +12,19 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 class HighlightCommand : Command<HighlightCommand>
 {
-    public static HighlightCommand GetPooled(HashSet<VisualElement> elementsToHighlight, HashSet<StyleRule> rulesToHighlight)
+    public static HighlightCommand GetPooled(object source, HashSet<VisualElement> elementsToHighlight, HashSet<StyleRule> rulesToHighlight)
     {
         var pooled = GetPooled();
+        pooled.Source = source;
         pooled.Elements = elementsToHighlight;
         pooled.Rules = rulesToHighlight;
         return pooled;
+    }
+
+    public static void Execute(object source, HashSet<VisualElement> elementsToHighlight, HashSet<StyleRule> rulesToHighlight)
+    {
+        using var command = GetPooled(source, elementsToHighlight, rulesToHighlight);
+        UICommandQueue.Execute(command);
     }
 
     /// <summary>

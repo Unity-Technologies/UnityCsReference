@@ -2,7 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
+
+using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +13,7 @@ namespace UnityEngine.UIElements
         // Used by our automated tests.
         internal bool m_Changed;
         internal bool m_ShouldInvokeUpdateValue;
+        internal string m_compositionString = string.Empty;
 
         const int k_LineFeed = 10;
         const int k_Space = 32;
@@ -65,20 +67,27 @@ namespace UnityEngine.UIElements
 
         void OnFocus(FocusEvent _)
         {
-            GUIUtility.imeCompositionMode = IMECompositionMode.On;
+            (textElement.panel as BaseVisualElementPanel).IMESetIsEnteringText(true);
             textElement.edition.SaveValueAndText();
         }
 
         void OnBlur(BlurEvent _)
         {
-            GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
+            (textElement.panel as BaseVisualElementPanel).IMESetIsEnteringText(false);
+            m_compositionString = string.Empty;
+            editingUtilities.isCompositionActive = false;
         }
 
-        void OnIMEInput(IMEEvent _)
+        void OnIMEInput(IMEEvent e)
         {
-            var oldIsCompositionActive = editingUtilities.isCompositionActive;
-            if (editingUtilities.UpdateImeState() || oldIsCompositionActive != editingUtilities.isCompositionActive)
+            m_compositionString = e.compositionString ?? string.Empty;
+            // Event composition string should match panel's (same source in production; tests inject panel delegate).
+            Debug.Assert(m_compositionString == ((textElement.panel as BaseVisualElementPanel).IMEGetCompositionString() ?? string.Empty));
+            // Refresh the label whenever IME composition is active or its state just transitioned
+            // (active->inactive needs a final update to clear the preview).
+            if (editingUtilities.UpdateImeState(e.compositionString) || editingUtilities.isCompositionActive)
                 UpdateLabel(true);
+            e.StopPropagation();
         }
 
         void OnKeyDown(KeyDownEvent evt)
@@ -187,8 +196,15 @@ namespace UnityEngine.UIElements
                     // if we have a composition string, make sure we clear the previous selection.
                     var oldIsCompositionActive = editingUtilities.isCompositionActive;
                     generatePreview = true;
-                    if (editingUtilities.UpdateImeState() || oldIsCompositionActive != editingUtilities.isCompositionActive)
+
+                    //TODO Remove this once we are certain that all IME changes are going through IMEEvents)
+                    if (editingUtilities.UpdateImeState( (textElement.panel as BaseVisualElementPanel).IMEGetCompositionString() ) || oldIsCompositionActive != editingUtilities.isCompositionActive)
                         m_Changed = true;
+
+                    // Only treat as legacy IME signal when keyCode is None and character is null (platforms may send e.g. KeypadEnter as (char)3 with keyCode None).
+                    if (evt.keyCode == KeyCode.None && c == '\0')
+                        Debug.LogError($"IME events are supposed to come through IMEEvent instead of KeyDown: {evt}");
+                    Debug.Assert(!m_Changed);
                 }
             }
             if (m_Changed || m_ShouldInvokeUpdateValue)
@@ -210,11 +226,18 @@ namespace UnityEngine.UIElements
         {
             var oldText = editingUtilities.text;
 
-            var imeEnabled = editingUtilities.UpdateImeState();
+            // IME composition state is owned by OnIMEInput (and the legacy OnKeyDown branch);
+            // UpdateLabel just reads it. Don't mutate IME state from here, otherwise callers
+            // unrelated to IME (Cut/Paste/Delete/text edits) would unnecessarily poke the
+            // IME state machine.
+            var imeEnabled = editingUtilities.isCompositionActive;
             if (imeEnabled && editingUtilities.ShouldUpdateImeWindowPosition())
-                editingUtilities.SetImeWindowPosition(new Vector2(textElement.worldBound.x, textElement.worldBound.y));
+            {
+                var cursorPos = editingUtilities.GetCurrentCursorPosition();
+                (textElement.panel as BaseVisualElementPanel).IMESetCursorPos( new Vector2(textElement.worldBound.x, textElement.worldBound.y) + cursorPos);
+            }
 
-            var fullText = generatePreview ? editingUtilities.GeneratePreviewString(textElement.enableRichText) : editingUtilities.text;
+            var fullText = generatePreview ? editingUtilities.GeneratePreviewString(textElement.enableRichText, m_compositionString) : editingUtilities.text;
 
             //Note that UpdateText will update editingUtilities with the latest text if validations were made.
             textElement.edition.UpdateText(fullText);
@@ -230,7 +253,7 @@ namespace UnityEngine.UIElements
                 editingUtilities.text = oldText;
 
                 // We need to move the cursor so that it appears at the end of the composition string when rendered in generateVisualContent.
-                editingUtilities.EnableCursorPreviewState();
+                editingUtilities.EnableCursorPreviewState(m_compositionString);
             }
 
             // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.

@@ -17,16 +17,21 @@ namespace Unity.Profiling.Editor.UI
 
         public readonly struct Segment
         {
-            public Segment(Color color, string name, ushort percentage)
+            public Segment(Color color, string name, ushort percentage, int? dataSeriesIndex = null)
             {
                 Color = color;
                 Name = name;
                 Percentage = percentage;
+                DataSeriesIndex = dataSeriesIndex;
             }
 
             public Color Color { get; }
             public string Name { get; }
             public ushort Percentage { get; }
+
+            // Optional palette index. When set, consumers may re-resolve Color from a
+            // caller-supplied palette to honour the colour-blind accessibility setting.
+            public int? DataSeriesIndex { get; }
         }
     }
 }

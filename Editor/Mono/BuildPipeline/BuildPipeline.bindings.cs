@@ -115,11 +115,11 @@ namespace UnityEditor
 
 
         [RequiredByNativeCode]
-        internal static string[] RetrieveAdditionalBuildMetadataLocationsFromPlayerContext()
+        internal static string[] RetrieveAdditionalBuildReportDirectoriesFromPlayerContext()
         {
             if (BuildPlayerContext.ActiveInstance == null)
                 return Array.Empty<string>();
-            return BuildPlayerContext.ActiveInstance.RetrieveAdditionalMetadataLocations();
+            return BuildPlayerContext.ActiveInstance.RetrieveAdditionalBuildReportDirectories();
         }
 
         ///<summary>Builds a player from a specific build profile.</summary>
@@ -280,7 +280,7 @@ namespace UnityEditor
                     buildPlayerOptions.subtarget,
                     buildPlayerOptions.options,
                     buildPlayerOptions.extraScriptingDefines,
-                    buildPlayerOptions.previousBuildMetadataLocations,
+                    buildPlayerOptions.previousBuildReportDirectories,
                     false);
             }
             catch (System.ArgumentException argumentException)
@@ -310,7 +310,7 @@ namespace UnityEditor
                 buildPlayerOptions.subtarget,
                 buildPlayerOptions.options,
                 buildPlayerOptions.extraScriptingDefines,
-                buildPlayerOptions.previousBuildMetadataLocations,
+                buildPlayerOptions.previousBuildReportDirectories,
                 delayToAfterScriptReload
                 );
         }
@@ -379,7 +379,7 @@ namespace UnityEditor
 
 
         // Entry point into the C++ implementation of BuildPlayer()
-        internal static extern BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines, string[] previousBuildMetadataLocations, bool delayToAfterScriptReload);
+        internal static extern BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines, string[] previousBuildReportDirectories, bool delayToAfterScriptReload);
 
         internal static extern void BuildPlayerInternalPostBuild(BuildReport report);
 
@@ -485,7 +485,7 @@ namespace UnityEditor
 
             var buildSessionGuid = GUID.Generate();
             buildParameters.buildStartTimeTicks = DateTime.UtcNow.Ticks;
-            buildParameters.metadataPath = BuildHistory.ReserveBuildMetadataPath(
+            buildParameters.metadataPath = BuildHistory.ReserveBuildReportDirectory(
                 buildSessionGuid.ToString(), buildParameters.buildStartTimeTicks);
 
             var report = BuildContentDirectoryInternal(buildParameters, buildSessionGuid);

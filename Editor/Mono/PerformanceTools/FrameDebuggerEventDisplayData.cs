@@ -60,6 +60,23 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         }
     }
 
+    // Sub-array info for CBuffer internal arrays
+    internal struct CBufferSubArrayInfo
+    {
+        internal string m_ArrayName;
+        internal int m_ArraySize;
+        internal bool m_IsFoldoutOpen;
+        internal string m_ContentString;
+        internal GUIStyle m_ArrayGUIStyle;
+
+        internal void GetCopyText(ref StringBuilder sb)
+        {
+            sb.AppendLine($"  {m_ArrayName}[{m_ArraySize}]");
+            if (!string.IsNullOrEmpty(m_ContentString))
+                sb.AppendLine(m_ContentString);
+        }
+    }
+
     internal struct ShaderPropertyDisplayInfo
     {
         internal bool m_IsArray;
@@ -69,6 +86,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal Texture m_Texture;
         internal GUIStyle m_ArrayGUIStyle;
         internal RenderTexture m_TextureCopy;
+        internal CBufferSubArrayInfo[] m_CBufferSubArrays;
 
         internal string copyString
         {
@@ -93,7 +111,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         internal void GetCopyText(ref StringBuilder sb)
         {
-            if (!m_IsArray)
+            if (m_CBufferSubArrays != null)
+            {
+                sb.AppendLine(m_FoldoutString);
+                foreach (var subArray in m_CBufferSubArrays)
+                    subArray.GetCopyText(ref sb);
+            }
+            else if (!m_IsArray)
                 sb.AppendLine(m_PropertyString);
             else
             {
@@ -298,9 +322,10 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private const int k_MaxNaturalNumber = 10 + k_MaxDecimalNumbers + 1 + 1; // + decimal point + sign
         private const string k_TwoColumnFormat  = "{0, -22}{1, -35}";
         private const string k_FourColumnFormat = "{0, -22}{1, -35}{2, -22}{3, -10}";
-        private static string s_IntPrecision = k_MaxNaturalNumber + ":F0";
-        private static string s_FloatPrecision = k_MaxNaturalNumber + ":F" + k_MaxDecimalNumbers;
+        private static readonly string k_IntPrecision = $"{k_MaxNaturalNumber}:F0";
+        private static readonly string k_FloatPrecision = $"{k_MaxNaturalNumber}:F{k_MaxDecimalNumbers}";
         private const string k_NotAvailableString = FrameDebuggerStyles.EventDetails.k_NotAvailable;
+        private const int k_MaxDisplayedLines = 128;
 
         // Structs
         private struct ShaderPropertySortingInfo : IComparable<ShaderPropertySortingInfo>
@@ -478,23 +503,23 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     displayData.m_Header = String.Format(displayData.m_Format, "Name", "Stage", "Scope", "Dynamic");
                     break;
                 case ShaderPropertyType.Float:
-                    displayData.m_Format += "{2, " + s_FloatPrecision + "}";
+                    displayData.m_Format += "{2, " + k_FloatPrecision + "}";
                     displayData.m_Header = String.Format(displayData.m_Format, "Name", "Stage", "Value");
                     break;
                 case ShaderPropertyType.Int:
-                    displayData.m_Format += "{2, " + s_IntPrecision + "}";
+                    displayData.m_Format += "{2, " + k_IntPrecision + "}";
                     displayData.m_Header = String.Format(displayData.m_Format, "Name", "Stage", "Value");
                     break;
                 case ShaderPropertyType.Vector:
-                    displayData.m_Format += "{2, " + s_FloatPrecision + "}{3, " + s_FloatPrecision + "}{4, " + s_FloatPrecision + "}{5, " + s_FloatPrecision + "}";
+                    displayData.m_Format += "{2, " + k_FloatPrecision + "}{3, " + k_FloatPrecision + "}{4, " + k_FloatPrecision + "}{5, " + k_FloatPrecision + "}";
                     displayData.m_Header = String.Format(displayData.m_Format, "Name", "Stage", "Value(R)", "Value(G)", "Value(B)", "Value(A)");
                     break;
                 case ShaderPropertyType.Matrix:
-                    displayData.m_HeaderFormat = "{0, " + -m_MaxNameLength + "}{1, " + -m_MaxStageLength + "}{2, " + s_FloatPrecision + "}{3, " + s_FloatPrecision + "}{4, " + s_FloatPrecision + "}{5, " + s_FloatPrecision + "}";
-                    displayData.m_Format = "{0, " + -m_MaxNameLength + "}{1, " + -m_MaxStageLength + "}{2, " + s_FloatPrecision + "}{3, " + s_FloatPrecision + "}{4, " + s_FloatPrecision + "}{5, " + s_FloatPrecision + "}\n"
-                                       + "{6, " + -m_MaxNameLength + "}{7, " + -m_MaxStageLength + "}{8, " + s_FloatPrecision + "}{9, " + s_FloatPrecision + "}{10, " + s_FloatPrecision + "}{11, " + s_FloatPrecision + "}\n"
-                                       + "{12, " + -m_MaxNameLength + "}{13, " + -m_MaxStageLength + "}{14, " + s_FloatPrecision + "}{15, " + s_FloatPrecision + "}{16, " + s_FloatPrecision + "}{17, " + s_FloatPrecision + "}\n"
-                                       + "{18, " + -m_MaxNameLength + "}{19, " + -m_MaxStageLength + "}{20, " + s_FloatPrecision + "}{21, " + s_FloatPrecision + "}{22, " + s_FloatPrecision + "}{23, " + s_FloatPrecision + "}";
+                    displayData.m_HeaderFormat = "{0, " + -m_MaxNameLength + "}{1, " + -m_MaxStageLength + "}{2, " + k_FloatPrecision + "}{3, " + k_FloatPrecision + "}{4, " + k_FloatPrecision + "}{5, " + k_FloatPrecision + "}";
+                    displayData.m_Format = "{0, " + -m_MaxNameLength + "}{1, " + -m_MaxStageLength + "}{2, " + k_FloatPrecision + "}{3, " + k_FloatPrecision + "}{4, " + k_FloatPrecision + "}{5, " + k_FloatPrecision + "}\n"
+                                       + "{6, " + -m_MaxNameLength + "}{7, " + -m_MaxStageLength + "}{8, " + k_FloatPrecision + "}{9, " + k_FloatPrecision + "}{10, " + k_FloatPrecision + "}{11, " + k_FloatPrecision + "}\n"
+                                       + "{12, " + -m_MaxNameLength + "}{13, " + -m_MaxStageLength + "}{14, " + k_FloatPrecision + "}{15, " + k_FloatPrecision + "}{16, " + k_FloatPrecision + "}{17, " + k_FloatPrecision + "}\n"
+                                       + "{18, " + -m_MaxNameLength + "}{19, " + -m_MaxStageLength + "}{20, " + k_FloatPrecision + "}{21, " + k_FloatPrecision + "}{22, " + k_FloatPrecision + "}{23, " + k_FloatPrecision + "}";
                     displayData.m_Header = String.Format(displayData.m_HeaderFormat, "Name", "Stage", "Column 0", "Column 1", "Column 2", "Column 3");
                     break;
                 case ShaderPropertyType.Texture:
@@ -507,8 +532,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     displayData.m_Header = String.Format(displayData.m_Format, "Name");
                     break;
                 case ShaderPropertyType.CBuffer:
-                    displayData.m_Format = "{0, " + -m_MaxNameLength + "}";
-                    displayData.m_Header = String.Format(displayData.m_Format, "Name");
+                    displayData.m_Format = "{0, " + -m_MaxNameLength + "}{1, " + -m_MaxStageLength + "}";
+                    displayData.m_Header = String.Format(displayData.m_Format, "Name", string.Empty);
                     break;
                 default:
                     return;
@@ -547,6 +572,222 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         {
             int numOfSpaces = nameLength + (FrameDebuggerHelper.CountDigits(numOfValues) - FrameDebuggerHelper.CountDigits(currentIndex));
             return $"{new string(' ', numOfSpaces)}[{currentIndex}]";
+        }
+
+        private void AppendTruncationIndicator(int numOfValues, int displayCount, int nameLength, string format, ShaderPropertyType propType)
+        {
+            if (numOfValues <= displayCount)
+                return;
+
+            int remainingCount = numOfValues - displayCount;
+            string ellipsis = $"{new string(' ', nameLength)}...";
+            string moreText = $"({remainingCount} more)";
+
+            switch (propType)
+            {
+                case ShaderPropertyType.Int:
+                case ShaderPropertyType.Float:
+                    m_StringBuilder.AppendFormat(format, ellipsis, string.Empty, moreText).AppendLine();
+                    break;
+                case ShaderPropertyType.Vector:
+                case ShaderPropertyType.Matrix:
+                    m_StringBuilder.AppendFormat(format, ellipsis, string.Empty, string.Empty, moreText, string.Empty, string.Empty).AppendLine();
+                    break;
+            }
+        }
+
+        // Helper for CBuffer array element display names
+        // Tracks array context and returns proper name with index for array elements
+        private const string k_UninitializedName = "<noninit>";
+
+        private void BuildCBufferSubArrays(ShaderConstantBufferInfo cbInfo, ShaderPropertyCollection displayData, ref List<CBufferSubArrayInfo> subArrays)
+        {
+            // Process all value types and group them into sub-arrays
+            // Each array starts with a named element (arraySize > 1 in flags), followed by unnamed elements
+
+            string intFormat = displayData.m_Format + "{2, " + k_IntPrecision + "}";
+            string floatFormat = displayData.m_Format + "{2, " + k_FloatPrecision + "}";
+            string vectorFormat = displayData.m_Format + "{2, " + k_FloatPrecision + "}{3, " + k_FloatPrecision + "}{4, " + k_FloatPrecision + "}{5, " + k_FloatPrecision + "}";
+
+            // Process Ints
+            ProcessCBufferValueArray(cbInfo.m_Ints, intFormat, subArrays,
+                (value, format, sb, idx, total, arrName) => {
+                    sb.AppendFormat(format,
+                        GetCBufferArrayElementName(idx, total, arrName.Length, arrName),
+                        string.Empty,
+                        value.m_Value).AppendLine();
+                });
+
+            // Process Floats
+            ProcessCBufferValueArray(cbInfo.m_Floats, floatFormat, subArrays,
+                (value, format, sb, idx, total, arrName) => {
+                    sb.AppendFormat(format,
+                        GetCBufferArrayElementName(idx, total, arrName.Length, arrName),
+                        string.Empty,
+                        value.m_Value).AppendLine();
+                });
+
+            // Process Vectors
+            ProcessCBufferValueArray(cbInfo.m_Vectors, vectorFormat, subArrays,
+                (value, format, sb, idx, total, arrName) => {
+                    sb.AppendFormat(format,
+                        GetCBufferArrayElementName(idx, total, arrName.Length, arrName),
+                        string.Empty,
+                        value.m_Value.x,
+                        value.m_Value.y,
+                        value.m_Value.z,
+                        value.m_Value.w).AppendLine();
+                });
+
+            // Process Matrices (each element renders as 4 text lines)
+            ProcessCBufferValueArray(cbInfo.m_Matrices, vectorFormat, subArrays,
+                (value, format, sb, idx, total, arrName) => {
+                    string indexStr = GetCBufferArrayElementName(idx, total, arrName.Length, arrName);
+                    sb.AppendFormat(format, indexStr, string.Empty, value.m_Value.m00, value.m_Value.m01, value.m_Value.m02, value.m_Value.m03).AppendLine();
+                    sb.AppendFormat(format, string.Empty, string.Empty, value.m_Value.m10, value.m_Value.m11, value.m_Value.m12, value.m_Value.m13).AppendLine();
+                    sb.AppendFormat(format, string.Empty, string.Empty, value.m_Value.m20, value.m_Value.m21, value.m_Value.m22, value.m_Value.m23).AppendLine();
+                    sb.AppendFormat(format, string.Empty, string.Empty, value.m_Value.m30, value.m_Value.m31, value.m_Value.m32, value.m_Value.m33).AppendLine();
+                }, linesPerElement: 4);
+        }
+
+        private string GetCBufferArrayElementName(int index, int totalSize, int nameLength, string arrayName)
+        {
+            if (totalSize == 1)
+            {
+                // Single value - just show the name
+                return arrayName;
+            }
+            else
+            {
+                // Array elements - show aligned indices (name is already in the foldout header)
+                int numSpaces = nameLength + (FrameDebuggerHelper.CountDigits(totalSize) - FrameDebuggerHelper.CountDigits(index));
+                return $"{new string(' ', numSpaces)}[{index}]";
+            }
+        }
+
+        private delegate void FormatValueDelegate<T>(T value, string format, StringBuilder sb, int index, int totalSize, string arrayName);
+
+        // How many array elements we render before showing "...". Single-line elements get up
+        // to k_MaxDisplayedLines; multi-line elements (e.g. matrices = 4 lines each) get fewer
+        // so the total rendered line count stays within the IMGUI Label text-mesh budget.
+        internal static int GetDisplayedElementCount(int elementCount, int linesPerElement)
+        {
+            return Mathf.Min(elementCount, k_MaxDisplayedLines / linesPerElement);
+        }
+
+        // Total rendered text lines for an array of `elementCount` elements that each render
+        // `linesPerElement` lines, capped by GetDisplayedElementCount (+1 line for the
+        // trailing "..." indicator when truncated).
+        internal static int GetRenderedLineCount(int elementCount, int linesPerElement)
+        {
+            int displayedElements = GetDisplayedElementCount(elementCount, linesPerElement);
+            int truncationLines = elementCount > displayedElements ? 1 : 0;
+            return displayedElements * linesPerElement + truncationLines;
+        }
+
+        private void ProcessCBufferValueArray<T>(T[] values, string format, List<CBufferSubArrayInfo> subArrays, FormatValueDelegate<T> formatValue, int linesPerElement = 1)
+            where T : struct
+        {
+            if (values == null || values.Length == 0)
+                return;
+
+            int i = 0;
+            while (i < values.Length)
+            {
+                // Get name and flags via reflection or interface - for now assume we have access
+                string elementName = GetValueName(values[i]);
+                int flags = GetValueFlags(values[i]);
+
+                bool hasValidName = !string.IsNullOrEmpty(elementName) && elementName != k_UninitializedName;
+
+                if (hasValidName)
+                {
+                    int arraySize = FrameDebuggerHelper.GetNumberOfValuesFromFlags(flags);
+                    if (arraySize > 1)
+                    {
+                        // This is the start of an array
+                        var subArray = new CBufferSubArrayInfo();
+                        subArray.m_ArrayName = elementName;
+                        subArray.m_ArraySize = arraySize;
+                        subArray.m_IsFoldoutOpen = false;
+
+                        // Build content for this array (capped by GetDisplayedElementCount)
+                        m_StringBuilder.Clear();
+                        int elementsToDisplay = GetDisplayedElementCount(arraySize, linesPerElement);
+                        for (int j = 0; j < elementsToDisplay && (i + j) < values.Length; j++)
+                        {
+                            formatValue(values[i + j], format, m_StringBuilder, j, arraySize, elementName);
+                        }
+
+                        // Add "..." if truncated
+                        if (arraySize > elementsToDisplay)
+                        {
+                            int remaining = arraySize - elementsToDisplay;
+                            m_StringBuilder.AppendFormat("    ... ({0} more)", remaining).AppendLine();
+                        }
+
+                        // Remove last newline
+                        if (m_StringBuilder.Length > 0 && m_StringBuilder[m_StringBuilder.Length - 1] == '\n')
+                            m_StringBuilder.Length--;
+                        if (m_StringBuilder.Length > 0 && m_StringBuilder[m_StringBuilder.Length - 1] == '\r')
+                            m_StringBuilder.Length--;
+
+                        subArray.m_ContentString = m_StringBuilder.ToString();
+                        subArray.m_ArrayGUIStyle = CreateArrayGUIStyle(GetRenderedLineCount(arraySize, linesPerElement));
+                        subArrays.Add(subArray);
+
+                        // Skip all elements in this array
+                        i += arraySize;
+                    }
+                    else
+                    {
+                        // Single value - create a sub-array with size 1
+                        var subArray = new CBufferSubArrayInfo();
+                        subArray.m_ArrayName = elementName;
+                        subArray.m_ArraySize = 1;
+                        subArray.m_IsFoldoutOpen = false;
+
+                        m_StringBuilder.Clear();
+                        formatValue(values[i], format, m_StringBuilder, 0, 1, elementName);
+
+                        // Remove last newline
+                        if (m_StringBuilder.Length > 0 && m_StringBuilder[m_StringBuilder.Length - 1] == '\n')
+                            m_StringBuilder.Length--;
+                        if (m_StringBuilder.Length > 0 && m_StringBuilder[m_StringBuilder.Length - 1] == '\r')
+                            m_StringBuilder.Length--;
+
+                        subArray.m_ContentString = m_StringBuilder.ToString();
+                        subArray.m_ArrayGUIStyle = CreateArrayGUIStyle(linesPerElement);
+                        subArrays.Add(subArray);
+
+                        i++;
+                    }
+                }
+                else
+                {
+                    // Orphan element with no name - skip it (shouldn't happen in well-formed data)
+                    i++;
+                }
+            }
+        }
+
+        // Type-specific accessors to avoid using dynamic
+        private string GetValueName<T>(T value) where T : struct
+        {
+            if (value is ShaderIntInfo intInfo) return intInfo.m_Name;
+            if (value is ShaderFloatInfo floatInfo) return floatInfo.m_Name;
+            if (value is ShaderVectorInfo vectorInfo) return vectorInfo.m_Name;
+            if (value is ShaderMatrixInfo matrixInfo) return matrixInfo.m_Name;
+            return string.Empty;
+        }
+
+        private int GetValueFlags<T>(T value) where T : struct
+        {
+            if (value is ShaderIntInfo intInfo) return intInfo.m_Flags;
+            if (value is ShaderFloatInfo floatInfo) return floatInfo.m_Flags;
+            if (value is ShaderVectorInfo vectorInfo) return vectorInfo.m_Flags;
+            if (value is ShaderMatrixInfo matrixInfo) return matrixInfo.m_Flags;
+            return 0;
         }
 
         private bool GetShaderPropertyData(ShaderPropertyType dataType, int arrayIndex, string name, ref ShaderPropertyCollection propertyTypeDisplayData, ref ShaderInfo shaderInfo, ref ShaderPropertyDisplayInfo data)
@@ -635,7 +876,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     numOfValues = FrameDebuggerHelper.GetNumberOfValuesFromFlags(intInfo.m_Flags);
                     stage = FrameDebuggerHelper.GetShaderStageString(intInfo.m_Flags);
                     data.m_IsArray = numOfValues > 1;
-                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(numOfValues);
+                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(GetRenderedLineCount(numOfValues, linesPerElement: 1));
 
                     if (!data.m_IsArray)
                         data.m_PropertyString = String.Format(propertyTypeDisplayData.m_Format, name, stage, intInfo.m_Value);
@@ -643,7 +884,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     {
                         m_StringBuilder.Clear();
                         data.m_FoldoutString = String.Format(propertyTypeDisplayData.m_Format, $"{name}[{numOfValues}]", stage, string.Empty, string.Empty, string.Empty, string.Empty);
-                        for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
+                        int intDisplayCount = GetDisplayedElementCount(numOfValues, linesPerElement: 1);
+                        for (int k = arrayIndex; k < arrayIndex + intDisplayCount; k++)
                         {
                             int value = shaderInfo.m_Ints[k].m_Value;
                             m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
@@ -651,6 +893,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                                                          string.Empty,
                                                          value).AppendLine();
                         }
+
+                        AppendTruncationIndicator(numOfValues, intDisplayCount, name.Length, propertyTypeDisplayData.m_Format, ShaderPropertyType.Int);
 
                         // Remove last linebreak
                         if (m_StringBuilder.Length > 2)
@@ -667,7 +911,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     numOfValues = FrameDebuggerHelper.GetNumberOfValuesFromFlags(floatInfo.m_Flags);
                     stage = FrameDebuggerHelper.GetShaderStageString(floatInfo.m_Flags);
                     data.m_IsArray = numOfValues > 1;
-                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(numOfValues);
+                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(GetRenderedLineCount(numOfValues, linesPerElement: 1));
 
                     if (!data.m_IsArray)
                         data.m_PropertyString = String.Format(propertyTypeDisplayData.m_Format, name, stage, floatInfo.m_Value);
@@ -677,7 +921,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
                         data.m_FoldoutString = m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format, $"{name}[{numOfValues}]", stage, string.Empty, string.Empty, string.Empty, string.Empty).ToString();
                         m_StringBuilder.Clear();
-                        for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
+                        int floatDisplayCount = GetDisplayedElementCount(numOfValues, linesPerElement: 1);
+                        for (int k = arrayIndex; k < arrayIndex + floatDisplayCount; k++)
                         {
                             float value = shaderInfo.m_Floats[k].m_Value;
                             m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
@@ -685,6 +930,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                                                          string.Empty,
                                                          value).AppendLine();
                         }
+
+                        AppendTruncationIndicator(numOfValues, floatDisplayCount, name.Length, propertyTypeDisplayData.m_Format, ShaderPropertyType.Float);
 
                         // Remove last linebreak
                         if (numOfValues > 1 && m_StringBuilder.Length > 2)
@@ -701,7 +948,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     numOfValues = FrameDebuggerHelper.GetNumberOfValuesFromFlags(vectorInfo.m_Flags);
                     stage = FrameDebuggerHelper.GetShaderStageString(vectorInfo.m_Flags);
                     data.m_IsArray = numOfValues > 1;
-                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(numOfValues);
+                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(GetRenderedLineCount(numOfValues, linesPerElement: 1));
 
                     if (!data.m_IsArray)
                         data.m_PropertyString = String.Format(propertyTypeDisplayData.m_Format, name, stage, vectorInfo.m_Value.x, vectorInfo.m_Value.y, vectorInfo.m_Value.z, vectorInfo.m_Value.w);
@@ -709,7 +956,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     {
                         m_StringBuilder.Clear();
                         data.m_FoldoutString = String.Format(propertyTypeDisplayData.m_Format, $"{name}[{numOfValues}]", stage, string.Empty, string.Empty, string.Empty, string.Empty);
-                        for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
+                        int vectorDisplayCount = GetDisplayedElementCount(numOfValues, linesPerElement: 1);
+                        for (int k = arrayIndex; k < arrayIndex + vectorDisplayCount; k++)
                         {
                             Vector4 value = shaderInfo.m_Vectors[k].m_Value;
                             m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
@@ -720,6 +968,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                                                          value.z,
                                                          value.w).AppendLine();
                         }
+
+                        AppendTruncationIndicator(numOfValues, vectorDisplayCount, name.Length, propertyTypeDisplayData.m_Format, ShaderPropertyType.Vector);
 
                         // Remove last linebreak
                         if (numOfValues > 1 && m_StringBuilder.Length > 2)
@@ -737,7 +987,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     numOfValues = FrameDebuggerHelper.GetNumberOfValuesFromFlags(matrixInfo.m_Flags);
                     stage = FrameDebuggerHelper.GetShaderStageString(matrixInfo.m_Flags);
                     data.m_IsArray = numOfValues > 1;
-                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(numOfValues * 4);
+                    int matrixDisplayCount = GetDisplayedElementCount(numOfValues, linesPerElement: 4);
+                    data.m_ArrayGUIStyle = CreateArrayGUIStyle(GetRenderedLineCount(numOfValues, linesPerElement: 4));
 
                     if (!data.m_IsArray)
                     {
@@ -753,7 +1004,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         m_StringBuilder.Clear();
                         data.m_FoldoutString = m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_HeaderFormat, $"{name}[{numOfValues}]", stage, string.Empty, string.Empty, string.Empty, string.Empty).ToString();
                         m_StringBuilder.Clear();
-                        for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
+                        for (int k = arrayIndex; k < arrayIndex + matrixDisplayCount; k++)
                         {
                             Matrix4x4 value = shaderInfo.m_Matrices[k].m_Value;
                             m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
@@ -763,6 +1014,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                                                          string.Empty, string.Empty, value.m20, value.m21, value.m22, value.m23,
                                                          string.Empty, string.Empty, value.m30, value.m31, value.m32, value.m33).AppendLine();
                         }
+
+                        AppendTruncationIndicator(numOfValues, matrixDisplayCount, name.Length, propertyTypeDisplayData.m_HeaderFormat, ShaderPropertyType.Matrix);
 
                         // Remove last linebreak
                         if (numOfValues > 1 && m_StringBuilder.Length > 2)
@@ -783,7 +1036,25 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 case ShaderPropertyType.CBuffer:
                     Profiler.BeginSample("Constant Buffer");
                     ShaderConstantBufferInfo constantBufferInfo = shaderInfo.m_CBuffers[arrayIndex];
-                    data.m_PropertyString = String.Format(propertyTypeDisplayData.m_Format, name);
+                    numOfValues = constantBufferInfo.m_Ints.Length
+                        + constantBufferInfo.m_Floats.Length
+                        + constantBufferInfo.m_Vectors.Length
+                        + constantBufferInfo.m_Matrices.Length;
+
+                    data.m_IsArray = numOfValues > 0;
+                    data.m_PropertyString = string.Format(propertyTypeDisplayData.m_Format, name, string.Empty);
+                    data.m_FoldoutString = data.m_IsArray
+                        ? string.Format(propertyTypeDisplayData.m_Format, $"{name}[{numOfValues}]", string.Empty)
+                        : data.m_PropertyString;
+
+                    if (data.m_IsArray)
+                    {
+                        // Build list of sub-arrays within this CBuffer
+                        var subArrays = new List<CBufferSubArrayInfo>();
+                        BuildCBufferSubArrays(constantBufferInfo, propertyTypeDisplayData, ref subArrays);
+                        data.m_CBufferSubArrays = subArrays.ToArray();
+                    }
+
                     Profiler.EndSample();
                     break;
 
@@ -794,14 +1065,19 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             return true;
         }
 
-        private GUIStyle CreateArrayGUIStyle(int numOfValues)
+        // renderedLineCount is the number of rendered text lines, not an element count.
+        // Multi-line elements (e.g. matrix array elements = 4 lines each) must be expanded
+        // by the caller. Truncation past the line budget (k_MaxDisplayedLines) and the
+        // trailing "..." line, if any, are also the caller's responsibility.
+        internal static GUIStyle CreateArrayGUIStyle(int renderedLineCount)
         {
             // GUIStyle.CalcSizeWithConstraints() is super expensive so to avoid that we set a fixed
             // height and width so that function can early out. The width doesn't matter due as the
             // Vertical layout above makes sure it doesn't go too far but needs to be set for the early out.
             GUIStyle style = new GUIStyle(FrameDebuggerStyles.EventDetails.s_MonoLabelNoWrapStyle);
             style.fixedWidth = 1000f;
-            style.fixedHeight = 16 * numOfValues;
+            style.fixedHeight = 16 * renderedLineCount;
+            style.alignment = TextAnchor.UpperLeft;
             return style;
         }
 

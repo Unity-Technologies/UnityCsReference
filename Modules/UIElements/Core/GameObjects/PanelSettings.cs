@@ -149,6 +149,7 @@ namespace UnityEngine.UIElements
         Rect targetRect { get; }
         TextureSlotCount textureSlotCount { get; }
         uint vertexBudget { get; }
+        ExtraVertexChannels extraVertexChannels { get; }
     }
 
     /// <summary>
@@ -226,7 +227,10 @@ namespace UnityEngine.UIElements
             {
                 if (m_RuntimePanel != null)
                 {
-                    DisposeRelatedPanel();
+                    if (isTransient)
+                        m_RuntimePanel.Dispose(); // Never registered
+                    else
+                        DisposeRelatedPanel();
                     m_RuntimePanel = null;
                 }
             }
@@ -681,6 +685,24 @@ namespace UnityEngine.UIElements
         {
             get => m_VertexBudget;
             set => m_VertexBudget = value;
+        }
+
+        [SerializeField]
+        ExtraVertexChannels m_ExtraVertexChannels = ExtraVertexChannels.None;
+
+        /// <summary>
+        /// Optional per-vertex channels that custom ShaderGraph shaders attached to this panel can read.
+        /// </summary>
+        /// <remarks>
+        /// Adds GPU memory per vertex for the enabled channels. Leave at <see cref="ExtraVertexChannels.None"/>
+        /// unless a shader requires the extra data. Changing this setting after initialization rebuilds the
+        /// panel's render chain.
+        /// </remarks>
+        /// <seealso cref="UIMesh"/>
+        public ExtraVertexChannels extraVertexChannels
+        {
+            get => m_ExtraVertexChannels;
+            set => m_ExtraVertexChannels = value;
         }
 
         [SerializeField]

@@ -73,7 +73,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The globally unique identifier for this graph.
         /// </summary>
-        public Hash128 Guid
+        public Hash128 ID
         {
             get
             {
@@ -86,7 +86,7 @@ namespace Unity.GraphToolkit.Editor
         /// The `GUID` of the asset file associated with this graph.
         /// </summary>
         /// <remarks>
-        /// The default value of <see cref="GUID"/> for local subgraphs, because they are not stored as separate asset files. 
+        /// The default value of <see cref="GUID"/> for local subgraphs, because they are not stored as separate asset files.
         /// For graphs that are persistent assets, this property contains the valid unique identifier of the asset file on disk.
         /// </remarks>
         public GUID AssetGuid
@@ -511,6 +511,48 @@ namespace Unity.GraphToolkit.Editor
         {
             CheckImplementation();
             m_Implementation.UndoEndRecordGraph();
+        }
+
+        /// <summary>
+        /// Determines whether a connection between the specified output and input ports is allowed.
+        /// </summary>
+        /// <param name="output">The output port from which the connection originates.</param>
+        /// <param name="input">The input port to which the connection is being made.</param>
+        /// <returns>
+        /// <c>true</c> if a connection between the specified ports is allowed; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// The default implementation checks type compatibility by verifying that the input port's
+        /// <see cref="IPort.DataType"/> is assignable from the output port's <see cref="IPort.DataType"/>.
+        /// This allows connections between ports of the same type or where the output type is derived
+        /// from the input type.
+        /// <para>
+        /// Override this method in derived graph classes to implement custom connection validation logic,
+        /// such as additional type constraints, node-specific rules, or graph-level restrictions.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// public override bool IsConnectionAllowed(IPort output, IPort input)
+        /// {
+        ///     // Allow connection if the output is a string and the input is an int
+        ///     if (output.DataType == typeof(string) && input.DataType == typeof(int))
+        ///         return true;
+        ///
+        ///     // Fallback on the default behaviour
+        ///     return base.IsConnectionAllowed(output, input);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public virtual bool IsConnectionAllowed(IPort output, IPort input)
+        {
+            // Avoid connection from object to Untyped
+            if (output.DataType == typeof(Untyped) || input.DataType == typeof(Untyped))
+                return output.DataType == input.DataType;
+
+            return input.DataType.IsAssignableFrom(output.DataType);
         }
 
         /// <summary>

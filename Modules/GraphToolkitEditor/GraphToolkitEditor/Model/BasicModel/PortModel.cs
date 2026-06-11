@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
-using Unity.GraphToolkit.InternalBridge;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -934,7 +933,7 @@ namespace Unity.GraphToolkit.Editor
             return EmbeddedValue.TrySetValue(value);
         }
 
-        Type IPort.DataType => PortDataType == typeof(Untyped) ? null : PortDataType;
+        Type IPort.DataType => PortDataType;
 
         /// <inheritdoc />
         public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems => k_ContextualMenuItems;

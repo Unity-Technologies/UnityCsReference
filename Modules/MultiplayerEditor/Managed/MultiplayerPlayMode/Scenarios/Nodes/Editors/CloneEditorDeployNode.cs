@@ -18,9 +18,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         [SerializeReference] public NodeInput<int> PlayerInstanceIndex;
         [SerializeReference] public NodeOutput<PlayerIdentifier> PlayerIdentifier; // Nodes needs to be public fields since they are serialized
-        #pragma warning disable UAC1001
-        [SerializeReference] public NodeOutput<TypeDependentPlayerInfo> TypeDependentPlayerInfo; // Nodes needs to be public fields since they are serialized
-        #pragma warning restore UAC1001
+        [SerializeReference] public NodeOutput<bool> AlreadyActive; // Nodes needs to be public fields since they are serialized
+
+     
+
 
         public bool IsRunning()
         {
@@ -33,7 +34,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             PlayerInstanceIndex = new(this);
 
             PlayerIdentifier = new(this);
-            TypeDependentPlayerInfo = new(this);
+            AlreadyActive = new(this);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -41,6 +42,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var playerInstanceIndex = GetInput(PlayerInstanceIndex);
             var player = MultiplayerPlaymode.Players[playerInstanceIndex];
             var args = new List<string> { CommandLineParameters.k_ScenarioClone };
+
+            SetOutput(AlreadyActive, player.PlayerState is PlayerState.Launched or PlayerState.Launching);
 
             try
             {
@@ -77,7 +80,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 DebugUtils.Trace($"Deploy finished for '{player.Name}'");
 
                 SetOutput(PlayerIdentifier, player.PlayerIdentifier);
-                SetOutput(TypeDependentPlayerInfo, player.TypeDependentPlayerInfo);
 
                 cancellationToken.ThrowIfCancellationRequested();
             }

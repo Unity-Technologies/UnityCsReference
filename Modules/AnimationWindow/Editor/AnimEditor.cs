@@ -59,6 +59,8 @@ namespace UnityEditor
         internal string eventToolTipText => m_Events.tooltipText;
         internal Vector2 eventToolTipPosition => m_Events.tooltipPosition;
 
+        internal bool initialized => m_Initialized;
+
         internal void MainContentOnGUI(Rect contentLayoutRect)
         {
             //  Bail out if the hierarchy in animator is optimized.

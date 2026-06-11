@@ -141,6 +141,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// Use this to provide custom instance creation logic, such as object pooling or dependency injection.
     /// The method must meet the following requirements:
+    ///
     ///- Be a static method defined on the element type.
     ///- Have public or internal accessibility.
     ///- Accept no parameters.

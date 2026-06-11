@@ -266,6 +266,12 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                     ), BreadcrumbBar.SeparatorStyle.Arrow));
             }
         }
+
+        if (UIToolkitAuthoringSettings.EnableUIStages)
+        {
+            menu.AppendSeparator();
+            StageContextMenuUtility.PopulateElementOperations(menu);
+        }
     }
     protected override bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
     {
@@ -360,5 +366,6 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                 HierarchyWindow.UnregisterNodeTypeHandler<VisualElementEditingNodeHandler>();
                 break;
         }
+        IntegratedAuthoringWorkflow.OnStageChanged(previousStage, nextStage);
     }
 }

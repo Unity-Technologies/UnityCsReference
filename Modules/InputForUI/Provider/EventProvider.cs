@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -14,13 +15,18 @@ namespace UnityEngine.InputForUI
     /// Events provider
     /// </summary>
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    internal static class EventProvider
+    internal static partial class EventProvider
     {
+        [AutoStaticsCleanupOnCodeReload]
         private static IEventProviderImpl s_impl = new InputManagerProvider();
+        [AutoStaticsCleanupOnCodeReload]
         private static EventSanitizer s_sanitizer;
 
+        [AutoStaticsCleanupOnCodeReload]
         private static IEventProviderImpl s_implMockBackup = null; // storing original impl when using mock
+        [AutoStaticsCleanupOnCodeReload]
         private static bool s_focusStateBeforeMock;
+        [AutoStaticsCleanupOnCodeReload]
         private static bool s_focusChangedRegistered;
 
         /// <summary>
@@ -70,7 +76,9 @@ namespace UnityEngine.InputForUI
             else
                 Shutdown();
         }
+        [AutoStaticsCleanupOnCodeReload]
         static bool m_IsEnabled = true;
+        [AutoStaticsCleanupOnCodeReload]
         static bool m_IsInitialized = false;
 
         internal static void Dispatch(in Event ev)
@@ -92,7 +100,8 @@ namespace UnityEngine.InputForUI
         }
 
         // This is a fairly hacky solution for now
-        private static List<Registration> _registrations = new();
+        [AutoStaticsCleanupOnCodeReload]
+        private static readonly List<Registration> _registrations = new();
 
         private struct Registration
         {

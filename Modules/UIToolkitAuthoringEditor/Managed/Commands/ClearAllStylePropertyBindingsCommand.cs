@@ -2,64 +2,82 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct ClearAllStylePropertyBindingsCommand
+internal sealed class ClearAllStylePropertyBindingsCommand : Command<ClearAllStylePropertyBindingsCommand>
 {
     const string CommandUndoName = "Clear all style property bindings";
 
-    readonly VisualElement Element;
-
-    public ClearAllStylePropertyBindingsCommand(VisualElement visualElement)
+    public static ClearAllStylePropertyBindingsCommand GetPooled(object source, VisualElement visualElement)
     {
-        Element = visualElement;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.Element = visualElement;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElement visualElement)
+    {
+        using var command = GetPooled(source, visualElement);
+        UICommandQueue.Execute(command);
+    }
+
+    public VisualElement Element { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Attributes;
+
+    protected override void Init()
+    {
+        base.Init();
+        Element = null;
+    }
+
+    public override bool Validate() =>
+        Element != null
+        && Element.visualElementAsset != null
+        && Element.visualElementAsset.visualTreeAsset != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        // Undo is registered only when there are bindings to clear; we record optimistically.
+        context.RecordUndo(Element.visualElementAsset.visualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
     {
         var visualElementAsset = Element.visualElementAsset;
-        var visualTreeAsset = Element.visualElementAsset.visualTreeAsset;
-
-        Assert.IsNotNull(Element);
-        Assert.IsNotNull(visualElementAsset);
-        Assert.IsNotNull(visualTreeAsset);
 
         using var styleBindings = ListPool<string>.Get(out var bindingIds);
         visualElementAsset.FindAllStyleBindings(bindingIds);
 
-        if (bindingIds.Count > 0)
+        if (bindingIds.Count == 0)
+            return CommandExecutionStatus.Success;
+
+        foreach (var bindingId in bindingIds)
         {
-            Undo.RegisterCompleteObjectUndo(visualTreeAsset, CommandUndoName);
-
-            foreach (var bindingId in bindingIds)
-            {
-                visualElementAsset.RemoveBinding(bindingId);
-                Element.ClearBinding(bindingId);
-            }
-
-            // Clean up the serializedData
-            var uxmlSerializedDataDescription = UxmlSerializedDataRegistry.GetDescription(Element.fullTypeName);
-            var attribute = uxmlSerializedDataDescription.FindAttributeWithUxmlName("Bindings");
-            attribute?.SyncSerializedData(Element, visualElementAsset.serializedData);
-
-            ResetAllInlineStyles(bindingIds);
-
-            Element.IncrementVersion(VersionChangeType.Bindings | VersionChangeType.Styles);
-            EditorUtility.SetDirty(visualTreeAsset);
-            UIElementsUtility.MarkVisualTreeAssetAsChanged(visualTreeAsset);
+            visualElementAsset.RemoveBinding(bindingId);
+            Element.ClearBinding(bindingId);
         }
+
+        // Clean up the serializedData
+        var uxmlSerializedDataDescription = UxmlSerializedDataRegistry.GetDescription(Element.fullTypeName);
+        var attribute = uxmlSerializedDataDescription.FindAttributeWithUxmlName("Bindings");
+        attribute?.SyncSerializedData(Element, visualElementAsset.serializedData);
+
+        ResetAllInlineStyles(bindingIds);
+
+        Element.IncrementVersion(VersionChangeType.Bindings | VersionChangeType.Styles);
+        return CommandExecutionStatus.Success;
     }
 
-    internal void ResetAllInlineStyles(List<string> bindingIds)
+    void ResetAllInlineStyles(List<string> bindingIds)
     {
         var vea = Element.visualElementAsset;
         var vta = Element.visualElementAsset.visualTreeAsset;

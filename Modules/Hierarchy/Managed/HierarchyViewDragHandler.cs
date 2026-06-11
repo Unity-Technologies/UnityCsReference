@@ -921,7 +921,7 @@ sealed class HierarchyViewDragHandler
             m_AutoExpansionData.expandItemBeginTimerMs = 0;
             m_AutoExpansionData.lastItemIndex = -1;
 
-            ViewModel.SetFlags(in node, HierarchyNodeFlags.Expanded);
+            m_HierarchyView.SetExpandedState(in node, true, false);
         }
     }
 }

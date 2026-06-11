@@ -154,7 +154,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PublishedDateTicks = GetPublishDateTicks(packageInfo),
                 m_MinimumUnityVersion = packageInfo.editorCompatibility?.minimumUnityVersion,
                 m_Author = packageInfo.author,
-                m_TrustAndSignature = GetTrustAndSignature(packageInfo, isInstalled),
+                m_TrustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(packageInfo, isInstalled),
                 m_SignatureOrgName = packageInfo.signature?.attestation?.ownerOrgName ?? string.Empty,
             };
 
@@ -205,45 +205,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     break;
             }
             return PackageTag.None;
-        }
-
-        public static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
-        {
-            if (!isInstalled)
-                return TrustAndSignature.NotApplicable;
-
-            switch (packageInfo.trustLevel)
-            {
-                case TrustLevel.FullTrust:
-                {
-                    if (packageInfo.signature?.status == SignatureStatus.Valid)
-                    {
-                        var publishingChannel = packageInfo.signature.attestation?.publishingChannel ?? "";
-                        // When the signature is valid but the publishing channel is empty, it's a legacy Unity signature
-                        // We will check it this way before the UpmClient provides a better way to identify legacy signatures
-                        if (publishingChannel is "unity" or "")
-                            return TrustAndSignature.FullTrustUnitySignature;
-                        return TrustAndSignature.FullTrustValidSignature;
-                    }
-
-                    if (packageInfo.source == PackageSource.BuiltIn)
-                        return TrustAndSignature.FullTrustBuiltInPackage;
-
-                    return TrustAndSignature.FullTrustNoSignature;
-                }
-                case TrustLevel.LimitedTrust:
-                    return TrustAndSignature.LimitedTrust;
-                case TrustLevel.Untrusted:
-                    switch (packageInfo.signature?.status)
-                    {
-                        case SignatureStatus.Unsigned:
-                            return TrustAndSignature.UntrustedNoSignature;
-                        case SignatureStatus.Invalid:
-                            return TrustAndSignature.UntrustedInvalidSignature;
-                    }
-                    break;
-            }
-            return TrustAndSignature.NotApplicable;
         }
 
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)

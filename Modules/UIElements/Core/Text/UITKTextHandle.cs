@@ -146,7 +146,14 @@ namespace UnityEngine.UIElements
         {
             if (useAdvancedText)
             {
+                bool wasCached = IsCachedPermanentATG;
                 CacheTextGenerationInfo();
+                if (!wasCached)
+                {
+                    m_TextElement.editingManipulator?.editingUtilities.SyncStateToNative();
+                    if (m_TextElement.editingManipulator == null)
+                        TextEditingService.SetText(textGenerationInfo, m_TextElement.text);
+                }
 
                 UpdateNative();
                 UpdateATGTextEventHandler();

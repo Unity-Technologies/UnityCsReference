@@ -153,7 +153,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         issue);
 
                     item.SetField("Category", issue.Category);
-                    item.SetField("Severity", issue.Severity);
+                    item.SetField("Severity", issue.Severity.ToFrontendString());
                     if (match.Groups[2].Success)
                         item.SetField("Reason", match.Groups[2].Value.Trim());
                     item.SetField("Descriptor ID", issue.DescriptorIdAsString);

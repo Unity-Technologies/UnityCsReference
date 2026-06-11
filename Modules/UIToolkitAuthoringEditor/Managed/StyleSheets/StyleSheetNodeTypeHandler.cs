@@ -29,7 +29,7 @@ namespace Unity.UIToolkit.Editor;
 /// - Reference count decreases
 /// - If count reaches 0, the ScriptableObject is destroyed
 /// </summary>
-internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyEntityIdConverter
+internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
 {
     internal class StyleSheetEditorExporter : StyleSheetExporter
     {
@@ -260,45 +260,61 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
         m_StyleRuleSelectionHandler = styleRuleSelectionHandler;
     }
 
-    HierarchyNode IHierarchyEntityIdConverter.GetNode(EntityId entityId)
+    public override HierarchyNode GetNodeFromEntityId(EntityId entityId)
     {
         return m_Mappings.TryGetNodeFromSelectionHandle(entityId, out var node)
             ? node
             : HierarchyNode.Null;
     }
 
-    void IHierarchyEntityIdConverter.GetNodes(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes)
+    public override int GetNodesFromEntityIds(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes)
     {
+        var resolved = 0;
         for (var i = 0; i < entityIds.Length; ++i)
         {
             ref var outNode = ref outNodes[i];
             if (outNode != HierarchyNode.Null)
+            {
+                ++resolved;
                 continue;
+            }
 
             if (m_Mappings.TryGetNodeFromSelectionHandle(entityIds[i], out var node))
+            {
                 outNode = node;
+                ++resolved;
+            }
         }
+        return entityIds.Length - resolved;
     }
 
-    EntityId IHierarchyEntityIdConverter.GetEntityId(in HierarchyNode node)
+    public override EntityId GetEntityIdFromNode(in HierarchyNode node)
     {
         return m_Mappings.TryGetSelectionHandle(node, out var entityId)
             ? entityId
             : EntityId.None;
     }
 
-    void IHierarchyEntityIdConverter.GetEntityIds(ReadOnlySpan<HierarchyNode> nodes,
+    public override int GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes,
         Span<EntityId> outEntityIds)
     {
+        var resolved = 0;
         for (var i = 0; i < nodes.Length; ++i)
         {
             ref var outEntityId = ref outEntityIds[i];
             if (outEntityId != EntityId.None)
+            {
+                ++resolved;
                 continue;
+            }
 
             if (m_Mappings.TryGetSelectionHandle(nodes[i], out var selectionHandle))
+            {
                 outEntityId = selectionHandle;
+                ++resolved;
+            }
         }
+        return nodes.Length - resolved;
     }
 
     public HierarchyNode AddStyleSheet(StyleSheet styleSheet)
@@ -780,6 +796,9 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler, IHierarchyE
             {
                 var index = Array.FindIndex(rule.styleSheet.rules, r => r == rule);
                 if (index < 0)
+                    continue;
+
+                if (!Hierarchy.Exists(node))
                     continue;
                 var ruleNode = Hierarchy.GetChild(node, index);
                 m_HighlightedNodes.Add(ruleNode);

@@ -296,11 +296,6 @@ namespace UnityEditor.AnimationWindowBuiltin
             throw new NotImplementedException();
         }
 
-        public virtual void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            controller.OnPlayModeStateChanged(state);
-        }
-
         // When curve is modified, we never trigger refresh right away. We order a refresh at later time by setting refresh to appropriate value.
         public virtual void CurveWasModified(AnimationClip clip, EditorCurveBinding binding, AnimationUtility.CurveModifiedType type)
         {

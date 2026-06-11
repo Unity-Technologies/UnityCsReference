@@ -37,6 +37,8 @@ namespace Unity.GraphToolkit.Editor
         VisualElement m_TabElement;
         VisualElement m_HideTabBottomBorderElement;
         VisualElement m_TabDraggableAreaElement;
+        readonly NodeColorLinePainterAnimator m_GradientAnimator = new();
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SubgraphNodeView"/> class.
@@ -109,6 +111,7 @@ namespace Unity.GraphToolkit.Editor
                 if (e.customStyle.TryGetValue(k_BorderColorProperty, out var borderColorValue))
                     m_TabBorderColor = borderColorValue;
             });
+            m_TabElement.RegisterCallbackOnce<GeometryChangedEvent>(TabElementOnGeometryChanged);
             hierarchy.Add(m_TabElement);
 
             // Element to hide the bottom border of the tab.
@@ -130,6 +133,9 @@ namespace Unity.GraphToolkit.Editor
                     m_TabColor = subgraphNodeModel.ElementColor.HasUserColor ? subgraphNodeModel.ElementColor.Color : subgraphNodeModel.DefaultColor;
                     m_TabElement.MarkDirtyRepaint();
                 }
+
+                if (NodeModel.FillAmount != 0f)
+                    m_GradientAnimator.SetFillAmount(NodeModel.FillAmount, m_TabElement.MarkDirtyRepaint);
             }
         }
 
@@ -141,6 +147,28 @@ namespace Unity.GraphToolkit.Editor
             AddToClassList(subgraphNodeUssClassName);
             this.AddPackageStylesheet("SubgraphNode.uss");
         }
+
+         void TabElementOnGeometryChanged(GeometryChangedEvent e)
+        {
+            if (NodeModel.FillAmount != 0.0f)
+                m_GradientAnimator.SetFillAmount(NodeModel.FillAmount, m_TabElement.MarkDirtyRepaint);
+        }
+
+        /// <inheritdoc/>
+        public override void SetFillAmount(float percentage)
+        {
+            float effective = percentage == 0f ? NodeModel.FillAmount : percentage;
+            m_GradientAnimator.SetFillAmount(effective, m_TabElement.MarkDirtyRepaint);
+        }
+
+        /// <inheritdoc/>
+        public override void BeginAnimating(float animationSpeed) => m_GradientAnimator.Play(animationSpeed);
+
+        /// <inheritdoc/>
+        public override void AnimationUpdate(double deltaTime) => m_GradientAnimator.Update(deltaTime, m_TabElement.MarkDirtyRepaint);
+
+        /// <inheritdoc/>
+        public override void StopAnimating() => m_GradientAnimator.Stop(m_TabElement.MarkDirtyRepaint);
 
         /// <inheritdoc/>
         protected override DynamicBorder CreateDynamicBorder()
@@ -167,10 +195,23 @@ namespace Unity.GraphToolkit.Editor
                 tabRect.height);
 
             DrawSubgraphTab(mgc.painter2D, tabRect, bottomRect);
-            mgc.painter2D.fillColor = m_TabColor;
+            var fillGradient = new FillGradient();
+            fillGradient.start = new Vector2(bottomRect.xMin, bottomRect.yMin);
+            fillGradient.end = new Vector2(bottomRect.xMax, bottomRect.yMax);
+            fillGradient.gradient = m_GradientAnimator.BuildGradient(NodeModel.ElementColor.Color);
+
+            mgc.painter2D.fillGradient = fillGradient;
             mgc.painter2D.strokeColor = m_TabBorderColor;
             mgc.painter2D.Fill();
             mgc.painter2D.Stroke();
+        }
+
+        internal class TestAccess
+        {
+            SubgraphNodeView m_View;
+            public TestAccess(SubgraphNodeView view) => m_View = view;
+            public bool IsGradientAnimating => m_View.m_GradientAnimator.isAnimating;
+            public float GradientFillAmount => m_View.m_GradientAnimator.fillAmount;
         }
 
         internal static void DrawSubgraphTab(Painter2D p2d, Rect tabRect, Rect bottomRect, Vector2 brr = default, Vector2 blr = default)

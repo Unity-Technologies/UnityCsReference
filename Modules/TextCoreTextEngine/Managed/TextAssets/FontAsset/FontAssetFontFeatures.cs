@@ -91,14 +91,13 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         internal void UpdateLigatureSubstitutionRecords()
         {
-            k_UpdateLigatureSubstitutionRecordsMarker.Begin();
+            using (k_UpdateLigatureSubstitutionRecordsMarker.Auto())
+            {
+                var records = FontEngine.GetLigatureSubstitutionRecords(m_GlyphIndexListNewlyAdded);
 
-            var records = FontEngine.GetLigatureSubstitutionRecords(m_GlyphIndexListNewlyAdded);
-
-            if (records != null)
-                AddLigatureSubstitutionRecords(records);
-
-            k_UpdateLigatureSubstitutionRecordsMarker.End();
+                if (records != null)
+                    AddLigatureSubstitutionRecords(records);
+            }
         }
 
         void AddLigatureSubstitutionRecords(LigatureSubstitutionRecord[] records)
@@ -143,15 +142,14 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         internal void UpdateGlyphAdjustmentRecords()
         {
-            k_UpdateGlyphAdjustmentRecordsMarker.Begin();
+            using (k_UpdateGlyphAdjustmentRecordsMarker.Auto())
+            {
+                LoadFontFace();
+                GlyphPairAdjustmentRecord[] records = FontEngine.GetPairAdjustmentRecords(m_GlyphIndexListNewlyAdded);
 
-            LoadFontFace();
-            GlyphPairAdjustmentRecord[] records = FontEngine.GetPairAdjustmentRecords(m_GlyphIndexListNewlyAdded);
-
-            if (records != null)
-                AddPairAdjustmentRecords(records);
-
-            k_UpdateGlyphAdjustmentRecordsMarker.End();
+                if (records != null)
+                    AddPairAdjustmentRecords(records);
+            }
         }
 
         void AddPairAdjustmentRecords(GlyphPairAdjustmentRecord[] records)

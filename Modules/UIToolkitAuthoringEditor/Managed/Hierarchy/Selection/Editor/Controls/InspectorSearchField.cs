@@ -164,18 +164,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     static void OnFind(ShortcutArguments args)
     {
         var searchField = args.context as InspectorSearchField;
-        searchField?.FocusField();
-    }
-
-    internal void FocusField()
-    {
-        toolbarSearchField.Focus();
-
-        // Scroll to the top
-        var sv = GetFirstAncestorOfType<ScrollView>();
-        if (sv == null)
-            return;
-        sv.scrollOffset = new Vector2(0, 0);
+        searchField?.toolbarSearchField.Focus();
     }
 
     private void OnFilterTypeChanged(ChangeEvent<ToggleButtonGroupState> evt)

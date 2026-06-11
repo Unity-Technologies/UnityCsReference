@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
 namespace UnityEditor.Build.Analysis
 {
@@ -22,6 +23,7 @@ namespace UnityEditor.Build.Analysis
     {
         public string BuildSessionGUID;
         public string BuildName;
+        public string BuildProfilePath;
         public string Platform;
         public string BuildResult;
         public string BuildStartedAtUtc;
@@ -42,6 +44,7 @@ namespace UnityEditor.Build.Analysis
         public BuildAnalysisStep[] Steps = Array.Empty<BuildAnalysisStep>();
         public BuildAnalysisAsset[] Assets = Array.Empty<BuildAnalysisAsset>();
         public BuildAnalysisImporterType[] ImporterTypes = Array.Empty<BuildAnalysisImporterType>();
+        public BuildAnalysisRootAsset[] RootAssets = Array.Empty<BuildAnalysisRootAsset>();
     }
 
     [Serializable]
@@ -58,7 +61,7 @@ namespace UnityEditor.Build.Analysis
     {
         public int Id;
         public string Path;
-        public string GUID;
+        public GUID GUID;
         public ulong OutputSizeBytes;
         public int ObjectCount;
         public int ResourceCount;
@@ -70,6 +73,17 @@ namespace UnityEditor.Build.Analysis
     {
         public int Id;
         public string Name;
+    }
+
+    [Serializable]
+    internal struct BuildAnalysisRootAsset
+    {
+        public int Id;
+        public int AssetId;
+        public int DirectAssetCount;
+        public ulong DirectSizeBytes;
+        public int TotalAssetCount;
+        public ulong TotalSizeBytes;
     }
 
     [Serializable]
@@ -92,6 +106,7 @@ namespace UnityEditor.Build.Analysis
     {
         public int AssetCount;
         public int SceneCount;
+        public int RootAssetCount;
         public int ErrorMessageCount;
         public int WarningMessageCount;
         public int InfoMessageCount;

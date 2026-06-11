@@ -34,8 +34,8 @@ namespace Unity.Collections.LowLevel.Unsafe
     // and accessing from another struct pointing to the same buffer.
 
     [UsedByNativeCode]
-    [NativeHeader("Runtime/Jobs/AtomicSafetyHandle.h")]
-    [NativeHeader("Runtime/Jobs/JobsDebugger.h")]
+    [NativeHeader("ManagedKernel/Jobs/AtomicSafetyHandle.h")]
+    [NativeHeader("ManagedKernel/Jobs/JobsDebugger.h")]
     public struct AtomicSafetyHandle
     {
         // These bit flag constants need to be in sync with

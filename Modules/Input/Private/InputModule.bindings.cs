@@ -44,6 +44,16 @@ namespace UnityEngineInternal.Input
 
         public static extern void Update(NativeInputUpdateType updateType);
 
+        /// <summary>
+        /// Sets the bitmask of <see cref="NativeInputUpdateType"/> values that should ripple
+        /// through the native PlayerLoop hooks to managed callbacks. Bits clear -> the
+        /// corresponding hook is a no-op (no managed callback fires for that update type).
+        /// Thread-safe; intended to be called when consumer configuration changes (rare).
+        /// Default at module init is all known update types enabled.
+        /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern void SetActiveUpdateMask(NativeInputUpdateType mask);
+
         internal static extern ulong GetBackgroundEventBufferSize();
 
         /// <summary>

@@ -57,6 +57,10 @@ namespace UnityEditor
         [NativeMethod("MenuController::GetEnabledWithContext", true)]
         internal static extern bool GetEnabledWithContext(string menuPath, UnityEngine.Object[] context);
 
+        [FreeFunction("MenuController::HasContext")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static extern bool HasContext(string menuPath);
+
         [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
         internal static extern void GetMenuItemDefaultShortcuts([Out,NotNull] List<string> outItemNames, [Out,NotNull] List<string> outItemDefaultShortcuts);
 

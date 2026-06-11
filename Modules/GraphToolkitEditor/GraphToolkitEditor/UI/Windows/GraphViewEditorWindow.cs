@@ -234,8 +234,11 @@ Would you like to save these changes?
         bool m_InitialAssetDirtyCache;
         bool m_CurrentAssetDirtyCache;
 
+        [NonSerialized]
         Hash128 m_RootGraphModelGuid;
+        [NonSerialized]
         Hash128 m_CurrentVisualizationContextId;
+        [NonSerialized]
         bool m_IsVisualizationContextAttached;
 
         protected GraphView m_GraphView;
@@ -243,9 +246,6 @@ Would you like to save these changes?
         protected VisualElement m_GraphContainer;
         protected BlankPage m_BlankPage;
         protected Label m_GraphProcessingPendingLabel;
-
-        internal event Action<GraphVisualization.Session> visualizationContextAttached;
-        internal event Action<GraphVisualization.Session> visualizationContextDetached;
 
         GraphProcessingStatusObserver m_GraphProcessingStatusObserver;
 
@@ -261,6 +261,15 @@ Would you like to save these changes?
 
         [SerializeField]
         Hash128 m_WindowHash;
+
+        //TODO : GTF-2489 - Remove GraphViewEditorWindow.s_FrameElementDelayMs and queue Framing after Graph Load
+        static long s_FrameElementDelayMs
+        {
+            get
+            {
+                return 10;
+            }
+        }
 
         public virtual IEnumerable<GraphView> GraphViews
         {
@@ -1288,19 +1297,25 @@ Would you like to save these changes?
 
         internal static void FrameGraphElement(Hash128 elementGuid, GraphViewEditorWindow window, GraphModel graphModelToLoad = null)
         {
+            FrameGraphElement(elementGuid, window.GraphView, graphModelToLoad);
+        }
+
+        internal static void FrameGraphElement(Hash128 elementGuid, GraphView graphView,
+            GraphModel graphModelToLoad = null)
+        {
             if (graphModelToLoad is not null)
             {
                 // We have to load the graph first.
-                window.GraphView.Dispatch(new LoadGraphCommand(graphModelToLoad, LoadGraphCommand.LoadStrategies.PushOnStack));
+                graphView.Dispatch(new LoadGraphCommand(graphModelToLoad, LoadGraphCommand.LoadStrategies.PushOnStack));
                 if (graphModelToLoad.TryGetModelFromGuid(elementGuid, out var elementModel))
                 {
                     // Wait some time for the graph to be loaded before framing the element.
-                    window.GraphView.schedule.Execute(() => { FrameElement(elementModel); }).ExecuteLater(10);
+                    graphView.schedule.Execute(() => { FrameElement(elementModel); }).ExecuteLater(s_FrameElementDelayMs);
                 }
             }
             else
             {
-                if (window.GraphView.GraphModel.TryGetModelFromGuid(elementGuid, out var elementModel))
+                if (graphView.GraphModel.TryGetModelFromGuid(elementGuid, out var elementModel))
                     FrameElement(elementModel);
             }
 
@@ -1308,9 +1323,9 @@ Would you like to save these changes?
 
             void FrameElement(Model elementModel)
             {
-                var graphElement = elementModel.GetView<GraphElement>(window.GraphView);
+                var graphElement = elementModel.GetView<GraphElement>(graphView);
                 if (graphElement != null)
-                    window.GraphView.DispatchFrameAndSelectElementsCommand(true, graphElement);
+                    graphView.DispatchFrameAndSelectElementsCommand(true, graphElement);
             }
         }
 
@@ -1621,7 +1636,11 @@ Would you like to save these changes?
         Hash128 GetRootGraphModelGuid()
         {
             if (GraphTool?.ToolState?.SubgraphStack is { Count: > 0 })
-                return GraphTool.ToolState.GetSubGraphModel(0).Guid;
+            {
+                var subGraphModel = GraphTool.ToolState.GetSubGraphModel(0);
+                if (subGraphModel != null)
+                    return subGraphModel.Guid;
+            }
 
             return GraphTool?.ToolState?.GraphModel?.Guid ?? default;
         }
@@ -1648,7 +1667,7 @@ Would you like to save these changes?
             GraphVisualization.Session session;
 
             // Prefer the explicit context id if it matches this window's root graph.
-            if (visualizationContextId.isValid && GraphVisualization.Registry.TryGetVisualizationSession(visualizationContextId, out var explicitSession) && explicitSession?.GraphGuid == m_RootGraphModelGuid)
+            if (visualizationContextId.isValid && GraphVisualization.Registry.TryGetVisualizationSession(visualizationContextId, out var explicitSession) && explicitSession?.GraphID == m_RootGraphModelGuid)
             {
                 session = explicitSession;
             }
@@ -1661,10 +1680,9 @@ Would you like to save these changes?
             if (session == null)
                 return;
 
-            m_CurrentVisualizationContextId = session.VisualizationContextId;
+            m_CurrentVisualizationContextId = session.VisualizationContextID;
             m_IsVisualizationContextAttached = true;
-
-            visualizationContextAttached?.Invoke(session);
+            session.SessionIsAttached = true;
         }
 
         void OnVisualizationContextWillUnregister(Hash128 visualizationContextId)
@@ -1677,7 +1695,7 @@ Would you like to save these changes?
             m_IsVisualizationContextAttached = false;
 
             if (GraphVisualization.Registry.TryGetVisualizationSession(visualizationContextId, out var session))
-                visualizationContextDetached?.Invoke(session);
+                session.SessionIsAttached = false;
         }
 
         internal class TestAccess

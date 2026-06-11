@@ -142,10 +142,6 @@ namespace Unity.GraphToolkit.Editor
             {
                 foreach (var subgraphError in subgraphErrors)
                 {
-                    // We don't show warnings from nested sub graphs. Only errors.
-                    if (subgraphError.ErrorType is LogType.Warning)
-                        continue;
-
                     // If the error has a context, only add the error if the current subgraph node is part of the context.
                     if (subgraphError.Context is { Count: > 0 })
                     {
@@ -167,7 +163,7 @@ namespace Unity.GraphToolkit.Editor
                     var subgraphNodeError = new GraphProcessingErrorModel(new GraphProcessingError(
                         subgraphError.ErrorMessage,
                         subgraphError.ParentModelGuid,
-                        LogType.Error, // We only show errors from lower levels sub graphs.
+                        subgraphError.ErrorType, // Preserve the original error type
                         subgraphError.SourceGraphReference,
                         new List<GraphElementModel>(context) // Make a copy of the list to make sure it is not modified
                     ));

@@ -27,26 +27,38 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsShape : IEquatable<PhysicsShape>
+    public readonly partial struct PhysicsShape : IPhysicsHandle<PhysicsShape>, IEquatable<PhysicsShape>
     {
-        #region Id
-
-        readonly Int32 m_Index1;
-        readonly UInt16 m_World0;
-        readonly UInt16 m_Generation;
+        #region Handle
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"type={shapeType}, index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
+        readonly PhysicsHandle m_PhysicsHandle;
+
+        /// <summary>
+        /// Create a shape from a physics handle.
+        /// 
+        /// NOTE: You must ensure that the physics handle represents the correct object type otherwise hard to detect bugs can occur.
+        /// </summary>
+        /// <param name="physicsHandle">The physics handle to use.</param>
+        public PhysicsShape(PhysicsHandle physicsHandle) { m_PhysicsHandle = physicsHandle; }
+
+        /// <summary>
+        /// Get the physics handle.
+        /// </summary>
+        public readonly PhysicsHandle physicsHandle => m_PhysicsHandle;
+
+        /// <undoc/>
+        public override readonly string ToString() => isValid ? $"type={shapeType}, {m_PhysicsHandle}" : "<INVALID>";
 
         #endregion
 
         #region Equality
 
         /// <undoc/>
-        public override bool Equals(object obj) { return base.Equals(obj); }
+        public override bool Equals(object obj) => obj is PhysicsShape other && Equals(other);
 
         /// <undoc/>
-        public bool Equals(PhysicsShape other) { return m_Index1 == other.m_Index1 && m_World0 == other.m_World0 && m_Generation == other.m_Generation; }
+        public bool Equals(PhysicsShape other) => m_PhysicsHandle == other.m_PhysicsHandle;
 
         /// <undoc/>
         public static bool operator ==(PhysicsShape lhs, PhysicsShape rhs) => lhs.Equals(rhs);
@@ -55,7 +67,8 @@ namespace Unity.U2D.Physics
         public static bool operator !=(PhysicsShape lhs, PhysicsShape rhs) => !(lhs == rhs);
 
         /// <undoc/>
-        public override int GetHashCode() { return HashCode.Combine(m_Index1, m_World0, m_Generation); }
+        public override int GetHashCode() => m_PhysicsHandle.GetHashCode();
+
 
         #endregion
 
@@ -321,7 +334,7 @@ namespace Unity.U2D.Physics
                 /// <summary>
                 /// Is the contact point speculative i.e. not currently interacting?
                 /// </summary>
-                public readonly bool speculative => totalNormalImpulse > 0.0f;
+                public readonly bool speculative => totalNormalImpulse == 0.0f;
 
                 #region Internal
 
@@ -626,22 +639,22 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// The default categories used.
             /// </summary>
-            public static PhysicsMask DefaultCategories = PhysicsMask.One;
+            public static readonly PhysicsMask DefaultCategories = PhysicsMask.One;
 
             /// <summary>
             /// The default contacts used.
             /// </summary>
-            public static PhysicsMask DefaultContacts = PhysicsMask.All;
+            public static readonly PhysicsMask DefaultContacts = PhysicsMask.All;
 
             /// <summary>
             /// Get a contact filter that is all categories and contacts everything.
             /// </summary>
-            public static ContactFilter Everything = new(PhysicsMask.All, PhysicsMask.All);
+            public static readonly ContactFilter Everything = new(PhysicsMask.All, PhysicsMask.All);
 
             /// <summary>
             /// Get a default contact filter that contacts everything.
             /// </summary>
-            public static ContactFilter defaultFilter = new(DefaultCategories, DefaultContacts);
+            public static readonly ContactFilter defaultFilter = new(DefaultCategories, DefaultContacts);
 
             /// <summary>
             /// Will this contact filter produce a contact with the specified contact filter.
@@ -952,7 +965,7 @@ namespace Unity.U2D.Physics
             /// The <see cref="PhysicsShape.ShapeProxy.count"/> must be 1.
             /// </summary>
             /// <exception cref="InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not 1.</exception>
-            public CircleGeometry circleGeometry
+            public readonly CircleGeometry circleGeometry
             {
                 get
                 {
@@ -968,7 +981,7 @@ namespace Unity.U2D.Physics
             /// The <see cref="PhysicsShape.ShapeProxy.count"/> must be 2.
             /// </summary>
             /// <exception cref="InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not 2.</exception>
-            public CapsuleGeometry capsuleGeometry
+            public readonly CapsuleGeometry capsuleGeometry
             {
                 get
                 {
@@ -983,7 +996,7 @@ namespace Unity.U2D.Physics
             /// Get a <see cref="PolygonGeometry"/> from the shape proxy.
             /// </summary>
             /// <exception cref="System.InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not in the range [3, <see cref="PhysicsConstants.MaxPolygonVertices"/>].</exception>
-            public unsafe PolygonGeometry polygonGeometry
+            public readonly unsafe PolygonGeometry polygonGeometry
             {
                 get
                 {
@@ -1004,7 +1017,7 @@ namespace Unity.U2D.Physics
             /// The <see cref="PhysicsShape.ShapeProxy.count"/> must be 2.
             /// </summary>
             /// <exception cref="InvalidOperationException">Thrown if the <see cref="PhysicsShape.ShapeProxy.count"/> is not 2.</exception>
-            public SegmentGeometry segmentGeometry
+            public readonly SegmentGeometry segmentGeometry
             {
                 get
                 {
@@ -1038,13 +1051,26 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Check if the shape proxy is valid.
             /// </summary>
-            public bool isValid => m_ShapeType switch
+            public readonly bool isValid => m_ShapeType switch
             {
                 ShapeType.Circle => m_Count == 1,
                 ShapeType.Capsule => m_Count == 2 && radius > 0.0f,
-                ShapeType.Polygon => m_Count > 3 && count <= PhysicsConstants.MaxPolygonVertices,
+                ShapeType.Polygon => m_Count >= 3 && count <= PhysicsConstants.MaxPolygonVertices,
                 ShapeType.Segment => m_Count == 2,
                 ShapeType.ChainSegment => m_Count == 2,
+                _ => throw new NotImplementedException()
+            };
+
+            /// <summary>
+            /// Get the AABB that bounds the shape proxy.
+            /// </summary>
+            public readonly PhysicsAABB aabb => m_ShapeType switch
+            {
+                ShapeType.Circle => circleGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.Capsule => capsuleGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.Polygon => polygonGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.Segment => segmentGeometry.CalculateAABB(PhysicsTransform.identity),
+                ShapeType.ChainSegment => segmentGeometry.CalculateAABB(PhysicsTransform.identity),
                 _ => throw new NotImplementedException()
             };
 
@@ -1052,7 +1078,7 @@ namespace Unity.U2D.Physics
             /// Get the convex-hull vertices as a span.
             /// </summary>
             /// <returns>The span representing the vertices in the convex-hull.</returns>
-            public unsafe Span<Vector2> AsSpan() => vertices.AsSpan(m_Count);
+            public readonly Span<Vector2> AsSpan() => vertices.AsSpan(m_Count);
 
             #region Internal
 
@@ -1188,7 +1214,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The shape geometry to use.</param>
         /// <param name="definition">The shape definition to use.</param>
         /// <returns>The created shape.</returns>
-        public static PhysicsShape CreateShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition) => PhysicsShape_CreateChainSegmenShapet(body, geometry, definition);
+        public static PhysicsShape CreateShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition) => PhysicsShape_CreateChainSegmentShape(body, geometry, definition);
 
         /// <summary>
         /// Create a Chain Segment shape, using its default definition, attached to the specified body.
@@ -1230,6 +1256,71 @@ namespace Unity.U2D.Physics
         /// <param name="shapes">The shapes to destroy.</param>
         /// <param name="updateBodyMass">Whether to update the body mass configuration. Not doing so is faster, especially when destroying multiple shapes.</param>
         public static void DestroyBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass) => PhysicsShape_DestroyBatch(shapes, updateBodyMass);
+
+        /// <summary>
+        /// Apply buoyancy, flow and damping forces to this shape based on how it is submerged in a fluid plane.
+        /// Unlike <see cref="PhysicsBody.ApplyBuoyancy(PhysicsBody.BuoyancyInput, float)"/>, only this shape contributes to its owning body's buoyancy - sibling shapes on the same body are left alone.
+        /// Forces and torques are continuous (not impulses), so this is expected to be called every simulation step.
+        /// The shape's owning body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; otherwise a warning is logged and the call is a no-op.
+        /// </summary>
+        /// <param name="input">The fluid and force configuration. See <see cref="PhysicsBody.BuoyancyInput"/>.</param>
+        /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
+        public unsafe readonly void ApplyBuoyancy(PhysicsBody.BuoyancyInput input, float deltaTime)
+        {
+            var shape = this;
+            ApplyBuoyancy(input, new ReadOnlySpan<PhysicsShape>(&shape, 1), deltaTime);
+        }
+
+        /// <summary>
+        /// Apply buoyancy, flow and damping forces to every shape in <paramref name="shapes"/> based on how each is submerged in a fluid plane.
+        /// The same <see cref="PhysicsBody.BuoyancyInput"/> is applied to all listed shapes. Each shape's owning body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; shapes on non-dynamic or invalid bodies log a warning and are skipped.
+        /// Per-body sleep/wake decisions and damping clamps aggregate only across the listed shapes for each body, so siblings not in <paramref name="shapes"/> contribute nothing - this is the difference from <see cref="PhysicsBody.ApplyBuoyancy(PhysicsBody.BuoyancyInput, ReadOnlySpan{PhysicsBody}, float)"/>, which always processes every shape on each listed body.
+        /// Forces and torques are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="input">The fluid and force configuration. See <see cref="PhysicsBody.BuoyancyInput"/>.</param>
+        /// <param name="shapes">The shapes that buoyancy should be applied to.</param>
+        /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
+        public static void ApplyBuoyancy(PhysicsBody.BuoyancyInput input, ReadOnlySpan<PhysicsShape> shapes, float deltaTime)
+        {
+            if (deltaTime <= 0f)
+                return;
+            if (input.density <= 0f)
+                throw new ArgumentException($"{nameof(PhysicsBody.BuoyancyInput)}.{nameof(PhysicsBody.BuoyancyInput.density)} must be greater than zero; no meaningful buoyancy force can be produced otherwise.", nameof(input));
+            if (input.mask == PhysicsMask.None)
+                throw new ArgumentException($"{nameof(PhysicsBody.BuoyancyInput)}.{nameof(PhysicsBody.BuoyancyInput.mask)} is empty; no shape can pass the category filter.", nameof(input));
+
+            PhysicsShape_ApplyBuoyancy(input, shapes, deltaTime);
+        }
+
+        /// <summary>
+        /// Apply wind forces to this shape.
+        /// Force is computed by Box2D using the shape's projected area, the wind velocity (<see cref="PhysicsBody.WindInput.force"/>) and the drag/lift coefficients in <paramref name="input"/>; circles ignore lift.
+        /// Forces are continuous (not impulses), so this is expected to be called every simulation step.
+        /// The shape's owning body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; otherwise a warning is logged and the call is a no-op.
+        /// Sleeping bodies are woken automatically by Box2D when the per-shape force is non-trivial.
+        /// </summary>
+        /// <param name="input">The wind configuration. See <see cref="PhysicsBody.WindInput"/>.</param>
+        public unsafe readonly void ApplyWind(PhysicsBody.WindInput input)
+        {
+            var shape = this;
+            ApplyWind(input, new ReadOnlySpan<PhysicsShape>(&shape, 1));
+        }
+
+        /// <summary>
+        /// Apply wind forces to every shape in <paramref name="shapes"/>.
+        /// The same <see cref="PhysicsBody.WindInput"/> is applied to all listed shapes. Each shape's owning body must be <see cref="PhysicsBody.BodyType.Dynamic"/>; shapes on non-dynamic or invalid bodies log a warning and are skipped.
+        /// Only the listed shapes contribute to wind on their owning bodies; sibling shapes not in <paramref name="shapes"/> are left alone - this is the difference from <see cref="PhysicsBody.ApplyWind(PhysicsBody.WindInput, ReadOnlySpan{PhysicsBody})"/>, which processes every shape on each listed body.
+        /// Forces are continuous (not impulses), so this is expected to be called every simulation step.
+        /// </summary>
+        /// <param name="input">The wind configuration. See <see cref="PhysicsBody.WindInput"/>.</param>
+        /// <param name="shapes">The shapes that wind should be applied to.</param>
+        public static void ApplyWind(PhysicsBody.WindInput input, ReadOnlySpan<PhysicsShape> shapes)
+        {
+            if (input.mask == PhysicsMask.None)
+                throw new ArgumentException($"{nameof(PhysicsBody.WindInput)}.{nameof(PhysicsBody.WindInput.mask)} is empty; no shape can pass the category filter.", nameof(input));
+
+            PhysicsShape_ApplyWind(input, shapes);
+        }
 
         /// <summary>
         /// Get/Set a shape definition by accessing all of its current properties.
@@ -1320,7 +1411,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The priority for combining the <see cref="PhysicsShape.friction"/> properties when two shapes come into contact.
-        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.frictionCombine"/> will be used.
+        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.frictionMixing"/> will be used.
         /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
         /// This is assigned to the current <see cref="PhysicsShape.surfaceMaterial"/>.
         /// </summary>
@@ -1328,7 +1419,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The priority for combining the <see cref="PhysicsShape.bounciness"/> properties when two shapes come into contact.
-        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.bouncinessCombine"/> will be used.
+        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.bouncinessMixing"/> will be used.
         /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
         /// This is assigned to the current <see cref="PhysicsShape.surfaceMaterial"/>.
         /// </summary>
@@ -1371,19 +1462,6 @@ namespace Unity.U2D.Physics
         public readonly MoverData moverData { get => PhysicsShape_GetMoverData(this); set => PhysicsShape_SetMoverData(this, value); }
 
         /// <summary>
-        /// Apply a wind force to the shape body using the density of air
-        /// This considers the projected area of the shape in the wind direction.
-        /// This also considers the relative velocity of the shape.
-        /// This only has an effect if the shape body is <see cref="UnityEngine.RigidbodyType2D.Dynamic"/>.
-        /// This only has an effect of shapes of type Circle, Capsule or Polygon.
-        /// </summary>
-        /// <param name="force">The wind velocity in world-space.</param>
-        /// <param name="drag">The drag coefficient which is a force that opposes the relative velocity.</param>
-        /// <param name="lift">The lift coefficient which is a force that is perpendicular to the relative velocity.</param>
-        /// <param name="wake">Whether the shape body should be woken or not.</param>
-        public readonly void ApplyWind(Vector2 force, float drag, float lift, bool wake = true) => PhysicsShape_ApplyWind(this, force, drag, lift, wake);
-
-        /// <summary>
         /// Controls whether this shape produces triggers events which can be retrieved after the simulation has completed.
         /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
         /// A trigger event will produce a <see cref="PhysicsCallbacks.ITriggerCallback"/> to the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved.
@@ -1410,7 +1488,7 @@ namespace Unity.U2D.Physics
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
         /// A contact filter callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IContactFilterCallback"/>.
         /// </summary>
-        public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContacFiltertCallbacks(this, value); }
+        public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContactFilterCallbacks(this, value); }
 
         /// <summary>
         /// Controls whether this shape produces pre-solve callbacks.
@@ -1783,6 +1861,55 @@ namespace Unity.U2D.Physics
                 ShapeType.Polygon => new ShapeProxy(useWorldSpace ? polygonGeometry.Transform(body.transform) : polygonGeometry),
                 ShapeType.Segment => new ShapeProxy(useWorldSpace ? segmentGeometry.Transform(body.transform) : segmentGeometry),
                 ShapeType.ChainSegment => new ShapeProxy(chainSegmentGeometry),
+                _ => throw new ArgumentException("PhysicsShape type is unknown."),
+            };
+        }
+
+        /// <summary>
+        /// Create a shape proxy from the shape, transformed by the specified transform.
+        /// </summary>
+        /// <param name="transform">The transform used to position the shape geometry.</param>
+        /// <exception cref="System.ArgumentException">Thrown if the shape is not valid.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape type is unknown.</exception>
+        public readonly ShapeProxy CreateShapeProxy(PhysicsTransform transform)
+        {
+            if (!isValid)
+                throw new ArgumentException("PhysicsShape is not valid.");
+
+            // Extract the appropriate geometry from the shape and delegate to the geometry-level overload.
+            return shapeType switch
+            {
+                ShapeType.Circle => circleGeometry.CreateShapeProxy(transform),
+                ShapeType.Capsule => capsuleGeometry.CreateShapeProxy(transform),
+                ShapeType.Polygon => polygonGeometry.CreateShapeProxy(transform),
+                ShapeType.Segment => segmentGeometry.CreateShapeProxy(transform),
+                ShapeType.ChainSegment => chainSegmentGeometry.CreateShapeProxy(transform),
+                _ => throw new ArgumentException("PhysicsShape type is unknown."),
+            };
+        }
+
+        /// <summary>
+        /// Create a shape proxy from the shape, transformed by the specified transform.
+        /// The maximum absolute value component from the scale will be used to scale the radius when <paramref name="scaleRadius"/> is true. Shape types without a radius ignore the flag.
+        /// </summary>
+        /// <param name="transform">The transform used to position the shape geometry.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape. Only affects shape types that carry a radius (Circle, Capsule, Polygon).</param>
+        /// <exception cref="System.ArgumentException">Thrown if the shape is not valid.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the shape type is unknown.</exception>
+        public readonly ShapeProxy CreateShapeProxy(Matrix4x4 transform, bool scaleRadius)
+        {
+            if (!isValid)
+                throw new ArgumentException("PhysicsShape is not valid.");
+
+            // Extract the appropriate geometry from the shape and delegate to the geometry-level overload.
+            // Segment and ChainSegment have no radius, so the scaleRadius flag is irrelevant for them.
+            return shapeType switch
+            {
+                ShapeType.Circle => circleGeometry.CreateShapeProxy(transform, scaleRadius),
+                ShapeType.Capsule => capsuleGeometry.CreateShapeProxy(transform, scaleRadius),
+                ShapeType.Polygon => polygonGeometry.CreateShapeProxy(transform, scaleRadius),
+                ShapeType.Segment => segmentGeometry.CreateShapeProxy(transform),
+                ShapeType.ChainSegment => chainSegmentGeometry.CreateShapeProxy(transform),
                 _ => throw new ArgumentException("PhysicsShape type is unknown."),
             };
         }

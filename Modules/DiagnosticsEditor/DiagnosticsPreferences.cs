@@ -114,7 +114,7 @@ namespace UnityEditor
                 foreach (var group in m_Switches)
                 {
                     group.foldout = EditorGUILayout.Foldout(group.foldout, String.IsNullOrEmpty(group.name) ? "General" : group.name,
-                        group.HasAnyChangedValues ? Styles.boldFoldout : EditorStyles.foldout);
+                        true, group.HasAnyChangedValues ? Styles.boldFoldout : EditorStyles.foldout);
 
                     if (group.foldout)
                     {

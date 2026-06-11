@@ -36,6 +36,12 @@ internal class BuildProfileBootstrapView : VisualElement
             Set(initializationInfo.packageAddInfo.GetPackageAddProgressInfo());
         };
 
+        if (initializationInfo.state == BuildProfileInitialization.State.AwaitingDomainReload)
+        {
+            StartSpinner();
+            m_PackageAddProgressLabel.text = TrText.buildProfileActivatingPlatform;
+        }
+
         // Prevent inspector editor from overwriting repaint
         // callback of an editor in the build profile window.
         if (onRepaintRequired != null)

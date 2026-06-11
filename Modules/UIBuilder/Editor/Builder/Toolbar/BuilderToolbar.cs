@@ -71,7 +71,7 @@ namespace Unity.UI.Builder
 
             m_ThemeManager = new ThemeStyleSheetManager(this);
             m_ThemeManager.selection = m_Selection;
-            ThemeUtility.themeFilesChanged += UpdateCanvasThemeMenuStatus;
+            ThemeUtility.themeFilesChanged += OnThemeFilesChanged;
 
             // File Menu
             m_FileMenu = this.Q<ToolbarMenu>("file-menu");
@@ -144,7 +144,16 @@ namespace Unity.UI.Builder
             if (m_ThemeManager != null)
                 BuilderAssetPostprocessor.Unregister(m_ThemeManager);
             UIToolkitProjectSettings.onThemeChanged -= OnProjectThemeChanged;
-            ThemeUtility.themeFilesChanged -= UpdateCanvasThemeMenuStatus;
+            ThemeUtility.themeFilesChanged -= OnThemeFilesChanged;
+        }
+
+        void OnThemeFilesChanged()
+        {
+            // Re-evaluate the effective theme from scratch. This event fires after
+            // RefreshRuntimeThemeFiles has updated s_ThemeFiles, so GetProjectDefaultTheme
+            // will see the current project state — handling both deletion (falls back to
+            // built-in) and creation of a new project default theme (switches to it).
+            InitCanvasTheme();
         }
 
         void OnProjectThemeChanged()
@@ -839,15 +848,6 @@ namespace Unity.UI.Builder
 
         public void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            bool listChanged = false;
-
-            // Check if any .tss files were moved
-            foreach (var movedAssetPath in movedFromAssetPaths)
-            {
-                if (movedAssetPath.EndsWith(BuilderConstants.TssExtension))
-                    listChanged = true;
-            }
-
             foreach (var assetPath in importedAssets)
             {
                 if (!assetPath.EndsWith(BuilderConstants.TssExtension))
@@ -858,48 +858,8 @@ namespace Unity.UI.Builder
                 {
                     selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
                 }
-
-                listChanged = true;
             }
 
-            foreach (var assetPath in deletedAssets)
-            {
-                if (!assetPath.EndsWith(BuilderConstants.TssExtension))
-                    continue;
-
-                listChanged = true;
-            }
-
-            // Refresh the centralized theme list before checking for removed themes
-            if (listChanged)
-            {
-                ThemeUtility.RefreshRuntimeThemeFiles();
-            }
-
-            // Check if current theme was removed and revert to default if needed
-            foreach (var assetPath in deletedAssets)
-            {
-                if (!assetPath.EndsWith(BuilderConstants.TssExtension))
-                    continue;
-
-                // Current theme has been removed, revert to the default one
-                if (!ThemeUtility.IsEditorCanvasTheme(document.currentCanvasTheme) &&
-                    document.currentCanvasThemeStyleSheet == null)
-                {
-                    var projectDefaultRuntimeAsset = ThemeUtility.FindProjectDefaultRuntimeThemeAsset();
-
-                    if (document.fileSettings.editorExtensionMode)
-                    {
-                        m_ToolBar.ChangeCanvasTheme(CanvasTheme.Default, null, true);
-                    }
-                    else
-                    {
-                        m_ToolBar.ChangeCanvasTheme(CanvasTheme.Custom,
-                            projectDefaultRuntimeAsset ?? ThemeUtility.builtInDefaultRuntimeTheme,
-                            isInit: true);
-                    }
-                }
-            }
         }
     }
 }

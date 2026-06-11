@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Profiling.Editor;
 using UnityEditor;
@@ -15,23 +16,25 @@ namespace UnityEditor.UIElements
     internal class UIToolkitProfilerModuleDetailsView : ProfilerModuleViewController
     {
         const int k_MainThreadIndex = 0;
-        const string k_DetailsSplitModeEditorPrefKey = "UIToolkitProfilerModule.DetailsSplitMode";
         const string k_ViewDataKeyPrefix = "uitoolkit-profiler";
 
         readonly ProfilerCounterDescriptor[] m_Counters;
         readonly string[] m_HierarchyMarkerNames;
         readonly string[] m_ColumnDisplayTitles;
-        MultiColumnListView m_ListView;
-        List<PanelDetailRow> m_Rows = new List<PanelDetailRow>();
+        MultiColumnTreeViewWithTotal m_TreeView;
+        Label m_EmptyOverlay;
+        readonly List<TreeViewItemData<PanelDetailRow>> m_RootItems = new List<TreeViewItemData<PanelDetailRow>>();
         readonly List<int> m_ChildItemIdsScratch = new List<int>(64);
         readonly Stack<int> m_HierarchyWalkStack = new Stack<int>(256);
-        IVisualElementScheduledItem m_ApplyListSourceScheduled;
+        IVisualElementScheduledItem m_ApplyTreeSourceScheduled;
 
         // Reusable collections for ReloadData; cleared each frame instead of re-allocated.
         readonly Dictionary<int, int> m_MarkerIdToCounterIndex = new Dictionary<int, int>();
         readonly Dictionary<(EntityId, int), float> m_PanelMarkerTimes = new Dictionary<(EntityId, int), float>();
         readonly List<EntityId> m_PanelOrder = new List<EntityId>();
         readonly HashSet<EntityId> m_PanelsSeen = new HashSet<EntityId>();
+        readonly Dictionary<EntityId, UIToolkitPanelUpdateMetricsInfo> m_PanelUpdateMetrics = new Dictionary<EntityId, UIToolkitPanelUpdateMetricsInfo>();
+        readonly float[] m_CounterTotalsScratch;
 
         PanelComponentsPaneController m_PanelComponentsPane;
 
@@ -41,6 +44,13 @@ namespace UnityEditor.UIElements
             public string panelName;
             public float[] counterTimesMs;
             public float totalTimeMs;
+            // PANEL_METRICS chunk may be absent for a panel that ran updaters (so it shows up via
+            // markers) but wasn't captured this frame. Track presence so the cells render "—"
+            // instead of a misleading "0".
+            public bool hasUpdateMetrics;
+            public uint hierarchyVersionChanges;
+            public uint repaintVersionChanges;
+            public int visualElementCount;
         }
 
         public UIToolkitProfilerModuleDetailsView(ProfilerWindow profilerWindow, ProfilerCounterDescriptor[] counters, string[] hierarchyMarkerNames, string[] columnDisplayTitles)
@@ -52,6 +62,7 @@ namespace UnityEditor.UIElements
             m_Counters = counters;
             m_HierarchyMarkerNames = hierarchyMarkerNames;
             m_ColumnDisplayTitles = columnDisplayTitles;
+            m_CounterTotalsScratch = new float[counters.Length];
         }
 
         static string BuildColumnHeaderTooltip(ProfilerCounterDescriptor counter, string hierarchyMarkerName)
@@ -71,8 +82,8 @@ namespace UnityEditor.UIElements
                 title = L10n.Tr("Panel"),
                 minWidth = 120,
                 optional = false,
-                comparison = (a, b) => EntityId.ToULong(m_Rows[a].panelEntityId).CompareTo(EntityId.ToULong(m_Rows[b].panelEntityId)),
-                bindCell = (e, row) => ((Label)e).text = row < m_Rows.Count ? m_Rows[row].panelName : ""
+                comparison = (a, b) => EntityId.ToULong(GetRowData(a).panelEntityId).CompareTo(EntityId.ToULong(GetRowData(b).panelEntityId)),
+                bindCell = (e, index) => ((Label)e).text = GetRowData(index).panelName ?? string.Empty
             });
 
             for (var i = 0; i < m_Counters.Length; i++)
@@ -86,19 +97,15 @@ namespace UnityEditor.UIElements
                     minWidth = 80,
                     width = 120,
                     makeHeader = UIToolkitProfilerToolbarHelpers.CreateDefaultColumnHeaderContent,
-                    comparison = (a, b) =>
-                    {
-                        var ta = rowTimeMs(a, counterIndex);
-                        var tb = rowTimeMs(b, counterIndex);
-                        return ta.CompareTo(tb);
-                    },
-                    bindCell = (e, row) =>
+                    comparison = (a, b) => rowTimeMs(a, counterIndex).CompareTo(rowTimeMs(b, counterIndex)),
+                    bindCell = (e, index) =>
                     {
                         var label = (Label)e;
-                        if (row < m_Rows.Count && counterIndex < m_Rows[row].counterTimesMs.Length)
-                            label.text = FormatTime(m_Rows[row].counterTimesMs[counterIndex]);
+                        var data = GetRowData(index);
+                        if (data.counterTimesMs != null && counterIndex < data.counterTimesMs.Length)
+                            label.text = FormatTime(data.counterTimesMs[counterIndex]);
                         else
-                            label.text = "—";
+                            label.text = UIToolkitProfilerToolbarHelpers.NoDataCell;
                     }
                 };
                 column.bindHeader = (ve) => UIToolkitProfilerToolbarHelpers.BindColumnHeaderWithTooltip(ve, column, headerTooltip);
@@ -110,41 +117,49 @@ namespace UnityEditor.UIElements
                 name = "total",
                 title = L10n.Tr("Total"),
                 minWidth = 80,
-                comparison = (a, b) => m_Rows[a].totalTimeMs.CompareTo(m_Rows[b].totalTimeMs),
-                bindCell = (e, row) =>
-                {
-                    var label = (Label)e;
-                    label.text = row < m_Rows.Count ? FormatTime(m_Rows[row].totalTimeMs) : "—";
-                }
+                comparison = (a, b) => GetRowData(a).totalTimeMs.CompareTo(GetRowData(b).totalTimeMs),
+                bindCell = (e, index) => ((Label)e).text = FormatTime(GetRowData(index).totalTimeMs)
             });
 
-            m_ListView = new MultiColumnListView(columns)
+            columns.Add(MakePanelCountColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes"),
+                L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame."),
+                r => r.hierarchyVersionChanges));
+            columns.Add(MakePanelCountColumn("repaintChanges", L10n.Tr("Repaint Changes"),
+                L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently."),
+                r => r.repaintVersionChanges));
+            columns.Add(MakePanelCountColumn("veCount", L10n.Tr("VE Count"),
+                L10n.Tr("Total number of VisualElements in this panel's hierarchy."),
+                r => r.visualElementCount));
+
+            // Flat list (no children); using the tree variant gives us a totals row and consistent
+            // alternating-row rendering with the details view.
+            m_TreeView = new MultiColumnTreeViewWithTotal(columns)
             {
                 fixedItemHeight = 18,
-                reorderable = true,
                 sortingMode = ColumnSortingMode.Default,
-                viewDataKey = "uitoolkit-profiler-details-listview",
+                viewDataKey = "uitoolkit-profiler-details-treeview",
                 showAlternatingRowBackgrounds = AlternatingRowBackground.All,
+                horizontalScrollingEnabled = true,
                 style = { flexGrow = 1 }
             };
 
-            m_ListView.makeNoneElement = () =>
-            {
-                var label = new Label(L10n.Tr("No data to show. Start profiling UI Toolkit content to see details."));
-                label.style.flexGrow = 1;
-                return label;
-            };
-
-            m_ListView.columnSortingChanged += OnColumnSortingChanged;
-            m_ListView.itemsChosen += OnItemsChosen;
-            m_ListView.selectedIndicesChanged += OnPanelRowSelectionChanged;
+            m_TreeView.columnSortingChanged += OnColumnSortingChanged;
+            m_TreeView.itemsChosen += OnItemsChosen;
+            m_TreeView.selectedIndicesChanged += OnPanelRowSelectionChanged;
 
             var mainToolbar = new Toolbar();
             mainToolbar.Add(new ToolbarSpacer { flex = true });
             UIToolkitProfilerToolbarHelpers.AddCommonButtons(mainToolbar);
 
-            m_PanelComponentsPane = new PanelComponentsPaneController(k_DetailsSplitModeEditorPrefKey, k_ViewDataKeyPrefix);
-            var splitView = m_PanelComponentsPane.WireUp(m_ListView, mainToolbar);
+            m_PanelComponentsPane = new PanelComponentsPaneController(k_ViewDataKeyPrefix);
+
+            var treeStack = UIToolkitProfilerToolbarHelpers.WrapWithEmptyOverlay(
+                m_TreeView,
+                "uitoolkit-profiler-details-tree-stack",
+                L10n.Tr("No data to show. Start profiling UI Toolkit content to see details."),
+                out m_EmptyOverlay);
+
+            var splitView = m_PanelComponentsPane.WireUp(treeStack, mainToolbar);
 
             var root = new VisualElement { name = "uitoolkit-profiler-details-root" };
             root.style.flexDirection = FlexDirection.Column;
@@ -158,28 +173,37 @@ namespace UnityEditor.UIElements
             return root;
         }
 
+        // Returns default for indices without a backing tree item (transient state during rebuild)
+        // so callers can render NoDataCell instead of throwing.
+        PanelDetailRow GetRowData(int index)
+        {
+            if (m_TreeView == null)
+                return default;
+            return m_TreeView.GetItemDataForIndex<PanelDetailRow>(index);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (!disposing)
                 return;
 
-            if (m_ListView != null)
+            if (m_TreeView != null)
             {
-                m_ListView.itemsChosen -= OnItemsChosen;
-                m_ListView.columnSortingChanged -= OnColumnSortingChanged;
-                m_ListView.selectedIndicesChanged -= OnPanelRowSelectionChanged;
+                m_TreeView.itemsChosen -= OnItemsChosen;
+                m_TreeView.columnSortingChanged -= OnColumnSortingChanged;
+                m_TreeView.selectedIndicesChanged -= OnPanelRowSelectionChanged;
             }
             m_PanelComponentsPane?.Dispose();
             m_PanelComponentsPane = null;
-            m_ApplyListSourceScheduled?.Pause();
-            m_ApplyListSourceScheduled = null;
+            m_ApplyTreeSourceScheduled?.Pause();
+            m_ApplyTreeSourceScheduled = null;
             ProfilerWindow.SelectedFrameIndexChanged -= OnSelectedFrameIndexChanged;
             base.Dispose(disposing);
         }
 
         void OnColumnSortingChanged()
         {
-            ScheduleApplyListViewSource();
+            ScheduleApplyTreeViewSource();
         }
 
         void OnItemsChosen(IEnumerable<object> chosen)
@@ -200,9 +224,10 @@ namespace UnityEditor.UIElements
                 return;
             foreach (var index in selectedIndices)
             {
-                if (index >= 0 && index < m_Rows.Count)
+                var data = GetRowData(index);
+                if (data.panelEntityId != EntityId.None)
                 {
-                    m_PanelComponentsPane.SetSelectedPanel(m_Rows[index].panelEntityId, m_Rows[index].panelName);
+                    m_PanelComponentsPane.SetSelectedPanel(data.panelEntityId, data.panelName);
                     return;
                 }
             }
@@ -216,85 +241,88 @@ namespace UnityEditor.UIElements
 
         void ReloadData(long frameIndex)
         {
-            m_Rows.Clear();
+            m_RootItems.Clear();
 
             if (frameIndex < 0)
             {
                 m_PanelComponentsPane?.LoadFrameMetadata(null, -1);
-                ApplyListViewSource();
-                return;
             }
-
-            using (var hierarchyData = ProfilerDriver.GetHierarchyFrameDataView(
-                (int)frameIndex, k_MainThreadIndex,
-                HierarchyFrameDataView.ViewModes.Default,
-                HierarchyFrameDataView.columnDontSort, false))
-            using (var rawFrameData = ProfilerDriver.GetRawFrameDataView((int)frameIndex, k_MainThreadIndex))
+            else
             {
-                m_PanelComponentsPane?.LoadFrameMetadata(rawFrameData, frameIndex);
-
-                if (!hierarchyData.valid)
+                using (var hierarchyData = ProfilerDriver.GetHierarchyFrameDataView(
+                    (int)frameIndex, k_MainThreadIndex,
+                    HierarchyFrameDataView.ViewModes.Default,
+                    HierarchyFrameDataView.columnDontSort, false))
+                using (var rawFrameData = ProfilerDriver.GetRawFrameDataView((int)frameIndex, k_MainThreadIndex))
                 {
-                    ApplyListViewSource();
-                    return;
+                    m_PanelComponentsPane?.LoadFrameMetadata(rawFrameData, frameIndex);
+
+                    if (hierarchyData.valid)
+                    {
+                        m_MarkerIdToCounterIndex.Clear();
+                        for (var i = 0; i < m_HierarchyMarkerNames.Length; i++)
+                        {
+                            var markerId = hierarchyData.GetMarkerId(m_HierarchyMarkerNames[i]);
+                            if (markerId != FrameDataView.invalidMarkerId)
+                                m_MarkerIdToCounterIndex[markerId] = i;
+                        }
+
+                        m_PanelMarkerTimes.Clear();
+                        m_PanelOrder.Clear();
+                        m_PanelsSeen.Clear();
+
+                        CollectUpdaterSamplesFromHierarchy(hierarchyData, hierarchyData.GetRootItemID());
+                        LoadPanelUpdateMetrics(rawFrameData);
+
+                        BuildRows(rawFrameData);
+                    }
                 }
-
-                m_MarkerIdToCounterIndex.Clear();
-                for (var i = 0; i < m_HierarchyMarkerNames.Length; i++)
-                {
-                    var markerId = hierarchyData.GetMarkerId(m_HierarchyMarkerNames[i]);
-                    if (markerId != FrameDataView.invalidMarkerId)
-                        m_MarkerIdToCounterIndex[markerId] = i;
-                }
-
-                m_PanelMarkerTimes.Clear();
-                m_PanelOrder.Clear();
-                m_PanelsSeen.Clear();
-
-                CollectUpdaterSamplesFromHierarchy(hierarchyData, hierarchyData.GetRootItemID());
-
-                BuildRows(rawFrameData);
             }
 
-            ApplyListViewSource();
+            // Always refresh — for no-frame / invalid-frame paths m_RootItems is empty, so totals
+            // fall back to "0" / "—" naturally instead of keeping stale values from the previous frame.
+            RefreshTotalsHeader();
+            UpdateEmptyOverlay();
+            ScheduleApplyTreeViewSource();
         }
 
-        void ApplyListViewSource()
+        void UpdateEmptyOverlay()
         {
-            ScheduleApplyListViewSource();
+            if (m_EmptyOverlay != null)
+                m_EmptyOverlay.style.display = m_RootItems.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         /// <summary>
         /// Defer binding + <see cref="BaseVerticalCollectionView.Rebuild"/> to the next scheduler tick.
-        /// Profiler frame changes can fire during layout (e.g. IMGUI toolbar); rebuilding the list then throws
+        /// Profiler frame changes can fire during layout (e.g. IMGUI toolbar); rebuilding the tree then throws
         /// <c>Cannot modify VisualElement hierarchy during layout calculation</c>.
         /// </summary>
-        void ScheduleApplyListViewSource()
+        void ScheduleApplyTreeViewSource()
         {
-            if (m_ListView == null)
+            if (m_TreeView == null)
                 return;
 
-            if (m_ListView.panel == null)
+            if (m_TreeView.panel == null)
             {
-                m_ListView.itemsSource = m_Rows;
-                m_ListView.Rebuild();
+                m_TreeView.SetRootItems(m_RootItems);
+                m_TreeView.Rebuild();
                 return;
             }
 
-            if (m_ApplyListSourceScheduled == null)
-                m_ApplyListSourceScheduled = m_ListView.schedule.Execute(DeferredApplyListViewSource);
-            else if (!m_ApplyListSourceScheduled.isActive)
-                m_ApplyListSourceScheduled.Resume();
+            if (m_ApplyTreeSourceScheduled == null)
+                m_ApplyTreeSourceScheduled = m_TreeView.schedule.Execute(DeferredApplyTreeViewSource);
+            else if (!m_ApplyTreeSourceScheduled.isActive)
+                m_ApplyTreeSourceScheduled.Resume();
         }
 
-        void DeferredApplyListViewSource()
+        void DeferredApplyTreeViewSource()
         {
-            if (m_ListView == null || m_ListView.panel == null)
+            if (m_TreeView == null || m_TreeView.panel == null)
                 return;
-            m_ListView.itemsSource = m_Rows;
-            m_ListView.Rebuild();
+            m_TreeView.SetRootItems(m_RootItems);
+            m_TreeView.Rebuild();
             // Re-trigger selection so the right pane reflects the (possibly preserved) selection on the new frame.
-            OnPanelRowSelectionChanged(m_ListView.selectedIndices);
+            OnPanelRowSelectionChanged(m_TreeView.selectedIndices);
         }
 
         void CollectUpdaterSamplesFromHierarchy(HierarchyFrameDataView hierarchyData, int rootItemId)
@@ -330,15 +358,89 @@ namespace UnityEditor.UIElements
             }
         }
 
-        float rowTimeMs(int row, int counterIndex)
+        // Per-panel integer column from PANEL_METRICS. Renders "—" when the panel has no
+        // PANEL_METRICS chunk in the current frame so an absent value isn't confused with a real zero.
+        Column MakePanelCountColumn(string name, string title, string tooltip, Func<PanelDetailRow, long> getter)
         {
-            if (row < 0 || row >= m_Rows.Count || counterIndex >= m_Rows[row].counterTimesMs.Length)
+            var column = new Column
+            {
+                name = name,
+                title = title,
+                minWidth = 90,
+                width = 110,
+                makeHeader = UIToolkitProfilerToolbarHelpers.CreateDefaultColumnHeaderContent,
+                bindCell = (e, index) =>
+                {
+                    var label = (Label)e;
+                    var data = GetRowData(index);
+                    if (!data.hasUpdateMetrics)
+                        label.text = UIToolkitProfilerToolbarHelpers.NoDataCell;
+                    else
+                        label.text = getter(data).ToString("N0");
+                },
+                comparison = (a, b) =>
+                {
+                    var dataA = GetRowData(a);
+                    var dataB = GetRowData(b);
+                    // Keep "—" rows pinned to the bottom regardless of sort direction so a user
+                    // sorting descending doesn't see the placeholders bubble to the top. The
+                    // framework flips comparison results for descending sort, so we flip our
+                    // NoData sign back to compensate.
+                    if (dataA.hasUpdateMetrics != dataB.hasUpdateMetrics)
+                    {
+                        var naturalCompare = dataA.hasUpdateMetrics ? -1 : 1;
+                        return IsColumnDescending(name) ? -naturalCompare : naturalCompare;
+                    }
+                    if (!dataA.hasUpdateMetrics)
+                        return 0;
+                    return getter(dataA).CompareTo(getter(dataB));
+                },
+            };
+            column.bindHeader = ve => UIToolkitProfilerToolbarHelpers.BindColumnHeaderWithTooltip(ve, column, tooltip);
+            return column;
+        }
+
+        bool IsColumnDescending(string columnName)
+        {
+            if (m_TreeView == null)
+                return false;
+            foreach (var sc in m_TreeView.sortedColumns)
+                if (sc.columnName == columnName)
+                    return sc.direction == SortDirection.Descending;
+            return false;
+        }
+
+        void LoadPanelUpdateMetrics(RawFrameDataView rawFrameData)
+        {
+            m_PanelUpdateMetrics.Clear();
+            if (rawFrameData == null || !rawFrameData.valid)
+                return;
+            var guid = ProfilerUIToolkit.kProfilerMetadataGuid;
+            var tag = ProfilerUIToolkit.kProfilerUIToolkitMetadataTagPanelMetrics;
+            var chunkCount = rawFrameData.GetFrameMetaDataCount(guid, tag);
+            for (var ci = 0; ci < chunkCount; ci++)
+            {
+                using (var chunk = rawFrameData.GetFrameMetaData<UIToolkitPanelUpdateMetricsInfo>(guid, tag, ci))
+                {
+                    if (chunk.Length < 1)
+                        continue;
+                    var info = chunk[0];
+                    m_PanelUpdateMetrics[info.panelEntityId] = info;
+                }
+            }
+        }
+
+        float rowTimeMs(int index, int counterIndex)
+        {
+            var data = GetRowData(index);
+            if (data.counterTimesMs == null || counterIndex < 0 || counterIndex >= data.counterTimesMs.Length)
                 return 0f;
-            return m_Rows[row].counterTimesMs[counterIndex];
+            return data.counterTimesMs[counterIndex];
         }
 
         void BuildRows(RawFrameDataView rawFrameData)
         {
+            var nextId = 1;
             foreach (var panelEntityId in m_PanelOrder)
             {
                 var panelName = UIToolkitProfilerToolbarHelpers.GetPanelDisplayName(rawFrameData, panelEntityId);
@@ -350,14 +452,54 @@ namespace UnityEditor.UIElements
                     total += times[i];
                 }
 
-                m_Rows.Add(new PanelDetailRow
+                var hasUpdateMetrics = m_PanelUpdateMetrics.TryGetValue(panelEntityId, out var updateMetrics);
+
+                m_RootItems.Add(new TreeViewItemData<PanelDetailRow>(nextId++, new PanelDetailRow
                 {
                     panelEntityId = panelEntityId,
                     panelName = panelName,
                     counterTimesMs = times,
-                    totalTimeMs = total
-                });
+                    totalTimeMs = total,
+                    hasUpdateMetrics = hasUpdateMetrics,
+                    hierarchyVersionChanges = updateMetrics.hierarchyVersionChanges,
+                    repaintVersionChanges = updateMetrics.repaintVersionChanges,
+                    visualElementCount = updateMetrics.visualElementCount,
+                }));
             }
+        }
+
+        void RefreshTotalsHeader()
+        {
+            if (m_TreeView == null)
+                return;
+
+            Array.Clear(m_CounterTotalsScratch, 0, m_CounterTotalsScratch.Length);
+            var totalTimeSum = 0f;
+            ulong hierarchySum = 0, repaintSum = 0;
+            long veSum = 0;
+            var anyMetrics = false;
+            for (var r = 0; r < m_RootItems.Count; r++)
+            {
+                var row = m_RootItems[r].data;
+                for (var i = 0; i < m_CounterTotalsScratch.Length && i < row.counterTimesMs.Length; i++)
+                    m_CounterTotalsScratch[i] += row.counterTimesMs[i];
+                totalTimeSum += row.totalTimeMs;
+                if (!row.hasUpdateMetrics)
+                    continue;
+                anyMetrics = true;
+                hierarchySum += row.hierarchyVersionChanges;
+                repaintSum += row.repaintVersionChanges;
+                veSum += row.visualElementCount;
+            }
+
+            m_TreeView.SetTotalCell("panel", L10n.Tr("Total"));
+            for (var i = 0; i < m_Counters.Length; i++)
+                m_TreeView.SetTotalCell(m_Counters[i].Name, FormatTime(m_CounterTotalsScratch[i]));
+            m_TreeView.SetTotalCell("total", FormatTime(totalTimeSum));
+            // Same '—' convention as the per-row cells when no panel reported metrics this frame.
+            m_TreeView.SetTotalCell("hierarchyChanges", anyMetrics ? hierarchySum.ToString("N0") : UIToolkitProfilerToolbarHelpers.NoDataCell);
+            m_TreeView.SetTotalCell("repaintChanges", anyMetrics ? repaintSum.ToString("N0") : UIToolkitProfilerToolbarHelpers.NoDataCell);
+            m_TreeView.SetTotalCell("veCount", anyMetrics ? veSum.ToString("N0") : UIToolkitProfilerToolbarHelpers.NoDataCell);
         }
 
         static string FormatTime(float timeMs) => $"{timeMs:F2} ms";

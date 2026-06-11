@@ -19,11 +19,17 @@ sealed partial class UIViewport : VisualElement
     const string k_StyleSheetDark = "UIToolkitAuthoring/UIViewportWindow/UIViewportDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/UIViewportWindow/UIViewportLight.uss";
 
+    const string k_OuterSplitViewName = UssClass + "__viewport-preview-split-view";
+    const string k_InnerSplitViewUssClass = UssClass + "__code-section";
+    const string k_ShowUxmlPreviewPrefKey = "UIToolkit.UIViewportWindow.ShowUxmlPreview";
+    const string k_ShowUssPreviewPrefKey = "UIToolkit.UIViewportWindow.ShowUssPreview";
+
     public const string UssClass = "unity-ui-viewport";
     public const string ToolbarUssClass = UssClass + "__toolbar";
     public const string ToolbarZoomMenuUssClass = ToolbarUssClass + "-zoom-menu";
     public const string ToolbarPreviewToggleUssClass = ToolbarUssClass + "-preview-button";
     public const string ToolbarFitViewportButtonUssClass = ToolbarUssClass + "-fit-button";
+    public const string ToolbarViewMenuUssClass = ToolbarUssClass + "-view-menu";
 
     public const string ViewportSurfaceUssClass = UssClass + "__viewport-surface";
 
@@ -36,6 +42,8 @@ sealed partial class UIViewport : VisualElement
     readonly VisualElement m_Surface;
     readonly UICanvas m_Canvas;
     readonly ToolbarMenu m_ZoomMenu;
+    readonly ToolbarMenu m_ViewMenu;
+    readonly UIViewportThemeMenu m_ThemeMenu;
     readonly ToolbarToggle m_PreviewToggle;
     readonly Button m_FitViewportButton;
 
@@ -44,6 +52,10 @@ sealed partial class UIViewport : VisualElement
     readonly UICanvasPanManipulator m_PanManipulator;
     readonly UICanvasZoomManipulator m_ZoomManipulator;
     readonly List<UICanvasResizeManipulator> m_ResizeManipulators = new();
+    readonly AddElementDropManipulator m_DropManipulator;
+
+    TwoPaneSplitView m_OuterSplitView;
+    TwoPaneSplitView m_InnerSplitView;
 
     const int k_FitAnimationDuration = 250;
     ValueAnimation<float> m_FitAnimation;
@@ -53,6 +65,7 @@ sealed partial class UIViewport : VisualElement
 
     public UICanvas Canvas => m_Canvas;
     public VisualElement Surface => m_Surface;
+    public AddElementDropManipulator DropManipulator => m_DropManipulator;
 
     public UIViewport()
     {
@@ -73,6 +86,8 @@ sealed partial class UIViewport : VisualElement
 
         m_PanManipulator = new UICanvasPanManipulator(this);
         m_ZoomManipulator = new UICanvasZoomManipulator(this);
+        m_DropManipulator = new AddElementDropManipulator(new UICanvasDropContext(m_Canvas));
+        m_Canvas.AddManipulator(m_DropManipulator);
 
         foreach (var resizer in this.Query<UICanvasResizerHandle>().Build())
         {
@@ -82,7 +97,11 @@ sealed partial class UIViewport : VisualElement
         m_ZoomMenu = this.Q<ToolbarMenu>(className: ToolbarZoomMenuUssClass);
         SetupZoomMenu();
 
-        m_PreviewToggle = this.Q<ToolbarToggle>(className:ToolbarPreviewToggleUssClass);
+        m_ViewMenu = this.Q<ToolbarMenu>(className: ToolbarViewMenuUssClass);
+        SetupViewMenu();
+
+        m_ThemeMenu = this.Q<UIViewportThemeMenu>();
+        m_PreviewToggle = this.Q<ToolbarToggle>(className: ToolbarPreviewToggleUssClass);
         SetupPreviewToggle();
         EnableInClassList(PreviewModeUssClass, m_Canvas.PreviewMode);
 
@@ -106,11 +125,16 @@ sealed partial class UIViewport : VisualElement
                 break;
             case AttachToPanelEvent:
                 PrefSettings.settingChanged += OnPrefsChanged;
+                m_OuterSplitView = panel.visualTree.Q<TwoPaneSplitView>(k_OuterSplitViewName);
+                m_InnerSplitView = panel.visualTree.Q<TwoPaneSplitView>(className: k_InnerSplitViewUssClass);
+                ApplyPreviewVisibility();
                 break;
             case DetachFromPanelEvent:
                 PrefSettings.settingChanged -= OnPrefsChanged;
                 if (m_FitAnimation != null && m_FitAnimation.isRunning)
                     m_FitAnimation?.Stop();
+                m_OuterSplitView = null;
+                m_InnerSplitView = null;
                 break;
             case PointerUpEvent pointerUpEvent:
                 if (TrySelectCanvas(pointerUpEvent))
@@ -147,6 +171,8 @@ sealed partial class UIViewport : VisualElement
         m_PreviewToggle.RegisterValueChangedCallback(OnPreviewToggleChanged);
         m_PreviewToggle.SetValueWithoutNotify(m_Canvas.PreviewMode);
     }
+
+    internal UIViewportThemeMenu ThemeMenu => m_ThemeMenu;
 
     void OnPreviewToggleChanged(ChangeEvent<bool> evt)
     {
@@ -297,5 +323,93 @@ sealed partial class UIViewport : VisualElement
         {
             item.iconImage = Background.FromTexture2D(icon);
         }
+    }
+
+    /// <summary>
+    /// Adds a checkable toggle item to the View dropdown menu.
+    /// </summary>
+    /// <param name="label">Display label for the menu item.</param>
+    /// <param name="isChecked">Callback that returns the current checked state.</param>
+    /// <param name="onToggle">Called with the new value when the item is clicked.</param>
+    public void AddViewMenuToggle(string label, Func<bool> isChecked, Action<bool> onToggle)
+    {
+        if (m_ViewMenu == null)
+            return;
+
+        m_ViewMenu.menu.AppendAction(label,
+            _ => onToggle(!isChecked()),
+            _ => isChecked() ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+    }
+
+    internal bool ShowUxmlPreview
+    {
+        get => GetUserSettingBool(k_ShowUxmlPreviewPrefKey, true);
+        set
+        {
+            SetUserSettingBool(k_ShowUxmlPreviewPrefKey, value);
+            ApplyPreviewVisibility();
+        }
+    }
+
+    internal bool ShowUssPreview
+    {
+        get => GetUserSettingBool(k_ShowUssPreviewPrefKey, true);
+        set
+        {
+            SetUserSettingBool(k_ShowUssPreviewPrefKey, value);
+            ApplyPreviewVisibility();
+        }
+    }
+
+    void SetupViewMenu()
+    {
+        AddViewMenuToggle(
+            L10n.Tr("Show UXML preview"),
+            () => ShowUxmlPreview,
+            value => ShowUxmlPreview = value);
+
+        AddViewMenuToggle(
+            L10n.Tr("Show USS preview"),
+            () => ShowUssPreview,
+            value => ShowUssPreview = value);
+    }
+
+    void ApplyPreviewVisibility()
+    {
+        if (m_InnerSplitView == null || m_OuterSplitView == null)
+            return;
+
+        var showUxml = ShowUxmlPreview;
+        var showUss = ShowUssPreview;
+
+        if (showUxml || showUss)
+        {
+            // Ensure the code section and inner split view are fully restored before
+            // selectively collapsing one side, to avoid double-collapsed state.
+            m_OuterSplitView.UnCollapse();
+            m_InnerSplitView.UnCollapse();
+
+            if (!showUxml)
+                m_InnerSplitView.CollapseChild(0);
+            else if (!showUss)
+                m_InnerSplitView.CollapseChild(1);
+        }
+        else
+        {
+            // Collapse the code section pane (index 1) from the outer split view.
+            // CollapseChild handles hiding the drag line automatically.
+            m_OuterSplitView.CollapseChild(1);
+        }
+    }
+
+    static bool GetUserSettingBool(string key, bool defaultValue)
+    {
+        var stored = EditorUserSettings.GetConfigValue(key);
+        return string.IsNullOrEmpty(stored) ? defaultValue : stored == "true";
+    }
+
+    static void SetUserSettingBool(string key, bool value)
+    {
+        EditorUserSettings.SetConfigValue(key, value ? "true" : "false");
     }
 }

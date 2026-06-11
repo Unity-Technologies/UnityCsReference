@@ -356,7 +356,10 @@ internal partial class DictionaryDrawer
             // Sanity-clamp only — keeps NaN/<0/>1 attribute values out of the cache.
             // The actual rendered width is enforced by GetKeyColumnPixelWidth, which
             // applies the pixel floor regardless of the stored fraction's exact value.
-            keyColumnFraction = Mathf.Clamp(attr.keyColumnFraction, 0.01f, 0.99f);
+            var fraction = attr.keyColumnFraction;
+            if (float.IsNaN(fraction))
+                fraction = 0.5f;
+            keyColumnFraction = Mathf.Clamp(fraction, 0.01f, 0.99f);
         }
     }
 

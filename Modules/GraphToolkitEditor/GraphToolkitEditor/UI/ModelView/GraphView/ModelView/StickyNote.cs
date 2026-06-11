@@ -52,6 +52,7 @@ namespace Unity.GraphToolkit.Editor
 
         string m_CurrentThemeClassName;
         string m_CurrentSizeClassName;
+        VisualElement m_ResizerRoot;
 
         public StickyNoteModel StickyNoteModel => Model as StickyNoteModel;
 
@@ -77,6 +78,8 @@ namespace Unity.GraphToolkit.Editor
             usageHints = UsageHints.DynamicTransform;
             AddToClassList(ussClassName);
             this.AddPackageStylesheet("StickyNote.uss");
+
+            m_ResizerRoot = (PartList.GetPart(resizerPartName) as FourWayResizerPart)?.Root;
         }
 
         /// <inheritdoc />
@@ -115,10 +118,32 @@ namespace Unity.GraphToolkit.Editor
         public static IEnumerable<string> GetSizes() => Enum.GetNames(typeof(StickyNoteTextSize));
 
         /// <inheritdoc />
+        protected override ClickSelector CreateClickSelector() => new StickyNoteClickSelector();
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(Vector2 localPoint)
+        {
+            if (m_ResizerRoot != null)
+            {
+                // Rect.Contains is half-open ([min, max)); use <= on max sides for symmetric coverage. (UUM-131394)
+                var r = m_ResizerRoot.layout;
+                return localPoint.x >= r.xMin && localPoint.x <= r.xMax &&
+                       localPoint.y >= r.yMin && localPoint.y <= r.yMax;
+            }
+            return base.ContainsPoint(localPoint);
+        }
+
+        /// <inheritdoc />
         public override void ActivateRename()
         {
             GraphView.Window.Focus();
             (PartList.GetPart(titleContainerPartName) as EditableTitlePart)?.BeginEditing();
+        }
+
+        // Uses TrickleDown so selection fires before ElementResizer.StopPropagation when clicking the resize border. (UUM-131394)
+        class StickyNoteClickSelector : GraphViewClickSelector
+        {
+            protected override bool UseTrickleDownForMouseDown => true;
         }
     }
 }

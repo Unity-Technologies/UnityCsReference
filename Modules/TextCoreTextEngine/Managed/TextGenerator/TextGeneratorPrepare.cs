@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.Text;
 using Unity.Jobs.LowLevel.Unsafe;
+using Unity.Profiling;
 using UnityEngine.Bindings;
-using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
 
 #pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
@@ -15,42 +15,44 @@ namespace UnityEngine.TextCore.Text
 {
     internal partial class TextGenerator
     {
+        static readonly ProfilerMarker s_PrepareMarker = new ProfilerMarker("TextGenerator.Prepare");
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void Prepare(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
-            Profiler.BeginSample("TextGenerator.Prepare");
-            m_Padding = generationSettings.extraPadding;
-            m_CurrentFontAsset = generationSettings.fontAsset;
-            m_ShouldRenderBitmap = generationSettings.fontAsset.IsBitmap();
+            using (s_PrepareMarker.Auto())
+            {
+                m_Padding = generationSettings.extraPadding;
+                m_CurrentFontAsset = generationSettings.fontAsset;
+                m_ShouldRenderBitmap = generationSettings.fontAsset.IsBitmap();
 
-            // Set the font style that is assigned by the builder
-            m_FontStyleInternal = generationSettings.fontStyle;
-            m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
+                // Set the font style that is assigned by the builder
+                m_FontStyleInternal = generationSettings.fontStyle;
+                m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
 
-            // Find and cache Underline & Ellipsis characters.
-            GetSpecialCharacters(generationSettings);
+                // Find and cache Underline & Ellipsis characters.
+                GetSpecialCharacters(generationSettings);
 
-            ComputeMarginSize(generationSettings.screenRect, Vector4.zero);
+                ComputeMarginSize(generationSettings.screenRect, Vector4.zero);
 
-            //ParseInputText
-            PopulateTextBackingArray(generationSettings.renderedText);
-            PopulateTextProcessingArray(generationSettings);
-            SetArraySizes(m_TextProcessingArray, generationSettings, textInfo);
+                //ParseInputText
+                PopulateTextBackingArray(generationSettings.renderedText);
+                PopulateTextProcessingArray(generationSettings);
+                SetArraySizes(m_TextProcessingArray, generationSettings, textInfo);
 
-            // Reset Font min / max used with Auto-sizing
-            if (TextGenerationSettings.autoSize)
+                // Reset Font min / max used with Auto-sizing
+                if (TextGenerationSettings.autoSize)
 #pragma warning disable CS0162 // Unreachable code detected
-                m_FontSize = Mathf.Clamp(generationSettings.fontSize, TextGenerationSettings.fontSizeMin, TextGenerationSettings.fontSizeMax);
+                    m_FontSize = Mathf.Clamp(generationSettings.fontSize, TextGenerationSettings.fontSizeMin, TextGenerationSettings.fontSizeMax);
 #pragma warning restore CS0162 // Unreachable code detected
-            else
-                m_FontSize = generationSettings.fontSize;
+                else
+                    m_FontSize = generationSettings.fontSize;
 
-            m_MaxFontSize = TextGenerationSettings.fontSizeMax;
-            m_MinFontSize = TextGenerationSettings.fontSizeMin;
-            m_LineSpacingDelta = 0;
-            m_CharWidthAdjDelta = 0;
-
-            Profiler.EndSample();
+                m_MaxFontSize = TextGenerationSettings.fontSizeMax;
+                m_MinFontSize = TextGenerationSettings.fontSizeMin;
+                m_LineSpacingDelta = 0;
+                m_CharWidthAdjDelta = 0;
+            }
         }
 
         internal bool PrepareFontAsset(TextGenerationSettings generationSettings)

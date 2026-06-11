@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor.GraphVisualization;
 
@@ -14,4 +13,9 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// </summary>
 class Store
 {
+    PortPreviewStore m_PortPreviewStore;
+    internal PortPreviewStore PortPreviewStore => m_PortPreviewStore ??= new PortPreviewStore();
+    
+    internal NodeAccentStore NodeAccentStore = new();
 }
+

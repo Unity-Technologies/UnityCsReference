@@ -9,12 +9,12 @@ namespace UnityEngine.UIElements.UIR
 {
     sealed class MeshManagerBasic : MeshManager
     {
-        public MeshManagerBasic(uint initialVertexCapacity, uint initialIndexCapacity, GpuUpdaterType gpuUpdaterType)
-            : base(initialVertexCapacity, initialIndexCapacity, gpuUpdaterType)
+        public MeshManagerBasic(uint initialVertexCapacity, uint initialIndexCapacity, uint extrasStride, GpuUpdaterType gpuUpdaterType)
+            : base(initialVertexCapacity, initialIndexCapacity, extrasStride, gpuUpdaterType)
         {
         }
 
-        public override void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData)
+        public override void Update(MeshHandle mesh, uint vertexCount, out RawSlice vertexData)
         {
             Debug.Assert(mesh.allocVerts.size >= vertexCount);
 
@@ -22,23 +22,23 @@ namespace UnityEngine.UIElements.UIR
 
             if (mesh.allocTime != m_FrameIndex)
             {
-                mesh.allocPage.vertices.AddDirtyRange(mesh.allocVerts.start, vertexCount);
+                mesh.allocPage.MarkVertexRangeDirty(mesh.allocVerts.start, vertexCount);
             }
         }
 
-        public override void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
+        public override void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             Debug.Assert(mesh.allocVerts.size >= vertexCount);
             Debug.Assert(mesh.allocIndices.size >= indexCount);
 
             int indexOfFirstVertex = (int)mesh.allocVerts.start;
             vertexData = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, (int)vertexCount);
-            indexData = mesh.allocPage.indices.cpuData.Slice((int)mesh.allocIndices.start, (int)indexCount);
+            indexData = mesh.allocPage.indices.cpuData.SliceAs<UInt16>((int)mesh.allocIndices.start, (int)indexCount);
             indexOffset = (ushort)indexOfFirstVertex;
 
             if (mesh.allocTime != m_FrameIndex)
             {
-                mesh.allocPage.vertices.AddDirtyRange(mesh.allocVerts.start, vertexCount);
+                mesh.allocPage.MarkVertexRangeDirty(mesh.allocVerts.start, vertexCount);
                 mesh.allocPage.indices.AddDirtyRange(mesh.allocIndices.start, indexCount);
             }
         }

@@ -97,8 +97,10 @@ namespace UnityEditor.UIElements
             // Build menu options
             if (m_CachedThemeChoices == null || m_CachedThemeData == null)
             {
-                m_CachedThemeChoices = new List<string>();
-                m_CachedThemeData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
+                // Build into locals so a re-entrant themeFilesChanged callback can't null the
+                // fields mid-build and cause an NRE when we continue iterating.
+                var newChoices = new List<string>();
+                var newData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
 
                 var editorThemes = ThemeUtility.GetEditorThemesToDisplayName();
                 foreach (var themeKvp in editorThemes)
@@ -110,17 +112,17 @@ namespace UnityEditor.UIElements
                     if (canvasTheme == projectTheme)
                     {
                         displayName += ThemeUtility.ProjectThemeSuffix;
-                        m_CachedThemeChoices.Insert(0, displayName);
-                        m_CachedThemeChoices.Insert(1, k_Separator);
+                        newChoices.Insert(0, displayName);
+                        newChoices.Insert(1, k_Separator);
                     }
                     else
-                        m_CachedThemeChoices.Add(displayName);
+                        newChoices.Add(displayName);
 
-                    m_CachedThemeData[displayName] = (canvasTheme, null);
+                    newData[displayName] = (canvasTheme, null);
                 }
 
                 // Add separator between editor and runtime themes
-                m_CachedThemeChoices.Add(k_Separator);
+                newChoices.Add(k_Separator);
 
                 var runtimeThemes = ThemeUtility.GetRuntimeThemesToDisplayName();
                 foreach (var themeKvp in runtimeThemes)
@@ -132,17 +134,20 @@ namespace UnityEditor.UIElements
                     if (themeSheet == projectThemeSheet)
                     {
                         displayName += ThemeUtility.ProjectThemeSuffix;
-                        m_CachedThemeChoices.Insert(0, displayName);
-                        m_CachedThemeChoices.Insert(1, k_Separator);
+                        newChoices.Insert(0, displayName);
+                        newChoices.Insert(1, k_Separator);
                     }
                     else
-                        m_CachedThemeChoices.Add(displayName);
+                        newChoices.Add(displayName);
 
-                    m_CachedThemeData[displayName] = (CanvasTheme.Custom, themeSheet);
+                    newData[displayName] = (CanvasTheme.Custom, themeSheet);
                 }
 
                 // Add separator before settings
-                m_CachedThemeChoices.Add(k_Separator);
+                newChoices.Add(k_Separator);
+
+                m_CachedThemeChoices = newChoices;
+                m_CachedThemeData = newData;
             }
 
             // Initialize selection to effective theme if not yet set

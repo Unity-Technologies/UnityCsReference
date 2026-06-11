@@ -59,7 +59,7 @@ namespace UnityEngine
             return GetAllocArrayFromChannel<T>(channel, VertexAttributeFormat.Float32, DefaultDimensionForChannel(channel));
         }
 
-        private void SetSizedArrayForChannel(VertexAttribute channel, VertexAttributeFormat format, int dim, ReadOnlySpan<byte> values, int valuesArrayLength, int valuesStart, int valuesCount, UnityEngine.Rendering.MeshUpdateFlags flags)
+        private void SetSizedArrayForChannel(VertexAttribute channel, VertexAttributeFormat format, int dim, Span<byte> values, int valuesArrayLength, int valuesStart, int valuesCount, UnityEngine.Rendering.MeshUpdateFlags flags)
         {
             if (canAccess)
             {

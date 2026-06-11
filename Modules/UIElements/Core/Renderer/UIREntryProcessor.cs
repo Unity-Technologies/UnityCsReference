@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements.UIR
     {
         struct MaskMesh
         {
-            public NativeSlice<Vertex> vertices;
+            public RawSlice vertices;
             public NativeSlice<ushort> indices;
             public int indexOffset; // From the beginning of the "real" index buffer to the first index actually being read
         }
@@ -25,6 +25,9 @@ namespace UnityEngine.UIElements.UIR
 
         RenderTreeManager m_RenderTreeManager;
         RenderData m_CurrentRenderData;
+
+        ExtraVertexChannels m_PanelExtras;
+        IntPtr m_NoUserExtrasTemplatePtr;
 
         int m_MaskDepth; // The currently used depth
         int m_MaskDepthPopped;
@@ -50,7 +53,7 @@ namespace UnityEngine.UIElements.UIR
 
         // Invariant within an alloc
         MeshHandle m_Mesh;              // The current destination mesh
-        NativeSlice<Vertex> m_Verts;    // The current destination vertex slice
+        RawSlice m_Verts;       // The current destination vertex+extras slice
         NativeSlice<UInt16> m_Indices;  // The current destination index slice
         ushort m_IndexOffset;           // The index offset provided by the render device for the current sub-alloc
         int m_AllocVertexCount;         // Number of vertices in the current alloc
@@ -81,6 +84,8 @@ namespace UnityEngine.UIElements.UIR
             UIRenderDevice device = renderTreeManager.device;
             m_RenderTreeManager = renderTreeManager;
             m_CurrentRenderData = renderData;
+            m_PanelExtras = device.extraVertexChannels;
+            m_NoUserExtrasTemplatePtr = device.noUserExtrasTemplatePtr;
 
             m_PreProcessor.PreProcess(root);
 
@@ -223,7 +228,7 @@ namespace UnityEngine.UIElements.UIR
                             }
                         }
                         else
-                            m_RenderType = VertexFlags.RenderTypeSolid; // Fallback to solid rendering
+                            m_RenderType = VertexFlags.RenderTypeSolid;
 
                         ProcessMeshEntry(entry, textureId);
                         m_RemapUVs = false;
@@ -432,8 +437,9 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 ushort clipRectId = ShaderInfoAllocator.BMPAllocToId(m_ClipRectId);
+                bool usesPerGlyphTextCoreSettings = (entry.flags & EntryFlags.UsesPerGlyphTextCoreSettings) != 0;
                 bool usesTextCoreSettings = (entry.flags & EntryFlags.UsesTextCoreSettings) != 0;
-                if (usesTextCoreSettings)
+                if (usesTextCoreSettings && !usesPerGlyphTextCoreSettings)
                 {
                     // Avoid writing the textcore id when the vertices aren't for text:
                     // the slot is shared with the vector graphics gradient index.
@@ -460,8 +466,9 @@ namespace UnityEngine.UIElements.UIR
                 var job = new ConvertMeshJobData
                 {
                     vertSrc = (IntPtr)entry.vertices.GetUnsafePtr(),
-                    vertDst = (IntPtr)targetVerticesSlice.GetUnsafePtr(),
+                    vertDst = targetVerticesSlice.GetUnsafePtr(),
                     vertCount = entryVertexCount,
+                    vertStride = targetVerticesSlice.Stride,
                     transform = m_Transform,
                     clipRectId = clipRectId,
                     transformId = m_TransformId,
@@ -470,7 +477,9 @@ namespace UnityEngine.UIElements.UIR
                     flags = m_RenderType,
                     textureId = (ushort)textureId.index,
                     gradientSettingsIndexOffset = m_GradientSettingIndexOffset,
-                    usesTextCoreSettings = usesTextCoreSettings ? 1 : 0,
+                    usesTextCoreSettings = usesPerGlyphTextCoreSettings ? TextCoreSettingsMode.PerGlyph :
+                                           usesTextCoreSettings ? TextCoreSettingsMode.PerElement :
+                                           TextCoreSettingsMode.None,
 
                     indexSrc = (IntPtr)entry.indices.GetUnsafePtr(),
                     indexDst = (IntPtr)targetIndicesSlice.GetUnsafePtr(),
@@ -485,6 +494,25 @@ namespace UnityEngine.UIElements.UIR
                     atlasRect = m_AtlasRect,
                     layoutSize = (currentMaterial != null) ? m_CurrentRenderData.owner.layoutSize : new Vector2(0, 0)
                 };
+
+                if (m_PanelExtras != ExtraVertexChannels.None)
+                {
+                    if ((entry.flags & EntryFlags.HasExtras) != 0)
+                    {
+                        ConvertMeshExtrasData* extras = m_RenderTreeManager.jobManager.AllocConvertMeshExtras();
+
+                        FillExtrasChannel(ref extras->normalSrc,    ref extras->normalSrcStride,    ref extras->normalDstOffset,    entry.normal,    ExtraVertexChannels.Normal,    m_PanelExtras);
+                        FillExtrasChannel(ref extras->tangentSrc,   ref extras->tangentSrcStride,   ref extras->tangentDstOffset,   entry.tangent,   ExtraVertexChannels.Tangent,   m_PanelExtras);
+                        FillExtrasChannel(ref extras->texCoord1Src, ref extras->texCoord1SrcStride, ref extras->texCoord1DstOffset, entry.texCoord1, ExtraVertexChannels.TexCoord1, m_PanelExtras);
+                        FillExtrasChannel(ref extras->texCoord2Src, ref extras->texCoord2SrcStride, ref extras->texCoord2DstOffset, entry.texCoord2, ExtraVertexChannels.TexCoord2, m_PanelExtras);
+                        FillExtrasChannel(ref extras->texCoord3Src, ref extras->texCoord3SrcStride, ref extras->texCoord3DstOffset, entry.texCoord3, ExtraVertexChannels.TexCoord3, m_PanelExtras);
+
+                        job.extras = (IntPtr)extras;
+                    }
+                    else
+                        job.extras = m_NoUserExtrasTemplatePtr;
+                }
+
                 m_RenderTreeManager.jobManager.Add(ref job);
 
                 if (m_IsDrawingMask)
@@ -515,6 +543,34 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // dstOffset == -1: channel not enabled (job skips). src == IntPtr.Zero: enabled but no data (job zero-fills).
+        static unsafe void FillExtrasChannel<T>(ref IntPtr src, ref int stride, ref int dstOffset,
+            NativeSlice<T> slice, ExtraVertexChannels channel, ExtraVertexChannels panelMask) where T : struct
+        {
+            src = IntPtr.Zero;
+            stride = 0;
+            dstOffset = -1;
+
+            if ((panelMask & channel) == 0)
+                return;
+
+            int offset = 0;
+            foreach (var c in UIRUtility.k_ExtrasChannelOrder)
+            {
+                if (c == channel)
+                    break;
+                if ((panelMask & c) != 0)
+                    offset += UIRUtility.k_ExtrasChannelBytes;
+            }
+            dstOffset = offset;
+
+            if (slice.Length > 0)
+            {
+                src = (IntPtr)slice.GetUnsafeReadOnlyPtr();
+                stride = slice.Stride;
+            }
+        }
+
         void DrawReverseMask()
         {
             while (m_MaskMeshes.TryPop(out MaskMesh mesh))
@@ -530,14 +586,15 @@ namespace UnityEngine.UIElements.UIR
                     // Now we need to copy the data
                     unsafe
                     {
-                        NativeSlice<Vertex> dstVertices = m_Verts.Slice(m_VertsFilled, mesh.vertices.Length);
+                        RawSlice dstVertices = m_Verts.Slice(m_VertsFilled, mesh.vertices.Length);
                         NativeSlice<ushort> dstIndices = m_Indices.Slice(m_IndicesFilled, mesh.indices.Length);
 
                         var job = new CopyMeshJobData
                         {
-                            vertSrc = (IntPtr)mesh.vertices.GetUnsafePtr(),
-                            vertDst = (IntPtr)dstVertices.GetUnsafePtr(),
+                            vertSrc = mesh.vertices.GetUnsafeReadOnlyPtr(),
+                            vertDst = dstVertices.GetUnsafePtr(),
                             vertCount = mesh.vertices.Length,
+                            vertStride = dstVertices.Stride,
                             indexSrc = (IntPtr)mesh.indices.GetUnsafePtr(),
                             indexDst = (IntPtr)dstIndices.GetUnsafePtr(),
                             indexCount = mesh.indices.Length,
@@ -619,7 +676,7 @@ namespace UnityEngine.UIElements.UIR
             else
             {
                 Debug.Assert(mesh == null); // It should have been cleared during the init
-                m_Verts = new NativeSlice<Vertex>();
+                m_Verts = default;
                 m_Indices = new NativeSlice<ushort>();
                 m_IndexOffset = 0;
                 m_AllocVertexCount = 0;
@@ -649,7 +706,7 @@ namespace UnityEngine.UIElements.UIR
             m_IndicesFilled = 0;
         }
 
-        static void UpdateOrAllocate(ref MeshHandle data, int vertexCount, int indexCount, UIRenderDevice device, out NativeSlice<Vertex> verts, out NativeSlice<UInt16> indices, out UInt16 indexOffset, ref ChainBuilderStats stats)
+        static void UpdateOrAllocate(ref MeshHandle data, int vertexCount, int indexCount, UIRenderDevice device, out RawSlice verts, out NativeSlice<UInt16> indices, out UInt16 indexOffset, ref ChainBuilderStats stats)
         {
             if (data != null)
             {

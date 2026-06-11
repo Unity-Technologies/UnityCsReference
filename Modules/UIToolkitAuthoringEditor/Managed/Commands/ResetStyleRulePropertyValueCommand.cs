@@ -3,40 +3,65 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct ResetStyleRulePropertyValueCommand
+internal sealed class ResetStyleRulePropertyValueCommand : Command<ResetStyleRulePropertyValueCommand>
 {
     const string CommandUndoName = "Reset style rule property value";
 
-    readonly StyleSheet StyleSheet;
-    readonly StyleProperty Property;
-    readonly VariablesInspector.VariableType Type;
-
-    public ResetStyleRulePropertyValueCommand(
+    public static ResetStyleRulePropertyValueCommand GetPooled(
+        object source,
         StyleSheet styleSheet,
         StyleProperty property,
         VariablesInspector.VariableType type)
     {
-        StyleSheet = styleSheet;
-        Property = property;
-        Type = type;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Property = property;
+        cmd.Type = type;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source,
+        StyleSheet styleSheet,
+        StyleProperty property,
+        VariablesInspector.VariableType type)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(Property);
+        using var command = GetPooled(source, styleSheet, property, type);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
+    public StyleProperty Property { get; private set; }
+    public VariablesInspector.VariableType Type { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Property = null;
+        Type = default;
+    }
+
+    public override bool Validate() => StyleSheet != null && Property != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         SetPropertyToDefaultValue(StyleSheet, Property, Type);
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 
     internal static void SetPropertyToDefaultValue(StyleSheet styleSheet, StyleProperty property, VariablesInspector.VariableType type)
@@ -75,7 +100,7 @@ internal readonly record struct ResetStyleRulePropertyValueCommand
 
     static string GetTextFieldDefaultValue(VariablesInspector.VariableType type)
     {
-        return (type) switch
+        return type switch
         {
             VariablesInspector.VariableType.Float => "0",
             VariablesInspector.VariableType.String => "String",

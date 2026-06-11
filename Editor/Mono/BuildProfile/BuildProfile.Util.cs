@@ -111,12 +111,16 @@ namespace UnityEditor.Build.Profile
             var keys = BuildProfileModuleUtil.FindAllViewablePlatforms();
             foreach(var key in keys)
             {
-                if (BuildProfileModuleUtil.IsModuleInstalled(key))
-                    installedPlatforms.Add(new InstalledPlatformInfo
-                    {
-                        platformGuid = key,
-                        displayName = BuildTargetDiscovery.BuildPlatformDisplayName(key),
-                    });
+                if (!BuildProfileModuleUtil.IsModuleInstalled(key))
+                {
+                    continue;
+                }
+
+                installedPlatforms.Add(new InstalledPlatformInfo
+                {
+                    platformGuid = key,
+                    displayName = BuildTargetDiscovery.BuildPlatformDisplayName(key),
+                });
             }
 
             return installedPlatforms;

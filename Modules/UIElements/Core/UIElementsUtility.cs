@@ -77,7 +77,11 @@ namespace UnityEngine.UIElements
                 case EventType.ScrollWheel:
                     return WheelEvent.GetPooled(systemEvent);
                 case EventType.KeyDown:
+                {
+                    if (systemEvent.keyCode == KeyCode.None && systemEvent.character == '\0')
+                        return IMEEvent.GetPooled(systemEvent, Input.compositionString); // No access to the panel from here. Using the global binding for now. Technically only called in the editor, so we could use an editor global binding?
                     return KeyDownEvent.GetPooled(systemEvent);
+                }
                 case EventType.KeyUp:
                     return KeyUpEvent.GetPooled(systemEvent);
                 case EventType.DragUpdated:
@@ -162,6 +166,14 @@ namespace UnityEngine.UIElements
 
         public const string hiddenClassName = "unity-hidden";
         internal static readonly UniqueStyleString hiddenClassNameUnique = new(hiddenClassName);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal const ExtraVertexChannels k_AllExtraChannels =
+            ExtraVertexChannels.TexCoord1 |
+            ExtraVertexChannels.TexCoord2 |
+            ExtraVertexChannels.TexCoord3 |
+            ExtraVertexChannels.Normal |
+            ExtraVertexChannels.Tangent;
 
         internal static bool s_EnableOSXContextualMenuEventsOnNonOSXPlatforms;
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]

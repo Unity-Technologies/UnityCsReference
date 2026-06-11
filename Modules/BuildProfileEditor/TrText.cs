@@ -78,6 +78,7 @@ namespace UnityEditor.Build.Profile
         // Build Profile Bootstrap View
         public static readonly string buildProfileConfiguration = L10n.Tr("Configuring Build Profile...");
         public static readonly string buildProfilePreparation = L10n.Tr("Preparing Build Profile...");
+        public static readonly string buildProfileActivatingPlatform = L10n.Tr("Activating platform...");
         public static readonly string packageAddDownloading = L10n.Tr("Downloading package...");
         public static readonly string packageAddInstalling = L10n.Tr("Installing package...");
         public static readonly string packageAddError = L10n.Tr("Error adding package {0}!");

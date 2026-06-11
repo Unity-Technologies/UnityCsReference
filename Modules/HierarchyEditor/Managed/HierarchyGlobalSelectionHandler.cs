@@ -11,7 +11,7 @@ using UnityEngine.Pool;
 namespace Unity.Hierarchy.Editor
 {
     [VisibleToOtherModules]
-    internal sealed class HierarchyGlobalSelectionHandler : IDisposable
+    internal sealed partial class HierarchyGlobalSelectionHandler : IDisposable
     {
         readonly HierarchyView m_HierarchyView;
         readonly EditorGUIUtility.EditorLockTracker m_LockTracker;
@@ -36,29 +36,9 @@ namespace Unity.Hierarchy.Editor
         public void SyncViewModelFromGlobalSelection(bool frameSelection)
         {
             HierarchyLogging.Log($"HierarchyGlobalSelectionHandler.SyncViewModelFromGlobalSelection(frameSelection={frameSelection})");
-            var globalSelection = Selection.GetEntityIdsUnsafe();
-
-            if (globalSelection.Length == 0)
-            {
-                m_HierarchyView.ViewModel.ClearFlags(HierarchyNodeFlags.Selected);
-                return;
-            }
-
-            // Set the selection
-            using var nodes = globalSelection.Length <= 16
-                ? new RentSpanUnmanaged<HierarchyNode>(stackalloc HierarchyNode[globalSelection.Length])
-                : new RentSpanUnmanaged<HierarchyNode>(globalSelection.Length);
-            m_HierarchyView.Source.GetNodes(globalSelection, nodes);
-
-            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyView.ViewModel, notify: false))
-            {
-                m_HierarchyView.ViewModel.ClearFlags(HierarchyNodeFlags.Selected);
-                m_HierarchyView.ViewModel.SetFlags(nodes, HierarchyNodeFlags.Selected);
-            }
-
-            // Frame the selection if requested
+            SyncViewModelFromGlobalSelectionNative(m_HierarchyView.ViewModel);
             if (frameSelection && !m_LockTracker.isLocked)
-                m_HierarchyView.Frame(nodes);
+                FrameCurrentSelection();
         }
 
         /// <summary>
@@ -67,58 +47,19 @@ namespace Unity.Hierarchy.Editor
         public void SyncGlobalSelectionFromViewModel()
         {
             HierarchyLogging.Log("HierarchyGlobalSelectionHandler.SyncGlobalSelectionFromViewModel()");
-            var count = m_HierarchyView.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
-            if (count == 0)
-            {
-                Selection.SetEntityIdsUnsafe(stackalloc EntityId[0]);
-                return;
-            }
-
-            // Get all the selected nodes
-            using var nodes = count <= 16
-                ? new RentSpanUnmanaged<HierarchyNode>(stackalloc HierarchyNode[count])
-                : new RentSpanUnmanaged<HierarchyNode>(count);
-            m_HierarchyView.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, nodes);
-
-            // Convert the nodes to entity ids
-            using var selectedEntityIds = count <= 16
-                ? new RentSpanUnmanaged<EntityId>(stackalloc EntityId[count])
-                : new RentSpanUnmanaged<EntityId>(count);
-            using var existingNodes = count <= 16
-                ? new RentSpanUnmanaged<HierarchyNode>(stackalloc HierarchyNode[count])
-                : new RentSpanUnmanaged<HierarchyNode>(count);
-            var existingNodeCount = FilterMissingNodes(nodes, existingNodes);
-            var trimmedNodes = existingNodes.Span[..existingNodeCount];
-            var trimmedEntityIds = selectedEntityIds.Span[..existingNodeCount];
-            m_HierarchyView.Source.GetEntityIds(trimmedNodes, trimmedEntityIds);
-
-            if (Selection.GetEntityIdsUnsafe().SequenceEqual(trimmedEntityIds))
-                return;
-
             m_SkipNextGlobalSelectionEvent = true;
-            Selection.SetEntityIdsUnsafe(trimmedEntityIds);
+            if (!SyncGlobalSelectionFromViewModelNative(m_HierarchyView.ViewModel))
+                m_SkipNextGlobalSelectionEvent = false;
         }
 
-        int FilterMissingNodes(ReadOnlySpan<HierarchyNode> nodes, Span<HierarchyNode> existingNodes)
+        void FrameCurrentSelection()
         {
-            using var exists = nodes.Length <= 16
-                ? new RentSpanUnmanaged<bool>(stackalloc bool[nodes.Length])
-                : new RentSpanUnmanaged<bool>(nodes.Length);
-
-            if (m_HierarchyView.Source.Exists(nodes, exists))
-            {
-                nodes.CopyTo(existingNodes);
-                return nodes.Length;
-            }
-
-            var count = 0;
-            for (var i = 0; i < nodes.Length; i++)
-            {
-                if (!exists.Span[i]) continue;
-
-                existingNodes[count++] = nodes[i];
-            }
-            return count;
+            var count = m_HierarchyView.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected);
+            if (count == 0)
+                return;
+            using var nodes = new RentSpanUnmanaged<HierarchyNode>(count);
+            m_HierarchyView.ViewModel.GetNodesWithFlags(HierarchyNodeFlags.Selected, nodes);
+            m_HierarchyView.Frame(nodes);
         }
 
         void OnGlobalSelectionChanged()

@@ -128,9 +128,10 @@ namespace UnityEngine.UIElements.UIR
 
             if (!m_Texels.IsCreated)
             {
-                s_MarkerGetTextureData.Begin();
-                m_Texels = m_Texture.GetRawTextureData<T>();
-                s_MarkerGetTextureData.End();
+                using (s_MarkerGetTextureData.Auto())
+                {
+                    m_Texels = m_Texture.GetRawTextureData<T>();
+                }
             }
 
             m_Texels[x + y * m_Texture.width] = m_Convert(color);
@@ -147,12 +148,13 @@ namespace UnityEngine.UIElements.UIR
             if (m_Texture == null || !m_Texels.IsCreated)
                 return;
 
-            s_MarkerUpdateTexture.Begin();
-            m_Texture.Apply(false, false);
-            // The native array can't be used after Apply has been called. By reseting it, we implicitly set IsCreated
-            // to false, which we use as the early-exit condition to prevent unnecessary calls to Apply.
-            m_Texels = new NativeArray<T>();
-            s_MarkerUpdateTexture.End();
+            using (s_MarkerUpdateTexture.Auto())
+            {
+                m_Texture.Apply(false, false);
+                // The native array can't be used after Apply has been called. By reseting it, we implicitly set IsCreated
+                // to false, which we use as the early-exit condition to prevent unnecessary calls to Apply.
+                m_Texels = new NativeArray<T>();
+            }
         }
 
         void CreateOrExpandTexture()
@@ -177,12 +179,13 @@ namespace UnityEngine.UIElements.UIR
 
             if (copy)
             {
-                s_MarkerCopyTexture.Begin();
-                var oldTexels = m_Texels.IsCreated ? m_Texels : m_Texture.GetRawTextureData<T>();
-                var newTexels = newTexture.GetRawTextureData<T>();
-                CpuBlit(oldTexels, m_Texture.width, m_Texture.height, newTexels, newTexture.width, newTexture.height);
-                m_Texels = newTexels;
-                s_MarkerCopyTexture.End();
+                using (s_MarkerCopyTexture.Auto())
+                {
+                    var oldTexels = m_Texels.IsCreated ? m_Texels : m_Texture.GetRawTextureData<T>();
+                    var newTexels = newTexture.GetRawTextureData<T>();
+                    CpuBlit(oldTexels, m_Texture.width, m_Texture.height, newTexels, newTexture.width, newTexture.height);
+                    m_Texels = newTexels;
+                }
             }
             else
                 m_Texels = new NativeArray<T>();

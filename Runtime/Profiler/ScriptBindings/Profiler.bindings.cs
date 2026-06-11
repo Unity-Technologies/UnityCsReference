@@ -329,7 +329,7 @@ namespace UnityEngine.Profiling
 
             var elemSize = UnsafeUtility.SizeOf(elementType);
             int dataLen = data.Length; 
-            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), data.Length, UnsafeUtility.SizeOf(elementType), true);
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), dataLen, elemSize, true);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -351,6 +351,16 @@ namespace UnityEngine.Profiling
             Internal_EmitGlobalMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>(), true);
         }
 
+        // Non-[Conditional] entry point for module code: module assemblies are compiled without
+        // ENABLE_PROFILER defined, which would silently strip every call to EmitFrameMetaData. The
+        // native binding is still gated on ENABLE_PROFILER via [NativeConditional], so this is a
+        // no-op in non-profiler native builds.
+        [VisibleToOtherModules("UnityEngine.U2DRuntimeModule")]
+        internal static unsafe void EmitFrameMetaDataInternal<T>(Guid id, int tag, Unity.Collections.NativeArray<T> data) where T : struct
+        {
+            Internal_EmitGlobalMetaData_Native(&id, 16, tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>(), true);
+        }
+
         [Conditional("ENABLE_PROFILER")]
         public static unsafe void EmitSessionMetaData(Guid id, int tag, Array data)
         {
@@ -363,7 +373,7 @@ namespace UnityEngine.Profiling
 
             var elemSize = UnsafeUtility.SizeOf(elementType);
             int dataLen = data.Length;
-            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), data.Length, UnsafeUtility.SizeOf(elementType), false);
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), dataLen, elemSize, false);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -387,7 +397,7 @@ namespace UnityEngine.Profiling
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Span", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern unsafe void Internal_EmitGlobalMetaData_Span(void* id, int idLen, int tag, ReadOnlySpan<byte> data, int count, int elementSize, bool frameData);
+        static extern unsafe void Internal_EmitGlobalMetaData_Span(void* id, int idLen, int tag, Span<byte> data, int count, int elementSize, bool frameData);
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]

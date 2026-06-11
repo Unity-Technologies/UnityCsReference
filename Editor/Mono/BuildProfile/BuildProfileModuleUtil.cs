@@ -477,7 +477,7 @@ namespace UnityEditor.Build.Profile
             options.locationPathName = buildLocation;
             options.assetBundleManifestPath = assetBundleManifestPath ?? PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
             options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.GetScenesForBuild());
-            options.previousBuildMetadataLocations = PostprocessBuildPlayer.GetPreviousContentBuildMetadataLocations();
+            options.previousBuildReportDirectories = PostprocessBuildPlayer.GetPreviousContentBuildReportDirectories();
 
             return options;
         }
@@ -595,7 +595,7 @@ namespace UnityEditor.Build.Profile
 
         public static bool IsPlatformAvailableOnHostPlatform(GUID platformGuid, OperatingSystemFamily operatingSystemFamily)
         {
-            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(platformGuid, SystemInfo.operatingSystemFamily);
+            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(platformGuid, operatingSystemFamily);
         }
 
         /// <summary>
@@ -928,6 +928,37 @@ namespace UnityEditor.Build.Profile
                 BuildProfileContext.instance.LastRunnableBuildPathKeys.Add(key);
             }
             EditorPrefs.SetString(key, value);
+        }
+
+        /// <summary>
+        /// Generates a unique file path for a build profile by ensuring the file name does not conflict with existing profiles.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static string GetUniqueBuildProfilePath(string path)
+        {
+            var allBuildProfiles = FindAllBuildProfiles();
+            string[] existingNames = allBuildProfiles.ConvertAll(profile => profile.name).ToArray();
+
+            string baseFileName = Path.GetFileNameWithoutExtension(path);
+            string uniqueName = ObjectNames.GetUniqueName(existingNames, baseFileName);
+
+            string directory = Path.GetDirectoryName(path);
+            string extension = Path.GetExtension(path);
+            string uniqueFilePath = Path.Combine(directory, uniqueName + extension);
+
+            // Check that the file path doesn't exist on disk
+            // (shouldn't be the case, as we check against all BuildProfiles before)
+            uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(uniqueFilePath);
+
+            return uniqueFilePath;
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static List<BuildProfile> FindAllBuildProfiles()
+        {
+            var profiles = new List<BuildProfile>(BuildProfile.GetAllBuildProfiles());
+            profiles.Sort((lhs, rhs) => EditorUtility.NaturalCompare(lhs.name, rhs.name));
+            return profiles;
         }
 
         /// <summary>

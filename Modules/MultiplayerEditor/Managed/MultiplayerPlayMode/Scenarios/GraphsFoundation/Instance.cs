@@ -187,6 +187,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 InstanceDeployStageDurationMs = deployStageDurationMs,
                 InstanceRunStageDurationMs = runStageDurationMs,
                 MultiplayerRole = GetMultiplayerRoleForAnalytics(),
+                InstanceTypeData = Controller.GetCustomAnalyticsData(executionGraph)?.ToJsonString(),
             };
         }
 
@@ -259,7 +260,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     var success = await RunOrResumeAsync(currentStage, m_FreeRunCancelTokenSource.Token);
 
                     // If we cancelled, exit out
-                    if (m_FreeRunCancelTokenSource == null || m_FreeRunCancelTokenSource.Token.IsCancellationRequested)
+                    if (m_FreeRunCancelTokenSource == null || StatusData.OverallStatus.State is ExecutionState.Aborted)
                         break;
 
                     // Else, continue on to the next stage once successful

@@ -7,7 +7,7 @@ namespace UnityEditor.AssetPackage;
 internal interface IUtilityAdapter
 {
     public ExportPackageItem[] BuildExportPackageItemsListWithPackageManagerWarning(string[] guids, bool includeDependencies, bool warnPackageManagerDependencies);
-    public void ExportPackage(string[] guids, string fileName, string ownerOrgId);
+    public void ExportPackageWithGUIDs(string[] guids, string fileName, string ownerOrgId);
 }
 
 internal class UtilityAdapter : IUtilityAdapter
@@ -15,5 +15,5 @@ internal class UtilityAdapter : IUtilityAdapter
     public ExportPackageItem[] BuildExportPackageItemsListWithPackageManagerWarning(string[] guids, bool includeDependencies, bool warnPackageManagerDependencies) =>
         Utility.BuildExportPackageItemsListWithPackageManagerWarning(guids, includeDependencies, warnPackageManagerDependencies);
 
-    public void ExportPackage(string[] guids, string fileName, string ownerOrgId) => Utility.ExportPackage(guids, fileName, ownerOrgId);
+    public void ExportPackageWithGUIDs(string[] guids, string fileName, string ownerOrgId) => Utility.ExportPackageWithGUIDs(guids, fileName, ownerOrgId);
 }

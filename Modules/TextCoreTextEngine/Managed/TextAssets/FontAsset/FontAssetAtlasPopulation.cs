@@ -603,7 +603,7 @@ namespace UnityEngine.TextCore.Text
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
-        internal bool TryAddGlyphs(List<uint> glyphsToAdd)
+        internal bool TryAddGlyphs(List<uint> glyphsToAdd, bool populateFontFeatures = true)
         {
             // Load font face.
             if (LoadFontFace() != FontEngineError.Success)
@@ -642,8 +642,10 @@ namespace UnityEngine.TextCore.Text
                     var additionalCapacity = glyphs.Length;
                     EnsureAdditionalCapacity(m_GlyphTable, additionalCapacity);
                     EnsureAdditionalCapacity(m_GlyphLookupDictionary, additionalCapacity);
-                    EnsureAdditionalCapacity(m_GlyphIndexListNewlyAdded, additionalCapacity);
                     EnsureAdditionalCapacity(m_GlyphIndexList, additionalCapacity);
+
+                    if (populateFontFeatures)
+                        EnsureAdditionalCapacity(m_GlyphIndexListNewlyAdded, additionalCapacity);
                 }
 
                 var successfullyAddedGlyphIndices = new HashSet<uint>();
@@ -658,8 +660,10 @@ namespace UnityEngine.TextCore.Text
                     // Add new glyph to glyph table.
                     m_GlyphTable.Add(glyph);
                     m_GlyphLookupDictionary.Add(glyphIndex, glyph);
-                    m_GlyphIndexListNewlyAdded.Add(glyphIndex);
                     m_GlyphIndexList.Add(glyphIndex);
+
+                    if (populateFontFeatures)
+                        m_GlyphIndexListNewlyAdded.Add(glyphIndex);
 
                     successfullyAddedGlyphIndices.Add(glyphIndex);
                 }
@@ -682,7 +686,7 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
-            if (m_GetFontFeatures && m_GlyphIndexListNewlyAdded.Count > 0)
+            if (populateFontFeatures && m_GetFontFeatures && m_GlyphIndexListNewlyAdded.Count > 0)
             {
                 RegisterFontAssetForKerningUpdate(this);
             }

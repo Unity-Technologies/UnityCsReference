@@ -568,6 +568,7 @@ namespace UnityEditor
                 isPasswordField = passwordField;
                 s_ActuallyEditing = true;
                 scrollOffset = Vector2.zero;
+                m_HasFocus = true;
                 UnityEditor.Undo.IncrementCurrentGroup();
 
                 m_IMECompositionModeBackup = Input.imeCompositionMode;
@@ -7697,6 +7698,12 @@ namespace UnityEditor
                     case SerializedPropertyType.Integer:
                     {
                         BeginChangeCheck();
+
+                        bool isUnsigned = property.numericType is SerializedPropertyNumericType.UInt64
+                            or SerializedPropertyNumericType.UInt32
+                            or SerializedPropertyNumericType.UInt16
+                            or SerializedPropertyNumericType.UInt8;
+
                         NumberFieldValue val = new NumberFieldValue(property.longValue);
                         LongField(position, label, ref val);
                         if (EndChangeCheck() && val.hasResult)
@@ -7713,6 +7720,8 @@ namespace UnityEditor
                                         values[i] = originalValues[i];
                                         if(canUseExpression)
                                             val.expression.Evaluate(ref values[i], i, values.Length);
+                                        if (isUnsigned)
+                                            values[i] = Math.Max(0, values[i]);
                                     }
                                     property.allLongValues = values;
                                 }
@@ -7720,6 +7729,8 @@ namespace UnityEditor
                             else
                             {
                                 property.longValue = val.longVal;
+                                if (isUnsigned)
+                                    property.longValue = Math.Max(0, property.longValue);
                             }
                         }
                         break;

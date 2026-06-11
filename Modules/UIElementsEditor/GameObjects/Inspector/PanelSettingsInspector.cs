@@ -46,6 +46,11 @@ namespace UnityEditor.UIElements.Inspector
 
         private VisualElement m_ScreenMatchModeMatchWidthOrHeightGroup;
 
+        private Slider m_MatchSlider;
+        private VisualElement m_MatchSliderTrack;
+        private VisualElement m_MatchSliderLeftSpace;
+        private VisualElement m_MatchSliderRightSpace;
+
         private Foldout m_ClearSettingsFoldout;
         private PropertyField m_ClearColorField;
         private PropertyField m_ColorClearValueField;
@@ -54,6 +59,7 @@ namespace UnityEditor.UIElements.Inspector
         private HelpBox m_ForceGammaOutputHelpBox;
 
         private PropertyField m_VertexBudgetField;
+        private PropertyField m_ExtraVertexChannelsField;
 
         private HelpBox m_MissingThemeHelpBox;
 
@@ -110,11 +116,19 @@ namespace UnityEditor.UIElements.Inspector
             m_ScreenMatchModeMatchWidthOrHeightGroup =
                 m_RootVisualElement.MandatoryQ("screen-match-mode-match-width-or-height");
 
+            m_MatchSlider = m_RootVisualElement.MandatoryQ<Slider>("match-slider");
+            m_MatchSliderTrack = m_MatchSlider.MandatoryQ(null, Slider.dragContainerUssClassName);
+            m_MatchSliderLeftSpace = m_RootVisualElement.MandatoryQ("match-slider-left-space");
+            m_MatchSliderRightSpace = m_RootVisualElement.MandatoryQ("match-slider-right-space");
+            m_MatchSliderTrack.RegisterCallback<GeometryChangedEvent>(_ => AlignMatchSliderLabels());
+            m_MatchSlider.RegisterCallback<GeometryChangedEvent>(_ => AlignMatchSliderLabels());
+
             m_ClearSettingsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("clear-settings-foldout");
             m_ClearColorField = m_RootVisualElement.MandatoryQ<PropertyField>("clear-color");
             m_ColorClearValueField = m_RootVisualElement.MandatoryQ<PropertyField>("color-clear-value");
 
             m_VertexBudgetField = m_RootVisualElement.MandatoryQ<PropertyField>("vertex-budget");
+            m_ExtraVertexChannelsField = m_RootVisualElement.MandatoryQ<PropertyField>("extra-vertex-channels");
 
             var choices = new List<int> {0, 1, 2, 3, 4, 5, 6, 7};
             m_TargetDisplayField = new PopupField<int>("Target Display", choices, 0, i => $"Display {i + 1}", i => $"Display {i + 1}");
@@ -181,6 +195,26 @@ namespace UnityEditor.UIElements.Inspector
                     m_ScreenMatchModeMatchWidthOrHeightGroup.style.display = DisplayStyle.None;
                     break;
             }
+        }
+
+        // Match-slider label width tracks the inspector width, so size the Width/Height caption spacers from the live track geometry.
+        private void AlignMatchSliderLabels()
+        {
+            if (m_MatchSliderTrack?.panel == null || m_MatchSliderLeftSpace == null || m_MatchSliderLeftSpace.parent == null || m_MatchSliderRightSpace == null)
+                return;
+
+            var rowBound = m_MatchSliderLeftSpace.parent.worldBound;
+            var trackBound = m_MatchSliderTrack.worldBound;
+            if (float.IsNaN(rowBound.x) || float.IsNaN(trackBound.x))
+                return;
+
+            var leftWidth = Mathf.Max(0f, trackBound.xMin - rowBound.xMin);
+            var rightWidth = Mathf.Max(0f, rowBound.xMax - trackBound.xMax);
+
+            if (Mathf.Abs(m_MatchSliderLeftSpace.resolvedStyle.width - leftWidth) > 0.01f)
+                m_MatchSliderLeftSpace.style.width = leftWidth;
+            if (Mathf.Abs(m_MatchSliderRightSpace.resolvedStyle.width - rightWidth) > 0.01f)
+                m_MatchSliderRightSpace.style.width = rightWidth;
         }
 
         void UpdateColorClearValue(bool newClearColor)

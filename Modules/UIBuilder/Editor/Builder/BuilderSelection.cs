@@ -360,9 +360,6 @@ namespace Unity.UI.Builder
             if (m_Notifiers == null || m_Notifiers.Count == 0)
                 return;
 
-            if (m_DocumentRootElement != null)
-                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
-
             foreach (var notifier in m_Notifiers)
                 if (notifier != source)
                     notifier.SelectionChanged();

@@ -141,7 +141,6 @@ namespace Unity.GraphToolkit.Editor
 
             m_Capsule = new VisualElement();
             m_Capsule.AddToClassList(capsuleUssClassName);
-            m_Capsule.pickingMode = PickingMode.Ignore;
             Add(m_Capsule);
 
             m_Icon = new Image();

@@ -11,8 +11,8 @@ namespace Unity.UI.Builder
     [UxmlElement]
     partial class BuilderTracker : VisualElement, IBuilderSelectionNotifier
     {
-        static readonly string s_UssClassName = "unity-builder-tracker";
-        internal static readonly string s_ActiveClassName = "unity-builder-tracker--active";
+        static readonly UniqueStyleString s_UssClassName = new("unity-builder-tracker");
+        internal static readonly UniqueStyleString s_ActiveClassName = new("unity-builder-tracker--active");
 
         protected VisualElement m_Target;
         BuilderCanvas m_Canvas;

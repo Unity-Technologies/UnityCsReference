@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Jobs;
-using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 
 using static Unity.U2D.Physics.Scripting2D;
@@ -20,6 +20,12 @@ namespace Unity.U2D.Physics
     [StructLayout(LayoutKind.Sequential)]
     readonly struct PhysicsTransformWriter
     {
+        static readonly ProfilerMarker s_WriteTransformsMarker = new ProfilerMarker("PhysicsWorld.WriteTransforms");
+        static readonly ProfilerMarker s_WriteTransformsCalculateWorldTransformsMarker = new ProfilerMarker("PhysicsWorld.WriteTransforms.CalculateWorldTransforms");
+        static readonly ProfilerMarker s_WriteTransformsWriteTransformsParallelJobMarker = new ProfilerMarker("PhysicsWorld.WriteTransforms.WriteTransformsParallelJob");
+        static readonly ProfilerMarker s_WriteTransformsWriteTransformsSequentialJobMarker = new ProfilerMarker("PhysicsWorld.WriteTransforms.WriteTransformsSequentialJob");
+        static readonly ProfilerMarker s_WriteTransformsCustomMarker = new ProfilerMarker("PhysicsWorld.WriteTransforms.Custom");
+
         /// <undoc/>
         [RequiredByNativeCode]
         static unsafe void WriteWorldTransforms(
@@ -31,59 +37,58 @@ namespace Unity.U2D.Physics
             PhysicsWorld.TransformTweenMode transformTweenMode
             )
         {
-            Profiler.BeginSample("PhysicsWorld.WriteTransforms");
-
-            Profiler.BeginSample("PhysicsWorld.WriteTransforms.CalculateWorldTransforms");
-
-            // Create the transform access array.
-            var isParallelTweening = transformTweenMode == PhysicsWorld.TransformTweenMode.Parallel;
-            var transformAccessArray = isParallelTweening ? PhysicsTransformTweener.GetWorldTransformAccessArray(world) : default;
-            var transformAccessArrayPtr = isParallelTweening ? new IntPtr(&transformAccessArray) : default;
-
-            // Fill the world transforms.
-            // NOTE: We can pass an empty transform-access-array here which will result in the transform-write tweens being sorted (by ascending transform-depth) for sequential writing.
-            var transformWriteTweens = PhysicsGlobal_CalculateWorldTransformWrite(world, transformPlane, transfomPlaneCustom, transformWriteMode, transformAccessArrayPtr).ToNativeArray<PhysicsBody.TransformWriteTween>();
-
-            Profiler.EndSample();
-
-            // Do we have any transforms to write?
-            if (transformWriteTweens.Length > 0)
+            using (s_WriteTransformsMarker.Auto())
             {
-                // Yes, so calculate if we should be calculate transform tweens.
-                var transformTweening = simulationType == PhysicsWorld.SimulationType.FixedUpdate;
+                // Create the transform access array.
+                var isParallelTweening = transformTweenMode == PhysicsWorld.TransformTweenMode.Parallel;
+                var transformAccessArray = isParallelTweening ? PhysicsTransformTweener.GetWorldTransformAccessArray(world) : default;
+                var transformAccessArrayPtr = isParallelTweening ? new IntPtr(&transformAccessArray) : default;
 
-                // Are we parallel tweening?
-                if (isParallelTweening)
+                // Fill the world transforms.
+                // NOTE: We can pass an empty transform-access-array here which will result in the transform-write tweens being sorted (by ascending transform-depth) for sequential writing.
+                NativeArray<PhysicsBody.TransformWriteTween> transformWriteTweens;
+                using (s_WriteTransformsCalculateWorldTransformsMarker.Auto())
                 {
-                    // Yes, so use the parallel job.
-                    Profiler.BeginSample("PhysicsWorld.WriteTransforms.WriteTransformsParallelJob");
-                    new WriteTransformsParallelJob { transformWriteTweens = transformWriteTweens, transformPlane = transformPlane, transformPlaneCustom = transfomPlaneCustom, transformTweening = transformTweening, fastWrite2D = transformWriteMode == PhysicsWorld.TransformWriteMode.Fast2D }.Schedule(transformAccessArray).Complete();
-                    Profiler.EndSample();
-                }
-                else
-                {
-                    // No, so use the sequential job.
-                    Profiler.BeginSample("PhysicsWorld.WriteTransforms.WriteTransformsSequentialJob");
-
-                    WriteTransformsSequentialTask(
-                        ref transformWriteTweens,
-                        transformPlane,
-                        ref transfomPlaneCustom,
-                        transformTweening,
-                        transformWriteMode == PhysicsWorld.TransformWriteMode.Fast2D);
-
-                    Profiler.EndSample();
+                    transformWriteTweens = PhysicsGlobal_CalculateWorldTransformWrite(world, transformPlane, transfomPlaneCustom, transformWriteMode, transformAccessArrayPtr).ToNativeArray<PhysicsBody.TransformWriteTween>();
                 }
 
-                // Set the transform write tweens (if active).
-                if (transformTweening)
-                    world.SetTransformWriteTweens(new Span<PhysicsBody.TransformWriteTween>(transformWriteTweens.GetUnsafeReadOnlyPtr(), transformWriteTweens.Length));
+                // Do we have any transforms to write?
+                if (transformWriteTweens.Length > 0)
+                {
+                    // Yes, so calculate if we should be calculate transform tweens.
+                    var transformTweening = simulationType == PhysicsWorld.SimulationType.FixedUpdate;
+
+                    // Are we parallel tweening?
+                    if (isParallelTweening)
+                    {
+                        // Yes, so use the parallel job.
+                        using (s_WriteTransformsWriteTransformsParallelJobMarker.Auto())
+                        {
+                            new WriteTransformsParallelJob { transformWriteTweens = transformWriteTweens, transformPlane = transformPlane, transformPlaneCustom = transfomPlaneCustom, transformTweening = transformTweening, fastWrite2D = transformWriteMode == PhysicsWorld.TransformWriteMode.Fast2D }.Schedule(transformAccessArray).Complete();
+                        }
+                    }
+                    else
+                    {
+                        // No, so use the sequential job.
+                        using (s_WriteTransformsWriteTransformsSequentialJobMarker.Auto())
+                        {
+                            WriteTransformsSequentialTask(
+                                ref transformWriteTweens,
+                                transformPlane,
+                                ref transfomPlaneCustom,
+                                transformTweening,
+                                transformWriteMode == PhysicsWorld.TransformWriteMode.Fast2D);
+                        }
+                    }
+
+                    // Set the transform write tweens (if active).
+                    if (transformTweening)
+                        world.SetTransformWriteTweens(new Span<PhysicsBody.TransformWriteTween>(transformWriteTweens.GetUnsafeReadOnlyPtr(), transformWriteTweens.Length));
+                }
+
+                // We're finished so dispose.
+                transformWriteTweens.Dispose();
             }
-
-            // We're finished so dispose.
-            transformWriteTweens.Dispose();
-
-            Profiler.EndSample();
         }
 
         /// <undoc/>
@@ -97,54 +102,53 @@ namespace Unity.U2D.Physics
             PhysicsWorld.TransformPlaneCustom transfomPlaneCustom,
             PhysicsWorld.TransformTweenMode transformTweenMode)
         {
-            Profiler.BeginSample("PhysicsWorld.WriteTransforms.Custom");
-
-            Profiler.BeginSample("PhysicsWorld.WriteTransforms.CalculateWorldTransforms");
-
-            // Create the transform access array.
-            var isParallelTweening = transformTweenMode == PhysicsWorld.TransformTweenMode.Parallel;
-            var transformAccessArray = isParallelTweening ? PhysicsTransformTweener.GetWorldTransformAccessArray(world) : default;
-            var transformAccessArrayPtr = isParallelTweening ? new IntPtr(&transformAccessArray) : default;
-
-            // Fill the world transforms.
-            // NOTE: We can pass an empty transform-access-array here which will result in the transform-write tweens being sorted (by ascending transform-depth) for sequential writing.
-            var transformWriteTweens = PhysicsGlobal_CalculateWorldTransformWrite(world, transformPlane, transfomPlaneCustom, transformWriteMode, transformAccessArrayPtr).ToNativeArray<PhysicsBody.TransformWriteTween>();
-
-            Profiler.EndSample();
-
-            // Do we have any transforms to write?
-            if (transformWriteTweens.Length > 0)
+            using (s_WriteTransformsCustomMarker.Auto())
             {
-                // Yes, so calculate if we should be calculate transform tweens.
-                var transformTweening = simulationType == PhysicsWorld.SimulationType.FixedUpdate;
+                // Create the transform access array.
+                var isParallelTweening = transformTweenMode == PhysicsWorld.TransformTweenMode.Parallel;
+                var transformAccessArray = isParallelTweening ? PhysicsTransformTweener.GetWorldTransformAccessArray(world) : default;
+                var transformAccessArrayPtr = isParallelTweening ? new IntPtr(&transformAccessArray) : default;
 
-                // Fetch the callback target.
-                var callbackTarget = transformWriteCallbackTarget as PhysicsCallbacks.ITransformWriteCallback;
-                if (callbackTarget != null)
+                // Fill the world transforms.
+                // NOTE: We can pass an empty transform-access-array here which will result in the transform-write tweens being sorted (by ascending transform-depth) for sequential writing.
+                NativeArray<PhysicsBody.TransformWriteTween> transformWriteTweens;
+                using (s_WriteTransformsCalculateWorldTransformsMarker.Auto())
                 {
-                    // Create the event.
-                    var transformWriteEvent = new PhysicsEvents.TransformWriteEvent(
-                        world,
-                        simulationType,
-                        transformPlane,
-                        transfomPlaneCustom,
-                        transformTweenMode,
-                        ref transformWriteTweens);
-
-                    // Send the event.
-                    callbackTarget.OnTransformWrite(transformWriteEvent);
-
-                    // Set the transform write tweens (if active).
-                    if (transformTweening)
-                        world.SetTransformWriteTweens(new Span<PhysicsBody.TransformWriteTween>(transformWriteTweens.GetUnsafeReadOnlyPtr(), transformWriteTweens.Length));
+                    transformWriteTweens = PhysicsGlobal_CalculateWorldTransformWrite(world, transformPlane, transfomPlaneCustom, transformWriteMode, transformAccessArrayPtr).ToNativeArray<PhysicsBody.TransformWriteTween>();
                 }
+
+                // Do we have any transforms to write?
+                if (transformWriteTweens.Length > 0)
+                {
+                    // Yes, so calculate if we should be calculate transform tweens.
+                    var transformTweening = simulationType == PhysicsWorld.SimulationType.FixedUpdate;
+
+                    // Fetch the callback target.
+                    var callbackTarget = transformWriteCallbackTarget as PhysicsCallbacks.ITransformWriteCallback;
+                    if (callbackTarget != null)
+                    {
+                        // Create the event.
+                        var transformWriteEvent = new PhysicsEvents.TransformWriteEvent(
+                            world,
+                            simulationType,
+                            transformPlane,
+                            transfomPlaneCustom,
+                            transformTweenMode,
+                            ref transformWriteTweens);
+
+                        // Send the event.
+                        callbackTarget.OnTransformWrite(transformWriteEvent);
+
+                        // Set the transform write tweens (if active).
+                        if (transformTweening)
+                            world.SetTransformWriteTweens(new Span<PhysicsBody.TransformWriteTween>(transformWriteTweens.GetUnsafeReadOnlyPtr(), transformWriteTweens.Length));
+                    }
+                }
+
+                // Dispose of the tweens.
+                if (transformWriteTweens.IsCreated)
+                    transformWriteTweens.Dispose();
             }
-
-            // Dispose of the tweens.
-            if (transformWriteTweens.IsCreated)
-                transformWriteTweens.Dispose();
-
-            Profiler.EndSample();
         }
 
         /// <undoc/>

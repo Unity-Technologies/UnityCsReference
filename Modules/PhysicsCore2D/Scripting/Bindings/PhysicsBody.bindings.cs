@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsBody::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsBodyDefinition PhysicsBody_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsBody::Create", IsThreadSafe = true)] extern internal static PhysicsBody PhysicsBody_Create(PhysicsWorld world, PhysicsBodyDefinition definition);
@@ -83,6 +83,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulse(PhysicsBody body, Vector2 impulse, Vector2 point, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulseToCenter", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulseToCenter(PhysicsBody body, Vector2 impulse, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyAngularImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyAngularImpulse(PhysicsBody body, float impulse, bool wake);
+        [NativeMethod(Name = "PhysicsBody::ApplyBuoyancy", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyBuoyancy(PhysicsBody.BuoyancyInput input, ReadOnlySpan<PhysicsBody> bodies, float deltaTime);
+        [NativeMethod(Name = "PhysicsBody::ApplyBuoyancyOverlap", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyBuoyancyOverlap(PhysicsWorld world, PhysicsAABB aabb, PhysicsBody.BuoyancyInput input, float deltaTime);
+        [NativeMethod(Name = "PhysicsBody::ApplyWind", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyWind(PhysicsBody.WindInput input, ReadOnlySpan<PhysicsBody> bodies);
+        [NativeMethod(Name = "PhysicsBody::ApplyWindOverlap", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyWindOverlap(PhysicsWorld world, PhysicsAABB aabb, PhysicsBody.WindInput input);
         [NativeMethod(Name = "PhysicsBody::ClearForces", IsThreadSafe = true)] extern internal static void PhysicsBody_ClearForces(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::WakeTouching", IsThreadSafe = true)] extern internal static void PhysicsBody_WakeTouching(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetContactEvents(PhysicsBody body, bool flag);

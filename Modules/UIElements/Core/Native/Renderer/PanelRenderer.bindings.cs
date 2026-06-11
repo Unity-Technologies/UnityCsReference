@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
     [HelpURL("ui-systems/panel-renderer-component")]
     [AddComponentMenu("UI Toolkit/Panel Renderer (UI Toolkit)")]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
+    [ExtensionOfNativeClass]
     public sealed class PanelRenderer : Renderer, IPanelComponent
     {
         #region Fields
@@ -140,6 +141,11 @@ namespace UnityEngine.UIElements
         // Start UI version at 1 so that users can rely on version 0 being "not initialized".
         private int m_UIVersion = 1;
 
+        // Set when the root visual element is (re)initialized; cleared once the reload
+        // callbacks fire. Prevents firing the callback against a root that has already
+        // been processed, for example, AddRootVisualElementToTree() running without a reload.
+        private bool m_UIReloadCallbackPending;
+
         /// <summary>
         /// Registers a callback to be invoked when the UI is reloaded.
         /// </summary>
@@ -156,10 +162,8 @@ namespace UnityEngine.UIElements
 
             m_OnUIReloadCallback += callback;
 
-            if (rootVisualElement != null)
-            {
+            if (rootVisualElement != null && rootVisualElement.panel != null)
                 callback(this, rootVisualElement);
-            }
         }
 
         /// <summary>
@@ -183,10 +187,8 @@ namespace UnityEngine.UIElements
 
             m_OnVersionedUIReloadCallback += callback;
 
-            if (rootVisualElement != null)
-            {
+            if (rootVisualElement != null && rootVisualElement.panel != null)
                 callback(this, rootVisualElement, m_UIVersion);
-            }
         }
 
         /// <summary>
@@ -212,6 +214,20 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(callback));
 
             m_OnVersionedUIReloadCallback -= callback;
+        }
+
+        void InvokeUIReloadCallbacks()
+        {
+            if (!m_UIReloadCallbackPending)
+                return;
+
+            if (rootVisualElement == null || rootVisualElement.panel == null)
+                return;
+
+            m_UIReloadCallbackPending = false;
+
+            m_OnUIReloadCallback?.Invoke(this, rootVisualElement);
+            m_OnVersionedUIReloadCallback?.Invoke(this, rootVisualElement, m_UIVersion);
         }
 
         extern private ScriptableObject nativePanelSettings { get; set; }
@@ -525,15 +541,7 @@ namespace UnityEngine.UIElements
 
                 // Increase the version to let users know they should re-initialize their UIs.
                 ++m_UIVersion;
-
-                if (m_OnUIReloadCallback != null)
-                {
-                    m_OnUIReloadCallback.Invoke(this, rootVisualElement);
-                }
-                if (m_OnVersionedUIReloadCallback != null)
-                {
-                    m_OnVersionedUIReloadCallback.Invoke(this, rootVisualElement, m_UIVersion);
-                }
+                m_UIReloadCallbackPending = true;
             }
             else
             {
@@ -581,6 +589,8 @@ namespace UnityEngine.UIElements
                 parentUI.AddChildAndInsertContentToVisualTree(this);
             else
                 panelSettings?.AttachAndInsertPanelComponentToVisualTree(this);
+
+            InvokeUIReloadCallbacks();
         }
 
         void AddChildAndInsertContentToVisualTree(PanelRenderer child)

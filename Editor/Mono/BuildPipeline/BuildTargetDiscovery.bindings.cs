@@ -1004,7 +1004,7 @@ namespace UnityEditor
             {
                 if (platformInfo.subtarget != StandaloneBuildSubtarget.Server)
                     return basePlatformGuid;
-                
+
                 if (TryGetServerGUIDFromBuildTarget(NamedBuildTarget.Server, platformInfo.buildTarget, out var serverPlatformGuid))
                     return serverPlatformGuid;
             }

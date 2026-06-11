@@ -38,21 +38,20 @@ namespace Unity.UI.Builder
             };
             m_ButtonStripContainer.AddToClassList(s_ButtonStripContainerClassName);
 
-            var iconPath = "Text Alignment/";
             m_HorizontalButtonGroup = new ToggleButtonGroup();
             m_HorizontalButtonGroup.name = "horizontal-align-strip";
             m_HorizontalButtonGroup.RegisterValueChangedCallback(OnHorizontalValueChange);
-            m_HorizontalButtonGroup.Add(new Button() { name = "left", iconImage = BuilderInspectorUtilities.LoadIcon("Left", iconPath), tooltip = "left" });
-            m_HorizontalButtonGroup.Add(new Button() { name = "center", iconImage = BuilderInspectorUtilities.LoadIcon("Centered", iconPath), tooltip = "center" });
-            m_HorizontalButtonGroup.Add(new Button() { name = "right", iconImage = BuilderInspectorUtilities.LoadIcon("Right", iconPath), tooltip = "right" });
+            m_HorizontalButtonGroup.Add(new Button() { name = "left", tooltip = "Left" });
+            m_HorizontalButtonGroup.Add(new Button() { name = "center", tooltip = "Center" });
+            m_HorizontalButtonGroup.Add(new Button() { name = "right", tooltip = "Right" });
             m_ButtonStripContainer.Add(m_HorizontalButtonGroup);
             m_HorizontalToggleButtonGrouptState = new ToggleButtonGroupState(0, s_HorizontalChoices.Length);
 
             m_VerticalButtonGroup = new ToggleButtonGroup();
             m_VerticalButtonGroup.name = "vertical-align-strip";
-            m_VerticalButtonGroup.Add(new Button() { name = "upper", iconImage = BuilderInspectorUtilities.LoadIcon("Upper", iconPath), tooltip = "upper" });
-            m_VerticalButtonGroup.Add(new Button() { name = "middle", iconImage = BuilderInspectorUtilities.LoadIcon("Middle", iconPath), tooltip = "middle" });
-            m_VerticalButtonGroup.Add(new Button() { name = "lower", iconImage = BuilderInspectorUtilities.LoadIcon("Lower", iconPath), tooltip = "lower" });
+            m_VerticalButtonGroup.Add(new Button() { name = "upper", tooltip = "Upper" });
+            m_VerticalButtonGroup.Add(new Button() { name = "middle", tooltip = "Middle" });
+            m_VerticalButtonGroup.Add(new Button() { name = "lower", tooltip = "Lower" });
             m_VerticalButtonGroup.RegisterValueChangedCallback(OnVerticalValueChange);
             m_ButtonStripContainer.Add(m_VerticalButtonGroup);
             m_VerticalToggleButtonGrouptState = new ToggleButtonGroupState(0, s_VerticalChoices.Length);

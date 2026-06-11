@@ -43,6 +43,7 @@ namespace UnityEditorInternal
 
         [SerializeReference] private IAnimationWindowSelectionItem m_Selection; // Internal selection
         [SerializeField] private AnimationWindowKeySelection m_KeySelection; // What is selected. Hashes persist cache reload, because they are from keyframe time+value
+        [SerializeField] AnimationWindowSearchFilter m_SearchFilter = new ();
 
         [SerializeField] public bool showCurveEditor; // Do we show dopesheet or curves
         [SerializeField] public bool linkedWithSequencer; // Toggle Sequencer selection mode.
@@ -176,6 +177,18 @@ namespace UnityEditorInternal
 
         public IAnimationWindowController controller => selection?.controller;
 
+        public string searchFilter
+        {
+            get => m_SearchFilter.searchString;
+            set
+            {
+                m_SearchFilter.searchString = value;
+
+                // Refresh everything.
+                refresh = RefreshType.Everything;
+            }
+        }
+
         public bool filterBySelection
         {
             get
@@ -201,6 +214,21 @@ namespace UnityEditorInternal
             set
             {
                 AnimationWindowOptions.showReadOnly = value;
+
+                // Refresh everything.
+                refresh = RefreshType.Everything;
+            }
+        }
+
+        public bool enableQueryBuilder
+        {
+            get
+            {
+                return AnimationWindowOptions.enableQueryBuilder;
+            }
+            set
+            {
+                AnimationWindowOptions.enableQueryBuilder = value;
 
                 // Refresh everything.
                 refresh = RefreshType.Everything;
@@ -334,17 +362,9 @@ namespace UnityEditorInternal
             }
         }
 
-        private void PurgeSelection()
-        {
-            linkedWithSequencer = false;
-            m_Selection?.Dispose();
-            m_Selection = new FallbackSelectionItem();
-        }
-
         public void OnEnable()
         {
             Undo.undoRedoEvent += UndoRedoPerformed;
-            AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
             AnimationUtility.onCurveWasModified += CurveWasModified;
 
             // NoOps...
@@ -359,7 +379,6 @@ namespace UnityEditorInternal
         public void OnDisable()
         {
             Undo.undoRedoEvent -= UndoRedoPerformed;
-            AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
             AnimationUtility.onCurveWasModified -= CurveWasModified;
 
             previewing = false;
@@ -617,6 +636,65 @@ namespace UnityEditorInternal
                     {
                         return false;
                     }
+                }
+            }
+
+            if (!m_SearchFilter.isActive)
+                return true;
+
+            var curveComponentName = curve.type.Name;
+
+            if (m_SearchFilter.componentNames.Count > 0)
+            {
+                if (!m_SearchFilter.componentNames.Exists(componentName => string.Equals(componentName, curveComponentName, StringComparison.OrdinalIgnoreCase)))
+                    return false;
+            }
+
+
+            if (m_SearchFilter.propertyNames.Count > 0)
+            {
+                var fullPropertyName = $"{curveComponentName}.{curve.propertyName}";
+                var propertyGroupName = AnimationWindowUtility.GetPropertyGroupName(fullPropertyName);
+                if (propertyGroupName != fullPropertyName)
+                {
+                    if (!m_SearchFilter.propertyNames.Exists(attrName =>
+                            string.Equals(attrName, fullPropertyName, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(attrName, propertyGroupName, StringComparison.OrdinalIgnoreCase)))
+                        return false;
+                }
+                else
+                {
+                    if (!m_SearchFilter.propertyNames.Exists(attrName => string.Equals(attrName, fullPropertyName, StringComparison.OrdinalIgnoreCase)))
+                        return false;
+                }
+            }
+
+            if (m_SearchFilter.nameFilters.Count > 0)
+            {
+                var nicePropertyName = AnimationWindowUtility.GetNicePropertyDisplayName(curve.type, curve.propertyName);
+
+                var gameObjectName = string.Empty;
+                if (string.IsNullOrEmpty(curve.path))
+                {
+                    if (activeRootGameObject != null)
+                    {
+                        gameObjectName = activeRootGameObject.name;
+                    }
+                }
+                else
+                {
+                    var index = curve.path.LastIndexOf('/');
+                    if (index != -1)
+                        gameObjectName = curve.path.Substring(index);
+                    else
+                        gameObjectName = curve.path;
+                }
+
+                foreach (var nameFilter in m_SearchFilter.nameFilters)
+                {
+                    if (!gameObjectName.Contains(nameFilter, StringComparison.OrdinalIgnoreCase) &&
+                        !nicePropertyName.Contains(nameFilter, StringComparison.OrdinalIgnoreCase))
+                        return false;
                 }
             }
 

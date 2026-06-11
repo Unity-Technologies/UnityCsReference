@@ -2,14 +2,28 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.UIElements;
 using UnityEditor;
+using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class AnimationPropertyContextualMenu
     {
+        // UI-framework-agnostic surface used by AnimationPropertyContextualMenu 
+        // Concrete adapters wrap the actual menu type (GenericMenu or DropdownMenu) 
+        interface IMenuBuilder
+        {
+            // callback may be null when enabled is false; adapters must render a disabled entry.
+            void AppendItem(GUIContent content, Action callback, bool enabled);
+            void AppendSeparator();
+        }
+
         public static AnimationPropertyContextualMenu Instance = new AnimationPropertyContextualMenu();
 
         IAnimationContextualResponder m_Responder;
@@ -22,6 +36,16 @@ namespace UnityEditorInternal
         private static GUIContent goToNextKeyContent = EditorGUIUtility.TrTextContent("Go to Next Key");
         private static GUIContent addCandidatesContent = EditorGUIUtility.TrTextContent("Key All Modified");
         private static GUIContent addAnimatedContent = EditorGUIUtility.TrTextContent("Key All Animated");
+
+        // for tests that match emitted items without re-translating the literals.
+        internal static string AddKeyText => addKeyContent.text;
+        internal static string UpdateKeyText => updateKeyContent.text;
+        internal static string RemoveKeyText => removeKeyContent.text;
+        internal static string RemoveCurveText => removeCurveContent.text;
+        internal static string GoToPreviousKeyText => goToPreviousKeyContent.text;
+        internal static string GoToNextKeyText => goToNextKeyContent.text;
+        internal static string AddCandidatesText => addCandidatesContent.text;
+        internal static string AddAnimatedText => addAnimatedContent.text;
 
         public AnimationPropertyContextualMenu()
         {
@@ -44,17 +68,8 @@ namespace UnityEditorInternal
             if (m_Responder == null)
                 return;
 
-            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property);
-
-            bool isPropertyAnimatable = m_Responder.IsAnimatable(modifications);
-            if (isPropertyAnimatable)
-            {
-                var targetObject = property.serializedObject.targetObject;
-                if (m_Responder.IsEditable(targetObject))
-                    OnPropertyContextMenu(menu, modifications);
-                else
-                    OnDisabledPropertyContextMenu(menu);
-            }
+            var modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property);
+            PopulateMenu(new GenericMenuBuilder(menu), modifications, property.serializedObject.targetObject);
         }
 
         void OnPropertyContextMenu(GenericMenu menu, MaterialProperty property, Renderer[] renderers)
@@ -70,114 +85,111 @@ namespace UnityEditorInternal
 
             var modifications = new List<PropertyModification>();
             foreach (Renderer renderer in renderers)
-            {
                 modifications.AddRange(MaterialAnimationUtility.MaterialPropertyToPropertyModifications(property, renderer));
-            }
 
-            var modificationsArray = modifications.ToArray();
-
-            if (!m_Responder.IsAnimatable(modificationsArray))
-                return;
-
-            if (m_Responder.IsEditable(renderers[0]))
-                OnPropertyContextMenu(menu, modificationsArray);
-            else
-                OnDisabledPropertyContextMenu(menu);
+            PopulateMenu(new GenericMenuBuilder(menu), modifications.ToArray(), renderers[0]);
         }
 
-        void OnPropertyContextMenu(GenericMenu menu, PropertyModification[] modifications)
+        // Bridges DropdownMenu calls into the shared menu layout.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void PopulateDropdownContextMenu(DropdownMenu menu, PropertyModification[] modifications, Object targetObject)
+        {
+            if (menu == null)
+                return;
+
+            PopulateMenu(new DropdownMenuBuilder(menu), modifications, targetObject);
+        }
+
+        // Shared menu layout. The caller supplies an IMenuBuilder adapter for whichever
+        // menu type it owns; the enable/disable rules and item ordering below are the
+        // single source of truth for both IMGUI and UI Toolkit emissions.
+        void PopulateMenu(IMenuBuilder builder, PropertyModification[] modifications, Object targetObject)
+        {
+            if (m_Responder == null || modifications == null || modifications.Length == 0)
+                return;
+
+            if (!m_Responder.IsAnimatable(modifications))
+                return;
+
+            if (m_Responder.IsEditable(targetObject))
+                AppendEnabled(builder, modifications);
+            else
+                AppendDisabled(builder);
+        }
+
+        void AppendEnabled(IMenuBuilder builder, PropertyModification[] modifications)
         {
             bool hasKey = m_Responder.KeyExists(modifications);
             bool hasCandidate = m_Responder.CandidateExists(modifications);
-            bool hasCurve = (hasKey || m_Responder.CurveExists(modifications));
-
+            bool hasCurve = hasKey || m_Responder.CurveExists(modifications);
             bool hasAnyCandidate = m_Responder.HasAnyCandidates();
             bool hasAnyCurve = m_Responder.HasAnyCurves();
 
-            menu.AddItem(((hasKey && hasCandidate) ? updateKeyContent : addKeyContent), false, () =>
-            {
-                m_Responder.AddKey(modifications);
-            });
-
-            if (hasKey)
-            {
-                menu.AddItem(removeKeyContent, false, () =>
-                {
-                    m_Responder.RemoveKey(modifications);
-                });
-            }
-            else
-            {
-                menu.AddDisabledItem(removeKeyContent);
-            }
-
-            if (hasCurve)
-            {
-                menu.AddItem(removeCurveContent, false, () =>
-                {
-                    m_Responder.RemoveCurve(modifications);
-                });
-            }
-            else
-            {
-                menu.AddDisabledItem(removeCurveContent);
-            }
-
-            menu.AddSeparator(string.Empty);
-            if (hasAnyCandidate)
-            {
-                menu.AddItem(addCandidatesContent, false, () =>
-                {
-                    m_Responder.AddCandidateKeys();
-                });
-            }
-            else
-            {
-                menu.AddDisabledItem(addCandidatesContent);
-            }
-
-            if (hasAnyCurve)
-            {
-                menu.AddItem(addAnimatedContent, false, () =>
-                {
-                    m_Responder.AddAnimatedKeys();
-                });
-            }
-            else
-            {
-                menu.AddDisabledItem(addAnimatedContent);
-            }
-
-            menu.AddSeparator(string.Empty);
-            if (hasCurve)
-            {
-                menu.AddItem(goToPreviousKeyContent, false, () =>
-                {
-                    m_Responder.GoToPreviousKeyframe(modifications);
-                });
-                menu.AddItem(goToNextKeyContent, false, () =>
-                {
-                    m_Responder.GoToNextKeyframe(modifications);
-                });
-            }
-            else
-            {
-                menu.AddDisabledItem(goToPreviousKeyContent);
-                menu.AddDisabledItem(goToNextKeyContent);
-            }
+            builder.AppendItem((hasKey && hasCandidate) ? updateKeyContent : addKeyContent,
+                () => m_Responder.AddKey(modifications), true);
+            builder.AppendItem(removeKeyContent,
+                () => m_Responder.RemoveKey(modifications), hasKey);
+            builder.AppendItem(removeCurveContent,
+                () => m_Responder.RemoveCurve(modifications), hasCurve);
+            builder.AppendSeparator();
+            builder.AppendItem(addCandidatesContent,
+                () => m_Responder.AddCandidateKeys(), hasAnyCandidate);
+            builder.AppendItem(addAnimatedContent,
+                () => m_Responder.AddAnimatedKeys(), hasAnyCurve);
+            builder.AppendSeparator();
+            builder.AppendItem(goToPreviousKeyContent,
+                () => m_Responder.GoToPreviousKeyframe(modifications), hasCurve);
+            builder.AppendItem(goToNextKeyContent,
+                () => m_Responder.GoToNextKeyframe(modifications), hasCurve);
         }
 
-        void OnDisabledPropertyContextMenu(GenericMenu menu)
+        static void AppendDisabled(IMenuBuilder builder)
         {
-            menu.AddDisabledItem(addKeyContent);
-            menu.AddDisabledItem(removeKeyContent);
-            menu.AddDisabledItem(removeCurveContent);
-            menu.AddSeparator(string.Empty);
-            menu.AddDisabledItem(addCandidatesContent);
-            menu.AddDisabledItem(addAnimatedContent);
-            menu.AddSeparator(string.Empty);
-            menu.AddDisabledItem(goToPreviousKeyContent);
-            menu.AddDisabledItem(goToNextKeyContent);
+            builder.AppendItem(addKeyContent, null, false);
+            builder.AppendItem(removeKeyContent, null, false);
+            builder.AppendItem(removeCurveContent, null, false);
+            builder.AppendSeparator();
+            builder.AppendItem(addCandidatesContent, null, false);
+            builder.AppendItem(addAnimatedContent, null, false);
+            builder.AppendSeparator();
+            builder.AppendItem(goToPreviousKeyContent, null, false);
+            builder.AppendItem(goToNextKeyContent, null, false);
+        }
+
+        // GenericMenu has no first-class "disabled item with callback" - falling back
+        // to AddDisabledItem is the conventional way to grey out an entry in IMGUI.
+        sealed class GenericMenuBuilder : IMenuBuilder
+        {
+            readonly GenericMenu m_Menu;
+            public GenericMenuBuilder(GenericMenu menu) { m_Menu = menu; }
+
+            public void AppendItem(GUIContent content, Action callback, bool enabled)
+            {
+                if (enabled && callback != null)
+                    m_Menu.AddItem(content, false, () => callback());
+                else
+                    m_Menu.AddDisabledItem(content);
+            }
+
+            public void AppendSeparator() => m_Menu.AddSeparator(string.Empty);
+        }
+
+        // DropdownMenu takes a string label rather than GUIContent; the IMGUI-style
+        // tooltip/image fields aren't surfaced today, but the path through .text keeps
+        // the localized literal that EditorGUIUtility.TrTextContent produced.
+        sealed class DropdownMenuBuilder : IMenuBuilder
+        {
+            readonly DropdownMenu m_Menu;
+            public DropdownMenuBuilder(DropdownMenu menu) { m_Menu = menu; }
+
+            public void AppendItem(GUIContent content, Action callback, bool enabled)
+            {
+                m_Menu.AppendAction(content.text,
+                    callback != null ? _ => callback() : null,
+                    enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
+
+            public void AppendSeparator() => m_Menu.AppendSeparator();
         }
     }
 }

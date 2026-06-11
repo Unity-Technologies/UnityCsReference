@@ -46,10 +46,10 @@ namespace Unity.Profiling.Editor.UI
         readonly IProfilerCaptureDataService m_DataService;
         readonly IProfilerPersistentSettingsService m_SettingsService;
         readonly ProfilerWindow m_ProfilerWindow;
-        SummaryType m_SelectedSummaryType;
+        internal SummaryType m_SelectedSummaryType;
         ViewController m_SelectedViewController;
-        bool m_CaptureSummaryRequiresReload;
-        bool m_SelectionSummaryRequiresReload;
+        internal bool m_CaptureSummaryRequiresReload;
+        internal bool m_SelectionSummaryRequiresReload;
         IDetailsProvider m_CaptureSummaryDetailsProvider;
         IDetailsProvider m_SelectionSummaryDetailsProvider;
         double m_TimeOfLastNewProfilerFrame;
@@ -289,14 +289,16 @@ namespace Unity.Profiling.Editor.UI
             // If the selection summary is not the active view, ensure it will be
             // reloaded on its next appearance and switch to it. Otherwise, just
             // reload the already displayed selection summary.
+            // Defer via schedule to avoid modifying the VisualElement hierarchy
+            // during a layout-phase callback (e.g. IMGUIContainer measure pass).
             if (m_SelectedSummaryType != SummaryType.Selection)
             {
                 m_SelectionSummaryRequiresReload = true;
-                ShowSummary(SummaryType.Selection);
+                View.schedule.Execute(() => ShowSummary(SummaryType.Selection));
             }
             else
             {
-                ReloadSelectionSummary();
+                View.schedule.Execute(() => ReloadSelectionSummary());
             }
         }
 
@@ -529,7 +531,7 @@ namespace Unity.Profiling.Editor.UI
             }
         }
 
-        enum SummaryType
+        internal enum SummaryType
         {
             None,
             Capture,

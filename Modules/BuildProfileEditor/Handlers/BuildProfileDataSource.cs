@@ -22,7 +22,7 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             this.m_Window = window;
             classicPlatforms = BuildProfileContext.instance.classicPlatformProfiles;
-            customBuildProfiles = FindAllBuildProfiles();
+            customBuildProfiles = BuildProfileModuleUtil.FindAllBuildProfiles();
             m_DuplicatedProfiles = new List<BuildProfile>();
 
             BuildProfile.AddOnBuildProfileEnable(OnBuildProfileCreated);
@@ -80,7 +80,7 @@ namespace UnityEditor.Build.Profile.Handlers
                 return null;
 
             BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
-            string uniqueFilePath = GetUniqueBuildProfilePath(path);
+            string uniqueFilePath = BuildProfileModuleUtil.GetUniqueBuildProfilePath(path);
 
             BuildProfile duplicatedProfile;
             if (isClassic)
@@ -111,28 +111,6 @@ namespace UnityEditor.Build.Profile.Handlers
             }));
 
             return duplicatedProfile;
-        }
-
-        /// <summary>
-        /// Generates a unique file path for a build profile by ensuring the file name does not conflict with existing profiles.
-        /// </summary>
-        private static string GetUniqueBuildProfilePath(string path)
-        {
-            var allBuildProfiles = FindAllBuildProfiles();
-            string[] existingNames = allBuildProfiles.ConvertAll(profile => profile.name).ToArray();
-
-            string baseFileName = Path.GetFileNameWithoutExtension(path);
-            string uniqueName = ObjectNames.GetUniqueName(existingNames, baseFileName);
-
-            string directory = Path.GetDirectoryName(path);
-            string extension = Path.GetExtension(path);
-            string uniqueFilePath = Path.Combine(directory, uniqueName + extension);
-
-            // Check that the file path doesn't exist on disk
-            // (shouldn't be the case, as we check against all BuildProfiles before)
-            uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(uniqueFilePath);
-
-            return uniqueFilePath;
         }
 
         /// <summary>
@@ -199,7 +177,7 @@ namespace UnityEditor.Build.Profile.Handlers
             var originalPath = AssetDatabase.GetAssetPath(buildProfile);
             var newPath = ReplaceFileNameInPath(originalPath, newName);
             var onlyCaseChange = string.Equals(buildProfile?.name, newName, StringComparison.OrdinalIgnoreCase);
-            var uniqueAssetPath = onlyCaseChange ? newPath : GetUniqueBuildProfilePath(newPath);
+            var uniqueAssetPath = onlyCaseChange ? newPath : BuildProfileModuleUtil.GetUniqueBuildProfilePath(newPath);
             var finalName = Path.GetFileNameWithoutExtension(uniqueAssetPath);
 
             if (!string.IsNullOrEmpty(originalPath))
@@ -281,13 +259,6 @@ namespace UnityEditor.Build.Profile.Handlers
 
             customBuildProfiles.Add(profile);
             return true;
-        }
-
-        static List<BuildProfile> FindAllBuildProfiles()
-        {
-            var profiles = new List<BuildProfile>(BuildProfile.GetAllBuildProfiles());
-            profiles.Sort((lhs, rhs) => EditorUtility.NaturalCompare(lhs.name, rhs.name));
-            return profiles;
         }
 
         static string ReplaceFileNameInPath(string originalPath, string newName)

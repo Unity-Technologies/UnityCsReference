@@ -290,31 +290,32 @@ class SelectorAccelerationCache
 
     public void Remove(StyleSheet styleSheet)
     {
-        s_MarkerClean.Begin();
-
-        EntityId entityId = styleSheet.GetEntityId();
-
-        // First, we try to find if any potential dependent stylesheet registered for this one
+        using (s_MarkerClean.Auto())
         {
-            (int firstIndex, int removeCount) = m_DependencyList.FindRangeForKey(m_DependencyComparer, entityId, EntityId.None);
 
-            // Remove each entry for any dependent stylesheet. Path-list cleanup is intentionally
-            // skipped for dependents - they get reimported separately and clean up their own paths
-            // through the path-keyed Remove flow.
-            for (int i = 0; i < removeCount; i++)
+            EntityId entityId = styleSheet.GetEntityId();
+
+            // First, we try to find if any potential dependent stylesheet registered for this one
             {
-                EntityId dependentEntityId = m_DependencyList[firstIndex + i].dependent;
-                TryRemoveAndDisposeEntry(dependentEntityId);
-                m_CacheForHash.Remove(dependentEntityId);
+                (int firstIndex, int removeCount) = m_DependencyList.FindRangeForKey(m_DependencyComparer, entityId, EntityId.None);
+
+                // Remove each entry for any dependent stylesheet. Path-list cleanup is intentionally
+                // skipped for dependents - they get reimported separately and clean up their own paths
+                // through the path-keyed Remove flow.
+                for (int i = 0; i < removeCount; i++)
+                {
+                    EntityId dependentEntityId = m_DependencyList[firstIndex + i].dependent;
+                    TryRemoveAndDisposeEntry(dependentEntityId);
+                    m_CacheForHash.Remove(dependentEntityId);
+                }
+
+                m_DependencyList.RemoveRange(firstIndex, removeCount);
             }
 
-            m_DependencyList.RemoveRange(firstIndex, removeCount);
+            // Attempt to remove the style sheet itself
+            RemovedStyleSheetFromMainCache(entityId, styleSheet);
+
         }
-
-        // Attempt to remove the style sheet itself
-        RemovedStyleSheetFromMainCache(entityId, styleSheet);
-
-        s_MarkerClean.End();
     }
 
     private void RemovedStyleSheetFromMainCache(EntityId entityId, StyleSheet styleSheet = null)
@@ -351,35 +352,36 @@ class SelectorAccelerationCache
 
         if (!m_Cache.TryGetValue(entityId, out var entry))
         {
-            s_MarkerBuild.Begin();
-            entry = new SelectorAccelerationCacheEntry();
-
-            // Ensure the main stylesheet has calculated hashes before building cache
-            styleSheet.RebuildIfNecessary();
-
-            // Track dependencies for imported stylesheets
-            if (styleSheet.flattenedRecursiveImports != null && styleSheet.flattenedRecursiveImports.Count > 0)
+            using (s_MarkerBuild.Auto())
             {
-                for (var i = styleSheet.flattenedRecursiveImports.Count - 1; i >= 0; i--)
+                entry = new SelectorAccelerationCacheEntry();
+
+                // Ensure the main stylesheet has calculated hashes before building cache
+                styleSheet.RebuildIfNecessary();
+
+                // Track dependencies for imported stylesheets
+                if (styleSheet.flattenedRecursiveImports != null && styleSheet.flattenedRecursiveImports.Count > 0)
                 {
-                    var sheet = styleSheet.flattenedRecursiveImports[i];
-                    if (sheet == null)
-                        continue;
-                    // This is very defensive, hopefully we can remove this in the future
-                    sheet.RebuildIfNecessary();
+                    for (var i = styleSheet.flattenedRecursiveImports.Count - 1; i >= 0; i--)
+                    {
+                        var sheet = styleSheet.flattenedRecursiveImports[i];
+                        if (sheet == null)
+                            continue;
+                        // This is very defensive, hopefully we can remove this in the future
+                        sheet.RebuildIfNecessary();
 
-                    // Accumulate new keys at the end to avoid repetitive scans for a specific index
-                    m_DependencyList.Add( (sheet.GetEntityId(), entityId));
+                        // Accumulate new keys at the end to avoid repetitive scans for a specific index
+                        m_DependencyList.Add( (sheet.GetEntityId(), entityId));
+                    }
+                    // Sort after adding values at the end
+                    m_DependencyList.Sort(m_DependencyComparer);
                 }
-                // Sort after adding values at the end
-                m_DependencyList.Sort(m_DependencyComparer);
+
+                // Build flattened cache
+                SelectorAccelerationCacheBuilder.BuildFlattenedCache(ref entry, styleSheet);
+
+                m_Cache.Add(entityId, entry);
             }
-
-            // Build flattened cache
-            SelectorAccelerationCacheBuilder.BuildFlattenedCache(ref entry, styleSheet);
-
-            m_Cache.Add(entityId, entry);
-            s_MarkerBuild.End();
             string path = Panel.GetStyleSheetPath(styleSheet);
             if (!string.IsNullOrEmpty(path) && path != "Library/unity editor resources")
             {

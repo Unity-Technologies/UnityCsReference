@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -32,8 +33,8 @@ namespace UnityEngine.UIElements.UIR
 
         uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
 
-        public MeshManagerTracked(uint initialVertexCapacity, uint initialIndexCapacity)
-            : base(initialVertexCapacity, initialIndexCapacity, GpuUpdaterType.Mapped)
+        public MeshManagerTracked(uint initialVertexCapacity, uint initialIndexCapacity, uint extrasStride)
+            : base(initialVertexCapacity, initialIndexCapacity, extrasStride, GpuUpdaterType.Mapped)
         {
             m_DeferredFrees = new List<List<AllocToFree>>((int)UIRenderDevice.k_MaxQueuedFrameCount);
             m_Updates = new List<List<AllocToUpdate>>((int)UIRenderDevice.k_MaxQueuedFrameCount);
@@ -44,7 +45,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public override void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData)
+        public override void Update(MeshHandle mesh, uint vertexCount, out RawSlice vertexData)
         {
             Debug.Assert(mesh.allocVerts.size >= vertexCount);
             if (mesh.allocTime == m_FrameIndex)
@@ -55,10 +56,10 @@ namespace UnityEngine.UIElements.UIR
             }
 
             uint oldIndexOffset = mesh.allocVerts.start; // Cache this before it gets modified in the call to Update below
-            NativeSlice<UInt16> oldIndexData = new NativeSlice<UInt16>(mesh.allocPage.indices.cpuData, (int)mesh.allocIndices.start, (int)mesh.allocIndices.size);
+            NativeSlice<UInt16> oldIndexData = mesh.allocPage.indices.cpuData.SliceAs<UInt16>((int)mesh.allocIndices.start, (int)mesh.allocIndices.size);
             UInt16 indexOffset;
             NativeSlice<UInt16> indexData;
-            UpdateAfterGPUUsedData(mesh, vertexCount, mesh.allocIndices.size, out vertexData, out indexData, out indexOffset, false);
+            UpdateAfterGPUUsedData(mesh, vertexCount, mesh.allocIndices.size, out vertexData, out indexData, out indexOffset, copyBackIndices: false);
 
             // Carry original indices, but repoint them at the new vertices
             int indexCount = (int)mesh.allocIndices.size;
@@ -67,7 +68,7 @@ namespace UnityEngine.UIElements.UIR
                 indexData[i] = (UInt16)(oldIndexData[i] + indexDifference);
         }
 
-        public override void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
+        public override void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             Debug.Assert(mesh.allocVerts.size >= vertexCount);
             Debug.Assert(mesh.allocIndices.size >= indexCount);
@@ -75,20 +76,18 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Update right after allocation and the GPU hasn't used the data yet.. update same allocation
                 vertexData = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, (int)vertexCount);
-                indexData = mesh.allocPage.indices.cpuData.Slice((int)mesh.allocIndices.start, (int)indexCount);
+                indexData = mesh.allocPage.indices.cpuData.SliceAs<UInt16>((int)mesh.allocIndices.start, (int)indexCount);
                 indexOffset = (UInt16)mesh.allocVerts.start;
 
                 // Case 1419340, having a nudge update, followed by a visuals update which causes a winding order change
                 // was not working because the copyBackIndices flag was left to "false".
-                UpdateCopyBackIndices(mesh, true);
-
-                return;
+                SetCopyBackFlags(mesh, copyBackIndices: true);
             }
-
-            UpdateAfterGPUUsedData(mesh, vertexCount, indexCount, out vertexData, out indexData, out indexOffset, true);
+            else
+                UpdateAfterGPUUsedData(mesh, vertexCount, indexCount, out vertexData, out indexData, out indexOffset, copyBackIndices: true);
         }
 
-        void UpdateCopyBackIndices(MeshHandle mesh, bool copyBackIndices)
+        void SetCopyBackFlags(MeshHandle mesh, bool copyBackIndices)
         {
             if (mesh.updateAllocID == 0)
                 return; // Not a alloc update
@@ -96,7 +95,7 @@ namespace UnityEngine.UIElements.UIR
             int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
             var updates = ActiveUpdatesForMeshHandle(mesh);
             var update = updates[activeUpdateIndex];
-            update.copyBackIndices = true;
+            update.copyBackIndices |= copyBackIndices;
             updates[activeUpdateIndex] = update;
         }
 
@@ -105,7 +104,7 @@ namespace UnityEngine.UIElements.UIR
             return m_Updates[(int)mesh.allocTime % m_Updates.Count];
         }
 
-        void UpdateAfterGPUUsedData(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset, bool copyBackIndices)
+        void UpdateAfterGPUUsedData(MeshHandle mesh, uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset, bool copyBackIndices)
         {
             var allocToUpdate = new AllocToUpdate()
             { id = m_NextUpdateID++, allocTime = m_FrameIndex, meshHandle = mesh, copyBackIndices = copyBackIndices };
@@ -140,7 +139,7 @@ namespace UnityEngine.UIElements.UIR
             // Try to allocate from the same page, if we fail, we revert to the general case
             if (TryAllocFromPage(mesh.allocPage, (uint)vertexCount, (uint)indexCount, ref mesh.allocVerts, ref mesh.allocIndices, true))
             {
-                mesh.allocPage.vertices.AddDirtyRange(mesh.allocVerts.start, mesh.allocVerts.size);
+                mesh.allocPage.MarkVertexRangeDirty(mesh.allocVerts.start, mesh.allocVerts.size);
                 mesh.allocPage.indices.AddDirtyRange(mesh.allocIndices.start, mesh.allocIndices.size);
             }
             else Allocate(mesh, vertexCount, indexCount, out vertexData, out indexData, true);
@@ -150,8 +149,8 @@ namespace UnityEngine.UIElements.UIR
 
             m_Updates[(int)(m_FrameIndex % m_Updates.Count)].Add(allocToUpdate);
 
-            vertexData = new NativeSlice<Vertex>(mesh.allocPage.vertices.cpuData, (int)mesh.allocVerts.start, (int)vertexCount);
-            indexData = new NativeSlice<UInt16>(mesh.allocPage.indices.cpuData, (int)mesh.allocIndices.start, (int)indexCount);
+            vertexData = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, (int)vertexCount);
+            indexData = mesh.allocPage.indices.cpuData.SliceAs<UInt16>((int)mesh.allocIndices.start, (int)indexCount);
             indexOffset = (UInt16)mesh.allocVerts.start;
         }
 
@@ -209,15 +208,20 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (update.meshHandle.updateAllocID == update.id && update.meshHandle.allocTime == update.allocTime)
                 {
-                    NativeSlice<Vertex> srcVerts = new NativeSlice<Vertex>(update.meshHandle.allocPage.vertices.cpuData, (int)update.meshHandle.allocVerts.start, (int)update.meshHandle.allocVerts.size);
-                    NativeSlice<Vertex> destVerts = new NativeSlice<Vertex>(update.permPage.vertices.cpuData, (int)update.permAllocVerts.start, (int)update.meshHandle.allocVerts.size);
-                    destVerts.CopyFrom(srcVerts);
-                    update.permPage.vertices.AddDirtyRange(update.permAllocVerts.start, update.meshHandle.allocVerts.size);
+                    int vertCount = (int)update.meshHandle.allocVerts.size;
+                    RawSlice srcVerts = update.meshHandle.allocPage.vertices.cpuData.Slice((int)update.meshHandle.allocVerts.start, vertCount);
+                    RawSlice destVerts = update.permPage.vertices.cpuData.Slice((int)update.permAllocVerts.start, vertCount);
+                    unsafe
+                    {
+                        UnsafeUtility.MemCpy((void*)destVerts.GetUnsafePtr(), (void*)srcVerts.GetUnsafeReadOnlyPtr(), destVerts.ByteLength);
+                    }
+
+                    update.permPage.MarkVertexRangeDirty(update.permAllocVerts.start, update.meshHandle.allocVerts.size);
 
                     if (update.copyBackIndices)
                     {
-                        NativeSlice<UInt16> srcIndices = new NativeSlice<UInt16>(update.meshHandle.allocPage.indices.cpuData, (int)update.meshHandle.allocIndices.start, (int)update.meshHandle.allocIndices.size);
-                        NativeSlice<UInt16> destIndices = new NativeSlice<UInt16>(update.permPage.indices.cpuData, (int)update.permAllocIndices.start, (int)update.meshHandle.allocIndices.size);
+                        NativeSlice<UInt16> srcIndices = update.meshHandle.allocPage.indices.cpuData.SliceAs<UInt16>((int)update.meshHandle.allocIndices.start, (int)update.meshHandle.allocIndices.size);
+                        NativeSlice<UInt16> destIndices = update.permPage.indices.cpuData.SliceAs<UInt16>((int)update.permAllocIndices.start, (int)update.meshHandle.allocIndices.size);
 
                         // Carry original indices, but repoint them at the new vertices
                         int indexCount = destIndices.Length;

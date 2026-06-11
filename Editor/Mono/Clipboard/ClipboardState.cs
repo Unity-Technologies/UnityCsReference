@@ -55,6 +55,18 @@ namespace UnityEditor
             }
         }
 
+        internal bool? m_HasLoadableSceneId;
+        internal LoadableSceneId m_ValueLoadableSceneId;
+        internal void FetchLoadableSceneId()
+        {
+            if (!m_HasLoadableSceneId.HasValue)
+            {
+                var ok = ClipboardParser.ParseCustom<LoadableSceneIdWrapper>(m_RawContents, out var wrapper);
+                m_HasLoadableSceneId = ok;
+                m_ValueLoadableSceneId = ok ? wrapper.ToLoadableSceneId() : default;
+            }
+        }
+
         internal bool? m_HasBool;
         internal bool m_ValueBool;
         internal void FetchBool()

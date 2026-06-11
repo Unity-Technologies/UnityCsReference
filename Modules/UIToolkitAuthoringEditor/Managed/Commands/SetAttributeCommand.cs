@@ -2,61 +2,89 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetAttributeCommand
+internal sealed class SetAttributeCommand : Command<SetAttributeCommand>
 {
     const string CommandUndoName = "Set attribute";
 
-    readonly VisualTreeAsset m_VisualTreeAsset;
-    readonly UxmlAsset m_UxmlAsset;
-    readonly UxmlSerializedData m_UxmlSerializedData;
-    readonly UxmlSerializedAttributeDescription m_AttributeDescription;
-    readonly object m_Value;
-
-    public SetAttributeCommand(
+    public static SetAttributeCommand GetPooled(
+        object source,
         VisualTreeAsset vta,
         UxmlAsset vea,
         UxmlSerializedData uxmlSerializedData,
         UxmlSerializedAttributeDescription desc,
         object attributeValue)
     {
-        m_VisualTreeAsset = vta;
-        m_UxmlAsset = vea;
-        m_UxmlSerializedData = uxmlSerializedData;
-        m_AttributeDescription = desc;
-        m_Value = attributeValue;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.VisualTreeAsset = vta;
+        cmd.UxmlAsset = vea;
+        cmd.UxmlSerializedData = uxmlSerializedData;
+        cmd.AttributeDescription = desc;
+        cmd.Value = attributeValue;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source,
+        VisualTreeAsset vta,
+        UxmlAsset vea,
+        UxmlSerializedData uxmlSerializedData,
+        UxmlSerializedAttributeDescription desc,
+        object attributeValue)
     {
-        Assert.IsNotNull(m_VisualTreeAsset);
-        Assert.IsNotNull(m_AttributeDescription);
+        using var command = GetPooled(source, vta, vea, uxmlSerializedData, desc, attributeValue);
+        UICommandQueue.Execute(command);
+    }
+
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
+    public UxmlAsset UxmlAsset { get; private set; }
+    public UxmlSerializedData UxmlSerializedData { get; private set; }
+    public UxmlSerializedAttributeDescription AttributeDescription { get; private set; }
+    public object Value { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Attributes;
+
+    protected override void Init()
+    {
+        base.Init();
+        VisualTreeAsset = null;
+        UxmlAsset = null;
+        UxmlSerializedData = null;
+        AttributeDescription = null;
+        Value = null;
+    }
+
+    public override bool Validate() => VisualTreeAsset != null && AttributeDescription != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(VisualTreeAsset);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         string valueAsString = "";
 
-        if (m_Value != null)
+        if (Value != null)
         {
-            Assert.IsTrue(UxmlAttributeConverter.TryConvertToString(m_Value, m_VisualTreeAsset, out valueAsString),
-                $"Value {m_Value} must be convertible to string.");
+            Assert.IsTrue(UxmlAttributeConverter.TryConvertToString(Value, VisualTreeAsset, out valueAsString),
+                $"Value {Value} must be convertible to string.");
         }
-
-        Undo.RegisterCompleteObjectUndo(m_VisualTreeAsset, CommandUndoName);
 
         // Set the attribute value and flag
-        m_AttributeDescription.SetSerializedValue(m_UxmlSerializedData, m_Value);
-        m_AttributeDescription.SetSerializedValueAttributeFlags(m_UxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+        AttributeDescription.SetSerializedValue(UxmlSerializedData, Value);
+        AttributeDescription.SetSerializedValueAttributeFlags(UxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
         // Set the attribute value for export.
-        if (m_UxmlAsset != null)
-        {
-            m_UxmlAsset.SetAttribute(m_AttributeDescription.name, valueAsString);
-        }
-        EditorUtility.SetDirty(m_VisualTreeAsset);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAsset);
+        if (UxmlAsset != null)
+            UxmlAsset.SetAttribute(AttributeDescription.name, valueAsString);
+
+        return CommandExecutionStatus.Success;
     }
 }

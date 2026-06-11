@@ -41,7 +41,8 @@ namespace Unity.GraphToolkit.Editor
         static readonly string k_ContextBorderTitleName = "context-border-title";
 
 
-        internal static readonly CustomStyleProperty<Color> BlocksBorderColorStyle = new CustomStyleProperty<Color>("--blocks--border-color");
+        internal static readonly CustomStyleProperty<Color> BlocksBorderColorStyle =
+            new CustomStyleProperty<Color>("--blocks--border-color");
 
         /// <summary>
         /// The USS class name added to the context borders element.
@@ -51,17 +52,20 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The USS class name added to the title element in the context border.
         /// </summary>
-        public static readonly string contextBorderTitleUssClassName = ussClassName.WithUssElement(k_ContextBorderTitleName);
+        public static readonly string contextBorderTitleUssClassName =
+            ussClassName.WithUssElement(k_ContextBorderTitleName);
 
         /// <summary>
         /// The USS class name added to the context borders element when the drag is refused.
         /// </summary>
-        public static readonly string contextBorderRefusedUssClassName = contextBorderUssClassName.WithUssModifier("refused");
+        public static readonly string contextBorderRefusedUssClassName =
+            contextBorderUssClassName.WithUssModifier("refused");
 
         /// <summary>
         /// The USS class name added to the context borders element when the drag is accepted.
         /// </summary>
-        public static readonly string contextBorderAcceptedUssClassName = contextBorderUssClassName.WithUssModifier("accepted");
+        public static readonly string contextBorderAcceptedUssClassName =
+            contextBorderUssClassName.WithUssModifier("accepted");
 
         VisualElement m_ContextBorder;
         VisualElement m_DragBlock;
@@ -95,16 +99,20 @@ namespace Unity.GraphToolkit.Editor
         {
             base.BuildPartList();
 
-            PartList.ReplacePart(topColorLineContainerPartName, NodeColorLinePart.Create(topColorLineContainerPartName, NodeModel, this, ussClassName,
-                new string[] {
+            PartList.ReplacePart(topColorLineContainerPartName, NodeColorLinePart.Create(topColorLineContainerPartName,
+                NodeModel, this, ussClassName,
+                new string[]
+                {
                     ussClassName.WithUssElement(NodeColorLinePart.colorLineName),
                     ussClassName.WithUssElement(NodeColorLinePart.colorLineName).WithUssModifier("top")
                 }));
             ContextBlocksPart = CreateContextBlocksPart();
             PartList.InsertPartBefore(bottomPortContainerPartName, ContextBlocksPart);
             PartList.MovePartBefore(cachePartName, blocksPartName);
-            PartList.AppendPart(NodeColorLinePart.Create(bottomColorLineContainerPartName, NodeModel, this, ussClassName,
-                new string[] {
+            PartList.AppendPart(NodeColorLinePart.Create(bottomColorLineContainerPartName, NodeModel, this,
+                ussClassName,
+                new string[]
+                {
                     ussClassName.WithUssElement(NodeColorLinePart.colorLineName),
                     ussClassName.WithUssElement(NodeColorLinePart.colorLineName).WithUssModifier("bottom")
                 }));
@@ -148,8 +156,10 @@ namespace Unity.GraphToolkit.Editor
         {
             base.UpdateUIFromModel(visitor);
 
-            var hasVerticalInput = ContextNodeModel?.InputsById.Values.HasAny(t => t.Orientation == PortOrientation.Vertical) ?? false;
-            var hasVerticalOutput = ContextNodeModel?.OutputsById.Values.HasAny(t => t.Orientation == PortOrientation.Vertical) ?? false;
+            var hasVerticalInput =
+                ContextNodeModel?.InputsById.Values.HasAny(t => t.Orientation == PortOrientation.Vertical) ?? false;
+            var hasVerticalOutput =
+                ContextNodeModel?.OutputsById.Values.HasAny(t => t.Orientation == PortOrientation.Vertical) ?? false;
 
             EnableInClassList(ussClassName.WithUssModifier("no-vertical-input"), !hasVerticalInput);
             EnableInClassList(ussClassName.WithUssModifier("no-vertical-output"), !hasVerticalOutput);
@@ -159,7 +169,8 @@ namespace Unity.GraphToolkit.Editor
         {
             if (!m_Attached)
             {
-                GraphView.RegisterElementZoomLevelClass(this, GraphViewZoomMode.Small, ussClassName.WithUssModifier(GraphElementHelper.mediumUssModifier));
+                GraphView.RegisterElementZoomLevelClass(this, GraphViewZoomMode.Small,
+                    ussClassName.WithUssModifier(GraphElementHelper.mediumUssModifier));
                 m_Attached = true;
             }
         }
@@ -184,7 +195,8 @@ namespace Unity.GraphToolkit.Editor
             if (blockContainer == null)
                 return 0;
 
-            using var dispose = blockContainer.Children().OfTypeToPooledList<BlockNodeView, VisualElement>(out var blocks);
+            using var dispose = blockContainer.Children()
+                .OfTypeToPooledList<BlockNodeView, VisualElement>(out var blocks);
 
             if (blocks.Count > 0)
             {
@@ -289,12 +301,14 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc/>
-        public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta, CopyPasteData copyPasteData)
+        public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta,
+            CopyPasteData copyPasteData)
         {
             if (!copyPasteData.Nodes.Exists(t => t is BlockNodeModel))
                 return false;
 
-            using var dispose = copyPasteData.Nodes.OfTypeToPooledList<BlockNodeModel, AbstractNodeModel>(out var blocks);
+            using var dispose =
+                copyPasteData.Nodes.OfTypeToPooledList<BlockNodeModel, AbstractNodeModel>(out var blocks);
 
             GraphView.Dispatch(new InsertBlocksInContextCommand(
                 ContextNodeModel, -1, blocks, false, true, operationName));
@@ -320,11 +334,13 @@ namespace Unity.GraphToolkit.Editor
                 m_BlocksBkgndColor = bkgndColor;
                 changed = true;
             }
+
             if (e.customStyle.TryGetValue(BlocksBorderColorStyle, out Color borderColor))
             {
                 m_BlocksBorderColor = borderColor;
                 changed = true;
             }
+
             changed = m_DrawParams.CustomStyleResolved(e) || changed;
 
             if (changed)
@@ -353,13 +369,55 @@ namespace Unity.GraphToolkit.Editor
             drawParams.topEtchMargin -= border;
             drawParams.topEtchWidth += border;
 
-            BlockNodeView.DrawBlock(ref bounds, p2d, ContextNodeModel.BlocksHaveEtches, true, true, false, ref drawParams);
+            BlockNodeView.DrawBlock(ref bounds, p2d, ContextNodeModel.BlocksHaveEtches, true, true, false,
+                ref drawParams);
 
             p2d.strokeColor = m_BlocksBorderColor;
             p2d.lineWidth = border;
 
             p2d.Fill(FillRule.OddEven);
             p2d.Stroke();
+        }
+
+        public override void SetFillAmount(float percentage)
+        {
+            base.SetFillAmount(percentage);
+
+            var part = PartList.GetPart(bottomColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.SetFillAmount(percentage);
+        }
+
+        public override void BeginAnimating(float animationSpeed)
+        {
+            base.BeginAnimating(animationSpeed);
+
+            var part = PartList.GetPart(bottomColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.PlayAnimation(animationSpeed);
+        }
+
+        public override void StopAnimating()
+        {
+            base.StopAnimating();
+            var part = PartList.GetPart(bottomColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+            part.StopAnimation();
+        }
+
+        public override void AnimationUpdate(double deltaTime)
+        {
+            base.AnimationUpdate(deltaTime);
+
+            var part = PartList.GetPart(bottomColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+            part.UpdateAnimation(deltaTime);
         }
     }
 }

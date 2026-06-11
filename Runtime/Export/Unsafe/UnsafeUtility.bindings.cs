@@ -12,7 +12,7 @@ using UnityEngine.Profiling;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
-    [NativeHeader("Runtime/Export/Unsafe/UnsafeUtility.bindings.h")]
+    [NativeHeader("ManagedKernel/Unsafe/UnsafeUtility.bindings.h")]
     [StaticAccessor("UnsafeUtility", StaticAccessorType.DoubleColon)]
     public static partial class UnsafeUtility
     {

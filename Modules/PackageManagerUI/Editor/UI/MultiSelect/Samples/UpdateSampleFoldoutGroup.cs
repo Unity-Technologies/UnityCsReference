@@ -18,7 +18,7 @@ internal class UpdateSampleFoldoutGroup : SampleMultiSelectFoldoutGroup
 
     public override bool AddItem(Sample item)
     {
-        if (item.isImported || item.previousImportPaths?.Count == 0)
+        if (item.isImported || item.previousImportPaths?.Count == 0 || !string.IsNullOrEmpty(item.assetPackagePath))
             return false;
         return base.AddItem(item);
     }

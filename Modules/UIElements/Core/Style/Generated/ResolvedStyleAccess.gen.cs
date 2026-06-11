@@ -72,6 +72,7 @@ namespace UnityEngine.UIElements
         public Rotate rotate => ve.computedStyle.rotate;
         public Scale scale => ve.computedStyle.scale;
         public TextOverflow textOverflow => ve.computedStyle.textOverflow;
+        public TextShadow textShadow => ve.computedStyle.textShadow;
         public float top => ve.layoutNode.LayoutY;
         public Vector3 transformOrigin => ve.ResolveTransformOrigin();
         public IEnumerable<TimeValue> transitionDelay => ve.computedStyle.transitionDelay.ToArray();
@@ -215,6 +216,8 @@ namespace UnityEngine.UIElements
         Scale IResolvedStyle.scale => resolvedStyle.scale;
 
         TextOverflow IResolvedStyle.textOverflow => resolvedStyle.textOverflow;
+
+        TextShadow IResolvedStyle.textShadow => resolvedStyle.textShadow;
 
         float IResolvedStyle.top => resolvedStyle.top;
 

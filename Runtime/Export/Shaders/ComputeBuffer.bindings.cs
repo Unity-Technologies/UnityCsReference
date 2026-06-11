@@ -219,7 +219,7 @@ namespace UnityEngine
         extern void InternalSetNativeData(IntPtr data, int nativeBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
-        extern void InternalSetData(ReadOnlySpan<byte> data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
+        extern void InternalSetData(Span<byte> data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize);
 
         // Read buffer data.
         [System.Security.SecurityCritical] // due to Marshal.SizeOf
@@ -259,7 +259,7 @@ namespace UnityEngine
 
             var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
             int dataLen = data.Length;
-            InternalGetData(UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+            InternalGetData(UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), managedBufferStartIndex, computeBufferStartIndex, count, elemSize);
         }
 
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalGetData", HasExplicitThis = true, ThrowsException = true)]

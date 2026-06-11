@@ -153,6 +153,7 @@ namespace UnityEditor
         private int                         m_LightMode = 1;
         private static readonly GUIContent  s_TilingText = EditorGUIUtility.TrTextContent("Tiling");
         private static readonly GUIContent  s_OffsetText = EditorGUIUtility.TrTextContent("Offset");
+        bool m_PreviewUpdateNeeded = false;
 
         const string kDefaultMaterialPreviewMesh = "DefaultMaterialPreviewMesh";
 
@@ -686,7 +687,7 @@ namespace UnityEditor
             public ShaderSelectionDropdown(Shader shader, Action<object> onSelectedShaderPopup)
                 : base(new AdvancedDropdownState())
             {
-                minimumSize = new Vector2(270, 308);
+                minimumSize = new Vector2(270, 200);
                 m_CurrentShader = shader;
                 m_OnSelectedShaderPopup = onSelectedShaderPopup;
                 m_DataSource = new ShaderDropdownDataSource(m_CurrentShader);
@@ -1109,6 +1110,7 @@ namespace UnityEditor
         {
             // @TODO: Show performance warnings for multi-selections too?
             m_InfoMessage = null;
+            m_PreviewUpdateNeeded = true;
             if (targets.Length == 1)
                 m_InfoMessage = Utils.PerformanceChecks.CheckMaterial(target as Material, EditorUserBuildSettings.activeBuildTarget);
         }
@@ -2927,7 +2929,9 @@ namespace UnityEditor
 
         public override bool RequiresConstantRepaint()
         {
-            return m_TimeUpdate == 1;
+            var required = m_TimeUpdate == 1 || m_PreviewUpdateNeeded;
+            m_PreviewUpdateNeeded = false;
+            return required;
         }
 
         public override void OnInteractivePreviewGUI(Rect r, GUIStyle background)

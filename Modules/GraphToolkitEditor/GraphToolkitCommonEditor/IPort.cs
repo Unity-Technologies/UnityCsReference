@@ -120,6 +120,6 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The globally unique identifier for this port.
         /// </summary>
-        Hash128 Guid { get; }
+        Hash128 ID { get; }
     }
 }

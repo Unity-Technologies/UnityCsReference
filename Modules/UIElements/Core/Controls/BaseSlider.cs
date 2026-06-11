@@ -659,7 +659,13 @@ namespace UnityEngine.UIElements
             if (sliderKey == SliderKey.None)
                 return;
 
+            // Don't consume the event when the value didn't actually change (e.g. at min/max). This lets focus
+            // traversal move past a focused slider at its boundary instead of trapping arrow navigation.
+            var oldValue = value;
             ComputeValueFromKey(sliderKey, evt.shiftKey);
+            if (EqualityComparer<TValueType>.Default.Equals(value, oldValue))
+                return;
+
             evt.StopPropagation();
             focusController?.IgnoreEvent(evt);
         }

@@ -13,9 +13,10 @@ namespace UnityEditor.Build.Analysis
         BuildReportSummary GetBuildSummary(GUID buildSessionGuid);
         bool TryLoadBuildReport(GUID buildSessionGuid, out BuildReport buildReport);
         bool TryGetFilePath(GUID buildSessionGuid, string filename, out string filePath);
-        bool TryGetMetadataPath(GUID buildSessionGuid, out string metadataPath);
+        bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory);
         void Refresh();
         int GetRevision();
+        int GetBuildHistoryLimit();
         int DeleteHistory(GUID[] buildSessionGuids);
         int DeleteAllHistory();
     }
@@ -43,9 +44,9 @@ namespace UnityEditor.Build.Analysis
             return BuildHistory.TryGetFilePath(buildSessionGuid, filename, out filePath);
         }
 
-        public bool TryGetMetadataPath(GUID buildSessionGuid, out string metadataPath)
+        public bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory)
         {
-            return BuildHistory.TryGetMetadataPath(buildSessionGuid, out metadataPath);
+            return BuildHistory.TryGetBuildReportDirectory(buildSessionGuid, out directory);
         }
 
         public void Refresh()
@@ -56,6 +57,11 @@ namespace UnityEditor.Build.Analysis
         public int GetRevision()
         {
             return BuildHistory.GetRevision();
+        }
+
+        public int GetBuildHistoryLimit()
+        {
+            return BuildHistory.BuildHistoryLimit;
         }
 
         public int DeleteHistory(GUID[] buildSessionGuids)

@@ -18,6 +18,7 @@ namespace Unity.GraphToolkit.Editor
 
         readonly GraphView m_GraphView;
         readonly HashSet<IAnimatableView> m_Active = new();
+        readonly HashSet<IAnimatableView> m_Paused = new();
 
         double m_LastEditorTime;
         bool m_Subscribed;
@@ -49,8 +50,12 @@ namespace Unity.GraphToolkit.Editor
                 animatableView.BeginAnimating(animationSpeed);
                 return;
             }
+            else if (m_Paused.Contains(animatableView))
+            {
+                Resume(animatableView, animationSpeed);
+                return;
+            }
 
-            // Initialize editor tick callback if no active animatables
             if (m_Active.Count == 0)
             {
                 m_LastEditorTime = EditorApplication.timeSinceStartup;
@@ -65,23 +70,48 @@ namespace Unity.GraphToolkit.Editor
             animatableView.BeginAnimating(animationSpeed);
         }
 
+        public void Resume(IAnimatableView animatableView, float animationSpeed)
+        {
+            if (animatableView == null
+                || m_Active.Contains(animatableView)
+                || !m_Paused.Contains(animatableView))
+                return;
+
+            m_Active.Add(animatableView);
+            m_Paused.Remove(animatableView);
+            animatableView.BeginAnimating(animationSpeed);
+        }
+
+        public void Pause(IAnimatableView animatableView)
+        {
+            if (animatableView == null
+                || !m_Active.Contains(animatableView)
+                || m_Paused.Contains(animatableView))
+                return;
+
+            m_Paused.Add(animatableView);
+            m_Active.Remove(animatableView);
+        }
+
         /// <summary>
         /// Stops playback for an animatable and removes it from the update loop.
         /// </summary>
         /// <param name="animatableView">The animatable to stop.</param>
         public void Stop(IAnimatableView animatableView)
         {
-            if (animatableView == null || !m_Active.Contains(animatableView))
+            if (animatableView == null
+                || (!m_Active.Contains(animatableView) && !m_Paused.Contains(animatableView)))
                 return;
 
             animatableView.StopAnimating();
             m_Active.Remove(animatableView);
+            m_Paused.Remove(animatableView);
             TryUnsubscribeIfEmpty();
         }
 
         void TryUnsubscribeIfEmpty()
         {
-            if (m_Active.Count != 0 || !m_Subscribed)
+            if (m_Active.Count != 0 || m_Paused.Count != 0 || !m_Subscribed)
                 return;
 
             EditorApplication.update -= EditorTick;
@@ -90,7 +120,7 @@ namespace Unity.GraphToolkit.Editor
 
         void EditorTick()
         {
-            if (m_Disposed || m_Active.Count == 0)
+            if (m_Disposed || (m_Active.Count == 0 && m_Paused.Count == 0))
             {
                 TryUnsubscribeIfEmpty();
                 return;
@@ -133,6 +163,13 @@ namespace Unity.GraphToolkit.Editor
             }
 
             m_Active.Clear();
+
+            foreach (var animatable in m_Paused)
+            {
+                animatable.StopAnimating();
+            }
+
+            m_Paused.Clear();
         }
     }
 }

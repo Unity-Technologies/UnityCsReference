@@ -131,16 +131,16 @@ namespace UnityEngine.UIElements
             _ = TextUtilities.textSettings;
 
 
-            k_PrepareMainThreadMarker.Begin();
-
-            hasPendingTextWork = false;
-
-            var prepareJob = new PrepareTextJobData
+            PrepareTextJobData prepareJob;
+            using (k_PrepareMainThreadMarker.Auto())
             {
-                managedJobDataHandle = textJobDatasHandle
-            };
+                hasPendingTextWork = false;
 
-            k_PrepareMainThreadMarker.End();
+                prepareJob = new PrepareTextJobData
+                {
+                    managedJobDataHandle = textJobDatasHandle
+                };
+            }
             TextCore.Text.TextGenerator.IsExecutingJob = true;
             JobHandle jobHandle = prepareJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
@@ -153,39 +153,41 @@ namespace UnityEngine.UIElements
 
             public void Execute(int index)
             {
-                k_PrepareJobifiedMarker.Begin();
-                List<ManagedJobData> managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
-                ManagedJobData managedJobData = managedJobDatas[index];
-                var visualElement = managedJobData.visualElement;
+                using (k_PrepareJobifiedMarker.Auto())
+                {
+                    List<ManagedJobData> managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
+                    ManagedJobData managedJobData = managedJobDatas[index];
+                    var visualElement = managedJobData.visualElement;
 
-                managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
-                if (managedJobData.prepareSuccess)
-                    managedJobData.prepareSuccess = visualElement.uitkTextHandle.PrepareFontAsset();
-                k_PrepareJobifiedMarker.End();
+                    managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
+                    if (managedJobData.prepareSuccess)
+                        managedJobData.prepareSuccess = visualElement.uitkTextHandle.PrepareFontAsset();
+                }
             }
         }
 
         void GenerateTextJobified(MeshGenerationContext mgc, object _)
         {
             TextCore.Text.TextGenerator.IsExecutingJob = false;
-            k_UpdateMainThreadMarker.Begin();
-            foreach (var textData in textJobDatas)
+            using (k_UpdateMainThreadMarker.Auto())
             {
-                // Loading line breaking rules is done here because it requires the main thread
-                var settings = TextUtilities.GetTextSettingsFrom(textData.visualElement);
-                settings?.lineBreakingRules?.LoadLineBreakingRules();
-                _ = settings?.fallbackOSFontAssets;
+                foreach (var textData in textJobDatas)
+                {
+                    // Loading line breaking rules is done here because it requires the main thread
+                    var settings = TextUtilities.GetTextSettingsFrom(textData.visualElement);
+                    settings?.lineBreakingRules?.LoadLineBreakingRules();
+                    _ = settings?.fallbackOSFontAssets;
 
-                if (textData.prepareSuccess)
-                    continue;
+                    if (textData.prepareSuccess)
+                        continue;
 
-                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
-                textData.visualElement.uitkTextHandle.PrepareFontAsset();
+                    textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
+                    textData.visualElement.uitkTextHandle.PrepareFontAsset();
+                }
+
+                FontAsset.UpdateFontAssetsInUpdateQueue();
+
             }
-
-            FontAsset.UpdateFontAssetsInUpdateQueue();
-
-            k_UpdateMainThreadMarker.End();
 
             mgc.GetTempMeshAllocator(out var allocator);
 
@@ -210,34 +212,35 @@ namespace UnityEngine.UIElements
 
             public void Execute(int index)
             {
-                k_ExecuteMarker.Begin();
-                var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
-                ManagedJobData managedJobData = managedJobDatas[index];
-                var visualElement = managedJobData.visualElement;
-                if (visualElement.PostProcessTextVertices != null)
-                    visualElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+                using (k_ExecuteMarker.Auto())
+                {
+                    var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
+                    ManagedJobData managedJobData = managedJobDatas[index];
+                    var visualElement = managedJobData.visualElement;
+                    if (visualElement.PostProcessTextVertices != null)
+                        visualElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
 
-                visualElement.uitkTextHandle.UpdateMesh();
+                    visualElement.uitkTextHandle.UpdateMesh();
 
-                var textInfo = visualElement.uitkTextHandle.textInfo;
-                var meshInfos = textInfo.meshInfo;
+                    var textInfo = visualElement.uitkTextHandle.textInfo;
+                    var meshInfos = textInfo.meshInfo;
 
-                List<Material> materials = null;
-                List<NativeSlice<Vertex>> verticesArray = null;
-                List<NativeSlice<ushort>> indicesArray = null;
-                List<GlyphRenderMode> renderModes = null;
+                    List<Material> materials = null;
+                    List<NativeSlice<Vertex>> verticesArray = null;
+                    List<NativeSlice<ushort>> indicesArray = null;
+                    List<GlyphRenderMode> renderModes = null;
 
-                ConvertMeshInfoToUIRVertex(meshInfos, alloc, visualElement, ref materials, ref verticesArray, ref indicesArray, ref renderModes);
+                    ConvertMeshInfoToUIRVertex(meshInfos, alloc, visualElement, ref materials, ref verticesArray, ref indicesArray, ref renderModes);
 
-                managedJobData.materials = materials;
-                managedJobData.vertices = verticesArray;
-                managedJobData.indices = indicesArray;
-                managedJobData.renderModes = renderModes;
+                    managedJobData.materials = materials;
+                    managedJobData.vertices = verticesArray;
+                    managedJobData.indices = indicesArray;
+                    managedJobData.renderModes = renderModes;
 
-                visualElement.uitkTextHandle.HandleATag();
-                visualElement.uitkTextHandle.HandleLinkTag();
+                    visualElement.uitkTextHandle.HandleATag();
+                    visualElement.uitkTextHandle.HandleLinkTag();
 
-                k_ExecuteMarker.End();
+                }
             }
         }
 
@@ -319,8 +322,20 @@ namespace UnityEngine.UIElements
                 mgc.Begin(managedJobData.node.GetParentEntry(), ve, ve.nestedRenderData ?? ve.renderData);
 
                 ve.uitkTextHandle.HandleLinkAndATagCallbacks();
-                ve.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(ve, managedJobData.vertices));
-                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.materials, managedJobData.renderModes);
+                bool usesPerGlyphTcs = false;
+                if (ve.PostProcessTextVertices != null)
+                {
+                    var rd = ve.nestedRenderData ?? ve.renderData;
+                    var perGlyphTcs = rd?.renderTree?.renderTreeManager?.perGlyphTcs;
+                    var glyphs = new TextElement.GlyphsEnumerable(ve, managedJobData.vertices);
+                    usesPerGlyphTcs = PerGlyphTextCoreSettings.InvokePostProcessVertices(perGlyphTcs, ve, rd, managedJobData.vertices, in glyphs);
+                }
+                else
+                {
+                    var rd = ve.nestedRenderData ?? ve.renderData;
+                    rd?.renderTree?.renderTreeManager?.perGlyphTcs?.Reset(rd);
+                }
+                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.materials, managedJobData.renderModes, usesPerGlyphTcs);
                 managedJobData.visualElement.OnGenerateTextOver(mgc);
 
                 mgc.End();

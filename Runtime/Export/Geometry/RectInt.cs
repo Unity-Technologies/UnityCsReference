@@ -103,15 +103,19 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void SetMinMax(Vector2Int minPosition, Vector2Int maxPosition)
         {
-            min = minPosition;
-            max = maxPosition;
+            m_XMin = minPosition.x;
+            m_YMin = minPosition.y;
+            m_Width = maxPosition.x - minPosition.x;
+            m_Height = maxPosition.y - minPosition.y;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void SetMinMax(in Vector2Int minPosition, in Vector2Int maxPosition)
         {
-            min = minPosition;
-            max = maxPosition;
+            m_XMin = minPosition.x;
+            m_YMin = minPosition.y;
+            m_Width = maxPosition.x - minPosition.x;
+            m_Height = maxPosition.y - minPosition.y;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -144,7 +148,7 @@ namespace UnityEngine
         private static readonly RectInt kZero = new RectInt(0, 0, 0, 0);
 
         // Shorthand for writing new RectInt(0,0,0,0).
-        static public RectInt zero
+        public static RectInt zero
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => kZero;
         }
@@ -227,7 +231,7 @@ namespace UnityEngine
 
         // Returns true if the rectangles are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(RectInt lhs, RectInt rhs) => !(lhs == rhs);
+        public static bool operator!=(RectInt lhs, RectInt rhs) => !(lhs.m_XMin == rhs.m_XMin && lhs.m_YMin == rhs.m_YMin && lhs.m_Width == rhs.m_Width && lhs.m_Height == rhs.m_Height);
 
         // Returns true if the rectangles are the same.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

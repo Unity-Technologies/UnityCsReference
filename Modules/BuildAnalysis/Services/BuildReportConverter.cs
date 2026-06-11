@@ -116,7 +116,7 @@ namespace UnityEditor.Build.Analysis
                 assets[i] = new BuildReportAssetData
                 {
                     Path = stats.sourceAssetPath ?? string.Empty,
-                    GUID = stats.sourceAssetGUID.ToString(),
+                    GUID = stats.sourceAssetGUID,
                     OutputSizeBytes = stats.size,
                     ObjectCount = stats.objectCount,
                     ResourceCount = stats.resourceCount,

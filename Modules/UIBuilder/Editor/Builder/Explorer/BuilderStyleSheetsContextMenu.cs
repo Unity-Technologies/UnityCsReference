@@ -61,6 +61,8 @@ namespace Unity.UI.Builder
                 {
                     selection.Select(null, documentElement);
                     BuilderStyleSheetsUtilities.SetActiveUSS(selection, paneWindow, selectedStyleSheet);
+                    if (paneWindow is Builder builder && builder.styleSheets?.elementHierarchyView != null)
+                        builder.styleSheets.elementHierarchyView.treeView.RefreshItems();
                 },
                 isStyleSheet && !styleSheetBelongsToParent
                 ? DropdownMenuAction.Status.Normal

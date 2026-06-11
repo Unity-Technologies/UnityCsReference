@@ -788,6 +788,7 @@ internal class DictionaryView : ListView
         m_SortedIndexMap = updatedSortedIndexMap;
         RefreshListView();
         RestoreSelectionByArrayIndices(selectedArrayIndices);
+        FocusContentContainer();
     }
 
     void OnKeyHeaderClicked(ClickEvent evt)
@@ -912,6 +913,7 @@ internal class DictionaryView : ListView
         RebuildSortedIndices();
         RefreshListView();
         RestoreSelectionByArrayIndices(selectedArrayIndices);
+        FocusContentContainer();
     }
 
     List<int> GetSelectedArrayIndices()

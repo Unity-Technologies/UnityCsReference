@@ -21,8 +21,6 @@ internal sealed partial class StyleRuleInspector : UIInspector
     public const string UssClass = "unity-style-rule-inspector";
     public const string StyleInspectorClass = UssClass + "__style-inspector";
     public const string ReadOnlyStyleInspectorClass = "unity-visual-element-inspector__style-inspector--readonly";
-    public const string HeaderUssClass = "unity-style-rule-inspector__header";
-
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/StyleRuleInspector.uxml";
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
@@ -32,7 +30,6 @@ internal sealed partial class StyleRuleInspector : UIInspector
 
     private readonly StyleInspectorElement m_StyleInspector;
     private StyleInspectorDefaultContent m_StyleInspectorDefaultContent;
-    private readonly StyleRuleHeader m_Header;
     private VariablesInspector m_VariablesSection;
 
     private StyleRule m_StyleRule;
@@ -52,7 +49,6 @@ internal sealed partial class StyleRuleInspector : UIInspector
             if (m_StyleRule == null)
             {
                 m_StyleInspector.Target = default;
-                m_Header.Rule = null;
                 m_VariablesSection?.Refresh(null);
             }
             else
@@ -69,7 +65,6 @@ internal sealed partial class StyleRuleInspector : UIInspector
                 }
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule.styleSheet, m_StyleRule);
-                m_Header.Rule = m_StyleRule;
                 m_VariablesSection?.Refresh(m_StyleRule);
             }
 
@@ -105,9 +100,6 @@ internal sealed partial class StyleRuleInspector : UIInspector
         styleSheets.Add(styleSheet);
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
         IsReadOnly = false;
-
-        m_Header = this.Q<StyleRuleHeader>(className: HeaderUssClass);
-        InitializeSearchField();
     }
 
     protected override void HandleEventBubbleUp(EventBase evt)
@@ -130,7 +122,6 @@ internal sealed partial class StyleRuleInspector : UIInspector
                 InitializeAnimationSectionVisibility();
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule?.styleSheet, m_StyleRule);
-                m_Header.Rule = m_StyleRule;
                 break;
             }
             case DetachFromPanelEvent detachFromPanelEvent:

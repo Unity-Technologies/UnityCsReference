@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements.UIR
@@ -53,6 +54,10 @@ namespace UnityEngine.UIElements.UIR
     class ExtraRenderData : LinkedPoolItem<ExtraRenderData>
     {
         public BasicNode<MeshHandle> extraMesh;
+
+        // Hash-deduped per-glyph TCS allocs written during PostProcessTextVertices.
+        // Null until first SetTints; freed in FreeExtraData.
+        public Dictionary<TextCoreSettings, BMPAlloc> textCoreSettingsAllocs;
     }
 
     struct GraphicEntry

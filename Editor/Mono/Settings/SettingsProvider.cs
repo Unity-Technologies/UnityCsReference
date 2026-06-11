@@ -170,17 +170,15 @@ namespace UnityEditor
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return typeof(T).GetFields(BindingFlags.Static | BindingFlags.Public)
-#pragma warning restore UA2001
                 .Where(field => typeof(GUIContent).IsAssignableFrom(field.FieldType))
                 .Select(field => ((GUIContent)field.GetValue(null)).text)
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 .Concat(typeof(T).GetProperties(BindingFlags.Static | BindingFlags.Public)
-#pragma warning restore UA2001
                     .Where(prop => typeof(GUIContent).IsAssignableFrom(prop.PropertyType))
                     .Select(prop => ((GUIContent)prop.GetValue(null, null)).text))
                 .Where(content => content != null)
                 .Select(content => content.ToLowerInvariant())
                 .Distinct();
+#pragma warning restore UA2001
         }
 
         public static IEnumerable<string> GetSearchKeywordsFromSerializedObject(SerializedObject serializedObject)

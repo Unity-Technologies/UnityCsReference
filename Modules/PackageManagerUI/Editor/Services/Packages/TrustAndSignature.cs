@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.AssetPackage;
+
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal enum TrustAndSignature
@@ -19,4 +21,56 @@ internal enum TrustAndSignature
     LimitedTrust,
     UntrustedNoSignature,
     UntrustedInvalidSignature,
+}
+
+internal static class TrustAndSignatureHelper
+{
+    public static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
+    {
+        if (!isInstalled)
+            return TrustAndSignature.NotApplicable;
+
+        return GetTrustAndSignature(packageInfo.trustLevel, packageInfo.signature, packageInfo.source == PackageSource.BuiltIn);
+    }
+
+    public static TrustAndSignature GetTrustAndSignature(AssetPackageInfo assetPackageInfo)
+    {
+        return GetTrustAndSignature(assetPackageInfo.trustLevel, assetPackageInfo.signature, isBuiltIn: false);
+    }
+
+    private static TrustAndSignature GetTrustAndSignature(TrustLevel trustLevel, SignatureInfo signature, bool isBuiltIn)
+    {
+        switch (trustLevel)
+        {
+            case TrustLevel.FullTrust:
+            {
+                if (signature?.status == SignatureStatus.Valid)
+                {
+                    var publishingChannel = signature.attestation?.publishingChannel ?? "";
+                    // When the signature is valid but the publishing channel is empty, it's a legacy Unity signature
+                    // We will check it this way before the UpmClient provides a better way to identify legacy signatures
+                    if (publishingChannel is "unity" or "")
+                        return TrustAndSignature.FullTrustUnitySignature;
+                    return TrustAndSignature.FullTrustValidSignature;
+                }
+
+                if (isBuiltIn)
+                    return TrustAndSignature.FullTrustBuiltInPackage;
+
+                return TrustAndSignature.FullTrustNoSignature;
+            }
+            case TrustLevel.LimitedTrust:
+                return TrustAndSignature.LimitedTrust;
+            case TrustLevel.Untrusted:
+                switch (signature?.status)
+                {
+                    case SignatureStatus.Unsigned:
+                        return TrustAndSignature.UntrustedNoSignature;
+                    case SignatureStatus.Invalid:
+                        return TrustAndSignature.UntrustedInvalidSignature;
+                }
+                break;
+        }
+        return TrustAndSignature.NotApplicable;
+    }
 }

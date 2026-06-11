@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.Accessibility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -47,6 +48,7 @@ namespace Unity.Profiling.Editor.UI
             m_DetailsBinder = detailsBinder;
 
             m_SettingsService.TargetFrameDurationChanged += OnTargetFrameDurationChanged;
+            UserAccessiblitySettings.colorBlindConditionChanged += OnColorBlindSettingChanged;
         }
 
         public void ReloadData(FrameBottlenecksModel model)
@@ -102,6 +104,7 @@ namespace Unity.Profiling.Editor.UI
         {
             if (disposing)
             {
+                UserAccessiblitySettings.colorBlindConditionChanged -= OnColorBlindSettingChanged;
                 m_SettingsService.TargetFrameDurationChanged -= OnTargetFrameDurationChanged;
                 m_DetailsBinder.UnbindDetailsElement(m_CpuBarWrapper);
                 m_DetailsBinder.UnbindDetailsElement(m_GpuBarWrapper);
@@ -137,6 +140,17 @@ namespace Unity.Profiling.Editor.UI
         }
 
         void OnTargetFrameDurationChanged()
+        {
+            if (IsViewLoaded == false)
+                return;
+
+            if (m_Model.HasValue == false)
+                return;
+
+            RefreshView();
+        }
+
+        void OnColorBlindSettingChanged()
         {
             if (IsViewLoaded == false)
                 return;
@@ -214,11 +228,13 @@ namespace Unity.Profiling.Editor.UI
             bar.style.width = new StyleLength(new Length(barDurationNormalized * 100f, LengthUnit.Percent));
             barLabel.text = (barDurationNs == 0) ? Content.k_NoValueText : TimeFormatterUtility.FormatTimeNsToMs(barDurationNs);
 
-            const string k_UssClass_DurationBarFillHighlighted = "frame-bottlenecks-view__chart-bar__fill-highlighted";
-            if (barDurationNs > targetFrameDurationNs)
-                bar.AddToClassList(k_UssClass_DurationBarFillHighlighted);
+            // Over-budget bars use the CPU palette colour as a warning (red by default,
+            // pink in colour-blind mode); under-budget bars fall back to the neutral USS background.
+            var isOverBudget = barDurationNs > targetFrameDurationNs;
+            if (isOverBudget)
+                bar.style.backgroundColor = BottlenecksChartViewModel.GetColorForDataSeries(BottlenecksChartViewModel.CpuDataSeriesIndex);
             else
-                bar.RemoveFromClassList(k_UssClass_DurationBarFillHighlighted);
+                bar.style.backgroundColor = StyleKeyword.Null;
         }
     }
 }

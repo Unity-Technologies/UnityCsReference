@@ -912,79 +912,85 @@ namespace UnityEngine.UIElements.UIR
 
         static bool NudgeVerticesToNewSpace(RenderData renderData, RenderTreeManager renderTreeManager, UIRenderDevice device)
         {
-            k_NudgeVerticesMarker.Begin();
-
-            Matrix4x4 newTransform;
-            UIRUtility.GetVerticesTransformInfo(renderData, out newTransform);
-            Matrix4x4 nudgeTransform = newTransform * renderData.verticesSpace.inverse;
-
-            // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
-            // considerably, then we assume that the vertices have become degenerate beyond restoration.
-            // In this case we refuse to nudge, and ask for this element to be fully repainted to regenerate
-            // the vertices without error.
-            const float kMaxAllowedDeviation = 0.0001f;
-            Matrix4x4 reconstructedNewTransform = nudgeTransform * renderData.verticesSpace;
-            float error;
-            error = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
-            error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
-            error += Mathf.Abs(newTransform.m02 - reconstructedNewTransform.m02);
-            error += Mathf.Abs(newTransform.m03 - reconstructedNewTransform.m03);
-            error += Mathf.Abs(newTransform.m10 - reconstructedNewTransform.m10);
-            error += Mathf.Abs(newTransform.m11 - reconstructedNewTransform.m11);
-            error += Mathf.Abs(newTransform.m12 - reconstructedNewTransform.m12);
-            error += Mathf.Abs(newTransform.m13 - reconstructedNewTransform.m13);
-            error += Mathf.Abs(newTransform.m20 - reconstructedNewTransform.m20);
-            error += Mathf.Abs(newTransform.m21 - reconstructedNewTransform.m21);
-            error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
-            error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
-            if (error > kMaxAllowedDeviation)
+            using (k_NudgeVerticesMarker.Auto())
             {
-                k_NudgeVerticesMarker.End();
-                return false;
-            }
+                Matrix4x4 newTransform;
+                UIRUtility.GetVerticesTransformInfo(renderData, out newTransform);
+                Matrix4x4 nudgeTransform = newTransform * renderData.verticesSpace.inverse;
 
-            renderData.verticesSpace = newTransform; // This is the new space of the vertices
+                // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
+                // considerably, then we assume that the vertices have become degenerate beyond restoration.
+                // In this case we refuse to nudge, and ask for this element to be fully repainted to regenerate
+                // the vertices without error.
+                const float kMaxAllowedDeviation = 0.0001f;
+                Matrix4x4 reconstructedNewTransform = nudgeTransform * renderData.verticesSpace;
+                float error;
+                error = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
+                error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
+                error += Mathf.Abs(newTransform.m02 - reconstructedNewTransform.m02);
+                error += Mathf.Abs(newTransform.m03 - reconstructedNewTransform.m03);
+                error += Mathf.Abs(newTransform.m10 - reconstructedNewTransform.m10);
+                error += Mathf.Abs(newTransform.m11 - reconstructedNewTransform.m11);
+                error += Mathf.Abs(newTransform.m12 - reconstructedNewTransform.m12);
+                error += Mathf.Abs(newTransform.m13 - reconstructedNewTransform.m13);
+                error += Mathf.Abs(newTransform.m20 - reconstructedNewTransform.m20);
+                error += Mathf.Abs(newTransform.m21 - reconstructedNewTransform.m21);
+                error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
+                error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
+                if (error > kMaxAllowedDeviation)
+                    return false;
 
-            var job = new NudgeJobData
-            {
-                transform = nudgeTransform,
-                keepZ = renderTreeManager.isFlat ? 1 : 0,
-            };
+                renderData.verticesSpace = newTransform; // This is the new space of the vertices
 
-            if (renderData.headMesh != null)
-                PrepareNudgeVertices(device, renderData.headMesh, out job.headSrc, out job.headDst, out job.headCount);
-
-            if (renderData.tailMesh != null)
-                PrepareNudgeVertices(device, renderData.tailMesh, out job.tailSrc, out job.tailDst, out job.tailCount);
-
-            renderTreeManager.jobManager.Add(ref job);
-
-            if (renderData.hasExtraMeshes)
-            {
-                ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
-                BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
-                while (extraMesh != null)
+                var job = new NudgeJobData
                 {
-                    var extraJob = new NudgeJobData { transform = job.transform };
-                    PrepareNudgeVertices(device, extraMesh.data, out extraJob.headSrc, out extraJob.headDst, out extraJob.headCount);
-                    renderTreeManager.jobManager.Add(ref extraJob);
-                    extraMesh = extraMesh.next;
-                }
-            }
+                    transform = nudgeTransform,
+                    keepZ = renderTreeManager.isFlat ? 1 : 0,
+                    vertStride = (int)device.vertexStride,
+                };
 
-            k_NudgeVerticesMarker.End();
-            return true;
+                if (renderData.headMesh != null)
+                    PrepareNudgeVertices(device, renderData.headMesh,
+                        out job.headSrc, out job.headDst, out job.headCount);
+
+                if (renderData.tailMesh != null)
+                    PrepareNudgeVertices(device, renderData.tailMesh,
+                        out job.tailSrc, out job.tailDst, out job.tailCount);
+
+                renderTreeManager.jobManager.Add(ref job);
+
+                if (renderData.hasExtraMeshes)
+                {
+                    ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
+                    BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
+                    while (extraMesh != null)
+                    {
+                        var extraJob = new NudgeJobData
+                        {
+                            transform = job.transform,
+                            keepZ = job.keepZ,
+                            vertStride = job.vertStride,
+                        };
+                        PrepareNudgeVertices(device, extraMesh.data,
+                            out extraJob.headSrc, out extraJob.headDst, out extraJob.headCount);
+                        renderTreeManager.jobManager.Add(ref extraJob);
+                        extraMesh = extraMesh.next;
+                    }
+                }
+
+                return true;
+            }
         }
 
-        static unsafe void PrepareNudgeVertices(UIRenderDevice device, MeshHandle mesh, out IntPtr src, out IntPtr dst, out int count)
+        static void PrepareNudgeVertices(UIRenderDevice device, MeshHandle mesh,
+            out IntPtr src, out IntPtr dst, out int count)
         {
             int vertCount = (int)mesh.allocVerts.size;
-            NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
-            NativeSlice<Vertex> newVerts;
-            device.Update(mesh, (uint)vertCount, out newVerts);
+            RawSlice oldSlice = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
+            device.Update(mesh, (uint)vertCount, out RawSlice newSlice);
 
-            src = (IntPtr)oldVerts.GetUnsafePtr();
-            dst = (IntPtr)newVerts.GetUnsafePtr();
+            src = oldSlice.GetUnsafeReadOnlyPtr();
+            dst = newSlice.GetUnsafePtr();
             count = vertCount;
         }
 

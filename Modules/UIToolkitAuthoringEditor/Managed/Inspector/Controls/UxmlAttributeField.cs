@@ -126,6 +126,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             {
                 m_Bindable = bindable;
                 child.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                if (child is PropertyField propertyField)
+                    propertyField.reset += m_Decorator.OnPropertyFieldReset;
             }
         }
 
@@ -134,6 +136,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             if (m_Bindable == child)
             {
                 child.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                if (child is PropertyField propertyField)
+                    propertyField.reset -= m_Decorator.OnPropertyFieldReset;
                 m_Bindable = null;
                 if (m_IsPropertyBoundToBindable)
                 {
@@ -149,6 +153,10 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             m_Decorator.boundProperty = evt.bindProperty;
             m_Decorator.boundField = evt.elementTarget;
             m_IsPropertyBoundToBindable = true;
+
+            // boundProperty is assigned after PropertyField.reset fires during the initial bind,
+            // so OnPropertyFieldReset silently aborts on first dispatch. Call it here to ensure
+            // the ListView handlers are always wired up.
             m_Decorator.OnPropertyFieldReset();
         }
     }
@@ -380,9 +388,9 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
                             this);
 
 
-                        menu.AppendAction(k_RemoveBindingText, (a) => {
-                            var cmd = new RemoveBindingCommand(context.element, bindingPath);
-                            cmd.Execute();
+                        menu.AppendAction(k_RemoveBindingText, (a) =>
+                        {
+                            RemoveBindingCommand.Execute(CommandSources.Inspector, context.element, bindingPath);
                             context.rootSerializedObject.UpdateIfRequiredOrScript();
                             ScheduleRefresh();
                         }, (a) => DropdownMenuAction.Status.Normal, this);
@@ -432,7 +440,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         if (!result.success)
             return;
 
-        var cmd = new UnsetAttributeCommand(context.editedVisualTreeAsset,
+        UnsetAttributeCommand.Execute(CommandSources.Inspector, context.editedVisualTreeAsset,
             result.uxmlAsset,
             result.serializedData as UnityEngine.UIElements.UxmlSerializedData,
             boundAttributeDescription,
@@ -440,8 +448,6 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             GetFullBindingPath(),
             context.isInTemplateInstance,
             true);
-
-        cmd.Execute();
     }
 
     readonly record struct UnsetAllAttributesContext(
@@ -543,15 +549,13 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         if (!resolvedContext.success)
             return;
 
-        var cmd = new UnsetAllAttributesCommand(context.editedVisualTreeAsset,
+        UnsetAllAttributesCommand.Execute(CommandSources.Inspector, context.editedVisualTreeAsset,
             resolvedContext.attributesUxmlOwner,
             resolvedContext.attributesSerializedData,
             resolvedContext.description,
             context.element,
             context.isInTemplateInstance,
             resolvedContext.ignoredAttributeNames);
-
-        cmd.Execute();
     }
 
     void UpdateBoundAttribute()

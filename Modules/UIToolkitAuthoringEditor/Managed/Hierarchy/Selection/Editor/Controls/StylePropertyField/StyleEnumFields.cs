@@ -259,7 +259,7 @@ namespace Unity.UIToolkit.Editor
     [UxmlElement]
     internal partial class SliceTypeStyleEnumField : StyleEnumField<SliceType>
     {
-        public SliceTypeStyleEnumField()
+        public SliceTypeStyleEnumField() : base(true)
         {
             valueField.SetTooltipForEnumValue(SliceType.Sliced, "Fill the slices by stretching the center and sides.");
             valueField.SetTooltipForEnumValue(SliceType.Tiled, "Fill the slices by tiling the center and sides. Image must be imported as a Sprite (2D and UI) and have Mesh Type set to Full Rect.");

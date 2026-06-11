@@ -10,7 +10,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         /// <summary>
         /// Internal buffer used to marshal results efficiently from the native engine.

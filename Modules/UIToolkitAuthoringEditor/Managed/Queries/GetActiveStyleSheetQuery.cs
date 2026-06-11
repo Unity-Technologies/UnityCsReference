@@ -15,7 +15,7 @@ class GetActiveStyleSheetQuery : Command<GetActiveStyleSheetQuery>
         try
         {
             using var command = GetPooled();
-            UICommandQueue.EnqueueCommand(command);
+            UICommandQueue.Execute(command);
         }
         finally
         {
@@ -37,6 +37,12 @@ class GetActiveStyleSheetQuery : Command<GetActiveStyleSheetQuery>
             cmd.Source = source;
             cmd.Payload = ss;
             return cmd;
+        }
+
+        public static void Execute(object source, StyleSheet ss)
+        {
+            using var command = GetPooled(source, ss);
+            UICommandQueue.Execute(command);
         }
 
         public StyleSheet Payload { get; private set; }

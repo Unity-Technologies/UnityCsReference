@@ -13,6 +13,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.HierarchyV2;
+using Debug = UnityEngine.Debug;
 
 namespace Unity.Hierarchy
 {
@@ -93,6 +94,15 @@ namespace Unity.Hierarchy
         VisualElement m_StyleContainer;
         IVisualElementScheduledItem m_ScheduledItem;
         int m_LastMouseUpSelectionIndex;
+        // Rejects the spurious same-frame second ClickEvent from PostDispatch on the same foldout.
+        int m_LastFoldoutFrame = -1;
+        HierarchyNode m_LastFoldoutNode = HierarchyNode.Null;
+
+        // Tracks the in-flight animation so same-node clicks can reverse instead of restarting.
+        // m_AnimatingExpanding is the target direction — needed because deferred collapse leaves
+        // the data flag set, so the data state can't tell us where the animation is heading.
+        HierarchyNode m_AnimatingNode = HierarchyNode.Null;
+        bool m_AnimatingExpanding;
         internal bool m_IsRenamingItem => m_RenamingItem != null;
         HierarchyViewItem m_RenamingItem;
         internal int m_RenameDelayMs;
@@ -245,7 +255,11 @@ namespace Unity.Hierarchy
         public string Filter
         {
             get => m_HierarchyViewModel.Query.ToString();
-            set => m_HierarchyViewModel.SetQuery(value);
+            set
+            {
+                m_CollectionView.animation?.SkipAnimation();
+                m_HierarchyViewModel.SetQuery(value);
+            }
         }
 
         /// <summary>
@@ -338,6 +352,8 @@ namespace Unity.Hierarchy
                 reorderable = true,
                 itemsSource = null
             };
+            m_CollectionView.animation = new CollectionViewClipAnimation();
+            m_CollectionView.animationCompleted += OnCollectionViewAnimationCompleted;
 
             m_NameColumn = new HierarchyViewColumnName(this);
             m_NavigateColumn = new HierarchyViewColumnNavigate(this);
@@ -395,6 +411,8 @@ namespace Unity.Hierarchy
         {
             if (m_Hierarchy == hierarchy)
                 return;
+
+            m_CollectionView.animation?.SkipAnimation();
 
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetSourceHierarchy(hierarchy={hierarchy?.GetHashCode():X}, flags={defaultFlags})");
 
@@ -1692,7 +1710,7 @@ namespace Unity.Hierarchy
 
         void OnUnbindItem(HierarchyViewItem element)
         {
-            element.ExpandedStateChanged -= SetExpandedState;
+            element.ExpandedStateChanged -= OnExpandedStateChanged;
         }
 
         void OnHandlerCreated(HierarchyNodeTypeHandlerBase handler)
@@ -1715,22 +1733,176 @@ namespace Unity.Hierarchy
 
         void OnBindItem(HierarchyViewItem item)
         {
-            item.ExpandedStateChanged += SetExpandedState;
+            item.ExpandedStateChanged += OnExpandedStateChanged;
         }
 
-        void SetExpandedState(in HierarchyNode node, bool isExpanded, bool recurse)
+        void OnExpandedStateChanged(in HierarchyNode node, bool isExpanded, bool recurse)
+        {
+            if (m_LastFoldoutFrame == Time.frameCount && m_LastFoldoutNode.Equals(node))
+                return;
+
+            m_LastFoldoutFrame = Time.frameCount;
+            m_LastFoldoutNode = node;
+
+            SetExpandedState(in node, isExpanded, recurse);
+        }
+
+        internal void SetExpandedState(in HierarchyNode node, bool isExpanded, bool recurse)
+        {
+            if (m_CollectionView.animation == null)
+            {
+                ApplyExpandedState(in node, isExpanded, recurse);
+                return;
+            }
+
+            // Drop same-direction requests during an in-flight animation: falling through would
+            // SkipAnimation → fire the deferred ClearFlags mid-Notify and corrupt the batch.
+            if (m_CollectionView.animation is { isAnimating: true }
+                && m_AnimatingNode.Equals(node)
+                && m_AnimatingExpanding == isExpanded)
+                return;
+
+            // Opposite-direction click on the same foldout: reverse the animator in place.
+            if (m_CollectionView.animation is { isAnimating: true } && m_AnimatingNode.Equals(node))
+            {
+                var parentIndex = m_HierarchyViewModel.IndexOf(in node);
+                if (parentIndex >= 0)
+                {
+                    var visibleChildCount = GetVisibleDescendantCount(in node);
+                    if (visibleChildCount > 0)
+                    {
+                        var reverseInfo = new ItemAnimationInfo
+                        {
+                            firstIndex = parentIndex + 1,
+                            count = visibleChildCount,
+                            itemHeight = k_ItemHeight,
+                            isAppearing = isExpanded,
+                        };
+
+                        var nodeCopy = node;
+                        Action onReverseComplete = isExpanded
+                            ? null
+                            : () =>
+                            {
+                                m_HierarchyViewModel.ClearFlags(in nodeCopy, HierarchyNodeFlags.Expanded);
+                                Update();
+                                UpdateListView();
+                            };
+
+                        if (m_CollectionView.TryReverseAnimation(reverseInfo, onReverseComplete))
+                        {
+                            m_AnimatingExpanding = isExpanded;
+                            return;
+                        }
+                    }
+                }
+            }
+
+            Debug.Assert(m_AnimatingNode.Equals(HierarchyNode.Null) || !m_AnimatingNode.Equals(node));
+
+            if (isExpanded)
+            {
+                m_CollectionView.PrepareBindWindowForAnimation();
+
+                if (recurse)
+                    m_HierarchyViewModel.SetFlagsRecursive(in node, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                else
+                    m_HierarchyViewModel.SetFlags(in node, HierarchyNodeFlags.Expanded);
+                Update();
+
+                var parentIndex = m_HierarchyViewModel.IndexOf(in node);
+                if (parentIndex < 0)
+                {
+                    m_CollectionView.ClearAnimationBindWindow();
+                    return;
+                }
+
+                var visibleChildCount = GetVisibleDescendantCount(in node);
+                if (visibleChildCount <= 0)
+                {
+                    m_CollectionView.ClearAnimationBindWindow();
+                    return;
+                }
+
+                if (m_CollectionView.IsStickyPinned(parentIndex))
+                {
+                    m_CollectionView.animation?.SkipAnimation();
+                    m_CollectionView.RefreshItems();
+                    return;
+                }
+
+                var info = new ItemAnimationInfo
+                {
+                    firstIndex = parentIndex + 1,
+                    count = visibleChildCount,
+                    itemHeight = k_ItemHeight,
+                    isAppearing = true,
+                };
+
+                m_CollectionView.NotifyItemsAppearing(info);
+                UpdateListView();
+                EnsureBatchItemsBound(info);
+                m_CollectionView.NotifyItemsAppeared(info);
+                // Tracker set AFTER Notify* — Notify*'s internal SkipAnimation fires
+                // animationCompleted, which would null the tracker we just set.
+                m_AnimatingNode = node;
+                m_AnimatingExpanding = true;
+            }
+            else
+            {
+                var parentIndex = m_HierarchyViewModel.IndexOf(in node);
+                var visibleChildCount = GetVisibleDescendantCount(in node);
+                if (parentIndex < 0 || visibleChildCount <= 0)
+                {
+                    ApplyExpandedState(in node, false, recurse);
+                    return;
+                }
+
+                // If the item is stuck, we collapse immediately to prevent weird UX and match the parity behaviour
+                if (m_CollectionView.IsStickyPinned(parentIndex))
+                {
+                    m_CollectionView.animation?.SkipAnimation();
+                    ApplyExpandedState(in node, false, recurse);
+                    m_CollectionView.RefreshItems();
+                    return;
+                }
+
+                var info = new ItemAnimationInfo
+                {
+                    firstIndex = parentIndex + 1,
+                    count = visibleChildCount,
+                    itemHeight = k_ItemHeight,
+                    isAppearing = false,
+                };
+
+                var nodeCopy = node;
+                m_CollectionView.NotifyItemsDisappearing(info, () =>
+                {
+                    if (recurse)
+                        m_HierarchyViewModel.ClearFlagsRecursive(in nodeCopy, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                    else
+                        m_HierarchyViewModel.ClearFlags(in nodeCopy, HierarchyNodeFlags.Expanded);
+                    Update();
+                    UpdateListView();
+                }, () => EnsureBatchItemsBound(info));
+                m_AnimatingNode = node;
+                m_AnimatingExpanding = false;
+            }
+        }
+
+        void ApplyExpandedState(in HierarchyNode node, bool isExpanded, bool recurse)
         {
             if (isExpanded)
             {
                 if (recurse)
-                    ExpandRecursive(in node, HierarchyTraversalDirection.Children);
+                    ExpandRecursive(in node);
                 else
                     Expand(in node);
             }
             else
             {
                 if (recurse)
-                    CollapseRecursive(in node, HierarchyTraversalDirection.Children);
+                    CollapseRecursive(in node);
                 else
                     Collapse(in node);
             }
@@ -1738,6 +1910,9 @@ namespace Unity.Hierarchy
 
         void SetExpandedState(ReadOnlySpan<HierarchyNode> nodes, bool isExpanded, bool recurse)
         {
+            // Multi-node toggles skip animation — affected indices aren't contiguous.
+            m_CollectionView.animation?.SkipAnimation();
+
             if (isExpanded)
             {
                 if (recurse)
@@ -1752,6 +1927,50 @@ namespace Unity.Hierarchy
                 else
                     Collapse(nodes);
             }
+        }
+
+        // Visible descendants only — GetChildrenCountRecursive includes collapsed subtrees.
+        internal int GetVisibleDescendantCount(in HierarchyNode node)
+        {
+            var index = m_HierarchyViewModel.IndexOf(in node);
+            if (index < 0)
+                return 0;
+
+            // GetNextSibling is Null for last-of-parent nodes; walk up the chain to find the
+            // true subtree boundary. Fall back to total count only for the last branch of the tree.
+            var nextIndex = m_HierarchyViewModel.Count;
+            var current = node;
+            while (current != HierarchyNode.Null)
+            {
+                var nextSibling = m_HierarchyViewModel.GetNextSibling(in current);
+                if (nextSibling != HierarchyNode.Null)
+                {
+                    var siblingIndex = m_HierarchyViewModel.IndexOf(in nextSibling);
+                    if (siblingIndex >= 0)
+                    {
+                        nextIndex = siblingIndex;
+                        break;
+                    }
+                }
+                current = m_HierarchyViewModel.GetParent(in current);
+            }
+
+            return Math.Max(0, nextIndex - index - 1);
+        }
+
+        // Force-binds the batch and below range so the animation strategy can shift them.
+        void EnsureBatchItemsBound(ItemAnimationInfo info)
+        {
+            var viewportCount = m_CollectionView.visibleViewportCount;
+            var cappedCount = Math.Min(info.count, viewportCount);
+            m_CollectionView.EnsureItemsBound(info.firstIndex, cappedCount);
+            m_CollectionView.EnsureItemsBound(info.firstIndex + info.count, cappedCount);
+        }
+
+        void OnCollectionViewAnimationCompleted()
+        {
+            m_AnimatingNode = HierarchyNode.Null;
+            m_AnimatingExpanding = false;
         }
 
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]

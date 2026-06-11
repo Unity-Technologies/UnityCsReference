@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsShape::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsShapeDefinition PhysicsShape_GetDefaultDefinition(bool useSettings);
         [NativeMethod(Name = "PhysicsShape::GetDefaultSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetDefaultSurfaceMaterial(bool useSettings);
@@ -17,10 +17,11 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::CreatePolygonShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreatePolygonShape(PhysicsBody body, PolygonGeometry geometry, PhysicsShapeDefinition definition);
         [NativeMethod(Name = "PhysicsShape::CreateCapsuleShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateCapsuleShape(PhysicsBody body, CapsuleGeometry geometry, PhysicsShapeDefinition definition);
         [NativeMethod(Name = "PhysicsShape::CreateSegmentShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateSegmentShape(PhysicsBody body, SegmentGeometry geometry, PhysicsShapeDefinition definition);
-        [NativeMethod(Name = "PhysicsShape::CreateChainSegmentShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateChainSegmenShapet(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition);
+        [NativeMethod(Name = "PhysicsShape::CreateChainSegmentShape", IsThreadSafe = true)] extern internal static PhysicsShape PhysicsShape_CreateChainSegmentShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition);
         [NativeMethod(Name = "PhysicsShape::CreateShapeBatch", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsShape_CreateShapeBatch(PhysicsBody body, PhysicsBuffer spanGeometry, PhysicsShape.ShapeType shapeType, PhysicsShapeDefinition definition, Allocator allocator);
         [NativeMethod(Name = "PhysicsShape::Destroy", IsThreadSafe = true)] extern internal static bool PhysicsShape_Destroy(PhysicsShape shape, bool updateBodyMass, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::DestroyBatch", IsThreadSafe = true)] extern internal static void PhysicsShape_DestroyBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass);
+        [NativeMethod(Name = "PhysicsShape::ApplyBuoyancy", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyBuoyancy(PhysicsBody.BuoyancyInput input, ReadOnlySpan<PhysicsShape> shapes, float deltaTime);
         [NativeMethod(Name = "PhysicsShape::WriteDefinition")] extern internal static void PhysicsShape_WriteDefinition(PhysicsShape shape, PhysicsShapeDefinition definition, bool onlyExtendedProperties);
         [NativeMethod(Name = "PhysicsShape::ReadDefinition")] extern internal static PhysicsShapeDefinition PhysicsShape_ReadDefinition(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsValid(PhysicsShape shape);
@@ -58,14 +59,14 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetContactFilter", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilter PhysicsShape_GetContactFilter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetMoverData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetMoverData(PhysicsShape shape, PhysicsShape.MoverData moverData);
         [NativeMethod(Name = "PhysicsShape::GetMoverData", IsThreadSafe = true)] extern internal static PhysicsShape.MoverData PhysicsShape_GetMoverData(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::ApplyWind", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyWind(PhysicsShape shape, Vector2 force, float drag, float lift, bool wake);
+        [NativeMethod(Name = "PhysicsShape::ApplyWind", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyWind(PhysicsBody.WindInput input, ReadOnlySpan<PhysicsShape> shapes);
         [NativeMethod(Name = "PhysicsShape::SetTriggerEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetTriggerEvents(PhysicsShape shape, bool enableContactEvents);
         [NativeMethod(Name = "PhysicsShape::GetTriggerEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetTriggerEvents(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactEvents(PhysicsShape shape, bool enableContactEvents);
         [NativeMethod(Name = "PhysicsShape::GetContactEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetContactEvents(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetHitEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetHitEvents(PhysicsShape shape, bool enableHitEvents);
         [NativeMethod(Name = "PhysicsShape::GetHitEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetHitEvents(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetContactFilterCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContacFiltertCallbacks(PhysicsShape shape, bool flag);
+        [NativeMethod(Name = "PhysicsShape::SetContactFilterCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactFilterCallbacks(PhysicsShape shape, bool flag);
         [NativeMethod(Name = "PhysicsShape::GetContactFilterCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetContactFilterCallbacks(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetPreSolveCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetPreSolveCallbacks(PhysicsShape shape, bool flag);
         [NativeMethod(Name = "PhysicsShape::GetPreSolveCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetPreSolveCallbacks(PhysicsShape shape);

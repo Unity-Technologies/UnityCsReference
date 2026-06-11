@@ -16,23 +16,21 @@ namespace UnityEditor.Build
     /// Provides access to the build history generated during builds.
     /// </summary>
     /// <remarks>
-    /// Unity stores the metadata files for Player and Content Directory builds in a sub-folder of the build history folder.
+    /// For each Player or Content Directory build, Unity creates a *build report directory* inside the build history. This directory holds the
+    /// <see cref="Build.Reporting.BuildReport"/> file and the supporting data captured during that build, including profiling information and
+    /// type-usage information. The precise content is influenced by the type of build, build options
+    /// and certain settings in the **Preferences** > **Build Pipeline** window.
     ///
     /// By default, build history is stored in `Library/BuildHistory`. You can change this location, for example
     /// to consolidate builds from multiple machines into a shared build history folder.
     ///
-    /// The build metadata folder is populated with files with information about various aspects of the build
-    /// such as the <see cref="Build.Reporting.BuildReport"/>, profiling information, and type-usage information.
-    /// The precise content is influenced by the type of build, build options
-    /// and certain settings in the **Preferences** > **Build Pipeline** window.
-    ///
     /// Unity assigns each build a unique GUID, which the `BuildHistory` API uses to precisely identify each build.
     /// For more information, refer to <see cref="BuildReportSummary.BuildSessionGUID"/>.
     ///
-    /// The files in the build history folder are for development and debugging purposes only. They are not meant to be shipped along with
+    /// The files in the build history are for development and debugging purposes only. They are not meant to be shipped along with
     /// the content and are not required by the runtime. Deleting build history does not impact the built content or the ability
     /// to run the Player, but can limit the ability to analyze or debug the results of the build. Incorporate the collection
-    /// of the build history directory content into automated build pipelines.
+    /// of the build history content into automated build pipelines.
     ///
     /// Retention Policy
     ///
@@ -51,7 +49,7 @@ namespace UnityEditor.Build
     /// If the Editor process terminates during a build, the build remains in the history with its initial
     /// `Pending` result.
     ///
-    /// Some BuildHistory methods, for example <see cref="TryGetMetadataPath"/> and
+    /// Some BuildHistory methods, for example <see cref="TryGetBuildReportDirectory"/> and
     /// <see cref="TryGetFilePath"/>, are available for use in the
     /// <see cref="IPreprocessBuildWithReport"/> and <see cref="IPostprocessBuildWithReport"/> build callbacks.
     ///
@@ -71,7 +69,7 @@ namespace UnityEditor.Build
         // ==================== Configuration Properties ====================
 
         /// <summary>
-        /// The default metadata directory path, regardless of the current build history directory.
+        /// The default build history root directory path, regardless of the current build history directory.
         /// </summary>
         public static string DefaultRootDirectory
         {
@@ -123,21 +121,25 @@ namespace UnityEditor.Build
         static string s_LastPushedDirectory;
 
         /// <summary>
-        /// Returns the path in the build history created by the most recent build.
+        /// Returns the build report directory of the most recent build.
         /// </summary>
-        /// <returns>The path of the most recent build metadata directory, or an empty string if the build history is empty.</returns>
-        public static string LatestBuildDirectory
+        /// <returns>The path of the most recent build report directory, or an empty string if the build history is empty.</returns>
+        public static string LatestBuildReportDirectory
         {
             get
             {
                 if (TryGetLatestCompletedBuild(out GUID guid) &&
-                    TryGetMetadataPath(guid, out string metadataPath))
+                    TryGetBuildReportDirectory(guid, out string directory))
                 {
-                    return metadataPath;
+                    return directory;
                 }
                 return string.Empty;
             }
         }
+
+        /// <undoc/>
+        [Obsolete("LatestBuildDirectory has been renamed to LatestBuildReportDirectory to disambiguate from the build output directory. (UnityUpgradable) -> LatestBuildReportDirectory", true)]
+        public static string LatestBuildDirectory => LatestBuildReportDirectory;
 
         // The most recent build that has finished (any non-Pending result). Distinct from
         // TryGetLatestBuild, which includes the in-progress build during preprocess callbacks.
@@ -238,16 +240,25 @@ namespace UnityEditor.Build
         }
 
         /// <summary>
-        /// Attempts to get the metadata directory path for a specific build.
+        /// Attempts to get the build report directory for a specific build.
         /// </summary>
         /// <param name="buildSessionGuid">The unique session GUID of the build to look up.</param>
-        /// <param name="metadataPath">When this method returns, contains the absolute path to the build metadata directory.</param>
+        /// <param name="directory">When this method returns, contains the absolute path to the build report directory.</param>
         /// <returns>`true` if the build is tracked in the build history; otherwise `false`.</returns>
-        /// <remarks>The metadata directory is guaranteed to exist on disk if this method returns `true`.
-        /// Use this to locate files written during the build, or to write additional metadata alongside the build output.</remarks>
-        public static bool TryGetMetadataPath(GUID buildSessionGuid, out string metadataPath)
+        /// <remarks>The build report directory holds the <see cref="Build.Reporting.BuildReport"/> file and the
+        /// supporting data captured during that build. The directory is guaranteed to exist on disk if this method
+        /// returns `true`. Use this to locate files written during the build, or to write additional files alongside
+        /// the build report.</remarks>
+        public static bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory)
         {
-            return BuildHistoryState.Instance.TryGetMetadataPath(buildSessionGuid, out metadataPath);
+            return BuildHistoryState.Instance.TryGetBuildReportDirectory(buildSessionGuid, out directory);
+        }
+
+        /// <undoc/>
+        [Obsolete("TryGetMetadataPath has been renamed to TryGetBuildReportDirectory. (UnityUpgradable) -> TryGetBuildReportDirectory(*)", true)]
+        public static bool TryGetMetadataPath(GUID buildSessionGuid, out string directory)
+        {
+            return TryGetBuildReportDirectory(buildSessionGuid, out directory);
         }
 
         // ==================== Query API - Search Operations ====================
@@ -365,16 +376,16 @@ namespace UnityEditor.Build
         }
 
         /// <summary>
-        /// Determine the metadata folder path and ensures the root BuildHistory directory exists.
+        /// Determine the build report directory path and ensure the root BuildHistory directory exists.
         /// This can happen very early in a build, as soon as the unique build session guid has been generated.
-        /// The folder itself is not created here; it is created later in BeginBuildTracking
-        /// when we are ready to write the initial BuildReportSummary.json is written.
+        /// The directory itself is not created here; it is created later in BeginBuildTracking
+        /// when we are ready to write the initial BuildReportSummary.json.
         /// </summary>
         /// <param name="buildSessionGuidString">The build session GUID as a string.</param>
         /// <param name="buildStartTimeTicks">Official build start time in UTC ticks
         /// (System.DateTime.Ticks / C++ DateTime::ticks).</param>
         [RequiredByNativeCode]
-        internal static string ReserveBuildMetadataPath(string buildSessionGuidString, long buildStartTimeTicks)
+        internal static string ReserveBuildReportDirectory(string buildSessionGuidString, long buildStartTimeTicks)
         {
             try
             {
@@ -388,19 +399,19 @@ namespace UnityEditor.Build
 
                 var buildSessionGuid = new GUID(buildSessionGuidString);
                 string folderName = FormatBuildHistoryFolderName(buildSessionGuid, startTime);
-                string metadataLocation = rootDirectory + "/" + folderName;
+                string directoryPath = rootDirectory + "/" + folderName;
 
-                if (Directory.Exists(metadataLocation))
+                if (Directory.Exists(directoryPath))
                 {
-                    Debug.LogError($"Build metadata folder already exists at: {metadataLocation}. The folder name should be unique.");
+                    Debug.LogError($"Build report directory already exists at: {directoryPath}. The folder name should be unique.");
                     return "";
                 }
 
-                return metadataLocation;
+                return directoryPath;
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"BuildHistory.ReserveBuildMetadataPath failed: {e.Message}");
+                Debug.LogWarning($"BuildHistory.ReserveBuildReportDirectory failed: {e}");
                 return "";
             }
         }
@@ -409,7 +420,7 @@ namespace UnityEditor.Build
         /// Called early in a build after the BuildReport is initialized with info about the planned build.
         /// Writes an initial BuildReportSummary.json with BuildResult.Pending
         /// and registers the build in BuildHistoryState so that API methods
-        /// like TryGetMetadataPath() and TryGetFilePath() work during the build.
+        /// like TryGetBuildReportDirectory() and TryGetFilePath() work during the build.
         /// </summary>
         [RequiredByNativeCode]
         internal static void BeginBuildTracking(BuildReport report, string metadataPath)
@@ -442,11 +453,14 @@ namespace UnityEditor.Build
                 if (report == null)
                     return;
 
-                if (!BuildHistoryState.Instance.TryGetMetadataPath(report.summary.buildSessionGuid, out string metadataPath))
+                if (!BuildHistoryState.Instance.TryGetBuildReportDirectory(report.summary.buildSessionGuid, out string metadataPath))
                     return;
 
                 // Rewrite BuildReportSummary.json with the final build state
                 BuildReportSummary.Save(report, metadataPath);
+
+                if (report.summary.buildType == BuildType.Player)
+                    TryImportPlayerBuildProfile(metadataPath);
 
                 // Update the cached state with the final summary
                 BuildHistoryState.Instance.AddOrUpdateBuild(metadataPath);
@@ -454,6 +468,36 @@ namespace UnityEditor.Build
             catch (System.Exception e)
             {
                 Debug.LogWarning($"BuildHistory.FinalizeBuild failed: {e.Message}");
+            }
+        }
+
+        // The BeeDriver writes the player build trace-event profile to this fixed location
+        const string k_PlayerBuildProfileSourcePath = "Library/Bee/buildreport.json";
+
+        // We use a different name in the build report directory, to avoid confusion
+        // with the primary BuildReport file.
+        internal const string PlayerBuildProfileFileName = "BuildPlayerTEP.json";
+
+        // Copy player build profile into the build report directory.
+        // The original file is left in place, for backward compatibility with
+        // tools and CI pipelines that still consume the legacy location.
+        static void TryImportPlayerBuildProfile(string buildReportDirectory)
+        {
+            if (!File.Exists(k_PlayerBuildProfileSourcePath))
+            {
+                Debug.LogWarning($"Player build profile not found at '{k_PlayerBuildProfileSourcePath}'; " +
+                    $"{PlayerBuildProfileFileName} will not be tracked in BuildHistory for this build.");
+                return;
+            }
+
+            string destPath = Path.Combine(buildReportDirectory, PlayerBuildProfileFileName);
+            try
+            {
+                File.Copy(k_PlayerBuildProfileSourcePath, destPath, overwrite: true);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to copy player build profile to '{destPath}': {e.Message}");
             }
         }
 

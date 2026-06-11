@@ -337,7 +337,7 @@ namespace UnityEngine
 
         /// <undoc/>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Plane lhs, Plane rhs) => !(lhs == rhs);
+        public static bool operator!=(Plane lhs, Plane rhs) => !(lhs.m_Normal == rhs.m_Normal && lhs.m_Distance == rhs.m_Distance);
 
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

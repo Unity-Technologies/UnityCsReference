@@ -109,9 +109,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             var style = SharedStyles.Foldout;
             Vector2 textSize = style.CalcSize(content);
-            Rect rect = GUILayoutUtility.GetRect(content, style, GUILayout.Width(textSize.x)); // Ensure width matches arrow + label, so we get the correct hitbox for opening the foldout
+            // Reserve the full available width for layout so parent containers don't shrink horizontally
+            // when the foldout is the only visible child, but limit the foldout's hit area to just the
+            // arrow + label so clicks in the empty space to the right don't toggle it.
+            Rect fullRect = GUILayoutUtility.GetRect(content, style, GUILayout.ExpandWidth(true));
+            Rect hitRect = new Rect(fullRect.x, fullRect.y, textSize.x, fullRect.height);
 
-            return EditorGUI.Foldout(rect, toggle, content, true, style);
+            return EditorGUI.Foldout(hitRect, toggle, content, true, style);
         }
 
         public static void ToolbarDropdownList(DropdownItem[] items, int selectionIndex,

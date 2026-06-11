@@ -13,7 +13,7 @@ namespace Unity.GraphToolkit.Editor
     /// UI for a <see cref="InputOutputPortsNodeModel"/>.
     /// </summary>
     [UnityRestricted]
-    internal class CollapsibleInOutNodeView : NodeView
+    internal class CollapsibleInOutNodeView : NodeView, IAnimatableView
     {
         /// <summary>
         /// The name of the title container with an icon.
@@ -246,6 +246,40 @@ namespace Unity.GraphToolkit.Editor
             if(EditableTitlePart != null && !EditableTitlePart.IsLayoutValid())
                 return false;
             return visible && base.IsReadyForCulling();
+        }
+
+        public virtual void BeginAnimating(float animationSpeed)
+        {
+            var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.PlayAnimation(animationSpeed);
+        }
+
+        public virtual void StopAnimating()
+        {
+            var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+            part.StopAnimation();
+        }
+
+        public virtual void AnimationUpdate(double deltaTime)
+        {
+            var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+            part.UpdateAnimation(deltaTime);
+        }
+
+        public virtual void SetFillAmount(float percentage)
+        {
+            var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
+            if (part == null)
+                return;
+
+            part.SetFillAmount(percentage);
         }
     }
 }

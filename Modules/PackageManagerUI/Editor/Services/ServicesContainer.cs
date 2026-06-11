@@ -174,7 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy));
             Register(new SampleFactory(ioProxy, upmCache, sampleCache, packageDatabase));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
-            Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator));
+            Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator, applicationProxy));
             Register(new ModalManager(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient));
 
             // We need to save some services as serialized members for them to survive domain reload properly

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.Profiling;
 using UnityEditor.UIElements.Debugger;
 using UnityEditorInternal;
@@ -19,6 +20,10 @@ namespace UnityEditor.UIElements
     /// </summary>
     internal static class UIToolkitProfilerToolbarHelpers
     {
+        // Sentinel rendered in cells (and totals) when a column has no meaningful value for the row
+        // (panel-only column on a batch row, missing PANEL_METRICS chunk, sums that don't compose).
+        public const string NoDataCell = "—";
+
         public static readonly string OpenFrameDebuggerLabel = L10n.Tr("Open Frame Debugger");
         public static readonly string OpenFrameDebuggerTooltip = L10n.Tr("Opens the Frame Debugger window to inspect draw calls.");
         public static readonly string OpenUiToolkitDebuggerLabel = L10n.Tr("Open UI Toolkit Debugger");
@@ -97,7 +102,6 @@ namespace UnityEditor.UIElements
             if (title != null)
             {
                 title.text = column.title;
-                title.tooltip = tooltipText;
             }
 
             if (!string.IsNullOrEmpty(column.title))
@@ -119,7 +123,38 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            headerContent.parent.tooltip = tooltipText;
+            // Hang the tooltip on the framework column header so it covers the title row AND the
+            // totals cell (when wrapped by MultiColumnTreeViewWithTotal). Walking ancestors instead
+            // of a fixed parent-hop keeps this wrapper-agnostic.
+            var headerColumn = headerContent.GetFirstAncestorOfType<MultiColumnHeaderColumn>();
+            if (headerColumn != null)
+                headerColumn.tooltip = tooltipText;
+        }
+
+        /// <summary>
+        /// Wraps <paramref name="content"/> in a stack-positioned host that overlays a centered
+        /// "no data" <see cref="Label"/> on top. Callers toggle <paramref name="overlay"/>'s
+        /// <see cref="IStyle.display"/> to show/hide the empty-state message. Layered as an overlay
+        /// because <see cref="BaseTreeView"/> has no <c>makeNoneElement</c>.
+        /// </summary>
+        public static VisualElement WrapWithEmptyOverlay(VisualElement content, string hostName, string emptyMessage, out Label overlay)
+        {
+            var host = new VisualElement { name = hostName };
+            host.style.flexGrow = 1;
+            host.Add(content);
+
+            overlay = new Label(emptyMessage)
+            {
+                pickingMode = PickingMode.Ignore,
+                style =
+                {
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    whiteSpace = WhiteSpace.Normal,
+                },
+            };
+            overlay.StretchToParentSize();
+            host.Add(overlay);
+            return host;
         }
 
         /// <summary>
@@ -127,9 +162,29 @@ namespace UnityEditor.UIElements
         /// finally to the raw EntityId. Used by both UI Toolkit profiler details views.
         /// </summary>
         public static string GetPanelDisplayName(RawFrameDataView frameData, EntityId entityId)
+            => GetPanelDisplayName(frameData, entityId, out _);
+
+        /// <summary>
+        /// Same as <see cref="GetPanelDisplayName(RawFrameDataView, EntityId)"/> but also resolves the
+        /// object's managed <see cref="Type"/> in the same pass, for callers that need a type icon.
+        /// The type comes from the live object, and only for current-session frames
+        /// (<see cref="IsCurrentEditorSessionFrame"/>): captured / cross-session frames don't record a
+        /// usable native type for IPanelComponent owners (the recorded native type id is 0), so type
+        /// is left null and the caller is expected to fall back.
+        /// </summary>
+        public static string GetPanelDisplayName(RawFrameDataView frameData, EntityId entityId, out Type type)
         {
+            type = null;
             if (entityId == EntityId.None)
                 return L10n.Tr("(Unknown)");
+
+            // The icon type comes from the live object, resolved only for current-session frames:
+            // captured or cross-session frames would map the EntityId to an unrelated object in this
+            // editor (and don't record a usable native type), so type stays null and bind falls back.
+            var obj = IsCurrentEditorSessionFrame ? InternalEditorUtility.GetObjectFromEntityId(entityId) : null;
+            if (obj != null)
+                type = obj.GetType();
+
             if (frameData != null && frameData.GetUnityObjectInfo(entityId, out var info))
             {
                 if (!string.IsNullOrEmpty(info.name))
@@ -139,11 +194,28 @@ namespace UnityEditor.UIElements
                     return typeInfo.name;
             }
             // Fallback to EditorUtility for editor-only objects that don't show up in frame data.
-            var obj = InternalEditorUtility.GetObjectFromEntityId(entityId);
             if (obj != null)
                 return string.IsNullOrEmpty(obj.name) ? obj.GetType().Name : obj.name;
             return EntityId.ToULong(entityId).ToString();
         }
+
+        /// <summary>
+        /// Whether the profiler frame currently loaded into the UI Toolkit details views belongs to
+        /// this editor session. The views share one selected frame (loaded through
+        /// PanelComponentsPaneController.LoadFrameMetadata, which calls
+        /// <see cref="UpdateCurrentEditorSession"/>), so name/icon resolution and ping logic gate
+        /// live-object lookups on this single flag. EntityIds from captured or remote-player frames
+        /// resolve against a different session and must not be matched to live editor objects.
+        /// </summary>
+        public static bool IsCurrentEditorSessionFrame { get; private set; }
+
+        /// <summary>
+        /// Refreshes <see cref="IsCurrentEditorSessionFrame"/> for the frame being loaded. Pass null
+        /// or an invalid view to mark "no current-session frame".
+        /// </summary>
+        public static void UpdateCurrentEditorSession(RawFrameDataView frameData)
+            => IsCurrentEditorSessionFrame =
+                frameData != null && frameData.valid && ProfilerDriver.FrameDataBelongsToCurrentEditorSession(frameData);
 
         /// <summary>Standard ping behavior: focuses the EditorWindow when applicable, otherwise selects+pings.</summary>
         public static void PingEntity(EntityId id)

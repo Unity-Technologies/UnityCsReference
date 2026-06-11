@@ -57,8 +57,13 @@ namespace Unity.UIToolkit.Editor
                     return TryEditPerElementClip(window, panelRenderer, clipOwner, clipOwner.resolvedStyle.unityAnimationClip, out newSelection);
             }
 
+            // In stage there is no PanelRenderer / Animator chain - surface per-element clip
+            // onboarding directly on the selected element so the AnimationWindow's Create call-to-action stays available.
             if (inStage)
-                return false;
+            {
+                newSelection = VisualElementAnimationSelectionItem.Create(window, null, element, null);
+                return true;
+            }
 
             var rootElement = element.GetFirstAncestorOfType<IPanelComponentRootElement>();
             if (rootElement == null)

@@ -141,6 +141,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             public bool isValidFile;
             public PackageInformation info;
             public List<PackageDependency> dependencies;
+
+            [System.NonSerialized]
+            public readonly Dictionary<string, PropertyErrorsAndWarnings> propertiesErrorsAndWarnings = new Dictionary<string, PropertyErrorsAndWarnings>();
+
+            [System.NonSerialized]
+            public bool inspectorHasErrors = false;
         }
 
         PackageManifestState packageState => extraDataTarget as PackageManifestState;
@@ -198,9 +204,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             public List<string> m_ErrorMessages = new List<string>();
             public List<string> m_WarningMessages = new List<string>();
         }
-
-        private readonly Dictionary<string, PropertyErrorsAndWarnings> m_PropertiesErrorsAndWarnings = new Dictionary<string, PropertyErrorsAndWarnings>();
-        private bool m_inspectorHasErrors = false;
 
         ReorderableList m_DependenciesList;
 
@@ -268,8 +271,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             //Ensure UIElements handles the IMGUI container with margins
             alwaysAllowExpansion = true;
 
-            m_inspectorHasErrors = false;
-            m_PropertiesErrorsAndWarnings.Clear();
+            if (packageState != null)
+            {
+                packageState.inspectorHasErrors = false;
+                packageState.propertiesErrorsAndWarnings.Clear();
+            }
 
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
@@ -310,7 +316,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
-            ReadPackageManifest(targets[targetIndex], (PackageManifestState)extraData);
+            var data = (PackageManifestState)extraData;
+            ReadPackageManifest(targets[targetIndex], data);
+            data.propertiesErrorsAndWarnings.Clear();
+            data.inspectorHasErrors = false;
         }
 
         private void AddDependencyElement(ReorderableList list)
@@ -371,17 +380,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool CanApply()
         {
-            return !m_inspectorHasErrors;
+            return !packageState.inspectorHasErrors;
         }
 
         protected override void Apply()
         {
             base.Apply();
 
-            if (m_inspectorHasErrors)
+            if (packageState.inspectorHasErrors)
             {
                 var errors = new List<string>();
-                foreach (var entry in m_PropertiesErrorsAndWarnings)
+                foreach (var entry in packageState.propertiesErrorsAndWarnings)
                     errors.AddRange(entry.Value.m_ErrorMessages);
                 throw new InvalidOperationException(string.Format(L10n.Tr("The Inspector window contains errors, information can't be saved.\n{0}"), String.Join("\n", errors)));
             }
@@ -402,9 +411,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     RevertButton();
 
                     if (buttonState.changed)
-                        m_PropertiesErrorsAndWarnings.Clear();
+                        packageState.propertiesErrorsAndWarnings.Clear();
                 }
-                using (new EditorGUI.DisabledScope(m_inspectorHasErrors))
+                using (new EditorGUI.DisabledScope(packageState.inspectorHasErrors))
                 {
                     return ApplyButton();
                 }
@@ -413,15 +422,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void OnUndoRedoPerformed()
         {
-            m_inspectorHasErrors = false;
-            m_PropertiesErrorsAndWarnings.Clear();
+            if (packageState != null)
+            {
+                packageState.inspectorHasErrors = false;
+                packageState.propertiesErrorsAndWarnings.Clear();
+            }
         }
 
         private void DoPropertyFieldLayoutErrors(List<string> errorMessages)
         {
             foreach (var err in errorMessages)
                 EditorGUILayout.HelpBox(err, MessageType.Error);
-            m_inspectorHasErrors = m_inspectorHasErrors || errorMessages.Count > 0;
+            packageState.inspectorHasErrors = packageState.inspectorHasErrors || errorMessages.Count > 0;
         }
         private void DoPropertyFieldLayoutWarnings(List<string> warningMessages)
         {
@@ -431,7 +443,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DoPropertyFieldLayoutErrorsAndWarnings(SerializedProperty property)
         {
-            if (m_PropertiesErrorsAndWarnings.TryGetValue(property.propertyPath, out var propertyErrorsAndWarnings))
+            if (packageState.propertiesErrorsAndWarnings.TryGetValue(property.propertyPath, out var propertyErrorsAndWarnings))
             {
                 DoPropertyFieldLayoutErrors(propertyErrorsAndWarnings.m_ErrorMessages);
                 DoPropertyFieldLayoutWarnings(propertyErrorsAndWarnings.m_WarningMessages);
@@ -443,7 +455,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (var propertyState = new EditorGUI.ChangeCheckScope())
             {
                 EditorGUILayout.PropertyField(property, style);
-                if (propertyState.changed || !m_PropertiesErrorsAndWarnings.ContainsKey(property.propertyPath))
+                if (propertyState.changed || !packageState.propertiesErrorsAndWarnings.ContainsKey(property.propertyPath))
                     return true;
             }
             return false;
@@ -523,7 +535,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             EditorGUILayout.TextField(Styles.unityRelease, m_UnityRelease.stringValue);
                         EditorGUI.showMixedValue = false;
 
-                        if (propertiesState.changed || !m_PropertiesErrorsAndWarnings.ContainsKey(m_UnityMajor.propertyPath))
+                        if (propertiesState.changed || !packageState.propertiesErrorsAndWarnings.ContainsKey(m_UnityMajor.propertyPath))
                             ValidateUnityVersion(m_UnityMajor, m_UnityMinor, m_UnityRelease);
                     }
                     DoPropertyFieldLayoutErrorsAndWarnings(m_UnityMajor);
@@ -562,7 +574,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             m_Description.stringValue = EditorGUILayout.TextArea(m_Description.stringValue ?? "",
                             GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
 
-                            if (propertyState.changed || !m_PropertiesErrorsAndWarnings.ContainsKey(m_Description.propertyPath))
+                            if (propertyState.changed || !packageState.propertiesErrorsAndWarnings.ContainsKey(m_Description.propertyPath))
                                 ValidateDescription(m_Description);
                         }
                     }
@@ -587,7 +599,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            m_inspectorHasErrors = false;
+            packageState.inspectorHasErrors = false;
 
             // Package information
             GUILayout.Label(Styles.information, EditorStyles.boldLabel);
@@ -607,7 +619,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (var propertyState = new EditorGUI.ChangeCheckScope())
             {
                 m_DependenciesList.DoLayoutList();
-                if (propertyState.changed || !m_PropertiesErrorsAndWarnings.ContainsKey(m_DependenciesList.serializedProperty.propertyPath))
+                if (propertyState.changed || !packageState.propertiesErrorsAndWarnings.ContainsKey(m_DependenciesList.serializedProperty.propertyPath))
                     ValidateDependenciesList(m_DependenciesList.serializedProperty, m_DependenciesList.count);
             }
             DoPropertyFieldLayoutErrorsAndWarnings(m_DependenciesList.serializedProperty);
@@ -975,7 +987,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ValidateVersionProperty(SerializedProperty version)
         {
             ValidateVersion(version.stringValue, out var propertyErrorsAndWarnings);
-            m_PropertiesErrorsAndWarnings[version.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[version.propertyPath] = propertyErrorsAndWarnings;
         }
 
         private void ValidateUnityVersionEnabled(SerializedProperty unityVersionEnabled)
@@ -983,7 +995,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (!unityVersionEnabled.boolValue)
                 propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a Minimum Unity version."));
-            m_PropertiesErrorsAndWarnings[unityVersionEnabled.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[unityVersionEnabled.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidateUnityVersion(SerializedProperty unityMajor, SerializedProperty unityMinor, SerializedProperty unityRelease)
@@ -999,7 +1011,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Unity Version '{0}'."), unityVersion));
             }
-            m_PropertiesErrorsAndWarnings[unityMajor.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[unityMajor.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidateDependenciesList(SerializedProperty dependencies, int countDependencies)
@@ -1024,7 +1036,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 currIndex++;
             }
-            m_PropertiesErrorsAndWarnings[dependencies.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[dependencies.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal static void ValidateTechnicalName(string technicalName, PackageInfo packageInfo, string assetPath, out PropertyErrorsAndWarnings propertyErrorsAndWarnings)
@@ -1044,7 +1056,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal void ValidateTechnicalNameProperty(SerializedProperty technicalName, PackageInfo packageInfo, string assetPath)
         {
             ValidateTechnicalName(technicalName.stringValue, packageInfo, assetPath, out var propertyErrorsAndWarnings);
-            m_PropertiesErrorsAndWarnings[technicalName.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[technicalName.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidateDisplayName(SerializedProperty displayName)
@@ -1052,7 +1064,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrWhiteSpace(displayName.stringValue) || displayName.stringValue.Trim().Length == 0)
                 propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a Display Name."));
-            m_PropertiesErrorsAndWarnings[displayName.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[displayName.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidateDescription(SerializedProperty description)
@@ -1060,7 +1072,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrWhiteSpace(description.stringValue) || description.stringValue.Trim().Length == 0)
                 propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a package description."));
-            m_PropertiesErrorsAndWarnings[description.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[description.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidateAuthorName(SerializedProperty authorName)
@@ -1068,7 +1080,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrWhiteSpace(authorName.stringValue) || authorName.stringValue.Trim().Length == 0)
                 propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("Package author name should be provided when author field is checked."));
-            m_PropertiesErrorsAndWarnings[authorName.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[authorName.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidatePackageVisibility(SerializedProperty visibility)
@@ -1079,7 +1091,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("This package and all its assets will be hidden by default in the Editor because its visibility is set to 'Always Hidden'."));
             if (packageVisibility == PackageVisibility.AlwaysVisible)
                 propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("This package and all its assets will be visible by default in the Editor because its visibility is set to 'Always Visible'."));
-            m_PropertiesErrorsAndWarnings[visibility.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[visibility.propertyPath] = propertyErrorsAndWarnings;
         }
 
         internal void ValidateUrl(SerializedProperty url)
@@ -1091,7 +1103,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
                     propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("This URL is malformed or invalid '{0}'."), url.stringValue));
             }
-            m_PropertiesErrorsAndWarnings[url.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[url.propertyPath] = propertyErrorsAndWarnings;
         }
         
         internal void ValidateEmail(SerializedProperty email)
@@ -1102,7 +1114,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!s_EmailRegex.IsMatch(email.stringValue))
                     propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("This email format is malformed or invalid '{0}'."), email.stringValue));
             }
-            m_PropertiesErrorsAndWarnings[email.propertyPath] = propertyErrorsAndWarnings;
+            packageState.propertiesErrorsAndWarnings[email.propertyPath] = propertyErrorsAndWarnings;
         }
     }
 }

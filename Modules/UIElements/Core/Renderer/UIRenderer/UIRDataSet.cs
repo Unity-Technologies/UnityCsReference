@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements.UIR
 {
     // This is used to store vertices or indices. We track up to a certain number of dirty ranges. Beyond that point,
     // we track a single range that covers the entire range that has been marked dirty. This class is not thread-safe.
-    class DataSet<T> : IDisposable where T : unmanaged
+    class DataSet : IDisposable
     {
         static readonly MemoryLabel s_CpuMemoryLabel = new(nameof(UIElements), "Renderer.RendererCpuData");
 
@@ -22,11 +22,11 @@ namespace UnityEngine.UIElements.UIR
             public uint count;
         }
 
-        public Utility.GPUBuffer<T> gpuData;
-        public NativeArray<T> cpuData;
+        public readonly Utility.GPUBufferType bufferType;
+        public Utility.GPUBuffer gpuData;
+        public RawArray cpuData;
         public GPUBufferAllocator allocator;
         public List<Range> dirtyRanges;
-        public readonly uint elemStride;
 
         // These track the overall bounds of all dirty ranges added since the last reset.
         uint m_DirtyRangeMin;
@@ -39,16 +39,17 @@ namespace UnityEngine.UIElements.UIR
         public uint dirtyRangeMin => m_DirtyRangeMin;
         public uint dirtyRangeMax => m_DirtyRangeMax;
 
-        public DataSet(Utility.GPUBufferType bufferType, bool mapped, uint totalCount)
+        public DataSet(Utility.GPUBufferType bufferType, bool mapped, uint totalElemCount, uint elemStride)
         {
+            this.bufferType = bufferType;
+
             GpuBufferFlags bufferFlags = 0;
             bufferFlags |= (bufferType == Utility.GPUBufferType.Vertex) ? GpuBufferFlags.BufferFlags_Target_Vertex : GpuBufferFlags.BufferFlags_Target_Index;
             bufferFlags |= mapped ? GpuBufferFlags.BufferFlags_Mode_SubUpdates : GpuBufferFlags.BufferFlags_Mode_Immutable | GpuBufferFlags.BufferFlags_Target_CopyDst;
 
-            gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferFlags);
-            cpuData = new NativeArray<T>((int)totalCount, s_CpuMemoryLabel, NativeArrayOptions.UninitializedMemory);
-            allocator = new GPUBufferAllocator(totalCount);
-            elemStride = (uint)gpuData.ElementStride;
+            gpuData = new Utility.GPUBuffer((int)totalElemCount, (int)elemStride, bufferFlags);
+            cpuData = new RawArray(checked((int)totalElemCount), checked((int)elemStride), s_CpuMemoryLabel);
+            allocator = new GPUBufferAllocator(totalElemCount);
 
             dirtyRanges = new List<Range>(32);
             ResetDirtyRanges();
@@ -88,7 +89,7 @@ namespace UnityEngine.UIElements.UIR
 
         public void AddDirtyRange(uint start, uint count)
         {
-            Debug.Assert(count > 0 && start + count <= cpuData.Length);
+            Debug.Assert(count > 0 && (start + count) <= (uint)cpuData.Length);
 
             // Update the overall bounds to track the min/max of all ranges added this frame.
             m_DirtyRangeMin = Math.Min(m_DirtyRangeMin, start);

@@ -148,7 +148,7 @@ namespace Unity.Hierarchy
         internal HierarchyViewItem()
         {
             // Setup the root. This is taken from 'TreeView.MakeTreeItem'
-            name = (string)k_UnityTreeViewItem;
+            SetName(k_UnityTreeViewItem);
             style.flexDirection = FlexDirection.Row;
 
             var root = new VisualElement();
@@ -202,6 +202,10 @@ namespace Unity.Hierarchy
         {
             if (Bound)
                 throw new InvalidOperationException("Cannot bind a hierarchy view item that is already bound.");
+
+            //Only refresh styling and bind elements when they are attached to a panel, otherwise some styling properties are not defined
+            if (panel == null)
+                return;
 
             // Setup object
             m_Node = node;

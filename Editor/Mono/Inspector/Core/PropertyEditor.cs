@@ -57,6 +57,7 @@ namespace UnityEditor
         protected const string s_EditorListClassName = "unity-inspector-editors-list";
         protected const string s_AddComponentClassName = "unity-inspector-add-component-button";
         protected const string s_HeaderInfoClassName = "unity-inspector-header-info";
+        internal const string s_StickyHeaderContainerClassName = "unity-inspector-sticky-header-container";
         protected const string s_FooterInfoClassName = "unity-inspector-footer-info";
         internal const string s_MainContainerClassName = "unity-inspector-main-container";
         protected const string s_PreviewContainer = "preview-container";
@@ -113,8 +114,6 @@ namespace UnityEditor
         private Object m_InspectedObject;
         private string m_ExpectedTitle;
         private static PropertyEditor s_LastPropertyEditor;
-        private DropdownField m_PreviewDropdown;
-
         protected EntityId m_LastInitialEditorEntityId;
         protected Component[] m_ComponentsInPrefabSource;
         protected HashSet<Component> m_RemovedComponents;
@@ -133,6 +132,7 @@ namespace UnityEditor
         protected List<IPreviewable> m_Previews;
         protected Dictionary<Type, List<Type>> m_PreviewableTypes;
         protected IPreviewable m_SelectedPreview;
+        internal IPreviewable selectedPreview => m_SelectedPreview;
         protected VisualElement m_EditorsElement;
         protected VisualElement editorsElement => m_EditorsElement ?? (m_EditorsElement = FindVisualElementInTreeByClassName(s_EditorListClassName));
         protected VisualElement m_RemovedPrefabComponentsElement;
@@ -166,8 +166,6 @@ namespace UnityEditor
         internal static PropertyEditor FocusedPropertyEditor { get; private set; }
 
         EditorElementUpdater m_EditorElementUpdater;
-        IPreviewable m_cachedPreviewEditor;
-        internal IPreviewable CachedPreviewEditor => m_cachedPreviewEditor;
 
         /// <summary>
         /// Delayer used to periodically check if the return value of <see cref="IPreviewable.HasPreviewGUI"/> has changed.
@@ -209,8 +207,6 @@ namespace UnityEditor
         }
 
         internal Rect scrollViewportRect => m_ScrollView.contentViewport.rect;
-
-        internal static bool s_StylesInit = false;
 
         protected static class Styles
         {
@@ -266,7 +262,6 @@ namespace UnityEditor
             {
                 vcsRevertStyle.padding.right = 15;
                 vcsBarStyleTwoRows.fixedHeight *= 2;
-                s_StylesInit = true;
             }
         }
 
@@ -411,7 +406,7 @@ namespace UnityEditor
         /// </summary>
         void HasPreviewPeriodicCheck(object _)
         {
-            var previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
+            var previewEditor = GetEditorThatControlsPreview();
 
             // Check if the return value of HasPreviewGUI has changed, and rebuild the contents containers if it did
             var hasPreview = previewEditor != null && previewEditor.HasPreviewGUI();
@@ -512,11 +507,12 @@ namespace UnityEditor
             // Check if scripts have changed without calling set dirty
             tracker.VerifyModifiedMonoBehaviours();
             InspectorUtility.DirtyLivePropertyChanges(tracker);
-            if(m_PreviewRootElement != null)
-                UpdateLabel(m_PreviewRootElement);
 
             if (!tracker.isDirty || !ReadyToRepaint())
                 return;
+
+            if (tracker.isDirty)
+                UpdateHeader();
 
             Repaint();
         }
@@ -1272,49 +1268,9 @@ namespace UnityEditor
             {
                 if (previewAndLabelElement != null)
                 {
-                    VisualElement previewItem = null;
                     CreatePreviewables();
-                    m_cachedPreviewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
-
-                    if (m_cachedPreviewEditor != null && m_cachedPreviewEditor.HasPreviewGUI())
-                    {
-                        m_PreviewRootElement = new PreviewRootElement();
-
-                        previewContainer = m_SplitView.Q(s_PreviewContainer);
-                        previewContainer.style.minHeight = m_PreviewMinHeight;
-
-                        previewItem = m_cachedPreviewEditor.CreatePreview(m_PreviewRootElement);
-                        var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-
-                        using var _pool = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-                        GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
-                        bool hasMixedPreviews = editorsWithPreviews.Count > 1;
-
-                        if (previewItem != null || hasMixedPreviews)
-                        {
-                            // Temporary naming while in transition to UITK
-                            InitUITKPreview();
-                            previewContainer.Add(m_PreviewRootElement);
-
-                            var displayStyle = m_IsPreviewPoppedOut ? DisplayStyle.None : DisplayStyle.Flex;
-                            previewContainer.style.display = displayStyle;
-                            draglineAnchor.style.display = displayStyle;
-                        }
-                        else // IMGUI fallback if no UITK preview found
-                        {
-                            var previewAndLabelsContainer =
-                                CreateIMGUIContainer(DrawPreviewAndLabels, s_PreviewContainer);
-                            m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
-                            previewAndLabelElement.Add(previewAndLabelsContainer);
-
-                            previewContainer.style.display = DisplayStyle.None;
-                            draglineAnchor.style.display = DisplayStyle.None;
-
-                            if (previewContainer == null)
-                                m_SplitView.Add(previewAndLabelElement);
-                        }
-
-                    }
+                    m_SelectedPreview = GetEditorThatControlsPreview();
+                    ResetPreviewContainer();
                 }
 
                 // Footer
@@ -1360,7 +1316,7 @@ namespace UnityEditor
 
                 UpdatePreviewHeight(0);
 
-                m_cachedPreviewEditor = null;
+                m_SelectedPreview = null;
 
                 if(previewContainer?.childCount > 0 && m_PreviewRootElement != null && previewContainer.Q(m_PreviewRootElement.name) != null)
                     previewContainer.Remove(m_PreviewRootElement);
@@ -1371,12 +1327,55 @@ namespace UnityEditor
             }
         }
 
+        protected virtual void ResetPreviewContainer()
+        {
+            if (previewAndLabelElement != null)
+                previewAndLabelElement.Clear();
+
+            VisualElement previewItem = null;
+
+            if (m_SelectedPreview != null && m_SelectedPreview.HasPreviewGUI())
+            {
+                m_PreviewRootElement = new PreviewRootElement();
+
+                previewContainer = m_SplitView.Q(s_PreviewContainer);
+                previewContainer.Clear();
+                previewContainer.style.minHeight = m_PreviewMinHeight;
+
+                previewItem = m_SelectedPreview.CreatePreview(m_PreviewRootElement);
+                var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+
+                if (previewItem != null)
+                {
+                    // Temporary naming while in transition to UITK
+                    InitUITKPreview();
+                    previewContainer.Add(m_PreviewRootElement);
+
+                    var displayStyle = m_IsPreviewPoppedOut ? DisplayStyle.None : DisplayStyle.Flex;
+                    previewContainer.style.display = displayStyle;
+                    draglineAnchor.style.display = displayStyle;
+                }
+                else if (previewAndLabelElement != null) // IMGUI fallback if no UITK preview found
+                {
+                    var previewAndLabelsContainer =
+                        CreateIMGUIContainer(DrawPreviewAndLabels, s_PreviewContainer);
+                    m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
+                    previewAndLabelElement.Add(previewAndLabelsContainer);
+
+                    previewContainer.style.display = DisplayStyle.None;
+                    draglineAnchor.style.display = DisplayStyle.None;
+
+                    if (previewContainer == null)
+                        m_SplitView.Add(previewAndLabelElement);
+                }
+            }
+        }
+
         void InitUITKPreview()
         {
             // Toolbar
             PrepareToolbar();
-
-            UpdatePreviewHeader(m_PreviewRootElement);
+            UpdateHeader();
 
             // Dragline
             m_SplitView.AddToClassList(PreviewRootElement.Styles.ussClassName);
@@ -1396,19 +1395,19 @@ namespace UnityEditor
             if (previewPane.childCount == 0)
             {
                 var previewAndLabelsContainer =
-                    CreateIMGUIContainer(() => DrawPreview(m_cachedPreviewEditor), "preview");
+                    CreateIMGUIContainer(() => DrawPreview(m_SelectedPreview), "preview");
                 previewPane.Add(previewAndLabelsContainer);
             }
         }
 
-        private void OnDraglineGeometryChange(VisualElement window, VisualElement dragline)
+        private void OnDraglineGeometryChange(PreviewRootElement previewRoot, VisualElement dragline)
         {
-            if (window == null)
+            if (previewRoot == null)
                 return;
 
-            var header = window.Q(PreviewRootElement.Styles.headerName);
-            var toolbar = header?.Q(PreviewRootElement.Styles.toolbarName);
-            var ellipsisMenu = header?.Q(PreviewRootElement.Styles.elipsisMenuName);
+            var header = previewRoot.GetHeader();
+            var toolbar = previewRoot.GetButtonPane();
+            var ellipsisMenu = previewRoot.GetEllipsisMenu();
             float margin = dragline.resolvedStyle.marginRight;
 
             if (header != null && toolbar != null && ellipsisMenu != null)
@@ -1423,93 +1422,61 @@ namespace UnityEditor
         {
             if (!isFloatingPreviewWindow)
             {
-                m_PreviewRootElement.m_EllipsisMenu.style.display = DisplayStyle.Flex;
+                m_PreviewRootElement.GetEllipsisMenu().style.display = DisplayStyle.Flex;
                 CreatePreviewEllipsisMenu();
             }
             else
             {
-                m_PreviewRootElement.m_EllipsisMenu.style.display = DisplayStyle.None;
-
-                // Hide the preview selector dropdown (and thus show label) in floating windows.
-                var header = m_PreviewRootElement.Q(PreviewRootElement.Styles.headerName);
-                var dropdown = header?.Q<DropdownField>("preview-selector-dropdown");
-                if (dropdown != null)
-                    dropdown.style.display = DisplayStyle.None;
+                m_PreviewRootElement.GetEllipsisMenu().style.display = DisplayStyle.None;
+                m_PreviewRootElement.GetResizer().style.backgroundImage = null;
             }
         }
 
-        internal void UpdateLabel(PreviewRootElement toolbar)
+        internal void UpdateHeader()
         {
-            IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
+            PreviewRootElement toolbar = m_PreviewRootElement;
+            if (toolbar == null)
+                return;
+
+            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
+            GetEditorsWithPreviews(editorsWithPreviews);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
 
             string label;
             if (previewEditor != null && previewEditor.HasPreviewGUI())
             {
                 string userDefinedTitle = previewEditor.GetPreviewTitle().text;
-                label = !String.IsNullOrEmpty(userDefinedTitle) ? userDefinedTitle : Styles.preTitle.text;
+                label = !String.IsNullOrEmpty(userDefinedTitle)? userDefinedTitle : Styles.preTitle.text;
             }
             else
             {
                 label = Styles.labelTitle.text;
             }
 
-            var header = toolbar?.Q(PreviewRootElement.Styles.headerName);
-            if (header == null) return;
-
-            var dropdown = header.Q<DropdownField>("preview-selector-dropdown");
-            var titleLabel = header.Q(PreviewRootElement.Styles.titleName);
-
-            if (dropdown != null && dropdown.style.display != DisplayStyle.None)
-            {
-                if (titleLabel != null)
-                    titleLabel.style.display = DisplayStyle.None;
-            }
-            else
-            {
-                if (dropdown != null)
-                    dropdown.style.display = DisplayStyle.None;
-                if (titleLabel is Label labelElement)
-                {
-                    labelElement.style.display = DisplayStyle.Flex;
-                    labelElement.text = label;
-                    var draglineAnchor = m_SplitView?.Q(s_draglineAnchor);
-                    if (draglineAnchor != null)
-                        draglineAnchor.style.marginLeft = 0;
-                }
-            }
-        }
-
-        void UpdatePreviewHeader(PreviewRootElement toolbar)
-        {
-            CreatePreviewables();
-
-            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-            GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
-            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
-
-            var header = toolbar?.Q(PreviewRootElement.Styles.headerName);
-            if (header == null) return;
-
-            // If we have more than one preview, show a dropdown.
+            //If we have more than one component with Previews, show a DropDown menu.
             if (editorsWithPreviews.Count > 1)
             {
-                SetupPreviewDropdown(header, editorsWithPreviews, previewEditor);
+                SetupPreviewDropdown(toolbar, editorsWithPreviews, previewEditor);
+                // disable label
+                var labelElement = toolbar.GetTitle();
+                labelElement.style.display = DisplayStyle.None;
             }
             else
             {
-                HidePreviewDropdown(header);
-                UpdateLabel(toolbar);
+                // update title for the preview
+                var labelElement = toolbar.GetTitle();
+                labelElement.style.display = DisplayStyle.Flex;
+                labelElement.text = label;
+
+                // disable dropdown
+                var dropdownElement = toolbar.GetDropdown();
+                dropdownElement.style.display = DisplayStyle.None;
             }
         }
 
-        void SetupPreviewDropdown(VisualElement header, List<IPreviewable> editorsWithPreviews, IPreviewable currentPreview)
+        void SetupPreviewDropdown(PreviewRootElement header, List<IPreviewable> editorsWithPreviews,
+            IPreviewable currentPreview)
         {
-            // Ensure styles are correctly initialized before doing the setup of the preview dropdown
-            // This can be called before Styles are initialized on domain reload. This function will
-            // be called multiple times in that context, the first call only might sometimes be invalid.
-            if(!s_StylesInit)
-                return;
-
             // Build the choices list with formatted titles.
             var choices = new List<string>();
             int selectedIndex = 0;
@@ -1536,28 +1503,26 @@ namespace UnityEditor
 
                 choices.Add(fullTitle);
 
-                if (editor == currentPreview)
+                if (ReferenceEquals(editor, currentPreview) ||
+                    (editor.GetType() == currentPreview?.GetType()
+                     && editor.target == currentPreview.target))
                 {
                     selectedIndex = i;
                 }
             }
 
-            var titleElement = header.Q(PreviewRootElement.Styles.titleName);
-            m_PreviewDropdown = header.Q<DropdownField>("preview-selector-dropdown");
-
-            if (m_PreviewDropdown != null)
+            var dropdown = header.GetDropdown();
+            if (dropdown != null)
             {
-                titleElement.style.display = DisplayStyle.None;
+                dropdown.choices = choices;
+                dropdown.index = selectedIndex;
+                dropdown.focusable = false;
 
-                m_PreviewDropdown.choices = choices;
-                m_PreviewDropdown.index = selectedIndex;
-                m_PreviewDropdown.focusable = false;
+                dropdown.UnregisterCallback<GeometryChangedEvent>(OnTitleGeometryChanged);
+                dropdown.RegisterCallback<GeometryChangedEvent>(OnTitleGeometryChanged);
 
-                m_PreviewDropdown.UnregisterValueChangedCallback(OnPreviewDropdownChanged);
-                m_PreviewDropdown.RegisterValueChangedCallback(OnPreviewDropdownChanged);
-
-                m_PreviewDropdown.UnregisterCallback<GeometryChangedEvent>(OnTitleGeometryChanged);
-                m_PreviewDropdown.RegisterCallback<GeometryChangedEvent>(OnTitleGeometryChanged);
+                dropdown.UnregisterValueChangedCallback(OnPreviewDropdownChanged);
+                dropdown.RegisterValueChangedCallback(OnPreviewDropdownChanged);
             }
         }
 
@@ -1575,50 +1540,33 @@ namespace UnityEditor
             }
         }
 
-        void OnPreviewDropdownChanged(ChangeEvent<string> evt)
+        internal void SetSelectedPreviewIndex(int selectedPreviewIndex)
         {
-            if (m_PreviewDropdown == null) return;
-
             using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-            GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
+            GetEditorsWithPreviews(editorsWithPreviews);
 
-            int selectedIndex = m_PreviewDropdown.index;
-            if (selectedIndex >= 0 && selectedIndex < editorsWithPreviews.Count)
+            if (selectedPreviewIndex >= 0 && selectedPreviewIndex < editorsWithPreviews.Count)
             {
-                m_SelectedPreview = editorsWithPreviews[selectedIndex];
-                m_cachedPreviewEditor = m_SelectedPreview;
-
-                var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-                draglineAnchor.style.marginLeft = m_PreviewDropdown.resolvedStyle.width;
-
-                var previewPane = m_PreviewRootElement.GetPreviewPane();
-                previewPane.Clear();
-
-                m_cachedPreviewEditor.CreatePreview(m_PreviewRootElement);
-                if (previewPane.childCount == 0)
-                {
-                    // IMGUI fallback — same pattern as InitUITKPreview
-                    var imguiContainer = CreateIMGUIContainer(() => DrawPreview(m_cachedPreviewEditor), "preview");
-                    previewPane.Add(imguiContainer);
-                }
-
-                Repaint();
+                m_SelectedPreview = editorsWithPreviews[selectedPreviewIndex];
+                ResetPreviewContainer();
             }
         }
 
-        void HidePreviewDropdown(VisualElement header)
+        protected virtual void OnPreviewDropdownChanged(ChangeEvent<string> evt)
         {
-            // Always query in case m_PreviewDropdown hasn't been set yet.
-            var dropdown = header.Q<DropdownField>("preview-selector-dropdown");
-            if (dropdown != null)
-            {
-                dropdown.style.display = DisplayStyle.None;
-            }
+            var dropdown = evt.elementTarget as DropdownField;
+            if (dropdown == null)
+                return;
 
-            var titleLabel = header.Q(PreviewRootElement.Styles.titleName);
-            if (titleLabel != null)
+            using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
+            GetEditorsWithPreviews(editorsWithPreviews);
+
+            int selectedIndex = dropdown.index;
+            if (selectedIndex >= 0 && selectedIndex < editorsWithPreviews.Count)
             {
-                titleLabel.style.display = DisplayStyle.Flex;
+                m_SelectedPreview = editorsWithPreviews[selectedIndex];
+                // In case of mixed UITK / IMGUI preview we need to rebuild the review window content
+                ResetPreviewContainer();
             }
         }
 
@@ -1737,10 +1685,10 @@ namespace UnityEditor
             return lastInteractedEditor;
         }
 
-        protected IPreviewable GetEditorThatControlsPreview(Editor[] activeEditors)
+        protected IPreviewable GetEditorThatControlsPreview()
         {
             using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-            GetEditorsWithPreviews(activeEditors, editorsWithPreviews);
+            GetEditorsWithPreviews(editorsWithPreviews);
             return GetEditorThatControlsPreview(editorsWithPreviews);
         }
 
@@ -1750,22 +1698,12 @@ namespace UnityEditor
                 return null;
 
             if (m_SelectedPreview != null)
-            {
-                if (editors.Contains(m_SelectedPreview))
-                    return m_SelectedPreview;
-
-                // m_SelectedPreview may be a stale custom IPreviewable, so rematch by type target so the user's dropdown selection survives rebuilds.
-                var previousPreview = m_SelectedPreview;
-                m_SelectedPreview = editors.Find(p => p.GetType() == previousPreview.GetType() && p.target == previousPreview.target);
-                if (m_SelectedPreview != null)
-                    return m_SelectedPreview;
-            }
+                return m_SelectedPreview;
 
             // Find last interacted editor, if not found check if we had an editor of similar type,
             // if not found use first editor that can show a preview otherwise return null.
-
-            IPreviewable lastInteractedEditor = GetLastInteractedEditor();
-            Type lastType = lastInteractedEditor?.GetType();
+            IPreviewable lastEditor = GetLastInteractedEditor();
+            Type lastType = lastEditor?.GetType();
 
             IPreviewable firstEditorThatHasPreview = null;
             IPreviewable similarEditorAsLast = null;
@@ -1788,8 +1726,11 @@ namespace UnityEditor
 
                 if (e.HasPreviewGUI())
                 {
-                    if (e == lastInteractedEditor)
-                        return e;
+                    if (e == lastEditor)
+                    {
+                        m_SelectedPreview = e;
+                        return m_SelectedPreview;
+                    }
 
                     if (similarEditorAsLast == null && e.GetType() == lastType)
                         similarEditorAsLast = e;
@@ -1809,8 +1750,10 @@ namespace UnityEditor
             return null;
         }
 
-        protected void GetEditorsWithPreviews(Editor[] editors, List<IPreviewable> outEditorsWithPreview)
+        protected void GetEditorsWithPreviews(List<IPreviewable> outEditorsWithPreview)
         {
+            Editor[] editors = tracker.activeEditors;
+
             outEditorsWithPreview.Clear();
             if (m_Previews == null) return;
 
@@ -1850,21 +1793,6 @@ namespace UnityEditor
                 if (previewable != null && previewable.HasPreviewGUI())
                     outEditorsWithPreview.Add(previewable);
             }
-
-            outEditorsWithPreview.Sort((a, b) =>
-            {
-                // Created a simple VE rather than a PreviewRootElement here for the sorting
-                var temp = new VisualElement();
-                bool aIsUITK = a.CreatePreview(temp) != null;
-                bool bIsUITK = b.CreatePreview(temp) != null;
-
-                if (aIsUITK != bIsUITK)
-                    return bIsUITK.CompareTo(aIsUITK);
-
-                var labelA = a.GetPreviewTitle().text;
-                var labelB = b.GetPreviewTitle().text;
-                return labelA.CompareTo(labelB);
-            });
         }
 
         internal virtual Object GetInspectedObject()
@@ -1923,7 +1851,7 @@ namespace UnityEditor
             var hasPreview = BeginDrawPreviewAndLabels();
 
             using var _ = ListPool<IPreviewable>.Get(out var editorsWithPreviews);
-            GetEditorsWithPreviews(tracker.activeEditors, editorsWithPreviews);
+            GetEditorsWithPreviews(editorsWithPreviews);
             IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
 
             // Do we have a preview?
@@ -1950,42 +1878,93 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 dragRect = GUILayoutUtility.GetLastRect();
 
-            GUIContent title;
-            if (m_HasPreview)
-            {
-                GUIContent userDefinedTitle = previewEditor.GetPreviewTitle();
-                title = userDefinedTitle ?? Styles.preTitle;
-            }
-            else
-            {
-                title = Styles.labelTitle;
-            }
+                GUIContent title;
+                if (m_HasPreview)
+                {
+                    GUIContent userDefinedTitle = previewEditor.GetPreviewTitle();
+                    title = userDefinedTitle ?? Styles.preTitle;
+                }
+                else
+                {
+                    title = Styles.labelTitle;
+                }
 
                 dragIconRect.x = dragRect.x + dragPadding;
                 dragIconRect.y = dragRect.y + (kBottomToolbarHeight - Styles.dragHandle.fixedHeight) / 2;
                 dragIconRect.width = dragRect.width - dragPadding * 2;
                 dragIconRect.height = Styles.dragHandle.fixedHeight;
 
-                float maxLabelWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
-                float labelWidth = Mathf.Min(maxLabelWidth, Styles.preToolbar2.CalcSize(title).x);
-                Rect labelRect = new Rect(dragRect.x, dragRect.y, labelWidth, dragRect.height);
+                //If we have more than one component with Previews, show a DropDown menu.
+                if (editorsWithPreviews.Count > 1)
+                {
+                    Vector2 foldoutSize = Styles.preDropDown.CalcSize(title);
+                    float maxFoldoutWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
+                    float foldoutWidth = Mathf.Min(maxFoldoutWidth, foldoutSize.x);
+                    Rect foldoutRect = new Rect(dragRect.x, dragRect.y, foldoutWidth, foldoutSize.y);
+                    dragRect.xMin += foldoutWidth;
+                    dragIconRect.xMin += foldoutWidth;
 
-                dragIconRect.xMin = labelRect.xMax + dragPadding;
+                    if (GUI.Button(foldoutRect, title, Styles.preDropDown))
+                    {
+                        GUIContent[] panelOptions = new GUIContent[editorsWithPreviews.Count];
+                        int selectedPreviewIndex = -1;
+                        for (int index = 0; index < editorsWithPreviews.Count; index++)
+                        {
+                            IPreviewable currentEditor = editorsWithPreviews[index];
+                            GUIContent previewTitle = currentEditor.GetPreviewTitle() ?? Styles.preTitle;
 
-                GUI.Label(labelRect, title, Styles.preToolbarLabel);
+                            string fullTitle;
+                            if (previewTitle == Styles.preTitle)
+                            {
+                                string componentTitle = ObjectNames.GetTypeName(currentEditor.target);
+                                if (NativeClassExtensionUtilities.ExtendsANativeType(currentEditor.target))
+                                {
+                                    componentTitle = MonoScript.FromScriptedObject(currentEditor.target).GetClass()
+                                        .Name;
+                                }
+
+                                fullTitle = previewTitle.text + " - " + componentTitle;
+                            }
+                            else
+                            {
+                                fullTitle = previewTitle.text;
+                            }
+
+                            panelOptions[index] = new GUIContent(fullTitle);
+                            if (editorsWithPreviews[index] == previewEditor)
+
+                            {
+                                selectedPreviewIndex = index;
+                            }
+                        }
+
+                        EditorUtility.DisplayCustomMenu(foldoutRect, panelOptions, selectedPreviewIndex,
+                            OnPreviewSelected, editorsWithPreviews.ToArray());
+                    }
+                }
+                else
+                {
+                    float maxLabelWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
+                    float labelWidth = Mathf.Min(maxLabelWidth, Styles.preToolbar2.CalcSize(title).x);
+                    Rect labelRect = new Rect(dragRect.x, dragRect.y, labelWidth, dragRect.height);
+
+                    dragIconRect.xMin = labelRect.xMax + dragPadding;
+
+                    GUI.Label(labelRect, title, Styles.preToolbarLabel);
+                }
+
+                if (m_HasPreview && Event.current.type == EventType.Repaint)
+                {
+                    // workaround: To properly center the image because it already has a 1px bottom padding
+                    dragIconRect.y += 1;
+                    Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
+                }
+
+                if (m_HasPreview && m_PreviewResizer.GetExpandedBeforeDragging())
+                    previewEditor.OnPreviewSettings();
+
+                EndDrawPreviewAndLabels(evt, rect, dragRect);
             }
-
-            if (m_HasPreview && Event.current.type == EventType.Repaint)
-            {
-                // workaround: To properly center the image because it already has a 1px bottom padding
-                dragIconRect.y += 1;
-                Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
-            }
-
-            if (m_HasPreview && m_PreviewResizer.GetExpandedBeforeDragging())
-                previewEditor.OnPreviewSettings();
-
-            EndDrawPreviewAndLabels(evt, rect, dragRect);
             EditorGUILayout.EndHorizontal();
 
             // Logic for resizing and collapsing
@@ -2055,7 +2034,7 @@ namespace UnityEditor
                 return;
 
             bool hasBundleName = Array.Exists(assets, a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
-            IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
+            IPreviewable previewEditor = GetEditorThatControlsPreview();
             if (previewEditor == null || !previewEditor.HasPreviewGUI())
             {
                 GUILayout.BeginVertical(Styles.footer);
@@ -2077,6 +2056,14 @@ namespace UnityEditor
                 }
             }
             GUILayout.EndVertical();
+        }
+
+        protected virtual void OnPreviewSelected(object userData, string[] options, int selected)
+        {
+            var availablePreviews = (IPreviewable[])userData;
+            m_SelectedPreview = availablePreviews[selected];
+            // In case of mixed UITK / IMGUI preview we need to rebuild the review window content
+            ResetPreviewContainer();
         }
 
         internal static void VersionControlBar(Editor assetEditor) => VersionControlBar(new[] { assetEditor });

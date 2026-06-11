@@ -19,6 +19,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public string name { get; private set; }
 
+        // Cached UniqueStyleString id for `name` so per-element lookups can skip the dictionary
+        // intern call. -1 means "no name" (null/empty).
+        internal int nameId { get; private set; }
+
         /// <summary>
         /// Creates custom property from a string.
         /// </summary>
@@ -29,6 +33,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentException($"Custom style property \"{propertyName}\" must start with \"--\" prefix.");
 
             name = propertyName;
+            nameId = string.IsNullOrEmpty(propertyName) ? -1 : new UniqueStyleString(propertyName).id;
         }
 
         public override bool Equals(object obj)

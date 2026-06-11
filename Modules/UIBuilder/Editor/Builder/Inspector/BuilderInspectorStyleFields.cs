@@ -122,102 +122,7 @@ namespace Unity.UI.Builder
             m_Inspector.highlightOverlayPainter.ClearOverlay();
         }
 
-        // For mapping icons to the builder's ToggleButtonGroup's buttons
-        // Note: The key represents the style name while the value is the folder name within the
-        //       UIBuilderPackageResources' icons folder.
-        readonly Dictionary<string, string> iconsFolderName = new()
-        {
-            { "display", "Display" },
-            { "visibility", "Display Visibility" },
-            { "overflow", "Display Overflow" },
-            { "flex-direction", "Flex Direction" },
-            { "flex-wrap", "Flex Wrap" },
-            {"align-content", "Align Content"},
-            { "align-items", "Align Items" },
-            { "justify-content", "Justify Content" },
-            { "align-self", "Align Self" },
-            { "white-space", "Text White Space" },
-            { "text-overflow", "Text Overflow" },
-            { "-unity-background-scale-mode", "Background" },
-            { "-unity-slice-type", "Background" },
-            { FlexDirection.Column.ToString(), "Flex Column" },
-            { FlexDirection.ColumnReverse.ToString(), "Flex Column" },
-            { FlexDirection.Row.ToString(), "Flex Row" },
-            { FlexDirection.RowReverse.ToString(), "Flex Row" },
-            { "animation-play-state", "Play State" },
-        };
-
         List<ToggleButtonGroup> m_FlexAlignmentToggleButtonGroups = new();
-
-        // A set of dictionaries to help map the correct icons based on the flex direction
-        // Note: As there is a dependency on the flex direction we need to map a set of ToggleButtonGroups to react
-        //       based on a specific flex direction. For the next set of dictionaries, the key represents the style's
-        //       enum value while the value represents the icon's real name in their respective
-        //       UIBuilderPackageResources icons folder.
-        readonly Dictionary<string, string> m_AlignItemsColumnIcons = new()
-        {
-            { "FlexStart", "Left" },
-            { "Center", "Center" },
-            { "FlexEnd", "Right" },
-            { "Stretch", "Stretch" }
-        };
-        readonly Dictionary<string, string> m_AlignItemsColumnReverseIcons = new()
-        {
-            { "FlexStart", "Left Reverse" },
-            { "Center", "Center Reverse" },
-            { "FlexEnd", "Right Reverse" },
-            { "Stretch", "Stretch Reverse" },
-        };
-        readonly Dictionary<string, string> m_AlignItemsRowIcons = new()
-        {
-            { "FlexStart", "Upper" },
-            { "Center", "Center" },
-            { "FlexEnd", "Lower" },
-            { "Stretch", "Stretch" },
-        };
-        readonly Dictionary<string, string> m_AlignItemsRowReverseIcons = new()
-        {
-            { "FlexStart", "Upper Reverse" },
-            { "Center", "Center Reverse" },
-            { "FlexEnd", "Lower Reverse" },
-            { "Stretch", "Stretch Reverse" },
-        };
-        readonly Dictionary<string, string> m_JustifyContentColumnIcons = new()
-        {
-            { "FlexStart", "Upper" },
-            { "Center", "Middle" },
-            { "FlexEnd", "Lower" },
-            { "SpaceBetween", "Space Between" },
-            { "SpaceAround", "Space Around" },
-            { "SpaceEvenly", "Space Evenly" },
-        };
-        readonly Dictionary<string, string> m_JustifyContentColumnReverseIcons = new()
-        {
-            { "FlexStart", "Upper Reverse" },
-            { "Center", "Middle Reverse" },
-            { "FlexEnd", "Lower Reverse" },
-            { "SpaceBetween", "Space Between Reverse" },
-            { "SpaceAround", "Space Around Reverse" },
-            { "SpaceEvenly", "Space Evenly" },
-        };
-        readonly Dictionary<string, string> m_JustifyContentRowIcons = new()
-        {
-            { "FlexStart", "Left" },
-            { "Center", "Center" },
-            { "FlexEnd", "Right" },
-            { "SpaceBetween", "Space Between" },
-            { "SpaceAround", "Space Around" },
-            { "SpaceEvenly", "Space Evenly" },
-        };
-        readonly Dictionary<string, string> m_JustifyContentRowReverseIcons = new()
-        {
-            { "FlexStart", "Left Reverse" },
-            { "Center", "Center Reverse" },
-            { "FlexEnd", "Right Reverse" },
-            { "SpaceBetween", "Space Between Reverse" },
-            { "SpaceAround", "Space Around Reverse" },
-            { "SpaceEvenly", "Space Evenly" },
-        };
 
         readonly string[] m_FlexDirectionDependentStyleNames = {"align-items", "justify-content", "align-self", "align-content" };
 
@@ -532,13 +437,9 @@ namespace Unity.UI.Builder
                         }
                         else
                         {
-                            var iconImage = styleName == "animation-play-state"
-                                ? BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/", BuilderConstants.UIToolkitAuthoringIconsPath )
-                                : BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/");
                             uiField.Add(new Button()
                             {
                                 name = enumAsDash,
-                                iconImage = iconImage,
                                 tooltip = tooltip
                             });
                         }
@@ -2731,44 +2632,13 @@ namespace Unity.UI.Builder
 
         void UpdateFlexStyleFieldIcons(Enum value)
         {
-            (string folderPath, bool isReverse) flexStyleIconConfig = (
-                $"{iconsFolderName[value.ToString()]}/",
-                (FlexDirection)value == FlexDirection.ColumnReverse ||
-                (FlexDirection)value == FlexDirection.RowReverse
-            );
+            var isColumn = (FlexDirection)value == FlexDirection.Column || (FlexDirection)value == FlexDirection.ColumnReverse;
+            var isReverse = (FlexDirection)value == FlexDirection.ColumnReverse || (FlexDirection)value == FlexDirection.RowReverse;
 
-            var index = 0;
             foreach (var toggleButtonGroup in m_FlexAlignmentToggleButtonGroups)
             {
-                var buttons = toggleButtonGroup.Query<Button>(className: "unity-button-group__button").ToList();
-                var count = buttons.Count;
-                Dictionary<string, string> dictionary = new();
-                for (var i = 0; i < count; i++)
-                {
-                    if (buttons[i].text == "AUTO") continue;
-
-                    dictionary = m_FlexDirectionDependentStyleNames[index] switch
-                    {
-                        "align-items" when flexStyleIconConfig.folderPath.Contains("Column") => flexStyleIconConfig.isReverse
-                            ? m_AlignItemsColumnReverseIcons
-                            : m_AlignItemsColumnIcons,
-                        "align-items" => flexStyleIconConfig.isReverse ? m_AlignItemsRowReverseIcons : m_AlignItemsRowIcons,
-                        "justify-content" when flexStyleIconConfig.folderPath.Contains("Column") => flexStyleIconConfig.isReverse
-                            ? m_JustifyContentColumnReverseIcons
-                            : m_JustifyContentColumnIcons,
-                        "justify-content" => flexStyleIconConfig.isReverse ? m_JustifyContentRowReverseIcons : m_JustifyContentRowIcons,
-                        _ => dictionary
-                    };
-
-                    var path = $"{iconsFolderName[m_FlexDirectionDependentStyleNames[index]]}/{flexStyleIconConfig.folderPath}";
-                    var enumValue = Enum.GetValues(toggleButtonGroup.userData as Type).GetValue(i).ToString();
-
-                    if (dictionary.TryGetValue(enumValue, out var iconName))
-                        buttons[i].iconImage = BuilderInspectorUtilities.LoadIcon(iconName, path);
-                    else
-                        buttons[i].iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(enumValue), path);
-                }
-                index++;
+                toggleButtonGroup.EnableInClassList("is-flex-column", isColumn);
+                toggleButtonGroup.EnableInClassList("is-flex-reverse", isReverse);
             }
         }
 

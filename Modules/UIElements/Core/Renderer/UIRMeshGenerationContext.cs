@@ -129,6 +129,94 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Optional per-vertex channels that a UI Toolkit panel can opt into for use by custom shaders.
+    /// </summary>
+    /// <remarks>
+    /// Each flag's value equals <c>1 &lt;&lt; (int)VertexAttribute.X</c> for the matching semantic.
+    /// </remarks>
+    [Flags]
+    public enum ExtraVertexChannels
+    {
+        /// <summary>No optional channels.</summary>
+        None      = 0,
+        /// <summary>TEXCOORD1 (float4).</summary>
+        TexCoord1 = 1 << 5,
+        /// <summary>TEXCOORD2 (float4).</summary>
+        TexCoord2 = 1 << 6,
+        /// <summary>TEXCOORD3 (float4).</summary>
+        TexCoord3 = 1 << 7,
+        /// <summary>NORMAL (float3 in the public API; padded to float4 on the GPU).</summary>
+        Normal    = 1 << 1,
+        /// <summary>TANGENT (float4, .w = handedness).</summary>
+        Tangent   = 1 << 2
+    }
+
+    /// <summary>
+    /// Bundle of vertex, index, and optional extras slices passed to
+    /// <see cref="MeshGenerationContext.DrawMesh(ref UIMesh, Texture)"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para><see cref="vertices"/> and <see cref="indices"/> are required. The optional extras
+    /// (<see cref="uv1"/>, <see cref="uv2"/>, <see cref="uv3"/>, <see cref="normal"/>, <see cref="tangent"/>)
+    /// are channels the panel must have opted into via <see cref="PanelSettings.extraVertexChannels"/> or
+    /// <see cref="IPanel.extraVertexChannels"/>. Providing a slice for a channel the panel did not enable
+    /// logs an error and drops that slice.</para>
+    /// <para>Each non-empty extras slice must have <c>Length == vertices.Length</c>; mismatches are logged
+    /// and the entire draw is dropped.</para>
+    /// <para>Channels enabled on the panel but left empty in the draw are zero-filled.</para>
+    /// <para>Slices passed to <see cref="MeshGenerationContext.DrawMesh(ref UIMesh, Texture)"/> are read at
+    /// flush time, not at the call site. Slices returned by
+    /// <see cref="MeshGenerationContext.AllocateTempMesh(ExtraVertexChannels, int, int, out UIMesh)"/> are
+    /// guaranteed valid through the flush; user-supplied slices must remain valid until the same flush point.</para>
+    /// </remarks>
+    public struct UIMesh
+    {
+        /// <summary>Vertex positions, colors, and UVs.</summary>
+        public NativeSlice<Vertex> vertices
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+        /// <summary>Triangle list indices.</summary>
+        public NativeSlice<ushort> indices
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+
+        /// <summary>UV1 coordinates (TEXCOORD1 in the shader).</summary>
+        public NativeSlice<Vector4> uv1
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+        /// <summary>UV2 coordinates (TEXCOORD2 in the shader).</summary>
+        public NativeSlice<Vector4> uv2
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+        /// <summary>UV3 coordinates (TEXCOORD3 in the shader).</summary>
+        public NativeSlice<Vector4> uv3
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+        /// <summary>Vertex normals. Padded to <c>Vector4</c> on the GPU (<c>.w</c> zero-filled).</summary>
+        public NativeSlice<Vector3> normal
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+        /// <summary>Vertex tangents (<c>.w</c> = handedness).</summary>
+        public NativeSlice<Vector4> tangent
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set;
+        }
+    }
+
+    /// <summary>
     /// Represents the vertex and index data allocated for drawing the content of a <see cref="VisualElement"/>.
     /// </summary>
     /// <remarks>
@@ -389,6 +477,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Allocates a temporary <see cref="UIMesh"/> with mandatory vertex+index storage and one extras slice per
+        /// channel set in <paramref name="extraChannels"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>Pass <paramref name="vertexCount"/> = 0 to skip the vertex (and extras) allocation, or
+        /// <paramref name="indexCount"/> = 0 to skip the index allocation, so callers can mix-and-match
+        /// (e.g. allocate indices once and reuse them across draws by stitching them into multiple
+        /// <see cref="UIMesh"/> values).</para>
+        /// <para>Channels not requested are returned as default (empty) slices; the renderer treats those as
+        /// "channel not provided" and zero-fills them at draw time. Use only during the mesh generation phase.</para>
+        /// </remarks>
+        public void AllocateTempMesh(ExtraVertexChannels extraChannels, int vertexCount, int indexCount, out UIMesh mesh)
+        {
+            m_Allocator.AllocateTempMesh(extraChannels, vertexCount, indexCount, out mesh);
+        }
+
+        /// <summary>
         /// Allocates and draws the specified number of vertices and indices required to express geometry for drawing the content of a <see cref="VisualElement"/>.
         /// </summary>
         /// <param name="vertexCount">The number of vertices to allocate. The maximum is 65535 (or UInt16.MaxValue).</param>
@@ -476,10 +581,36 @@ namespace UnityEngine.UIElements
         /// <param name="textureOptions">Flags that apply to the provided texture for this draw call.</param>
         public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions)
         {
-            if (vertices.Length == 0 || indices.Length == 0)
+            // Sugar over DrawMesh(ref UIMesh, ...). Single producer path; extras stay empty.
+            var mesh = new UIMesh { vertices = vertices, indices = indices };
+            DrawMesh(ref mesh, texture, textureOptions);
+        }
+
+        /// <summary>
+        /// Records a draw command with a <see cref="UIMesh"/> bundle.
+        /// </summary>
+        /// <remarks>
+        /// <para>The slices inside <paramref name="mesh"/> are read at flush time (end of the current repaint
+        /// pass), not at this call. See <see cref="UIMesh"/> for the lifetime contract.</para>
+        /// <para><see cref="UIMesh.vertices"/> and <see cref="UIMesh.indices"/> are mandatory. Each non-empty
+        /// extras slice must have <c>Length == mesh.vertices.Length</c>; mismatches are logged and the entire
+        /// draw is dropped.</para>
+        /// </remarks>
+        public void DrawMesh(ref UIMesh mesh, Texture texture = null)
+        {
+            DrawMesh(ref mesh, texture, TextureOptions.None);
+        }
+
+        /// <summary>
+        /// Records a draw command with a <see cref="UIMesh"/> bundle.
+        /// </summary>
+        /// <remarks>See <see cref="DrawMesh(ref UIMesh, Texture)"/> for the lifetime contract and validation rules.</remarks>
+        public void DrawMesh(ref UIMesh mesh, Texture texture, TextureOptions textureOptions)
+        {
+            if (mesh.vertices.Length == 0 || mesh.indices.Length == 0)
                 return;
 
-            entryRecorder.DrawMesh(parentEntry, vertices, indices, texture, textureOptions);
+            entryRecorder.DrawMesh(parentEntry, ref mesh, texture, textureOptions);
         }
 
         /// <summary>

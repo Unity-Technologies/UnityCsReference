@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using LibTessDotNet;
 using ClipperLib;
@@ -15,6 +16,8 @@ namespace Unity.VectorGraphics
         const int k_ClipperScale = 100000;
 
         private static Stack<List<List<IntPoint>>> m_ClipStack = new Stack<List<List<IntPoint>>>();
+
+        static readonly ProfilerMarker s_ClipGeometryMarker = new ProfilerMarker("ClipGeometry");
 
         internal static void ResetClip()
         {
@@ -45,36 +48,35 @@ namespace Unity.VectorGraphics
 
         internal static void ClipGeometry(VectorUtils.Geometry geom)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("ClipGeometry");
-
-            var clipper = new Clipper();
-            foreach (var clipperPaths in m_ClipStack)
+            using (s_ClipGeometryMarker.Auto())
             {
-                var vertices = new List<Vector2>(geom.Vertices.Length);
-                var indices = new List<UInt16>(geom.Indices.Length);
-                var paths = BuildTriangleClipPaths(geom);
-                var result = new List<List<IntPoint>>();
-
-                UInt16 maxIndex = 0;
-
-                foreach (var path in paths)
+                var clipper = new Clipper();
+                foreach (var clipperPaths in m_ClipStack)
                 {
-                    clipper.AddPaths(clipperPaths, PolyType.ptClip, true);
-                    clipper.AddPath(path, PolyType.ptSubject, true);
-                    clipper.Execute(ClipType.ctIntersection, result, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
+                    var vertices = new List<Vector2>(geom.Vertices.Length);
+                    var indices = new List<UInt16>(geom.Indices.Length);
+                    var paths = BuildTriangleClipPaths(geom);
+                    var result = new List<List<IntPoint>>();
 
-                    if (result.Count > 0)
-                        BuildGeometryFromClipPaths(geom, result, vertices, indices, ref maxIndex);
+                    UInt16 maxIndex = 0;
 
-                    clipper.Clear();
-                    result.Clear();
+                    foreach (var path in paths)
+                    {
+                        clipper.AddPaths(clipperPaths, PolyType.ptClip, true);
+                        clipper.AddPath(path, PolyType.ptSubject, true);
+                        clipper.Execute(ClipType.ctIntersection, result, PolyFillType.pftNonZero, PolyFillType.pftNonZero);
+
+                        if (result.Count > 0)
+                            BuildGeometryFromClipPaths(geom, result, vertices, indices, ref maxIndex);
+
+                        clipper.Clear();
+                        result.Clear();
+                    }
+
+                    geom.Vertices = vertices.ToArray();
+                    geom.Indices = indices.ToArray();
                 }
-
-                geom.Vertices = vertices.ToArray();
-                geom.Indices = indices.ToArray();
             }
-
-            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         private static List<List<IntPoint>> BuildTriangleClipPaths(VectorUtils.Geometry geom)

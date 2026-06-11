@@ -37,6 +37,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         static readonly string[] AreaNames = Enum.GetNames(typeof(Areas)).Where(a => a != "None" && a != "All").ToArray();
 #pragma warning restore UA2001
+        static string[] NicifiedAreaNames { get { if (s_NicifiedAreaNames == null) s_NicifiedAreaNames = Array.ConvertAll(AreaNames, ObjectNames.NicifyVariableName); return s_NicifiedAreaNames; } }
+        static string[] s_NicifiedAreaNames;
         static ProjectAuditorWindow s_Instance;
 
         public static ProjectAuditorWindow Instance
@@ -1358,7 +1360,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 EditorGUILayout.LabelField(Contents.AreaFilter, LayoutSize.FilterOptionsLabelWidth);
 
-                if (AreaNames.Length > 0)
+                if (NicifiedAreaNames.Length > 0)
                 {
                     using (new EditorGUI.DisabledScope(!IsAnalysisValid() || SelectionWindow.IsOpen<AreaSelectionWindow>()))
                     {
@@ -1380,7 +1382,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                                 var screenPosition = GUIUtility.GUIToScreenPoint(windowPosition);
 
                                 SelectionWindow.Open<AreaSelectionWindow>("Areas", screenPosition.x, screenPosition.y, m_AreaSelection,
-                                    AreaNames, selection =>
+                                    NicifiedAreaNames, selection =>
                                     {
                                         var selectEvent = AnalyticsReporter.BeginAnalytic();
                                         SetAreaSelection(selection);
@@ -1747,19 +1749,20 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (m_AreaSelectionSummary == "All")
                     {
-                        m_AreaSelection.SetAll(AreaNames);
+                        m_AreaSelection.SetAll(NicifiedAreaNames);
                         m_SelectedAreas = Areas.All;
                     }
                     else if (m_AreaSelectionSummary != "None")
                     {
                         var areas = Formatting.SplitStrings(m_AreaSelectionSummary);
-                        m_AreaSelection.selection.AddRange(areas);
+                        foreach (var area in areas)
+                            m_AreaSelection.selection.Add(ObjectNames.NicifyVariableName(area));
                         m_SelectedAreas = (Areas)Enum.Parse(typeof(Areas), m_AreaSelectionSummary);
                     }
                 }
                 else
                 {
-                    m_AreaSelection.SetAll(AreaNames);
+                    m_AreaSelection.SetAll(NicifiedAreaNames);
                     m_SelectedAreas = Areas.All;
                 }
             }

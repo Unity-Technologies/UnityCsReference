@@ -19,6 +19,13 @@ partial class StyleSheetHeader : UISelectionObjectHeader
     public const string StyleSheetNameUssClass = UssClass + "__stylesheet-name";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/StyleSheetHeader.uxml";
+    private const string k_StyleSheet = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspector.uss";
+    private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
+    private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
+
+    static StyleSheet s_StyleSheet;
+    static StyleSheet s_ThemedStyleSheet;
+    static bool s_ThemedStyleSheetIsProSkin;
 
     private TextField m_StyleSheetName;
     private StyleSheet m_StyleSheet;
@@ -69,6 +76,15 @@ partial class StyleSheetHeader : UISelectionObjectHeader
     public StyleSheetHeader()
     {
         AddToClassList(UssClass);
+        if (s_StyleSheet == null)
+            s_StyleSheet = EditorGUIUtility.Load(k_StyleSheet) as StyleSheet;
+        if (s_ThemedStyleSheet == null || s_ThemedStyleSheetIsProSkin != EditorGUIUtility.isProSkin)
+        {
+            s_ThemedStyleSheet = EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? k_StyleSheetDark : k_StyleSheetLight) as StyleSheet;
+            s_ThemedStyleSheetIsProSkin = EditorGUIUtility.isProSkin;
+        }
+        styleSheets.Add(s_StyleSheet);
+        styleSheets.Add(s_ThemedStyleSheet);
 
         TypeIcon = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
         TypeName = nameof(StyleSheet);

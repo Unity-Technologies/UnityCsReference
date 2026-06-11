@@ -10,8 +10,7 @@ namespace UnityEngine.UIElements.UIR
 {
     internal class DetachedAllocator : IDisposable
     {
-        private TempAllocator<Vertex> m_VertsPool;
-        private TempAllocator<UInt16> m_IndexPool;
+        private TempAllocator m_TempAllocator;
         private List<MeshWriteData> m_MeshWriteDataPool;
         private List<int> m_FillGradientMeshIndices;
         private List<FillGradient> m_FillGradients;
@@ -31,8 +30,7 @@ namespace UnityEngine.UIElements.UIR
             m_FillTextureMeshIndices = new List<int>(16);
             m_FillTextures = new List<Texture>(16);
             m_MeshWriteDataCount = 0;
-            m_VertsPool = new TempAllocator<Vertex>(8192, 2048, 64 * 1024);
-            m_IndexPool = new TempAllocator<UInt16>(8192 << 1, 2048 << 1, (64 * 1024) << 1);
+            m_TempAllocator = new TempAllocator(512 * 1024, 512 * 1024, 4 * 1024 * 1024);
         }
 
         public void Dispose()
@@ -49,8 +47,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                m_VertsPool.Dispose();
-                m_IndexPool.Dispose();
+                m_TempAllocator.Dispose();
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
@@ -167,14 +164,13 @@ namespace UnityEngine.UIElements.UIR
                 return mwd;
             }
 
-            mwd.Reset(m_VertsPool.Alloc(vertexCount), m_IndexPool.Alloc(indexCount));
+            mwd.Reset(m_TempAllocator.Alloc<Vertex>(vertexCount), m_TempAllocator.Alloc<ushort>(indexCount));
             return mwd;
         }
 
         public void Clear()
         {
-            m_VertsPool.Reset();
-            m_IndexPool.Reset();
+            m_TempAllocator.Reset();
             m_MeshWriteDataCount = 0;
             m_FillGradientDataCount = 0;
             m_FillTextureDataCount = 0;

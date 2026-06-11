@@ -85,6 +85,7 @@ namespace UnityEditor
                 Add(obj.GetEntityId());
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void Remove(EntityId entityId)
         {
             var ids = new List<EntityId>(Selection.entityIds);

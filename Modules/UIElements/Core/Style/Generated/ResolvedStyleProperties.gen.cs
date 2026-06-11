@@ -70,6 +70,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId rotateProperty = "resolvedStyle." + nameof(IResolvedStyle.rotate);
             internal static readonly BindingId scaleProperty = "resolvedStyle." + nameof(IResolvedStyle.scale);
             internal static readonly BindingId textOverflowProperty = "resolvedStyle." + nameof(IResolvedStyle.textOverflow);
+            internal static readonly BindingId textShadowProperty = "resolvedStyle." + nameof(IResolvedStyle.textShadow);
             internal static readonly BindingId topProperty = "resolvedStyle." + nameof(IResolvedStyle.top);
             internal static readonly BindingId transformOriginProperty = "resolvedStyle." + nameof(IResolvedStyle.transformOrigin);
             internal static readonly BindingId transitionDelayProperty = "resolvedStyle." + nameof(IResolvedStyle.transitionDelay);

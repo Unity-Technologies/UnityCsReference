@@ -35,6 +35,20 @@ internal sealed class CommandSystem
     string m_OutermostGroupUndoName;
     int m_CommandGroupDepth;
 
+    /// <summary>
+    /// Raised when the outermost command group opens. Nested groups do not raise this event.
+    /// The undo name passed to the outermost <see cref="BeginGroup"/> / <see cref="BeginCommandGroup"/> is provided.
+    /// Listeners can use this signal to begin batching expensive operations across the group's commands.
+    /// </summary>
+    public event Action<string> GroupBegan;
+
+    /// <summary>
+    /// Raised after the outermost command group closes and dirty marking has been applied.
+    /// Nested groups do not raise this event. The outermost group's undo name is provided.
+    /// Listeners can use this signal to flush any batched work started in <see cref="GroupBegan"/>.
+    /// </summary>
+    public event Action<string> GroupEnded;
+
     const int k_MaxScopePoolSize = 4;
     readonly Stack<CommandGroupScope> m_ScopePool = new();
 
@@ -162,17 +176,18 @@ internal sealed class CommandSystem
     }
 
     /// <summary>
-    /// Enqueues a command for execution. Commands are always executed immediately.
+    /// Executes a command immediately and returns the resulting <see cref="CommandContext"/>.
     /// When inside a command group, the group's undo context is used for deduplication and dirty deferral.
     /// The command system acquires a reference to the command for the duration of execution and releases
     /// it afterward. The caller retains ownership and is responsible for disposing the command.
     /// </summary>
     /// <param name="command">The command to execute.</param>
-    public void EnqueueCommand(Command command)
+    /// <returns>The <see cref="CommandContext"/> describing the executed command and its final status.</returns>
+    public CommandContext Execute(Command command)
     {
         Assert.IsNotNull(command, "Command cannot be null");
         command.Acquire();
-        ExecuteCommandAndInvokeHandlers(command);
+        return ExecuteCommandAndInvokeHandlers(command);
     }
 
     /// <summary>
@@ -198,7 +213,8 @@ internal sealed class CommandSystem
     {
         Assert.IsFalse(string.IsNullOrEmpty(undoName), "Undo name is required for command groups");
 
-        if (m_CommandGroupDepth == 0)
+        var isOutermost = m_CommandGroupDepth == 0;
+        if (isOutermost)
         {
             if (m_ActiveGroupUndoObjects == null)
                 m_ActiveGroupUndoObjects = new HashSet<UnityEngine.Object>();
@@ -209,6 +225,9 @@ internal sealed class CommandSystem
         }
 
         m_CommandGroupDepth++;
+
+        if (isOutermost)
+            GroupBegan?.Invoke(undoName);
     }
 
     /// <summary>
@@ -220,43 +239,36 @@ internal sealed class CommandSystem
 
         m_CommandGroupDepth--;
 
-        if (m_CommandGroupDepth == 0 && m_ActiveGroupUndoObjects is { Count: > 0 })
+        if (m_CommandGroupDepth != 0)
+            return;
+
+        if (m_ActiveGroupUndoObjects is { Count: > 0 })
         {
             foreach (var obj in m_ActiveGroupUndoObjects)
-            {
-                if (obj != null)
-                {
-                    EditorUtility.SetDirty(obj);
-                    switch (obj)
-                    {
-                        case VisualTreeAsset vta:
-                            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
-                            break;
-                        case StyleSheet ss:
-                            UIElementsUtility.MarkStyleSheetAsChanged(ss);
-                            break;
-                    }
-                }
-            }
+                SetDirty(obj);
 
             m_ActiveGroupUndoObjects.Clear();
         }
+
+        var outermostUndoName = m_OutermostGroupUndoName;
+        m_OutermostGroupUndoName = null;
+        GroupEnded?.Invoke(outermostUndoName);
     }
 
-    void ExecuteCommandAndInvokeHandlers(Command command)
+    CommandContext ExecuteCommandAndInvokeHandlers(Command command)
     {
         if (!command.Validate())
         {
+            var failedContext = new CommandContext(command, command.Source, CommandExecutionStatus.ValidationFailed);
             try
             {
-                var failedContext = new CommandContext(command, command.Source, CommandExecutionStatus.ValidationFailed);
                 InvokeHandlers(command, failedContext);
             }
             finally
             {
                 command.Release();
             }
-            return;
+            return failedContext;
         }
 
         var insideGroup = m_CommandGroupDepth > 0;
@@ -282,14 +294,12 @@ internal sealed class CommandSystem
             if (!insideGroup)
             {
                 foreach (var obj in undoObjects)
-                {
-                    if (obj != null)
-                        EditorUtility.SetDirty(obj);
-                }
+                    SetDirty(obj);
             }
 
             var context = new CommandContext(command, command.Source, status);
             InvokeHandlers(command, context);
+            return context;
         }
         finally
         {
@@ -348,6 +358,23 @@ internal sealed class CommandSystem
         {
             if (invokedHandlers != null)
                 HashSetPool<CommandHandler>.Release(invokedHandlers);
+        }
+    }
+
+    static void SetDirty(UnityEngine.Object obj)
+    {
+        if (obj == null)
+            return;
+
+        EditorUtility.SetDirty(obj);
+        switch (obj)
+        {
+            case VisualTreeAsset vta:
+                UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
+                break;
+            case StyleSheet ss:
+                UIElementsUtility.MarkStyleSheetAsChanged(ss);
+                break;
         }
     }
 

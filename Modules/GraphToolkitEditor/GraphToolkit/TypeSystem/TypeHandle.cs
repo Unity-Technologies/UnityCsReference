@@ -29,15 +29,6 @@ namespace Unity.GraphToolkit
     }
 
     /// <summary>
-    /// The type for untyped ports.
-    /// </summary>
-    [UnityRestricted]
-    internal class Untyped
-    {
-        Untyped() { }
-    }
-
-    /// <summary>
     /// The type for subgraphs.
     /// </summary>
     [UnityRestricted]

@@ -76,7 +76,11 @@ namespace UnityEngine.UIElements
 
         private void RemoveCustomStyleProperty(StylePropertyReader reader)
         {
-            var name = (UniqueStyleString)reader.property.name;
+            var id = reader.property.customNameId;
+            if (id < 0)
+                return;
+
+            var name = new UniqueStyleString(id);
             if (customProperties.ContainsKey(name) != true)
                 return;
 
@@ -89,11 +93,13 @@ namespace UnityEngine.UIElements
             if (!m_CustomProperties.IsCreated())
                 m_CustomProperties = CustomPropertyList.Create();
 
-            var styleProperty = reader.property;
+            var id = reader.property.customNameId;
+            if (id < 0)
+                return;
 
             // Custom property only support one value
             StylePropertyValue customProp = reader.GetValue(0);
-            m_CustomProperties[(UniqueStyleString)styleProperty.name] = customProp;
+            m_CustomProperties[new UniqueStyleString(id)] = customProp;
         }
 
         private void ApplyAllPropertyInitial()

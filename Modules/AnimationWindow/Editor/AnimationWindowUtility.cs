@@ -324,7 +324,7 @@ namespace UnityEditorInternal
 
             foreach (var key in keyframes)
             {
-                if (!key.isPPtrCurve)
+                if (key.isFloatCurve)
                     return true;
             }
 
@@ -616,7 +616,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            return AnimationWindowUtility.GetNicePropertyDisplayName(curveBinding.type, AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName));
+            return AnimationWindowUtility.GetNicePropertyDisplayName(curveBinding.type, curveBinding.propertyName);
         }
 
         public static string GetNicePropertyDisplayName(EditorCurveBinding curveBinding, SerializedObject so, Type animatableObjectType, out string fullPathForTooltip)
@@ -700,7 +700,7 @@ namespace UnityEditorInternal
             }
 
             if (name[name.Length - 2] != '.')
-            { 
+            {
                 foreach (var h in s_PropertyHandlers)
                 {
                     int idx = h.GetChannelIndex(name);

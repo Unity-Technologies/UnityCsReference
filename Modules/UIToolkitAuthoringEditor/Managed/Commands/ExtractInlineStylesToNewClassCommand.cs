@@ -22,6 +22,13 @@ sealed class ExtractInlineStylesToNewClassCommand : Command<ExtractInlineStylesT
         return cmd;
     }
 
+    public static void Execute(object source, VisualElementAsset vea, VisualTreeAsset vta, StyleSheet ss,
+        string className)
+    {
+        using var command = GetPooled(source, vea, vta, ss, className);
+        UICommandQueue.Execute(command);
+    }
+
     public VisualElementAsset ElementAsset { get; private set; }
     public VisualTreeAsset VisualTreeAsset { get; private set; }
     public StyleSheet MainStyleSheet { get; private set; }

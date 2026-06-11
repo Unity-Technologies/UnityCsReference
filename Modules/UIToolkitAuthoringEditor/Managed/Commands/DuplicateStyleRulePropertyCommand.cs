@@ -2,43 +2,68 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct DuplicateStyleRulePropertyCommand
+internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyleRulePropertyCommand>
 {
     const string CommandUndoName = "Duplicate style property";
 
-    readonly StyleSheet StyleSheet;
-    readonly StyleRule Rule;
-    readonly StyleProperty SourceProperty;
-    readonly string NewName;
-
-    public DuplicateStyleRulePropertyCommand(
+    public static DuplicateStyleRulePropertyCommand GetPooled(
+        object source,
         StyleSheet styleSheet,
         StyleRule rule,
         StyleProperty sourceProperty,
         string newName)
     {
-        StyleSheet = styleSheet;
-        Rule = rule;
-        SourceProperty = sourceProperty;
-        NewName = newName;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Rule = rule;
+        cmd.SourceProperty = sourceProperty;
+        cmd.NewName = newName;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source,
+        StyleSheet styleSheet,
+        StyleRule rule,
+        StyleProperty sourceProperty,
+        string newName)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(Rule);
-        Assert.IsNotNull(SourceProperty);
+        using var command = GetPooled(source, styleSheet, rule, sourceProperty, newName);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
+    public StyleRule Rule { get; private set; }
+    public StyleProperty SourceProperty { get; private set; }
+    public string NewName { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Rule = null;
+        SourceProperty = null;
+        NewName = null;
+    }
+
+    public override bool Validate() => StyleSheet != null && Rule != null && SourceProperty != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         var newProperty = Rule.AddProperty(NewName);
         StyleSheetUtility.TransferStylePropertyHandles(StyleSheet, SourceProperty, StyleSheet, newProperty);
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

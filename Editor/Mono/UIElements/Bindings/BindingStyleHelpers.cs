@@ -362,6 +362,14 @@ namespace UnityEditor.UIElements
                 return;
             }
 
+            if (elementHeight == 0f)
+            {
+                bar.style.top = 0f;
+                bar.style.height = 0f;
+                bar.style.left = 0f;
+                return;
+            }
+
             // This is needed so if you have 2 overridden fields their blue
             // bars touch (and it looks like one long bar). They normally wouldn't
             // because most fields have a small margin.
@@ -390,7 +398,8 @@ namespace UnityEditor.UIElements
                 return;
 
             // If the userData parent has been removed then we should remove all bars as the component has been removed.
-            for (var i = 0; i < barContainer.childCount; i++)
+            // Iterate backwards because RemoveFromHierarchy mutates the container's children.
+            for (var i = barContainer.childCount - 1; i >= 0; i--)
             {
                 var element = barContainer[i].userData as VisualElement;
                 if (element == null || FindPrefabOverrideOrLivePropertyBarCompatibleParent(element) != null) continue;
@@ -414,7 +423,6 @@ namespace UnityEditor.UIElements
                     default:
                         throw new ArgumentOutOfRangeException(nameof(barType), barType, null);
                 }
-                return;
             }
 
             for (var i = 0; i < barContainer.childCount; i++)

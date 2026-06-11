@@ -120,9 +120,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var isImported = m_IOProxy.DirectoryExists(importPath);
                 var sizeInBytes = m_IOProxy.DirectorySizeInBytes(resolvedSamplePath);
                 var previousImportPaths = GetPreviousImportPaths(sanitizedPackageDisplayName, sanitizedSampleDisplayName);
-                return new Sample(sample, sampleInfoCollection.packageUniqueId, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths, package);
+                var assetPackagePath = FindAssetPackagePath(resolvedSamplePath);
+                return new Sample(sample, sampleInfoCollection.packageUniqueId, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths, assetPackagePath, package);
             });
             return new SampleCollection(sampleInfoCollection.packageUniqueId, samples);
+        }
+
+        private string FindAssetPackagePath(string resolvedSamplePath)
+        {
+            try
+            {
+                var assetPackages = m_IOProxy.GetFiles(resolvedSamplePath, "*.unitypackage");
+                return assetPackages.Length > 0 ? assetPackages[0] : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private string[] GetPreviousImportPaths(string sanitizedPackageDisplayName, string sanitizedSampleDisplayName)

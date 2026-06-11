@@ -42,7 +42,7 @@ namespace UnityEngine.AdaptivePerformance
             }
         }
 
-        [SerializeField, Tooltip("Thermal Action Delay")]
+        [SerializeField, Min(0), Tooltip("Thermal Action Delay")]
         float m_ThermalActionDelay = 10;
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace UnityEngine.AdaptivePerformance
             set { m_ThermalActionDelay = value; }
         }
 
-        [SerializeField, Tooltip("Performance Action Delay")]
+        [SerializeField, Min(0), Tooltip("Performance Action Delay")]
         float m_PerformanceActionDelay = 4;
 
         /// <summary>

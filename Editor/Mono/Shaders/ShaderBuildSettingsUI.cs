@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Shaders
@@ -15,18 +16,49 @@ namespace UnityEditor.Shaders
         private List<ShaderBuildSettings.KeywordDeclarationOverride> m_KeywordDeclarationOverrides = new();
         private List<string> m_ConstantDefines = new();
         private List<string> m_InternalConstantDefines = new();
+        private List<ShaderBuildSettings.ShaderCompilerSettings> m_CompilerBackendSettings = new();
         private bool[] m_LoadedItemInitialized = Array.Empty<bool>();
         private SerializedObject m_SettingsDataStore = null;
         private SerializedProperty m_SettingsProperty = null;
         private bool m_IsTargetingBuildProfile = false;
         private bool m_HasUnsavedChanges = false;
+        private BuildProfile m_CachedBuildProfile = null;
+        private BuildTarget? m_LastBuildTarget = null;
+        private List<GraphicsDeviceType> m_SelectableApisCache = null;
 
         private ListView m_KeywordDeclarationOverridesListView;
         private ListView m_ConstantDefinesListView;
+        private ListView m_CompilerBackendListView;
+        private HelpBox m_CompilerBackendEmptyApisHelpBox;
         private Button m_ApplyButton;
         private Button m_RevertButton;
 
         private VisualTreeAsset m_ConstantDefineUXML;
+        private VisualTreeAsset m_CompilerBackendRowUXML;
+
+        private static string CompilerDisplayName(ShaderBuildSettings.ShaderCompilerToolchain compiler)
+        {
+            switch (compiler)
+            {
+                case ShaderBuildSettings.ShaderCompilerToolchain.FXC: return L10n.Tr("DirectX 11 Shader Compiler (FXC)");
+                case ShaderBuildSettings.ShaderCompilerToolchain.DXC: return L10n.Tr("DirectX 12 Shader Compiler (DXC)");
+                case ShaderBuildSettings.ShaderCompilerToolchain.Default: return L10n.Tr("Default");
+                default: return compiler.ToString();
+            }
+        }
+
+        private static string CompilerTooltip(ShaderBuildSettings.ShaderCompilerToolchain compiler)
+        {
+            switch (compiler)
+            {
+                case ShaderBuildSettings.ShaderCompilerToolchain.FXC:
+                case ShaderBuildSettings.ShaderCompilerToolchain.DXC:
+                    return L10n.Tr("Compiler used for shaders targeting the selected graphics API. Per-shader '#pragma use_dxc' / '#pragma never_use_dxc' directives override this project setting.");
+                case ShaderBuildSettings.ShaderCompilerToolchain.Default:
+                default:
+                    return L10n.Tr("Compiler used for shaders targeting the selected graphics API.");
+            }
+        }
 
         public bool HasUnsavedChanges => m_HasUnsavedChanges;
 
@@ -37,9 +69,20 @@ namespace UnityEditor.Shaders
             if (m_SettingsDataStore != null)
                 m_SettingsProperty = m_SettingsDataStore.FindProperty("m_ShaderBuildSettings");
 
+            m_CachedBuildProfile = null;
+            m_LastBuildTarget = null;
+            m_SelectableApisCache = null;
+            if (m_IsTargetingBuildProfile && m_SettingsDataStore != null && m_SettingsDataStore.targetObject != null)
+            {
+                var assetPath = AssetDatabase.GetAssetPath(m_SettingsDataStore.targetObject);
+                if (!string.IsNullOrEmpty(assetPath))
+                    m_CachedBuildProfile = AssetDatabase.LoadMainAssetAtPath(assetPath) as BuildProfile;
+            }
+
             var shaderBuildSettingsUI = root.Q<VisualElement>("ShaderBuildSettings");
 
             m_ConstantDefineUXML = EditorGUIUtility.Load("ShaderBuildSettings/UXML/ShaderConstantDefine.uxml") as VisualTreeAsset;
+            m_CompilerBackendRowUXML = EditorGUIUtility.Load("ShaderBuildSettings/UXML/ShaderCompilerBackendRow.uxml") as VisualTreeAsset;
 
             m_KeywordDeclarationOverridesListView = shaderBuildSettingsUI.Q<ListView>("KeywordDeclarationOverrides");
             m_KeywordDeclarationOverridesListView.itemsSource = m_KeywordDeclarationOverrides;
@@ -59,6 +102,34 @@ namespace UnityEditor.Shaders
             m_ConstantDefinesListView.itemsAdded += OnItemsAdded;
             m_ConstantDefinesListView.itemsRemoved += OnItemsRemoved;
             m_ConstantDefinesListView.itemIndexChanged += OnItemIndexChanged;
+
+            var compilerBackendFoldout = shaderBuildSettingsUI.Q<Foldout>("CompilerBackendFoldout");
+            if (m_IsTargetingBuildProfile)
+            {
+                m_CompilerBackendListView = shaderBuildSettingsUI.Q<ListView>("CompilerBackendList");
+                m_CompilerBackendListView.itemsSource = m_CompilerBackendSettings;
+                m_CompilerBackendListView.makeItem = MakeCompilerBackendItem;
+                m_CompilerBackendListView.bindItem = BindCompilerBackendItem;
+                m_CompilerBackendListView.unbindItem = UnbindCompilerBackendItem;
+                m_CompilerBackendListView.itemsRemoved += OnCompilerBackendItemsRemoved;
+                m_CompilerBackendListView.overridingAddButtonBehavior = AddCompilerBackendRow;
+
+                m_CompilerBackendEmptyApisHelpBox = new HelpBox(
+                    L10n.Tr("Shader compiler toolchain selection is not available for this build target. Unity will use the default toolchain."),
+                    HelpBoxMessageType.Info);
+                m_CompilerBackendEmptyApisHelpBox.style.display = DisplayStyle.None;
+                compilerBackendFoldout?.Insert(0, m_CompilerBackendEmptyApisHelpBox);
+            }
+            else if (compilerBackendFoldout != null)
+            {
+                var listView = shaderBuildSettingsUI.Q<ListView>("CompilerBackendList");
+                if (listView != null)
+                    listView.style.display = DisplayStyle.None;
+                var helpBox = new HelpBox(
+                    L10n.Tr("Shader compiler toolchain selection is configured per Build Profile."),
+                    HelpBoxMessageType.Info);
+                compilerBackendFoldout.Insert(0, helpBox);
+            }
 
             m_ApplyButton = shaderBuildSettingsUI.Q<Button>("ApplyButton");
             m_ApplyButton.RegisterCallback<ClickEvent>(OnApplyClicked);
@@ -248,11 +319,14 @@ namespace UnityEditor.Shaders
 
         private void ApplySettings()
         {
-            string kdoValidationErrorMsg, defineValidationErrorMsg;
+            string kdoValidationErrorMsg, defineValidationErrorMsg, compilerValidationErrorMsg;
             int internalDefineCount = m_InternalConstantDefines.Count;
             m_InternalConstantDefines.InsertRange(m_InternalConstantDefines.Count, m_ConstantDefines); // temporarily combine the two define lists
             bool isValidData = ShaderBuildSettings.ValidateKeywordDeclarationOverrides(m_KeywordDeclarationOverrides.ToArray(), out kdoValidationErrorMsg);
             isValidData &= ShaderBuildSettings.ValidateDefinesInternal(m_InternalConstantDefines.ToArray(), (uint)internalDefineCount, out defineValidationErrorMsg);
+            compilerValidationErrorMsg = "";
+            if (m_IsTargetingBuildProfile)
+                isValidData &= ShaderBuildSettings.ValidateShaderCompilerSettings(m_CompilerBackendSettings.ToArray(), out compilerValidationErrorMsg);
             m_InternalConstantDefines.RemoveRange(internalDefineCount, m_InternalConstantDefines.Count - internalDefineCount); // revert the list back
 
             if (isValidData)
@@ -267,6 +341,9 @@ namespace UnityEditor.Shaders
 
                 if (defineValidationErrorMsg.Length > 0)
                     Debug.LogError(defineValidationErrorMsg);
+
+                if (compilerValidationErrorMsg.Length > 0)
+                    Debug.LogError(compilerValidationErrorMsg);
             }
         }
 
@@ -320,13 +397,24 @@ namespace UnityEditor.Shaders
             return kwoProp.FindPropertyRelative("variantGenerationMode");
         }
 
+        private SerializedProperty GetCompilerSettingsProperty()
+        {
+            return m_SettingsProperty?.FindPropertyRelative("compilerSettings");
+        }
+
         private void LoadSettingsData()
         {
+            // Clean stale selections before shrinking the list of keywords.
+            m_KeywordDeclarationOverridesListView.ClearSelection();
+            m_ConstantDefinesListView.ClearSelection();
+
             m_KeywordDeclarationOverrides.Clear();
             m_KeywordDeclarationOverridesListView.RefreshItems();
             m_InternalConstantDefines.Clear();
             m_ConstantDefines.Clear();
             m_ConstantDefinesListView.RefreshItems();
+            m_CompilerBackendSettings.Clear();
+            m_CompilerBackendListView?.RefreshItems();
 
             // When this UI is used for project settings, the serialized object is created from native GraphicsSettings.
             // Therefore the boxedValue etc are not usable here and we need to find the individual serialized properties manually.
@@ -377,12 +465,33 @@ namespace UnityEditor.Shaders
                         m_ConstantDefines.Add(element.stringValue);
                     }
                 }
+
+                if (m_IsTargetingBuildProfile)
+                {
+                    var compilerSettingsProp = GetCompilerSettingsProperty();
+                    if (compilerSettingsProp != null)
+                    {
+                        for (int i = 0, n = compilerSettingsProp.arraySize; i < n; ++i)
+                        {
+                            var element = compilerSettingsProp.GetArrayElementAtIndex(i);
+                            var apiProp = element.FindPropertyRelative("graphicsAPI");
+                            var compilerProp = element.FindPropertyRelative("compilerToolchainOverride");
+                            m_CompilerBackendSettings.Add(new ShaderBuildSettings.ShaderCompilerSettings
+                            {
+                                graphicsAPI = (GraphicsDeviceType)apiProp.intValue,
+                                compilerToolchainOverride = (ShaderBuildSettings.ShaderCompilerToolchain)compilerProp.intValue,
+                            });
+                        }
+                    }
+                }
             }
 
             m_LoadedItemInitialized = new bool[m_KeywordDeclarationOverrides.Count]; // Defaults to false
 
             m_KeywordDeclarationOverridesListView.RefreshItems();
             m_ConstantDefinesListView.RefreshItems();
+            m_CompilerBackendListView?.RefreshItems();
+            UpdateAddCompilerBackendButtonState();
         }
 
         private void SaveSettingsData()
@@ -431,6 +540,21 @@ namespace UnityEditor.Shaders
                     }
                 }
 
+                if (m_IsTargetingBuildProfile)
+                {
+                    var compilerSettingsProp = GetCompilerSettingsProperty();
+                    if (compilerSettingsProp != null)
+                    {
+                        compilerSettingsProp.arraySize = m_CompilerBackendSettings.Count;
+                        for (int i = 0, n = m_CompilerBackendSettings.Count; i < n; ++i)
+                        {
+                            var element = compilerSettingsProp.GetArrayElementAtIndex(i);
+                            element.FindPropertyRelative("graphicsAPI").intValue = (int)m_CompilerBackendSettings[i].graphicsAPI;
+                            element.FindPropertyRelative("compilerToolchainOverride").intValue = (int)m_CompilerBackendSettings[i].compilerToolchainOverride;
+                        }
+                    }
+                }
+
                 m_SettingsDataStore.ApplyModifiedProperties();
 
                 // Ensure that the re-imports are triggered if the currently active settings were touched
@@ -445,6 +569,239 @@ namespace UnityEditor.Shaders
                     AssetDatabase.Refresh();
                 }
             }
+        }
+
+        // --- Shader Compiler Backend Selection -----------------------------------------------
+
+        private VisualElement MakeCompilerBackendItem()
+        {
+            var element = m_CompilerBackendRowUXML.Instantiate();
+            FillSlotWithPopup<GraphicsDeviceType>(element, "GraphicsAPIDropdown",
+                "compiler-backend-api-dropdown", v => v.ToString(), OnCompilerBackendApiChanged);
+            FillSlotWithPopup<ShaderBuildSettings.ShaderCompilerToolchain>(element, "CompilerDropdown",
+                "compiler-backend-compiler-dropdown", CompilerDisplayName, OnCompilerBackendCompilerChanged);
+            return element;
+        }
+
+        // UXML can't express PopupField<T> for non-string T; the row template uses an empty VisualElement
+        // slot that this swaps for the typed PopupField at the same parent/index.
+        private static void FillSlotWithPopup<T>(VisualElement root, string name, string ussClass,
+            Func<T, string> formatter, EventCallback<ChangeEvent<T>> changedCallback)
+        {
+            var slot = root.Q<VisualElement>(name);
+            if (slot == null)
+                return;
+            var parent = slot.parent;
+            int idx = parent.IndexOf(slot);
+            parent.Remove(slot);
+            var popup = new PopupField<T>
+            {
+                name = name,
+                choices = new List<T>(),
+                formatListItemCallback = formatter,
+                formatSelectedValueCallback = formatter,
+            };
+            popup.AddToClassList(ussClass);
+            popup.RegisterValueChangedCallback(changedCallback);
+            parent.Insert(idx, popup);
+        }
+
+        private BuildTarget GetCurrentBuildTarget()
+        {
+            if (m_IsTargetingBuildProfile && m_CachedBuildProfile != null)
+                return m_CachedBuildProfile.buildTarget;
+            return EditorUserBuildSettings.activeBuildTarget;
+        }
+
+        // Cached; invalidated only on build target change.
+        private List<GraphicsDeviceType> GetSelectableApisForCurrentTarget()
+        {
+            var currentTarget = GetCurrentBuildTarget();
+            if (m_SelectableApisCache != null && m_LastBuildTarget == currentTarget)
+                return m_SelectableApisCache;
+
+            m_LastBuildTarget = currentTarget;
+            var result = new List<GraphicsDeviceType>();
+            GraphicsDeviceType[] targetSupported;
+            try
+            {
+                targetSupported = PlayerSettings.GetSupportedGraphicsAPIs(currentTarget)
+                    ?? Array.Empty<GraphicsDeviceType>();
+            }
+            catch
+            {
+                targetSupported = Array.Empty<GraphicsDeviceType>();
+            }
+
+            for (int i = 0; i < targetSupported.Length; ++i)
+            {
+                var api = targetSupported[i];
+                if (ShaderBuildSettings.SupportsCompilerToolchainOverride(api))
+                    result.Add(api);
+            }
+            m_SelectableApisCache = result;
+            return result;
+        }
+
+        private void BindCompilerBackendItem(VisualElement element, int index)
+        {
+            var apiPopup = element.Q<PopupField<GraphicsDeviceType>>("GraphicsAPIDropdown");
+            var compilerPopup = element.Q<PopupField<ShaderBuildSettings.ShaderCompilerToolchain>>("CompilerDropdown");
+            if (apiPopup == null || compilerPopup == null)
+                return;
+
+            if (index < 0 || index >= m_CompilerBackendSettings.Count)
+                return;
+
+            var row = m_CompilerBackendSettings[index];
+            var selectable = GetSelectableApisForCurrentTarget();
+
+            var inUseByOthers = new HashSet<GraphicsDeviceType>();
+            for (int j = 0, n = m_CompilerBackendSettings.Count; j < n; ++j)
+            {
+                if (j != index)
+                    inUseByOthers.Add(m_CompilerBackendSettings[j].graphicsAPI);
+            }
+
+            var apiChoices = new List<GraphicsDeviceType>(selectable.Count);
+            for (int i = 0; i < selectable.Count; ++i)
+            {
+                var candidate = selectable[i];
+                if (!inUseByOthers.Contains(candidate))
+                    apiChoices.Add(candidate);
+            }
+
+            apiPopup.choices = apiChoices;
+            apiPopup.SetValueWithoutNotify(row.graphicsAPI);
+            apiPopup.tooltip = L10n.Tr("Select the graphics API this compiler choice applies to.");
+
+            var supportedCompilers = ShaderBuildSettings.GetSupportedCompilerToolchainsForAPI(row.graphicsAPI)
+                ?? new[] { ShaderBuildSettings.ShaderCompilerToolchain.Default };
+            compilerPopup.choices = new List<ShaderBuildSettings.ShaderCompilerToolchain>(supportedCompilers);
+            compilerPopup.SetValueWithoutNotify(row.compilerToolchainOverride);
+            compilerPopup.SetEnabled(supportedCompilers.Length > 1);
+            compilerPopup.tooltip = CompilerTooltip(row.compilerToolchainOverride);
+
+            // Callbacks are registered once in MakeCompilerBackendItem; userData carries the row index they read.
+            apiPopup.userData = index;
+            compilerPopup.userData = index;
+        }
+
+        private void UnbindCompilerBackendItem(VisualElement element, int index)
+        {
+            var apiPopup = element.Q<PopupField<GraphicsDeviceType>>("GraphicsAPIDropdown");
+            var compilerPopup = element.Q<PopupField<ShaderBuildSettings.ShaderCompilerToolchain>>("CompilerDropdown");
+            if (apiPopup != null) apiPopup.userData = null;
+            if (compilerPopup != null) compilerPopup.userData = null;
+        }
+
+        private static bool TryGetRowIndex(EventBase evt, int max, out int rowIndex)
+        {
+            rowIndex = -1;
+            if ((evt.target as VisualElement)?.userData is not int idx)
+                return false;
+            if (idx < 0 || idx >= max)
+                return false;
+            rowIndex = idx;
+            return true;
+        }
+
+        private void OnCompilerBackendApiChanged(ChangeEvent<GraphicsDeviceType> evt)
+        {
+            if (!TryGetRowIndex(evt, m_CompilerBackendSettings.Count, out int rowIndex))
+                return;
+
+            var api = evt.newValue;
+            var row = m_CompilerBackendSettings[rowIndex];
+            row.graphicsAPI = api;
+            // Pre-select the recommended compiler for the new API, matching AddCompilerBackendRow.
+            row.compilerToolchainOverride = PickRecommendedCompilerToolchainForAPI(api);
+            m_CompilerBackendSettings[rowIndex] = row;
+            m_CompilerBackendListView.RefreshItems();
+            SettingsChanged();
+            UpdateAddCompilerBackendButtonState();
+        }
+
+        private void OnCompilerBackendCompilerChanged(ChangeEvent<ShaderBuildSettings.ShaderCompilerToolchain> evt)
+        {
+            if (!TryGetRowIndex(evt, m_CompilerBackendSettings.Count, out int rowIndex))
+                return;
+
+            var compiler = evt.newValue;
+            var row = m_CompilerBackendSettings[rowIndex];
+            row.compilerToolchainOverride = compiler;
+            m_CompilerBackendSettings[rowIndex] = row;
+            if (evt.target is VisualElement el)
+                el.tooltip = CompilerTooltip(compiler);
+            SettingsChanged();
+        }
+
+        // Recommended = first non-Default in the native list; Default if the API has no override entry.
+        private static ShaderBuildSettings.ShaderCompilerToolchain PickRecommendedCompilerToolchainForAPI(GraphicsDeviceType api)
+        {
+            var supported = ShaderBuildSettings.GetSupportedCompilerToolchainsForAPI(api);
+            if (supported != null)
+            {
+                for (int i = 0; i < supported.Length; ++i)
+                {
+                    if (supported[i] != ShaderBuildSettings.ShaderCompilerToolchain.Default)
+                        return supported[i];
+                }
+            }
+            return ShaderBuildSettings.ShaderCompilerToolchain.Default;
+        }
+
+        private GraphicsDeviceType? FindFirstUnusedSelectableApi()
+        {
+            var selectable = GetSelectableApisForCurrentTarget();
+            var inUse = new HashSet<GraphicsDeviceType>();
+            for (int j = 0, n = m_CompilerBackendSettings.Count; j < n; ++j)
+                inUse.Add(m_CompilerBackendSettings[j].graphicsAPI);
+
+            for (int i = 0; i < selectable.Count; ++i)
+            {
+                if (!inUse.Contains(selectable[i]))
+                    return selectable[i];
+            }
+            return null;
+        }
+
+        private void AddCompilerBackendRow(BaseListView listView, Button addButton)
+        {
+            var apiOpt = FindFirstUnusedSelectableApi();
+            // Defensive: add button is gated by allowAdd, but a programmatic add could bypass it.
+            if (apiOpt == null)
+                return;
+
+            var api = apiOpt.Value;
+            m_CompilerBackendSettings.Add(new ShaderBuildSettings.ShaderCompilerSettings
+            {
+                graphicsAPI = api,
+                compilerToolchainOverride = PickRecommendedCompilerToolchainForAPI(api),
+            });
+            m_CompilerBackendListView.RefreshItems();
+            UpdateAddCompilerBackendButtonState();
+            SettingsChanged();
+        }
+
+        private void OnCompilerBackendItemsRemoved(IEnumerable<int> indices)
+        {
+            SettingsChanged();
+            // itemsRemoved fires before itemsSource updates; defer one frame to read post-removal count.
+            m_CompilerBackendListView?.schedule.Execute(UpdateAddCompilerBackendButtonState);
+        }
+
+        private void UpdateAddCompilerBackendButtonState()
+        {
+            if (m_CompilerBackendListView == null)
+                return;
+            // Drives footer add-button via the public API; avoids the internal "unity-list-view__add-button" class.
+            m_CompilerBackendListView.allowAdd = FindFirstUnusedSelectableApi() != null;
+
+            bool hasSelectableApis = GetSelectableApisForCurrentTarget().Count > 0;
+            m_CompilerBackendListView.style.display = hasSelectableApis ? DisplayStyle.Flex : DisplayStyle.None;
+            if (m_CompilerBackendEmptyApisHelpBox != null)
+                m_CompilerBackendEmptyApisHelpBox.style.display = hasSelectableApis ? DisplayStyle.None : DisplayStyle.Flex;
         }
     }
 }

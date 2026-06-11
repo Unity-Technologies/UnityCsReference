@@ -17,12 +17,19 @@ sealed class AddStyleRuleCommand : Command<AddStyleRuleCommand>
         return cmd;
     }
 
+    public static void Execute(object source, StyleSheet styleSheet, string selectorString)
+    {
+        using var command = GetPooled(source, styleSheet, selectorString);
+        UICommandQueue.Execute(command);
+    }
+
     const string CommandUndoName = "Add style rule";
 
     public StyleSheet StyleSheet { get; private set; }
     public string SelectorString { get; private set; }
 
     public override string UndoName => CommandUndoName;
+    public override CommandCategory Category { get; } = CommandCategory.StylingContext;
 
     protected override void Init()
     {

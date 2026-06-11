@@ -6,10 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static partial class UIElementsTemplate
     {
         private static string GetCurrentFolder()
@@ -50,6 +52,7 @@ namespace UnityEditor.UIElements
             ProjectWindowUtil.CreateAssetWithTextContent("NewUXMLTemplate.uxml", contents, icon, onRenameComplete);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         public static string CreateUXMLTemplate(string folder, string uxmlContent = "")
         {
             if (!Directory.Exists(UxmlSchemaGenerator.SchemaFolder))

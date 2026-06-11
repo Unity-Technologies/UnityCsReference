@@ -74,6 +74,7 @@ internal class DropdownHandler : BaseService<IDropdownHandler>, IDropdownHandler
     private readonly IPackageOperationDispatcher m_OperationDispatcher;
     private readonly ICustomDisplayDialog m_CustomDisplayDialog;
     private readonly IPackageCreator m_PackageCreator;
+    private readonly IApplicationProxy m_Application;
     public DropdownHandler(IResourceLoader resourceLoader,
         IUpmClient upmClient,
         IAssetStoreDownloadManager assetStoreDownloadManager,
@@ -81,7 +82,8 @@ internal class DropdownHandler : BaseService<IDropdownHandler>, IDropdownHandler
         IPageManager pageManager,
         IPackageOperationDispatcher operationDispatcher,
         ICustomDisplayDialog customDisplayDialog,
-        IPackageCreator packageCreator)
+        IPackageCreator packageCreator,
+        IApplicationProxy application)
     {
         m_ResourceLoader = RegisterDependency(resourceLoader);
         m_UpmClient = RegisterDependency(upmClient);
@@ -91,6 +93,7 @@ internal class DropdownHandler : BaseService<IDropdownHandler>, IDropdownHandler
         m_OperationDispatcher = RegisterDependency(operationDispatcher);
         m_CustomDisplayDialog = RegisterDependency(customDisplayDialog);
         m_PackageCreator = RegisterDependency(packageCreator);
+        m_Application = RegisterDependency(application);
     }
 
     public void ShowAddPackageByNameDropdown(VisualElement anchorElement, string packageName = null, string packageVersion = null)
@@ -105,7 +108,7 @@ internal class DropdownHandler : BaseService<IDropdownHandler>, IDropdownHandler
 
     public void ShowCreatePackageDropdown(VisualElement anchorElement)
     {
-        DropdownWindow.ShowDropdown(anchorElement, new CreatePackageDropdown(m_ResourceLoader, m_PackageCreator));
+        DropdownWindow.ShowDropdown(anchorElement, new CreatePackageDropdown(m_ResourceLoader, m_PackageCreator, m_Application));
     }
 
     public void ShowGenericInputDropdown(VisualElement anchorElement, InputDropdownArgs args)

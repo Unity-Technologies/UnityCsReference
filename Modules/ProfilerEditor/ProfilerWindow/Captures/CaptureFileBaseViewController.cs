@@ -5,6 +5,7 @@
 using System.IO;
 using System.Text;
 using Unity.Collections;
+using UnityEditor.Accessibility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -38,6 +39,7 @@ namespace Unity.Profiling.Editor.UI
         {
             Model = model;
             m_ScreenshotsManager = screenshotsManager;
+            UserAccessiblitySettings.colorBlindConditionChanged += OnColorBlindSettingChanged;
         }
 
         protected void ScreenshotRefresh()
@@ -52,9 +54,20 @@ namespace Unity.Profiling.Editor.UI
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
+                UserAccessiblitySettings.colorBlindConditionChanged -= OnColorBlindSettingChanged;
                 m_BottleneckModel?.Dispose();
+            }
 
             base.Dispose(disposing);
+        }
+
+        void OnColorBlindSettingChanged()
+        {
+            if (!IsViewLoaded)
+                return;
+
+            m_BlocksGraphView?.MarkDirtyRepaint();
         }
 
         protected override void ViewLoaded()
@@ -160,7 +173,7 @@ namespace Unity.Profiling.Editor.UI
 
         Color BlocksGraphViewRender.IDataSource.ColorForDataSeriesInGraphView(int dataSeriesIndex)
         {
-            return BottlenecksChartViewModel.Colors[dataSeriesIndex];
+            return BottlenecksChartViewModel.GetColorForDataSeries(dataSeriesIndex);
         }
 
         Color BlocksGraphViewRender.IDataSource.InvalidColorForDataSeriesInGraphView()

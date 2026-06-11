@@ -183,7 +183,7 @@ namespace UnityEditor
             }
             else
             {
-                IntDraggable(rect, null, burstCycleCount, k_BurstDragWidth);
+                IntDraggable(rect, GUIContent.none, burstCycleCount, k_BurstDragWidth);
             }
             rect.width += k_minMaxToggleWidth;
             Rect popupRect = GetPopupRect(rect);

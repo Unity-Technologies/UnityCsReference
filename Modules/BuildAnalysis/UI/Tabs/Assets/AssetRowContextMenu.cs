@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Build.Analysis
 {
     /// <summary>
-    /// Shared row context menu for asset tables (Asset Table now, Root Asset Table later).
+    /// Shared row context menu for asset tables
     /// Reads the asset path from the cell's <see cref="VisualElement.userData"/> at populate
     /// time so the menu always reflects the row currently bound to that cell.
     /// </summary>

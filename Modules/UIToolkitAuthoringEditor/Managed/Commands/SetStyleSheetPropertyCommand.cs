@@ -3,56 +3,80 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct SetStyleSheetPropertyCommand<T>
+internal sealed class SetStyleSheetPropertyCommand<T> : Command<SetStyleSheetPropertyCommand<T>>
 {
     const string CommandUndoName = "Set style property";
 
-    readonly StyleSheet StyleSheet;
-    readonly StyleRule Rule;
-    readonly StylePropertyId StylePropertyId;
-    readonly Action<StyleProperty, StyleSheet, T> ValueSetter;
-    readonly T Value;
-
-    public SetStyleSheetPropertyCommand(StyleSheet styleSheet,
+    public static SetStyleSheetPropertyCommand<T> GetPooled(
+        object source,
+        StyleSheet styleSheet,
         StyleRule rule,
         StylePropertyId stylePropertyId,
         Action<StyleProperty, StyleSheet, T> valueSetter,
         T value)
     {
-        StyleSheet = styleSheet;
-        Rule = rule;
-        StylePropertyId = stylePropertyId;
-        ValueSetter = valueSetter;
-        Value = value;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Rule = rule;
+        cmd.StylePropertyId = stylePropertyId;
+        cmd.ValueSetter = valueSetter;
+        cmd.Value = value;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(
+        object source,
+        StyleSheet styleSheet,
+        StyleRule rule,
+        StylePropertyId stylePropertyId,
+        Action<StyleProperty, StyleSheet, T> valueSetter,
+        T value)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(Rule);
+        using var command = GetPooled(source, styleSheet, rule, stylePropertyId, valueSetter, value);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
+    public StyleRule Rule { get; private set; }
+    public StylePropertyId StylePropertyId { get; private set; }
+    public Action<StyleProperty, StyleSheet, T> ValueSetter { get; private set; }
+    public T Value { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Styling;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Rule = null;
+        StylePropertyId = default;
+        ValueSetter = null;
+        Value = default;
+    }
+
+    public override bool Validate() => StyleSheet != null && Rule != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         var property = GetOrCreateStyleProperty(Rule, StylePropertyId);
         ValueSetter(property, StyleSheet, Value);
-
-        EditorUtility.SetDirty(StyleSheet);
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
-        {
-            stage.PanelElement.FrameUpdate();
-        }
+        return CommandExecutionStatus.Success;
     }
 
-
-    private static StyleProperty GetOrCreateStyleProperty(StyleRule rule, StylePropertyId stylePropertyId)
+    static StyleProperty GetOrCreateStyleProperty(StyleRule rule, StylePropertyId stylePropertyId)
     {
         return rule.FindLastProperty(stylePropertyId) ?? rule.AddProperty(stylePropertyId);
     }

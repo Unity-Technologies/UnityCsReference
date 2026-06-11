@@ -431,6 +431,9 @@ namespace UnityEditor
                 case SerializedPropertyType.LoadableObjectId:
                     res["val"] = WriteCustom(new LoadableObjectIdWrapper(p.loadableObjectIdValue));
                     break;
+                case SerializedPropertyType.LoadableSceneId:
+                    res["val"] = WriteCustom(new LoadableSceneIdWrapper(p.loadableSceneIdValue));
+                    break;
 
                 // Copy/Paste of these for generic serialized properties is not implemented yet.
                 case SerializedPropertyType.ExposedReference: break;
@@ -554,6 +557,10 @@ namespace UnityEditor
                         if (ParseCustom<LoadableObjectIdWrapper>(Convert.ToString(oval), out var loadableObjectIdWrapper))
                             prop.loadableObjectIdValue = loadableObjectIdWrapper.ToLoadableObjectId();
                         break;
+                    case SerializedPropertyType.LoadableSceneId:
+                        if (ParseCustom<LoadableSceneIdWrapper>(Convert.ToString(oval), out var loadableSceneIdWrapper))
+                            prop.loadableSceneIdValue = loadableSceneIdWrapper.ToLoadableSceneId();
+                        break;
 
                     // Copy/Paste of these for generic serialized properties is not implemented yet.
                     case SerializedPropertyType.FixedBufferSize: break;
@@ -671,5 +678,17 @@ namespace UnityEditor
         public LoadableObjectId loadableObjectId;
 
         public LoadableObjectId ToLoadableObjectId() => loadableObjectId;
+    }
+
+    [Serializable]
+    internal class LoadableSceneIdWrapper
+    {
+        public LoadableSceneIdWrapper() { }
+
+        public LoadableSceneIdWrapper(LoadableSceneId s) { sceneGUID = LoadableSceneIdEditorUtility.LoadableSceneIdToGuid(s).ToString(); }
+
+        public string sceneGUID = "";
+
+        public LoadableSceneId ToLoadableSceneId() => LoadableSceneIdEditorUtility.CreateLoadableSceneId(GUID.TryParse(sceneGUID, out var guid) ? guid : new GUID());
     }
 }

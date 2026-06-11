@@ -74,11 +74,11 @@ namespace UnityEngine
             return s_DuplicateEntriesForDictionaries != null && s_DuplicateEntriesForDictionaries.HostHasDuplicateDictionaryEntries(entityId);
         }
 
-        internal static int PruneDuplicateDictionaryEntriesWhere(Predicate<EntityId> shouldRemoveHost)
+        internal static int PruneDuplicateDictionaryEntriesForUnloadedHosts()
         {
-            if (s_DuplicateEntriesForDictionaries == null || shouldRemoveHost == null)
+            if (s_DuplicateEntriesForDictionaries == null)
                 return 0;
-            return s_DuplicateEntriesForDictionaries.PruneHostsWhere(shouldRemoveHost);
+            return s_DuplicateEntriesForDictionaries.PruneUnloadedHosts();
         }
 
         internal static bool HasAnyCachedDuplicateDictionaryHosts()
@@ -86,7 +86,7 @@ namespace UnityEngine
             return s_DuplicateEntriesForDictionaries != null && s_DuplicateEntriesForDictionaries.HasAnyCachedHosts;
         }
 
-        private delegate bool SetEntriesTypedDelegate(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier);
+        private delegate bool SetEntriesTypedDelegate(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates);
         private static readonly MethodInfo s_SetEntriesTypedInfo = typeof(DictionarySerialization).GetMethod(nameof(SetEntriesTyped), BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly ConcurrentDictionary<Type, SetEntriesTypedDelegate> s_SetEntriesTypedCache = new ConcurrentDictionary<Type, SetEntriesTypedDelegate>();
 
@@ -94,8 +94,10 @@ namespace UnityEngine
         private static readonly MethodInfo s_GetEntriesTypedInfo = typeof(DictionarySerialization).GetMethod(nameof(GetEntriesTyped), BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly ConcurrentDictionary<Type, GetEntriesTypedDelegate> s_GetEntriesTypedCache = new ConcurrentDictionary<Type, GetEntriesTypedDelegate>();
 
-        private static bool SetEntriesTyped<TKey, TValue>(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier)
+        private static bool SetEntriesTyped<TKey, TValue>(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates)
         {
+            hadDuplicates = false;
+
             if (dictionary is not Dictionary<TKey, TValue> dict)
                 return false;
 
@@ -168,12 +170,20 @@ namespace UnityEngine
                     + "This typically indicates a user-defined GetHashCode or Equals on the key type threw.");
             }
 
+            // Intentional: hadDuplicates is assigned only on the editor duplicate-tracking path. Player
+            // builds (s_DuplicateEntriesForDictionaries == null) and editor loads without an active
+            // FieldUniqueIdentifierContext (empty dictionaryIdentifier) do not track duplicates and must
+            // not surface the Console warning -- the native caller (DictionaryField::SetArray) gates
+            // logging on this flag, and the matching DebugAssert there encodes the same invariant.
             if (s_DuplicateEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryIdentifier))
             {
                 if (duplicateIndices == null)
                     s_DuplicateEntriesForDictionaries.Clear(hostingEntityId, dictionaryIdentifier);
                 else
+                {
                     s_DuplicateEntriesForDictionaries.Store(hostingEntityId, dictionaryIdentifier, new DuplicateEntriesData(duplicateIndices.ToArray(), duplicateEntries.ToArray(), dict.Count));
+                    hadDuplicates = duplicateIndices.Count > 0;
+                }
             }
 
             return true;
@@ -320,9 +330,17 @@ namespace UnityEngine
         /// from each serialized key/value entry. Duplicate keys are tracked in
         /// <see cref="s_DuplicateEntriesForDictionaries"/> when the Editor context is set so Apply/Update can preserve them.
         /// </summary>
+        /// <param name="hadDuplicates">Editor-only signal: set to <c>true</c> only on the duplicate-tracking path
+        /// (when <see cref="s_DuplicateEntriesForDictionaries"/> is non-null and <paramref name="dictionaryIdentifier"/>
+        /// is non-empty). Always <c>false</c> in player builds (no duplicate tracking) and on Editor loads without an
+        /// active FieldUniqueIdentifierContext (no identifier to anchor a warning to). The native caller uses this as
+        /// the gate for emitting the Editor-only Console warning in <c>DictionaryField::SetArray</c>. Always set even
+        /// when this method returns <c>false</c>.</param>
         [RequiredByNativeCode]
-        internal static bool SetEntriesFromSerializedData(EntityId hostingEntityId, object dictionary, object entriesArray, string dictionaryIdentifier)
+        internal static bool SetEntriesFromSerializedData(EntityId hostingEntityId, object dictionary, object entriesArray, string dictionaryIdentifier, out bool hadDuplicates)
         {
+            hadDuplicates = false;
+
             if (dictionary == null)
                 return false;
 
@@ -341,7 +359,7 @@ namespace UnityEngine
                 return false;
 
             var setEntries = GetSetEntriesTypedDelegate(dictArgs);
-            return setEntries(hostingEntityId, dictionary, array, dictionaryIdentifier);
+            return setEntries(hostingEntityId, dictionary, array, dictionaryIdentifier, out hadDuplicates);
         }
 
         /// <summary>

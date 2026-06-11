@@ -100,10 +100,12 @@ namespace Unity.Profiling.Editor.UI
             // Await the top markers for the longest frame and invoke callback.
             var buildTopMarkersForLongestFrame = topRangeMarkersBuilder.BuildTopMarkersForLongestFrame;
             var topMarkersForLongestFrame = await buildTopMarkersForLongestFrame;
+            cancellationToken.ThrowIfCancellationRequested();
             OnTopFrameMarkersBuildCompleted.Invoke(topMarkersForLongestFrame);
 
             // Await the top markers for the full range and invoke callbacks.
             var topRangeMarkers = await buildTopRangeMarkers;
+            cancellationToken.ThrowIfCancellationRequested();
             OnTopRangeMarkersBuildCompleted.Invoke(topRangeMarkers.TopMarkersByExclusiveTime);
             OnTopGCMarkersBuildCompleted.Invoke(topRangeMarkers.TopMarkersByGCAllocation);
         }

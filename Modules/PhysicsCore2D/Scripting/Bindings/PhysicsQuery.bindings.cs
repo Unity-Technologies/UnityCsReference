@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         [NativeMethod(Name = "PhysicsQuery::ShapeAndShape", IsThreadSafe = true)] extern internal static PhysicsShape.ContactManifold PhysicsQuery_ShapeAndShape(PhysicsShape shapeA, PhysicsTransform transformA, PhysicsShape shapeB, PhysicsTransform transformB);
         [NativeMethod(Name = "PhysicsQuery::CircleAndCircle", IsThreadSafe = true)] extern internal static PhysicsShape.ContactManifold PhysicsQuery_CircleAndCircle(CircleGeometry geometryA, PhysicsTransform transformA, CircleGeometry geometryB, PhysicsTransform transformB);

@@ -54,6 +54,11 @@ static class CommandSources
     /// Command source representing the Uss Preview window.
     /// </summary>
     public static readonly CommandSource UssPreview = new();
+
+    /// <summary>
+    /// Command source representing any menu (context menu, top bar menu, etc.)
+    /// </summary>
+    public static readonly CommandSource Menus = new();
 }
 
 /// <summary>
@@ -71,33 +76,40 @@ internal enum CommandCategory
     None = 0,
 
     /// <summary>
-    /// Command category for inline style rule-related commands.
-    /// Commands in this category modify inline styles on visual elements.
+    /// Command category for styling related commands.
+    /// Commands in this category modify styles on a style sheet.
     /// </summary>
-    InlineRule = 1 << 0,
-
-    /// <summary>
-    /// Command category for style sheet rule-related commands.
-    /// Commands in this category modify style sheet rules.
-    /// </summary>
-    StyleSheetRule = 1 << 1,
+    Styling = 1 << 0,
 
     /// <summary>
     /// Command category for styling context related commands.
     /// Commands in this category modify data that would change the set of selectors matching for a given element. For
     /// example, adding or removing a style sheet, change the element's name, adding or removing a selector, etc.
     /// </summary>
-    StylingContext = 1 << 2,
+    StylingContext = 1 << 1,
+
+    /// <summary>
+    /// Command category for Uxml Attributes related commands.
+    /// Commands in this category modify data on the UxmlSerializedData type for a given element.
+    /// </summary>
+    Attributes = 1 << 2,
+
+    /// <summary>
+    /// Command category for hierarchy related commands.
+    /// Commands in this category modify the visual tree of a VisualTreeAsset. For
+    /// example, adding or removing an element.
+    /// </summary>
+    Hierarchy = 1 << 3,
 
     /// <summary>
     /// Command category for highlight related commands.
     /// Commands in this category either request or process highlight items.
     /// </summary>
-    Highlight = 1 << 3,
+    Highlight = 1 << 4,
 
     /// <summary>
     /// Command category for selection related commands.
     /// Commands in this category either request or process selection.
     /// </summary>
-    Selection = 1 << 4,
+    Selection = 1 << 5,
 }

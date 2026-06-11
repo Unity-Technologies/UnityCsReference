@@ -32,9 +32,20 @@ namespace UnityEditor
             public static GUIContent VirtualizeEffects      = EditorGUIUtility.TrTextContent("Virtualize Effects", "When enabled, dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.");
             public static GUIContent EnableOutputSuspension = EditorGUIUtility.TrTextContent("Enable Output Suspension (editor only)", "When enabled automatically suspends audio output after detecting that the output has been silent for a long duration (editor only). Suspending the audio system disables a mechanism in the operating system that prevents the computer from going into sleep mode.");
 
+        }
+
+        private class StylesNonSearchable
+        {
             public static GUIContent DSPBufferSizeInfo = EditorGUIUtility.TrTextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system");
             public static GUIContent EnhancedAudioFoundationInfo = EditorGUIUtility.TrTextContent("Enhanced will be used on Windows, macOS, iOS, Android (8.1 and later), and Xbox. Other platforms will use Classic.");
         }
+
+        static readonly string[] k_AdditionalSearchKeywords =
+        {
+            "enhanced audio foundation",
+        };
+
+        static List<string> s_SearchKeywords;
 
         private static bool m_ShowAudioFoundationUI = Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "-showAudioFoundationUI" || arg == "-enhancedAudioFoundation");
 
@@ -107,7 +118,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_RequestedDSPBufferSize, Styles.DSPBufferSize);
             if (m_RequestedDSPBufferSize.intValue != m_ActualDSPBufferSize.intValue)
                 EditorGUILayout.HelpBox(
-                    string.Format(Styles.DSPBufferSizeInfo.text,
+                    string.Format(StylesNonSearchable.DSPBufferSizeInfo.text,
                         m_RequestedDSPBufferSize.intValue == 0 ? "default" : m_RequestedDSPBufferSize.intValue.ToString(),
                         m_ActualDSPBufferSize.intValue),
                     MessageType.Info);
@@ -117,7 +128,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_AudioFoundation, Styles.AudioFoundation);
                 if (m_AudioFoundation.intValue.Equals(1))
                 {
-                    EditorGUILayout.HelpBox(Styles.EnhancedAudioFoundationInfo.text, MessageType.Info);
+                    EditorGUILayout.HelpBox(StylesNonSearchable.EnhancedAudioFoundationInfo.text, MessageType.Info);
                     EditorGUI.indentLevel++;
                     EditorGUILayout.PropertyField(m_OutputChannelLayout, Styles.OutputChannelLayout);
                     EditorGUILayout.PropertyField(m_OutputSamplingRate, Styles.OutputSamplingRate);
@@ -185,9 +196,16 @@ namespace UnityEditor
         [SettingsProvider]
         static SettingsProvider CreateProjectSettingsProvider()
         {
+            if (s_SearchKeywords == null)
+            {
+                s_SearchKeywords = new List<string>();
+                s_SearchKeywords.AddRange(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>());
+                s_SearchKeywords.AddRange(k_AdditionalSearchKeywords);
+            }
+
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/Audio", "ProjectSettings/AudioManager.asset",
-                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>());
+                s_SearchKeywords);
             return provider;
         }
     }

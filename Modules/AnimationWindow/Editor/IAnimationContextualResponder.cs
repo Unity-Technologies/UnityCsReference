@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
     // Required information for animation recording.
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IAnimationContextualResponder
     {
         bool IsAnimatable(PropertyModification[] modifications);

@@ -30,6 +30,23 @@ namespace UnityEngine.UIElements.UIR
         internal uint updateAllocID; // If not 0, the alloc here points to a temporary location managed by an update record with the said ID
     }
 
+    // Keep in sync with native UIToolkit::KickRangesReason (UIRendererCommon.h).
+    internal enum KickRangesReason : byte
+    {
+        None = 0,
+        MaterialChange,
+        PageChange,
+        TextureSlotsExhausted,
+        StencilRefChange,
+        BreakBatches,
+        RangesBufferFull,
+        ImmediateCommand,
+        RenderChainCut,
+        DefaultMaterialChange,
+        ScissorChange,
+        ViewChange,
+    }
+
     class UIRenderDevice : IDisposable
     {
         public static class Testing
@@ -60,6 +77,18 @@ namespace UnityEngine.UIElements.UIR
 
         IntPtr m_DefaultStencilState;
         IntPtr m_VertexDecl;
+        readonly ExtraVertexChannels m_ExtraVertexChannels;
+        readonly uint m_ExtrasStride;
+
+        // Shared zero-fill template for draws that don't provide user extras. Pointer is shared across jobs.
+        unsafe ConvertMeshExtrasData* m_NoUserExtrasTemplate;
+        static readonly MemoryLabel k_NoUserExtrasLabel = new(nameof(UIElements), "Renderer.NoUserExtrasTemplate");
+
+        public ExtraVertexChannels extraVertexChannels => m_ExtraVertexChannels;
+        public uint extrasStride => m_ExtrasStride;
+        public uint vertexStride => (uint)Unsafe.SizeOf<Vertex>() + m_ExtrasStride;
+
+        internal unsafe IntPtr noUserExtrasTemplatePtr => (IntPtr)m_NoUserExtrasTemplate;
 
         List<MeshHandle> m_MeshesPendingFree;
         CommandListManager m_CommandListManager;
@@ -109,7 +138,7 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false)
+        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false, ExtraVertexChannels extraVertexChannels = ExtraVertexChannels.None)
         {
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
             Debug.Assert(k_PruneEmptyPageFrameCount > k_MaxQueuedFrameCount); // To prevent pending updates from attempting to access a pruned page.
@@ -124,23 +153,35 @@ namespace UnityEngine.UIElements.UIR
 
             this.isFlat = isFlat;
             this.forceGammaRendering = forceGammaRendering;
+            m_ExtraVertexChannels = extraVertexChannels;
+            m_ExtrasStride = (uint)UIRUtility.ExtrasStride(extraVertexChannels);
+
+            unsafe
+            {
+                if (m_ExtraVertexChannels != ExtraVertexChannels.None)
+                {
+                    m_NoUserExtrasTemplate = (ConvertMeshExtrasData*)UnsafeUtility.MallocTracked(
+                        sizeof(ConvertMeshExtrasData), 16, k_NoUserExtrasLabel, 0);
+                    BuildNoUserExtrasTemplate(m_ExtraVertexChannels, m_NoUserExtrasTemplate);
+                }
+            }
 
             if (!Utility.HasMappedBufferRange())
             {
                 // Not optimal for WebGPU (double staging since the GfxDevice already has a staging CPU buffer).
                 // Typically only for WebGL
-                m_MeshManager = new MeshManagerBasic(initialVertexCapacity, initialIndexCapacity, GpuUpdaterType.StagedCpuGpu);
+                m_MeshManager = new MeshManagerBasic(initialVertexCapacity, initialIndexCapacity, m_ExtrasStride, GpuUpdaterType.StagedCpuGpu);
             }
             else if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.WebGPU)
             {
                 // Not supported on WebGL because it doesn't support partial buffer updates (it re-creates the buffer).
-                m_MeshManager = new MeshManagerBasic(initialVertexCapacity, initialIndexCapacity, GpuUpdaterType.StagedGpuOnly);
+                m_MeshManager = new MeshManagerBasic(initialVertexCapacity, initialIndexCapacity, m_ExtrasStride, GpuUpdaterType.StagedGpuOnly);
             }
             else
             {
                 // Not supported on WebGL because it doesn't support partial buffer updates (it re-creates the buffer).
                 // Not optimal on WebGPU because tracking is not required (buffer access is exclusive).
-                m_MeshManager = new MeshManagerTracked(initialVertexCapacity, initialIndexCapacity);
+                m_MeshManager = new MeshManagerTracked(initialVertexCapacity, initialIndexCapacity, m_ExtrasStride);
             }
 
             m_MeshesPendingFree = new();
@@ -170,9 +211,35 @@ namespace UnityEngine.UIElements.UIR
             m_CommandListManager = new(m_VertexDecl, m_DefaultStencilState);
         }
 
+        static int ReserveExtrasOffset(ExtraVertexChannels channel, ExtraVertexChannels mask, ref int cursor)
+        {
+            if ((mask & channel) == 0)
+                return -1;
+            int o = cursor;
+            cursor += UIRUtility.k_ExtrasChannelBytes;
+            return o;
+        }
+
+        // Channel order must match UIRUtility.k_ExtrasChannelOrder — modifying it is a breaking change.
+        static unsafe void BuildNoUserExtrasTemplate(ExtraVertexChannels mask, ConvertMeshExtrasData* extras)
+        {
+            int cursor = 0;
+            extras->texCoord1DstOffset = ReserveExtrasOffset(ExtraVertexChannels.TexCoord1, mask, ref cursor);
+            extras->texCoord2DstOffset = ReserveExtrasOffset(ExtraVertexChannels.TexCoord2, mask, ref cursor);
+            extras->texCoord3DstOffset = ReserveExtrasOffset(ExtraVertexChannels.TexCoord3, mask, ref cursor);
+            extras->normalDstOffset    = ReserveExtrasOffset(ExtraVertexChannels.Normal,    mask, ref cursor);
+            extras->tangentDstOffset   = ReserveExtrasOffset(ExtraVertexChannels.Tangent,   mask, ref cursor);
+
+            extras->texCoord1Src = IntPtr.Zero; extras->texCoord1SrcStride = 0;
+            extras->texCoord2Src = IntPtr.Zero; extras->texCoord2SrcStride = 0;
+            extras->texCoord3Src = IntPtr.Zero; extras->texCoord3SrcStride = 0;
+            extras->normalSrc    = IntPtr.Zero; extras->normalSrcStride    = 0;
+            extras->tangentSrc   = IntPtr.Zero; extras->tangentSrcStride   = 0;
+        }
+
         void InitVertexDeclaration()
         {
-            var vertexDecl = new VertexAttributeDescriptor[]
+            var stream0 = new VertexAttributeDescriptor[]
             {
                 // POSITION
                 new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
@@ -183,13 +250,32 @@ namespace UnityEngine.UIElements.UIR
                 // TEXCOORD0: UV (.xy) + LayoutUV (.zw)
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 4),
 
-                // TEXCOORD1: Flags and Ids
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UInt32, 4),
+                // TEXCOORD4: Flags and Ids
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord4, VertexAttributeFormat.UInt32, 4),
 
-                // TEXCOORD2: circle arc data OR text extra-dilate in .x
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord2, VertexAttributeFormat.Float32, 4),
+                // TEXCOORD5: circle arc data OR text extra-dilate in .x
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord5, VertexAttributeFormat.Float32, 4),
             };
-            m_VertexDecl = Utility.GetVertexDeclaration(vertexDecl);
+
+            // Append Extras immediately after the fixed Vertex bytes
+            var combined = new List<VertexAttributeDescriptor>(stream0.Length + UIRUtility.k_ExtrasChannelOrder.Length);
+            combined.AddRange(stream0);
+            foreach (var channel in UIRUtility.k_ExtrasChannelOrder) // Modifying the order is a breaking change
+            {
+                if ((m_ExtraVertexChannels & channel) == 0)
+                    continue;
+                var attr = channel switch
+                {
+                    ExtraVertexChannels.TexCoord1 => VertexAttribute.TexCoord1,
+                    ExtraVertexChannels.TexCoord2 => VertexAttribute.TexCoord2,
+                    ExtraVertexChannels.TexCoord3 => VertexAttribute.TexCoord3,
+                    ExtraVertexChannels.Normal    => VertexAttribute.Normal,
+                    ExtraVertexChannels.Tangent   => VertexAttribute.Tangent,
+                    _ => throw new InvalidOperationException()
+                };
+                combined.Add(new VertexAttributeDescriptor(attr, VertexAttributeFormat.Float32, 4));
+            }
+            m_VertexDecl = Utility.GetVertexDeclaration(combined.ToArray());
         }
 
         #region Dispose Pattern
@@ -223,6 +309,15 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_Profiler.Dispose();
 
+                unsafe
+                {
+                    if (m_NoUserExtrasTemplate != null)
+                    {
+                        UnsafeUtility.FreeTracked(m_NoUserExtrasTemplate, k_NoUserExtrasLabel);
+                        m_NoUserExtrasTemplate = null;
+                    }
+                }
+
                 m_CommandListManager.ResetUIRendererDrawCallData();
 
                 DeviceToFree free = new DeviceToFree
@@ -252,19 +347,19 @@ namespace UnityEngine.UIElements.UIR
 
         #endregion // Dispose Pattern
 
-        public MeshHandle Allocate(uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
+        public MeshHandle Allocate(uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             Debug.Assert(!m_RenderingInProgress);
             return m_MeshManager.Allocate(vertexCount, indexCount, out vertexData, out indexData, out indexOffset);
         }
 
-        public void Update(MeshHandle mesh, uint vertexCount, out NativeSlice<Vertex> vertexData)
+        public void Update(MeshHandle mesh, uint vertexCount, out RawSlice vertexData)
         {
             Debug.Assert(!m_RenderingInProgress);
             m_MeshManager.Update(mesh, vertexCount, out vertexData);
         }
 
-        public void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out NativeSlice<Vertex> vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
+        public void Update(MeshHandle mesh, uint vertexCount, uint indexCount, out RawSlice vertexData, out NativeSlice<UInt16> indexData, out UInt16 indexOffset)
         {
             Debug.Assert(!m_RenderingInProgress);
             m_MeshManager.Update(mesh, vertexCount, indexCount, out vertexData, out indexData, out indexOffset);
@@ -289,11 +384,12 @@ namespace UnityEngine.UIElements.UIR
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
-            s_MarkerBeforeDraw.Begin();
+            using (s_MarkerBeforeDraw.Auto())
+            {
 
-            m_MeshManager.OnFrameRenderingBegin();
+                m_MeshManager.OnFrameRenderingBegin();
 
-            s_MarkerBeforeDraw.End();
+            }
 
             // UUM-101410: We must update the fence now in case that multiple calls to Update() are performed without
             // Render() being called. Otherwise, the previous fence (which has already passed) won't be updated and we
@@ -687,15 +783,16 @@ namespace UnityEngine.UIElements.UIR
                         mustApplyCmdState = true;
                         newMatDiffers = true;
                         stashRange = true;
-                        kickReason |= KickRangesReason.MaterialChange;
+                        kickReason = KickRangesReason.MaterialChange;
                     }
                     else
                     {
+                        // Listed in priority order: last assignment wins when multiple conditions fire.
                         if (head.mesh.allocPage != st.curPage)
                         {
                             mustApplyCmdState = true;
                             stashRange = true;
-                            kickReason |= KickRangesReason.PageChange;
+                            kickReason = KickRangesReason.PageChange;
                         }
                         else if (curDrawIndex != head.mesh.allocIndices.start + head.indexOffset)
                             stashRange = true; // Same page but discontinuous range.
@@ -707,7 +804,7 @@ namespace UnityEngine.UIElements.UIR
                             if (textureSlot < 0 && m_TextureSlotManager.FreeSlots < 1)
                             { // No more slots available.
                                 stashRange = true;
-                                kickReason |= KickRangesReason.TextureSlotsExhausted;
+                                kickReason = KickRangesReason.TextureSlotsExhausted;
                             }
                         }
 
@@ -715,18 +812,14 @@ namespace UnityEngine.UIElements.UIR
                         {
                             mustApplyCmdState = true;
                             stashRange = true;
-                            kickReason |= KickRangesReason.StencilRefChange;
+                            kickReason = KickRangesReason.StencilRefChange;
                         }
 
-                        if (stashRange && isLastRange)
-                        {
-                            // The range we'll close is the last that we can store.
-                            // TODO: This only works since ranges are serialized and will break once the ranges are
-                            //       truly processed in a multi-threaded fashion without copies. When this happens, a new
-                            //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
-                            //       the time being, calling KickRanges will make the whole buffer available.
-                            kickReason |= KickRangesReason.RangesBufferFull;
-                        }
+                        // TODO: This only works since ranges are serialized and will break once they are
+                        //       truly processed in a multi-threaded fashion without copies. A new mechanism
+                        //       will be needed to handle the "ranges-buffer-full" condition then.
+                        if (stashRange && isLastRange && kickReason == KickRangesReason.None)
+                            kickReason = KickRangesReason.RangesBufferFull;
                     }
                 }
                 else
@@ -763,13 +856,15 @@ namespace UnityEngine.UIElements.UIR
                     }
 
                     stashRange = true;
-                    kickReason |= KickReasonForNonDrawCommand(head.type);
+                    kickReason = KickReasonForNonDrawCommand(head.type);
                 }
 
                 if (doBreakBatches)
                 {
                     stashRange = true;
-                    kickReason |= KickRangesReason.BreakBatches;
+                    // Only flag BreakBatches when no real cause fires — real causes are more informative.
+                    if (kickReason == KickRangesReason.None)
+                        kickReason = KickRangesReason.BreakBatches;
                 }
 
                 bool kickRanges = kickReason != KickRangesReason.None;
@@ -826,10 +921,10 @@ namespace UnityEngine.UIElements.UIR
                     if (rangesReady > 0)
                     {
                         ApplyBatchState(ref st);
-                        KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
+                        KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList, kickReason);
 
                         if (batchProfilerEnabled)
-                            m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, (uint)kickReason, in m_DrawStats);
+                            m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, kickReason, in m_DrawStats);
                     }
 
                     if (head.type != CommandType.Draw)
@@ -898,11 +993,11 @@ namespace UnityEngine.UIElements.UIR
             if (rangesReady > 0)
             {
                 ApplyBatchState(ref st);
-                KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
+                KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList, KickRangesReason.None);
 
-                // Final batch of the pass — kick reason 0 since it's the natural end.
+                // Final batch of the pass — KickRangesReason.None since it's the natural end.
                 if (batchProfilerEnabled)
-                    m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, kickRangesReason: 0u, in m_DrawStats);
+                    m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, kickRangesReason: KickRangesReason.None, in m_DrawStats);
             }
 
             if (batchProfilerEnabled)
@@ -1011,22 +1106,23 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        unsafe void KickRanges(DrawBufferRange* ranges, ref int rangesReady, ref int rangesStart, int rangesCount, Page curPage, CommandList commandList)
+        unsafe void KickRanges(DrawBufferRange* ranges, ref int rangesReady, ref int rangesStart, int rangesCount, Page curPage, CommandList commandList, KickRangesReason kickReason)
         {
             Debug.Assert(rangesReady > 0);
 
             if (rangesStart + rangesReady <= rangesCount)
             {
-                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady), commandList);
+                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady), commandList, kickReason);
                 m_DrawStats.drawRangeCallCount++;
             }
             else
             {
-                // Less common situation, the numbers straddles the end of the ranges buffer
+                // Less common: the range buffer wraps. The reason applies to the first half (the
+                // boundary with the previous batch); the second half is a continuation.
                 int firstRangeCount = rangesCount - rangesStart;
                 int secondRangeCount = rangesReady - firstRangeCount;
-                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount), commandList);
-                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount), commandList);
+                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount), commandList, kickReason);
+                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount), commandList, KickRangesReason.None);
 
                 m_DrawStats.drawRangeCallCount += 2;
             }
@@ -1035,17 +1131,14 @@ namespace UnityEngine.UIElements.UIR
             rangesReady = 0;
         }
 
-        unsafe void DrawRanges(Utility.GPUBuffer<ushort> ib, Utility.GPUBuffer<Vertex> vb, NativeSlice<DrawBufferRange> ranges, CommandList commandList)
+        unsafe void DrawRanges(Utility.GPUBuffer ib, Utility.GPUBuffer vb, NativeSlice<DrawBufferRange> ranges, CommandList commandList, KickRangesReason kickReason)
         {
             if (commandList != null)
-            {
-                commandList.DrawRanges(ib, vb, ranges);
-            }
+                commandList.DrawRanges(ib, vb, ranges, kickReason);
             else
             {
-                IntPtr* vStream = stackalloc IntPtr[1];
-                vStream[0] = vb.BufferPointer;
-                Utility.DrawRanges(ib.BufferPointer, vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl);
+                IntPtr vStream = vb.BufferPointer;
+                Utility.DrawRanges(ib.BufferPointer, &vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl, kickReason);
             }
         }
 
@@ -1060,9 +1153,10 @@ namespace UnityEngine.UIElements.UIR
         {
             if (fence != 0 && !Utility.CPUFencePassed(fence))
             {
-                s_MarkerFence.Begin();
-                Utility.WaitForCPUFencePassed(fence);
-                s_MarkerFence.End();
+                using (s_MarkerFence.Auto())
+                {
+                    Utility.WaitForCPUFencePassed(fence);
+                }
             }
         }
 
@@ -1070,28 +1164,29 @@ namespace UnityEngine.UIElements.UIR
         {
             m_RenderingInProgress = false;
 
-            s_MarkerAdvanceFrame.Begin();
-
-            m_FrameIndex++;
-
-            m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
-
+            using (s_MarkerAdvanceFrame.Auto())
             {
-                int fenceIndex = (int)(m_FrameIndex % m_Fences.Length);
-                uint fence = m_Fences[fenceIndex];
-                WaitOnCpuFence(fence);
-                m_Fences[fenceIndex] = 0;
+
+                m_FrameIndex++;
+
+                m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
+
+                {
+                    int fenceIndex = (int)(m_FrameIndex % m_Fences.Length);
+                    uint fence = m_Fences[fenceIndex];
+                    WaitOnCpuFence(fence);
+                    m_Fences[fenceIndex] = 0;
+                }
+
+                m_CommandListManager.AdvanceFrame();
+                m_MeshManager.AdvanceFrame();
+
+                foreach (var mesh in m_MeshesPendingFree)
+                    Free(mesh);
+
+                m_MeshesPendingFree.Clear();
+
             }
-
-            m_CommandListManager.AdvanceFrame();
-            m_MeshManager.AdvanceFrame();
-
-            foreach (var mesh in m_MeshesPendingFree)
-                Free(mesh);
-
-            m_MeshesPendingFree.Clear();
-
-            s_MarkerAdvanceFrame.End();
         }
 
         internal static void PrepareForGfxDeviceRecreate()
@@ -1142,23 +1237,6 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        [System.Flags]
-        internal enum KickRangesReason : uint
-        {
-            None = 0,
-            MaterialChange = 1 << 0,
-            PageChange = 1 << 1,
-            TextureSlotsExhausted = 1 << 2,
-            StencilRefChange = 1 << 3,
-            BreakBatches = 1 << 4,
-            RangesBufferFull = 1 << 5,        // Stashed-range buffer ran out of slots mid-draw
-            ImmediateCommand = 1 << 6,        // Immediate / ImmediateCull
-            RenderChainCut = 1 << 7,          // CutRenderChain (new command list owner)
-            DefaultMaterialChange = 1 << 8,   // Push/PopDefaultMaterial
-            ScissorChange = 1 << 9,           // Push/PopScissor
-            ViewChange = 1 << 10,             // Push/PopView
-        }
-
         internal struct DrawStatistics
         {
             public int currentFrameIndex;
@@ -1181,31 +1259,32 @@ namespace UnityEngine.UIElements.UIR
 
         public static void ProcessDeviceFreeQueue()
         {
-            s_MarkerFree.Begin();
-
-            if (m_SynchronousFree)
-                Utility.SyncRenderThread();
-
-            var freeNode = m_DeviceFreeQueue.First;
-            while (freeNode != null)
+            using (s_MarkerFree.Auto())
             {
-                if (!Utility.CPUFencePassed(freeNode.Value.handle))
-                    break;
-                freeNode.Value.Dispose();
-                m_DeviceFreeQueue.RemoveFirst();
-                freeNode = m_DeviceFreeQueue.First;
+
+                if (m_SynchronousFree)
+                    Utility.SyncRenderThread();
+
+                var freeNode = m_DeviceFreeQueue.First;
+                while (freeNode != null)
+                {
+                    if (!Utility.CPUFencePassed(freeNode.Value.handle))
+                        break;
+                    freeNode.Value.Dispose();
+                    m_DeviceFreeQueue.RemoveFirst();
+                    freeNode = m_DeviceFreeQueue.First;
+                }
+
+                // After synchronizing with the render thread, all cpu fences should pass.
+                Debug.Assert(!m_SynchronousFree || m_DeviceFreeQueue.Count == 0);
+
+                if (m_ActiveDeviceCount == 0 && m_SubscribedToNotifications)
+                {
+                    Utility.NotifyOfUIREvents(false);
+                    m_SubscribedToNotifications = false;
+                }
+
             }
-
-            // After synchronizing with the render thread, all cpu fences should pass.
-            Debug.Assert(!m_SynchronousFree || m_DeviceFreeQueue.Count == 0);
-
-            if (m_ActiveDeviceCount == 0 && m_SubscribedToNotifications)
-            {
-                Utility.NotifyOfUIREvents(false);
-                m_SubscribedToNotifications = false;
-            }
-
-            s_MarkerFree.End();
         }
 
         private static void OnEngineUpdateGlobal()

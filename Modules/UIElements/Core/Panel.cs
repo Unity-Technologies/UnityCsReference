@@ -355,6 +355,16 @@ namespace UnityEngine.UIElements
         FocusController focusController { get; }
 
         /// <summary>
+        /// Optional per-vertex channels that custom ShaderGraph shaders can read from this panel.
+        /// </summary>
+        /// <remarks>
+        /// Modifying this property rebuilds the rendering commands and meshes so that the new GPU vertex
+        /// layout takes effect. Defaults to <see cref="ExtraVertexChannels.None"/>; leave it at the default
+        /// unless a custom shader requires the additional channels.
+        /// </remarks>
+        ExtraVertexChannels extraVertexChannels { get; set; }
+
+        /// <summary>
         /// Finds the top-most VisualElement overlapping the provided point.
         /// </summary>
         /// <remarks>
@@ -662,6 +672,12 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal IPanelRenderer panelRenderer;
 
+        public ExtraVertexChannels extraVertexChannels
+        {
+            get => panelRenderer?.extraVertexChannels ?? ExtraVertexChannels.None;
+            set { if (panelRenderer != null) panelRenderer.extraVertexChannels = value; }
+        }
+
         // For debug panels, over which panel is it overlayed. Null otherwise.
         internal IPanel overlayedOverPanel;
 
@@ -687,7 +703,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal abstract uint version { get; }
+        internal abstract uint version
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get;
+        }
         internal abstract uint repaintVersion { get; }
         internal abstract uint hierarchyVersion { get; }
         internal abstract uint nameVersion { get; }
@@ -873,6 +893,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        protected bool m_DrawsInCameras;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal bool drawsInCameras
+        {
+            get => m_DrawsInCameras;
+        }
+
         internal void SetSpecializedHierarchyFlagsUpdater()
         {
             var updater = GetUpdater(VisualTreeUpdatePhase.TransformClip);
@@ -959,6 +987,15 @@ namespace UnityEngine.UIElements
         internal Func<AbstractGenericMenu> CreateMenuFunctor;
 
         internal AbstractGenericMenu CreateMenu() => CreateMenuFunctor.Invoke();
+
+        //TODO plug IME to the proper place
+        internal Func<string> IMEGetCompositionString = () => Input.compositionString;
+        internal Action<bool> IMESetIsEnteringText = (isEnteringText) =>
+        {
+            Input.imeCompositionMode = isEnteringText ? IMECompositionMode.On : IMECompositionMode.Auto;
+        };
+
+        internal Action<Vector2> IMESetCursorPos = (v2) => Input.compositionCursorPos = v2; // What coordinate system is this? seems like we are sending the panel pixel directly to the os
 
         internal void PointerLeavesPanel(int pointerId, EventBase triggerEvent = null)
         {
@@ -1303,7 +1340,11 @@ namespace UnityEngine.UIElements
         public override int IMGUIContainersCount { get; set; }
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
-        internal override uint version => m_Version;
+        internal override uint version
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_Version;
+        }
         internal override uint repaintVersion => m_RepaintVersion;
         internal override uint hierarchyVersion => m_HierarchyVersion;
         internal override uint nameVersion => m_NameVersion;
@@ -1523,11 +1564,12 @@ namespace UnityEngine.UIElements
                 UIElementsUtility.RebuildDirtyStyleSheets();
                 m_ValidatingLayout = true;
 
-                m_MarkerValidateLayout.Begin();
-                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
-                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
-                m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
-                m_MarkerValidateLayout.End();
+                using (m_MarkerValidateLayout.Auto())
+                {
+                    m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
+                    m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
+                    m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
+                }
 
                 m_ValidatingLayout = false;
             }
@@ -1813,19 +1855,15 @@ namespace UnityEngine.UIElements
 
         internal event Action drawsInCamerasChanged;
         void InvokeDrawsInCamerasChanged() { drawsInCamerasChanged?.Invoke(); }
-        bool m_DrawsInCameras;
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal bool drawsInCameras
+        internal void SetDrawsInCameras(bool value)
         {
-            get { return m_DrawsInCameras; }
-            set
+            if (m_DrawsInCameras != value)
             {
-                if (m_DrawsInCameras != value)
-                {
-                    m_DrawsInCameras = value;
-                    UIElementsRuntimeUtility.SetPanelsDrawInCameraDirty();
-                    InvokeDrawsInCamerasChanged();
-                }
+                m_DrawsInCameras = value;
+                UIElementsRuntimeUtility.SetPanelsDrawInCameraDirty();
+                InvokeDrawsInCamerasChanged();
             }
         }
 

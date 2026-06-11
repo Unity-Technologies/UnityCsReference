@@ -3,35 +3,55 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.UIToolkit.Editor.Importers;
-using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct PasteElementsCommand
+internal sealed class PasteElementsCommand : Command<PasteElementsCommand>
 {
     const string CommandUndoName = "Paste elements";
 
-    readonly string CopiedContent;
-    readonly VisualElementAsset CopyIntoAsset;
-
-    public PasteElementsCommand(string copiedContent, VisualElementAsset copyIntoAsset)
+    public static PasteElementsCommand GetPooled(object source, string copiedContent, VisualElementAsset copyIntoAsset)
     {
-        CopiedContent = copiedContent;
-        CopyIntoAsset = copyIntoAsset;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.CopiedContent = copiedContent;
+        cmd.CopyIntoAsset = copyIntoAsset;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, string copiedContent, VisualElementAsset copyIntoAsset)
     {
-        Assert.IsNotNull(CopyIntoAsset);
-        Assert.IsNotNull(CopyIntoAsset.visualTreeAsset);
+        using var command = GetPooled(source, copiedContent, copyIntoAsset);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(CopyIntoAsset.visualTreeAsset, CommandUndoName);
+    public string CopiedContent { get; private set; }
+    public VisualElementAsset CopyIntoAsset { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Hierarchy;
+
+    protected override void Init()
+    {
+        base.Init();
+        CopiedContent = null;
+        CopyIntoAsset = null;
+    }
+
+    public override bool Validate() => CopyIntoAsset != null && CopyIntoAsset.visualTreeAsset != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        var vta = CopyIntoAsset.visualTreeAsset;
+        context.RecordUndo(vta);
+        context.RecordUndo(vta.inlineSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
         var importer = new TempVisualTreeAssetImporter();
         importer.ImportXmlFromString(CopiedContent, out var pasteVta);
@@ -48,10 +68,7 @@ internal readonly record struct PasteElementsCommand
             Object.DestroyImmediate(pasteVta);
         }
 
-        EditorUtility.SetDirty(CopyIntoAsset.visualTreeAsset);
-        EditorUtility.SetDirty(CopyIntoAsset.visualTreeAsset.inlineSheet);
-
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
-        UIElementsUtility.MarkVisualTreeAssetAsChanged(CopyIntoAsset.visualTreeAsset);
+        return CommandExecutionStatus.Success;
     }
 }

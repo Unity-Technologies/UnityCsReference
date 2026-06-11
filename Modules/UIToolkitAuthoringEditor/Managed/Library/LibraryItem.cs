@@ -11,6 +11,8 @@ namespace Unity.UIToolkit.Editor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class LibraryItem
     {
+        public const string DragDataKey = "LibraryItem";
+
         public string name { get; }
         public LibraryTypeKey libraryType { get; }
         public string libraryPath { get; }

@@ -5,21 +5,25 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
-    internal class AppStatusBar : GUIView
+    internal partial class AppStatusBar : GUIView
     {
+        [NoAutoStaticsCleanup]
         static readonly NumberFormatInfo percentageFormat = new CultureInfo("en-US", false).NumberFormat;
 
         internal static class Styles
         {
             public const int spacing = 4;
 
+            [NoAutoStaticsCleanup]
             public static readonly GUILayoutOption progressBarWidth = GUILayout.Width(180);
+            [NoAutoStaticsCleanup]
             public static readonly GUILayoutOption progressLabelMaxWidth = GUILayout.MaxWidth(230);
             public static readonly GUIStyle background = "AppToolbar";
             public static readonly GUIStyle statusLabel = EditorStyles.FromUSS(EditorStyles.label, "status-bar-label");
@@ -46,6 +50,7 @@ namespace UnityEditor
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static AppStatusBar s_AppStatusBar;
         private ShortcutHelperBar m_ShortcutHelperBar;
 

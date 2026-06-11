@@ -84,6 +84,8 @@ namespace UnityEngine.UIElements
             KeyCode keyCode,
             EventModifiers modifiers,
             IEventHandler target);
+
+        internal bool SendIMEEvent(string compositionString, IEventHandler target);
     }
 
     /// <summary>
@@ -247,7 +249,7 @@ namespace UnityEngine.UIElements
 
         public bool HasActiveDocuments()
         {
-            // This should be close to a no-op is the panel are already sorted. 
+            // This should be close to a no-op if the panels are already sorted.
             return UIElementsRuntimeUtility.GetSortedPlayerPanels()?.Count > 0;
         }
 
@@ -313,7 +315,7 @@ namespace UnityEngine.UIElements
             return new RuntimePanel(ownerObject);
         }
 
-        private RuntimePanel(ScriptableObject ownerObject)
+        protected RuntimePanel(ScriptableObject ownerObject)
             : base(ownerObject, s_EventDispatcher)
         {
             CreateMenuFunctor = () => new GenericDropdownMenu();
@@ -477,7 +479,7 @@ namespace UnityEngine.UIElements
         }
 
         bool IRuntimePanel.SendPointerCancelEvent(IPointerEvent eventData, IEventHandler target, IEventHandler elementUnderPointer)
-{
+        {
             using (var evt = PointerCancelEvent.GetPooled(eventData))
             {
                 UpdatePointerEventTarget(evt, eventData, target, elementUnderPointer);
@@ -502,16 +504,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool IRuntimePanel.SendNavigationEvent(
-            NavigationEventType eventType,
-            IEventHandler target,
-            NavigationDeviceType deviceType,
-            EventModifiers modifiers,
-            Vector2 moveVector,
+        bool IRuntimePanel.SendNavigationEvent(NavigationEventType eventType, IEventHandler target,
+            NavigationDeviceType deviceType, EventModifiers modifiers, Vector2 moveVector,
             NavigationMoveDirection moveDirection)
         {
-
-
             EventBase evt = eventType switch
             {
                 NavigationEventType.Submit => NavigationSubmitEvent.GetPooled(deviceType, modifiers),
@@ -534,11 +530,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool IRuntimePanel.SendKeyboardEvent(
-            bool isKeyDown,
-            char character,
-            KeyCode keyCode,
-            EventModifiers modifiers,
+        bool IRuntimePanel.SendKeyboardEvent(bool isKeyDown, char character, KeyCode keyCode, EventModifiers modifiers,
             IEventHandler target)
         {
             EventBase evt = isKeyDown
@@ -550,6 +542,15 @@ namespace UnityEngine.UIElements
                 evt.target = target;
                 SendEvent(evt);
                 return evt.isPropagationStopped;
+            }
+        }
+        bool IRuntimePanel.SendIMEEvent(string compositionString, IEventHandler target)
+        {
+            using (var imeEvt = IMEEvent.GetPooled(compositionString ?? string.Empty))
+            {
+                imeEvt.target = target;
+                SendEvent(imeEvt);
+                return imeEvt.isPropagationStopped;
             }
         }
 

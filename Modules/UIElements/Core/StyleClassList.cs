@@ -21,8 +21,15 @@ internal struct StyleClassList : IEnumerable<UniqueStyleString>
     internal readonly struct TestScope : IDisposable
     {
         private readonly Dictionary<int, List<Record>> m_HashToInstances;
-        public TestScope() => m_HashToInstances = s_HashToInstances;
-        public void Dispose() => s_HashToInstances = m_HashToInstances;
+        public TestScope()
+        {
+            m_HashToInstances = s_HashToInstances;
+            s_HashToInstances = new();
+        }
+        public void Dispose()
+        {
+            s_HashToInstances = m_HashToInstances;
+        }
     }
 
     /// <summary>

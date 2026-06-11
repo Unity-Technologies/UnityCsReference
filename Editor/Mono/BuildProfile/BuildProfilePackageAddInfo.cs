@@ -38,6 +38,9 @@ namespace UnityEditor.Build.Profile
         public Action OnPackageAddProgress;
         public Action OnPackageAddComplete;
 
+        [SerializeField]
+        bool isPackageAddRequest = false;
+
         PackageManager.Requests.AddAndRemoveRequest m_PackageAddRequest = null;
         ProgressEntry m_PackageAddProgressInfo = new();
 
@@ -46,7 +49,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public void RequestPackageInstallation()
         {
-            if (m_PackageAddRequest != null)
+            if (m_PackageAddRequest != null && isPackageAddRequest)
                 return;
 
             if (packagesToAdd.Length > 0)
@@ -54,6 +57,7 @@ namespace UnityEditor.Build.Profile
                 m_PackageAddRequest = PackageManager.Client.AddAndRemove(packagesToAdd);
                 m_PackageAddRequest.progressUpdated += HandlePackageAddProgress;
                 EditorApplication.update += CheckCompletion;
+                isPackageAddRequest = true;
             }
         }
 

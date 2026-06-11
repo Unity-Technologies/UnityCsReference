@@ -2,37 +2,55 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct RemoveStyleRulePropertyCommand
+internal sealed class RemoveStyleRulePropertyCommand : Command<RemoveStyleRulePropertyCommand>
 {
     const string CommandUndoName = "Remove style rule property";
 
-    readonly StyleSheet StyleSheet;
-    readonly StyleRule Rule;
-    readonly StyleProperty Property;
-
-    public RemoveStyleRulePropertyCommand(StyleSheet styleSheet, StyleRule rule, StyleProperty property)
+    public static RemoveStyleRulePropertyCommand GetPooled(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty property)
     {
-        StyleSheet = styleSheet;
-        Rule = rule;
-        Property = property;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.StyleSheet = styleSheet;
+        cmd.Rule = rule;
+        cmd.Property = property;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty property)
     {
-        Assert.IsNotNull(StyleSheet);
-        Assert.IsNotNull(Rule);
-        Assert.IsNotNull(Property);
+        using var command = GetPooled(source, styleSheet, rule, property);
+        UICommandQueue.Execute(command);
+    }
 
-        Undo.RegisterCompleteObjectUndo(StyleSheet, CommandUndoName);
+    public StyleSheet StyleSheet { get; private set; }
+    public StyleRule Rule { get; private set; }
+    public StyleProperty Property { get; private set; }
 
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.StylingContext;
+
+    protected override void Init()
+    {
+        base.Init();
+        StyleSheet = null;
+        Rule = null;
+        Property = null;
+    }
+
+    public override bool Validate() => StyleSheet != null && Rule != null && Property != null;
+
+    public override void Prepare(in PrepareContext context)
+    {
+        context.RecordUndo(StyleSheet);
+    }
+
+    public override CommandExecutionStatus Execute()
+    {
         Rule.RemoveProperty(Property);
-
-        EditorUtility.SetDirty(StyleSheet);
+        return CommandExecutionStatus.Success;
     }
 }

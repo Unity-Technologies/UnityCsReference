@@ -66,8 +66,8 @@ namespace Unity.UI.Builder
 
             base.UpdateAttributeOverrideStyle(fieldElement);
 
-            var hasAnyBoundField = attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName) != null
-                                   || attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName) != null;
+            var hasAnyBoundField = attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName.value) != null
+                                   || attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName.value) != null;
 
             attributesContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutBindingClassName, hasAnyBoundField);
 

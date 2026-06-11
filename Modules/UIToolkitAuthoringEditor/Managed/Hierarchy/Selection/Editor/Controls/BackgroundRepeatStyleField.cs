@@ -17,7 +17,8 @@ namespace Unity.UIToolkit.Editor
         static readonly string s_FieldClassName = "unity-background-repeat-style-field";
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundRepeatStyleField.uxml";
         static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundRepeatStyleField.uss";
-        static readonly string s_IconPath = "UIToolkit/Icons";
+        static readonly string s_UssPathDark = "UIToolkitAuthoring/Inspector/Controls/BackgroundRepeatStyleFieldDark.uss";
+        static readonly string s_UssPathLight = "UIToolkitAuthoring/Inspector/Controls/BackgroundRepeatStyleFieldLight.uss";
 
         public static readonly string s_BackgroundRepeatXFieldName = "repeatx";
         public static readonly string s_BackgroundRepeatYFieldName = "repeaty";
@@ -40,6 +41,8 @@ namespace Unity.UIToolkit.Editor
             AddToClassList(s_FieldClassName);
 
             styleSheets.Add(EditorGUIUtility.Load(s_UssPath) as StyleSheet);
+            var ussPathThemed = EditorGUIUtility.isProSkin ? s_UssPathDark : s_UssPathLight;
+            styleSheets.Add(EditorGUIUtility.Load(ussPathThemed) as StyleSheet);
 
             var template = EditorGUIUtility.Load(s_UxmlPath) as VisualTreeAsset;
             template.CloneTree(this);
@@ -62,22 +65,28 @@ namespace Unity.UIToolkit.Editor
             m_BackgroundRepeatXField.labelElement.tooltip = fieldTooltip;
             m_BackgroundRepeatYField.labelElement.tooltip = fieldTooltip;
 
-            var iconImageNoRepeat = UIResources.LoadIcon($"{s_IconPath}/repeatBG_OFF.png");
-            var iconImageRepeat = UIResources.LoadIcon($"{s_IconPath}/repeatBG_ON.png");
-            var iconImageRound = UIResources.LoadIcon($"{s_IconPath}/repeatBG_ROUND.png");
-            var iconImageSpace = UIResources.LoadIcon($"{s_IconPath}/repeatBG_SPACE.png");
-
-            m_BackgroundRepeatXField.Add(new Button() { iconImage = iconImageNoRepeat, tooltip = NoRepeatTooltip });
-            m_BackgroundRepeatXField.Add(new Button() { iconImage = iconImageSpace, tooltip = SpaceTooltip });
-            m_BackgroundRepeatXField.Add(new Button() { iconImage = iconImageRound, tooltip = RoundTooltip });
-            m_BackgroundRepeatXField.Add(new Button() { iconImage = iconImageRepeat, tooltip = RepeatTooltip });
-
-            m_BackgroundRepeatYField.Add(new Button() { iconImage = iconImageNoRepeat, tooltip = NoRepeatTooltip });
-            m_BackgroundRepeatYField.Add(new Button() { iconImage = iconImageSpace, tooltip = SpaceTooltip });
-            m_BackgroundRepeatYField.Add(new Button() { iconImage = iconImageRound, tooltip = RoundTooltip });
-            m_BackgroundRepeatYField.Add(new Button() { iconImage = iconImageRepeat, tooltip = RepeatTooltip });
+            AddRepeatButtons(m_BackgroundRepeatXField);
+            AddRepeatButtons(m_BackgroundRepeatYField);
 
             value = new BackgroundRepeat();
+        }
+
+        static void AddRepeatButtons(ToggleButtonGroup group)
+        {
+            (string className, string tooltip)[] buttons =
+            {
+                ("background-repeat-no-repeat", NoRepeatTooltip),
+                ("background-repeat-space", SpaceTooltip),
+                ("background-repeat-round", RoundTooltip),
+                ("background-repeat-repeat", RepeatTooltip),
+            };
+
+            foreach (var (className, tooltip) in buttons)
+            {
+                var button = new Button { tooltip = tooltip };
+                button.AddToClassList(className);
+                group.Add(button);
+            }
         }
 
         public override void SetValueWithoutNotify(BackgroundRepeat newValue)

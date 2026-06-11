@@ -3,43 +3,72 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.UIToolkit.Editor.Importers;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal readonly record struct DuplicateElementsCommand
+internal sealed class DuplicateElementsCommand : Command<DuplicateElementsCommand>
 {
     const string CommandUndoName = "Duplicate elements";
 
-    readonly VisualElementAsset[] ToDuplicateAssets;
-
-    public DuplicateElementsCommand(VisualElementAsset[] toDuplicate)
+    public static DuplicateElementsCommand GetPooled(object source, VisualElementAsset[] toDuplicate)
     {
-        ToDuplicateAssets = toDuplicate;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.ToDuplicateAssets = toDuplicate;
+        return cmd;
     }
 
-    public void Execute()
+    public static void Execute(object source, VisualElementAsset[] toDuplicate)
     {
+        using var command = GetPooled(source, toDuplicate);
+        UICommandQueue.Execute(command);
+    }
+
+    public VisualElementAsset[] ToDuplicateAssets { get; private set; }
+
+    public override string UndoName => CommandUndoName;
+    public override CommandCategory Category => CommandCategory.Hierarchy;
+
+    protected override void Init()
+    {
+        base.Init();
+        ToDuplicateAssets = null;
+    }
+
+    public override bool Validate()
+    {
+        if (ToDuplicateAssets == null)
+            return false;
         foreach (var asset in ToDuplicateAssets)
         {
-            Assert.IsNotNull(asset);
-            Assert.IsNotNull(asset.visualTreeAsset);
+            if (asset == null || asset.visualTreeAsset == null)
+                return false;
         }
+        return true;
+    }
 
-        var exporter = VisualTreeAssetExporter.Default;
-        using var exportListHandle = ListPool<UxmlAsset>.Get(out var exportList);
+    public override void Prepare(in PrepareContext context)
+    {
         using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
-        using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
         foreach (var asset in ToDuplicateAssets)
         {
             if (set.Add(asset.visualTreeAsset))
-                Undo.RegisterCompleteObjectUndo(asset.visualTreeAsset, CommandUndoName);
+                context.RecordUndo(asset.visualTreeAsset);
+        }
+    }
 
+    public override CommandExecutionStatus Execute()
+    {
+        var exporter = VisualTreeAssetExporter.Default;
+        using var exportListHandle = ListPool<UxmlAsset>.Get(out var exportList);
+        using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
+
+        foreach (var asset in ToDuplicateAssets)
+        {
             exportList.Clear();
             exportList.Add(asset);
             var export = exporter.ToUxmlString(asset.visualTreeAsset, exportList);
@@ -61,12 +90,7 @@ internal readonly record struct DuplicateElementsCommand
             }
         }
 
-        foreach (var vta in set)
-        {
-            EditorUtility.SetDirty(vta);
-            UIElementsUtility.MarkVisualTreeAssetAsChanged(vta);
-        }
-
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        return CommandExecutionStatus.Success;
     }
 }

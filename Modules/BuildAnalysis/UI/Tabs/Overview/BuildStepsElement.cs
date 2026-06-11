@@ -14,7 +14,7 @@ namespace UnityEditor.Build.Analysis
     internal class BuildStepsElement : VisualElement
     {
         private const int k_FixedItemHeight = 26;
-        private const int k_MaxVisibleRows = 10;
+        private const int k_MaxVisibleRows = 13;
         private const string k_UssPath = "BuildAnalysis/StyleSheets/BuildSteps.uss";
 
         private struct StepItemData
@@ -39,10 +39,10 @@ namespace UnityEditor.Build.Analysis
             var styleSheet = EditorGUIUtility.LoadRequired(k_UssPath) as StyleSheet;
             styleSheets.Add(styleSheet);
 
-            AddToClassList("overview-section");
+            AddToClassList("section");
 
             var foldout = new Foldout { text = "Build Steps", value = true };
-            foldout.AddToClassList("overview-section-foldout");
+            foldout.AddToClassList("section-foldout");
             Add(foldout);
 
             m_TreeView = new MultiColumnTreeView
@@ -110,6 +110,7 @@ namespace UnityEditor.Build.Analysis
                     var label = new Label();
                     label.AddToClassList("build-step-meta");
                     label.selection.isSelectable = true;
+                    label.tooltip = "Percentage of the total build duration";
                     return label;
                 },
                 bindCell = BindMetaCell,
@@ -197,23 +198,23 @@ namespace UnityEditor.Build.Analysis
             var data = m_TreeView.GetItemDataForIndex<StepItemData>(index);
             ((Label)element).text = string.Format(
                 CultureInfo.InvariantCulture,
-                "{0} ({1:F1}%)",
-                FormatUtility.FormatDuration(data.DurationMs),
-                data.PercentOfTotal);
+                "{0:F1}% ({1})",
+                data.PercentOfTotal,
+                FormatUtility.FormatDuration(data.DurationMs));
         }
 
         private static string FormatBadgeTooltip(int count, string severity)
         {
             var plural = count == 1 ? severity : severity + "s";
-            return $"{count} {plural}. Filter by this step in the Message Console to view them.";
+            return $"{count} {plural}. Filter by this step in the Build Logs console to view.";
         }
 
         private static VisualElement MakeBadgeCell()
         {
             var container = new VisualElement();
             container.AddToClassList("build-step-badges");
-            container.Add(MakeSingleBadge("warn", "warn-icon-small"));
             container.Add(MakeSingleBadge("error", "error-icon-small"));
+            container.Add(MakeSingleBadge("warn", "warn-icon-small"));
             return container;
         }
 

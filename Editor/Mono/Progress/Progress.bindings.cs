@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -291,16 +292,26 @@ namespace UnityEditor
             ProgressWindow.ShowDetails(shouldReposition);
         }
 
-        private static List<Item> s_ProgressItems = new List<Item>(8);
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        private static readonly List<Item> s_ProgressItems = new List<Item>(8);
+        [AutoStaticsCleanupOnCodeReload]
         private static bool s_Initialized;
+        [NoAutoStaticsCleanup]
         private static float s_Progress;
+        [NoAutoStaticsCleanup]
         private static bool s_ProgressDirty = true;
+        [NoAutoStaticsCleanup]
         private static TimeSpan s_RemainingTime = TimeSpan.Zero;
+        [NoAutoStaticsCleanup]
         private static bool s_RemainingTimeDirty = true;
+        [NoAutoStaticsCleanup]
         private static DateTime s_LastRemainingTimeUpdate = DateTime.Now;
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<Item[]> added;
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<Item[]> updated;
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<Item[]> removed;
 
         public static IEnumerable<Item> EnumerateItems()

@@ -124,6 +124,8 @@ namespace Unity.GraphToolkit.Editor
         TypeHandle m_CurrentTypeHandle;
 
         bool m_HasContextualMenuBeenBuilt; // for testing purposes
+        PortPreview m_PortPreview;
+        Action m_OnNextAttachAction;
 
         /// <summary>
         /// The default port color.
@@ -178,6 +180,45 @@ namespace Unity.GraphToolkit.Editor
         }
 
         public Color PortColor { get; protected set; } = DefaultPortColor;
+
+        public PortPreview PortPreview
+        {
+            get
+            {
+                if (m_PortPreview == null)
+                    CreatePortPreview();
+
+                return m_PortPreview;
+            }
+        }
+
+        void OnPointerEnterEvent(PointerEnterEvent evt)
+        {
+            m_PortPreview?.BringToFront();
+        }
+
+        public void RemovePortPreview()
+        {
+            if (m_PortPreview == null)
+                return;
+
+            UnregisterCallback<PointerEnterEvent>(OnPointerEnterEvent);
+
+            if (m_PortPreview.hierarchy.parent != null)
+                GraphView.RemoveElement(m_PortPreview);
+            else
+            {
+                // When the port is culled, Marker.OnTargetDetachedFromPanel already removed the preview
+                // from the hierarchy and registered OnTargetAttachedToPanel on the port. Without
+                // DisconnectFromTarget(), OnTargetAttachedToPanel would re-add the preview as a ghost
+                // when the port comes back into view.
+                m_PortPreview.DisconnectFromTarget();
+                m_PortPreview.RemoveFromRootView();
+            }
+
+            m_PortPreview = null;
+            MarkDirtyRepaint();
+        }
 
         /// <inheritdoc />
         public virtual bool CanAcceptDrop(IReadOnlyList<GraphElementModel> droppedElements)
@@ -287,6 +328,20 @@ namespace Unity.GraphToolkit.Editor
 
             AddToClassList(ussClassName);
             this.AddPackageStylesheet("Port.uss");
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            var action = m_OnNextAttachAction;
+            m_OnNextAttachAction = null;
+            action?.Invoke();
+        }
+
+        internal void OnNextAttach(Action action)
+        {
+            m_OnNextAttachAction = action;
         }
 
         /// <inheritdoc />
@@ -458,6 +513,10 @@ namespace Unity.GraphToolkit.Editor
                     }
                 }
             }
+
+            // Port preview depends on port model's visualization change and data type change.
+            if (m_PortPreview != null && visitor.ChangeHints.Contains(ChangeHint.Data))
+                m_PortPreview.UpdateUIFromModel(visitor);
         }
 
         /// <summary>
@@ -563,7 +622,8 @@ namespace Unity.GraphToolkit.Editor
 
         bool IsMouseOnCapsuleNodeTitle(Vector2 mousePosition)
         {
-            var isCapsuleNode = PortModel.NodeModel is ISingleInputPortNodeModel || PortModel.NodeModel is ISingleOutputPortNodeModel;
+            var isCapsuleNode = PortModel.NodeModel is ISingleInputPortNodeModel ||
+                                PortModel.NodeModel is ISingleOutputPortNodeModel;
             if (!isCapsuleNode)
                 return false;
 
@@ -578,6 +638,15 @@ namespace Unity.GraphToolkit.Editor
             // Transform mouse position to local space and check if it is within the element
             Vector2 localPos = hitBoxElement.WorldToLocal(mousePosition);
             return hitBoxElement.ContainsPoint(localPos);
+        }
+
+        /// <inheritdoc />
+        public override void RemoveFromRootView()
+        {
+            base.RemoveFromRootView();
+
+            // When a port is removed, its marker should be removed as well.
+            m_PortPreview?.RemoveFromRootView();
         }
 
         void PopulateMenuActionMap(Dictionary<string, Action> menuActionMap, ContextualMenuPopulateEvent evt)
@@ -950,6 +1019,22 @@ namespace Unity.GraphToolkit.Editor
 
             PortColor = typeStyle.Value.color;
             return true;
+        }
+
+        void CreatePortPreview()
+        {
+            // We wait until the port is attached to the panel to create the port preview because we don't want to add it before the port is actually in the graph view hierarchy.
+            if (panel == null || m_PortPreview != null)
+                return;
+
+            var portPreviewModel = new PortPreviewModel(PortModel);
+
+            m_PortPreview = ModelViewFactory.CreateUI<PortPreview>(GraphView, portPreviewModel);
+            Debug.Assert(m_PortPreview != null, "GraphElementFactory does not know how to create UI for " + portPreviewModel.GetType());
+            GraphView.AddElement(m_PortPreview);
+
+            // To fix the issue with port preview overlapping the contextual menu of the port, we bring the port preview to front when hovering on the port.
+            RegisterCallback<PointerEnterEvent>(OnPointerEnterEvent);
         }
 
         internal class TestAccess

@@ -28,14 +28,13 @@ namespace Unity.Hierarchy.Editor
     [NativeHeader("Modules/HierarchyEditor/HierarchyGameObjectHandlerBindings.h")]
     public sealed class HierarchyGameObjectHandler :
         HierarchyNodeTypeHandler,
-        IHierarchyEntityIdConverter,
         IHierarchyEditorNodeTypeHandler,
         IHierarchySearchPropositionProvider,
         IHierarchyExtendCreateMenu
     {
-        const string k_GameObjectUssClass = "hierarchy-item__gameobject-node";
-        const string k_GameObjectDisabledUssClass = "unity-disabled";
-        const string k_GameObjectDefaultParentUssClass = "hierarchy-item__gameobject-default-parent";
+        static readonly UniqueStyleString k_GameObjectUssClass = new("hierarchy-item__gameobject-node");
+        static readonly UniqueStyleString k_GameObjectDisabledUssClass = new("unity-disabled");
+        static readonly UniqueStyleString k_GameObjectDefaultParentUssClass = new("hierarchy-item__gameobject-default-parent");
 
         static HashSet<string> k_SpecialTypes = new HashSet<string>(new [] { "prefab" });
 
@@ -303,7 +302,7 @@ namespace Unity.Hierarchy.Editor
         {
             var gameObjectNodeType = GetNodeType();
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var parentNodeType = view.ViewModel.GetNodeType(in parent);
             return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType || parentNodeType == subSceneNodeType;
         }
@@ -311,7 +310,7 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
         {
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var childNodeType = view.ViewModel.GetNodeType(in child);
             return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
         }
@@ -828,9 +827,9 @@ namespace Unity.Hierarchy.Editor
                 return scene.IsValid() ? scene.handle.ToEntityId() : EntityId.None;
             }
 
-            if (dropTargetNodeType == Hierarchy.GetNodeType<HierarchySubSceneHandler>())
+            if (dropTargetNodeType == Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>())
             {
-                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneHandler>();
+                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneAuthoringHandler>();
                 if (dropOption.HasFlag(HierarchyDropFlags.DropUpon))
                 {
                     var scene = subSceneHandler.GetScene(in dropTarget);
@@ -965,14 +964,6 @@ namespace Unity.Hierarchy.Editor
             return DragVisualMode.None;
         }
 
-        HierarchyNode IHierarchyEntityIdConverter.GetNode(EntityId entityId) => GetNodeFromEntityId(entityId);
-
-        void IHierarchyEntityIdConverter.GetNodes(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes) => GetNodesFromEntityIds(entityIds, outNodes);
-
-        EntityId IHierarchyEntityIdConverter.GetEntityId(in HierarchyNode node) => GetEntityIdFromNode(in node);
-
-        void IHierarchyEntityIdConverter.GetEntityIds(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds) => GetEntityIdsFromNodes(nodes, outEntityIds);
-
         [NativeMethod(IsThreadSafe = true)]
         internal static extern GameObject GetGameObjectFromEntityId(EntityId entityId);
 
@@ -981,18 +972,6 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchyGameObjectHandlerBindings::GetOrCreateNodeFromEntityId", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNode GetOrCreateNodeFromEntityId(EntityId entityId);
-
-        [NativeMethod(IsThreadSafe = true)]
-        extern HierarchyNode GetNodeFromEntityId(EntityId entityId);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        extern void GetNodesFromEntityIds(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes);
-
-        [NativeMethod(IsThreadSafe = true)]
-        extern EntityId GetEntityIdFromNode(in HierarchyNode node);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        extern void GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

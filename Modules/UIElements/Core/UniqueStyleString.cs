@@ -18,8 +18,31 @@ namespace UnityEngine.UIElements;
 /// </remarks>
 public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
 {
-    private static readonly Dictionary<string, int> k_StringToIndex = new();
-    private static readonly List<string> k_IndexToString = new();
+    private static Dictionary<string, int> k_StringToIndex = new();
+    private static List<string> k_IndexToString = new();
+
+    // For tests, operations inside this scope target a fresh internal storage so that pollution
+    // from built-in stylesheets or other tests does not skew the size — and therefore the cache
+    // footprint — of the lookup table being measured.
+    internal readonly struct TestScope : IDisposable
+    {
+        private readonly Dictionary<string, int> m_PrevStringToIndex;
+        private readonly List<string> m_PrevIndexToString;
+
+        public TestScope()
+        {
+            m_PrevStringToIndex = k_StringToIndex;
+            m_PrevIndexToString = k_IndexToString;
+            k_StringToIndex = new();
+            k_IndexToString = new();
+        }
+
+        public void Dispose()
+        {
+            k_StringToIndex = m_PrevStringToIndex;
+            k_IndexToString = m_PrevIndexToString;
+        }
+    }
 
     private readonly int m_Id;
 

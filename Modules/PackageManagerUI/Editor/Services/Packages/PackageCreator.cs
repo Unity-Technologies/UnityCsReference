@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.CodeDom;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using UnityEditorInternal;
 using UnityEngine;
@@ -17,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 internal interface IPackageCreator: IService
 {
     public event Action<string> onPackageCreated;
+    public bool CanGenerateValidNamespace(string displayName);
     public void CreatePackage(string displayName);
 }
 
@@ -27,8 +27,10 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     private static readonly string k_TempFolder = "Temp/";
     private static readonly string k_PackagesFolder = "Packages/";
 
-    private const string k_DefaultOrgName = "Undefined";
-    private const string k_DefaultDisplayName = "New Package";
+    private const string k_DefaultOrgNamespace = "Undefined";
+    private const string k_DefaultPackageNamespace = "NewPackage";
+    private const string k_DefaultOrgTechnicalName = "undefined";
+    private const string k_DefaultTechnicalNameWithoutOrg = "newpackage";
 
     public static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occurred while trying to create the new package.");
     public static readonly string k_TempAndPackagesFolderAreReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The project contains read-only folders ('Temp' and 'Packages'). Change the permissions to read and write and try again.");
@@ -37,7 +39,6 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     public static readonly string k_PermissionDeniedGeneralErrorMessage = L10n.Tr("An error occurred while trying to create the new package. You might not have permissions to write to the 'Temp' or 'Packages' folders. This error can happen when you don't open the Unity Editor in administrator mode. Close the Editor, then open it in administrator mode and try again. Error: ");
     public static readonly string k_PathIsTooLongErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The path to your project might be too long. Move your project to another location with a shorter path, then try again.");
     public static readonly string k_NameIsTooLongErrorMessage = L10n.Tr("The package display name is too long.");
-    public static readonly string k_PackageDisplayNameChangedMessage = L10n.Tr("The display name you entered contained invalid characters. It has been updated from \"{0}\" to \"{1}\".");
 
     private readonly IUnityConnectProxy m_UnityConnectProxy;
     private readonly IUpmCache m_UpmCache;
@@ -55,24 +56,51 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         m_DateTimeProxy = RegisterDependency(dateTimeProxy);
     }
 
+    // Since namespace has a stricter rule than package name, if we can sanitize a string to be used as a namespace,
+    // we know for sure it will also be good to be used as package name after sanitization.
+    public bool CanGenerateValidNamespace(string value) => !string.IsNullOrEmpty(PackageValidator.SanitizeNamespace(value));
+
+    private static string SanitizeOrUseDefault(string value, Func<string, string> sanitizationFunction, string defaultValue)
+    {
+        var sanitizedValue = sanitizationFunction?.Invoke(value);
+        return string.IsNullOrEmpty(sanitizedValue) ? defaultValue : sanitizedValue;
+    }
+
+    private void ModifySuffixToAvoidConflictIfNeeded(ref string technicalName, ref string rootNamespace)
+    {
+        // We modify the technical name and the namespace together because we want to keep the suffix in sync as much as possible. Not doing that could lead to
+        // cases like a package with technical name `com.org.package2` but the namespace is  `Org.Package` or even `Org.Package1`, which can be confusing.
+        var technicalNameWithoutSuffixNumber = RemoveSuffixNumber(technicalName);
+        var newSuffix = 0;
+        while (m_UpmCache.GetInstalledPackageInfo(technicalName) != null)
+        {
+            newSuffix++;
+            technicalName = $"{technicalNameWithoutSuffixNumber}{newSuffix}";
+        }
+
+        if (newSuffix <= 0)
+            return;
+
+        rootNamespace = $"{RemoveSuffixNumber(rootNamespace)}{newSuffix}";
+    }
+
     public void CreatePackage(string displayName)
     {
-        var organization = IsValidPackageNameAndNamespaceAfterSanitization(m_UnityConnectProxy.userPrimaryOrg)
-            ? m_UnityConnectProxy.userPrimaryOrg
-            : k_DefaultOrgName;
-        var oldDisplayName = displayName;
-        displayName = IsValidPackageNameAndNamespaceAfterSanitization(displayName)
-            ? PackageValidator.SanitizeDisplayName(displayName)
-            : k_DefaultDisplayName;
+        var orgTechnicalName = SanitizeOrUseDefault(m_UnityConnectProxy.userPrimaryOrg, PackageValidator.SanitizePackageTechnicalName, k_DefaultOrgTechnicalName);
+        var technicalNameWithoutOrg = SanitizeOrUseDefault(displayName, PackageValidator.SanitizePackageTechnicalName, k_DefaultTechnicalNameWithoutOrg);
+        var technicalName = "com." + orgTechnicalName + "." + technicalNameWithoutOrg;
 
-        if(!displayName.Equals(oldDisplayName))
-            Debug.LogWarning(string.Format(k_PackageDisplayNameChangedMessage, oldDisplayName, displayName));
+        var organizationNamespace = SanitizeOrUseDefault(m_UnityConnectProxy.userPrimaryOrg, PackageValidator.SanitizeNamespace, k_DefaultOrgNamespace);
+        var packageNamespace = SanitizeOrUseDefault(displayName, PackageValidator.SanitizeNamespace, k_DefaultPackageNamespace);
+        var rootNamespace = organizationNamespace + "." + packageNamespace;
 
-        var packageName = GenerateUniquePackageNameAndUpdateDisplayName(organization, ref displayName);
-        var rootNamespace = PackageValidator.SanitizeNamespace(organization) + "." + PackageValidator.SanitizeNamespace(displayName);
+        ModifySuffixToAvoidConflictIfNeeded(ref technicalName, ref rootNamespace);
 
-        var destinationDirName = IOUtils.PathsCombine("Packages", packageName);
-        var variables = CreateTemplateVariables(packageName, displayName, rootNamespace);
+        if (technicalName.Length > PackageValidator.k_MaxAllowedCharsInTechnicalName)
+            throw new ArgumentException(k_NameIsTooLongErrorMessage);
+
+        var destinationDirName = IOUtils.PathsCombine("Packages", technicalName);
+        var variables = CreateTemplateVariables(technicalName, displayName, rootNamespace);
         var tempFolder = m_IOProxy.GetUniqueTempPathInProject();
         try
         {
@@ -92,7 +120,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
             }
 
             m_IOProxy.Move(tempFolder, destinationDirName);
-            TriggerOnPackageCreatedEventAndResolve(packageName);
+            TriggerOnPackageCreatedEventAndResolve(technicalName);
         }
         catch (Exception e)
         {
@@ -137,54 +165,9 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         m_UpmClient.Resolve(true);
     }
 
-    private string GenerateUniquePackageNameAndUpdateDisplayName(string organization, ref string displayName)
-    {
-        var packageName = "com." + PackageValidator.SanitizePackageTechnicalName(organization) + "." + PackageValidator.SanitizePackageTechnicalName(displayName);
-        var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
-
-        var newSuffix = 0;
-        while (m_UpmCache.GetInstalledPackageInfo(packageName) != null)
-        {
-            newSuffix++;
-            packageName = $"{packageNameWithoutSuffixNumber}{newSuffix}";
-        }
-
-        if (newSuffix > 0)
-            displayName = $"{RemoveSuffixNumber(displayName)} {newSuffix}";
-
-        if (packageName.Length > PackageValidator.k_MaxAllowedCharsInTechnicalName)
-            throw new ArgumentException(k_NameIsTooLongErrorMessage);
-
-        return packageName;
-    }
-
     private static string RemoveSuffixNumber(string value)
     {
         return Regex.Replace(value, @"\d+$", "").Trim();
-    }
-
-    // Since namespace has a stricter rule than package name, if a string is good enough to be used as a namespace after sanitization,
-    // we know for sure it will also be good to be used as package name after sanitization.
-    private bool IsValidPackageNameAndNamespaceAfterSanitization(string value)
-    {
-        var sanitizedValue = PackageValidator.SanitizeNamespace(value);
-        return !string.IsNullOrEmpty(sanitizedValue) && ValidateNamespace(sanitizedValue);
-    }
-
-    private bool ValidateNamespace(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-            return false;
-
-        try
-        {
-            CodeGenerator.ValidateIdentifiers(new CodeNamespace(name));
-            return true;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
     }
 
     private void ReplaceVariablesInFile(Dictionary<string, string> variables, string file)
@@ -198,8 +181,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     private void RenameFileWithVariables(Dictionary<string, string> variables, string file)
     {
         var originalFileName = IOUtils.GetFileName(file);
-        var updatedFileName = ReplaceVariablesInString(variables, originalFileName);
-
+        var updatedFileName =  ReplaceVariablesInString(variables, originalFileName);
         if (updatedFileName == originalFileName)
             return;
 
@@ -207,7 +189,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         m_IOProxy.Move(file, IOUtils.PathsCombine(folder, updatedFileName));
     }
 
-    private static string ReplaceVariablesInString(Dictionary<string, string> variables, string input)
+    private static string ReplaceVariablesInString(IDictionary<string, string> variables, string input)
     {
         if (string.IsNullOrEmpty(input))
             return string.Empty;
@@ -241,7 +223,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         return sb.ToString();
     }
 
-    private Dictionary<string, string> CreateTemplateVariables(string packageName, string displayName, string rootNamespace)
+    private Dictionary<string, string> CreateTemplateVariables(string packageTechnicalName, string displayName, string rootNamespace)
     {
         var fullVersion = InternalEditorUtility.GetFullUnityVersion();
         var versionParts = fullVersion.Split(' ')[0].Split('.');
@@ -250,13 +232,23 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         var build = versionParts.Length > 2 ? versionParts[2] : string.Empty;
         return new Dictionary<string, string>
         {
-            { "#NAME#", packageName },
+            // We only call `EscapeStringForJson` for display name and author name because they are the only ones that could contain characters that need escape
+            { "#NAME_JSON#", packageTechnicalName },
+            { "#UNITYVERSION_JSON#", majorMinor },
+            { "#UNITYRELEASE_JSON#", build },
+            { "#DISPLAYNAME_JSON#", EscapeStringForJson(displayName) },
+            { "#AUTHORNAME_JSON#", EscapeStringForJson(m_UnityConnectProxy.displayName) },
+
             { "#DISPLAYNAME#", displayName },
-            { "#ROOTNAMESPACE#", rootNamespace },
-            { "#UNITYVERSION#", majorMinor },
-            { "#UNITYRELEASE#", build },
             { "#CURRENTDATE#", m_DateTimeProxy.utcNow.ToString("yyyy-MM-dd") },
-            { "#AUTHORNAME#", m_UnityConnectProxy.displayName }
+
+            // Since namespace already has strict rules we don't need additional sanitization for it to be used in json or file name
+            { "#ROOTNAMESPACE#", rootNamespace },
         };
+    }
+
+    private static string EscapeStringForJson(string value)
+    {
+        return string.IsNullOrEmpty(value) ? string.Empty : JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode(value);
     }
 }

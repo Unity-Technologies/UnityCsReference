@@ -894,6 +894,45 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     }
                     GUILayout.EndHorizontal();
                 }
+                else if (data.m_CBufferSubArrays != null && data.m_CBufferSubArrays.Length > 0)
+                {
+                    // CBuffer with sub-arrays - each sub-array gets its own foldout
+                    GUILayout.BeginVertical(FrameDebuggerStyles.EventDetails.s_PropertiesLeftMarginStyle);
+
+                    // Main CBuffer foldout
+                    data.m_IsFoldoutOpen = EditorGUILayout.Foldout(data.m_IsFoldoutOpen, data.m_FoldoutString, FrameDebuggerStyles.EventDetails.s_ArrayFoldoutStyle);
+                    if (data.m_IsFoldoutOpen)
+                    {
+                        // Display each sub-array with its own foldout
+                        EditorGUI.indentLevel++;
+                        for (int j = 0; j < data.m_CBufferSubArrays.Length; j++)
+                        {
+                            var subArray = data.m_CBufferSubArrays[j];
+                            string subArrayHeader = subArray.m_ArraySize > 1
+                                ? $"{subArray.m_ArrayName}[{subArray.m_ArraySize}]"
+                                : subArray.m_ArrayName;
+
+                            if (subArray.m_ArraySize > 1)
+                            {
+                                // Array - show as foldout
+                                subArray.m_IsFoldoutOpen = EditorGUILayout.Foldout(subArray.m_IsFoldoutOpen, subArrayHeader, FrameDebuggerStyles.EventDetails.s_ArrayFoldoutStyle);
+                                if (subArray.m_IsFoldoutOpen && !string.IsNullOrEmpty(subArray.m_ContentString))
+                                {
+                                    GUILayout.Label(subArray.m_ContentString, subArray.m_ArrayGUIStyle);
+                                }
+                            }
+                            else
+                            {
+                                // Single value - show directly
+                                GUILayout.Label(subArray.m_ContentString, FrameDebuggerStyles.EventDetails.s_MonoLabelNoWrapStyle);
+                            }
+                            data.m_CBufferSubArrays[j] = subArray;
+                        }
+                        EditorGUI.indentLevel--;
+                    }
+
+                    GUILayout.EndVertical();
+                }
                 else
                 {
                     GUILayout.BeginVertical(FrameDebuggerStyles.EventDetails.s_PropertiesLeftMarginStyle);

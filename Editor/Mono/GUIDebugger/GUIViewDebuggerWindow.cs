@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -44,6 +45,7 @@ namespace UnityEditor
             public static readonly Color paddingHighlighterColor = new Color(0.76f, 0.87f, 0.71f, 0.5f);
         }
 
+        [NoAutoStaticsCleanup] // singleton editor window; survives code reload
         static GUIViewDebuggerWindow s_ActiveInspector;
 
         static EditorWindow GetEditorWindow(GUIView view)
@@ -449,7 +451,9 @@ namespace UnityEditor
 
     internal static partial class GUIViewDebuggerHelper
     {
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action onViewInstructionsChanged = null;
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<GUIView, bool> onDebuggingViewchanged = null;
 
         [RequiredByNativeCode]

@@ -78,7 +78,7 @@ namespace UnityEditor
         public string name { get; set; }
 
         /// <summary>
-        /// Internal: path to the build metadata directory, set by BuildHistory.ReserveBuildMetadataPath
+        /// Internal: path to the build report directory, set by BuildHistory.ReserveBuildReportDirectory
         /// before calling into native code.
         /// </summary>
         internal string metadataPath { get; set; }

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
@@ -29,8 +27,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             multiColumnHeader.SetSorting((int)MultiSelectionTable.Column.ItemName, true);
             multiColumnHeader.ResizeToFit();
 
-            var niceNames = Array.ConvertAll(names, ObjectNames.NicifyVariableName);
-            m_SelectionTable = new MultiSelectionTable(m_TreeViewState, multiColumnHeader, niceNames, selection);
+            m_SelectionTable = new MultiSelectionTable(m_TreeViewState, multiColumnHeader, names, selection);
         }
     }
 }

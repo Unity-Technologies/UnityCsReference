@@ -223,8 +223,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             if (!VerifyNewClassNameIsValid(className))
                 return;
 
-            using var command = AddClassCommand.GetPooled(CommandSources.Inspector, elementAsset, className);
-            UICommandQueue.EnqueueCommand(command);
+            AddClassCommand.Execute(CommandSources.Inspector, elementAsset, className);
 
             m_InputTextField.SetValueWithoutNotify(string.Empty);
         }
@@ -259,23 +258,20 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
                     if (string.IsNullOrEmpty(ussPath))
                         return;
 
-                    using var createStyleSheet = CreateStyleSheetCommand.GetPooled(CommandSources.Inspector, vta, ussPath);
-                    UICommandQueue.EnqueueCommand(createStyleSheet);
+                    CreateStyleSheetCommand.Execute(CommandSources.Inspector, vta, ussPath);
                     activeStyleSheet = GetActiveStyleSheetQuery.Get();
                 }
 
                 if (activeStyleSheet == null)
                     return;
 
-                using var command = ExtractInlineStylesToNewClassCommand.GetPooled(
+                ExtractInlineStylesToNewClassCommand.Execute(
                     CommandSources.Inspector,
                     vea,
                     vta,
                     activeStyleSheet,
                     className);
-                UICommandQueue.EnqueueCommand(command);
-                using var addClass = AddClassCommand.GetPooled(CommandSources.Inspector, vea, className);
-                UICommandQueue.EnqueueCommand(addClass);
+                AddClassCommand.Execute(CommandSources.Inspector, vea, className);
             }
         }
         finally
@@ -327,9 +323,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             return;
 
         Target.RemoveFromClassList(className);
-        using var command = RemoveClassFromElementCommand.GetPooled(CommandSources.Inspector, Target.visualElementAsset, className);
-        UICommandQueue.EnqueueCommand(command);
-
+        RemoveClassFromElementCommand.Execute(CommandSources.Inspector, Target.visualElementAsset, className);
         evt.StopPropagation();
     }
 
@@ -360,7 +354,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         if (StyleSheetUtility.TryGetFirstRuleWithSimpleClassSelector(sheets, className, out var rule))
         {
             using var selectRuleCommand = RequestSelectionQuery<StyleRule>.GetPooled(CommandSources.Inspector, rule);
-            UICommandQueue.EnqueueCommand(selectRuleCommand);
+            UICommandQueue.Execute(selectRuleCommand);
             return;
         }
 
@@ -371,8 +365,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             if (string.IsNullOrEmpty(ussPath))
                 return;
 
-            using var createStyleSheet = CreateStyleSheetCommand.GetPooled(CommandSources.Inspector, vta, ussPath);
-            UICommandQueue.EnqueueCommand(createStyleSheet);
+            CreateStyleSheetCommand.Execute(CommandSources.Inspector, vta, ussPath);
             activeStyleSheet = GetActiveStyleSheetQuery.Get();
         }
 
@@ -386,11 +379,9 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             return;
         }
 
-        using var addRuleCommand = AddStyleRuleCommand.GetPooled(CommandSources.Inspector, sheets[0], selectorString);
-        UICommandQueue.EnqueueCommand(addRuleCommand);
+        AddStyleRuleCommand.Execute(CommandSources.Inspector, sheets[0], selectorString);
 
-        using var selectNewRuleCommand = RequestSelectionQuery<StyleRule>.GetPooled(CommandSources.Inspector, sheets[0].rules[^1]);
-        UICommandQueue.EnqueueCommand(selectNewRuleCommand);
+        RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, sheets[0].rules[^1]);
     }
 
     void ResizeClassList(VisualElement element, int count, UnityEngine.Pool.ObjectPool<ClassPill> pool)

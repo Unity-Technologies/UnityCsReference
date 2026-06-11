@@ -16,7 +16,7 @@ namespace UnityEditor.Build
         private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder");
 
         private BuildPipelineSettingsProvider()
-            : base("Project/Analysis/Build Pipeline", SettingsScope.Project)
+            : base("Project/Build Pipeline", SettingsScope.Project)
         { }
 
         public static string buildHistoryFolderPath

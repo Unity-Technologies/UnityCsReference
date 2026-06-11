@@ -13,6 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static string SanitizeFileName(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c, '_');
             // Remove additional special characters that Unity doesn't like

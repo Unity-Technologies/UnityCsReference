@@ -22,6 +22,7 @@ namespace UnityEditorInternal.Profiling
         const string k_SettingsKeyPrefix = "Profiler.GPUProfilerModule.";
         protected override string SettingsKeyPrefix => k_SettingsKeyPrefix;
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Hierarchy;
+        protected override bool IsGpuView => true;
 
         static readonly string k_GpuProfilingDisabled = L10n.Tr("GPU Profiling was not enabled so no data was gathered.");
 
@@ -116,7 +117,6 @@ namespace UnityEditorInternal.Profiling
         internal override void OnEnable()
         {
             base.OnEnable();
-            m_FrameDataHierarchyView.OnEnable(this, ProfilerWindow, true);
             m_FrameDataHierarchyView.dataAvailabilityMessage = null;
             if (m_ViewType == ProfilerViewType.Timeline)
                 m_ViewType = ProfilerViewType.Hierarchy;

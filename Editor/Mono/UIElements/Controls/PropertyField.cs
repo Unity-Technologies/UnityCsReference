@@ -114,18 +114,22 @@ namespace UnityEditor.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-property-field";
+        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
         public static readonly string labelUssClassName = ussClassName + "__label";
+        internal static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public static readonly string inputUssClassName = ussClassName + "__input";
+        internal static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
         /// <summary>
         /// USS class name of property fields in inspector elements
         /// </summary>
         public static readonly string inspectorElementUssClassName = ussClassName + "__inspector-property";
+        internal static readonly UniqueStyleString inspectorElementUssClassNameUnique = new(inspectorElementUssClassName);
 
         internal static readonly string imguiContainerPropertyUssClassName = ussClassName + "__imgui-container-property";
 
@@ -156,7 +160,7 @@ namespace UnityEditor.UIElements
         /// </remarks>
         public PropertyField(SerializedProperty property, string label)
         {
-            AddToClassList(ussClassName);
+            AddToClassList(ussClassNameUnique);
             this.label = label;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -186,9 +190,9 @@ namespace UnityEditor.UIElements
             var currentElement = parent;
             while (currentElement != null)
             {
-                if (currentElement.ClassListContains(InspectorElement.ussClassName))
+                if (currentElement.ClassListContains(InspectorElement.ussClassNameUnique))
                 {
-                    AddToClassList(inspectorElementUssClassName);
+                    AddToClassList(inspectorElementUssClassNameUnique);
                     m_InspectorElement = currentElement;
                 }
 
@@ -808,15 +812,15 @@ namespace UnityEditor.UIElements
         {
             var wrapper = new VisualElement();
             // add the base classes for the field which will provide the correct margins
-            wrapper.AddToClassList(BaseField<ObjectField>.ussClassName);
-            wrapper.AddToClassList(BaseField<ObjectField>.alignedFieldUssClassName);
+            wrapper.AddToClassList(BaseField<ObjectField>.ussClassNameUnique);
+            wrapper.AddToClassList(BaseField<ObjectField>.alignedFieldUssClassNameUnique);
 
             var labelOnly = new Label();
             var fieldLabel = label ?? property.localizedDisplayName;
             labelOnly.name = "unity-input-" + property.propertyPath;
             labelOnly.text = fieldLabel;
 
-            labelOnly.AddToClassList(labelUssClassName);
+            labelOnly.AddToClassList(labelUssClassNameUnique);
             wrapper.Add(labelOnly);
 
             return wrapper;
@@ -881,16 +885,16 @@ namespace UnityEditor.UIElements
         [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
         internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
         {
-            field.labelElement.AddToClassList(labelUssClassName);
-            field.visualInput.AddToClassList(inputUssClassName);
-            field.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
+            field.labelElement.AddToClassList(labelUssClassNameUnique);
+            field.visualInput.AddToClassList(inputUssClassNameUnique);
+            field.AddToClassList(BaseField<TValue>.alignedFieldUssClassNameUnique);
 
             var nestedFields = field.visualInput.Query<VisualElement>(
                 classes: new []{BaseField<TValue>.ussClassName, BaseCompositeField<int, IntegerField, int>.ussClassName} );
 
             nestedFields.ForEach(x =>
             {
-                x.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
+                x.AddToClassList(BaseField<TValue>.alignedFieldUssClassNameUnique);
             });
         }
 
@@ -1049,10 +1053,30 @@ namespace UnityEditor.UIElements
                     if (property.type == "ulong")
                         return ConfigureField<UnsignedLongField, ulong>(originalField as UnsignedLongField, property,
                             () => new UnsignedLongField());
-                    if (property.type == "uint")
-                        return ConfigureField<UnsignedIntegerField, uint>(originalField as UnsignedIntegerField, property,
+                    if (property.type == "uint" || property.type == "ushort" || property.type == "byte")
+                    {
+                        var uintField = ConfigureField<UnsignedIntegerField, uint>(originalField as UnsignedIntegerField, property,
                             () => new UnsignedIntegerField());
 
+                        if (uintField != null)
+                        {
+                            switch (property.type)
+                            {
+                                case "ushort":
+                                    uintField.onValidateValue += v => Math.Min(v, ushort.MaxValue);
+                                    break;
+                                case "byte":
+                                    uintField.onValidateValue += v => Math.Min(v, byte.MaxValue);
+                                    break;
+                                default:
+                                    break;
+
+                            }
+                            
+                        }
+                        return uintField;
+                    }
+   
                 {
                     var intField = ConfigureField<IntegerField, int>(originalField as IntegerField, property,
                         () => new IntegerField()) as IntegerField;
@@ -1061,6 +1085,18 @@ namespace UnityEditor.UIElements
                     {
                         // If the field was recycled from an ArraySize property
                         intField.isDelayed = false;
+
+                        switch (property.type)
+                            {
+                                case "short":
+                                    intField.onValidateValue += v => Mathf.Clamp(v, short.MinValue, short.MaxValue);
+                                    break;
+                                case "sbyte":
+                                    intField.onValidateValue += v => Mathf.Clamp(v, sbyte.MinValue, sbyte.MaxValue);
+                                    break;
+                                default:
+                                    break;
+                            }          
                     }
 
                     return intField;
@@ -1105,18 +1141,28 @@ namespace UnityEditor.UIElements
                     if (requiredType == null)
                     {
                         var targetTypeName = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
-                        foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
+
+                        // Special handling for native types that have a PPtr<MonoBehaviour> which when converted to managed could be a MonoBehaviour or
+                        // a ScriptableObject. We use Object so we can support both.
+                        if (NativeClassExtensionUtilities.ExtendsANativeType(target) && targetTypeName == nameof(MonoBehaviour))
                         {
-                            if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
-                                continue;
+                            requiredType = typeof(UnityEngine.Object);
+                        }
+                        else
+                        {
+                            foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
+                            {
+                                if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
+                                    continue;
 
-                            // We ignore C# types as they can can be confused with a built-in type with the same name,
-                            // we can use the FieldInfo to find MonoScript types. (UUM-29499)
-                            if (typeof(MonoBehaviour).IsAssignableFrom(objectTypes) || typeof(ScriptableObject).IsAssignableFrom(objectTypes))
-                                continue;
+                                // We ignore C# types as they can be confused with a built-in type with the same name,
+                                // we can use the FieldInfo to find MonoScript types. (UUM-29499)
+                                if (objectTypes.IsSubclassOf(typeof(MonoBehaviour)) || objectTypes.IsSubclassOf(typeof(ScriptableObject)))
+                                    continue;
 
-                            requiredType = objectTypes;
-                            break;
+                                requiredType = objectTypes;
+                                break;
+                            }
                         }
                     }
 

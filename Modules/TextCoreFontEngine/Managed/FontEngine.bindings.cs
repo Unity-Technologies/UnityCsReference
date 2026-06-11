@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
-using UnityEngine.Profiling;
 
 namespace UnityEngine.TextCore.LowLevel
 {
@@ -55,7 +55,7 @@ namespace UnityEngine.TextCore.LowLevel
         RASTER_MODE_BITMAP      = 0x10,
         RASTER_MODE_SDF         = 0x20,
         RASTER_MODE_SDFAA       = 0x40,
-        // Reserved             = 0x80,
+        RASTER_MODE_STRONG      = 0x80,
 
         RASTER_MODE_MSDF        = 0x100,
         RASTER_MODE_MSDFA       = 0x200,
@@ -152,6 +152,16 @@ namespace UnityEngine.TextCore.LowLevel
     }
 
     /// <summary>
+    /// Editor-internal render modes that complement <see cref="GlyphRenderMode"/> but must not be exposed publicly.
+    /// </summary>
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
+    internal static class GlyphRenderModeInternal
+    {
+        // Only used by the editor's bitmap mode alongside the OS settings to disable the font smoothing.
+        public const GlyphRenderMode RASTER_HINTED_STRONG = (GlyphRenderMode)(GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_STRONG | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X);
+    }
+
+    /// <summary>
     /// The modes available when packing glyphs into an atlas texture.
     /// </summary>
     [UsedByNativeCode]
@@ -222,6 +232,8 @@ namespace UnityEngine.TextCore.LowLevel
         private static MarkToLigatureAdjustmentRecord[] s_MarkToLigatureAdjustmentRecords_MarshallingArray;
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
+
+        static readonly ProfilerMarker s_TryAddGlyphsToTextureMarker = new ProfilerMarker("FontEngine.TryAddGlyphsToTexture");
 
         /// <summary>
         ///
@@ -1108,7 +1120,7 @@ namespace UnityEngine.TextCore.LowLevel
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryAddGlyphsToTexture(List<Glyph> glyphsToAdd, List<Glyph> glyphsAdded, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture)
         {
-            Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
+            using var tryAddGlyphsToTextureScope = s_TryAddGlyphsToTextureMarker.Auto();
 
             int writeIndex = 0;
             bool keepCopyingData;
@@ -1229,8 +1241,6 @@ namespace UnityEngine.TextCore.LowLevel
                 writeIndex += 1;
             }
 
-            Profiler.EndSample();
-
             return allGlyphsAdded;
         }
 
@@ -1245,13 +1255,12 @@ namespace UnityEngine.TextCore.LowLevel
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryAddGlyphsToTexture(List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs)
         {
-            Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
+            using var tryAddGlyphsToTextureScope = s_TryAddGlyphsToTextureMarker.Auto();
 
             glyphs = null;
 
             if (glyphIndexes == null || glyphIndexes.Count == 0)
             {
-                Profiler.EndSample();
                 return false;
             }
 
@@ -1326,8 +1335,6 @@ namespace UnityEngine.TextCore.LowLevel
             }
 
             glyphs = s_Glyphs;
-
-            Profiler.EndSample();
 
             return allGlyphsAdded;
         }

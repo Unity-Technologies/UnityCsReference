@@ -81,12 +81,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return false;
             }
 
-            var eventName = previousImports.Count == 0 ? "importSample" : "reimportSample";
-            PackageManagerWindowAnalytics.SendEvent(eventName, sample.package?.versions.primary.uniqueId);
-
             var success = sample.Import(Sample.ImportOptions.OverridePreviousImports);
             if (!success)
                 return false;
+
+            var eventName = sample.isImported ? "reimportSample"
+                : sample.previousImportPaths?.Count > 0 ? "updateSample"
+                : "importSample";
+            PackageManagerWindowAnalytics.SendEvent(eventName, sample);
 
             PingSampleInProjectBrowser(sample);
             return true;
@@ -95,6 +97,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerActionImplementation(IReadOnlyCollection<Sample> samples)
         {
             m_SampleImporter.Import(samples, Sample.ImportOptions.OverridePreviousImports);
+
+            var eventName = "importSampleBulk";
+            foreach (var sample in samples)
+            {
+                eventName = sample.isImported ? "reimportSampleBulk"
+                    : sample.previousImportPaths?.Count > 0 ? "updateSampleBulk"
+                    : "importSampleBulk";
+                break;
+            }
+            PackageManagerWindowAnalytics.SendEvent(eventName, samples);
+
             return true;
         }
 

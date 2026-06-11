@@ -212,6 +212,7 @@ namespace UnityEngine.UIElements
                 m_RightPane.style.width = StyleKeyword.Initial;
                 m_RightPane.style.height = StyleKeyword.Initial;
                 m_RightPane.style.flexGrow = 1;
+                m_RightPane.style.flexBasis = 0;
                 m_LeftPane.style.display = DisplayStyle.None;
             }
             else
@@ -219,6 +220,7 @@ namespace UnityEngine.UIElements
                 m_LeftPane.style.width = StyleKeyword.Initial;
                 m_LeftPane.style.height = StyleKeyword.Initial;
                 m_LeftPane.style.flexGrow = 1;
+                m_LeftPane.style.flexBasis = 0;
                 m_RightPane.style.display = DisplayStyle.None;
             }
 
@@ -322,15 +324,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var postSetupWithEmptyLeftPane = m_LeftPane == null;
             PostDisplaySetup();
-
-            // If CollapseChild was called before the setup was complete, we need to call it again.
-            if (postSetupWithEmptyLeftPane && m_PendingCollapseToExecute)
-            {
-                CollapseChild(m_CollapsedChildIndex);
-                m_PendingCollapseToExecute = false;
-            }
 
             UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
 
@@ -460,6 +454,19 @@ namespace UnityEngine.UIElements
             m_DragLineAnchor.AddManipulator(m_Resizer);
 
             RegisterCallback<GeometryChangedEvent>(OnSizeChange);
+
+            // PostDisplaySetup resets flex properties without touching display, so if a child
+            // was already collapsed (display: none) we re-apply CollapseChild to restore the
+            // correct flex state on the visible pane.
+            if (m_LeftPane.style.display == DisplayStyle.None)
+                CollapseChild(0);
+            else if (m_RightPane.style.display == DisplayStyle.None)
+                CollapseChild(1);
+            else if (m_PendingCollapseToExecute)
+            {
+                CollapseChild(m_CollapsedChildIndex);
+                m_PendingCollapseToExecute = false;
+            }
         }
 
         void OnSizeChange(GeometryChangedEvent evt)

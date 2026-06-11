@@ -368,16 +368,27 @@ namespace UnityEngine.UIElements
 
         public override void UpdateBackground()
         {
-            float backgroundFillHeight;
-            if (m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.All ||
-                (backgroundFillHeight = m_ScrollView.contentViewport.resolvedStyle.height - GetExpectedContentHeight()) <= 0)
+            var viewport = m_ScrollView.contentViewport;
+
+            if (m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.All || lastVisibleItem == null)
             {
                 m_EmptyRows?.RemoveFromHierarchy();
+                viewport.RemoveFromClassList(BaseVerticalCollectionView.viewportWithFillUssClassNameUnique);
                 return;
             }
 
-            if (lastVisibleItem == null)
+            // With horizontal scrolling the viewport hugs content until --with-fill stretches it. Add the class first,
+            // then measure the parent, which that stretch doesn't affect.
+            viewport.AddToClassList(BaseVerticalCollectionView.viewportWithFillUssClassNameUnique);
+
+            var availableHeight = m_ScrollView.contentAndVerticalScrollContainer.resolvedStyle.height;
+            var backgroundFillHeight = availableHeight - GetExpectedContentHeight();
+            if (!(backgroundFillHeight > 0))
+            {
+                m_EmptyRows?.RemoveFromHierarchy();
+                viewport.RemoveFromClassList(BaseVerticalCollectionView.viewportWithFillUssClassNameUnique);
                 return;
+            }
 
             if (m_EmptyRows == null)
             {
@@ -385,7 +396,7 @@ namespace UnityEngine.UIElements
             }
 
             if (m_EmptyRows.parent == null)
-                m_ScrollView.contentViewport.Add(m_EmptyRows);
+                viewport.Add(m_EmptyRows);
 
             var pixelAlignedItemHeight = GetExpectedItemHeight(-1);
             var itemCount = Mathf.FloorToInt(backgroundFillHeight / pixelAlignedItemHeight) + 1;

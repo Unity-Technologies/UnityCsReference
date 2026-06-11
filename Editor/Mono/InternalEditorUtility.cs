@@ -88,6 +88,7 @@ namespace UnityEditorInternal
 
                 case "vulkandevicefilter":
                 case "d3d12devicefilter":
+                case "webgpudevicefilter":
                     return EditorGUIUtility.FindTexture(typeof(EditorSettings));
 
                 default: return null;

@@ -28,14 +28,14 @@ static class LicenseTrStrings
     public static readonly string RemovedDescriptionManyLicensesWithUiEntitlement = L10n.Tr("Your licenses for {0} have been removed. You can continue to use the Unity Editor, but some features might be unavailable. To reactivate the license, use the Unity Hub to resolve or contact your administrator.");
 
     // LicenseReturnedWindowContents
-    public static string ReturnedWindowTitle = L10n.Tr("License returned");
+    public static readonly string ReturnedWindowTitle = L10n.Tr("License returned");
     public static readonly string ReturnedDescriptionOneLicenseNoUiEntitlement = L10n.Tr("Your license for {0} has been returned and your project will close. Activate your license again if you want to continue working with the Unity Editor.");
     public static readonly string ReturnedDescriptionManyLicensesNoUiEntitlement = L10n.Tr("Your licenses for {0} have been returned and your project will close. Activate your license again if you want to continue working with the Unity Editor.");
     public static readonly string ReturnedDescriptionOneLicenseWithUiEntitlement = L10n.Tr("Your license for {0} has been returned. You can continue to use the Unity Editor, but some features might be unavailable. To reactivate the license, use the Unity Hub to resolve or contact your administrator.");
     public static readonly string ReturnedDescriptionManyLicensesWithUiEntitlement = L10n.Tr("Your licenses for {0} have been returned. You can continue to use the Unity Editor, but some features might be unavailable. To reactivate the license, use the Unity Hub to resolve or contact your administrator.");
 
     // LicenseExpiredWindowContents
-    public static string ExpiredWindowTitle = L10n.Tr("License expired");
+    public static readonly string ExpiredWindowTitle = L10n.Tr("License expired");
     public static readonly string ExpiredDescriptionOneLicenseNoUiEntitlement = L10n.Tr("Your license for {0} has been expired and your project will close. To reactivate the license, contact your administrator or use the Unity Hub to resolve.");
     public static readonly string ExpiredDescriptionManyLicensesNoUiEntitlement = L10n.Tr("Your licenses for {0} have been expired and your project will close. To reactivate the license, contact your administrator or use the Unity Hub to resolve.");
     public static readonly string ExpiredDescriptionOneLicenseWithUiEntitlement = L10n.Tr("Your license for {0} has been expired. You can continue to use the Unity Editor, but some features might be unavailable. To reactivate the license, use the Unity Hub to resolve or contact your administrator.");

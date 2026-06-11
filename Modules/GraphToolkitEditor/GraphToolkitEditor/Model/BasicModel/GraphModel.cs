@@ -1787,26 +1787,37 @@ namespace Unity.GraphToolkit.Editor
         public virtual AbstractNodeModel CreateNode(Type nodeTypeToCreate, string nodeName, Vector2 position,
             Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
         {
+            if (spawnFlags.IsOrphan())
+            {
+                // Orphan nodes are not added to the graph and don't trigger graph changes.
+                using var blockDirtyScope = BlockAssetDirtyScope();
+                return InstantiateAndAddNode();
+            }
+
             using var dirtyScope = AssetDirtyScope();
+            return InstantiateAndAddNode();
 
-            if (!AllowPortalCreation && typeof(WirePortalModel).IsAssignableFrom(nodeTypeToCreate))
+            AbstractNodeModel InstantiateAndAddNode()
             {
-                throw new ArgumentException("Portal creation is disabled.", nameof(nodeTypeToCreate));
+                if (!AllowPortalCreation && typeof(WirePortalModel).IsAssignableFrom(nodeTypeToCreate))
+                {
+                    throw new ArgumentException("Portal creation is disabled.", nameof(nodeTypeToCreate));
+                }
+
+                if (!AllowSubgraphCreation && typeof(SubgraphNodeModel).IsAssignableFrom(nodeTypeToCreate))
+                {
+                    throw new ArgumentException("Subgraph creation is disabled.", nameof(nodeTypeToCreate));
+                }
+
+                var nodeModel = InstantiateNode(nodeTypeToCreate, nodeName, position, guid, initializationCallback, spawnFlags);
+
+                if (!spawnFlags.IsOrphan() && ReferenceEquals(nodeModel.Container, this))
+                {
+                    AddNode(nodeModel);
+                }
+
+                return nodeModel;
             }
-
-            if (!AllowSubgraphCreation && typeof(SubgraphNodeModel).IsAssignableFrom(nodeTypeToCreate))
-            {
-                throw new ArgumentException("Subgraph creation is disabled.", nameof(nodeTypeToCreate));
-            }
-
-            var nodeModel = InstantiateNode(nodeTypeToCreate, nodeName, position, guid, initializationCallback, spawnFlags);
-
-            if (!spawnFlags.IsOrphan() && ReferenceEquals(nodeModel.Container, this))
-            {
-                AddNode(nodeModel);
-            }
-
-            return nodeModel;
         }
 
         /// <summary>
@@ -3046,17 +3057,6 @@ namespace Unity.GraphToolkit.Editor
                 return null;
 
             return typeof(Constant<>).MakeGenericType(resolvedType);
-        }
-
-        /// <summary>
-        /// Indicates whether a given type handle can be assigned to another type handle.
-        /// </summary>
-        /// <param name="destination">The destination type handle.</param>
-        /// <param name="source">The source type handle.</param>
-        /// <returns>Whether a given type handle can be assigned to another type handle.</returns>
-        public virtual bool CanAssignTo(TypeHandle destination, TypeHandle source)
-        {
-            return destination == TypeHandle.Unknown || source.IsAssignableFrom(destination);
         }
 
         /// <summary>

@@ -4,7 +4,6 @@
 
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -12,17 +11,29 @@ namespace Unity.UIToolkit.Editor;
 [CustomEditor(typeof(StyleSheetSelection))]
 class StyleSheetSelectionEditor : UnityEditor.Editor
 {
-    private StyleSheetSelection Target => (StyleSheetSelection)target;
+    StyleSheetHeader m_Header;
 
-    protected override void OnHeaderGUI()
-    {
-        // Intentionally left empty to override the header.
-    }
+    private StyleSheetSelection Target => (StyleSheetSelection)target;
 
     public override bool UseDefaultMargins()
     {
         // We don't want to have an artificial padding
         return false;
+    }
+
+    internal override bool isHeaderSticky => true;
+
+    internal override VisualElement CreateInspectorHeaderGUI()
+    {
+        m_Header = new StyleSheetHeader { name = "Header" };
+        m_Header.StyleSheet = Target.StyleSheet;
+        m_Header.SetBinding(StyleSheetHeader.StyleSheetProperty, new DataBinding
+        {
+            dataSource = Target,
+            dataSourcePath = StyleSheetSelection.StyleSheetProperty,
+            bindingMode = BindingMode.ToTarget
+        });
+        return m_Header;
     }
 
     public override VisualElement CreateInspectorGUI()
@@ -34,7 +45,6 @@ class StyleSheetSelectionEditor : UnityEditor.Editor
             dataSourcePath = StyleSheetSelection.StyleSheetProperty,
             bindingMode = BindingMode.ToTarget
         });
-
         return inspector;
     }
 }

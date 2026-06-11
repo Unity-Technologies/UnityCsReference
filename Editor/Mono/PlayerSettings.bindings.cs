@@ -12,6 +12,9 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Modules;
 using UnityEditor.Build.Profile;
+using UnityEngine.Rendering;
+using Unity.Scripting.LifecycleManagement;
+
 
 namespace UnityEditor
 {
@@ -426,6 +429,7 @@ namespace UnityEditor
     {
         private PlayerSettings() { }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static SerializedObject _serializedObject;
 
         [FreeFunction("GetPlayerSettingsPtr")]
@@ -650,6 +654,7 @@ namespace UnityEditor
 
         // Defines if fullscreen games should darken secondary displays.
         [Obsolete("captureSingleScreen has been removed.", false)]
+        [NoAutoStaticsCleanup]
         public static bool captureSingleScreen { get; set; }
 
         // Write a log file with debugging information.
@@ -2010,6 +2015,10 @@ namespace UnityEditor
             PlayerSettingsEditor.SyncEditors(platform);
         }
 
+        [NativeMethod("GetPlatformAutomaticGraphicsAPIsList")]
+        internal extern GraphicsDeviceType[] GetPlatformAutomaticGraphicsAPIsList(BuildTarget platform);
+
+
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         private static extern void SetUseDefaultGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, bool automatic);
 
@@ -2065,6 +2074,8 @@ namespace UnityEditor
 
         public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
 
+        public static extern WebGPUDeviceFilterLists webGPUDeviceFilterListAsset { get; set; }
+     
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern RayTracingFeatureFlags GetRayTracingFeaturesSupportForPlatform_Internal(BuildTarget platform, bool checkGraphicsApisList);
 
@@ -2074,4 +2085,3 @@ namespace UnityEditor
         }
     }
 }
-

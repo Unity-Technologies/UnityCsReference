@@ -34,9 +34,9 @@ internal abstract class UIInspector : VisualElement, IDisposable
 
     PostUpdateBinding m_PostUpdater;
 
-    protected void InitializeSearchField()
+    internal void InitializeSearchField(InspectorSearchField searchField)
     {
-        SearchField = this.Q<InspectorSearchField>();
+        SearchField = searchField;
         SearchField.SearchContainer = this;
         focusable = true;
         m_PostUpdater = new PostUpdateBinding(this);
@@ -51,20 +51,24 @@ internal abstract class UIInspector : VisualElement, IDisposable
     [EventInterest(typeof(FocusInEvent), typeof(BlurEvent))]
     protected override void HandleEventBubbleUp(EventBase evt)
     {
-        switch (evt)
+        if (SearchField != null)
         {
-            case FocusInEvent:
+            switch (evt)
             {
-                SearchField.active = true;
-                break;
-            }
-            case BlurEvent:
-            {
-                if (!Contains(focusController.focusedElement as VisualElement))
-                    SearchField.active = false;
-                break;
+                case FocusInEvent:
+                {
+                    SearchField.active = true;
+                    break;
+                }
+                case BlurEvent:
+                {
+                    if (!Contains(focusController.focusedElement as VisualElement))
+                        SearchField.active = false;
+                    break;
+                }
             }
         }
+
         base.HandleEventBubbleUp(evt);
     }
 

@@ -49,6 +49,24 @@ namespace UnityEngine.UIElements
             Debug.Assert(impl != null);
             impl.AllocateTempMesh(vertexCount, indexCount, out vertices, out indices);
         }
+
+        /// <summary>
+        /// Allocates a temporary <see cref="UIMesh"/> with mandatory vertex+index storage and one extras slice
+        /// per channel set in <paramref name="extraChannels"/>.
+        /// </summary>
+        /// <remarks>
+        /// Pass <paramref name="vertexCount"/> = 0 to skip the vertex+extras allocation, or
+        /// <paramref name="indexCount"/> = 0 to skip the index allocation. Channels not requested are returned
+        /// as default (empty) slices.
+        /// </remarks>
+        public void AllocateTempMesh(ExtraVertexChannels extraChannels, int vertexCount, int indexCount, out UIMesh mesh)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+
+            var impl = m_Handle.Target as TempMeshAllocatorImpl;
+            Debug.Assert(impl != null);
+            impl.AllocateTempMesh(extraChannels, vertexCount, indexCount, out mesh);
+        }
     }
 }
 
@@ -69,8 +87,7 @@ namespace UnityEngine.UIElements.UIR
         static int s_StaticSafetyId;
         AtomicSafetyHandle m_SafetyHandle;
 
-        TempAllocator<Vertex> m_VertexPool = new(8192, 2048, 64 * 1024);
-        TempAllocator<UInt16> m_IndexPool = new(8192 << 1, 2048 << 1, (64 * 1024) << 1);
+        TempAllocator m_TempAllocator = new(512 * 1024, 512 * 1024, 4 * 1024 * 1024);
 
         public TempMeshAllocatorImpl()
         {
@@ -133,8 +150,8 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 // On the main thread, our own allocator is faster.
-                vertices = vertexCount > 0 ? m_VertexPool.Alloc(vertexCount) : new NativeSlice<Vertex>();
-                indices = indexCount > 0 ? m_IndexPool.Alloc(indexCount) : new NativeSlice<ushort>();
+                vertices = vertexCount > 0 ? m_TempAllocator.Alloc<Vertex>(vertexCount) : new NativeSlice<Vertex>();
+                indices = indexCount > 0 ? m_TempAllocator.Alloc<ushort>(indexCount) : new NativeSlice<ushort>();
                 return;
             }
 
@@ -146,6 +163,43 @@ namespace UnityEngine.UIElements.UIR
 
             vertices = vertexCount > 0 ? Allocate<Vertex>(vertexCount, 4) : new NativeSlice<Vertex>();
             indices = indexCount > 0 ? Allocate<ushort>(indexCount, 2) : new NativeSlice<ushort>();
+        }
+
+        public void AllocateTempMesh(ExtraVertexChannels extraChannels, int vertexCount, int indexCount, out UIMesh mesh)
+        {
+            if (vertexCount > UIRenderDevice.maxVerticesPerPage)
+                throw new ArgumentOutOfRangeException(nameof(vertexCount), $"Attempting to allocate {vertexCount} vertices which exceeds the limit of {UIRenderDevice.maxVerticesPerPage}.");
+
+            mesh = default;
+
+            if (!JobsUtility.IsExecutingJob && disposed)
+            {
+                DisposeHelper.NotifyDisposedUsed(this);
+                return;
+            }
+
+            if (vertexCount > 0)
+            {
+                mesh.vertices = AllocChannel<Vertex>(vertexCount);
+                if (extraChannels != ExtraVertexChannels.None)
+                {
+                    if ((extraChannels & ExtraVertexChannels.Normal)    != 0) mesh.normal    = AllocChannel<Vector3>(vertexCount);
+                    if ((extraChannels & ExtraVertexChannels.Tangent)   != 0) mesh.tangent   = AllocChannel<Vector4>(vertexCount);
+                    if ((extraChannels & ExtraVertexChannels.TexCoord1) != 0) mesh.uv1       = AllocChannel<Vector4>(vertexCount);
+                    if ((extraChannels & ExtraVertexChannels.TexCoord2) != 0) mesh.uv2       = AllocChannel<Vector4>(vertexCount);
+                    if ((extraChannels & ExtraVertexChannels.TexCoord3) != 0) mesh.uv3       = AllocChannel<Vector4>(vertexCount);
+                }
+            }
+
+            if (indexCount > 0)
+                mesh.indices = AllocChannel<ushort>(indexCount);
+        }
+
+        NativeSlice<T> AllocChannel<T>(int count) where T : unmanaged
+        {
+            if (!JobsUtility.IsExecutingJob)
+                return m_TempAllocator.Alloc<T>(count);
+            return Allocate<T>(count, UnsafeUtility.AlignOf<T>());
         }
 
         public void Clear()
@@ -172,8 +226,7 @@ namespace UnityEngine.UIElements.UIR
                 m_ThreadData[i].allocations.Clear();
             }
 
-            m_VertexPool.Reset();
-            m_IndexPool.Reset();
+            m_TempAllocator.Reset();
         }
 
         #region Dispose Pattern
@@ -201,8 +254,7 @@ namespace UnityEngine.UIElements.UIR
                 AtomicSafetyHandle.Release(m_SafetyHandle);
                 m_GCHandle.Free();
 
-                m_VertexPool.Dispose();
-                m_IndexPool.Dispose();
+                m_TempAllocator.Dispose();
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);

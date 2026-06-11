@@ -420,6 +420,8 @@ namespace Unity.Hierarchy.Editor
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
             rootVisualElement.RegisterCallback<KeyUpEvent>(OnKeyUp);
             rootVisualElement.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
             EditorApplication.frameAndRenameNewGameObject += OnRequestFrameAndRenameNewGameObjectOrEntity;
             ClipboardUtility.cuttingGameObjects += OnCutGameObjects;
@@ -439,6 +441,20 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
             RefreshDescriptors();
+        }
+
+        void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            // Be certain to register the event only once.
+            // In case the window is not visible when starting the editor, opening it would trigger
+            // both OnEnable and OnAttachedToPanel, registering the event twice if not unregistered first.
+            HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
+            HierarchyPreferences.GameObjectIconModeChanged += OnGameObjectIconModeChanged;
+        }
+
+        void OnDetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
         }
 
         void OnEnterPlayModePreStart()
@@ -660,10 +676,12 @@ namespace Unity.Hierarchy.Editor
                     break;
 
                 case PlayModeStateChange.ExitingPlayMode:
+                    m_HierarchyView.ListView.animation?.SkipAnimation();
                     SaveViewState(HierarchyViewState.Content.ExitPlayMode);
                     break;
 
                 case PlayModeStateChange.ExitingEditMode:
+                    m_HierarchyView.ListView.animation?.SkipAnimation();
                     SaveViewState(HierarchyViewState.Content.EnterPlayMode);
                     break;
 
@@ -682,9 +700,9 @@ namespace Unity.Hierarchy.Editor
 
             // Convert EntityId to HierarchyNode. If the entity is a component, fall back to its
             // owning GameObject — matching the behaviour of the legacy SceneHierarchy.
-            var node = m_Hierarchy.GetNode(entityId);
+            var node = m_Hierarchy.GetNodeFromEntityId(entityId);
             if (node == HierarchyNode.Null)
-                node = m_Hierarchy.GetNode(InternalEditorUtility.GetGameObjectEntityIdFromComponent(entityId));
+                node = m_Hierarchy.GetNodeFromEntityId(InternalEditorUtility.GetGameObjectEntityIdFromComponent(entityId));
             if (node == HierarchyNode.Null)
                 return;
 
@@ -829,7 +847,7 @@ namespace Unity.Hierarchy.Editor
                 viewModel.ClearFlags(HierarchyNodeFlags.Cut);
                 foreach (var go in gameObjects)
                 {
-                    var node = m_Hierarchy.GetNode(go.GetEntityId());
+                    var node = m_Hierarchy.GetNodeFromEntityId(go.GetEntityId());
                     viewModel.SetFlagsRecursive(in node, HierarchyNodeFlags.Cut, HierarchyTraversalDirection.Children);
                 }
             }
@@ -1242,7 +1260,7 @@ namespace Unity.Hierarchy.Editor
 
             m_HierarchyView.Update();
 
-            var node = m_Hierarchy.GetNode(entityId);
+            var node = m_Hierarchy.GetNodeFromEntityId(entityId);
             if (node == HierarchyNode.Null)
                 return;
 

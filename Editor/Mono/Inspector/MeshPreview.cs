@@ -20,14 +20,14 @@ namespace UnityEditor
             public static readonly GUIContent meshLodIcon = EditorGUIUtility.TrIconContent("MeshLOD", "Select a LOD to view.");
             public static readonly GUIContent wireframeToggle = EditorGUIUtility.TrIconContent(EditorGUIUtility.LoadIconRequired("Toolbars/wireframe"), "Show wireframe");
 
-            public static GUIContent displayModeDropdown = EditorGUIUtility.TrTextContent("", "Change display mode");
+            public static readonly GUIContent displayModeDropdown = EditorGUIUtility.TrTextContent("", "Change display mode");
             public static readonly GUIContent shadedIcon = EditorGUIUtility.TrIconContent("Toolbars/Shaded", k_DisplayModeTooltip);
             public static readonly GUIContent uvIcon = EditorGUIUtility.TrIconContent("PreTextureMipMapLow", k_DisplayModeTooltip);
 
-            public static GUIContent uvChannelDropdown = EditorGUIUtility.TrTextContent("", k_DisplayModeTooltip);
+            public static readonly GUIContent uvChannelDropdown = EditorGUIUtility.TrTextContent("", k_DisplayModeTooltip);
 
-            public static GUIStyle preSlider = "preSlider";
-            public static GUIStyle preSliderThumb = "preSliderThumb";
+            public static readonly GUIStyle preSlider = "preSlider";
+            public static readonly GUIStyle preSliderThumb = "preSliderThumb";
         }
 
         internal class Settings : IDisposable
@@ -153,13 +153,13 @@ namespace UnityEditor
             }
         }
 
-        static string[] m_DisplayModes =
+        static readonly string[] m_DisplayModes =
         {
             "Shaded", "UV Checker", "UV Layout",
             "Vertex Color", "Normals", "Tangents", "Blendshapes"
         };
 
-        static string[] m_UVChannels =
+        static readonly string[] m_UVChannels =
         {
             "Channel 0", "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5", "Channel 6", "Channel 7"
         };

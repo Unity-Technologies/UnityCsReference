@@ -7,7 +7,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace Unity.U2D.Physics
 {
     /// <summary>
-    /// Contacts used by physics.
+    /// Constants used throughout the 2D physics system.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly partial struct PhysicsConstants

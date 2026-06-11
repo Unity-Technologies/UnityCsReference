@@ -249,8 +249,8 @@ namespace Unity.UI.Builder
             {
                 var styleCategory = pair.Key;
                 var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(styleCategory);
-                var hasBoundField = styleCategory.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName) != null
-                                    || styleCategory.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName) != null;
+                var hasBoundField = styleCategory.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName.value) != null
+                                    || styleCategory.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName.value) != null;
 
                 styleCategory.EnableInClassList(BuilderConstants.InspectorStyleCategoryFoldoutOverrideClassName, hasOverriddenField);
                 styleCategory.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutBindingClassName, hasBoundField);

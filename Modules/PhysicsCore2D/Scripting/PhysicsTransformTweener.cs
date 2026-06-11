@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Jobs;
-using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 
 using static Unity.U2D.Physics.Scripting2D;
@@ -20,6 +20,11 @@ namespace Unity.U2D.Physics
     [StructLayout(LayoutKind.Sequential)]
     readonly struct PhysicsTransformTweener
     {
+        static readonly ProfilerMarker s_WriteTransformTweensMarker = new ProfilerMarker("PhysicsWorld.WriteTransformTweens");
+        static readonly ProfilerMarker s_WriteTransformTweensParallelMarker = new ProfilerMarker("PhysicsWorld.WriteTransformTweens.Parallel");
+        static readonly ProfilerMarker s_WriteTransformTweensSequentialMarker = new ProfilerMarker("PhysicsWorld.WriteTransformTweens.Sequential");
+        static readonly ProfilerMarker s_WriteTransformTweensCustomMarker = new ProfilerMarker("PhysicsWorld.WriteTransformTweens.Custom");
+
         [RequiredByNativeCode]
         static unsafe void WriteTransformTweens(
             bool syncInterpolation,
@@ -38,62 +43,65 @@ namespace Unity.U2D.Physics
                 transformTweenMode == PhysicsWorld.TransformTweenMode.Off)
                 return;
 
-            Profiler.BeginSample("PhysicsWorld.WriteTransformTweens");
-
-            // Fetch the transform write tweens.
-            var transformWriteTweens = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray(transformWriteTweensBuffer.ToSpan<PhysicsBody.TransformWriteTween>(), Allocator.None);
-            var transformWriteTweensSafety = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref transformWriteTweens, transformWriteTweensSafety);
-            // Parallel (Transform Access Array method).
-            if (transformTweenMode == PhysicsWorld.TransformTweenMode.Parallel)
+            using (s_WriteTransformTweensMarker.Auto())
             {
-                // Fetch a transform tween pointer (we must do this after the safety handle is assigned).
-                var tweenCount = transformWriteTweens.Length;
 
-                // Create the transform access array.
-                var transformAccessArray = GetWorldTransformAccessArray(world);
-
-                Profiler.BeginSample("PhysicsWorld.WriteTransformTweens.Parallel");
-
-                // To be safe, we should only handle this is the two are the same.
-                if (tweenCount == transformAccessArray.length)
+                // Fetch the transform write tweens.
+                var transformWriteTweens = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray(transformWriteTweensBuffer.ToSpan<PhysicsBody.TransformWriteTween>(), Allocator.None);
+                var transformWriteTweensSafety = AtomicSafetyHandle.Create();
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref transformWriteTweens, transformWriteTweensSafety);
+                // Parallel (Transform Access Array method).
+                if (transformTweenMode == PhysicsWorld.TransformTweenMode.Parallel)
                 {
-                    // Schedule the transform tweens job.
-                    // NOTE: The body in any tween may have been destroyed therefore we should never refer to it. The transform is checked for validity.
-                    new WriteTransformTweensParallelJob
-                    {
-                        interpolationTime = interpolationTime,
-                        extrapolationTime = extrapolationTime,
-                        transformWriteMode = transformWriteMode,
-                        transformPlane = transformPlane,
-                        transformPlaneCustom = transformPlaneCustom,
-                        transformWriteTweens = transformWriteTweens,
-                        syncInterpolation = syncInterpolation
+                    // Fetch a transform tween pointer (we must do this after the safety handle is assigned).
+                    var tweenCount = transformWriteTweens.Length;
 
-                    }.Schedule(transformAccessArray).Complete();
+                    // Create the transform access array.
+                    var transformAccessArray = GetWorldTransformAccessArray(world);
+
+                    using (s_WriteTransformTweensParallelMarker.Auto())
+                    {
+
+                        // To be safe, we should only handle this is the two are the same.
+                        if (tweenCount == transformAccessArray.length)
+                        {
+                            // Schedule the transform tweens job.
+                            // NOTE: The body in any tween may have been destroyed therefore we should never refer to it. The transform is checked for validity.
+                            new WriteTransformTweensParallelJob
+                            {
+                                interpolationTime = interpolationTime,
+                                extrapolationTime = extrapolationTime,
+                                transformWriteMode = transformWriteMode,
+                                transformPlane = transformPlane,
+                                transformPlaneCustom = transformPlaneCustom,
+                                transformWriteTweens = transformWriteTweens,
+                                syncInterpolation = syncInterpolation
+
+                            }.Schedule(transformAccessArray).Complete();
+                        }
+
+                    }
+                }
+                // Sequential (main-thread method).
+                else if (transformTweenMode == PhysicsWorld.TransformTweenMode.Sequential)
+                {
+                    using (s_WriteTransformTweensSequentialMarker.Auto())
+                    {
+
+                        WriteTransformTweensTask(
+                            syncInterpolation,
+                            interpolationTime,
+                            extrapolationTime,
+                            transformWriteMode,
+                            transformPlane,
+                            ref transformPlaneCustom,
+                            ref transformWriteTweens);
+
+                    }
                 }
 
-                Profiler.EndSample();
+                AtomicSafetyHandle.Release(transformWriteTweensSafety);
             }
-            // Sequential (main-thread method).
-            else if (transformTweenMode == PhysicsWorld.TransformTweenMode.Sequential)
-            {
-                Profiler.BeginSample("PhysicsWorld.WriteTransformTweens.Sequential");
-
-                WriteTransformTweensTask(
-                    syncInterpolation,
-                    interpolationTime,
-                    extrapolationTime,
-                    transformWriteMode,
-                    transformPlane,
-                    ref transformPlaneCustom,
-                    ref transformWriteTweens);
-
-                Profiler.EndSample();
-            }
-
-            AtomicSafetyHandle.Release(transformWriteTweensSafety);
-            Profiler.EndSample();
         }
 
         /// <undoc/>
@@ -108,35 +116,37 @@ namespace Unity.U2D.Physics
             PhysicsWorld.TransformPlaneCustom transformPlaneCustom,
             PhysicsBuffer transformWriteTweensBuffer)
         {
-            Profiler.BeginSample("PhysicsWorld.WriteTransformTweens");
-
-            // Fetch the transform write tweens.
-            var transformWriteTweens = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray(transformWriteTweensBuffer.ToSpan<PhysicsBody.TransformWriteTween>(), Allocator.None);
-            var transformWriteTweensSafety = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref transformWriteTweens, transformWriteTweensSafety);
-            // Fetch the callback target.
-            var callbackTarget = transformWriteCallbackTarget as PhysicsCallbacks.ITransformWriteCallback;
-            if (callbackTarget != null)
+            using (s_WriteTransformTweensMarker.Auto())
             {
-                Profiler.BeginSample("PhysicsWorld.WriteTransformTweens.Custom");
 
-                // Create the event.
-                var transformTweenWriteEvent = new PhysicsEvents.TransformTweenWriteEvent(
-                    world,
-                    interpolationTime,
-                    extrapolationTime,
-                    transformPlane,
-                    transformPlaneCustom,
-                    ref transformWriteTweens);
+                // Fetch the transform write tweens.
+                var transformWriteTweens = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray(transformWriteTweensBuffer.ToSpan<PhysicsBody.TransformWriteTween>(), Allocator.None);
+                var transformWriteTweensSafety = AtomicSafetyHandle.Create();
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref transformWriteTweens, transformWriteTweensSafety);
+                // Fetch the callback target.
+                var callbackTarget = transformWriteCallbackTarget as PhysicsCallbacks.ITransformWriteCallback;
+                if (callbackTarget != null)
+                {
+                    using (s_WriteTransformTweensCustomMarker.Auto())
+                    {
 
-                // Send the event.
-                callbackTarget.OnTransformTweenWrite(transformTweenWriteEvent);
+                        // Create the event.
+                        var transformTweenWriteEvent = new PhysicsEvents.TransformTweenWriteEvent(
+                            world,
+                            interpolationTime,
+                            extrapolationTime,
+                            transformPlane,
+                            transformPlaneCustom,
+                            ref transformWriteTweens);
 
-                Profiler.EndSample();
+                        // Send the event.
+                        callbackTarget.OnTransformTweenWrite(transformTweenWriteEvent);
+
+                    }
+                }
+
+                AtomicSafetyHandle.Release(transformWriteTweensSafety);
             }
-
-            AtomicSafetyHandle.Release(transformWriteTweensSafety);
-            Profiler.EndSample();
         }
 
         #region Writers

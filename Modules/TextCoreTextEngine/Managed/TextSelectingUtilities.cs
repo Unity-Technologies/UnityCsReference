@@ -156,6 +156,7 @@ namespace UnityEngine
             {
                 if (useAdvancedText)
                 {
+                    m_CursorIndex = value;
                     if (TextSelectionService.SetCursorIndex(tgi, value))
                         OnCursorIndexChange?.Invoke();
                     return;
@@ -196,7 +197,6 @@ namespace UnityEngine
                 {
                     if (TextSelectionService.SetSelectIndex(tgi, value))
                     {
-                        m_SelectIndex = value;
                         OnSelectIndexChange?.Invoke();
                     }
                         
@@ -223,6 +223,7 @@ namespace UnityEngine
             {
                 if (useAdvancedText)
                 {
+                    m_SelectIndex = value;
                     if (TextSelectionService.SetSelectIndex(tgi, value))
                         OnSelectIndexChange?.Invoke();
                     return;

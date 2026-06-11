@@ -342,6 +342,7 @@ namespace UnityEditor.Networking.PlayerConnection
             baseIndent = 0;
             depthIndentWidth = foldoutWidth;
             rowHeight = 20f;
+            enableItemHovering = true;
             m_CloseWindow = closeWindow;
         }
 

@@ -102,7 +102,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var previousProfile = InternalUtilities.BuildProfileState.FromActiveSettings();
             DebugUtils.Trace("Building");
 
-            BuildReport report;
+            BuildReport report = null;
             try
             {
                 // Modify product name to include multiplayer role for window title
@@ -136,6 +136,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             catch (Exception e)
             {
+                if (report != null && report.summary.result == BuildResult.Cancelled)
+                    throw new OperationCanceledException("Build was cancelled.", e);
+
                 Debug.LogException(e);
                 throw;
             }

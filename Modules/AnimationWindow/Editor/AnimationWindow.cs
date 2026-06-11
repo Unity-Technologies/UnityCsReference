@@ -163,11 +163,13 @@ namespace UnityEditor
         private AnimationWindow()
         {}
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void RefreshCurve(EditorCurveBinding binding)
         {
             state?.RefreshCurve(binding);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void RefreshClip()
         {
             state?.RefreshClip();
@@ -190,6 +192,7 @@ namespace UnityEditor
 
             Undo.undoRedoEvent += UndoRedoPerformed;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
             AnimationWindowCallbacks.StopAnimationPlaybackAndPreviewing += StopAnimationPlaybackAndPreviewing;
         }
 
@@ -200,6 +203,7 @@ namespace UnityEditor
 
             Undo.undoRedoEvent -= UndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
             AnimationWindowCallbacks.StopAnimationPlaybackAndPreviewing -= StopAnimationPlaybackAndPreviewing;
         }
 
@@ -210,10 +214,15 @@ namespace UnityEditor
 
         void Update()
         {
-            state?.Update();
+            // AnimationWindowState has some data that still depends on IMGUI
+            // evaluation and is initialized just in time during rendering.
+            // Make sure AnimEditor has been initialized before updating
+            // AnimationWindowState and AnimEditor.
+            if (m_AnimEditor == null || !m_AnimEditor.initialized)
+                return;
 
-            if (m_AnimEditor != null)
-                m_AnimEditor.Update();
+            state?.Update();
+            m_AnimEditor.Update();
 
             hasUnsavedChanges = selection?.hasUnsavedChanges ?? false;
 
@@ -437,12 +446,17 @@ namespace UnityEditor
                 }
                 else
                 {
-                    selection?.OnPlayModeStateChanged(state);
+                    // Purge selection before domain reload to prevent stale GameObject references
+                    PurgeSelection();
                 }
             }
             else
             {
-                selection?.OnPlayModeStateChanged(state);
+                // Purge selection before domain reload on ExitingPlayMode
+                if (state == PlayModeStateChange.ExitingPlayMode)
+                {
+                    PurgeSelection();
+                }
 
                 if (state == PlayModeStateChange.EnteredEditMode)
                 {
@@ -455,6 +469,18 @@ namespace UnityEditor
                     // Reload selection when entering play mode
                     OnSelectionChangeInternal(false);
                 }
+            }
+        }
+
+        private void PurgeSelection()
+        {
+            // Clear selection to prevent stale GameObject references during domain reload.
+            // Note: Dispose() will also stop preview by disposing the controller.
+            // This matches the behavior during assembly reload (script compilation).
+            if (state != null)
+            {
+                state.linkedWithSequencer = false;
+                state.selection = new FallbackSelectionItem();
             }
         }
 

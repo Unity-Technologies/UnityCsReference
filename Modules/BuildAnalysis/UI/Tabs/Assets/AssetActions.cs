@@ -8,7 +8,7 @@ using UnityEngine;
 namespace UnityEditor.Build.Analysis
 {
     /// <summary>
-    /// Shared entry points for asset-row actions (Inspector Select button + future row context menu).
+    /// Shared entry points for asset-row actions
     /// The two action implementations are exposed as swappable delegates so unit tests can capture
     /// invocations without reaching into the Editor APIs.
     /// </summary>

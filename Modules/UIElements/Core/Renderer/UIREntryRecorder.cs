@@ -43,6 +43,8 @@ namespace UnityEngine.UIElements.UIR
         UsesTextCoreSettings = 1 << 0,
         IsPremultiplied = 1 << 1,
         SkipDynamicAtlas = 1 << 2,
+        HasExtras = 1 << 3,
+        UsesPerGlyphTextCoreSettings = 1 << 4,
     }
 
     class Entry
@@ -53,6 +55,13 @@ namespace UnityEngine.UIElements.UIR
         // In an entry, the winding order is ALWAYS clockwise (front-facing)
         public NativeSlice<Vertex> vertices;
         public NativeSlice<ushort> indices;
+
+        // Empty slice means "channel not provided" — the convert job zero-fills.
+        public NativeSlice<Vector4> texCoord1;
+        public NativeSlice<Vector4> texCoord2;
+        public NativeSlice<Vector4> texCoord3;
+        public NativeSlice<Vector3> normal;
+        public NativeSlice<Vector4> tangent;
 
         public Texture texture;
         public float textScale;
@@ -82,6 +91,11 @@ namespace UnityEngine.UIElements.UIR
             flags = 0;
             immediateCallback = null;
             panelComponentId = EntityId.None;
+            texCoord1 = default;
+            texCoord2 = default;
+            texCoord3 = default;
+            normal = default;
+            tangent = default;
         }
     }
 
@@ -91,11 +105,13 @@ namespace UnityEngine.UIElements.UIR
     class EntryRecorder
     {
         EntryPool m_EntryPool;
+        readonly ExtraVertexChannels m_PanelExtras;
 
-        public EntryRecorder(EntryPool entryPool)
+        public EntryRecorder(EntryPool entryPool, ExtraVertexChannels panelExtras = ExtraVertexChannels.None)
         {
             Debug.Assert(entryPool != null);
             m_EntryPool = entryPool;
+            m_PanelExtras = panelExtras;
         }
 
         public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices)
@@ -105,25 +121,83 @@ namespace UnityEngine.UIElements.UIR
 
         public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions = TextureOptions.None)
         {
+            var mesh = new UIMesh { vertices = vertices, indices = indices };
+            DrawMesh(parentEntry, ref mesh, texture, textureOptions, ignoreExtras: true);
+        }
+
+        public void DrawMesh(Entry parentEntry, ref UIMesh mesh, Texture texture, TextureOptions textureOptions = TextureOptions.None, bool ignoreExtras = false)
+        {
+            int vertexCount = mesh.vertices.Length;
+
+            if (!ignoreExtras)
+            {
+                // Strict: every non-empty extras slice must match vertices.Length. Indices reference vertex slots,
+                // so a shorter extras slice would cause an out-of-range read in the convert job.
+                if (!CheckExtras(mesh.uv1,     nameof(UIMesh.uv1),     vertexCount)) return;
+                if (!CheckExtras(mesh.uv2,     nameof(UIMesh.uv2),     vertexCount)) return;
+                if (!CheckExtras(mesh.uv3,     nameof(UIMesh.uv3),     vertexCount)) return;
+                if (!CheckExtras(mesh.normal,  nameof(UIMesh.normal),  vertexCount)) return;
+                if (!CheckExtras(mesh.tangent, nameof(UIMesh.tangent), vertexCount)) return;
+
+                // Drop slices for channels the panel didn't opt into. Stream-1 has no GPU slot for them and the
+                // user wouldn't see the data anyway — log so the mistake is visible during development.
+                mesh.uv1     = DropDisabledChannel(mesh.uv1,     nameof(UIMesh.uv1),     ExtraVertexChannels.TexCoord1);
+                mesh.uv2     = DropDisabledChannel(mesh.uv2,     nameof(UIMesh.uv2),     ExtraVertexChannels.TexCoord2);
+                mesh.uv3     = DropDisabledChannel(mesh.uv3,     nameof(UIMesh.uv3),     ExtraVertexChannels.TexCoord3);
+                mesh.normal  = DropDisabledChannel(mesh.normal,  nameof(UIMesh.normal),  ExtraVertexChannels.Normal);
+                mesh.tangent = DropDisabledChannel(mesh.tangent, nameof(UIMesh.tangent), ExtraVertexChannels.Tangent);
+            }
+
             var entry = m_EntryPool.Get();
-            entry.vertices = vertices;
-            entry.indices = indices;
+            entry.vertices = mesh.vertices;
+            entry.indices = mesh.indices;
             entry.texture = texture;
+
+            EntryFlags entryFlags = 0;
+
+            if (!ignoreExtras)
+            {
+                entry.texCoord1 = mesh.uv1;
+                entry.texCoord2 = mesh.uv2;
+                entry.texCoord3 = mesh.uv3;
+                entry.normal = mesh.normal;
+                entry.tangent = mesh.tangent;
+                if ((mesh.uv1.Length | mesh.uv2.Length | mesh.uv3.Length | mesh.normal.Length | mesh.tangent.Length) != 0) // Bitwise OR is faster
+                    entryFlags |= EntryFlags.HasExtras;
+            }
 
             if (object.ReferenceEquals(null, texture))
                 entry.type = EntryType.DrawSolidMesh;
             else
             {
                 entry.type = EntryType.DrawTexturedMesh;
-                EntryFlags flags = 0;
                 if ((textureOptions & TextureOptions.PremultipliedAlpha) != 0)
-                    flags |= EntryFlags.IsPremultiplied;
+                    entryFlags |= EntryFlags.IsPremultiplied;
                 if ((textureOptions & TextureOptions.SkipDynamicAtlas) != 0)
-                    flags |= EntryFlags.SkipDynamicAtlas;
-                entry.flags = flags;
+                    entryFlags |= EntryFlags.SkipDynamicAtlas;
             }
 
+            entry.flags = entryFlags;
+
             AppendMeshEntry(parentEntry, entry);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool CheckExtras<T>(NativeSlice<T> slice, string name, int expectedLength) where T : struct
+        {
+            if (slice.Length == 0 || slice.Length == expectedLength)
+                return true;
+            Debug.LogError($"UIMesh.{name} has length {slice.Length}, expected {expectedLength} (vertices.Length). Dropping the entire draw call.\n{Environment.StackTrace}");
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        NativeSlice<T> DropDisabledChannel<T>(NativeSlice<T> slice, string name, ExtraVertexChannels channel) where T : struct
+        {
+            if (slice.Length == 0 || (m_PanelExtras & channel) != 0)
+                return slice;
+            Debug.LogError($"UIMesh.{name} provided but the panel's ExtraVertexChannels does not enable {channel}. Dropping this channel from the draw.\n{Environment.StackTrace}");
+            return default;
         }
 
         public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, TextureId textureId, bool isPremultiplied = false)
@@ -138,10 +212,12 @@ namespace UnityEngine.UIElements.UIR
             AppendMeshEntry(parentEntry, entry);
         }
 
-        public void DrawRasterText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool multiChannel)
+        public void DrawRasterText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool multiChannel, bool usesPerGlyphTextCoreSettings = false)
         {
             var entry = m_EntryPool.Get();
             entry.flags = EntryFlags.UsesTextCoreSettings; // For dynamic color
+            if (usesPerGlyphTextCoreSettings)
+                entry.flags |= EntryFlags.UsesPerGlyphTextCoreSettings;
             if (multiChannel)
             {
                 entry.type = EntryType.DrawTexturedMesh;
@@ -157,11 +233,13 @@ namespace UnityEngine.UIElements.UIR
             AppendMeshEntry(parentEntry, entry);
         }
 
-        public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
+        public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness, bool usesPerGlyphTextCoreSettings = false)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawTextMesh;
             entry.flags = EntryFlags.UsesTextCoreSettings;
+            if (usesPerGlyphTextCoreSettings)
+                entry.flags |= EntryFlags.UsesPerGlyphTextCoreSettings;
             entry.vertices = vertices;
             entry.indices = indices;
             entry.texture = texture;

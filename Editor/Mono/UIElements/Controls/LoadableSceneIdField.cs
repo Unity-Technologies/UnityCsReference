@@ -66,7 +66,7 @@ namespace UnityEditor.UIElements
             if (evt.newValue != null && !newLoadableSceneId.IsValid)
             {
                 Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableSceneId."));
-                m_ObjectField.SetValueWithoutNotify(LoadableSceneIdToObject(value));
+                m_ObjectField.SetValueWithoutNotify(LoadableSceneIdEditorUtility.LoadableSceneIdToScene(value));
                 return;
             }
 
@@ -77,7 +77,7 @@ namespace UnityEditor.UIElements
         public override void SetValueWithoutNotify(LoadableSceneId newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            m_ObjectField.SetValueWithoutNotify(LoadableSceneIdToObject(value));
+            m_ObjectField.SetValueWithoutNotify(LoadableSceneIdEditorUtility.LoadableSceneIdToScene(value));
         }
 
         /// <inheritdoc />
@@ -85,15 +85,6 @@ namespace UnityEditor.UIElements
         {
             if (m_ObjectField != null)
                 m_ObjectField.showMixedValue = showMixedValue;
-        }
-
-        static Object LoadableSceneIdToObject(LoadableSceneId sceneId)
-        {
-            var guid = LoadableSceneIdEditorUtility.LoadableSceneIdToGuid(sceneId);
-            if (guid.Empty())
-                return null;
-            var path = AssetDatabase.GUIDToAssetPath(guid);
-            return AssetDatabase.LoadAssetAtPath<SceneAsset>(path);
         }
 
         static LoadableSceneId ObjectToLoadableSceneId(Object obj)

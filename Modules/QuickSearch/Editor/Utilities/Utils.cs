@@ -35,6 +35,8 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ShaderVariant.Editor")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Shared")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
+
 
 namespace UnityEditor.Search
 {

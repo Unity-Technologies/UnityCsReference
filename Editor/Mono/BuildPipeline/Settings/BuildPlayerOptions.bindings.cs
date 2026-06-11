@@ -91,10 +91,10 @@ namespace UnityEditor
         ///<summary>The additional preprocessor defines you can specify while compiling assemblies for the Player. These defines are appended to the existing Scripting Define Symbols list configured in the Player settings.</summary>
         public string[] extraScriptingDefines { get; set; }
         
-        ///<summary>Use this property to reference the output folders or metadata folders from one or more content directory builds.</summary>
+        ///<summary>Use this property to reference the output folders or build report directories from one or more content directory builds.</summary>
         ///<remarks>The types used in those builds are included in the information provided to UnityLinker.
         ///This ensures that the player can load all the content from those additional builds.</remarks>
-        public string[] previousBuildMetadataLocations { get; set; }
+        public string[] previousBuildReportDirectories { get; set; }
 
         [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerOptions.h")]
         [FreeFunction("BuildPipeline::GetBuildPlayerSetup")]

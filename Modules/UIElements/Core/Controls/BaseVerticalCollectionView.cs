@@ -1024,6 +1024,10 @@ namespace UnityEngine.UIElements
         internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
         internal static readonly UniqueStyleString backgroundFillUssClassNameUnique = new(backgroundFillUssClassName);
 
+        // Marker for USS to stretch the viewport in v+h mode while a background fill is active.
+        internal static readonly string viewportWithFillUssClassName = ScrollView.viewportUssClassName + "--with-fill";
+        internal static readonly UniqueStyleString viewportWithFillUssClassNameUnique = new(viewportWithFillUssClassName);
+
         /// <summary>
         /// Enum for current pointer processing state.
         /// </summary>

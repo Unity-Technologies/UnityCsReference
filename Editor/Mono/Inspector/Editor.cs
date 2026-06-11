@@ -62,7 +62,7 @@ namespace UnityEditor
         ~ObjectPreview()
         {
             // Watch out for Editor classes implementing OnDisableINTERNAL and not calling cleanup (GenericInspector).
-            Debug.LogError($"{this} was not disposed properly. Make sure that base.Cleanup is called if overriding " +
+            Debug.LogError($"{this.target.GetType()} was not disposed properly. Make sure that base.Cleanup is called if overriding " +
                 $"the Cleanup method. If you are implementing this in an Editor or EditorWindow, don't " +
                 $"forget to call ObjectPreview.Cleanup in OnDisable.");
         }
@@ -916,6 +916,20 @@ namespace UnityEditor
         {
             return null;
         }
+
+        // Implement this function to make a custom UIElements inspector header.
+        // When isHeaderSticky is true, the returned element is placed outside the inspector's
+        // scroll view so it remains visible while scrolling.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal virtual VisualElement CreateInspectorHeaderGUI()
+        {
+            return null;
+        }
+
+        // Controls whether the element returned by CreateInspectorHeaderGUI is placed outside
+        // the inspector scroll view (sticky) or inside it before the inspector content (non-sticky).
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal virtual bool isHeaderSticky => false;
 
         // Implement this function if you want your editor constantly repaint (every 33ms)
         public virtual bool RequiresConstantRepaint()

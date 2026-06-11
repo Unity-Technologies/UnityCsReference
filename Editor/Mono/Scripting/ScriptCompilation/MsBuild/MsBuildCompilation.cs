@@ -296,6 +296,7 @@ partial class MsBuildCompilation
             allAssemblyJsonPaths[i] = ConvertPath(m_AllAssemblyJsonPaths[i]);
         }
 
+        GetUserPrecompiledAssembliesForConverter(out var precompiledPaths, out var precompiledExplicitlyReferenced);
         var context = new ConversionContext()
         {
             RootFolder = ".",
@@ -305,6 +306,8 @@ partial class MsBuildCompilation
             allAssemblyJsonContents = m_AllAssemblyJsonContents,
             allAssemblyJsonGuids = m_AllAssemblyJsonGuids,
             allScriptPaths = allScripts,
+            precompiledAssemblyPaths = precompiledPaths,
+            precompiledAssemblyExplicitlyReferenced = precompiledExplicitlyReferenced,
             errors = new List<string>(),
             warnings = new List<string>()
         };
@@ -325,5 +328,28 @@ partial class MsBuildCompilation
     {
         // Work with full paths to not rely on auto resolved relative paths inside to converter library.
         return AssetPath.GetFullPath(path);
+    }
+
+    // Hands the converter the auto-referenced plugin set the editor already knows about, so it doesn't
+    // have to walk the filesystem or parse .meta files itself. The native layer in PrecompiledAssemblies.cpp
+    // already filters hidden folders, parses meta, and tags AssemblyFlags.ExplicitlyReferenced.
+    //
+    // Filter to UserAssembly only: Unity modules (UnityEngine.dll, etc.) are wired by the SDK via
+    // EnableUnityEngineReferences; emitting them as bare references would duplicate.
+    private static void GetUserPrecompiledAssembliesForConverter(out string[] paths, out bool[] explicitlyReferenced)
+    {
+        var provider = new PrecompiledAssemblyProvider();
+        var all = provider.GetAllPrecompiledAssemblies();
+        var pathList = new List<string>(all.Length);
+        var explicitList = new List<bool>(all.Length);
+        foreach (var pa in all)
+        {
+            if ((pa.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly)
+                continue;
+            pathList.Add(pa.Path);
+            explicitList.Add((pa.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced);
+        }
+        paths = pathList.ToArray();
+        explicitlyReferenced = explicitList.ToArray();
     }
 }

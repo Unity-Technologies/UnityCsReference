@@ -1340,7 +1340,7 @@ namespace UnityEngine.Rendering
         extern private void InternalSetComputeBufferNativeData([NotNull] ComputeBuffer buffer, IntPtr data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferData", HasExplicitThis = true, ThrowsException = true)]
-        extern void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, ReadOnlySpan<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, Span<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
         extern private void InternalSetComputeBufferCounterValue([NotNull] ComputeBuffer buffer, uint counterValue);
@@ -1448,7 +1448,7 @@ namespace UnityEngine.Rendering
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetGraphicsBufferData([NotNull] GraphicsBuffer buffer, ReadOnlySpan<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern private void InternalSetGraphicsBufferData([NotNull] GraphicsBuffer buffer, Span<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
         extern private void InternalSetGraphicsBufferCounterValue([NotNull] GraphicsBuffer buffer, uint counterValue);

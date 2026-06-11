@@ -39,8 +39,11 @@ namespace UnityEditor
             get => (IconMode)s_GameObjectIconMode.value;
             set
             {
-                s_GameObjectIconMode.value = (int)value;
-                GameObjectIconModeChanged?.Invoke();
+                if (s_GameObjectIconMode.value != (int)value)
+                {
+                    s_GameObjectIconMode.value = (int)value;
+                    GameObjectIconModeChanged?.Invoke();
+                }
             }
         }
 

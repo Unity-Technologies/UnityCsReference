@@ -55,7 +55,6 @@ namespace UnityEngine.UIElements
             public Rect subRect;
             public Rect uv;
             public Color color;
-            public ScaleMode scaleMode;
 
             public IntPtr backgroundRepeatInstanceList;
             public int backgroundRepeatInstanceListStartIndex;
@@ -94,6 +93,7 @@ namespace UnityEngine.UIElements
             public NativeColorId colorId;
 
             public int meshFlags;
+            public ScaleMode scaleMode;
         }
 
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeBorder(ref NativeBorderParams borderParams);

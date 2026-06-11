@@ -10,29 +10,39 @@ using UnityEngine.UIElements.StyleSheets.Syntax;
 namespace UnityEngine.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    internal struct StyleVariable
+    internal readonly struct StyleVariable
     {
-        public readonly string name;
+        // UniqueStyleString id for the variable name; lets TryFindVariable compare ints
+        // instead of running string equality on every backward-scan step.
+        public readonly int nameId;
+        // Identity hash combining nameId + sheet + handles, precomputed at construction
+        // so StyleVariableContext can dedup and order-hash without re-hashing per Add and
+        // without a parallel hash list.
+        public readonly int hash;
         public readonly StyleSheet sheet;
         public readonly StyleValueHandle[] handles;
 
-        public StyleVariable(string name, StyleSheet sheet, StyleValueHandle[] handles)
+        // Recovered from nameId via UniqueStyleString's id→string table; kept as a
+        // computed property for inspector / authoring callers that still want the name.
+        // Negative ids never resolve to a string (the id table is 0-based), so return
+        // null rather than indexing out of range.
+        public string name => nameId < 0 ? null : new UniqueStyleString(nameId).value;
+
+        public StyleVariable(int nameId, StyleSheet sheet, StyleValueHandle[] handles)
         {
-            this.name = name;
+            this.nameId = nameId;
             this.sheet = sheet;
             this.handles = handles;
-        }
-
-        public override int GetHashCode()
-        {
             unchecked
             {
-                var hashCode = name.GetHashCode();
-                hashCode = (hashCode * 397) ^ sheet.GetHashCode();
-                hashCode = (hashCode * 397) ^ handles.GetHashCode();
-                return hashCode;
+                int h = nameId;
+                h = (h * 397) ^ sheet.GetHashCode();
+                h = (h * 397) ^ handles.GetHashCode();
+                this.hash = h;
             }
         }
+
+        public override int GetHashCode() => hash;
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
@@ -43,13 +53,12 @@ namespace UnityEngine.UIElements
         private int m_VariableHash;
         private List<StyleVariable> m_Variables;
         private List<int> m_SortedHash;
-        private List<int> m_UnsortedHash;
 
         public List<StyleVariable> variables => m_Variables;
 
         public void Add(StyleVariable sv)
         {
-            var hash = sv.GetHashCode();
+            var hash = sv.hash;
             int ComputeOrderSensitiveHash(int index)
             {
                 unchecked
@@ -64,21 +73,24 @@ namespace UnityEngine.UIElements
             if (hashIndex >= 0)
             {
                 // UUM-32738: if the variable is already there, we need to move it to the end.
+                // Reading via a Span avoids the 24B struct copy that List<T>.this[int] does on
+                // every read; the span is only used to locate the duplicate and we break out
+                // before any mutation, so it never goes stale.
+                var span = NoAllocHelpers.CreateReadOnlySpan(m_Variables);
 
                 // The new variable is already at the end. Nothing to update.
-                var variableIndex = m_Variables.Count - 1;
-                if (m_UnsortedHash[variableIndex] == hash)
+                var variableIndex = span.Length - 1;
+                if (span[variableIndex].hash == hash)
                     return;
 
                 // Look for the variable starting from the end. If this is a variable that gets redefined a lot,
                 // it has more chances to be near the end.
                 for (variableIndex--; variableIndex >= 0; variableIndex--)
-                    if (m_UnsortedHash[variableIndex] == hash)
+                    if (span[variableIndex].hash == hash)
                     {
                         // Found the variable: Remove it and let it be re-added at the end.
                         m_VariableHash ^= ComputeOrderSensitiveHash(variableIndex);
                         m_Variables.RemoveAt(variableIndex);
-                        m_UnsortedHash.RemoveAt(variableIndex);
                         break;
                     }
             }
@@ -89,7 +101,6 @@ namespace UnityEngine.UIElements
 
             m_VariableHash ^= ComputeOrderSensitiveHash(m_Variables.Count);
             m_Variables.Add(sv);
-            m_UnsortedHash.Add(hash);
         }
 
         public void AddInitialRange(StyleVariableContext other)
@@ -101,7 +112,6 @@ namespace UnityEngine.UIElements
                 m_VariableHash = other.m_VariableHash;
                 m_Variables.AddRange(other.m_Variables);
                 m_SortedHash.AddRange(other.m_SortedHash);
-                m_UnsortedHash.AddRange(other.m_UnsortedHash);
             }
         }
 
@@ -112,7 +122,6 @@ namespace UnityEngine.UIElements
                 m_Variables.Clear();
                 m_VariableHash = 0;
                 m_SortedHash.Clear();
-                m_UnsortedHash.Clear();
             }
         }
 
@@ -121,7 +130,6 @@ namespace UnityEngine.UIElements
             m_Variables = new List<StyleVariable>();
             m_VariableHash = 0;
             m_SortedHash = new List<int>();
-            m_UnsortedHash = new List<int>();
         }
 
         public StyleVariableContext(StyleVariableContext other)
@@ -129,16 +137,27 @@ namespace UnityEngine.UIElements
             m_Variables = new List<StyleVariable>(other.m_Variables);
             m_VariableHash = other.m_VariableHash;
             m_SortedHash = new List<int>(other.m_SortedHash);
-            m_UnsortedHash = new List<int>(other.m_UnsortedHash);
         }
 
-        public bool TryFindVariable(string name, out StyleVariable v)
+        public bool TryFindVariable(int nameId, out StyleVariable v)
         {
-            for (int i = m_Variables.Count - 1; i >= 0; --i)
+            // -1 is the sentinel for "no id assigned yet" on both StyleProperty.customNameId
+            // and StyleSheet.ReadVariableId. Treat it as a miss instead of letting the scan
+            // collide with an entry that legitimately has that id.
+            if (nameId < 0)
             {
-                if (m_Variables[i].name == name)
+                v = default(StyleVariable);
+                return false;
+            }
+
+            // Span access skips the List<T>.this[int] per-iteration struct copy: critical
+            // because this scan fires per var() resolution during style updates.
+            var span = NoAllocHelpers.CreateReadOnlySpan(m_Variables);
+            for (int i = span.Length - 1; i >= 0; --i)
+            {
+                if (span[i].nameId == nameId)
                 {
-                    v = m_Variables[i];
+                    v = span[i];
                     return true;
                 }
             }
@@ -174,7 +193,7 @@ namespace UnityEngine.UIElements
 
         private StylePropertyValueMatcher m_Matcher = new StylePropertyValueMatcher();
         private List<StylePropertyValue> m_ResolvedValues = new List<StylePropertyValue>();
-        private Stack<string> m_ResolvedVarStack = new Stack<string>();
+        private Stack<int> m_ResolvedVarStack = new Stack<int>();
 
         private StyleProperty m_Property;
         private Stack<ResolveContext> m_ContextStack = new Stack<ResolveContext>();
@@ -216,15 +235,15 @@ namespace UnityEngine.UIElements
         {
             m_ResolvedVarStack.Clear();
 
-            ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varName);
+            ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varNameId);
 
-            var result = ResolveVarFunction(ref index, argc, varName);
+            var result = ResolveVarFunction(ref index, argc, varNameId);
             return result == Result.Valid;
         }
 
-        private Result ResolveVarFunction(ref int index, int argc, string varName)
+        private Result ResolveVarFunction(ref int index, int argc, int varNameId)
         {
-            var result = ResolveVariable(varName);
+            var result = ResolveVariable(varNameId);
 
             // Always consume all tokens and move the index to the end of the var() function
             if (argc > 1)
@@ -261,19 +280,22 @@ namespace UnityEngine.UIElements
             return result.success;
         }
 
-        private Result ResolveVariable(string variableName)
+        private Result ResolveVariable(int variableNameId)
         {
-            StyleVariable sv;
-            if (!variableContext.TryFindVariable(variableName, out sv))
+            // Every var() name reachable here has been pre-registered by StyleSheet.SetupReferences
+            // and addressed by its UniqueStyleString id. An id that no Add ever stored (including
+            // the -1 sentinel from a sheet that never went through SetupReferences) simply misses
+            // the scan and returns NotFound — same outcome as before.
+            if (!variableContext.TryFindVariable(variableNameId, out var sv))
                 return Result.NotFound;
 
-            if (m_ResolvedVarStack.Contains(sv.name))
+            if (m_ResolvedVarStack.Contains(sv.nameId))
             {
                 // Cyclic dependencies : https://drafts.csswg.org/css-variables/#cycles
                 return Result.NotFound;
             }
 
-            m_ResolvedVarStack.Push(sv.name);
+            m_ResolvedVarStack.Push(sv.nameId);
             var result = Result.Valid;
             for (int i = 0; i < sv.handles.Length && result == Result.Valid; ++i)
             {
@@ -285,8 +307,8 @@ namespace UnityEngine.UIElements
                 {
                     PushContext(sv.sheet, sv.handles);
 
-                    ParseVarFunction(sv.sheet, sv.handles, ref i, out var argc, out var varName);
-                    result = ResolveVarFunction(ref i, argc, varName);
+                    ParseVarFunction(sv.sheet, sv.handles, ref i, out var argc, out var varNameId);
+                    result = ResolveVarFunction(ref i, argc, varNameId);
 
                     PopContext();
                 }
@@ -310,11 +332,11 @@ namespace UnityEngine.UIElements
 
                 if (handle.IsVarFunction())
                 {
-                    ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varName);
+                    ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varNameId);
 
                     if (appendValues)
                     {
-                        var nestedVarFunctionResult = ResolveVarFunction(ref index, argc, varName);
+                        var nestedVarFunctionResult = ResolveVarFunction(ref index, argc, varNameId);
                         if (nestedVarFunctionResult != Result.Valid)
                             result = nestedVarFunctionResult;
                     }
@@ -343,10 +365,10 @@ namespace UnityEngine.UIElements
         }
 
         private static void ParseVarFunction(StyleSheet sheet, StyleValueHandle[] handles, ref int index,
-            out int argCount, out string variableName)
+            out int argCount, out int variableNameId)
         {
             argCount = (int)sheet.ReadFloat(handles[++index]);
-            variableName = sheet.ReadVariable(handles[++index]);
+            variableNameId = sheet.ReadVariableId(handles[++index]);
         }
     }
 }

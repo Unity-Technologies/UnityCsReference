@@ -54,7 +54,17 @@ internal class StyleSheetsWindow : EditorWindow
     [SerializeField]
     readonly Dictionary<VisualTreeAsset, StyleSheet> m_ActiveStyleSheetInVisualTreeAsset = new();
 
-    public StyleSheet ActiveStyleSheet => m_ActiveStyleSheet;
+    public StyleSheet ActiveStyleSheet
+    {
+        get => m_ActiveStyleSheet;
+        private set
+        {
+            if (m_ActiveStyleSheet == value)
+                return;
+            m_ActiveStyleSheet = value;
+            ActiveStyleSheetChangedMessage.Execute(CommandSources.StyleSheets, m_ActiveStyleSheet);
+        }
+    }
 
     [InitializeOnLoadMethod]
     static void Initialize()
@@ -246,9 +256,7 @@ internal class StyleSheetsWindow : EditorWindow
                 styleSheet = styleSheets[0];
         }
 
-        using var command =
-            GetActiveStyleSheetQuery.QueryPayload.GetPooled(CommandSources.StyleSheets, styleSheet);
-        UICommandQueue.EnqueueCommand(command);
+        GetActiveStyleSheetQuery.QueryPayload.Execute(CommandSources.StyleSheets, styleSheet);
     }
 
     void Update()
@@ -451,8 +459,7 @@ internal class StyleSheetsWindow : EditorWindow
         if (!TryEnsureActiveStyleSheetBeforeNewRule())
             return;
 
-        using var addRuleCommand = AddStyleRuleCommand.GetPooled(CommandSources.StyleSheets, m_ActiveStyleSheet, evt.selectorStr);
-        UICommandQueue.EnqueueCommand(addRuleCommand);
+        AddStyleRuleCommand.Execute(CommandSources.StyleSheets, ActiveStyleSheet, evt.selectorStr);
         SelectAndScrollTo([m_ActiveStyleSheet.rules[^1]]);
     }
 
@@ -468,17 +475,17 @@ internal class StyleSheetsWindow : EditorWindow
         using var _ = ListPool<StyleSheet>.Get(out var sheets);
         m_TrackedVTA.GetAllReferencedStyleSheets(sheets);
 
-        if (m_ActiveStyleSheet != null && sheets.Contains(m_ActiveStyleSheet))
+        if (ActiveStyleSheet != null && sheets.Contains(ActiveStyleSheet))
             return true;
 
         if (sheets.Count > 0)
         {
-            m_ActiveStyleSheet = sheets[0];
-            m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = m_ActiveStyleSheet;
+            ActiveStyleSheet = sheets[0];
+            m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = ActiveStyleSheet;
             return true;
         }
 
-        return TryCreateStyleSheet() && m_ActiveStyleSheet != null;
+        return TryCreateStyleSheet() && ActiveStyleSheet != null;
     }
 
     void OnVisualTreeAssetChanged()
@@ -555,7 +562,7 @@ internal class StyleSheetsWindow : EditorWindow
             }
             m_StyleSheetNodes.Clear();
 
-            m_ActiveStyleSheet = null;
+            ActiveStyleSheet = null;
             if (m_TrackedVTA)
                 m_ActiveStyleSheetInVisualTreeAsset.Remove(m_TrackedVTA);
 
@@ -634,12 +641,12 @@ internal class StyleSheetsWindow : EditorWindow
         // Set and store the active stylesheet for the current visual tree asset
         if (m_ActiveStyleSheetInVisualTreeAsset.TryGetValue(m_TrackedVTA, out var savedActive) && stylesheets.Contains(savedActive))
         {
-            m_ActiveStyleSheet = savedActive;
+            ActiveStyleSheet = savedActive;
         }
-        else if ((m_ActiveStyleSheet == null || !stylesheets.Contains(m_ActiveStyleSheet)) && stylesheets.Count > 0)
+        else if ((ActiveStyleSheet == null || !stylesheets.Contains(ActiveStyleSheet)) && stylesheets.Count > 0)
         {
-            m_ActiveStyleSheet = stylesheets[0];
-            m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = m_ActiveStyleSheet;
+            ActiveStyleSheet = stylesheets[0];
+            m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = ActiveStyleSheet;
         }
 
         // Update sort order for all stylesheets to match UXML order
@@ -676,8 +683,8 @@ internal class StyleSheetsWindow : EditorWindow
         if (node.Rule != null)
             return;
 
-        m_ActiveStyleSheet = node.StyleSheet;
-        m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = m_ActiveStyleSheet;
+        ActiveStyleSheet = node.StyleSheet;
+        m_ActiveStyleSheetInVisualTreeAsset[m_TrackedVTA] = ActiveStyleSheet;
     }
 
     public void CreateStyleSheet()
@@ -691,7 +698,7 @@ internal class StyleSheetsWindow : EditorWindow
         if (string.IsNullOrEmpty(ussPath))
             return;
 
-        new AddStyleSheetCommand(m_TrackedVTA, ussPath).Execute();
+        AddStyleSheetCommand.Execute(CommandSources.StyleSheets, m_TrackedVTA, ussPath);
         RefreshStyleSheetList();
     }
 
@@ -709,7 +716,7 @@ internal class StyleSheetsWindow : EditorWindow
                 return;
         }
 
-        new RemoveStyleSheetCommand(m_TrackedVTA, styleSheet).Execute();
+        RemoveStyleSheetCommand.Execute(CommandSources.StyleSheets, m_TrackedVTA, styleSheet);
         RefreshStyleSheetList();
     }
 
@@ -759,8 +766,7 @@ internal class StyleSheetsWindow : EditorWindow
         if (string.IsNullOrEmpty(ussPath))
             return false;
 
-        using var command = CreateStyleSheetCommand.GetPooled(CommandSources.StyleSheets, m_TrackedVTA, ussPath);
-        UICommandQueue.EnqueueCommand(command);
+        CreateStyleSheetCommand.Execute(CommandSources.StyleSheets, m_TrackedVTA, ussPath);
         RefreshStyleSheetList();
         return true;
     }

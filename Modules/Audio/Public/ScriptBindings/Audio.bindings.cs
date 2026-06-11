@@ -29,6 +29,13 @@ namespace UnityEngine.Audio
         [NativeMethod(Name = "AudioManagerTestProxy::ComputeAudibilityConsistency", IsFreeFunction = true)]
         internal static extern bool ComputeAudibilityConsistency();
     }
+
+    [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
+    sealed class PlatformAudioTestProxy
+    {
+        [NativeMethod(Name = "PlatformAudioTestProxy::HasDefaultPlaybackDevice", IsFreeFunction = true)]
+        internal static extern bool HasDefaultPlaybackDevice();
+    }
 }
 
 namespace UnityEngine
@@ -69,7 +76,8 @@ namespace UnityEngine
         Quadraphonic = 4,
         Surround_5_0 = 5,
         Surround_5_1 = 6,
-        Surround_7_1 = 8
+        Surround_7_1 = 8,
+        Surround_7_1_4 = 12
     };
 
     internal enum SamplingRateBehavior

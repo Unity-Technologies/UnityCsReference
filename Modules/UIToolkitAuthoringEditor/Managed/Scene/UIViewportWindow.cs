@@ -45,8 +45,8 @@ partial class UIViewportWindow : EditorWindow
 
     public const string EnterStageModeWarningContainerUssClass = UssClass + "__container__enter-stage-mode-warning";
     const string HiddenEnterStageModeWarningContainerUssClass = EnterStageModeWarningContainerUssClass + HiddenPostFix;
-    public const string ViewporWrapperContainerUssClass = UssClass + "__container__viewport-wrapper";
-    const string HiddenViewportWrapperContainerUssClass = ViewporWrapperContainerUssClass + HiddenPostFix;
+    public const string ViewportWrapperContainerUssClass = UssClass + "__container__viewport-wrapper";
+    const string HiddenViewportWrapperContainerUssClass = ViewportWrapperContainerUssClass + HiddenPostFix;
 
     const string CanvasUssClass = UssClass + "__canvas";
     const string ViewportUssClass = UssClass + "__viewport";
@@ -90,6 +90,8 @@ partial class UIViewportWindow : EditorWindow
     EntityId m_StageId;
     UICanvas m_Canvas;
     UIViewport m_Viewport;
+
+    PreviewThemeState m_ThemeState;
     UxmlCodePreview m_UxmlPreview;
     UssCodePreview m_UssPreview;
 
@@ -143,7 +145,7 @@ partial class UIViewportWindow : EditorWindow
             rootVisualElement.styleSheets.Add(styleSheet);
 
         m_EnterStageModeOverlay = rootVisualElement.Q(className: EnterStageModeWarningContainerUssClass);
-        m_ViewportOverlay = rootVisualElement.Q(className: ViewporWrapperContainerUssClass);
+        m_ViewportOverlay = rootVisualElement.Q(className: ViewportWrapperContainerUssClass);
         m_Canvas = rootVisualElement.Q<UICanvas>(CanvasUssClass);
         m_Viewport = rootVisualElement.Q<UIViewport>(ViewportUssClass);
         m_UxmlPreview = rootVisualElement.Q<UxmlCodePreview>();
@@ -216,21 +218,66 @@ partial class UIViewportWindow : EditorWindow
 
         m_Canvas.SetContext(stage.PanelElement, storageKey);
 
+        m_ThemeState = PreviewThemeState.ForDocument(stage.Context.RootVisualTreeAsset);
+        SetupThemeMenu(stage.Context.PanelSettings, m_ThemeState.SelectedTheme);
+
+        m_Viewport.DropManipulator.EditedVisualTreeAsset = stage.EditedVisualTreeAsset;
+        m_Viewport.DropManipulator.RequestRefresh = stage.RequestRefresh;
+        m_Viewport.DropManipulator.WouldCauseCircularDependency = stage.Context.WillCauseCircularDependency;
+
         m_UxmlPreview.Asset = stage.EditedVisualTreeAsset;
-        m_UssPreview.Asset = stage.EditedVisualTreeAsset.GetAllReferencedStyleSheets().FirstOrDefault();
+        m_UssPreview.Asset = GetActiveStyleSheetQuery.Get() ?? stage.EditedVisualTreeAsset.GetAllReferencedStyleSheets().FirstOrDefault();
+        UICommandQueue.RegisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
+    }
+
+    void SetupThemeMenu(PanelSettings panelSettings, ThemeStyleSheet selectedTheme)
+    {
+        m_Viewport.ThemeMenu.ThemeSelected += OnThemeMenuThemeSelected;
+        m_Viewport.ThemeMenu.SelectedTheme = selectedTheme;
+        m_Viewport.ThemeMenu.PanelSettings = panelSettings;
+
+        if (m_Canvas.PanelElement != null)
+            m_Canvas.PanelElement.ThemeStyleSheet = selectedTheme;
+    }
+
+    void OnThemeMenuThemeSelected(ThemeStyleSheet theme)
+    {
+        if (m_Canvas.PanelElement != null)
+            m_Canvas.PanelElement.ThemeStyleSheet = theme;
+        m_ThemeState.SelectedTheme = theme;
+    }
+
+    internal void ClearThemeMenu()
+    {
+        if (m_Viewport?.ThemeMenu != null)
+            m_Viewport.ThemeMenu.ThemeSelected -= OnThemeMenuThemeSelected;
+        m_Viewport?.ThemeMenu.ClearItems();
+        if (m_Canvas?.PanelElement != null)
+            m_Canvas.PanelElement.ThemeStyleSheet = null;
     }
 
     void ReleaseStage(EntityId stageId)
     {
         m_Canvas.DestroySettingsPermanently();
+        ClearThemeMenu();
+
+        m_Viewport.DropManipulator.EditedVisualTreeAsset = null;
+        m_Viewport.DropManipulator.RequestRefresh = null;
+        m_Viewport.DropManipulator.WouldCauseCircularDependency = null;
 
         m_UxmlPreview.Asset = null;
         m_UssPreview.Asset = null;
+        UICommandQueue.UnregisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
     }
 
     static float GetPixelsPerPoint(VisualElement element)
     {
         return element?.panel == null
             ? EditorGUIUtility.pixelsPerPoint : element.scaledPixelsPerPoint;
+    }
+
+    void ActiveStyleSheetChanged(in CommandContext context)
+    {
+        m_UssPreview.Asset = ((ActiveStyleSheetChangedMessage)context.Command).StyleSheet;
     }
 }

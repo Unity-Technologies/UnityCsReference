@@ -26,6 +26,17 @@ internal sealed class SetAttributeOverrideCommand : Command<SetAttributeOverride
         return cmd;
     }
 
+    public static void Execute(
+        object source,
+        VisualTreeAsset vta,
+        UxmlSerializedAttributeDescription desc,
+        VisualElement visualElement,
+        object attributeValue)
+    {
+        using var command = GetPooled(source, vta, desc, visualElement, attributeValue);
+        UICommandQueue.Execute(command);
+    }
+
     VisualTreeAsset m_VisualTreeAsset;
     UxmlSerializedAttributeDescription m_AttributeDescription;
     VisualElement m_VisualElement;

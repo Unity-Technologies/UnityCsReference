@@ -6,16 +6,32 @@ using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Tilemaps;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     [RequiredByNativeCode]
     internal class EditorPreviewTilemap : ITilemap
     {
+        [NoAutoStaticsCleanup]
+        private static Sprite s_InvalidTileSprite;
+
         [InitializeOnLoadMethod]
         private static void InitializeOnLoad()
         {
             RegisterCreateITilemapFunc(CreateInstanceFromTilemapDefault, 1);
+        }
+
+        private static Sprite GetInvalidTileSprite()
+        {
+            if (s_InvalidTileSprite == null)
+            {
+                Texture2D tex = Texture2D.whiteTexture;
+                s_InvalidTileSprite = Sprite.Create(tex, new Rect(0.0f, 0.0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width);
+                s_InvalidTileSprite.name = "Invalid Tile Sprite";
+                s_InvalidTileSprite.hideFlags = HideFlags.NotEditable;
+            }
+            return s_InvalidTileSprite;
         }
 
         internal static Func<Tilemap, ITilemap> createEditorPreviewTilemap;
@@ -81,8 +97,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static TileBase CreateInvalidTile()
         {
-            Texture2D tex = Texture2D.whiteTexture;
-            Sprite sprite = Sprite.Create(tex, new Rect(0.0f, 0.0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width);
+            Sprite sprite = GetInvalidTileSprite();
 
             Tile tile = ScriptableObject.CreateInstance<Tile>();
             tile.sprite = sprite;

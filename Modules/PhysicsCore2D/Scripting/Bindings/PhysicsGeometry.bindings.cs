@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace Unity.U2D.Physics
 {
-    internal static partial class Scripting2D
+    static partial class Scripting2D
     {
         // Circle Geometry.
         [NativeMethod(Name = "CircleGeometry::IsValid", IsThreadSafe = true)] extern internal static bool CircleGeometry_IsValid(CircleGeometry geometry);

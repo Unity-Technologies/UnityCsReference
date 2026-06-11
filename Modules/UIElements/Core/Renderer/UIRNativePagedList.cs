@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -15,7 +16,7 @@ namespace UnityEngine.UIElements.UIR
     // d) Inner pages are exposed as NativeSlices
     // e) Pages grow by a factor of 2x
     // f) Elements can be added by ref or value
-    class NativePagedList<T> : IDisposable where T : struct
+    class NativePagedList<T> : IDisposable where T : unmanaged
     {
         readonly int k_PoolCapacity;
 
@@ -52,6 +53,16 @@ namespace UnityEngine.UIElements.UIR
         }
 
         public void Add(T data) { Add(ref data); }
+
+        // Reserves a fresh, zero-initialized slot in the last page and returns a stable pointer to it.
+        // Pointer remains valid until Reset() (pages are Persistent and never moved). Useful when callers
+        // need to fill the slot through a pointer rather than constructing a value to Add().
+        public unsafe T* AllocLast()
+        {
+            var defaultValue = default(T);
+            Add(ref defaultValue);
+            return (T*)NativeArrayUnsafeUtility.GetUnsafePtr(m_LastPage) + (m_CountInLastPage - 1);
+        }
 
         // TODO: Implement page enumerator instead
         List<NativeSlice<T>> m_Enumerator = new List<NativeSlice<T>>(8);

@@ -97,7 +97,7 @@ internal static class PanelSettingsUtility
     {
         panel.targetTexture = targetTexture;
         panel.targetDisplay = panelSettings.targetDisplay;
-        panel.drawsInCameras = panelSettings.renderMode == PanelRenderMode.WorldSpace;
+        panel.SetDrawsInCameras(panelSettings.renderMode == PanelRenderMode.WorldSpace);
         panel.pixelsPerUnit = panelSettings.pixelsPerUnit;
         panel.isFlat = panelSettings.renderMode != PanelRenderMode.WorldSpace;
         panel.clearSettings = new PanelClearSettings
@@ -109,6 +109,7 @@ internal static class PanelSettingsUtility
         panel.referenceSpritePixelsPerUnit = panelSettings.referenceSpritePixelsPerUnit;
         panel.panelRenderer.vertexBudget = panelSettings.vertexBudget;
         panel.panelRenderer.textureSlotCount = panelSettings.textureSlotCount;
+        panel.panelRenderer.extraVertexChannels = panelSettings.extraVertexChannels;
         panel.dataBindingManager.logLevel = panelSettings.bindingLogLevel;
 
         if (panel.atlas is DynamicAtlas atlas)

@@ -302,18 +302,20 @@ namespace UnityEngine.UIElements
                     try
                     {
                         panel.duringLayoutPhase = true;
-                        k_ComputeLayoutMarker.Begin();
-                        visualTree.layoutNode.CalculateLayout();
-                        k_ComputeLayoutMarker.End();
+                        using (k_ComputeLayoutMarker.Auto())
+                        {
+                            visualTree.layoutNode.CalculateLayout();
+                        }
                     }
                     finally
                     {
                         panel.duringLayoutPhase = false;
                     }
 
-                    k_UpdateSubTreeMarker.Begin();
-                    UpdateSubTree(visualTree, changeEventsList);
-                    k_UpdateSubTreeMarker.End();
+                    using (k_UpdateSubTreeMarker.Auto())
+                    {
+                        UpdateSubTree(visualTree, changeEventsList);
+                    }
 
                     if (recordLayout)
                     {
@@ -324,14 +326,15 @@ namespace UnityEngine.UIElements
                         layoutLoop++;
                         recordedLayoutItemList.Add(record);
                     }
-                    k_DispatchChangeEventsMarker.Begin();
-                    DispatchChangeEvents(changeEventsList, validateLayoutCount);
-                    if (!visualTree.layoutNode.IsDirty)
+                    using (k_DispatchChangeEventsMarker.Auto())
                     {
-                        DispatchMissedHierarchyChangeEvents(missedHierarchyChangeEventsList, validateLayoutCount);
-                        missedHierarchyChangeEventsList.Clear();
+                        DispatchChangeEvents(changeEventsList, validateLayoutCount);
+                        if (!visualTree.layoutNode.IsDirty)
+                        {
+                            DispatchMissedHierarchyChangeEvents(missedHierarchyChangeEventsList, validateLayoutCount);
+                            missedHierarchyChangeEventsList.Clear();
+                        }
                     }
-                    k_DispatchChangeEventsMarker.End();
 
                     if (validateLayoutCount++ >= kMaxValidateLayoutCount)
                     {

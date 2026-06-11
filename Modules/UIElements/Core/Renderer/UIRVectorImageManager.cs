@@ -183,117 +183,115 @@ namespace UnityEngine.UIElements.UIR
 
         VectorImageRenderInfo Register(VectorImage vi, VisualElement context)
         {
-            s_MarkerRegister.Begin();
-
-            VectorImageRenderInfo renderInfo = m_RenderInfoPool.Get();
-            renderInfo.useCount = 1;
-            renderInfo.atlas = vi.atlas;
-            m_Registered[vi] = renderInfo;
-
-            if (vi.settings?.Length > 0)
+            using (s_MarkerRegister.Auto())
             {
-                // We first attempt to allocate into the gradient settings atlas since it supports deallocation.
-                int gradientCount = vi.settings.Length;
-                Alloc alloc = m_GradientSettingsAtlas.Add(gradientCount);
-                if (alloc.size > 0)
+                VectorImageRenderInfo renderInfo = m_RenderInfoPool.Get();
+                renderInfo.useCount = 1;
+                renderInfo.atlas = vi.atlas;
+                m_Registered[vi] = renderInfo;
+
+                if (vi.settings?.Length > 0)
                 {
-                    // Then attempt to allocate in the texture atlas.
-                    // TODO: Once the atlas actually processes returns, we should call it at some point.
-                    if (m_Atlas.TryGetAtlas(context, vi.atlas, out TextureId atlasId, out RectInt uvs))
+                    // We first attempt to allocate into the gradient settings atlas since it supports deallocation.
+                    int gradientCount = vi.settings.Length;
+                    Alloc alloc = m_GradientSettingsAtlas.Add(gradientCount);
+                    if (alloc.size > 0)
                     {
-                        // Remap.
-                        GradientRemap previous = null;
-                        for (int i = 0; i < gradientCount; ++i)
+                        // Then attempt to allocate in the texture atlas.
+                        // TODO: Once the atlas actually processes returns, we should call it at some point.
+                        if (m_Atlas.TryGetAtlas(context, vi.atlas, out TextureId atlasId, out RectInt uvs))
                         {
-                            // Chain.
-                            GradientRemap current = m_GradientRemapPool.Get();
-                            if (i > 0)
-                                previous.next = current;
-                            else
-                                renderInfo.firstGradientRemap = current;
-                            previous = current;
+                            // Remap.
+                            GradientRemap previous = null;
+                            for (int i = 0; i < gradientCount; ++i)
+                            {
+                                // Chain.
+                                GradientRemap current = m_GradientRemapPool.Get();
+                                if (i > 0)
+                                    previous.next = current;
+                                else
+                                    renderInfo.firstGradientRemap = current;
+                                previous = current;
 
-                            // Remap the index.
-                            current.origIndex = i;
-                            current.destIndex = (int)alloc.start + i;
+                                // Remap the index.
+                                current.origIndex = i;
+                                current.destIndex = (int)alloc.start + i;
 
-                            // Remap the rect.
-                            GradientSettings gradient = vi.settings[i];
-                            RectInt location = gradient.location;
-                            location.x += uvs.x;
-                            location.y += uvs.y;
-                            current.location = location;
-                            current.atlas = atlasId;
+                                // Remap the rect.
+                                GradientSettings gradient = vi.settings[i];
+                                RectInt location = gradient.location;
+                                location.x += uvs.x;
+                                location.y += uvs.y;
+                                current.location = location;
+                                current.atlas = atlasId;
 
-                            // Prevent circular dependency
-                            current.next = null;
+                                // Prevent circular dependency
+                                current.next = null;
+                            }
+
+                            // Write into the previously allocated gradient settings now that we are sure to use it.
+                            m_GradientSettingsAtlas.Write(alloc, vi.settings, renderInfo.firstGradientRemap);
+                        }
+                        else
+                        {
+                            // If the texture atlas didn't fit, keep it as a standalone custom texture, only need to remap the setting indices
+                            GradientRemap previous = null;
+                            for (int i = 0; i < gradientCount; ++i)
+                            {
+                                GradientRemap current = m_GradientRemapPool.Get();
+                                if (i > 0)
+                                    previous.next = current;
+                                else
+                                    renderInfo.firstGradientRemap = current;
+                                previous = current;
+
+                                current.origIndex = i;
+                                current.destIndex = (int)alloc.start + i;
+                                current.atlas = TextureId.invalid;
+                                current.next = null;
+                            }
+
+                            m_GradientSettingsAtlas.Write(alloc, vi.settings, null);
                         }
 
-                        // Write into the previously allocated gradient settings now that we are sure to use it.
-                        m_GradientSettingsAtlas.Write(alloc, vi.settings, renderInfo.firstGradientRemap);
+                        renderInfo.gradientSettingsAlloc = alloc;
                     }
                     else
                     {
-                        // If the texture atlas didn't fit, keep it as a standalone custom texture, only need to remap the setting indices
-                        GradientRemap previous = null;
-                        for (int i = 0; i < gradientCount; ++i)
+                        if (!m_LoggedExhaustedSettingsAtlas)
                         {
-                            GradientRemap current = m_GradientRemapPool.Get();
-                            if (i > 0)
-                                previous.next = current;
-                            else
-                                renderInfo.firstGradientRemap = current;
-                            previous = current;
-
-                            current.origIndex = i;
-                            current.destIndex = (int)alloc.start + i;
-                            current.atlas = TextureId.invalid;
-                            current.next = null;
+                            Debug.LogError("Exhausted max gradient settings (" + m_GradientSettingsAtlas.length + ") for atlas: " + m_GradientSettingsAtlas.atlas?.name);
+                            m_LoggedExhaustedSettingsAtlas = true;
                         }
-
-                        m_GradientSettingsAtlas.Write(alloc, vi.settings, null);
-                    }
-
-                    renderInfo.gradientSettingsAlloc = alloc;
-                }
-                else
-                {
-                    if (!m_LoggedExhaustedSettingsAtlas)
-                    {
-                        Debug.LogError("Exhausted max gradient settings (" + m_GradientSettingsAtlas.length + ") for atlas: " + m_GradientSettingsAtlas.atlas?.name);
-                        m_LoggedExhaustedSettingsAtlas = true;
                     }
                 }
+
+                return renderInfo;
             }
-
-            s_MarkerRegister.End();
-
-            return renderInfo;
         }
 
         void Unregister(VectorImage vi, VectorImageRenderInfo renderInfo)
         {
-            s_MarkerUnregister.Begin();
-
-            GradientRemap remap = renderInfo.firstGradientRemap;
-
-            if (renderInfo.gradientSettingsAlloc.size > 0)
+            using (s_MarkerUnregister.Auto())
             {
-                m_GradientSettingsAtlas.Remove(renderInfo.gradientSettingsAlloc);
-                m_Atlas.ReturnAtlas(null, renderInfo.atlas, remap.atlas);
+                GradientRemap remap = renderInfo.firstGradientRemap;
+
+                if (renderInfo.gradientSettingsAlloc.size > 0)
+                {
+                    m_GradientSettingsAtlas.Remove(renderInfo.gradientSettingsAlloc);
+                    m_Atlas.ReturnAtlas(null, renderInfo.atlas, remap.atlas);
+                }
+
+                while (remap != null)
+                {
+                    GradientRemap next = remap.next;
+                    m_GradientRemapPool.Return(remap);
+                    remap = next;
+                }
+
+                m_Registered.Remove(vi);
+                m_RenderInfoPool.Return(renderInfo);
             }
-
-            while (remap != null)
-            {
-                GradientRemap next = remap.next;
-                m_GradientRemapPool.Return(remap);
-                remap = next;
-            }
-
-            m_Registered.Remove(vi);
-            m_RenderInfoPool.Return(renderInfo);
-
-            s_MarkerUnregister.End();
         }
     }
 }

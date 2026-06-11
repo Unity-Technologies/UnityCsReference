@@ -21,106 +21,131 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Alignment of the whole area of children on the cross axis if they span over multiple lines in this container.
         /// </summary>
-        Align alignContent { get; }
+        Align alignContent => default;
+
         /// <summary>
         /// Alignment of children on the cross axis of this container.
         /// </summary>
-        Align alignItems { get; }
+        Align alignItems => default;
+
         /// <summary>
         /// Similar to align-items, but only for this specific element.
         /// </summary>
-        Align alignSelf { get; }
+        Align alignSelf => default;
+
         /// <summary>
         /// Controls whether the animation is running or paused.
         /// </summary>
-        AnimationPlayState animationPlayState { get; }
+        AnimationPlayState animationPlayState => default;
+
         /// <summary>
         /// Sets a preferred aspect ratio for the box, which will be used in the calculation of auto sizes and some other layout functions.
         /// </summary>
-        Ratio aspectRatio { get; }
+        Ratio aspectRatio => default;
+
         /// <summary>
         /// Background color to paint in the element's box.
         /// </summary>
-        Color backgroundColor { get; }
+        Color backgroundColor => default;
+
         /// <summary>
         /// Background image to paint in the element's box.
         /// </summary>
-        Background backgroundImage { get; }
+        Background backgroundImage => default;
+
         /// <summary>
         /// Background image x position value.
         /// </summary>
-        BackgroundPosition backgroundPositionX { get; }
+        BackgroundPosition backgroundPositionX => default;
+
         /// <summary>
         /// Background image y position value.
         /// </summary>
-        BackgroundPosition backgroundPositionY { get; }
+        BackgroundPosition backgroundPositionY => default;
+
         /// <summary>
         /// Background image repeat value.
         /// </summary>
-        BackgroundRepeat backgroundRepeat { get; }
+        BackgroundRepeat backgroundRepeat => default;
+
         /// <summary>
         /// Background image size value. Transitions are fully supported only when using size in pixels or percentages, such as pixel-to-pixel or percentage-to-percentage transitions.
         /// </summary>
-        BackgroundSize backgroundSize { get; }
+        BackgroundSize backgroundSize => default;
+
         /// <summary>
         /// Color of the element's bottom border.
         /// </summary>
-        Color borderBottomColor { get; }
+        Color borderBottomColor => default;
+
         /// <summary>
         /// The radius of the bottom-left corner when a rounded rectangle is drawn in the element's box.
         /// </summary>
-        float borderBottomLeftRadius { get; }
+        float borderBottomLeftRadius => default;
+
         /// <summary>
         /// The radius of the bottom-right corner when a rounded rectangle is drawn in the element's box.
         /// </summary>
-        float borderBottomRightRadius { get; }
+        float borderBottomRightRadius => default;
+
         /// <summary>
         /// Space reserved for the bottom edge of the border during the layout phase.
         /// </summary>
-        float borderBottomWidth { get; }
+        float borderBottomWidth => default;
+
         /// <summary>
         /// Color of the element's left border.
         /// </summary>
-        Color borderLeftColor { get; }
+        Color borderLeftColor => default;
+
         /// <summary>
         /// Space reserved for the left edge of the border during the layout phase.
         /// </summary>
-        float borderLeftWidth { get; }
+        float borderLeftWidth => default;
+
         /// <summary>
         /// Color of the element's right border.
         /// </summary>
-        Color borderRightColor { get; }
+        Color borderRightColor => default;
+
         /// <summary>
         /// Space reserved for the right edge of the border during the layout phase.
         /// </summary>
-        float borderRightWidth { get; }
+        float borderRightWidth => default;
+
         /// <summary>
         /// Color of the element's top border.
         /// </summary>
-        Color borderTopColor { get; }
+        Color borderTopColor => default;
+
         /// <summary>
         /// The radius of the top-left corner when a rounded rectangle is drawn in the element's box.
         /// </summary>
-        float borderTopLeftRadius { get; }
+        float borderTopLeftRadius => default;
+
         /// <summary>
         /// The radius of the top-right corner when a rounded rectangle is drawn in the element's box.
         /// </summary>
-        float borderTopRightRadius { get; }
+        float borderTopRightRadius => default;
+
         /// <summary>
         /// Space reserved for the top edge of the border during the layout phase.
         /// </summary>
-        float borderTopWidth { get; }
+        float borderTopWidth => default;
+
         /// <summary>
         /// Bottom distance from the element's box during layout.
         /// </summary>
-        float bottom { get; }
+        float bottom => default;
+
         /// <summary>
         /// Color to use when drawing the text of an element.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        Color color { get; }
+        Color color => default;
+
         /// <summary>
         /// Defines how an element is displayed in the layout.
         /// </summary>
@@ -132,272 +157,336 @@ namespace UnityEngine.UIElements
         /// Elements with a display style of <see cref="DisplayStyle.None"/> are ignored by pointer events
         /// and by <see cref="IPanel.Pick"/>.
         /// </remarks>
-        DisplayStyle display { get; }
+        DisplayStyle display => default;
+
         /// <summary>
         /// Filter effects to apply to the element.
         /// </summary>
-        IEnumerable<FilterFunction> filter { get; }
+        IEnumerable<FilterFunction> filter => default;
+
         /// <summary>
         /// Initial main size of a flex item, on the main flex axis. The final layout might be smaller or larger, according to the flex shrinking and growing determined by the other flex properties.
         /// </summary>
-        StyleFloat flexBasis { get; }
+        StyleFloat flexBasis => default;
+
         /// <summary>
         /// Direction of the main axis to layout children in a container.
         /// </summary>
-        FlexDirection flexDirection { get; }
+        FlexDirection flexDirection => default;
+
         /// <summary>
         /// Specifies how the item will grow relative to the rest of the flexible items inside the same container.
         /// </summary>
-        float flexGrow { get; }
+        float flexGrow => default;
+
         /// <summary>
         /// Specifies how the item will shrink relative to the rest of the flexible items inside the same container.
         /// </summary>
-        float flexShrink { get; }
+        float flexShrink => default;
+
         /// <summary>
         /// Placement of children over multiple lines if not enough space is available in this container.
         /// </summary>
-        Wrap flexWrap { get; }
+        Wrap flexWrap => default;
+
         /// <summary>
         /// Font size to draw the element's text, specified in point size.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        float fontSize { get; }
+        float fontSize => default;
+
         /// <summary>
         /// Fixed height of an element for the layout.
         /// </summary>
-        float height { get; }
+        float height => default;
+
         /// <summary>
         /// Justification of children on the main axis of this container.
         /// </summary>
-        Justify justifyContent { get; }
+        Justify justifyContent => default;
+
         /// <summary>
         /// Left distance from the element's box during layout.
         /// </summary>
-        float left { get; }
+        float left => default;
+
         /// <summary>
         /// Increases or decreases the space between characters.
         /// </summary>
-        float letterSpacing { get; }
+        float letterSpacing => default;
+
         /// <summary>
         /// Space reserved for the bottom edge of the margin during the layout phase.
         /// </summary>
-        float marginBottom { get; }
+        float marginBottom => default;
+
         /// <summary>
         /// Space reserved for the left edge of the margin during the layout phase.
         /// </summary>
-        float marginLeft { get; }
+        float marginLeft => default;
+
         /// <summary>
         /// Space reserved for the right edge of the margin during the layout phase.
         /// </summary>
-        float marginRight { get; }
+        float marginRight => default;
+
         /// <summary>
         /// Space reserved for the top edge of the margin during the layout phase.
         /// </summary>
-        float marginTop { get; }
+        float marginTop => default;
+
         /// <summary>
         /// Maximum height for an element, when it is flexible or measures its own size.
         /// </summary>
-        StyleFloat maxHeight { get; }
+        StyleFloat maxHeight => default;
+
         /// <summary>
         /// Maximum width for an element, when it is flexible or measures its own size.
         /// </summary>
-        StyleFloat maxWidth { get; }
+        StyleFloat maxWidth => default;
+
         /// <summary>
         /// Minimum height for an element, when it is flexible or measures its own size.
         /// </summary>
-        StyleFloat minHeight { get; }
+        StyleFloat minHeight => default;
+
         /// <summary>
         /// Minimum width for an element, when it is flexible or measures its own size.
         /// </summary>
-        StyleFloat minWidth { get; }
+        StyleFloat minWidth => default;
+
         /// <summary>
         /// Specifies the transparency of an element and of its children.
         /// </summary>
         /// <remarks>
         /// The opacity can be between 0.0 and 1.0. The lower value, the more transparent.
         /// </remarks>
-        float opacity { get; }
+        float opacity => default;
+
         /// <summary>
         /// Space reserved for the bottom edge of the padding during the layout phase.
         /// </summary>
-        float paddingBottom { get; }
+        float paddingBottom => default;
+
         /// <summary>
         /// Space reserved for the left edge of the padding during the layout phase.
         /// </summary>
-        float paddingLeft { get; }
+        float paddingLeft => default;
+
         /// <summary>
         /// Space reserved for the right edge of the padding during the layout phase.
         /// </summary>
-        float paddingRight { get; }
+        float paddingRight => default;
+
         /// <summary>
         /// Space reserved for the top edge of the padding during the layout phase.
         /// </summary>
-        float paddingTop { get; }
+        float paddingTop => default;
+
         /// <summary>
         /// Element's positioning in its parent container.
         /// </summary>
         /// <remarks>
         /// This property is used in conjunction with left, top, right and bottom properties.
         /// </remarks>
-        Position position { get; }
+        Position position => default;
+
         /// <summary>
         /// Right distance from the element's box during layout.
         /// </summary>
-        float right { get; }
+        float right => default;
+
         /// <summary>
         /// A rotation transformation.
         /// </summary>
-        Rotate rotate { get; }
+        Rotate rotate => default;
+
         /// <summary>
         /// A scaling transformation.
         /// </summary>
-        Scale scale { get; }
+        Scale scale => default;
+
         /// <summary>
         /// The element's text overflow mode.
         /// </summary>
-        TextOverflow textOverflow { get; }
+        TextOverflow textOverflow => default;
+
+        /// <summary>
+        /// Drop shadow of the text.
+        /// </summary>
+        TextShadow textShadow => default;
+
         /// <summary>
         /// Top distance from the element's box during layout.
         /// </summary>
-        float top { get; }
+        float top => default;
+
         /// <summary>
         /// The transformation origin is the point around which a transformation is applied.
         /// </summary>
-        Vector3 transformOrigin { get; }
+        Vector3 transformOrigin => default;
+
         /// <summary>
         /// Duration to wait before starting a property's transition effect when its value changes.
         /// </summary>
-        IEnumerable<TimeValue> transitionDelay { get; }
+        IEnumerable<TimeValue> transitionDelay => default;
+
         /// <summary>
         /// Time a transition animation should take to complete.
         /// </summary>
-        IEnumerable<TimeValue> transitionDuration { get; }
+        IEnumerable<TimeValue> transitionDuration => default;
+
         /// <summary>
         /// Properties to which a transition effect should be applied.
         /// </summary>
-        IEnumerable<StylePropertyName> transitionProperty { get; }
+        IEnumerable<StylePropertyName> transitionProperty => default;
+
         /// <summary>
         /// Determines how intermediate values are calculated for properties modified by a transition effect.
         /// </summary>
-        IEnumerable<EasingFunction> transitionTimingFunction { get; }
+        IEnumerable<EasingFunction> transitionTimingFunction => default;
+
         /// <summary>
         /// A translate transformation.
         /// </summary>
-        Vector3 translate { get; }
+        Vector3 translate => default;
+
         /// <summary>
         /// Animation to apply with the current element as root.
         /// </summary>
-        UIAnimationClip unityAnimationClip { get; }
+        UIAnimationClip unityAnimationClip => default;
+
         /// <summary>
         /// Tinting color for the element's backgroundImage.
         /// </summary>
-        Color unityBackgroundImageTintColor { get; }
+        Color unityBackgroundImageTintColor => default;
+
         /// <summary>
         /// TextElement editor rendering mode.
         /// </summary>
-        EditorTextRenderingMode unityEditorTextRenderingMode { get; }
+        EditorTextRenderingMode unityEditorTextRenderingMode => default;
+
         /// <summary>
         /// Font to draw the element's text, defined as a Font object.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        Font unityFont { get; }
+        Font unityFont => default;
+
         /// <summary>
         /// Font to draw the element's text, defined as a FontDefinition structure. It takes precedence over `-unity-font`.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        FontDefinition unityFontDefinition { get; }
+        FontDefinition unityFontDefinition => default;
+
         /// <summary>
         /// Font style and weight (normal, bold, italic) to draw the element's text.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        FontStyle unityFontStyleAndWeight { get; }
+        FontStyle unityFontStyleAndWeight => default;
+
         /// <summary>
         /// Custom material to use on the element.
         /// </summary>
-        MaterialDefinition unityMaterial { get; }
+        MaterialDefinition unityMaterial => default;
+
         /// <summary>
         /// Increases or decreases the space between paragraphs.
         /// </summary>
-        float unityParagraphSpacing { get; }
+        float unityParagraphSpacing => default;
+
         /// <summary>
         /// Size of the 9-slice's bottom edge when painting an element's background image.
         /// </summary>
-        int unitySliceBottom { get; }
+        int unitySliceBottom => default;
+
         /// <summary>
         /// Size of the 9-slice's left edge when painting an element's background image.
         /// </summary>
-        int unitySliceLeft { get; }
+        int unitySliceLeft => default;
+
         /// <summary>
         /// Size of the 9-slice's right edge when painting an element's background image.
         /// </summary>
-        int unitySliceRight { get; }
+        int unitySliceRight => default;
+
         /// <summary>
         /// Scale applied to an element's slices.
         /// </summary>
-        float unitySliceScale { get; }
+        float unitySliceScale => default;
+
         /// <summary>
         /// Size of the 9-slice's top edge when painting an element's background image.
         /// </summary>
-        int unitySliceTop { get; }
+        int unitySliceTop => default;
+
         /// <summary>
         /// Specifies the type of sclicing.
         /// </summary>
-        SliceType unitySliceType { get; }
+        SliceType unitySliceType => default;
+
         /// <summary>
         /// Horizontal and vertical text alignment in the element's box.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        TextAnchor unityTextAlign { get; }
+        TextAnchor unityTextAlign => default;
+
         /// <summary>
         /// Switches between Unity's standard and advanced text generator
         /// </summary>
         /// <remarks>
         /// The advanced text generator supports comprehensive Unicode and text shaping for various languages and scripts, including RTL languages. However, it's currently in development and may not have full feature parity with the standard generator. This property is inherited by default and affects text rendering capabilities.
         /// </remarks>
-        TextGeneratorType unityTextGenerator { get; }
+        TextGeneratorType unityTextGenerator => default;
+
         /// <summary>
         /// Outline color of the text.
         /// </summary>
-        Color unityTextOutlineColor { get; }
+        Color unityTextOutlineColor => default;
+
         /// <summary>
         /// Outline width of the text.
         /// </summary>
-        float unityTextOutlineWidth { get; }
+        float unityTextOutlineWidth => default;
+
         /// <summary>
         /// The element's text overflow position.
         /// </summary>
-        TextOverflowPosition unityTextOverflowPosition { get; }
+        TextOverflowPosition unityTextOverflowPosition => default;
+
         /// <summary>
         /// Specifies whether or not an element is visible.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        Visibility visibility { get; }
+        Visibility visibility => default;
+
         /// <summary>
         /// Word wrap over multiple lines if not enough space is available to draw the text of an element.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
-        WhiteSpace whiteSpace { get; }
+        WhiteSpace whiteSpace => default;
+
         /// <summary>
         /// Fixed width of an element for the layout.
         /// </summary>
-        float width { get; }
+        float width => default;
+
         /// <summary>
         /// Increases or decreases the space between words.
         /// </summary>
-        float wordSpacing { get; }
+        float wordSpacing => default;
     }
 }

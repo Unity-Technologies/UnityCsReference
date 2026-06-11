@@ -7,18 +7,11 @@ using System;
 namespace UnityEngine
 {
     // Attribute to control the header UI of a Dictionary
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public sealed class DictionaryHeaderAttribute : Attribute
     {
-        public readonly float keyColumnFraction;
-        public readonly string keyColumnLabel;
-        public readonly string valueColumnLabel;
-
-        public DictionaryHeaderAttribute(string keyColumnLabel = null, string valueColumnLabel = null, float keyColumnFraction = 0.5f)
-        {
-            this.keyColumnFraction = float.IsNaN(keyColumnFraction) ? 0.5f : Mathf.Clamp(keyColumnFraction, 0.01f, 0.99f);
-            this.keyColumnLabel = keyColumnLabel;
-            this.valueColumnLabel = valueColumnLabel;
-        }
+        public string keyColumnLabel { get; set; } = string.Empty;
+        public string valueColumnLabel { get; set; } = string.Empty;
+        public float keyColumnFraction { get; set; } = 0.5f;
     }
 }

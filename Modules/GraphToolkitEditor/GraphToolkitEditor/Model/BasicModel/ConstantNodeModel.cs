@@ -212,6 +212,7 @@ namespace Unity.GraphToolkit.Editor
                 TypeHandleHelpers.GenerateTypeHandle(m_Node.Value.Type),
                 PortType.Default,
                 portId: "collectionReference",
+                options: PortModelOptions.Hidden,
                 initializationCallback: InitializeSizeOption);
 
             input.SetExpandable(true);

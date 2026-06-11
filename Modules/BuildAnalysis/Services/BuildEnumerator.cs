@@ -86,6 +86,7 @@ namespace UnityEditor.Build.Analysis
                 BuildStartedAt = ParseBuildStartedAtLocal(summary.BuildStartedAt),
                 Platform = summary.Platform,
                 BuildResult = summary.BuildResult,
+                BuildType = summary.BuildType,
                 TotalSizeBytes = summary.TotalSizeBytes,
                 TotalTimeMs = summary.TotalTimeMs,
                 FolderPath = folderPath,

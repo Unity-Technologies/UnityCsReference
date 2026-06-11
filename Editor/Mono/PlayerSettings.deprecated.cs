@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 using EditorGraphicsSettings = UnityEditor.Rendering.EditorGraphicsSettings;
 
@@ -145,8 +146,10 @@ namespace UnityEditor
     partial class PlayerSettings
     {
         [Obsolete("Use PlayerSettings.Android.keystorePass instead (UnityUpgradable) -> UnityEditor.PlayerSettings/Android.keystorePass", true)]
+        [NoAutoStaticsCleanup]
         public static string keystorePass { get; set; }
         [Obsolete("Use PlayerSettings.Android.keyaliasPass instead (UnityUpgradable) -> UnityEditor.PlayerSettings/Android.keyaliasPass", true)]
+        [NoAutoStaticsCleanup]
         public static string keyaliasPass { get; set; }
 
         partial class Android

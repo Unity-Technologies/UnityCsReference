@@ -73,7 +73,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var nameLabel = this.Q<Label>(classes: BuilderConstants.ExplorerItemNameLabelClassName);
+            var nameLabel = this.Q<Label>(classes: BuilderConstants.ExplorerItemNameLabelClassName.value);
             var labelContainer = this.Q(classes: BuilderConstants.ExplorerItemSelectorLabelContClassName);
 
             m_RenameTextField.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
@@ -88,7 +88,7 @@ namespace Unity.UI.Builder
         {
             m_RenameTextField.UnregisterCallback<GeometryChangedEvent>(OnRenameTextFieldGeometryChanged);
             m_RenameTextField.Focus();
-            var typeLabel = this.Q<Label>(classes: BuilderConstants.ElementTypeClassName);
+            var typeLabel = this.Q<Label>(classes: BuilderConstants.ElementTypeClassName.value);
             if (m_RenameTextField.text == string.Empty && typeLabel != null)
             {
                 m_RenameTextField.text = typeLabel.text;
@@ -121,10 +121,10 @@ namespace Unity.UI.Builder
         {
             m_RenameTextField = new TextField()
             {
-                name = BuilderConstants.ExplorerItemRenameTextfieldName,
                 maxLength = BuilderConstants.ElementNameMaxLength,
                 isDelayed = true
             };
+            m_RenameTextField.SetName(BuilderConstants.ExplorerItemRenameTextfieldName);
             m_RenameTextField.AddToClassList(BuilderConstants.ExplorerItemRenameTextfieldClassName);
 
             SetRenameTextFieldValueFromDocumentElement(documentElement);

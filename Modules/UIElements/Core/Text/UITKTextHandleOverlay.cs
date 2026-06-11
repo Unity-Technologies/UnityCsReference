@@ -145,19 +145,17 @@ namespace UnityEngine.UIElements
 
             int g = LogicalToGlyphIndex(i);
             var nativeInfo = TextGenerationInfo.GetTextInfo(textGenerationInfo);
-            // Use TextRenderingIndices to look up the correct mesh quad.
-            // GetGlyphAtFlatIndex was wrong: mesh textElementInfos are NOT 1:1 with global
-            // glyph indices because invisible glyphs are skipped and underline/strikethrough
-            // quads are appended. TextRenderingIndices stores the actual (meshIndex, elementIndex)
-            // pair assigned during AddGlyph.
-            var renderIdx = TextGenerationInfo.GetTextRenderingIndices(textGenerationInfo, g);
+            // Mesh textElementInfos are NOT 1:1 with global glyph indices: invisible
+            // glyphs are skipped and decoration quads are appended. The (meshIndex,
+            // textElementInfoIndex) pair is what AddGlyph actually assigned.
+            var info = TextGenerationInfo.GetGlyphRenderInfo(textGenerationInfo, g);
             NativeTextElementInfo nativeElem = default;
-            if (renderIdx.meshIndex >= 0 && renderIdx.meshIndex < nativeInfo.meshInfoCount)
+            if (info.meshIndex >= 0 && info.meshIndex < nativeInfo.meshInfoCount)
             {
-                var mesh = nativeInfo.meshInfos[renderIdx.meshIndex];
+                var mesh = nativeInfo.meshInfos[info.meshIndex];
                 var span = mesh.textElementInfos;
-                if (renderIdx.textElementInfoIndex >= 0 && renderIdx.textElementInfoIndex < span.Length)
-                    nativeElem = span[renderIdx.textElementInfoIndex];
+                if (info.textElementInfoIndex >= 0 && info.textElementInfoIndex < span.Length)
+                    nativeElem = span[info.textElementInfoIndex];
             }
 
             int lineNum = TextSelectionService.GetLineNumber(textGenerationInfo, i);

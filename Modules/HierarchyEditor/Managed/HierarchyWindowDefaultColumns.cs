@@ -95,6 +95,7 @@ namespace Unity.Hierarchy.Editor
         /// Column Id for object Visibility in Scene.
         /// </summary>
         public const string k_ColumnId = "Visibility";
+        static readonly UniqueStyleString k_IsVisibleClass = new("is-visible");
 
         /// <summary>
         /// USS class for toggle icon used to display object Visibility in Scene.
@@ -150,7 +151,7 @@ namespace Unity.Hierarchy.Editor
         {
             editor.Element.showMixedValue =
                 SceneVisibilityManager.instance.GetSceneVisibilityState(editor.Model) == SceneVisibilityManager.SceneVisState.Mixed;
-            editor.Element.EnableInClassList("is-visible", value);
+            editor.Element.EnableInClassList(k_IsVisibleClass, value);
         }
 
         // internal for tests
@@ -207,7 +208,7 @@ namespace Unity.Hierarchy.Editor
                 editor.Element.showMixedValue = editor.Model.transform.childCount > 0 &&
                                                 !SceneVisibilityManager.instance.AreAllDescendantsHidden(editor.Model);
             }
-            editor.Element.EnableInClassList("is-visible", value);
+            editor.Element.EnableInClassList(k_IsVisibleClass, value);
         }
 
         // internal for tests
@@ -269,6 +270,7 @@ namespace Unity.Hierarchy.Editor
         /// Column Id for object Pickability in Scene.
         /// </summary>
         public const string k_ColumnId = "Picking";
+        static readonly UniqueStyleString k_IsPickableClass = new("is-pickable");
 
         /// <summary>
         /// USS class for toggle icon used to display object Pickability in Scene.
@@ -324,7 +326,7 @@ namespace Unity.Hierarchy.Editor
         {
             editor.Element.showMixedValue =
                 SceneVisibilityManager.instance.GetScenePickingState(editor.Model) == SceneVisibilityManager.ScenePickingState.Mixed;
-            editor.Element.EnableInClassList("is-pickable", value);
+            editor.Element.EnableInClassList(k_IsPickableClass, value);
         }
 
         // internal for tests
@@ -391,7 +393,7 @@ namespace Unity.Hierarchy.Editor
                 editor.Element.showMixedValue = editor.Model.transform.childCount > 0 &&
                                                 !SceneVisibilityManager.instance.IsPickingDisabledOnAllDescendants(editor.Model);
             }
-            editor.Element.EnableInClassList("is-pickable", value);
+            editor.Element.EnableInClassList(k_IsPickableClass, value);
         }
 
         // internal for tests

@@ -72,10 +72,17 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        /// <summary>
+        /// Whether to register the <see cref="OnMouseDown"/> callback in the trickle-down phase.
+        /// Override and return <c>true</c> when descendant manipulators call <c>StopPropagation</c>
+        /// in their own <c>OnMouseDown</c> and would otherwise block selection.
+        /// </summary>
+        protected virtual bool UseTrickleDownForMouseDown => false;
+
         /// <inheritdoc />
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown, UseTrickleDownForMouseDown ? TrickleDown.TrickleDown : TrickleDown.NoTrickleDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
         }
@@ -83,7 +90,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown, UseTrickleDownForMouseDown ? TrickleDown.TrickleDown : TrickleDown.NoTrickleDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
         }

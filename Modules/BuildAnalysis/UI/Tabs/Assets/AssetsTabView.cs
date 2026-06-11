@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,6 +14,8 @@ namespace UnityEditor.Build.Analysis
         private const string k_UxmlPath = "BuildAnalysis/UXML/AssetsTab.uxml";
         private const int k_InspectorPaneIndex = 1;
 
+        public event Action InspectorOpenRequested;
+
         private readonly VisualElement m_Root = new VisualElement();
         private VisualElement m_NoSelection;
         private VisualElement m_Body;
@@ -20,9 +23,12 @@ namespace UnityEditor.Build.Analysis
         private VisualElement m_InspectorHost;
         private BuildHeaderController m_Header;
         private AssetTable m_AssetTable;
+        private RootAssetTable m_RootAssetTable;
         private AssetInspector m_AssetInspector;
         private Label m_ScenesValue;
         private Label m_AssetsValue;
+        private VisualElement m_RootAssetsCard;
+        private Label m_RootAssetsValue;
 
         private bool m_HasLaidOut;
         private bool m_InspectorOpen;
@@ -46,8 +52,12 @@ namespace UnityEditor.Build.Analysis
             m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));
             m_ScenesValue = m_Root.Q<VisualElement>("stat-card-scenes").Q<Label>("value");
             m_AssetsValue = m_Root.Q<VisualElement>("stat-card-assets").Q<Label>("value");
+            m_RootAssetsCard = m_Root.Q<VisualElement>("stat-card-root-assets");
+            m_RootAssetsValue = m_RootAssetsCard.Q<Label>("value");
 
             var sections = m_Root.Q<VisualElement>("assets-sections");
+            m_RootAssetTable = new RootAssetTable();
+            sections.Add(m_RootAssetTable);
             m_AssetTable = new AssetTable();
             sections.Add(m_AssetTable);
 
@@ -67,6 +77,9 @@ namespace UnityEditor.Build.Analysis
         {
             var importerType = asset.HasValue ? ResolveImporterType(asset.Value.ImporterTypeId) : null;
             m_AssetInspector.SetAsset(asset, importerType);
+
+            if (asset.HasValue)
+                InspectorOpenRequested?.Invoke();
         }
 
         private BuildAnalysisImporterType? ResolveImporterType(int id)
@@ -85,6 +98,8 @@ namespace UnityEditor.Build.Analysis
             if (!hasSelection)
             {
                 m_CachedImporterTypes = Array.Empty<BuildAnalysisImporterType>();
+                m_RootAssetsCard.style.display = DisplayStyle.None;
+                m_RootAssetTable.style.display = DisplayStyle.None;
                 return;
             }
 
@@ -93,16 +108,28 @@ namespace UnityEditor.Build.Analysis
             var counts = analysis.Computed.Counts;
             m_ScenesValue.text = counts.SceneCount.ToString();
             m_AssetsValue.text = counts.AssetCount.ToString();
+
+            var isContentDirectory = selection.BuildType == BuildType.ContentDirectory;
+            m_RootAssetsCard.style.display = isContentDirectory ? DisplayStyle.Flex : DisplayStyle.None;
+            m_RootAssetTable.style.display = isContentDirectory ? DisplayStyle.Flex : DisplayStyle.None;
+            if (isContentDirectory)
+            {
+                m_RootAssetsValue.text = counts.RootAssetCount.ToString();
+                m_RootAssetTable.Bind(analysis);
+            }
+
             m_AssetTable.Bind(analysis);
         }
 
         public void OnTabVisibilityChanged(bool isVisible)
         {
             // Selection is only valid for the exact table state in which it was made.
-            // Clearing on tab return forces the user to re-pick a row, matching the spec
-            // (UX-Assets-Tab.md § Inspector — Selection lifecycle).
+            // Clearing on tab return forces the user to re-pick a row
             if (isVisible)
+            {
                 m_AssetTable.ClearSelection();
+                m_RootAssetTable.ClearSelection();
+            }
         }
 
         public void OnInspectorVisibilityChanged(bool isOpen)

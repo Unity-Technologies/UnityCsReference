@@ -50,6 +50,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
             }
 
+            // The inner Scenario is non-serialized and is null after a domain reload until
+            // CreateAndLoadScenario succeeds. Show a transient Info message; the window's
+            // ConfigAssetChanged subscription will re-create this element once it is ready.
+            if (m_Scenario.Scenario == null)
+            {
+                AttachHelpBox(container, "Scenario is initialising. The instance list will appear once it is ready.", HelpBoxMessageType.Info);
+                return;
+            }
+
             var mainEditor = new VisualElement();
             var virtualEditors = new VisualElement();
             var otherInstances = new VisualElement();

@@ -376,6 +376,16 @@ namespace UnityEditor.Overlays
                 CanCreatePreset,
                 (name) =>
                 {
+                    if (Exists(window.GetType(), name) &&
+                        !EditorUtility.DisplayDialog(
+                            L10n.Tr("Overwrite Preset?"),
+                            string.Format(L10n.Tr("Do you want to overwrite '{0}' preset?"), name),
+                            L10n.Tr("Overwrite"), L10n.Tr("Cancel")))
+                    {
+                        onFailed?.Invoke();
+                        return;
+                    }
+
                     var preset = CreatePresetFromOverlayState(name, window, true);
                     if (preset != null)
                     {

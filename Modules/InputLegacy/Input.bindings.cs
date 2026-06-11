@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -365,7 +366,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Input/InputBindings.h")]
-    public class Input
+    public partial class Input
     {
         public static float GetAxis(string axisName) => Internal.InputUnsafeUtility.GetAxis(axisName);
         public static float GetAxisRaw(string axisName) => Internal.InputUnsafeUtility.GetAxisRaw(axisName);
@@ -441,6 +442,7 @@ namespace UnityEngine
         [Obsolete("eatKeyPressOnTextFieldFocus property is deprecated, and only provided to support legacy behavior.")]
         public extern static bool eatKeyPressOnTextFieldFocus { get; set; }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static bool simulateTouchEnabled { get; set; }
 
         [FreeFunction("GetMousePresent")]
@@ -516,6 +518,7 @@ namespace UnityEngine
             set;
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static LocationService locationServiceInstance;
         public static LocationService location
         {
@@ -526,6 +529,7 @@ namespace UnityEngine
                 return locationServiceInstance;
             }
         }
+        [AutoStaticsCleanupOnCodeReload]
         private static Compass compassInstance;
         public static Compass compass
         {
@@ -538,6 +542,7 @@ namespace UnityEngine
         }
         [FreeFunction("GetGyro")]
         private extern static int GetGyroInternal();
+        [AutoStaticsCleanupOnCodeReload]
         private static Gyroscope s_MainGyro;
         public static Gyroscope gyro
         {

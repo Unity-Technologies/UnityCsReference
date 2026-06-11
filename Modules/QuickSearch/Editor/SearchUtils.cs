@@ -988,6 +988,9 @@ namespace UnityEditor.Search
                         return "Count";
                     return null;
 
+                case SerializedPropertyType.LoadableSceneId:
+                    return typeof(SceneAsset).AssemblyQualifiedName;
+
                 case SerializedPropertyType.ObjectReference:
                     if (p.objectReferenceValue)
                         return p.objectReferenceValue.GetType().AssemblyQualifiedName;
@@ -1602,6 +1605,14 @@ namespace UnityEditor.Search
                         if (loadableObj == null)
                             return "none";
                         var path = GetObjectPath(loadableObj, subAssetUseGlobalObjectId: true);
+                        return EscapeLiteralString(path);
+                    }
+                case SerializedPropertyType.LoadableSceneId:
+                    {
+                        if (value == null)
+                            return "none";
+
+                        var path = GetObjectPath(value as SceneAsset, subAssetUseGlobalObjectId: true);
                         return EscapeLiteralString(path);
                     }
                 case SerializedPropertyType.String:

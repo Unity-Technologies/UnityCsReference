@@ -41,6 +41,11 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// The unique identifier of the element.
+        /// </summary>
+        public Hash128 ID => Guid;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Model"/> class.
         /// </summary>
         protected Model()

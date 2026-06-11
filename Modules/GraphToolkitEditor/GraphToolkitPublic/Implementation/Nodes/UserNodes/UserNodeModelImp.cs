@@ -20,6 +20,11 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public Node Node => m_Node;
 
+        // Set to true by CallOnEnable and implicitly reset to false by Unity deserialization ([NonSerialized]).
+        // UndoRedoPerformed uses this to re-invoke OnEnable only on nodes freshly recreated by undo/redo (eg: during node creation, node duplication),
+        // not on nodes that are still live in memory.
+        [NonSerialized]
+        bool m_OnEnableCalled;
         [NonSerialized]
         string m_CustomTooltip;
         [NonSerialized]
@@ -28,6 +33,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         string m_CustomSubtitle;
         [NonSerialized]
         Color m_CustomDefaultColor;
+
+        bool IUserNodeModelImp.OnEnableCalled { get => m_OnEnableCalled; set => m_OnEnableCalled = value; }
 
         public override string Tooltip
         {
@@ -38,6 +45,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTooltip = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -66,6 +74,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -79,6 +88,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomSubtitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -96,6 +106,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -120,8 +131,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override void OnDuplicateNode(AbstractNodeModel sourceNode)
         {
-            ((IUserNodeModelImp)this).CallOnEnable();
             base.OnDuplicateNode(sourceNode);
+            ((IUserNodeModelImp)this).CallOnEnable();
         }
 
         public override void OnCreateNode()
@@ -145,6 +156,11 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public BlockNode Node => m_Node;
 
+        // Set to true by CallOnEnable and implicitly reset to false by Unity deserialization ([NonSerialized]).
+        // UndoRedoPerformed uses this to re-invoke OnEnable only on nodes freshly recreated by undo/redo (eg: during node creation, node duplication),
+        // not on nodes that are still live in memory.
+        [NonSerialized]
+        bool m_OnEnableCalled;
         [NonSerialized]
         string m_CustomTooltip;
         [NonSerialized]
@@ -153,6 +169,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         string m_CustomSubtitle;
         [NonSerialized]
         Color m_CustomDefaultColor;
+
+        bool IUserNodeModelImp.OnEnableCalled { get => m_OnEnableCalled; set => m_OnEnableCalled = value; }
 
         public override string Tooltip
         {
@@ -163,6 +181,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTooltip = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -191,6 +210,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -204,6 +224,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomSubtitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -221,6 +242,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -245,8 +267,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override void OnDuplicateNode(AbstractNodeModel sourceNode)
         {
-            ((IUserNodeModelImp)this).CallOnEnable();
             base.OnDuplicateNode(sourceNode);
+            ((IUserNodeModelImp)this).CallOnEnable();
         }
 
         public override void OnCreateNode()
@@ -272,6 +294,11 @@ namespace Unity.GraphToolkit.Editor.Implementation
         Node IUserNodeModelImp.Node => m_Node;
         public ContextNode Node => m_Node;
 
+        // Set to true by CallOnEnable and implicitly reset to false by Unity deserialization ([NonSerialized]).
+        // UndoRedoPerformed uses this to re-invoke OnEnable only on nodes freshly recreated by undo/redo (eg: during node creation, node duplication),
+        // not on nodes that are still live in memory.
+        [NonSerialized]
+        bool m_OnEnableCalled;
         [NonSerialized]
         string m_CustomTooltip;
         [NonSerialized]
@@ -280,6 +307,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         string m_CustomSubtitle;
         [NonSerialized]
         Color m_CustomDefaultColor = Color.darkGreen;
+
+        bool IUserNodeModelImp.OnEnableCalled { get => m_OnEnableCalled; set => m_OnEnableCalled = value; }
 
         public override string Tooltip
         {
@@ -290,6 +319,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTooltip = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -318,6 +348,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomTitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -331,6 +362,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomSubtitle = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -348,6 +380,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
                     return;
 
                 m_CustomDefaultColor = value;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
@@ -373,8 +406,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override void OnDuplicateNode(AbstractNodeModel sourceNode)
         {
-            ((IUserNodeModelImp)this).CallOnEnable();
             base.OnDuplicateNode(sourceNode);
+            ((IUserNodeModelImp)this).CallOnEnable();
         }
 
         public override void OnCreateNode()

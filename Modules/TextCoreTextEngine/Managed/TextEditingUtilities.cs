@@ -57,7 +57,7 @@ namespace UnityEngine
                 m_Text = text;
                 OnTextChanged?.Invoke();
             }
-                
+
             m_TextSelectingUtility.NotifyFromFlags(flags);
         }
 
@@ -89,6 +89,8 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void SyncStateToNative()
         {
+            if (nativeTgi != IntPtr.Zero)
+                TextEditingService.SetText(nativeTgi, m_Text);
             m_TextSelectingUtility.SyncStateToNative();
         }
 
@@ -143,12 +145,10 @@ namespace UnityEngine
                 var newText = value ?? string.Empty;
                 if (useAdvancedText)
                 {
-                    if (!TextEditingService.SetText(nativeTgi, newText))
-                        return;
                     if (newText == m_Text)
                         return;
                     m_Text = newText;
-
+                    TextEditingService.SetText(nativeTgi, newText);
                 }
                 else
                 {
@@ -188,11 +188,16 @@ namespace UnityEngine
         }
 
         /// <summary>
-        /// Checks if IME is active and updates the internal states. This should be run each update.
+        /// Synchronizes IME state with <paramref name="compositionString"/> and returns whether
+        /// composition activity transitioned (e.g. became active or inactive).
+        /// Returns false when the call is a no-op so callers can treat a non-no-op result as
+        /// evidence that state was out of sync.
         /// </summary>
-        public bool UpdateImeState()
+        public bool UpdateImeState(String compositionString)
         {
-            if (Input.compositionString.Length > 0)
+            compositionString ??= string.Empty;
+            var wasCompositionActive = isCompositionActive;
+            if (compositionString.Length > 0)
             {
                 if (!isCompositionActive)
                 {
@@ -207,7 +212,7 @@ namespace UnityEngine
                 isCompositionActive = false;
             }
 
-            return isCompositionActive;
+            return wasCompositionActive != isCompositionActive;
         }
 
         public bool ShouldUpdateImeWindowPosition()
@@ -215,24 +220,21 @@ namespace UnityEngine
             return m_UpdateImeWindowPosition;
         }
 
-        public void SetImeWindowPosition(Vector2 worldPosition)
+        public Vector2 GetCurrentCursorPosition()
         {
             if (useAdvancedText)
             {
-                var cursorPos = textHandle.PixelsToPoints(TextSelectionService.GetCursorPositionFromCursorIndex(nativeTgi));
-                Input.compositionCursorPos = worldPosition + cursorPos;
-                return;
+               return textHandle.PixelsToPoints(TextSelectionService.GetCursorPositionFromCursorIndex(nativeTgi));
             }
 
-            var cursorPosStandard = textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
-            Input.compositionCursorPos = worldPosition + cursorPosStandard;
+            return textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
         }
 
-        public string GeneratePreviewString(bool richText)
+        public string GeneratePreviewString(bool richText, string compositionString)
         {
+            compositionString ??= string.Empty;
             RestoreCursorState();
-            var compositionString = Input.compositionString;
-            if (isCompositionActive)
+            if (isCompositionActive && !string.IsNullOrEmpty(compositionString))
             {
                 return richText ? text.Insert(stringCursorIndex, $"<u>{compositionString}</u>") : text.Insert(stringCursorIndex, compositionString);
             }
@@ -244,11 +246,12 @@ namespace UnityEngine
         /// When generateVisualContent is invoked this cursor position will be returned. Any changes to the text will revert the cursor back to the original position.
         /// </summary>
         /// <param name="cursor"></param>
-        public void EnableCursorPreviewState()
+        public void EnableCursorPreviewState(string compositionString)
         {
+            compositionString ??= string.Empty;
             if (useAdvancedText)
             {
-                TextEditingService.EnableCursorPreviewState(nativeTgi, Input.compositionString.Length);
+                TextEditingService.EnableCursorPreviewState(nativeTgi, compositionString.Length);
                 return;
             }
 
@@ -256,7 +259,7 @@ namespace UnityEngine
                 return;
 
             m_CursorIndexSavedState = m_TextSelectingUtility.cursorIndexNoValidation;
-            cursorIndexNoValidation = selectIndexNoValidation = m_CursorIndexSavedState + Input.compositionString.Length;
+            cursorIndexNoValidation = selectIndexNoValidation = m_CursorIndexSavedState + compositionString.Length;
         }
 
         /// <summary>

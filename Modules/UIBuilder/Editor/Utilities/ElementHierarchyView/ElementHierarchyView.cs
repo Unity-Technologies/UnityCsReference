@@ -43,6 +43,7 @@ namespace Unity.UI.Builder
 
         public const string k_PillName = "unity-builder-tree-class-pill";
         const string k_TreeItemPillClass = "unity-debugger-tree-item-pill";
+        static readonly UniqueStyleString k_DebuggerTreeItemNameLabelClass = new("unity-debugger-tree-item-name-label");
 
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
@@ -551,7 +552,7 @@ namespace Unity.UI.Builder
                 }
 
                 // Since we are no longer clearing, we need to remove the old instance of the rename field. Otherwise, rename will rename the last bound record instead of the latest
-                labelCont.Q<TextField>(BuilderConstants.ExplorerItemRenameTextfieldName)?.RemoveFromHierarchy();
+                labelCont.Q<TextField>(BuilderConstants.ExplorerItemRenameTextfieldName.value)?.RemoveFromHierarchy();
 
                 // Textfield to rename element in hierarchy.
                 var renameField = explorerItem.CreateRenamingTextField(documentElement, null, m_Selection);
@@ -614,7 +615,7 @@ namespace Unity.UI.Builder
             // Element name label.
             var nameLabel = new Label();
             nameLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-            nameLabel.AddToClassList("unity-debugger-tree-item-name-label");
+            nameLabel.AddToClassList(k_DebuggerTreeItemNameLabelClass);
             nameLabel.AddToClassList(BuilderConstants.ExplorerItemNameLabelClassName);
             nameLabel.AddToClassList(BuilderConstants.ElementNameClassName);
             if (!string.IsNullOrEmpty(documentElement.name))
@@ -1001,7 +1002,7 @@ namespace Unity.UI.Builder
                 if (!isValidTarget)
                     return;
 
-                var icon = element.Q(null, BuilderConstants.ExplorerItemIconClassName);
+                var icon = element.Q(null, BuilderConstants.ExplorerItemIconClassName.value);
                 if (icon == null)
                     return;
 

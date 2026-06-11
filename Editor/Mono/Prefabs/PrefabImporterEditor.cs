@@ -154,7 +154,7 @@ namespace UnityEditor
         {
             bool isTextFieldCaretShowing = EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection;
 
-            return !EditorFocusMonitor.IsDelayableFieldFocused() &&
+            return !EditorFocusMonitor.HasTextElementFocus() &&
             GUIUtility.hotControl == 0 &&
             !MouseCaptureController.IsMouseCaptured() &&
             !isTextFieldCaretShowing &&
