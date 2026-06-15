@@ -296,7 +296,7 @@ namespace Unity.Hierarchy.Editor
         {
             var gameObjectNodeType = GetNodeType();
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var parentNodeType = view.ViewModel.GetNodeType(in parent);
             return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType || parentNodeType == subSceneNodeType;
         }
@@ -304,7 +304,7 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
         {
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var childNodeType = view.ViewModel.GetNodeType(in child);
             return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
         }
@@ -810,9 +810,9 @@ namespace Unity.Hierarchy.Editor
                 return scene.IsValid() ? scene.handle.ToEntityId() : EntityId.None;
             }
 
-            if (dropTargetNodeType == Hierarchy.GetNodeType<HierarchySubSceneHandler>())
+            if (dropTargetNodeType == Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>())
             {
-                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneHandler>();
+                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneAuthoringHandler>();
                 if (dropOption.HasFlag(HierarchyDropFlags.DropUpon))
                 {
                     var scene = subSceneHandler.GetScene(in dropTarget);

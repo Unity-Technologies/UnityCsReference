@@ -328,6 +328,7 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 null,
+                Vector2.zero,
                 panel.scaledPixelsPerPoint,
                 true,
                 textureSlotCount,
@@ -396,17 +397,9 @@ namespace UnityEngine.UIElements.UIR
                 Camera.SetupCurrent(null);
                 RenderTexture.active = nestedTreeRT;
                 shouldResetRT = true;
+                scissor = bounds;
 
-                // Filters are rendered in an unscaled render target, so we force the pixelsPerPoint to 1.
-                pixelsPerPoint = 1.0f;
-
-                var viewport = UIRUtility.CastToRect(nestedTreeViewport);
-
-                // Flip the scissor rectangle to match the UI Toolkit coordinate system
-                scissor = viewport;
-                scissor.y = scissor.height - scissor.yMax;
-
-                GL.Viewport(viewport);
+                GL.Viewport(UIRUtility.CastToRect(nestedTreeViewport));
             }
 
             var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, -0.001f, 1.001f);
@@ -421,6 +414,7 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 scissor,
+                new Vector2(bounds.xMin, bounds.yMin),
                 pixelsPerPoint,
                 false,
                 textureSlotCount,

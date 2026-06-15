@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsAABB
+    public partial struct PhysicsAABB
     {
         /// <summary>
         /// Create an axis-aligned bounding-box with the specified bounds.
@@ -75,7 +75,7 @@ namespace Unity.U2D.Physics
         /// Normalize the AABB ensuring that <see cref="PhysicsAABB.lowerBound"/> is lower than or equal to <see cref="PhysicsAABB.upperBound"/>.
         /// </summary>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Normalized() => this = normalized;
+        public void Normalize() => this = normalized;
 
         /// <summary>
         /// Check if the specified point overlaps this AABB.

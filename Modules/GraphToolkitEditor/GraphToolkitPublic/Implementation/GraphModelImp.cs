@@ -1007,6 +1007,25 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             // Clear the nodes list so that it is rebuilt next time it is accessed
             m_Nodes = null;
+
+            // Nodes that are re-created by undo/redo (eg: create, duplicate) lose all their non-serialized state (custom title, tooltip, subtitle, color).
+            // To prevent this, we call OnEnable on undo/redo to restore their customization.
+            LockForModification = true;
+            try
+            {
+                foreach (var nodeModel in NodeAndBlockModels)
+                {
+                    // Skip nodes that weren't recreated by undo/redo. They haven't lost their non-serialized state, so we don't need to call OnEnable on them.
+                    if (nodeModel is not IUserNodeModelImp userNodeModelImp || userNodeModelImp.OnEnableCalled)
+                        continue;
+
+                    userNodeModelImp.CallOnEnable();
+                }
+            }
+            finally
+            {
+                LockForModification = false;
+            }
         }
     }
 }

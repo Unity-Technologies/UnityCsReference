@@ -98,8 +98,8 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public BoundsInt(int xMin, int yMin, int zMin, int sizeX, int sizeY, int sizeZ)
         {
-            m_Position = new Vector3Int(xMin, yMin, zMin);
-            m_Size = new Vector3Int(sizeX, sizeY, sizeZ);
+            m_Position.Set(xMin, yMin, zMin);
+            m_Size.Set(sizeX, sizeY, sizeZ);
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -119,66 +119,92 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void SetMinMax(Vector3Int minPosition, Vector3Int maxPosition)
         {
-            xMin = minPosition.x;
-            yMin = minPosition.y;
-            zMin = minPosition.z;
-
-            xMax = maxPosition.x;
-            yMax = maxPosition.y;
-            zMax = maxPosition.z;
+            m_Position = minPosition;
+            m_Size = maxPosition - minPosition;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void SetMinMax(in Vector3Int minPosition, in Vector3Int maxPosition)
         {
-            xMin = minPosition.x;
-            yMin = minPosition.y;
-            zMin = minPosition.z;
-
-            xMax = maxPosition.x;
-            yMax = maxPosition.y;
-            zMax = maxPosition.z;
+            m_Position = minPosition;
+            m_Size = maxPosition - minPosition;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void ClampToBounds(BoundsInt bounds)
         {
-            m_Position.x = Math.Max(Math.Min(bounds.xMax, m_Position.x), bounds.xMin);
-            m_Position.y = Math.Max(Math.Min(bounds.yMax, m_Position.y), bounds.yMin);
-            m_Position.z = Math.Max(Math.Min(bounds.zMax, m_Position.z), bounds.zMin);
+            int bxMax = bounds.xMax;
+            int byMax = bounds.yMax;
+            int bzMax = bounds.zMax;
 
-            m_Size.x = Math.Min(bounds.xMax - m_Position.x, m_Size.x);
-            m_Size.y = Math.Min(bounds.yMax - m_Position.y, m_Size.y);
-            m_Size.z = Math.Min(bounds.zMax - m_Position.z, m_Size.z);
+            int posx = Math.Max(Math.Min(bxMax, m_Position.x), bounds.xMin);
+            int posy = Math.Max(Math.Min(byMax, m_Position.y), bounds.yMin);
+            int posz = Math.Max(Math.Min(bzMax, m_Position.z), bounds.zMin);
+
+            m_Size.Set(
+                Math.Min(bxMax - posx, m_Size.x),
+                Math.Min(byMax - posy, m_Size.y),
+                Math.Min(bzMax - posz, m_Size.z)
+            );
+
+            m_Position.Set(
+                posx,
+                posy,
+                posz
+            );
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void ClampToBounds(in BoundsInt bounds)
         {
-            m_Position.x = Math.Max(Math.Min(bounds.xMax, m_Position.x), bounds.xMin);
-            m_Position.y = Math.Max(Math.Min(bounds.yMax, m_Position.y), bounds.yMin);
-            m_Position.z = Math.Max(Math.Min(bounds.zMax, m_Position.z), bounds.zMin);
+            int bxMax = bounds.xMax;
+            int byMax = bounds.yMax;
+            int bzMax = bounds.zMax;
 
-            m_Size.x = Math.Min(bounds.xMax - m_Position.x, m_Size.x);
-            m_Size.y = Math.Min(bounds.yMax - m_Position.y, m_Size.y);
-            m_Size.z = Math.Min(bounds.zMax - m_Position.z, m_Size.z);
+            int posx = Math.Max(Math.Min(bxMax, m_Position.x), bounds.xMin);
+            int posy = Math.Max(Math.Min(byMax, m_Position.y), bounds.yMin);
+            int posz = Math.Max(Math.Min(bzMax, m_Position.z), bounds.zMin);
+
+            m_Size.Set(
+                Math.Min(bxMax - posx, m_Size.x),
+                Math.Min(byMax - posy, m_Size.y),
+                Math.Min(bzMax - posz, m_Size.z)
+            );
+
+            m_Position.Set(
+                posx,
+                posy,
+                posz
+            );
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Contains(Vector3Int position) => position.x >= xMin
-                && position.y >= yMin
-                && position.z >= zMin
-                && position.x < xMax
-                && position.y < yMax
-                && position.z < zMax;
+        public bool Contains(Vector3Int position)
+        {
+            int posx = position.x;
+            int posy = position.y;
+            int posz = position.z;
+            return posx >= xMin
+                && posy >= yMin
+                && posz >= zMin
+                && posx < xMax
+                && posy < yMax
+                && posz < zMax;
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Contains(in Vector3Int position) => position.x >= xMin
-                && position.y >= yMin
-                && position.z >= zMin
-                && position.x < xMax
-                && position.y < yMax
-                && position.z < zMax;
+        public bool Contains(in Vector3Int position)
+        {
+            int posx = position.x;
+            int posy = position.y;
+            int posz = position.z;
+            return posx >= xMin
+                && posy >= yMin
+                && posz >= zMin
+                && posx < xMax
+                && posy < yMax
+                && posz < zMax;
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly string ToString() => ToString(null, null);
@@ -198,7 +224,7 @@ namespace UnityEngine
         public static bool operator==(BoundsInt lhs, BoundsInt rhs) => lhs.m_Position == rhs.m_Position && lhs.m_Size == rhs.m_Size;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(BoundsInt lhs, BoundsInt rhs) => !(lhs == rhs);
+        public static bool operator!=(BoundsInt lhs, BoundsInt rhs) => !(lhs.m_Position == rhs.m_Position && lhs.m_Size == rhs.m_Size);
 
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

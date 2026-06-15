@@ -372,7 +372,7 @@ namespace UnityEngine
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "GraphicsBuffer_Bindings::InternalSetData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetData(ReadOnlySpan<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern private void InternalSetData(Span<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [System.Security.SecurityCritical] // due to Marshal.SizeOf
         public void GetData(System.Array data)

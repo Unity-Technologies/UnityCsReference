@@ -116,12 +116,12 @@ namespace Unity.U2D.Physics
         public readonly PhysicsJoint.JointType jointType => m_JointHandle.jointType;
 
         /// <summary>
-        /// The second body the joint constrains.
+        /// The first body the joint constrains.
         /// </summary>
         public readonly PhysicsBody bodyA => m_JointHandle.bodyA;
 
         /// <summary>
-        /// A local anchor point on the first body for the constraint.
+        /// The second body the joint constrains.
         /// </summary>
         public readonly PhysicsBody bodyB => m_JointHandle.bodyB;
 
@@ -176,7 +176,7 @@ namespace Unity.U2D.Physics
         public readonly Vector2 currentConstraintForce => m_JointHandle.currentConstraintForce;
 
         /// <summary>
-        /// Get the current constraint torque used by the joint, usually in newtons.
+        /// Get the current constraint torque used by the joint, usually in newton-meters.
         /// </summary>
         public readonly float currentConstraintTorque => m_JointHandle.currentConstraintTorque;
 

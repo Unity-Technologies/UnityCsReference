@@ -54,6 +54,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         void IUserNodeModelImp.CallOnEnable()
         {
+            m_OnEnableCalled = true;
             Node?.OnEnable();
             foreach (var block in GetGraphElementModels())
             {
@@ -66,6 +67,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         void IUserNodeModelImp.CallOnDisable()
         {
+            m_OnEnableCalled = false;
             foreach (var block in GetGraphElementModels())
             {
                 if (block is IUserNodeModelImp userBlockNodeModelImp)

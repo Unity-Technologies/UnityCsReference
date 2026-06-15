@@ -13,6 +13,8 @@ namespace Unity.UIToolkit.Editor;
 internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderExtension
 {
     private const string k_EnableHierarchyIntegrationText = "Enable Hierarchy Integration";
+    private const string k_NewHierarchyRequiredText = "Hierarchy Integration requires the new Hierarchy window, which is currently disabled.";
+    private const string k_EnableNewHierarchyButtonText = "Enable new Hierarchy window";
     private const string k_EnableUIStagesText = "Enable UI Stages";
     private const string k_DisplayOptionsText = "Display Options";
     private const string k_DisplayTypenameOptionsText = "Always Display Typename";
@@ -35,6 +37,11 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
 
     void IUIToolkitSettingsProviderExtension.OnActivate(string searchContext, VisualElement rootElement)
     {
+        BuildSettings(rootElement);
+    }
+
+    internal void BuildSettings(VisualElement rootElement)
+    {
         var header = new Label("UI Authoring");
         header.AddToClassList("uitoolkit-settings-header");
         header.style.paddingTop = 20;
@@ -45,13 +52,26 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
             text = k_EnableHierarchyIntegrationText,
             value = UIToolkitAuthoringSettings.EnableHierarchyIntegration
         };
+        rootElement.Add(hierarchyIntegration);
+
+        var newHierarchyHelpBox = new HelpBox(k_NewHierarchyRequiredText, HelpBoxMessageType.Warning)
+        {
+            buttonText = k_EnableNewHierarchyButtonText
+        };
+        newHierarchyHelpBox.onButtonClicked += () =>
+        {
+            HierarchyPreferences.UseNewHierarchyWindowEnabled = true;
+            UpdateNewHierarchyHelpBox();
+        };
+        rootElement.Add(newHierarchyHelpBox);
 
         hierarchyIntegration.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.EnableHierarchyIntegration = evt.newValue;
+            UpdateNewHierarchyHelpBox();
         });
 
-        rootElement.Add(hierarchyIntegration);
+        UpdateNewHierarchyHelpBox();
 
         var uiStagesIntegration = new Toggle()
         {
@@ -105,6 +125,13 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
 
         rootElement.Add(displayUssClassesOptions);
         displayUssClassesOptions.AddToClassList(Toggle.alignedFieldUssClassName);
+
+        void UpdateNewHierarchyHelpBox()
+        {
+            var show = UIToolkitAuthoringSettings.EnableHierarchyIntegration
+                       && !HierarchyPreferences.UseNewHierarchyWindowEnabled;
+            newHierarchyHelpBox.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
     }
 
     void IUIToolkitSettingsProviderExtension.OnDeactivate()

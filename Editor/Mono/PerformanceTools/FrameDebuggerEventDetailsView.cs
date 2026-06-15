@@ -660,7 +660,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         private void DrawShadingRateImage()
         {
-            if (m_CachedEventData.m_ShadingRateImageTexture == null)
+            if (string.IsNullOrEmpty(m_CachedEventData.m_ShadingRateImageName))
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(m_CachedEventData.m_ShadingRateImageDetails, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle);
@@ -668,23 +668,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
             else
             {
-                // Blit to the copy first
-                if (m_ShadingRateImageTextureCopy == null)
-                {
-                    int renderTargetWidthInt = m_CachedEventData.m_ShadingRateImageTexture.width * ShadingRateInfo.imageTileSize.x;
-                    int renderTargetHeightInt = m_CachedEventData.m_ShadingRateImageTexture.height * ShadingRateInfo.imageTileSize.y;
-                    m_ShadingRateImageTextureCopy = RenderTexture.GetTemporary(renderTargetWidthInt, renderTargetHeightInt);
-
-                    // Convert from the unviewable SRI texture to a visualized color version using Blit
-                    FrameDebuggerHelper.ConvertShadingRateImage(
-                        ref m_CachedEventData.m_ShadingRateImageTexture,
-                        ref m_ShadingRateImageTextureCopy,
-                        m_CachedEventData.m_ShadingRateImageTexture.width,
-                        m_CachedEventData.m_ShadingRateImageTexture.height,
-                        FrameDebuggerWindow.shadingRateLut
-                    );
-                }
-
                 // Set up the Texture Preview
                 Rect previewRect = GUILayoutUtility.GetRect(10, 10);
                 previewRect.width = 10;
@@ -695,16 +678,36 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(m_CachedEventData.m_ShadingRateImageDetails, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle, GUILayout.MinWidth(m_CachedEventData.m_DetailsGUIWidth), GUILayout.MinHeight(60));
                 
-                Texture previewTexture = m_ShadingRateImageTextureCopy;
-                GUI.DrawTexture(previewRect, previewTexture, ScaleMode.StretchToFill, false);
-
-                if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(previewRect))
+                if (m_CachedEventData.m_ShadingRateImageTexture != null)
                 {
-                    PopupWindowWithoutFocus.Show(
-                        previewRect,
-                        new ObjectPreviewPopup(m_ShadingRateImageTextureCopy),
-                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
-                    );
+                    // Blit to the copy first
+                    if (m_ShadingRateImageTextureCopy == null)
+                    {
+                        int renderTargetWidthInt = m_CachedEventData.m_ShadingRateImageTexture.width * ShadingRateInfo.imageTileSize.x;
+                        int renderTargetHeightInt = m_CachedEventData.m_ShadingRateImageTexture.height * ShadingRateInfo.imageTileSize.y;
+                        m_ShadingRateImageTextureCopy = RenderTexture.GetTemporary(renderTargetWidthInt, renderTargetHeightInt);
+
+                        // Convert from the unviewable SRI texture to a visualized color version using Blit
+                        FrameDebuggerHelper.ConvertShadingRateImage(
+                            ref m_CachedEventData.m_ShadingRateImageTexture,
+                            ref m_ShadingRateImageTextureCopy,
+                            m_CachedEventData.m_ShadingRateImageTexture.width,
+                            m_CachedEventData.m_ShadingRateImageTexture.height,
+                            FrameDebuggerWindow.shadingRateLut
+                        );
+                    }
+
+                    Texture previewTexture = m_ShadingRateImageTextureCopy;
+                    GUI.DrawTexture(previewRect, previewTexture, ScaleMode.StretchToFill, false);
+
+                    if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(previewRect))
+                    {
+                        PopupWindowWithoutFocus.Show(
+                            previewRect,
+                            new ObjectPreviewPopup(m_ShadingRateImageTextureCopy),
+                            new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
+                        );
+                    }
                 }
                 EditorGUILayout.EndHorizontal();
             }

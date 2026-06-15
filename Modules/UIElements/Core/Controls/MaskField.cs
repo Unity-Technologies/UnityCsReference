@@ -325,10 +325,10 @@ namespace UnityEngine.UIElements
             }
 
             var mixedString = sb.ToString();
-            var minSize = textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
 
-            // If text doesn't fit, we use "Mixed..."
-            if (float.IsNaN(textElement.resolvedStyle.width) || minSize.x > textElement.resolvedStyle.width)
+            // Off-panel elements must not be measured; fall back to the compact label until laid out.
+            if (textElement.panel == null || float.IsNaN(textElement.resolvedStyle.width)
+                || textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x > textElement.resolvedStyle.width)
             {
                 mixedString = s_MixedLabel;
             }

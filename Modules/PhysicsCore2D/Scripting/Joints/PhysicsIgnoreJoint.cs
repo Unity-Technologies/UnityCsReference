@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -117,12 +118,12 @@ namespace Unity.U2D.Physics
         public readonly PhysicsJoint.JointType jointType => m_JointHandle.jointType;
 
         /// <summary>
-        /// The second body the joint constrains.
+        /// The first body the joint constrains.
         /// </summary>
         public readonly PhysicsBody bodyA => m_JointHandle.bodyA;
 
         /// <summary>
-        /// A local anchor point on the first body for the constraint.
+        /// The second body the joint constrains.
         /// </summary>
         public readonly PhysicsBody bodyB => m_JointHandle.bodyB;
 
@@ -130,36 +131,42 @@ namespace Unity.U2D.Physics
         /// This is unused in this specific joint.
         /// Typically this is the local anchor frame constraint relative to bodyA's origin.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly PhysicsTransform localAnchorA { get => m_JointHandle.localAnchorA; set => m_JointHandle.localAnchorA = value; }
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this is the local anchor frame constraint relative to bodyB's origin.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly PhysicsTransform localAnchorB { get => m_JointHandle.localAnchorB; set => m_JointHandle.localAnchorB = value; }
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this is the force threshold beyond which a joint event will be produced.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float forceThreshold { get => m_JointHandle.forceThreshold; set => m_JointHandle.forceThreshold = value; }
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this is the torque threshold beyond which a joint event will be produced.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float torqueThreshold { get => m_JointHandle.torqueThreshold; set => m_JointHandle.torqueThreshold = value; }
 
         /// <summary>
         /// This is unused in this specific joint and is always false.
         /// Typically this gets whether the shapes on the pair of bodies can come into contact.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly bool collideConnected { get => m_JointHandle.collideConnected; set => m_JointHandle.collideConnected = value; }
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this would control the joint stiffness frequency, in cycles per second.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float tuningFrequency { get => m_JointHandle.tuningFrequency; set => m_JointHandle.tuningFrequency = value; }
 
         /// <summary>
@@ -167,12 +174,14 @@ namespace Unity.U2D.Physics
         /// Typically this would control the joint stiffness damping, non-dimensional.
         /// Use 1 for critical damping.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float tuningDamping { get => m_JointHandle.tuningDamping; set => m_JointHandle.tuningDamping = value; }
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this would control the scaling of the joint drawing.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float drawScale { get => m_JointHandle.drawScale; set => m_JointHandle.drawScale = value; }
 
         /// <summary>
@@ -184,24 +193,28 @@ namespace Unity.U2D.Physics
         /// This is unused in this specific joint.
         /// Typically this would get the current constraint force used by the joint, usually in newtons.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly Vector2 currentConstraintForce => m_JointHandle.currentConstraintForce;
 
         /// <summary>
         /// This is unused in this specific joint.
-        /// Typically this would get the current constraint torque used by the joint, usually in newtons.
+        /// Typically this would get the current constraint torque used by the joint, usually in newton-meters.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float currentConstraintTorque => m_JointHandle.currentConstraintTorque;
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this would get the current linear separation error for this joint.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float currentLinearSeparationError => m_JointHandle.currentLinearSeparationError;
 
         /// <summary>
         /// This is unused in this specific joint.
         /// Typically this would get the current angular separation error for this joint.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public readonly float currentAngularSeparationError => m_JointHandle.currentAngularSeparationError;
 
         /// <summary>

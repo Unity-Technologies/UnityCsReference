@@ -208,10 +208,15 @@ namespace UnityEditor
 
         void Update()
         {
-            state?.Update();
+            // AnimationWindowState has some data that still depends on IMGUI
+            // evaluation and is initialized just in time during rendering.
+            // Make sure AnimEditor has been initialized before updating
+            // AnimationWindowState and AnimEditor.
+            if (m_AnimEditor == null || !m_AnimEditor.initialized)
+                return;
 
-            if (m_AnimEditor != null)
-                m_AnimEditor.Update();
+            state?.Update();
+            m_AnimEditor.Update();
 
             hasUnsavedChanges = selection?.hasUnsavedChanges ?? false;
 

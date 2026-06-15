@@ -203,6 +203,10 @@ namespace Unity.Hierarchy
             if (Bound)
                 throw new InvalidOperationException("Cannot bind a hierarchy view item that is already bound.");
 
+            //Only refresh styling and bind elements when they are attached to a panel, otherwise some styling properties are not defined
+            if (panel == null)
+                return;
+
             // Setup object
             m_Node = node;
             m_Handler = view.ViewModel.GetNodeTypeHandler(in node);

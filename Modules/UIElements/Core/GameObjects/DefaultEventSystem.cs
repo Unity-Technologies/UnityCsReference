@@ -63,7 +63,7 @@ namespace UnityEngine.UIElements
             IgnoreIfAppNotFocused
         }
 
-        private int m_UpdateFrameCount = 0;
+        internal int m_UpdateFrameCount = 0;
         public void Update(UpdateMode updateMode = UpdateMode.Always)
         {
             if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)

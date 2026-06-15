@@ -589,14 +589,20 @@ namespace UnityEngine
             // Returns false in the presence of NaN values.
             float diff_x = lhs.x - rhs.x;
             float diff_y = lhs.y - rhs.y;
-            return (diff_x * diff_x + diff_y * diff_y) < kEpsilon * kEpsilon;
+            float sqrmag = diff_x * diff_x + diff_y * diff_y;
+            return sqrmag < kEpsilon * kEpsilon;
         }
 
         // Returns true if vectors are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Vector2 lhs, Vector2 rhs) =>
+        public static bool operator!=(Vector2 lhs, Vector2 rhs)
+        {
             // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            float diff_x = lhs.x - rhs.x;
+            float diff_y = lhs.y - rhs.y;
+            float sqrmag = diff_x * diff_x + diff_y * diff_y;
+            return !(sqrmag < kEpsilon * kEpsilon);
+        }
 
 
         // Converts a [[Vector3]] to a Vector2.

@@ -79,13 +79,13 @@ namespace UnityEngine
 
         private static readonly Rect kZero = new Rect(0.0f, 0.0f, 0.0f, 0.0f);
 
-        static public Rect zero
+        public static Rect zero
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => kZero;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        static public Rect MinMaxRect(float xmin, float ymin, float xmax, float ymax) => new Rect() { m_XMin = xmin, m_YMin = ymin, m_Width = xmax - xmin, m_Height = ymax - ymin };
+        public static Rect MinMaxRect(float xmin, float ymin, float xmax, float ymax) => new Rect() { m_XMin = xmin, m_YMin = ymin, m_Width = xmax - xmin, m_Height = ymax - ymin };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Set(float x, float y, float width, float height)
@@ -128,7 +128,7 @@ namespace UnityEngine
 
         public Vector2 max
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => new Vector2() { x = xMax, y = yMax };
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => new Vector2() { x = m_XMin + m_Width, y = m_YMin + m_Height };
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { xMax = value.x; yMax = value.y; }
         }
 
@@ -153,37 +153,37 @@ namespace UnityEngine
         public float xMin
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_XMin;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { float oldxmax = xMax; m_XMin = value; m_Width = oldxmax - m_XMin; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { float oldxmax = m_XMin + m_Width; m_XMin = value; m_Width = oldxmax - m_XMin; }
         }
         public float yMin
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_YMin;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { float oldymax = yMax; m_YMin = value; m_Height = oldymax - m_YMin; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { float oldymax = m_YMin + m_Height; m_YMin = value; m_Height = oldymax - m_YMin; }
         }
         public float xMax
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Width + m_XMin;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_XMin + m_Width;
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Width = value - m_XMin;
         }
         public float yMax
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Height + m_YMin;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_YMin + m_Height;
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Height = value - m_YMin;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Contains(Vector2 point) => (point.x >= m_XMin) && (point.x < xMax) && (point.y >= m_YMin) && (point.y < yMax);
+        public readonly bool Contains(Vector2 point) => (point.x >= m_XMin) && (point.x < (m_XMin + m_Width)) && (point.y >= m_YMin) && (point.y < (m_YMin + m_Height));
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Contains(in Vector2 point) => (point.x >= m_XMin) && (point.x < xMax) && (point.y >= m_YMin) && (point.y < yMax);
-
-        // Returns true if the /x/ and /y/ components of /point/ is a point inside this rectangle.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Contains(Vector3 point) => (point.x >= m_XMin) && (point.x < xMax) && (point.y >= m_YMin) && (point.y < yMax);
+        public readonly bool Contains(in Vector2 point) => (point.x >= m_XMin) && (point.x < (m_XMin + m_Width)) && (point.y >= m_YMin) && (point.y < (m_YMin + m_Height));
 
         // Returns true if the /x/ and /y/ components of /point/ is a point inside this rectangle.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Contains(in Vector3 point) => (point.x >= m_XMin) && (point.x < xMax) && (point.y >= m_YMin) && (point.y < yMax);
+        public readonly bool Contains(Vector3 point) => (point.x >= m_XMin) && (point.x < (m_XMin + m_Width)) && (point.y >= m_YMin) && (point.y < (m_YMin + m_Height));
+
+        // Returns true if the /x/ and /y/ components of /point/ is a point inside this rectangle.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Contains(in Vector3 point) => (point.x >= m_XMin) && (point.x < (m_XMin + m_Width)) && (point.y >= m_YMin) && (point.y < (m_YMin + m_Height));
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool Contains(Vector3 point, bool allowInverse)
@@ -193,8 +193,8 @@ namespace UnityEngine
                 return Contains(in point);
             }
 
-            float xmax = xMax;
-            float ymax = yMax;
+            float xmax = m_XMin + m_Width;
+            float ymax = m_YMin + m_Height;
 
             bool xAxis = m_Width < 0f && (point.x <= m_XMin) && (point.x > xmax) ||
                 m_Width >= 0f && (point.x >= m_XMin) && (point.x < xmax);
@@ -211,8 +211,8 @@ namespace UnityEngine
                 return Contains(in point);
             }
 
-            float xmax = xMax;
-            float ymax = yMax;
+            float xmax = m_XMin + m_Width;
+            float ymax = m_YMin + m_Height;
 
             bool xAxis = m_Width < 0f && (point.x <= m_XMin) && (point.x > xmax) ||
                 m_Width >= 0f && (point.x >= m_XMin) && (point.x < xmax);
@@ -221,99 +221,66 @@ namespace UnityEngine
             return xAxis && yAxis;
         }
 
-        // Swaps min and max if min was greater than max.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        private static Rect OrderMinMax(Rect rect)
-        {
-            float xmax = rect.xMax;
-            float ymax = rect.yMax;
+        public readonly bool Overlaps(Rect other) => (other.m_XMin + other.m_Width) > m_XMin && other.m_XMin < (m_XMin + m_Width) && (other.m_YMin + other.m_Height) > m_YMin && other.m_YMin < (m_YMin + m_Height);
 
-            return MinMaxRect(
-                Mathf.Min(rect.m_XMin, xmax),
-                Mathf.Min(rect.m_YMin, ymax),
-                Mathf.Max(rect.m_XMin, xmax),
-                Mathf.Max(rect.m_YMin, ymax)
-            );
-        }
-
-        // Swaps min and max if min was greater than max.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        private static Rect OrderMinMax(in Rect rect)
-        {
-            float xmax = rect.xMax;
-            float ymax = rect.yMax;
+        public readonly bool Overlaps(in Rect other) => (other.m_XMin + other.m_Width) > m_XMin && other.m_XMin < (m_XMin + m_Width) && (other.m_YMin + other.m_Height) > m_YMin && other.m_YMin < (m_YMin + m_Height);
 
-            return MinMaxRect(
-                Mathf.Min(rect.m_XMin, xmax),
-                Mathf.Min(rect.m_YMin, ymax),
-                Mathf.Max(rect.m_XMin, xmax),
-                Mathf.Max(rect.m_YMin, ymax)
-            );
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        private static bool UnorderedOverlaps(in Rect lhs, in Rect rhs)
+        {
+            float lhsXMin = lhs.m_XMin;
+            float lhsYMin = lhs.m_YMin;
+            float lhsXMax = lhsXMin + lhs.m_Width;
+            float lhsYMax = lhsYMin + lhs.m_Height;
+
+            float rhsXMin = rhs.m_XMin;
+            float rhsYMin = rhs.m_YMin;
+            float rhsXMax = rhsXMin + rhs.m_Width;
+            float rhsYMax = rhsYMin + rhs.m_Height;
+
+            return Mathf.Max(rhsXMin, rhsXMax) > Mathf.Min(lhsXMin, lhsXMax) &&
+                   Mathf.Min(rhsXMin, rhsXMax) < Mathf.Max(lhsXMin, lhsXMax) &&
+                   Mathf.Max(rhsYMin, rhsYMax) > Mathf.Min(lhsYMin, lhsYMax) &&
+                   Mathf.Min(rhsYMin, rhsYMax) < Mathf.Max(lhsYMin, lhsYMax);
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Overlaps(Rect other) => other.xMax > m_XMin && other.m_XMin < xMax && other.yMax > m_YMin && other.m_YMin < yMax;
+        public readonly bool Overlaps(Rect other, bool allowInverse) => allowInverse ? UnorderedOverlaps(in this, in other) : Overlaps(in other);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Overlaps(in Rect other) => other.xMax > m_XMin && other.m_XMin < xMax && other.yMax > m_YMin && other.m_YMin < yMax;
-
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Overlaps(Rect other, bool allowInverse)
-        {
-            if (allowInverse)
-            {
-                other = OrderMinMax(in other);
-                return OrderMinMax(in this).Overlaps(in other);
-            }
-            else
-            {
-                return Overlaps(in other);
-            }
-        }
-
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Overlaps(in Rect other, bool allowInverse)
-        {
-            if (allowInverse)
-            {
-                Rect otherRect = OrderMinMax(in other);
-                return OrderMinMax(in this).Overlaps(in otherRect);
-            }
-            else
-            {
-                return Overlaps(in other);
-            }
-        }
+        public readonly bool Overlaps(in Rect other, bool allowInverse) => allowInverse ? UnorderedOverlaps(in this, in other) : Overlaps(in other);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 NormalizedToPoint(Rect rectangle, Vector2 normalizedRectCoordinates) => new Vector2() {
-                x = Mathf.Lerp(rectangle.m_XMin, rectangle.xMax, normalizedRectCoordinates.x),
-                y = Mathf.Lerp(rectangle.m_YMin, rectangle.yMax, normalizedRectCoordinates.y)
+                x = Mathf.Lerp(rectangle.m_XMin, rectangle.m_XMin + rectangle.m_Width, normalizedRectCoordinates.x),
+                y = Mathf.Lerp(rectangle.m_YMin, rectangle.m_YMin + rectangle.m_Height, normalizedRectCoordinates.y)
             };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 NormalizedToPoint(in Rect rectangle, in Vector2 normalizedRectCoordinates) => new Vector2() {
-                x = Mathf.Lerp(rectangle.m_XMin, rectangle.xMax, normalizedRectCoordinates.x),
-                y = Mathf.Lerp(rectangle.m_YMin, rectangle.yMax, normalizedRectCoordinates.y)
+                x = Mathf.Lerp(rectangle.m_XMin, rectangle.m_XMin + rectangle.m_Width, normalizedRectCoordinates.x),
+                y = Mathf.Lerp(rectangle.m_YMin, rectangle.m_YMin + rectangle.m_Height, normalizedRectCoordinates.y)
             };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 PointToNormalized(Rect rectangle, Vector2 point) => new Vector2() {
-                x = Mathf.InverseLerp(rectangle.m_XMin, rectangle.xMax, point.x),
-                y = Mathf.InverseLerp(rectangle.m_YMin, rectangle.yMax, point.y)
+                x = Mathf.InverseLerp(rectangle.m_XMin, rectangle.m_XMin + rectangle.m_Width, point.x),
+                y = Mathf.InverseLerp(rectangle.m_YMin, rectangle.m_YMin + rectangle.m_Height, point.y)
             };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector2 PointToNormalized(in Rect rectangle, in Vector2 point) => new Vector2() {
-                x = Mathf.InverseLerp(rectangle.m_XMin, rectangle.xMax, point.x),
-                y = Mathf.InverseLerp(rectangle.m_YMin, rectangle.yMax, point.y)
+                x = Mathf.InverseLerp(rectangle.m_XMin, rectangle.m_XMin + rectangle.m_Width, point.x),
+                y = Mathf.InverseLerp(rectangle.m_YMin, rectangle.m_YMin + rectangle.m_Height, point.y)
             };
 
         // Returns true if the rectangles are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(Rect lhs, Rect rhs) =>
             // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            !(lhs.m_XMin == rhs.m_XMin && lhs.m_YMin == rhs.m_YMin && lhs.m_Width == rhs.m_Width && lhs.m_Height == rhs.m_Height);
 
         // Returns true if the rectangles are the same.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

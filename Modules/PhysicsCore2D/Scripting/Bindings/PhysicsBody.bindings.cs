@@ -75,6 +75,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsBody::GetEnabled", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetEnabled(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetFastRotationAllowed", IsThreadSafe = true)] extern internal static void PhysicsBody_SetFastRotationAllowed(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::GetFastRotationAllowed", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetFastRotationAllowed(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetContactRecyclingAllowed", IsThreadSafe = true)] extern internal static void PhysicsBody_SetContactRecyclingAllowed(PhysicsBody body, bool flag);
+        [NativeMethod(Name = "PhysicsBody::GetContactRecyclingAllowed", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetContactRecyclingAllowed(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetFastCollisionsAllowed", IsThreadSafe = true)] extern internal static void PhysicsBody_SetFastCollisionsAllowed(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::GetFastCollisionsAllowed", IsThreadSafe = true)] extern internal static bool PhysicsBody_GetFastCollisionsAllowed(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::ApplyForce", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyForce(PhysicsBody body, Vector2 force, Vector2 point, bool wake);

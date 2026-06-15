@@ -907,7 +907,8 @@ namespace UnityEditor
                 }
                 else
                 {
-                    EditorUtility.RevealInFinder(entry.libraryPath);
+                    var fullPath = Path.GetFullPath(entry.libraryPath);
+                    EditorUtility.RevealInFinder(fullPath);
                 }
             }
         }
@@ -1725,7 +1726,7 @@ namespace UnityEditor
         {
             return index switch
             {
-                0 => element.libraryPath,
+                0 => Path.GetFullPath(element.libraryPath),
                 1 => element.extension,
                 2 => GetAssetFileSize(element),
                 _ => "",

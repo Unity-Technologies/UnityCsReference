@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField, DontCreateProperty]
-        private FilterParameterDeclaration[] m_Parameters;
+        private FilterParameterDeclaration[] m_Parameters = Array.Empty<FilterParameterDeclaration>();
 
         /// <summary>The description of the function parameters.</summary>
         /// <remarks>A maximum of 4 parameters is supported. Extra parameters will be ignored.</remarks>
@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField, DontCreateProperty]
-        private PostProcessingPass[] m_Passes;
+        private PostProcessingPass[] m_Passes = Array.Empty<PostProcessingPass>();
 
         /// <summary>The post-processing effects applied by the filter function.</summary>
         [CreateProperty]

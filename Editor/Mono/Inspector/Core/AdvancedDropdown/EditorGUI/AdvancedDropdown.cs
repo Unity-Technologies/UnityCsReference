@@ -41,10 +41,10 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             m_WindowInstance = ScriptableObject.CreateInstance<AdvancedDropdownWindow>();
-            if (minimumSize != Vector2.zero)
-                m_WindowInstance.minSize = minimumSize;
-            if (maximumSize!= Vector2.zero)
-                m_WindowInstance.maxSize = maximumSize;
+            // Forward bounds as nullable so the window can distinguish "caller didn't set"
+            // (use defaults) from "caller set to the EditorWindow default of (50, 50)".
+            m_WindowInstance.callerMinSize = minimumSize != Vector2.zero ? minimumSize : (Vector2?)null;
+            m_WindowInstance.callerMaxSize = maximumSize != Vector2.zero ? maximumSize : (Vector2?)null;
             m_WindowInstance.state = m_State;
             m_WindowInstance.dataSource = m_DataSource;
             m_WindowInstance.gui = m_Gui;

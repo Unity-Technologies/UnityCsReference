@@ -88,7 +88,7 @@ namespace UnityEngine
         public readonly float magnitude
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get => Mathf.Sqrt((float)(m_X * m_X + m_Y * m_Y));
+            get => (float)Math.Sqrt(m_X * m_X + m_Y * m_Y);
         }
 
         // Returns the squared length of this vector (RO).
@@ -120,19 +120,19 @@ namespace UnityEngine
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2Int Min(Vector2Int lhs, Vector2Int rhs) => new Vector2Int(Mathf.Min(lhs.m_X, rhs.m_X), Mathf.Min(lhs.m_Y, rhs.m_Y));
+        public static Vector2Int Min(Vector2Int lhs, Vector2Int rhs) => new Vector2Int(Math.Min(lhs.m_X, rhs.m_X), Math.Min(lhs.m_Y, rhs.m_Y));
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2Int Min(in Vector2Int lhs, in Vector2Int rhs) => new Vector2Int(Mathf.Min(lhs.m_X, rhs.m_X), Mathf.Min(lhs.m_Y, rhs.m_Y));
+        public static Vector2Int Min(in Vector2Int lhs, in Vector2Int rhs) => new Vector2Int(Math.Min(lhs.m_X, rhs.m_X), Math.Min(lhs.m_Y, rhs.m_Y));
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2Int Max(Vector2Int lhs, Vector2Int rhs) => new Vector2Int(Mathf.Max(lhs.m_X, rhs.m_X), Mathf.Max(lhs.m_Y, rhs.m_Y));
+        public static Vector2Int Max(Vector2Int lhs, Vector2Int rhs) => new Vector2Int(Math.Max(lhs.m_X, rhs.m_X), Math.Max(lhs.m_Y, rhs.m_Y));
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2Int Max(in Vector2Int lhs, in Vector2Int rhs) => new Vector2Int(Mathf.Max(lhs.m_X, rhs.m_X), Mathf.Max(lhs.m_Y, rhs.m_Y));
+        public static Vector2Int Max(in Vector2Int lhs, in Vector2Int rhs) => new Vector2Int(Math.Max(lhs.m_X, rhs.m_X), Math.Max(lhs.m_Y, rhs.m_Y));
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -234,7 +234,7 @@ namespace UnityEngine
         public static bool operator==(Vector2Int lhs, Vector2Int rhs) => lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Vector2Int lhs, Vector2Int rhs) => !(lhs == rhs);
+        public static bool operator!=(Vector2Int lhs, Vector2Int rhs) => !(lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y);
 
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

@@ -450,7 +450,7 @@ namespace Unity.U2D.Physics
         /// <param name="curveStride">The curve stride is only used when a non-zero radius is used. It controls how many vertices are used to approximate the curved polygon geometry. Lower values produce more vertices whereas larger values produce fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
-        public unsafe readonly LayerHandle AddLayer(ReadOnlySpan<PolygonGeometry> geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
+        public readonly LayerHandle AddLayer(ReadOnlySpan<PolygonGeometry> geometry, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
         {
             return PhysicsComposer_AddLayer(this, new Layer(geometry, transform, operation, order, curveStride, reverseWinding));
         }
@@ -482,7 +482,7 @@ namespace Unity.U2D.Physics
         /// <param name="curveStride">The curve stride is used to approximately the curved geometry but is applied according to the specific shape geometry type. Lower values produce more vertices, larger values fewer vertices. The valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0] although values over 0.3 tend to produce relatively poor results.</param>
         /// <param name="reverseWinding">Whether the winding should be reversed. Typically winding is generated anti-clockwise, reversed winding is therefore clockwise.</param>
         /// <returns>A handle to the new layer.</returns>
-        public unsafe readonly LayerHandle AddLayer(ReadOnlySpan<PhysicsShape> shapes, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
+        public readonly LayerHandle AddLayer(ReadOnlySpan<PhysicsShape> shapes, PhysicsTransform transform, Operation operation = Operation.OR, int order = 0, float curveStride = DefaultCurveStride, bool reverseWinding = false)
         {
             return PhysicsComposer_AddLayer(this, new Layer(shapes, transform, operation, order, curveStride, reverseWinding));
         }

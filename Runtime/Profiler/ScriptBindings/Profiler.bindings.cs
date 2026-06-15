@@ -328,7 +328,7 @@ namespace UnityEngine.Profiling
 
             var elemSize = UnsafeUtility.SizeOf(elementType);
             int dataLen = data.Length; 
-            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), data.Length, UnsafeUtility.SizeOf(elementType), true);
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), dataLen, elemSize, true);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -362,7 +362,7 @@ namespace UnityEngine.Profiling
 
             var elemSize = UnsafeUtility.SizeOf(elementType);
             int dataLen = data.Length;
-            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), data.Length, UnsafeUtility.SizeOf(elementType), false);
+            Internal_EmitGlobalMetaData_Span(&id, 16, tag, UnsafeUtility.GetByteSpanFromArray(data, dataLen, elemSize), dataLen, elemSize, false);
         }
 
         [Conditional("ENABLE_PROFILER")]
@@ -386,7 +386,7 @@ namespace UnityEngine.Profiling
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Span", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]
-        static extern unsafe void Internal_EmitGlobalMetaData_Span(void* id, int idLen, int tag, ReadOnlySpan<byte> data, int count, int elementSize, bool frameData);
+        static extern unsafe void Internal_EmitGlobalMetaData_Span(void* id, int idLen, int tag, Span<byte> data, int count, int elementSize, bool frameData);
 
         [NativeMethod(Name = "ProfilerBindings::Internal_EmitGlobalMetaData_Native", IsFreeFunction = true, IsThreadSafe = true)]
         [NativeConditional("ENABLE_PROFILER")]

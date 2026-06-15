@@ -55,7 +55,7 @@ namespace UnityEngine.TextCore.LowLevel
         RASTER_MODE_BITMAP      = 0x10,
         RASTER_MODE_SDF         = 0x20,
         RASTER_MODE_SDFAA       = 0x40,
-        // Reserved             = 0x80,
+        RASTER_MODE_STRONG      = 0x80,
 
         RASTER_MODE_MSDF        = 0x100,
         RASTER_MODE_MSDFA       = 0x200,
@@ -149,6 +149,16 @@ namespace UnityEngine.TextCore.LowLevel
         SDF32 = GlyphRenderMode.SDF32,
         SDFAA_HINTED = GlyphRenderMode.SDFAA_HINTED,
         SDFAA = GlyphRenderMode.SDFAA
+    }
+
+    /// <summary>
+    /// Editor-internal render modes that complement <see cref="GlyphRenderMode"/> but must not be exposed publicly.
+    /// </summary>
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
+    internal static class GlyphRenderModeInternal
+    {
+        // Only used by the editor's bitmap mode alongside the OS settings to disable the font smoothing.
+        public const GlyphRenderMode RASTER_HINTED_STRONG = (GlyphRenderMode)(GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_STRONG | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X);
     }
 
     /// <summary>
@@ -510,6 +520,9 @@ namespace UnityEngine.TextCore.LowLevel
 
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static extern bool IsColorFontFace();
+
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule", "UnityEditor.TextCoreTextEngineModule", "Unity.FontEngine.Editor.Tests")]
+        internal static extern bool IsVariableFontFace();
 
 
         /// <summary>

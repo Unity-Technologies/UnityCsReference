@@ -960,7 +960,7 @@ namespace UnityEngine.UIElements
 
             p.targetTexture = targetTexture;
             p.targetDisplay = targetDisplay;
-            p.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
+            p.SetDrawsInCameras(renderMode == PanelRenderMode.WorldSpace);
             p.pixelsPerUnit = pixelsPerUnit;
             p.isFlat = renderMode != PanelRenderMode.WorldSpace;
             p.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};

@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
     [HelpURL("ui-systems/panel-renderer-component")]
     [AddComponentMenu("UI Toolkit/Panel Renderer (UI Toolkit)")]
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/PanelRenderer.h")]
+    [ExtensionOfNativeClass]
     public sealed class PanelRenderer : Renderer, IPanelComponent
     {
         #region Fields

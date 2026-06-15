@@ -150,6 +150,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal GraphicsFormat m_RenderTargetFormat;
         internal UnityEngine.Object m_RealShader;
         internal UnityEngine.Object m_OriginalShader;
+        internal string m_ShadingRateImageName;
         internal Texture m_ShadingRateImageTexture;
 
         internal string copyString
@@ -298,6 +299,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_RenderTargetHeight = curEventData.m_RenderTargetHeight;
                 m_IsValid = m_IsComputeEvent || m_IsRayTracingEvent;
             }
+
+            if (!string.IsNullOrEmpty(curEventData.m_ShadingRateImageName))
+                m_ShadingRateImageName = curEventData.m_ShadingRateImageName;
             if (curEventData.m_ShadingRateImageTexture != null)
                 m_ShadingRateImageTexture = curEventData.m_ShadingRateImageTexture;
         }
@@ -699,6 +703,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private void Clear()
         {
             FrameDebuggerHelper.DestroyTexture(ref m_RenderTargetRenderTexture);
+            m_ShadingRateImageName = string.Empty;
             m_ShadingRateImageTexture = null;
             m_StringBuilder.Clear();
             m_DetailsStringBuilder.Clear();
@@ -1042,11 +1047,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", passName);
 
             // Set variable rate shading image details
-            if (FrameDebuggerHelper.IsVRSSupported())
+            if (FrameDebuggerHelper.IsVRSSupported() || !string.IsNullOrEmpty(curEventData.m_ShadingRateImageName))
             {
                 m_StringBuilder.Clear();
                 m_StringBuilder.AppendFormat(k_TwoColumnFormat, "Base Shading Rate", $"{(ShadingRateFragmentSize)curEventData.m_ShadingRateFragmentSize}");
-                if (curEventData.m_ShadingRateImageTexture != null)
+                if (!string.IsNullOrEmpty(curEventData.m_ShadingRateImageName))
                 {
                     ShadingRateCombiner primCombiner = (ShadingRateCombiner)curEventData.m_ShadingRatePrimitiveCombiner;
                     ShadingRateCombiner fragCombiner = (ShadingRateCombiner)curEventData.m_ShadingRateFragmentCombiner;
@@ -1054,7 +1059,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     m_StringBuilder.AppendFormat(k_TwoColumnFormat, "ShadingRateCombiners", $"{primCombiner} / {fragCombiner}");
                     m_StringBuilder.AppendLine();
                     // Custom format to reserve space for the SRI texture preview
-                    m_StringBuilder.AppendFormat("{0, -25}{1, -32}", "Shading Rate Image", curEventData.m_ShadingRateImageTexture.name);
+                    m_StringBuilder.AppendFormat(curEventData.m_ShadingRateImageTexture ? "{0, -25}{1, -32}" : k_TwoColumnFormat, "Shading Rate Image", curEventData.m_ShadingRateImageName);
                 }
                 m_ShadingRateImageDetails = m_StringBuilder.ToString();
             }

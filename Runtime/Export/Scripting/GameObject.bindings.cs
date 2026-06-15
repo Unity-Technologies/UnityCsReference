@@ -101,7 +101,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentsInternal", HasExplicitThis = true, ThrowsException = true)]
-        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<Component> resultList);
+        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, object resultList);
 
         private System.Array GetComponentsInternal<T>(bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, [Out] List<T> resultList)
         {

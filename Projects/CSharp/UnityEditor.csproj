@@ -8028,8 +8028,8 @@
     <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\HierarchySceneHandler.bindings.cs">
       <Link>Modules\HierarchyEditor\ScriptBindings\HierarchySceneHandler.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\HierarchySubSceneHandler.bindings.cs">
-      <Link>Modules\HierarchyEditor\ScriptBindings\HierarchySubSceneHandler.bindings.cs</Link>
+    <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\HierarchySubSceneAuthoringHandler.bindings.cs">
+      <Link>Modules\HierarchyEditor\ScriptBindings\HierarchySubSceneAuthoringHandler.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\HierarchyEditor\ScriptBindings\HierarchyWindowManager.bindings.cs">
       <Link>Modules\HierarchyEditor\ScriptBindings\HierarchyWindowManager.bindings.cs</Link>
@@ -10598,6 +10598,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs">
       <Link>Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Controls\LayerMaskField64.cs">
+      <Link>Modules\PhysicsCore2DEditor\Controls\LayerMaskField64.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2DEditor\Menu\PhysicsCore2DMenuItems.cs">
       <Link>Modules\PhysicsCore2DEditor\Menu\PhysicsCore2DMenuItems.cs</Link>

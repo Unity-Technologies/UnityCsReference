@@ -394,9 +394,16 @@ namespace UnityEngine
 
         // Returns true if vectors are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Vector4 lhs, Vector4 rhs) =>
+        public static bool operator!=(Vector4 lhs, Vector4 rhs)
+        {
             // Returns true in the presence of NaN values.
-            !(lhs == rhs);
+            float diffx = lhs.x - rhs.x;
+            float diffy = lhs.y - rhs.y;
+            float diffz = lhs.z - rhs.z;
+            float diffw = lhs.w - rhs.w;
+            float sqrmag = diffx * diffx + diffy * diffy + diffz * diffz + diffw * diffw;
+            return !(sqrmag < kEpsilon * kEpsilon);
+        }
 
 
         // Converts a [[Vector3]] to a Vector4.

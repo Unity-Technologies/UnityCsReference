@@ -108,6 +108,7 @@ namespace UnityEditor.TextCore.Text
         const string k_FontAssetCreationSettingsContainerKey = "TextMeshPro.FontAssetCreator.RecentFontAssetCreationSettings.Container";
         const string k_FontAssetCreationSettingsCurrentIndexKey = "TextMeshPro.FontAssetCreator.RecentFontAssetCreationSettings.CurrentIndex";
         const float k_TwoColumnControlsWidth = 335f;
+        const string k_VariableFontUnsupportedMessage = "Variable fonts are not supported by the Font Asset Creator. Please choose a static font.";
 
         // Diagnostics
         System.Diagnostics.Stopwatch m_StopWatch;
@@ -733,6 +734,11 @@ namespace UnityEditor.TextCore.Text
                         {
                             Debug.LogWarning("Unable to load font face for [" + m_SourceFont.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings. You may disable it after creating the static Font Asset.", m_SourceFont);
                         }
+                        else if (FontEngine.IsVariableFontFace())
+                        {
+                            Debug.LogWarning(k_VariableFontUnsupportedMessage, m_SourceFont);
+                            errorCode = FontEngineError.Invalid_File_Format;
+                        }
                     }
 
                     // Define an array containing the characters we will render.
@@ -1218,7 +1224,9 @@ namespace UnityEditor.TextCore.Text
             m_SavedFontAtlas = null;
 
             m_OutputFeedback = string.Empty;
-            m_WarningMessage = string.Empty;
+
+            if (!m_IsGenerationDisabled)
+                m_WarningMessage = string.Empty;
         }
 
         /// <summary>
@@ -1227,8 +1235,22 @@ namespace UnityEditor.TextCore.Text
         /// <returns></returns>
         string[] GetFontFaces()
         {
+            if (m_IsGenerationDisabled)
+            {
+                m_WarningMessage = string.Empty;
+                m_IsGenerationDisabled = false;
+            }
+
             if (FontEngine.LoadFontFace(m_SourceFont, 0, 0) != FontEngineError.Success)
                 return Array.Empty<string>();
+
+            if (FontEngine.IsVariableFontFace())
+            {
+                m_WarningMessage = k_VariableFontUnsupportedMessage;
+                m_IsGenerationDisabled = true;
+                return Array.Empty<string>();
+            }
+
             return FontEngine.GetFontFaces();
         }
 

@@ -604,6 +604,8 @@ namespace UnityEditor
             if (menuDescriptor == null)
                 return;
 
+            EditorUtility.Internal_UpdateAllMenus();
+
             GenericMenu menu = new GenericMenu();
             BuildContextMenu(menuDescriptor, menuId, menu);
             menu.ShowAsContext();
@@ -683,7 +685,7 @@ namespace UnityEditor
                         {
                             // We are re-using a default menu item
                             menuItemId = JsonUtils.JsonReadString(menu, k_MenuKeyItemId, menuItemId);
-                            if (EditorApplication.ValidateMenuItem(menuItemId))
+                            if (Menu.MenuItemExists(menuItemId) && EditorApplication.ValidateMenuItem(menuItemId))
                                 contextMenu.AddItem(new GUIContent(fullMenuName), false, () => EditorApplication.ExecuteMenuItem(menuItemId));
                             else
                                 contextMenu.AddDisabledItem(new GUIContent(fullMenuName));

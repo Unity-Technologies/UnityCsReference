@@ -246,6 +246,14 @@ namespace UnityEditor
                     throw new ArgumentException("Non-development build cannot allow auto-connecting the profiler. Either add the Development build option, or remove the ConnectWithProfiler build option.");
                 }
             }
+            else
+            {
+                if ((buildPlayerOptions.options & BuildOptions.EnableCodeCoverage) != 0)
+                {
+                    if (!BuildProfileModuleUtil.IsBuildTargetSupportedByCoverage(buildPlayerOptions.target))
+                        throw new ArgumentException("Code coverage is unavailable for the selected build target. Remove the EnableCodeCoverage build option.");
+                }
+            }
 
             try
             {

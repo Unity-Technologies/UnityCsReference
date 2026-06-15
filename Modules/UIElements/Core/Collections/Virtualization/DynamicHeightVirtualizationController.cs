@@ -411,7 +411,7 @@ namespace UnityEngine.UIElements
             }
 
             m_StickToBottom = scrollableHeight > 0 && Math.Abs(scrollOffset.y - m_ScrollView.verticalScroller.highValue) < float.Epsilon;
-            m_ScrollView.SetScrollOffsetWithoutNotify(scrollOffset);
+            m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, scrollOffset.y));
             serializedData.scrollOffset = m_ScrollView.scrollOffset;
             m_CollectionView.SaveViewData();
 

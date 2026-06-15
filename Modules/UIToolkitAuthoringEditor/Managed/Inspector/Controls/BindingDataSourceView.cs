@@ -277,9 +277,12 @@ internal partial class BindingDataSourceView : BindableElement
         if (field == null)
             return;
 
+        if (m_DataSourceObjectField.boundProperty is not { isValid: true } property)
+            return;
+
         // Get the actual value of the data source object serialized property, which may be
         // different from the field value if it is inherited.
-        var dataSourceObj = m_DataSourceObjectField.boundProperty?.boxedValue;
+        var dataSourceObj = property.boxedValue;
 
         // If there is no data source object set, try to get an inherited one
         if (dataSourceObj == null)
@@ -307,9 +310,12 @@ internal partial class BindingDataSourceView : BindableElement
         if (field == null)
             return;
 
+        if (m_DataSourceTypeField.boundProperty is not { isValid: true } property)
+            return;
+
         // Get the actual value of the data source type serialized property, which may be
         // different from the field value if it is inherited
-        var sourceTypeValue = m_DataSourceTypeField.boundProperty?.stringValue;
+        var sourceTypeValue = property.stringValue;
 
         if (string.IsNullOrEmpty(sourceTypeValue))
         {

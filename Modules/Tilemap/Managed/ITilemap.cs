@@ -254,6 +254,34 @@ namespace UnityEngine.Tilemaps
             return false;
         }
 
+        [RequiredByNativeCode]
+        private unsafe static void HandleAllTilesOnEnable(ITilemap tilemap
+            , int usedTileCount
+            , IntPtr usedTilesIntPtr)
+        {
+            void* usedTilesPtr = usedTilesIntPtr.ToPointer();
+            var usedTileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(usedTilesPtr, usedTileCount, Allocator.Invalid);
+
+            var ash = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileIds, ash);
+
+            for (int i = 0; i < usedTileCount; i++)
+            {
+                var tileId = usedTileIds[i];
+                if (tileId != EntityId.None)
+                {
+                    var tile = Resources.EntityIdToObject(tileId) as TileBase;
+                    if (tile != null)
+                    {
+                        tile.OnDisable();
+                        tile.OnEnable();
+                    }
+                }
+            }
+
+            AtomicSafetyHandle.Release(ash);
+        }
+
         internal virtual unsafe JobHandle HandleGetAllTileData(int usedTileCount
             , NativeArray<EntityId> usedTilesIds
             , int count

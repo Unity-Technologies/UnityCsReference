@@ -19,9 +19,9 @@ namespace Unity.Hierarchy.Editor
     /// Provides a <see cref="HierarchyNodeTypeHandler"/> for subscenes.
     /// </summary>
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/HierarchyEditor/Public/HierarchySubSceneHandler.h")]
-    [NativeHeader("Modules/HierarchyEditor/HierarchySubSceneHandlerBindings.h")]
-    public sealed class HierarchySubSceneHandler :
+    [NativeHeader("Modules/HierarchyEditor/Public/HierarchySubSceneAuthoringHandler.h")]
+    [NativeHeader("Modules/HierarchyEditor/HierarchySubSceneAuthoringHandlerBindings.h")]
+    public sealed class HierarchySubSceneAuthoringHandler :
         HierarchyNodeTypeHandler,
         IHierarchyEntityIdConverter,
         IHierarchyEditorNodeTypeHandler
@@ -30,17 +30,17 @@ namespace Unity.Hierarchy.Editor
 
         internal new static class BindingsMarshaller
         {
-            public static IntPtr ConvertToUnmanaged(HierarchySubSceneHandler handler) => handler.m_Ptr;
+            public static IntPtr ConvertToUnmanaged(HierarchySubSceneAuthoringHandler handler) => handler.m_Ptr;
         }
 
         HierarchyNodeType m_NodeType;
 
-        HierarchySubSceneHandler()
+        HierarchySubSceneAuthoringHandler()
         {
             throw new NotSupportedException();
         }
 
-        HierarchySubSceneHandler(IntPtr nativePtr, Hierarchy hierarchy, HierarchyCommandList cmdList) : base(nativePtr, hierarchy, cmdList)
+        HierarchySubSceneAuthoringHandler(IntPtr nativePtr, Hierarchy hierarchy, HierarchyCommandList cmdList) : base(nativePtr, hierarchy, cmdList)
         {
         }
 
@@ -118,7 +118,7 @@ namespace Unity.Hierarchy.Editor
         public extern Scene GetScene(in HierarchyNode node);
 
         /// <summary>
-        /// Gets the <see cref="HierarchyNodeType"/> registered for this <see cref="HierarchySubSceneHandler"/>.
+        /// Gets the <see cref="HierarchyNodeType"/> registered for this <see cref="HierarchySubSceneAuthoringHandler"/>.
         /// </summary>
         /// <returns>The <see cref="HierarchyNodeType"/> for this handler.</returns>
         public new HierarchyNodeType GetNodeType()
@@ -325,13 +325,13 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEntityIdConverter.GetEntityIds(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds) => GetEntityIdsFromNodes(nodes, outEntityIds);
 
-        [FreeFunction("HierarchySubSceneHandlerBindings::GetStaticNodeType", IsThreadSafe = true)]
+        [FreeFunction("HierarchySubSceneAuthoringHandlerBindings::GetStaticNodeType", IsThreadSafe = true)]
         static extern int GetStaticNodeType();
 
-        [FreeFunction("HierarchySubSceneHandlerBindings::GetOrCreateNodeFromEntityId", HasExplicitThis = true, IsThreadSafe = true)]
+        [FreeFunction("HierarchySubSceneAuthoringHandlerBindings::GetOrCreateNodeFromEntityId", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNode GetOrCreateNodeFromEntityId(EntityId entityId);
 
-        [FreeFunction("HierarchySubSceneHandlerBindings::GetOrCreateNodeFromScene", HasExplicitThis = true, IsThreadSafe = true)]
+        [FreeFunction("HierarchySubSceneAuthoringHandlerBindings::GetOrCreateNodeFromScene", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNode GetOrCreateNodeFromScene(Scene scene);
 
         [NativeMethod(IsThreadSafe = true)]
@@ -357,7 +357,7 @@ namespace Unity.Hierarchy.Editor
             if (cmdListPtr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(cmdListPtr));
 
-            var handler = new HierarchySubSceneHandler(nativePtr,
+            var handler = new HierarchySubSceneAuthoringHandler(nativePtr,
                 (Hierarchy)GCHandle.FromIntPtr(hierarchyPtr).Target,
                 (HierarchyCommandList)GCHandle.FromIntPtr(cmdListPtr).Target);
             handler.Initialize();

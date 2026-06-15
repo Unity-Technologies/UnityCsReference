@@ -8,6 +8,7 @@ using JetBrains.Annotations;
 using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEditor.UIElements;
@@ -36,6 +37,11 @@ namespace Unity.UI.Builder
         const string k_WarningHelpBoxClassName = "material-warning-label";
         const string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/MaterialDefinitionStyleField.uxml";
         const string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/MaterialDefinitionStyleField";
+
+        const ShaderPropertyFlags k_NonOverridableFlags =
+            ShaderPropertyFlags.HideInInspector |
+            ShaderPropertyFlags.PerRendererData |
+            ShaderPropertyFlags.NonModifiableTextureData;
 
         static readonly string k_MaterialPropertiesDropdownClassName = "inspector-variables-dropdown";
         // static readonly string k_AddMoreIconClassName = BaseListView.footerAddButtonName + "--with-menu";
@@ -135,32 +141,45 @@ namespace Unity.UI.Builder
             m_MaterialPropertiesListView.style.display = (mat == null) ? DisplayStyle.None : DisplayStyle.Flex;
 
             var props = ExtractMaterialProperties(mat);
-            if (props.Count > 0)
-            {
-                var menu = new GenericDropdownMenu();
-                foreach (var prop in props)
-                    menu.AddItem(SanitizePropertyName(prop.name), false, (_) => OnMaterialPropertyAdded(prop), null);
-
-                m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText)) { classList = { k_EmptyListClassName } };
-                m_MaterialPropertiesListView.showAddRemoveFooter = true;
-                m_MaterialPropertiesListView.overridingAddButtonBehavior = (_, btn) =>
-                {
-                    menu.DropDown(btn.worldBound, btn, DropdownMenuSizeMode.Auto);
-                    menu.contentContainer.AddToClassList(k_MaterialPropertiesDropdownClassName);
-                };
-
-                var addButton = m_MaterialPropertiesListView.Q<Button>(BaseListView.footerAddButtonName);
-                addButton.text = string.Empty;
-                addButton.iconImage = EditorGUIUtility.IconContent("Toolbar Plus More", "Add new variable").image as Texture2D;
-            }
-            else
+            if (props.Count == 0)
             {
                 m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_NoPropertiesText)) { classList = { k_EmptyListClassName } };
                 m_MaterialPropertiesListView.showAddRemoveFooter = false;
 
                 // Add this "with footer" class to keep the same scrollview style
                 m_MaterialPropertiesListView.scrollView.AddToClassList(k_MaterialPropertiesListViewWithFooterClassName);
+                return;
             }
+
+            using var addedHandle = HashSetPool<string>.Get(out var addedNames);
+            if (value.propertyValues != null)
+            {
+                foreach (var pv in value.propertyValues)
+                    addedNames.Add(pv.name);
+            }
+
+            var menu = new GenericDropdownMenu();
+            int availableCount = 0;
+            foreach (var prop in props)
+            {
+                if (addedNames.Contains(prop.name))
+                    continue;
+                menu.AddItem(SanitizePropertyName(prop.name), false, (_) => OnMaterialPropertyAdded(prop), null);
+                availableCount++;
+            }
+
+            m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText)) { classList = { k_EmptyListClassName } };
+            m_MaterialPropertiesListView.showAddRemoveFooter = true;
+            m_MaterialPropertiesListView.overridingAddButtonBehavior = (_, btn) =>
+            {
+                menu.DropDown(btn.worldBound, btn, DropdownMenuSizeMode.Auto);
+                menu.contentContainer.AddToClassList(k_MaterialPropertiesDropdownClassName);
+            };
+
+            var addButton = m_MaterialPropertiesListView.Q<Button>(BaseListView.footerAddButtonName);
+            addButton.text = string.Empty;
+            addButton.iconImage = EditorGUIUtility.IconContent("Toolbar Plus More", "Add new variable").image as Texture2D;
+            addButton.SetEnabled(availableCount > 0);
         }
 
         List<MaterialPropertyValue> ExtractMaterialProperties(Material mat)
@@ -172,7 +191,7 @@ namespace Unity.UI.Builder
             var matProps = ShaderUtil.GetMaterialProperties(new Material[] { mat });
             foreach (var prop in matProps)
             {
-                if (prop.propertyFlags.HasFlag(ShaderPropertyFlags.HideInInspector))
+                if ((prop.propertyFlags & k_NonOverridableFlags) != 0)
                     continue;
 
                 if (prop.propertyType == ShaderPropertyType.Texture)

@@ -257,6 +257,10 @@ namespace UnityEngine.UIElements
         internal static bool? overrideUseDefaultEventSystem { get; set; }
         internal static bool autoUpdateEventSystem { get; set; } = true;
 
+        // For unit tests and some XR debugging options
+        internal static DefaultEventSystem.UpdateMode eventSystemUpdateMode { get; set; } =
+            DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused;
+
         private static bool s_IsPlayMode = false;
 
         public static void RegisterEventSystem(Object eventSystem)
@@ -312,10 +316,19 @@ namespace UnityEngine.UIElements
                 UpdatePanelRenderers();
             }
 
-            UpdateEventSystem();
+            _UpdateEventSystem();
         }
 
+        // Used by XRI package
         internal static void UpdateEventSystem()
+        {
+            // UUM-139866: calling defaultEventSystem.Update throws if there are no panels
+            if (GetSortedPlayerPanels().Count == 0)
+                return;
+            _UpdateEventSystem();
+        }
+
+        private static void _UpdateEventSystem()
         {
             if (s_IsPlayMode)
             {
@@ -325,7 +338,7 @@ namespace UnityEngine.UIElements
 
                     if (autoUpdateEventSystem)
                     {
-                        defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
+                        defaultEventSystem.Update(eventSystemUpdateMode);
                     }
                 }
                 else if (s_DefaultEventSystem != null)

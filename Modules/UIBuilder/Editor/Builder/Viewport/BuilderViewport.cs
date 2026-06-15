@@ -121,7 +121,6 @@ namespace Unity.UI.Builder
                 if (m_PaneWindow.document)
                     m_PaneWindow.document.viewportZoomScale = value;
                 m_Canvas.zoomScale = value;
-                m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
             }
         }
 

@@ -144,7 +144,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
             var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Invalid Signature"),"invalidSignatureInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"))
             {
                 headerIcon = Icon.PackageErrorLarge,
-                headerMainText = L10n.Tr("This project contains at least one package that has an invalid signature."),
+                headerMainText = L10n.Tr("This project contains one or more packages with invalid signatures."),
                 bodyText = L10n.Tr("This might indicate they are unsafe or malicious. Would you like to open the Package Manager to review these packages?"),
                 readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig",
                 readMoreClickedAnalyticsId = "invalid-signature-in-project-read-more",
@@ -158,7 +158,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
             var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Missing Signature"), "unsignedPackageInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"))
             {
                 headerIcon = Icon.PackageWarningLarge,
-                headerMainText = L10n.Tr("This project contains at least one package that doesn't have a signature."),
+                headerMainText = L10n.Tr("This project contains one or more unsigned packages."),
                 bodyText = L10n.Tr("This could indicate they are potentially unsafe. Would you like to open the Package Manager to review these packages?"),
                 readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html",
                 readMoreClickedAnalyticsId = "unsigned-package-in-project-read-more"

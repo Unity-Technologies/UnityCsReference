@@ -1065,18 +1065,28 @@ namespace UnityEditor.UIElements
                     if (requiredType == null)
                     {
                         var targetTypeName = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
-                        foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
+
+                        // Special handling for native types that have a PPtr<MonoBehaviour> which when converted to managed could be a MonoBehaviour or
+                        // a ScriptableObject. We use Object so we can support both.
+                        if (NativeClassExtensionUtilities.ExtendsANativeType(target) && targetTypeName == nameof(MonoBehaviour))
                         {
-                            if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
-                                continue;
+                            requiredType = typeof(UnityEngine.Object);
+                        }
+                        else
+                        {
+                            foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
+                            {
+                                if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
+                                    continue;
 
-                            // We ignore C# types as they can can be confused with a built-in type with the same name,
-                            // we can use the FieldInfo to find MonoScript types. (UUM-29499)
-                            if (typeof(MonoBehaviour).IsAssignableFrom(objectTypes) || typeof(ScriptableObject).IsAssignableFrom(objectTypes))
-                                continue;
+                                // We ignore C# types as they can be confused with a built-in type with the same name,
+                                // we can use the FieldInfo to find MonoScript types. (UUM-29499)
+                                if (objectTypes.IsSubclassOf(typeof(MonoBehaviour)) || objectTypes.IsSubclassOf(typeof(ScriptableObject)))
+                                    continue;
 
-                            requiredType = objectTypes;
-                            break;
+                                requiredType = objectTypes;
+                                break;
+                            }
                         }
                     }
 

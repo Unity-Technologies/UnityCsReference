@@ -41,6 +41,19 @@ namespace Unity.U2D.Physics
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorld.drawCapacity is deprecated. Draw capacity is now automatically managed.", false)]
         public readonly int drawCapacity { get => 0; set { } }
+
+        public partial struct WorldProfile
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.WorldProfile.prepareStages is deprecated, please use PhysicsWorld.WorldProfile.solverSetup instead. (UnityUpgradable) -> solverSetup", false)]
+            public float prepareStages { readonly get => solverSetup; set => solverSetup = value; }
+
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.WorldProfile.solveConstraints is deprecated, please use PhysicsWorld.WorldProfile.constraints instead. (UnityUpgradable) -> constraints", false)]
+            public float solveConstraints { readonly get => constraints; set => constraints = value; }
+        }
     }
 
     public partial struct PhysicsWorldDefinition
@@ -214,6 +227,33 @@ namespace Unity.U2D.Physics
             [Obsolete("CastResult.hit is deprecated, please use CastResult.isValid instead. (UnityUpgradable) -> isValid", false)]
             public readonly bool hit => isValid;
         }
+    }
+
+    public readonly partial struct PhysicsEvents
+    {
+        public readonly partial struct TransformWriteEvent
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsEvents.TransformWriteEvent.transfomPlaneCustom is deprecated, please use PhysicsEvents.TransformWriteEvent.transformPlaneCustom instead. (UnityUpgradable) -> transformPlaneCustom", false)]
+            public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => transformPlaneCustom;
+        }
+
+        public readonly partial struct TransformTweenWriteEvent
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsEvents.TransformTweenWriteEvent.transfomPlaneCustom is deprecated, please use PhysicsEvents.TransformTweenWriteEvent.transformPlaneCustom instead. (UnityUpgradable) -> transformPlaneCustom", false)]
+            public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => transformPlaneCustom;
+        }
+    }
+
+    public partial struct PhysicsAABB
+    {
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsAABB.Normalized() is deprecated, please use PhysicsAABB.Normalize() instead. (UnityUpgradable) -> Normalize()", false)]
+        public void Normalized() => Normalize();
     }
 
     public readonly partial struct PhysicsConstants

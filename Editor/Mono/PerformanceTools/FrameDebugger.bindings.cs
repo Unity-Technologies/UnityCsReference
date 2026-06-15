@@ -201,6 +201,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public int m_ShadingRateFragmentSize;
         public int m_ShadingRatePrimitiveCombiner;
         public int m_ShadingRateFragmentCombiner;
+        public string m_ShadingRateImageName;
         public Texture m_ShadingRateImageTexture;
 
         // shader state

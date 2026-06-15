@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.ComponentModel;
 using Unity.Scripting.LifecycleManagement;
 using Unity.Scripting.LifecycleManagement.CodeGen;
-using UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -20,10 +18,12 @@ namespace UnityEngine
     {
     }
 
+    [Obsolete("PlayModeScopeAutoCleanup is no longer emitted by the source generator. Use DelegateAutoCleanup.CreateForPlayMode(...) instead.", false)]
     public abstract class PlayModeScopeAutoCleanup : ClassAutoCleanup
     {
         protected PlayModeScopeAutoCleanup() : base(typeof(PlayModeScope)) {}
     }
+
     internal sealed class PlayModeScope : LifecycleScope
     {
         public static readonly string ScopeName = "PlayMode";

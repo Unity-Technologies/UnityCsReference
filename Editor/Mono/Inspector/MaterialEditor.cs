@@ -686,7 +686,7 @@ namespace UnityEditor
             public ShaderSelectionDropdown(Shader shader, Action<object> onSelectedShaderPopup)
                 : base(new AdvancedDropdownState())
             {
-                minimumSize = new Vector2(270, 308);
+                minimumSize = new Vector2(270, 200);
                 m_CurrentShader = shader;
                 m_OnSelectedShaderPopup = onSelectedShaderPopup;
                 m_DataSource = new ShaderDropdownDataSource(m_CurrentShader);

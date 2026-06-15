@@ -17,23 +17,20 @@ namespace Unity.GraphToolkit.Editor
     /// lifecycle hooks, serialization support, and the structure needed to define ports, UI behaviors, and custom logic.
     /// This class forms the foundation of all user-defined nodes in a graph-based tool, including variable nodes, context nodes,
     /// and subgraph nodes.
-    /// <br/>
-    /// <br/>
+    ///
     /// To create a custom node, derive from <see cref="Node"/>, define its input and output ports using a port builder in <see cref="OnDefinePorts"/>,
     /// and define its <see cref="INodeOption"/>s in <see cref="OnDefineOptions"/>.
-    /// <br/>
-    /// <br/>
+    ///
     /// This class is used in combination with other types like <see cref="INode"/>, <see cref="IPort"/>, and <see cref="Graph"/>
     /// to construct and manage node-based workflows.
-    /// <br/>
-    /// <br/>
+    ///
     /// See also:
-    /// <list type="bullet">
-    /// <item><description><see cref="INode"/> for the interface this class implements</description></item>
-    /// <item><description><see cref="ContextNode"/> and <see cref="BlockNode"/> for composition patterns</description></item>
-    /// <item><description><see cref="IVariableNode"/> for how to work with variable-based nodes</description></item>
-    /// <item><description><see cref="ISubgraphNode"/> for how to work with subgraph-based nodes</description></item>
-    /// </list>
+    /// 
+    ///- <see cref="INode"/> for the interface this class implements
+    ///- <see cref="ContextNode"/> and <see cref="BlockNode"/> for composition patterns
+    ///- <see cref="IVariableNode"/> for how to work with variable-based nodes
+    ///- <see cref="ISubgraphNode"/> for how to work with subgraph-based nodes
+    /// 
     /// </remarks>
     [Serializable]
     public abstract partial class Node : INode
@@ -58,13 +55,15 @@ namespace Unity.GraphToolkit.Editor
             /// If <see cref="IOptionBuilder.WithDisplayName(string)"/> is not used, this name is also used as the option's display label.
             /// </remarks>
             /// <example>
-            /// <code>
+            /// <code lang="cs">
+            /// <![CDATA[
             /// protected override void OnDefineOptions(IOptionDefinitionContext context)
             /// {
             ///     context.AddOption("MyOption", typeof(int)))
             ///         .WithDefaultValue(2)
             ///         .Delayed()
             /// }
+            /// ]]>
             /// </code>
             /// </example>
             IOptionBuilder AddOption(string name, Type dataType);
@@ -80,13 +79,15 @@ namespace Unity.GraphToolkit.Editor
             /// If <see cref="IOptionBuilder{TData}.WithDisplayName(string)"/> is not used, this name is also used as the option's display label.
             /// </remarks>
             /// <example>
-            /// <code>
+            /// <code lang="cs">
+            /// <![CDATA[
             /// protected override void OnDefineOptions(IOptionDefinitionContext context)
             /// {
-            ///     context.AddOption&lt;int&gt;("MyOption")
+            ///     context.AddOption<int>("MyOption")
             ///         .WithDefaultValue(2)
             ///         .Delayed()
             /// }
+            /// ]]>
             /// </code>
             /// </example>
             IOptionBuilder<TData> AddOption<TData>(string name);
@@ -109,20 +110,20 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>
             /// <c>portName</c> is used to identify the port. It must be unique among input ports and node options on the node. This name is used as the ID when calling <see cref="GetInputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
-            /// <br/>
-            /// <br/>
+            ///
             /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
-            /// <br/>
-            /// <br/>
+            ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
             /// <example>
-            /// <code>
+            /// <code lang="cs">
+            /// <![CDATA[
             /// var port = context.AddInputPort("myInput")
             ///     .WithDisplayName("My Input Port")
-            ///     .WithDataType&lt;int&gt;()
+            ///     .WithDataType<int>()
             ///     .WithConnectorUI(PortConnectorUI.Circle)
             ///     .Build();
+            /// ]]>
             /// </code>
             /// </example>
             IInputPortBuilder AddInputPort(string portName);
@@ -135,20 +136,20 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>
             /// <c>portName</c> is used to identify the port. It must be unique among output ports on the node. This name is used as the ID when calling <see cref="GetOutputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
-            /// <br/>
-            /// <br/>
+            ///
             /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
-            /// <br/>
-            /// <br/>
+            ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
             /// <example>
-            /// <code>
+            /// <code lang="cs">
+            /// <![CDATA[
             /// var port = context.AddOutputPort("myOutput")
             ///     .WithDisplayName("My Output Port")
             ///     .WithDataType(typeof(float))
             ///     .WithConnectorUI(PortConnectorUI.Arrowhead)
             ///     .Build();
+            /// ]]>
             /// </code>
             /// </example>
             IOutputPortBuilder AddOutputPort(string portName);
@@ -162,19 +163,19 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>
             /// <c>portName</c> is used to identify the port. It must be unique among input ports on the node. This name is used as the ID when calling <see cref="GetInputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
-            /// <br/>
-            /// <br/>
+            ///
             /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
-            /// <br/>
-            /// <br/>
+            ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
             /// <example>
-            /// <code>
-            /// var port = context.AddInputPort&lt;string&gt;("stringInput")
+            /// <code lang="cs">
+            /// <![CDATA[
+            /// var port = context.AddInputPort<string>("stringInput")
             ///     .WithDisplayName("String Input")
             ///     .WithDefaultValue("default text")
             ///     .Build();
+            /// ]]>
             /// </code>
             /// </example>
             IInputPortBuilder<T> AddInputPort<T>(string portName)
@@ -191,18 +192,18 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>
             /// <c>portName</c> is used to identify the port. It must be unique among output ports on the node. This name is used as the ID when calling <see cref="GetOutputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
-            /// <br/>
-            /// <br/>
+            ///
             /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
-            /// <br/>
-            /// <br/>
+            ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
             /// <example>
-            /// <code>
-            /// var port = context.AddOutputPort&lt;bool&gt;("boolOutput")
+            /// <code lang="cs">
+            /// <![CDATA[
+            /// var port = context.AddOutputPort<bool>("boolOutput")
             ///     .WithDisplayName("Boolean Output")
             ///     .Build();
+            /// ]]>
             /// </code>
             /// </example>
             IOutputPortBuilder<T> AddOutputPort<T>(string portName)
@@ -295,20 +296,22 @@ namespace Unity.GraphToolkit.Editor
         /// This method is called before <see cref="OnDefinePorts"/>. Override this method to add node options using the provided <see cref="IOptionDefinitionContext"/>.
         /// </remarks>
         /// <example>
-        /// <code>
+        /// <code lang="cs">
+        /// <![CDATA[
         /// protected override void OnDefineOptions(IOptionDefinitionContext context)
         /// {
-        ///     context.AddNodeOption&lt;bool&gt;(
-        ///         optionName: "My Bool",
-        ///         optionDisplayName: "myBoolId");
+        ///     context.AddOption<bool>(
+        ///         optionName: "myBoolId",
+        ///         optionDisplayName: "My Bool");
         ///
-        ///     context.AddNodeOption(
+        ///     context.AddOption(
         ///         optionName: "Label",
         ///         dataType: typeof(string),
         ///         optionDisplayName: "labelId",
         ///         tooltip: "A label.",
         ///         defaultValue: "Default Value");
         /// }
+        /// ]]>
         /// </code>
         /// </example>
         protected virtual void OnDefineOptions(IOptionDefinitionContext context) { }
@@ -327,10 +330,11 @@ namespace Unity.GraphToolkit.Editor
         /// You also use the <c>portName</c> identifier to call <see cref="Node.GetInputPortByName"/>.
         /// </remarks>
         /// <example>
-        /// <code>
+        /// <code lang="cs">
+        /// <![CDATA[
         /// protected override void OnDefinePorts(IPortDefinitionContext context)
         /// {
-        ///     var inputPort = context.AddInputPort&lt;string&gt;("stringInput")
+        ///     var inputPort = context.AddInputPort<string>("stringInput")
         ///         .WithDisplayName("String Input")
         ///         .WithDefaultValue("Default Value")
         ///         .Build();
@@ -341,6 +345,7 @@ namespace Unity.GraphToolkit.Editor
         ///         .WithConnectorUI(PortConnectorUI.Arrowhead)
         ///         .Build();
         /// }
+        /// ]]>
         /// </code>
         /// </example>
         protected virtual void OnDefinePorts(IPortDefinitionContext context) { }

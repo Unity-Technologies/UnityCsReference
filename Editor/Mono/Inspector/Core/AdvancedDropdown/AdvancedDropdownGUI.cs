@@ -32,8 +32,6 @@ namespace UnityEditor.IMGUI.Controls
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
 
-            public const float k_MaxWindowHeight = 250f;
-
             static Styles()
             {
                 headerEllipsis.padding.left = 20;
@@ -283,16 +281,18 @@ namespace UnityEditor.IMGUI.Controls
 
         internal Vector2 CalculateContentSize(AdvancedDropdownDataSource dataSource)
         {
+            return CalculateContentSize(dataSource, dataSource.mainTree);
+        }
+
+        internal Vector2 CalculateContentSize(AdvancedDropdownDataSource dataSource, AdvancedDropdownItem currentLevel)
+        {
             float maxWidth = 0;
             float maxHeight = 0;
             bool includeArrow = false;
             float arrowWidth = Styles.rightArrow.fixedWidth;
 
-            // Calculate size recursively starting from main tree children
-            CalculateTreeSize(dataSource.mainTree, ref maxWidth, ref maxHeight, ref includeArrow);
-
-            // Make sure that the height is aceptable in case there are a lot of elements
-            maxHeight = Mathf.Min(Styles.k_MaxWindowHeight, maxHeight);
+            // Calculate size for the specified level
+            CalculateTreeSize(currentLevel, ref maxWidth, ref maxHeight, ref includeArrow);
 
             if (includeArrow)
             {
@@ -321,61 +321,39 @@ namespace UnityEditor.IMGUI.Controls
             return new Vector2(maxWidth, maxHeight);
         }
 
-        private void CalculateTreeSize(AdvancedDropdownItem root, ref float maxWidth, ref float maxHeight, ref bool includeArrow)
+        private void CalculateTreeSize(AdvancedDropdownItem level, ref float maxWidth, ref float maxHeight, ref bool includeArrow)
         {
-            /// Recursively finds the node with the highest number of immediate children in the entire tree.
-            /// This searches through all branches to find the node that has the most direct children,
-            /// which helps determine the height needed for the dropdown. As for example the first level might have fewer items than
-            /// one of the deeper levels. Making sure we find the largest set of immediate children ensures we allocate enough height for any level.
-            AdvancedDropdownItem largestChild = FindLargestChild(root);
+            int itemCount = level.childList.Count;
 
-            for (int i = 0; i < largestChild.childList.Count; i++)
+            // Calculate size based on actual children
+            for (int i = 0; i < itemCount; i++)
             {
-                var child = largestChild.childList[i];
+                var child = level.childList[i];
                 var content = child.content;
                 var a = CalcItemSize(content);
                 a.x += iconSize.x + 1;
 
+                // Calculate width
                 if (maxWidth < a.x)
                 {
                     maxWidth = a.x + 1;
                     includeArrow |= child.childList.Count > 0;
                 }
 
+                // Calculate height
                 if (child.IsSeparator())
                 {
                     maxHeight += Styles.lineSeparator.CalcHeight(content, maxWidth) + Styles.lineSeparator.margin.vertical;
                 }
                 else if (child is AdvancedDropdownItem.HelpBoxDropdownItem helpBox)
                 {
-                    maxHeight += CalcHelpBoxHeight(helpBox);
+                    maxHeight += CalcHelpBoxHeight(helpBox) + Styles.helpBox.margin.vertical;
                 }
                 else
                 {
                     maxHeight += CalcItemHeight(content, maxWidth);
                 }
             }
-        }
-
-        private AdvancedDropdownItem FindLargestChild(AdvancedDropdownItem item)
-        {
-            // Start by assuming the current node is the largest
-            AdvancedDropdownItem largest = item;
-
-            // Recursively search through all children
-            foreach (var child in item.childList)
-            {
-                // Find the largest node in this child's branch
-                var largestChild = FindLargestChild(child);
-
-                // Compare immediate child counts - if this branch has more direct children, it becomes the new largest
-                if (largestChild.childList.Count > largest.childList.Count)
-                {
-                    largest = largestChild;
-                }
-            }
-
-            return largest;
         }
 
         internal float GetSelectionHeight(AdvancedDropdownDataSource dataSource, Rect buttonRect)

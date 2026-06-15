@@ -858,6 +858,14 @@ namespace UnityEngine.UIElements
             }
         }
 
+        protected bool m_DrawsInCameras;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal bool drawsInCameras
+        {
+            get => m_DrawsInCameras;
+        }
+
         internal void SetSpecializedHierarchyFlagsUpdater()
         {
             var updater = GetUpdater(VisualTreeUpdatePhase.TransformClip);
@@ -1671,18 +1679,15 @@ namespace UnityEngine.UIElements
 
         internal event Action drawsInCamerasChanged;
         void InvokeDrawsInCamerasChanged() { drawsInCamerasChanged?.Invoke(); }
-        bool m_DrawsInCameras;
-        internal bool drawsInCameras
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void SetDrawsInCameras(bool value)
         {
-            get { return m_DrawsInCameras; }
-            set
+            if (m_DrawsInCameras != value)
             {
-                if (m_DrawsInCameras != value)
-                {
-                    m_DrawsInCameras = value;
-                    UIElementsRuntimeUtility.SetPanelsDrawInCameraDirty();
-                    InvokeDrawsInCamerasChanged();
-                }
+                m_DrawsInCameras = value;
+                UIElementsRuntimeUtility.SetPanelsDrawInCameraDirty();
+                InvokeDrawsInCamerasChanged();
             }
         }
 

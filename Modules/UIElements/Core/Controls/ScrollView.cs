@@ -225,6 +225,11 @@ namespace UnityEngine.UIElements
 
         VisualElement m_DeferredScrollToElement;
         IVisualElementScheduledItem m_DeferredScrollTo;
+        Vector2 m_LastDeferredScrollOffset;
+        int m_DeferredScrollToAttempts;
+
+        // Safety cap when the ScrollView never lays out (e.g. display: none).
+        const int k_MaxDeferredScrollToAttempts = 60;
 
         // ScrollViews can take more than 3 passes to stabilize. This can be the case when a scrollview contains elements with height bound to their width (e.g label with wrapped text).
         // Beyond 5 passes, we assume that the layout may never be stabilized then we stop updating the visibility of the scrollers.
@@ -478,12 +483,32 @@ namespace UnityEngine.UIElements
 
         internal float scrollableWidth
         {
-            get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
+            get
+            {
+                var width = contentContainer.boundingBox.width;
+                if (width > contentContainer.layout.width)
+                {
+                    var padding = contentContainer.resolvedStyle.paddingRight;
+                    if (!float.IsNaN(padding))
+                        width += padding;
+                }
+                return width - contentViewport.layout.width;
+            }
         }
 
         internal float scrollableHeight
         {
-            get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
+            get
+            {
+                var height = contentContainer.boundingBox.height;
+                if (height > contentContainer.layout.height)
+                {
+                    var padding = contentContainer.resolvedStyle.paddingBottom;
+                    if (!float.IsNaN(padding))
+                        height += padding;
+                }
+                return height - contentViewport.layout.height;
+            }
         }
 
         // For inertia: how quickly the scrollView stops from moving after PointerUp.
@@ -728,6 +753,12 @@ namespace UnityEngine.UIElements
             else
                 StopDeferredScrollTo();
 
+            ApplyScrollTo(child);
+            m_LastDeferredScrollOffset = scrollOffset;
+        }
+
+        void ApplyScrollTo(VisualElement child)
+        {
             m_Velocity = Vector2.zero;
             float yDeltaOffset = 0, xDeltaOffset = 0;
 
@@ -750,19 +781,16 @@ namespace UnityEngine.UIElements
 
         bool ShouldDeferScrollTo() => contentContainer.panel.isDirty;
 
-        bool ShouldStopDeferredScrollTo() => !ShouldDeferScrollTo();
-
         void StartDeferredScrollTo(VisualElement target)
         {
+            if (m_DeferredScrollToElement != target)
+                m_DeferredScrollToAttempts = 0;
             m_DeferredScrollToElement = target;
+
             if (m_DeferredScrollTo == null)
-            {
-                m_DeferredScrollTo = schedule.Execute(PerformDeferredScrollTo).Until(ShouldStopDeferredScrollTo);
-            }
+                m_DeferredScrollTo = schedule.Execute(PerformDeferredScrollTo).Every(0);
             else if (!m_DeferredScrollTo.isActive)
-            {
                 m_DeferredScrollTo.Resume();
-            }
         }
 
         void StopDeferredScrollTo()
@@ -777,22 +805,36 @@ namespace UnityEngine.UIElements
 
         void PerformDeferredScrollTo()
         {
-            if (m_DeferredScrollToElement != null)
-            {
-                if (!contentContainer.Contains(m_DeferredScrollToElement))
-                {
-                    // The element has been removed from the contentContainer, so we can't scroll to it.
-                    StopDeferredScrollTo();
-                }
-                else
-                {
-                    ScrollTo(m_DeferredScrollToElement);
-                }
-            }
-            else
+            if (m_DeferredScrollToElement == null)
             {
                 StopDeferredScrollTo();
+                return;
             }
+
+            if (!contentContainer.Contains(m_DeferredScrollToElement))
+            {
+                StopDeferredScrollTo();
+                return;
+            }
+
+            // External scroll input — stop instead of reverting it. (UUM-142486)
+            if (scrollOffset != m_LastDeferredScrollOffset)
+            {
+                StopDeferredScrollTo();
+                return;
+            }
+
+            if (++m_DeferredScrollToAttempts > k_MaxDeferredScrollToAttempts)
+            {
+                StopDeferredScrollTo();
+                return;
+            }
+
+            ApplyScrollTo(m_DeferredScrollToElement);
+            m_LastDeferredScrollOffset = scrollOffset;
+
+            if (!ShouldDeferScrollTo())
+                StopDeferredScrollTo();
         }
 
         private float GetXDeltaOffset(VisualElement child)

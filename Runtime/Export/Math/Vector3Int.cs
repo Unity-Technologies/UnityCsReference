@@ -95,7 +95,7 @@ namespace UnityEngine
         public readonly float magnitude
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get => Mathf.Sqrt((float)(m_X * m_X + m_Y * m_Y + m_Z * m_Z));
+            get => (float)Math.Sqrt(m_X * m_X + m_Y * m_Y + m_Z * m_Z);
         }
 
         // Returns the squared length of this vector (RO).
@@ -107,27 +107,41 @@ namespace UnityEngine
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Distance(Vector3Int a, Vector3Int b) => (a - b).magnitude;
+        public static float Distance(Vector3Int a, Vector3Int b)
+        {
+            float diff_x = a.m_X - b.m_X;
+            float diff_y = a.m_Y - b.m_Y;
+            float diff_z = a.m_Z - b.m_Z;
+
+            return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);
+        }
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Distance(in Vector3Int a, in Vector3Int b) => (a - b).magnitude;
+        public static float Distance(in Vector3Int a, in Vector3Int b)
+        {
+            float diff_x = a.m_X - b.m_X;
+            float diff_y = a.m_Y - b.m_Y;
+            float diff_z = a.m_Z - b.m_Z;
+
+            return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);
+        }
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Min(Vector3Int lhs, Vector3Int rhs) => new Vector3Int(Mathf.Min(lhs.m_X, rhs.m_X), Mathf.Min(lhs.m_Y, rhs.m_Y), Mathf.Min(lhs.m_Z, rhs.m_Z));
+        public static Vector3Int Min(Vector3Int lhs, Vector3Int rhs) => new Vector3Int(Math.Min(lhs.m_X, rhs.m_X), Math.Min(lhs.m_Y, rhs.m_Y), Math.Min(lhs.m_Z, rhs.m_Z));
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Min(in Vector3Int lhs, in Vector3Int rhs) => new Vector3Int(Mathf.Min(lhs.m_X, rhs.m_X), Mathf.Min(lhs.m_Y, rhs.m_Y), Mathf.Min(lhs.m_Z, rhs.m_Z));
+        public static Vector3Int Min(in Vector3Int lhs, in Vector3Int rhs) => new Vector3Int(Math.Min(lhs.m_X, rhs.m_X), Math.Min(lhs.m_Y, rhs.m_Y), Math.Min(lhs.m_Z, rhs.m_Z));
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Max(Vector3Int lhs, Vector3Int rhs) => new Vector3Int(Mathf.Max(lhs.m_X, rhs.m_X), Mathf.Max(lhs.m_Y, rhs.m_Y), Mathf.Max(lhs.m_Z, rhs.m_Z));
+        public static Vector3Int Max(Vector3Int lhs, Vector3Int rhs) => new Vector3Int(Math.Max(lhs.m_X, rhs.m_X), Math.Max(lhs.m_Y, rhs.m_Y), Math.Max(lhs.m_Z, rhs.m_Z));
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Max(in Vector3Int lhs, in Vector3Int rhs) => new Vector3Int(Mathf.Max(lhs.m_X, rhs.m_X), Mathf.Max(lhs.m_Y, rhs.m_Y), Mathf.Max(lhs.m_Z, rhs.m_Z));
+        public static Vector3Int Max(in Vector3Int lhs, in Vector3Int rhs) => new Vector3Int(Math.Max(lhs.m_X, rhs.m_X), Math.Max(lhs.m_Y, rhs.m_Y), Math.Max(lhs.m_Z, rhs.m_Z));
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -236,7 +250,7 @@ namespace UnityEngine
         public static bool operator==(Vector3Int lhs, Vector3Int rhs) => lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y && lhs.m_Z == rhs.m_Z;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Vector3Int lhs, Vector3Int rhs) => !(lhs == rhs);
+        public static bool operator!=(Vector3Int lhs, Vector3Int rhs) => !(lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y && lhs.m_Z == rhs.m_Z);
 
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -248,10 +262,10 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Equals(Vector3Int other) => this == other;
+        public readonly bool Equals(Vector3Int other) => m_X == other.m_X && m_Y == other.m_Y && m_Z == other.m_Z;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Equals(in Vector3Int other) => this == other;
+        public readonly bool Equals(in Vector3Int other) => m_X == other.m_X && m_Y == other.m_Y && m_Z == other.m_Z;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly int GetHashCode()

@@ -63,11 +63,7 @@ namespace Unity.U2D.Physics.Editor
             return root;
         }
 
-        public void OnEnable()
-        {
-            var root = CreatePropertyGUI(serializedObject);
-            PhysicsCoreSettings2DProvider.SetSettingsObject(root, serializedObject);
-        }
+        public void OnEnable() => PhysicsCoreSettings2DProvider.SetSettingsObject();
 
         public void OnDisable() => PhysicsCoreSettings2DProvider.ClearSettingsObject();
 
@@ -84,7 +80,7 @@ namespace Unity.U2D.Physics.Editor
 
             // Set title.
             var titleLabel = root.Q<Label>("settings-title");
-            titleLabel.text = selectedSettings.name + (PhysicsEditorOnly.physicsSettings == selectedSettings ? " (Active)" : " (Inactive)");
+            titleLabel.text = selectedSettings.name + (PhysicsEditorOnly.physicsSettings == selectedSettings ? " (Assigned)" : " (Not Assigned)");
 
             // Add styles.
             root.styleSheets.Add(EditorGUIUtility.Load(PhysicsCoreProjectSettings2DProvider.StyleSheetPath.projectSettingsSheet) as StyleSheet);
@@ -196,35 +192,85 @@ namespace Unity.U2D.Physics.Editor
     {
         public const string SettingsPath = "Project/Physics Core 2D/Settings";
         static readonly string EmptySettingsLabel = $"Select a \"{ObjectNames.NicifyVariableName(nameof(PhysicsCoreSettings2D))}\" Asset to edit ...";
+        const string k_AutoEditPrefKey = "PhysicsCore2D.ProjectSettings.autoEditActiveSettings";
 
         public static PhysicsCoreSettings2DProvider Instance { get; private set; }
 
-        private VisualElement m_ProviderRoot;
+        VisualElement m_ProviderRoot;
 
         public PhysicsCoreSettings2DProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null) : base(path, scopes, keywords) { }
 
-        public static void SetSettingsObject(VisualElement root, SerializedObject serializedObject)
+        public static void SetSettingsObject() => Instance?.RefreshContent();
+
+        public static void ClearSettingsObject() => Instance?.RefreshContent();
+
+        public static void RefreshActiveSettingContent()
         {
-            if (Instance != null && Instance.m_ProviderRoot != null)
-            {
-                Instance.m_ProviderRoot.Clear();
-                Instance.m_ProviderRoot.Add(root);
-                Instance.keywords = GetSearchKeywordsFromSerializedObject(serializedObject);
-            }
+            if (Instance == null)
+                return;
+
+            if (EditorPrefs.GetBool(k_AutoEditPrefKey) && Selection.activeObject is not PhysicsCoreSettings2D)
+                Instance.RefreshContent();
         }
 
-        public static void ClearSettingsObject()
+        void RefreshContent()
         {
-            if (Instance != null && Instance.m_ProviderRoot != null)
+            if (m_ProviderRoot == null)
+                return;
+
+            m_ProviderRoot.Clear();
+
+            if (Selection.activeObject is PhysicsCoreSettings2D selected)
             {
-                Instance.m_ProviderRoot.Clear();
-                Instance.m_ProviderRoot.Add(CreateEmptyPropertyGUI());
+                var so = new SerializedObject(selected);
+                var contentRoot = PhysicsCoreSettings2DEditor.CreatePropertyGUI(so);
+                InjectAutoEditToggle(contentRoot);
+                m_ProviderRoot.Add(contentRoot);
+                keywords = GetSearchKeywordsFromSerializedObject(so);
+                return;
             }
+
+            if (EditorPrefs.GetBool(k_AutoEditPrefKey) && PhysicsEditorOnly.physicsSettings != null)
+            {
+                var so = new SerializedObject(PhysicsEditorOnly.physicsSettings);
+                var contentRoot = PhysicsCoreSettings2DEditor.CreatePropertyGUI(so);
+                InjectAutoEditToggle(contentRoot);
+                m_ProviderRoot.Add(contentRoot);
+                keywords = GetSearchKeywordsFromSerializedObject(so);
+                return;
+            }
+
+            var emptyRoot = CreateEmptyPropertyGUI();
+            emptyRoot.Insert(0, CreateAutoEditToggle());
+            m_ProviderRoot.Add(emptyRoot);
+        }
+
+        static void InjectAutoEditToggle(VisualElement contentRoot)
+        {
+            var titleLabel = contentRoot.Q<Label>("settings-title");
+            titleLabel.parent.Insert(titleLabel.parent.IndexOf(titleLabel) + 1, CreateAutoEditToggle());
+        }
+
+        static Toggle CreateAutoEditToggle()
+        {
+            var toggle = new Toggle
+            {
+                text = "Auto-Edit Active Setting",
+                tooltip = "When enabled, the active Physics Core Settings 2D asset is always shown here for editing. When disabled, select a Physics Core Settings 2D asset in the Project window to edit it.",
+                value = EditorPrefs.GetBool(k_AutoEditPrefKey)
+            };
+            toggle.style.marginTop = 4;
+            toggle.style.marginLeft = 12;
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                EditorPrefs.SetBool(k_AutoEditPrefKey, evt.newValue);
+                Instance.RefreshContent();
+            });
+            return toggle;
         }
 
         static VisualElement CreateEmptyPropertyGUI()
         {
-            // Show help box to guide user.
             var root = new VisualElement();
             root.style.paddingTop = root.style.paddingLeft = root.style.paddingRight = 12;
             root.Add(new HelpBox(EmptySettingsLabel, HelpBoxMessageType.Info));
@@ -238,20 +284,11 @@ namespace Unity.U2D.Physics.Editor
             {
                 activateHandler = (searchContext, root) =>
                 {
+                    if (!EditorPrefs.HasKey(k_AutoEditPrefKey))
+                        EditorPrefs.SetBool(k_AutoEditPrefKey, true);
+
                     Instance.m_ProviderRoot = root;
-
-                    if (Selection.activeObject is PhysicsCoreSettings2D)
-                    {
-                        var serializedObject = new SerializedObject(Selection.activeObject);
-                        var editorRoot = PhysicsCoreSettings2DEditor.CreatePropertyGUI(serializedObject);
-
-                        SetSettingsObject(editorRoot, serializedObject);
-                        return;
-                    }
-
-                    // Not core settings so create an empty page (Empty State).
-                    Instance.m_ProviderRoot.Clear();
-                    Instance.m_ProviderRoot.Add(CreateEmptyPropertyGUI());
+                    Instance.RefreshContent();
                 },
 
                 deactivateHandler = () => Instance.m_ProviderRoot = null,

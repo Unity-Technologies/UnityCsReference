@@ -405,7 +405,7 @@ namespace Unity.Scripting.LifecycleManagement
                         }
                         catch (Exception ex)
                         {
-                            DebugLifecycle.ReportError($"AutoStaticsCleanup ERROR: while {scopeTransitionType} {lifecycleScopeType}, cleanup class {autoCleanup.GetType()} failed with exception {ex}");
+                            DebugLifecycle.ReportError($"AutoStaticsCleanup ERROR: while {scopeTransitionType} {lifecycleScopeType}, cleanup {autoCleanup} (type: {autoCleanup.GetType()}) failed with exception {ex}");
                         }
                     }
                 }

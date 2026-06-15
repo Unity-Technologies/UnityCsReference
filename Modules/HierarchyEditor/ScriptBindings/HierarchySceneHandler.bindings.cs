@@ -208,7 +208,7 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
         {
             var gameObjectNodeType = Hierarchy.GetNodeType<HierarchyGameObjectHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var childNodeType = view.ViewModel.GetNodeType(in child);
             return childNodeType == gameObjectNodeType || childNodeType == subSceneNodeType;
         }
@@ -538,9 +538,9 @@ namespace Unity.Hierarchy.Editor
                 if (go != null)
                     return go.scene;
             }
-            else if (nodeType == Hierarchy.GetNodeType<HierarchySubSceneHandler>())
+            else if (nodeType == Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>())
             {
-                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneHandler>();
+                var subSceneHandler = Hierarchy.GetNodeTypeHandlerBase<HierarchySubSceneAuthoringHandler>();
                 var go = subSceneHandler.GetGameObject(in node);
                 if (go != null)
                     return go.scene;

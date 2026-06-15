@@ -147,6 +147,9 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The mover data used for the shape mover.
         /// </summary>
+        /// <remarks>
+        /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes usability issues as a property.
+        /// </remarks>
         public PhysicsShape.MoverData moverData;
     }
 }

@@ -533,15 +533,7 @@ namespace Unity.GraphToolkit.Editor
             else
             {
                 var selection = GetBlackboardSelection(evt);
-
-                foreach (var elementModel in selection)
-                {
-                    if (elementModel is VariableDeclarationModelBase vdm)
-                    {
-                        categorizedMenuItems = ContextualMenuHelpers.CategorizeMenuItems(vdm.ContextualMenuItems);
-                        break;
-                    }
-                }
+                categorizedMenuItems = ContextualMenuHelpers.GetMenuItemsForSelection(selection);
             }
 
             categorizedMenuItems ??= ContextualMenuHelpers.CategorizeMenuItems(ContextualMenuItems);
@@ -908,5 +900,17 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.selectAllItem,
             ContextualMenuHelpers.selectUnusedItem,
         };
+
+        public class TestAccess
+        {
+            readonly Blackboard m_Blackboard;
+
+            public TestAccess(Blackboard blackboard)
+            {
+                m_Blackboard = blackboard;
+            }
+
+            public void BuildContextualMenu(ContextualMenuPopulateEvent e) => m_Blackboard.BuildContextualMenu(e);
+        }
     }
 }

@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// See <see cref="PhysicsWorld.Simulate(float)"/> and <see cref="PhysicsWorld.Simulate(ReadOnlySpan{PhysicsWorld}, float)"/>.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly struct PhysicsEvents
+    public readonly partial struct PhysicsEvents
     {
         /// <summary>
         /// An event produced by a <see cref="PhysicsBody"/> that indicates the simulation changed the body in one of the following ways:
@@ -135,7 +135,7 @@ namespace Unity.U2D.Physics
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-	        /// The unique Id of the contact.
+            /// The unique Id of the contact.
             /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="PhysicsShape.ContactId.isValid"/>.
             /// </summary>
             public readonly PhysicsShape.ContactId contactId => m_ContactId;
@@ -172,7 +172,7 @@ namespace Unity.U2D.Physics
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-	        /// The unique Id of the contact.
+            /// The unique Id of the contact.
             /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="PhysicsShape.ContactId.isValid"/>.
             /// </summary>
             public readonly PhysicsShape.ContactId contactId => m_ContactId;
@@ -210,7 +210,7 @@ namespace Unity.U2D.Physics
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-	        /// The unique Id of the contact.
+            /// The unique Id of the contact.
             /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="PhysicsShape.ContactId.isValid"/>.
             /// </summary>
             public readonly PhysicsShape.ContactId contactId => m_ContactId;
@@ -271,7 +271,7 @@ namespace Unity.U2D.Physics
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <undoc/>
-            public override readonly string ToString() => $"ContactFilterEvent: physicwWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}";
+            public override readonly string ToString() => $"ContactFilterEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}";
 
             #region Internal
 
@@ -314,7 +314,7 @@ namespace Unity.U2D.Physics
             public readonly Vector2 normal => m_Normal;
 
             /// <undoc/>
-            public override readonly string ToString() => $"PreSolveEvent: physicwWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
+            public override readonly string ToString() => $"PreSolveEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
 
             #region Internal
 
@@ -353,7 +353,7 @@ namespace Unity.U2D.Physics
         /// An event produced and sent to the callback target set with <see cref="PhysicsWorld.transformWriteCallbackTarget"/> which must implement <see cref="PhysicsCallbacks.ITransformWriteCallback"/> which will have <see cref="PhysicsCallbacks.ITransformWriteCallback.OnTransformWrite(PhysicsEvents.TransformWriteEvent)"/> called allowing custom transform writing.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct TransformWriteEvent
+        public readonly partial struct TransformWriteEvent
         {
             internal TransformWriteEvent(
                 PhysicsWorld world,
@@ -391,7 +391,7 @@ namespace Unity.U2D.Physics
             /// The transform plane (custom) of the physics world when the event was created.
             /// This maybe not be relevant unless the transform plane is <see cref="PhysicsWorld.TransformPlane.Custom"/>.
             /// </summary>
-            public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => m_TransfomPlaneCustom;
+            public readonly PhysicsWorld.TransformPlaneCustom transformPlaneCustom => m_TransfomPlaneCustom;
 
             /// <summary>
             /// The transform tween mode of the physics world when the event was created.
@@ -400,6 +400,10 @@ namespace Unity.U2D.Physics
 
             /// <summary>
             /// The transform write tweens available to be configured.
+            ///
+            /// The returned <see cref="NativeArray{T}"/> aliases the per-frame internal buffer owned by the world; it does not own its memory (so disposing it does nothing).
+            /// The contents are only valid until the next simulation step runs, after which the buffer may be reused or destroyed.
+            /// If a longer-lived copy is required, copy the contents into a caller-owned <see cref="NativeArray{T}"/>.
             /// </summary>
             public readonly NativeArray<PhysicsBody.TransformWriteTween> tweens => m_TransformWriteTweens;
 
@@ -419,7 +423,7 @@ namespace Unity.U2D.Physics
         /// An event produced and sent to the callback target set with <see cref="PhysicsWorld.transformWriteCallbackTarget"/> which must implement <see cref="PhysicsCallbacks.ITransformWriteCallback"/> which will have <see cref="PhysicsCallbacks.ITransformWriteCallback.OnTransformTweenWrite(TransformTweenWriteEvent)"/> called allowing custom transform writing.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct TransformTweenWriteEvent
+        public readonly partial struct TransformTweenWriteEvent
         {
             internal TransformTweenWriteEvent(
                 PhysicsWorld world,
@@ -462,10 +466,14 @@ namespace Unity.U2D.Physics
             /// The transform plane (custom) of the physics world when the event was created.
             /// This maybe not be relevant unless the transform plane is <see cref="PhysicsWorld.TransformPlane.Custom"/>.
             /// </summary>
-            public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => m_TransfomPlaneCustom;
+            public readonly PhysicsWorld.TransformPlaneCustom transformPlaneCustom => m_TransfomPlaneCustom;
 
             /// <summary>
             /// The transform write tweens available to be configured.
+            ///
+            /// The returned <see cref="NativeArray{T}"/> aliases the per-frame internal buffer owned by the world; it does not own its memory (so disposing it does nothing).
+            /// The contents are only valid until the next simulation step runs, after which the buffer may be reused or destroyed.
+            /// If a longer-lived copy is required, copy the contents into a caller-owned <see cref="NativeArray{T}"/>.
             /// </summary>
             public readonly NativeArray<PhysicsBody.TransformWriteTween> tweens => m_TransformWriteTweens;
 

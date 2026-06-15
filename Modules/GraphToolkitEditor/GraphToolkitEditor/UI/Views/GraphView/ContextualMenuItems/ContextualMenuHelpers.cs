@@ -14,7 +14,7 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
     /// </summary>
     static class ContextualMenuHelpers
     {
-        internal static Dictionary<ContextualMenuCategory, List<ContextualMenuItem>> GetMenuItemsForSelection(List<GraphElementModel> selection)
+        internal static Dictionary<ContextualMenuCategory, List<ContextualMenuItem>> GetMenuItemsForSelection(IReadOnlyList<GraphElementModel> selection)
         {
             // If the selection is null or empty, return null.
             if (selection == null || selection.Count == 0)

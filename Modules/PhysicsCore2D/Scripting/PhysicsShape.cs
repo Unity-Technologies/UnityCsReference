@@ -334,7 +334,7 @@ namespace Unity.U2D.Physics
                 /// <summary>
                 /// Is the contact point speculative i.e. not currently interacting?
                 /// </summary>
-                public readonly bool speculative => totalNormalImpulse > 0.0f;
+                public readonly bool speculative => totalNormalImpulse == 0.0f;
 
                 #region Internal
 
@@ -1055,7 +1055,7 @@ namespace Unity.U2D.Physics
             {
                 ShapeType.Circle => m_Count == 1,
                 ShapeType.Capsule => m_Count == 2 && radius > 0.0f,
-                ShapeType.Polygon => m_Count > 3 && count <= PhysicsConstants.MaxPolygonVertices,
+                ShapeType.Polygon => m_Count >= 3 && count <= PhysicsConstants.MaxPolygonVertices,
                 ShapeType.Segment => m_Count == 2,
                 ShapeType.ChainSegment => m_Count == 2,
                 _ => throw new NotImplementedException()
@@ -1214,7 +1214,7 @@ namespace Unity.U2D.Physics
         /// <param name="geometry">The shape geometry to use.</param>
         /// <param name="definition">The shape definition to use.</param>
         /// <returns>The created shape.</returns>
-        public static PhysicsShape CreateShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition) => PhysicsShape_CreateChainSegmenShapet(body, geometry, definition);
+        public static PhysicsShape CreateShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition) => PhysicsShape_CreateChainSegmentShape(body, geometry, definition);
 
         /// <summary>
         /// Create a Chain Segment shape, using its default definition, attached to the specified body.
@@ -1346,7 +1346,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The priority for combining the <see cref="PhysicsShape.friction"/> properties when two shapes come into contact.
-        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.frictionCombine"/> will be used.
+        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.frictionMixing"/> will be used.
         /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
         /// This is assigned to the current <see cref="PhysicsShape.surfaceMaterial"/>.
         /// </summary>
@@ -1354,7 +1354,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// The priority for combining the <see cref="PhysicsShape.bounciness"/> properties when two shapes come into contact.
-        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.bouncinessCombine"/> will be used.
+        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="PhysicsShape.SurfaceMaterial.bouncinessMixing"/> will be used.
         /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
         /// This is assigned to the current <see cref="PhysicsShape.surfaceMaterial"/>.
         /// </summary>
@@ -1436,7 +1436,7 @@ namespace Unity.U2D.Physics
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
         /// A contact filter callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IContactFilterCallback"/>.
         /// </summary>
-        public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContacFiltertCallbacks(this, value); }
+        public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContactFilterCallbacks(this, value); }
 
         /// <summary>
         /// Controls whether this shape produces pre-solve callbacks.

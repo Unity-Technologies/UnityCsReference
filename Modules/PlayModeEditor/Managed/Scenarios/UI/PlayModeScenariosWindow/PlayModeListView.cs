@@ -40,25 +40,12 @@ namespace Unity.PlayMode.Editor
             m_NewItemTextField.OnFinishEdit += s =>
             {
                 m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-                var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                var uniqueName = MakeUniqueScenarioName(s);
+                var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(uniqueName, m_NewItemTextField.userData as Type);
                 if (newConfig != null)
                 {
                     TrySelect(newConfig);
                 }
-            };
-
-            m_NewItemTextField.OnEdit += s =>
-            {
-                bool nameExists = false;
-                foreach (var c in PlayModeScenarioUtils.GetAllConfigs())
-                {
-                    if (c.name == s)
-                    {
-                        nameExists = true;
-                        break;
-                    }
-                }
-                m_NewItemTextField.InputIsValid = !nameExists;
             };
 
             m_NewItemTextField.OnCancel += () => m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
@@ -202,29 +189,20 @@ namespace Unity.PlayMode.Editor
 
         internal void ShowAddTextField(Type type, string newItemName)
         {
-            var allConfigs = PlayModeScenarioUtils.GetAllConfigs();
-            var finalName = newItemName;
-            int counter = 1;
-            bool nameExists = true;
-            while (nameExists)
-            {
-                nameExists = false;
-                foreach (var c in allConfigs)
-                {
-                    if (c.name == finalName)
-                    {
-                        nameExists = true;
-                        finalName = newItemName + $"({counter})";
-                        counter++;
-                        break;
-                    }
-                }
-            }
-
-            m_NewItemTextField.Text = finalName;
+            m_NewItemTextField.Text = MakeUniqueScenarioName(newItemName);
             m_NewItemTextField.userData = type;
+            m_NewItemTextField.InputIsValid = true;
             m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
             m_NewItemTextField.EnableEditMode();
+        }
+
+        static string MakeUniqueScenarioName(string desiredName)
+        {
+            var allConfigs = PlayModeScenarioUtils.GetAllConfigs();
+            var existingNames = new string[allConfigs.Count];
+            for (int i = 0; i < allConfigs.Count; i++)
+                existingNames[i] = allConfigs[i].name;
+            return ObjectNames.GetUniqueName(existingNames, desiredName);
         }
     }
 }

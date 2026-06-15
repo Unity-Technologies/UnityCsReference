@@ -1838,13 +1838,18 @@ namespace UnityEngine.TextCore
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+        // Shared read-only sentinel for the no-tags fast path to avoid allocating per frame.
+        private static readonly List<string> s_EmptyTagNameList = new();
+
         internal static bool HasFontTags(string text, TextSettings textSettings, out List<string> fontAssetNames)
         {
-            fontAssetNames = new();
-
             if (!ContainsFontTag(text))
+            {
+                fontAssetNames = s_EmptyTagNameList;
                 return false;
+            }
 
+            fontAssetNames = new();
             var tags = FindTags(ref text, textSettings, preprocessingOnly: true);
 
             foreach (var tag in tags)
@@ -1863,11 +1868,13 @@ namespace UnityEngine.TextCore
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal static bool HasSpriteTags(string text, TextSettings textSettings, out List<string> spriteAssetNames)
         {
-            spriteAssetNames = new();
-
             if (!ContainsSpriteTag(text))
+            {
+                spriteAssetNames = s_EmptyTagNameList;
                 return false;
+            }
 
+            spriteAssetNames = new();
             var tags = FindTags(ref text, textSettings, preprocessingOnly: true);
 
             foreach (var tag in tags)
@@ -1891,11 +1898,13 @@ namespace UnityEngine.TextCore
 
         internal static bool HasGradientTags(string text, TextSettings textSettings, out List<string> gradientAssetNames)
         {
-            gradientAssetNames = new();
-
             if (!ContainsGradientTag(text))
+            {
+                gradientAssetNames = s_EmptyTagNameList;
                 return false;
+            }
 
+            gradientAssetNames = new();
             var tags = FindTags(ref text, textSettings, preprocessingOnly: true);
 
             foreach (var tag in tags)

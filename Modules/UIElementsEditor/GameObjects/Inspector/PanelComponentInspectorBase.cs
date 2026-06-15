@@ -24,6 +24,10 @@ namespace UnityEditor.UIElements.Inspector
         const string k_InspectorEditSourceAssetButtonTooltip = "Edit the Visual Tree Asset (UXML) in the UI Builder.";
         const string k_InspectorNewSourceAssetButtonTooltip = "Create a new Visual Tree Asset (UXML).";
 
+        // Flags set by PresetEditor on temporary preview GameObjects
+        const HideFlags k_PresetPreviewFlags = HideFlags.HideInHierarchy | HideFlags.NotEditable |
+                                                HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+
         private static StyleSheet s_DefaultStyleSheet;
         private static VisualTreeAsset s_InspectorUxml;
 
@@ -63,7 +67,9 @@ namespace UnityEditor.UIElements.Inspector
             // Show the PanelRenderer migration warning when inspecting a UIDocument,
             // but only if there isn't a PanelRenderer component on the same GameObject.
             bool shouldShowMigrationWarning = (parentObjectType == typeof(UIDocument));
-            bool shouldEnableConversionButton = (target as Component).GetComponent<PanelRenderer>() == null;
+
+            // Show the conversion button if the inspected component is a UIDocument without a PanelRenderer, and it's not a preset preview (temporary GameObject created by PresetEditor)
+            bool shouldEnableConversionButton = !Presets.Preset.IsEditorTargetAPreset(target) && (target as Component).GetComponent<PanelRenderer>() == null;
 
             var migrationContainer = m_RootVisualElement.MandatoryQ<VisualElement>("migration-warning-container");
             if (!shouldShowMigrationWarning)
@@ -102,6 +108,7 @@ namespace UnityEditor.UIElements.Inspector
             m_PositionEnumField.Init(pc.position);
             m_PositionEnumField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change Position");
                 pc.position = (Position)evt.newValue;
             });
 
@@ -109,6 +116,7 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceSizeField.Init(pc.worldSpaceSizeMode);
             m_WorldSpaceSizeField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change World Space Size Mode");
                 pc.worldSpaceSizeMode = (WorldSpaceSizeMode)evt.newValue;
             });
 
@@ -138,6 +146,7 @@ namespace UnityEditor.UIElements.Inspector
             m_PivotReferenceSizeField.Init(pc.pivotReferenceSize);
             m_PivotReferenceSizeField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change Pivot Reference Size");
                 pc.pivotReferenceSize = (PivotReferenceSize)evt.newValue;
             });
 
@@ -145,6 +154,7 @@ namespace UnityEditor.UIElements.Inspector
             m_PivotField.Init(pc.pivot);
             m_PivotField.RegisterValueChangedCallback(evt =>
             {
+                Undo.RecordObject(target, "Change Pivot");
                 pc.pivot = (Pivot)evt.newValue;
             });
 
@@ -220,6 +230,11 @@ namespace UnityEditor.UIElements.Inspector
             bool hasVisualTreeAsset = panelComponent.visualTreeAsset != null;
             m_SourceAssetButton.text = hasVisualTreeAsset ? "Edit..." : "New";
             m_SourceAssetButton.tooltip = hasVisualTreeAsset ? k_InspectorEditSourceAssetButtonTooltip : k_InspectorNewSourceAssetButtonTooltip;
+
+            // Hide button for preset previews (temporary GameObjects created by PresetEditor)
+            // These temporary objects are destroyed during asset creation which causes exceptions
+            bool isPresetPreview = (panelComponent.gameObject.hideFlags & k_PresetPreviewFlags) == k_PresetPreviewFlags;
+            m_SourceAssetButton.style.display = isPresetPreview ? DisplayStyle.None : DisplayStyle.Flex;
 
             // Let the component update its rendering properties (UUM-105765)
             panelComponent.PerformUpdate();

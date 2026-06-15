@@ -486,18 +486,22 @@ namespace UnityEditor.Build.Profile
             if (platformSettings == null)
                 return;
 
+            var buildTarget = profile.buildTarget;
+
             platformSettings.development = development;
             platformSettings.connectProfiler = connectProfiler;
             platformSettings.buildWithDeepProfilingSupport = buildWithDeepProfilingSupport;
-            var isCoverageSupported = BuildProfileModuleUtil.IsCoverageSupported(profile.buildTarget);
-            platformSettings.buildWithCodeCoverage = isCoverageSupported ? buildWithCodeCoverage : false;
+            if (!BuildProfileModuleUtil.IsStandalonePlatform(buildTarget))
+                platformSettings.buildWithCodeCoverage = false;
+            else
+                platformSettings.buildWithCodeCoverage = buildWithCodeCoverage;
             platformSettings.allowDebugging = allowDebugging;
             platformSettings.waitForManagedDebugger = waitForManagedDebugger;
             platformSettings.managedDebuggerFixedPort = managedDebuggerFixedPort;
             platformSettings.explicitNullChecks = explicitNullChecks;
             platformSettings.explicitDivideByZeroChecks = explicitDivideByZeroChecks;
             platformSettings.explicitArrayBoundsChecks = explicitArrayBoundsChecks;
-            if (BuildProfileModuleUtil.IsStandalonePlatform(profile.buildTarget))
+            if (BuildProfileModuleUtil.IsStandalonePlatform(buildTarget))
                 platformSettings.compressionType = compressionType;
             platformSettings.installInBuildFolder = installInBuildFolder;
             platformSettings.SetSharedSetting(k_SettingWindowsDevicePortalAddress, windowsDevicePortalAddress);

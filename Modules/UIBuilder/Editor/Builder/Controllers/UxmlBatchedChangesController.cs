@@ -19,7 +19,7 @@ internal class UxmlBatchedChangesController: IDisposable
     private struct BatchedChange
     {
         public VisualElement fieldElement { get; set; }
-        public SerializedProperty property { get; set; }
+        public string propertyPath { get; set; }
         public IBatchedUxmlChangesListener listener { get; set; }
         public VisualTreeAsset uxmlDocument { get; set; }
     }
@@ -107,7 +107,7 @@ internal class UxmlBatchedChangesController: IDisposable
             return;
 
         var fieldElement = GetRootFieldElement(target);
-        m_BatchedChanges.Add(new BatchedChange { fieldElement = fieldElement, property = property, listener = listener, uxmlDocument = uxmlDocument });
+        m_BatchedChanges.Add(new BatchedChange { fieldElement = fieldElement, propertyPath = property.propertyPath, listener = listener, uxmlDocument = uxmlDocument });
     }
 
     /// <summary>
@@ -264,7 +264,7 @@ internal class UxmlBatchedChangesController: IDisposable
     private void AddBatchedUxmlObjectChange(VisualElement target, SerializedProperty property, IBatchedUxmlChangesListener listener, VisualTreeAsset uxmlDocument = null)
     {
         var fieldElement = GetRootFieldElement(target);
-        m_BatchedUxmlObjectChanges.Add(new BatchedChange { fieldElement = fieldElement, property = property, listener = listener, uxmlDocument = uxmlDocument});
+        m_BatchedUxmlObjectChanges.Add(new BatchedChange { fieldElement = fieldElement, propertyPath = property.propertyPath, listener = listener, uxmlDocument = uxmlDocument});
     }
 
     /// <summary>
@@ -304,7 +304,7 @@ internal class UxmlBatchedChangesController: IDisposable
 
                 Undo.IncrementCurrentGroup();
                 var revertGroup = Undo.GetCurrentGroup();
-                var result = changeEvent.listener.SynchronizePath(changeEvent.property.propertyPath, true);
+                var result = changeEvent.listener.SynchronizePath(changeEvent.propertyPath, true);
                 if (!result.success)
                     continue;
 
@@ -366,7 +366,7 @@ internal class UxmlBatchedChangesController: IDisposable
                 if (fieldElement.panel == null)
                     continue;
 
-                var result = changeEvent.listener.SynchronizePath(changeEvent.property.propertyPath, true);
+                var result = changeEvent.listener.SynchronizePath(changeEvent.propertyPath, true);
                 if (!result.success)
                     continue;
 

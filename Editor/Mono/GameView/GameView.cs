@@ -1179,7 +1179,11 @@ namespace UnityEditor
             if (statsWindowAsset != null)
             {
                 m_StatsWindowInstance = statsWindowAsset.CloneTree();
-                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true);     
+                
+                // We set picking mode to ignore so that it doesn't interfere with mouse events in the game view. (UUM-143196)
+                m_StatsWindowInstance.pickingMode = PickingMode.Ignore;
+
+                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true); 
                 InitializeFoldoutState(m_StatsWindowInstance, "SceneFoldout", true);
                 InitializeFoldoutState(m_StatsWindowInstance, "DrawsFoldout", false);
                 InitializeFoldoutState(m_StatsWindowInstance, "MemoryFoldout", false);

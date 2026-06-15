@@ -218,6 +218,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Switch2.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.CodeCoverage.Tests.Editor")]
 //For add Component tests
 [assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.Playmode.EditorScripts.AssetCreation")]
 

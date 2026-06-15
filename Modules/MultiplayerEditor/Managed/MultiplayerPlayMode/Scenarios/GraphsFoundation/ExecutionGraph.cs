@@ -240,7 +240,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             int completed;
 
             var runningTasks = new List<Task>(stageNodes.Count);
-            while ((nodesToRun = GetNextNodesToRun(stageNodes, runningTasks.Count == 0, out completed)).Count > 0 || runningTasks.Count > 0)
+            while ((nodesToRun = GetNextNodesToRun(stageNodes, runningTasks.Count == 0, stage, out completed)).Count > 0 || runningTasks.Count > 0)
             {
                 foreach (var node in nodesToRun)
                 {
@@ -324,7 +324,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        private List<ExecutionNode> GetNextNodesToRun(IEnumerable<ExecutionNode> candidates, bool allowIsolation, out int completed)
+        private List<ExecutionNode> GetNextNodesToRun(IEnumerable<ExecutionNode> candidates, bool allowIsolation, ExecutionStage stage, out int completed)
         {
             var availableNodes = new List<ExecutionNode>();
             var availableIsolationNode = (ExecutionNode)null;
@@ -341,7 +341,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (candidate.State != ExecutionState.Idle && !candidate.Interrupted)
                     continue;
 
-                if (HasAllDependenciesCompleted(candidate))
+                if (HasAllDependenciesCompleted(candidate) ||
+                    (stage is ExecutionStage.Cleanup && HasAllDependenciesCompleted(candidate, ExecutionStage.Cleanup)))
                 {
                     if (HasToRunInIsolation(candidate))
                         availableIsolationNode = candidate;
@@ -374,6 +375,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             var inputs = FindConnectedInputs(node);
             return HasAllConnectionsCompleted(inputs);
+        }
+
+        private bool HasAllDependenciesCompleted(ExecutionNode node, ExecutionStage stage)
+        {
+            var inputs = FindConnectedInputs(node);
+            inputs = FilterInputsByStage(inputs, stage);
+            return HasAllConnectionsCompleted(inputs);
+        }
+
+        private IEnumerable<NodeInput> FilterInputsByStage(IEnumerable<NodeInput> inputs, ExecutionStage stage)
+        {
+            foreach (var input in inputs)
+            {
+                var dependency = input.GetSource().GetNode();
+                if (IsNodeInStage(dependency, stage))
+                    yield return input;
+            }
+        }
+
+        private bool IsNodeInStage(ExecutionNode node, ExecutionStage stage)
+        {
+            return Stages[(int)stage].Nodes.Contains(node);
         }
 
         private bool HasAllConnectionsCompleted(IEnumerable<NodeInput> inputs)

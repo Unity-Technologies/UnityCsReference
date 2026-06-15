@@ -1124,7 +1124,7 @@ namespace UnityEngine.Tilemaps
     public partial struct TileChangeData
     {
         public Vector3Int position { get { return m_Position; } set { m_Position = value; } }
-        public TileBase tile { get { return (TileBase)m_TileAsset; } set { m_TileAsset = value; } }
+        public TileBase tile { get { return m_TileAsset as TileBase; } set { m_TileAsset = value; } }
         public Color color { get { return m_Color; } set { m_Color = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
 

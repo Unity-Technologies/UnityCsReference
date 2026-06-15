@@ -112,7 +112,7 @@ namespace Unity.U2D.Physics
             PositionY = 1 << 1,
 
             /// <summary>
-            /// FreConstraineze rotation along the Z-axis.
+            /// Constrain rotation along the Z-axis.
             /// </summary>
             Rotation = 1 << 2,
 
@@ -1067,6 +1067,16 @@ namespace Unity.U2D.Physics
         /// This should only be used for circular objects, such as wheels, balls etc.
         /// </summary>
         public readonly bool fastRotationAllowed { get => PhysicsBody_GetFastRotationAllowed(this); set => PhysicsBody_SetFastRotationAllowed(this, value); }
+
+        /// <summary>
+        /// Controls contact recycling for this body. Enabled by default.
+        /// Contact recycling reuses contact manifolds when bodies move only slightly, improving performance.
+        /// Disabling it can avoid ghost collisions, at the cost of higher simulation time.
+        /// Both bodies in a contact must have recycling enabled for that contact to be recycled.
+        /// Existing contacts retain their prior setting; only contacts created after a change will be recycled.
+        /// See <see cref="PhysicsBodyDefinition.contactRecyclingAllowed"/>.
+        /// </summary>
+        public readonly bool contactRecyclingAllowed { get => PhysicsBody_GetContactRecyclingAllowed(this); set => PhysicsBody_SetContactRecyclingAllowed(this, value); }
 
         /// <summary>
         /// Treat this body as high speed object that performs continuous collision detection against dynamic and kinematic bodies, but not other high speed bodies.

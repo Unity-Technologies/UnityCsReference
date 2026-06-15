@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.U2D.Physics.Editor
@@ -14,12 +15,14 @@ namespace Unity.U2D.Physics.Editor
     [CustomPropertyDrawer(typeof(PhysicsQuery.QueryFilter))]
     sealed class QueryFilterPropertyDrawer : PropertyDrawer
     {
+        #region UITK
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
 
             var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(QueryFilterPropertyDrawer).ToString() };
-            root.Add(foldout);            
+            root.Add(foldout);
 
             const string categoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_Categories);
             const string hitCategoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_HitCategories);
@@ -87,5 +90,61 @@ namespace Unity.U2D.Physics.Editor
 
             return root;
         }
+
+        #endregion
+
+        #region IMGUI
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            if (!property.isExpanded)
+                return EditorGUIUtility.singleLineHeight;
+
+            var ignoreFilterProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter));
+            return EditorGUIUtility.singleLineHeight
+                + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * 2
+                + EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(ignoreFilterProperty, true);
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            label = EditorGUI.BeginProperty(position, label, property);
+
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsQuery.QueryFilter>(property);
+
+            var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);
+
+            if (property.isExpanded)
+            {
+                EditorGUI.indentLevel++;
+
+                var categoriesProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_Categories));
+                var hitCategoriesProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_HitCategories));
+                var ignoreFilterProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter));
+
+                var categoriesBitMask = categoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+                var hitCategoriesBitMask = hitCategoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+
+                float y = foldoutRect.yMax + EditorGUIUtility.standardVerticalSpacing;
+                var lineHeight = EditorGUIUtility.singleLineHeight;
+                var spacing = EditorGUIUtility.standardVerticalSpacing;
+
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(categoriesProperty.displayName), categoriesBitMask, showAsPhysicsMask);
+                y += lineHeight + spacing;
+
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(hitCategoriesProperty.displayName), hitCategoriesBitMask, showAsPhysicsMask);
+                y += lineHeight + spacing;
+
+                var ignoreFilterHeight = EditorGUI.GetPropertyHeight(ignoreFilterProperty, true);
+                EditorGUI.PropertyField(new Rect(position.x, y, position.width, ignoreFilterHeight), ignoreFilterProperty, true);
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUI.EndProperty();
+        }
+
+        #endregion
     }
 }

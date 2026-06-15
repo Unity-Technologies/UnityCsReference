@@ -6192,6 +6192,9 @@
     <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
       <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\DelegateAutoCleanup.cs">
+      <Link>Runtime\Scripting\LifecycleManagement\DelegateAutoCleanup.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\DomainReloadLifecycleController.cs">
       <Link>Runtime\Scripting\LifecycleManagement\DomainReloadLifecycleController.cs</Link>
     </Compile>

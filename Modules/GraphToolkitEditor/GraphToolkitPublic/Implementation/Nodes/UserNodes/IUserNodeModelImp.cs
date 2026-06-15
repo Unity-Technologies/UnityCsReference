@@ -11,6 +11,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
     {
         public Node Node { get; }
 
+        bool OnEnableCalled { get; set; }
+
         void CustomOnDefineNode(NodeModel.NodeDefinitionScope definitionScope)
         {
             if (Node == null)
@@ -30,10 +32,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
         void CallOnEnable()
         {
             Node?.OnEnable();
+            OnEnableCalled = true;
         }
 
         void CallOnDisable()
         {
+            OnEnableCalled = false;
             Node?.OnDisable();
         }
     }

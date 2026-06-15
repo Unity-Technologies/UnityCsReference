@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("HierarchyModule")]
+    [VisibleToOtherModules("HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class HierarchyPreferences
     {
         const bool kUseNewHierarchy = false;
@@ -31,6 +31,12 @@ namespace UnityEditor
         public static readonly SavedBool UseQueryBuilder = new SavedBool("HierarchyWindow.UseQueryBuilder", true);
         public static readonly SavedBool AlternatingRowBackground = new SavedBool("HierarchyWindow.AlternatingRowBackground", true);
         public static readonly SavedBool UseNewHierarchy = new SavedBool("HierarchyWindow.UseNewHierarchy", kUseNewHierarchy);
+
+        public static bool UseNewHierarchyWindowEnabled
+        {
+            get => UseNewHierarchy.value;
+            set => UseNewHierarchy.value = value;
+        }
 
         public static void EnsureCorrectHierarchyIsInUse(EditorWindow window)
         {
