@@ -393,6 +393,9 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettingsPtr")]
         private static extern UnityEngine.Object InternalGetPlayerSettingsObject();
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern PlayerSettings GetProjectSettingsPlayerSettings();
+
         internal static void ValidateBuildTargetNameParameter(string buildTargetName, bool unknownIsValid = false)
         {
             // The empty string is the valid form of BuildTargetGroup.Unknown, so don't throw an execption for that case.

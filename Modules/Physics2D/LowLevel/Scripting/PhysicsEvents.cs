@@ -132,7 +132,7 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-	        /// The unique Id of the contact.
+            /// The unique Id of the contact.
             /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="LowLevelPhysics2D.PhysicsShape.ContactId.isValid"/>.
             /// </summary>
             public readonly PhysicsShape.ContactId contactId => m_ContactId;
@@ -169,7 +169,7 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-	        /// The unique Id of the contact.
+            /// The unique Id of the contact.
             /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="LowLevelPhysics2D.PhysicsShape.ContactId.isValid"/>.
             /// </summary>
             public readonly PhysicsShape.ContactId contactId => m_ContactId;
@@ -207,7 +207,7 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-	        /// The unique Id of the contact.
+            /// The unique Id of the contact.
             /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity with <see cref="LowLevelPhysics2D.PhysicsShape.ContactId.isValid"/>.
             /// </summary>
             public readonly PhysicsShape.ContactId contactId => m_ContactId;
@@ -268,7 +268,7 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <undoc/>
-            public override readonly string ToString() => $"ContactFilterEvent: physicwWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}";
+            public override readonly string ToString() => $"ContactFilterEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}";
 
             #region Internal
 
@@ -311,7 +311,7 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly Vector2 normal => m_Normal;
 
             /// <undoc/>
-            public override readonly string ToString() => $"PreSolveEvent: physicwWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
+            public override readonly string ToString() => $"PreSolveEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
 
             #region Internal
 

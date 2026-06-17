@@ -42,7 +42,7 @@ namespace UnityEditor
 
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
-            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("Unable to start the baking process as the required version of Apple Rosetta could not be found", MessageType.Error);
+            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("Unable to start the baking process as the required version of Apple Rosetta could not be found.", MessageType.Error);
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
@@ -580,7 +580,7 @@ namespace UnityEditor
                             else
                             {
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
-                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: !IsPrecomputeBakingAndDenosingSupported()))
+                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: ShouldDisableMainBakeButton()))
                                 {
                                     DoBake();
 
@@ -752,7 +752,7 @@ namespace UnityEditor
                 }
             }
 
-            if (!Lightmapping.IsRealtimeGiPrecomputeSupported())
+            if (Lightmapping.IsRosettaRequiredAndUnavailable())
             {
                 using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
                 {
@@ -870,8 +870,8 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
-        // Check if anything is causing baking not to be supported
-        private static bool IsPrecomputeBakingAndDenosingSupported() => Lightmapping.IsRealtimeGiPrecomputeSupported() && SelectedDenoisersSupported();
+        private static bool ShouldDisableMainBakeButton() =>
+            Lightmapping.IsRosettaRequiredAndUnavailable() || !SelectedDenoisersSupported();
 
         static bool SelectedDenoisersSupported()
         {

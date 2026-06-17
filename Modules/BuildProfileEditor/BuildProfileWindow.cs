@@ -628,11 +628,12 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileInspectorElement.Clear();
             m_BuildProfileInspectorHeaderElement.Clear();
 
-            // Builds can only be made for an active BuildProfile,
-            // otherwise allow activating the selected profile.
-            UpdateFormButtonState(profile);
-
             m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateInspectorGUI());
+
+            // CreateInspectorGUI may complete async profile initialization (e.g. dedicated server
+            // package install). Refresh footer buttons after the inspector is built so CanBuildLocally
+            // reflects the latest profile state.
+            UpdateFormButtonState(profile);
 
             // Editor User Build Settings track 'selected' build target group.
             // This was used by different UX to update default build target group tabs

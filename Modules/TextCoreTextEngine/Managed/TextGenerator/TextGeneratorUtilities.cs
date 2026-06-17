@@ -1803,7 +1803,7 @@ namespace UnityEngine.TextCore.Text
 
         public static bool IsBitmapRendering(GlyphRenderMode glyphRenderMode)
         {
-            return glyphRenderMode == GlyphRenderMode.RASTER || glyphRenderMode == GlyphRenderMode.RASTER_HINTED || glyphRenderMode == GlyphRenderMode.SMOOTH || glyphRenderMode == GlyphRenderMode.SMOOTH_HINTED;
+            return glyphRenderMode == GlyphRenderMode.RASTER || glyphRenderMode == GlyphRenderMode.RASTER_HINTED || glyphRenderMode == GlyphRenderModeInternal.RASTER_HINTED_STRONG || glyphRenderMode == GlyphRenderMode.SMOOTH || glyphRenderMode == GlyphRenderMode.SMOOTH_HINTED;
         }
 
         public static bool IsBaseGlyph(uint c)

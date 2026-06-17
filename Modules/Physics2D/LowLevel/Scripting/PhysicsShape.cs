@@ -310,7 +310,7 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// <summary>
                 /// Is the contact point speculative i.e. not currently interacting?
                 /// </summary>
-                public readonly bool speculative => totalNormalImpulse > 0.0f;
+                public readonly bool speculative => totalNormalImpulse == 0.0f;
 
                 #region Internal
 
@@ -1087,7 +1087,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="geometry">The shape geometry to use.</param>
         /// <param name="definition">The shape definition to use.</param>
         /// <returns>The created shape.</returns>
-        public static PhysicsShape CreateShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition) => PhysicsShape_CreateChainSegmenShapet(body, geometry, definition);
+        public static PhysicsShape CreateShape(PhysicsBody body, ChainSegmentGeometry geometry, PhysicsShapeDefinition definition) => PhysicsShape_CreateChainSegmentShape(body, geometry, definition);
 
         /// <summary>
         /// Create a Chain Segment shape, using its default definition, attached to the specified body.
@@ -1220,7 +1220,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// The priority for combining the <see cref="LowLevelPhysics2D.PhysicsShape.friction"/> properties when two shapes come into contact.
-        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.frictionCombine"/> will be used.
+        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.frictionMixing"/> will be used.
         /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
@@ -1228,7 +1228,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// The priority for combining the <see cref="LowLevelPhysics2D.PhysicsShape.bounciness"/> properties when two shapes come into contact.
-        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.bouncinessCombine"/> will be used.
+        /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.bouncinessMixing"/> will be used.
         /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
@@ -1311,7 +1311,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
         /// A contact filter callback will call the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactFilterCallback"/>.
         /// </summary>
-        public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContacFiltertCallbacks(this, value); }
+        public readonly bool contactFilterCallbacks { get => PhysicsShape_GetContactFilterCallbacks(this); set => PhysicsShape_SetContactFilterCallbacks(this, value); }
 
         /// <summary>
         /// Controls whether this shape produces pre-solve callbacks.

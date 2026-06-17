@@ -30,7 +30,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Get a default <see cref="LowLevelPhysics2D.PhysicsWorld"/> definition.
         /// </summary>
-        public static PhysicsWorldDefinition defaultDefinition { get => PhysicsWorld_GetDefaultDefinition(true); }
+        public static PhysicsWorldDefinition defaultDefinition => PhysicsWorld_GetDefaultDefinition(true);
 
         /// <summary>
         /// Get/Set the gravity vector applied to all bodies in the world, usually in m/s^2.

@@ -5,7 +5,7 @@
 namespace UnityEngine.LowLevelPhysics2D
 {
     /// <summary>
-    /// Contacts used by physics.
+    /// Constants used throughout the 2D physics system.
     /// </summary>
     public readonly struct PhysicsConstants
     {

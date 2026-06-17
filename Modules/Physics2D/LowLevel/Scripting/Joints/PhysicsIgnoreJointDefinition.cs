@@ -19,7 +19,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create a default <see cref="LowLevelPhysics2D.PhysicsIgnoreJoint"/> definition.
         /// </summary>
-        public PhysicsIgnoreJointDefinition() { this = IgnorePhysicsJoint_GetDefaultDefinition(); }
+        public PhysicsIgnoreJointDefinition() { this = defaultDefinition; }
 
         /// <summary>
         /// Create a default <see cref="LowLevelPhysics2D.PhysicsIgnoreJoint"/> definition.

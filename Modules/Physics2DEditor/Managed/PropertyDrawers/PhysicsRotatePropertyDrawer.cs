@@ -26,7 +26,7 @@ namespace UnityEditor.LowLevelPhysics2D
             var directionProperty = property.FindPropertyRelative(nameof(PhysicsRotate.direction));
             var rotation = LimitPrecision(PhysicsMath.ToDegrees(new PhysicsRotate { direction = directionProperty.vector2Value }.angle));
 
-            m_RotationField = new FloatField("Rotation") { tooltip = Tooltips.rotation, value = rotation };
+            m_RotationField = new FloatField(property.displayName) { tooltip = Tooltips.rotation, value = rotation };
             m_RotationField.AddToClassList(FloatField.alignedFieldUssClassName);
 
             m_DirectionField = new Vector2Field { bindingPath = directionProperty.propertyPath };

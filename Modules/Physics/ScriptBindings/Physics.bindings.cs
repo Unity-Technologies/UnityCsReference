@@ -40,6 +40,30 @@ namespace UnityEngine
         All = SyncTransforms | IgnoreEmptyScenes
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct JointLimitRange
+    {
+        public float min;
+        public float max;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct IntegrationLimits
+    {
+        public const int JointTypeCount = 7; // Matches JointType::Count in C++
+
+        fixed float m_Joints[JointTypeCount * 2]; // Each JointLimitRange has 2 floats (cannot use fixed JointLimitRange[] - C# limitation)
+
+        public JointLimitRange GetJointLimit(ArticulationJointType jointType)
+        {
+            int index = (int)jointType * 2;
+            if (index < 0 || index >= JointTypeCount * 2 - 1)
+                return default;
+
+            return new JointLimitRange { min = m_Joints[index], max = m_Joints[index + 1] };
+        }
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     public unsafe struct IntegrationInfo
     {
@@ -70,6 +94,8 @@ namespace UnityEngine
         fixed byte m_Name[16];
         [FieldOffset(36)]
         fixed byte m_Desc[220];
+        [FieldOffset(256)]
+        IntegrationLimits m_Limit;
 
         public readonly uint id => m_Id;
 
@@ -101,6 +127,8 @@ namespace UnityEngine
         public bool isFallback => id == k_FallbackIntegrationId;
 
         internal bool isExperimental => m_IntegrationVersion[0] < 1;
+
+        internal IntegrationLimits limit => m_Limit;
     }
 
     [NativeHeader("Modules/Physics/PhysicsQuery.h")]

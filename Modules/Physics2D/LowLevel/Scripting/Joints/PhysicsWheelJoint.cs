@@ -105,12 +105,12 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly PhysicsJoint.JointType jointType => m_Id.jointType;
 
         /// <summary>
-        /// The second body the joint constrains.
+        /// The first body the joint constrains.
         /// </summary>
         public readonly PhysicsBody bodyA => m_Id.bodyA;
 
         /// <summary>
-        /// A local anchor point on the first body for the constraint.
+        /// The second body the joint constrains.
         /// </summary>
         public readonly PhysicsBody bodyB => m_Id.bodyB;
 
@@ -165,7 +165,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly Vector2 currentConstraintForce => m_Id.currentConstraintForce;
 
         /// <summary>
-        /// Get the current constraint torque used by the joint, usually in newtons.
+        /// Get the current constraint torque used by the joint, usually in newton-meters.
         /// </summary>
         public readonly float currentConstraintTorque => m_Id.currentConstraintTorque;
 
@@ -283,12 +283,12 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly float motorSpeed { get => WheelJoint_GetMotorSpeed(this); set => WheelJoint_SetMotorSpeed(this, value); }
 
         /// <summary>
-        /// The maximum torque the motor can apply, usually in newtons.
+        /// The maximum torque the motor can apply, usually in newton-meters.
         /// </summary>
         public readonly float maxMotorTorque { get => WheelJoint_GetMaxMotorTorque(this); set => WheelJoint_SetMaxMotorTorque(this, value); }
 
         /// <summary>
-        /// Get the current motor torque, usually in newtons.
+        /// Get the current motor torque, usually in newton-meters.
         /// </summary>
         public readonly float currentMotorTorque { get => WheelJoint_GetCurrentMotorTorque(this); }
 

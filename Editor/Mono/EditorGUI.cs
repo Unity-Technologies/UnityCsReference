@@ -550,6 +550,7 @@ namespace UnityEditor
                 isPasswordField = passwordField;
                 s_ActuallyEditing = true;
                 scrollOffset = Vector2.zero;
+                m_HasFocus = true;
                 UnityEditor.Undo.IncrementCurrentGroup();
 
                 m_IMECompositionModeBackup = Input.imeCompositionMode;

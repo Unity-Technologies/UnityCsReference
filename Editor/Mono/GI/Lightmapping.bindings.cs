@@ -473,7 +473,7 @@ namespace UnityEditor
         internal static extern bool BakeReflectionProbeSnapshot(ReflectionProbe probe);
 
         [FreeFunction]
-        internal static extern bool IsRealtimeGiPrecomputeSupported();
+        internal static extern bool IsRosettaRequiredAndUnavailable();
 
         // Used to quickly update all baked reflection probes without GI computations.
         [FreeFunction]

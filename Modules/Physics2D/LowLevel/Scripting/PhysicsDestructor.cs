@@ -61,7 +61,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// The array returned contains a series of ranges where each range is a unique connected island where the range indicates both the start index and length of the original polygon indices.
             /// The number of discovered unique islands is defined by the size of the returned array.
             ///
-            /// This is only valid when fragmenting with a mask with <see cref="LowLevelPhysics2D.PhysicsDestructor.Fragment(FragmentGeometry, FragmentGeometry, ReadOnlySpan{Vector2}, Allocator)"/>.
+            /// This is only populated when fragmenting with a mask with <see cref="LowLevelPhysics2D.PhysicsDestructor.Fragment(FragmentGeometry, FragmentGeometry, ReadOnlySpan{Vector2}, Allocator)"/>; otherwise it returns an empty array.
             /// </summary>
             public NativeArray<RangeInt> unbrokenGeometryIslands => m_UnbrokenGeometryIslands.ToNativeArray<RangeInt>();
 
@@ -80,9 +80,9 @@ namespace UnityEngine.LowLevelPhysics2D
             /// </summary>
             public void Dispose()
             {
-                unbrokenGeometryIslands.Dispose();
-                unbrokenGeometry.Dispose();
-                brokenGeometry.Dispose();
+                m_UnbrokenGeometryIslands.Dispose();
+                m_UnbrokenGeometry.Dispose();
+                m_BrokenGeometry.Dispose();
             }
 
             #region Internal
@@ -118,12 +118,12 @@ namespace UnityEngine.LowLevelPhysics2D
             public NativeArray<PolygonGeometry> rightGeometry => m_RightGeometry.ToNativeArray<PolygonGeometry>();
 
             /// <summary>
-            /// Dispose of the fragment result.
+            /// Dispose of the slice result.
             /// </summary>
             public void Dispose()
             {
-                leftGeometry.Dispose();
-                rightGeometry.Dispose();
+                m_LeftGeometry.Dispose();
+                m_RightGeometry.Dispose();
             }
 
             #region Internal
@@ -151,7 +151,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="fragmentPoints">The world-space fragment points used to define fragment regions. The number of fragment points must be greater than 1.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The fragment results. These results must be disposed of after use otherwise leaks will occur.</returns>
-        public static FragmentResult Fragment(FragmentGeometry target, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator) => PhysicsDestructor_Fragment(target, fragmentPoints, allocator);
+        public static FragmentResult Fragment(FragmentGeometry target, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator = Allocator.Temp) => PhysicsDestructor_Fragment(target, fragmentPoints, allocator);
 
         /// <summary>
         /// Fragment the specified mask geometry using the specified fragment points, after the target geometry has the mask (carving) geometry removed from it.
@@ -170,7 +170,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="fragmentPoints">The world-space fragment points used to define fragment regions. The number of fragment points must be greater than 1.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The fragment results. The transform returned here is the one provided in the target geometry. These results must be disposed of after use otherwise leaks will occur.</returns>
-        public static FragmentResult Fragment(FragmentGeometry target, FragmentGeometry mask, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator) => PhysicsDestructor_FragmentMasked(target, mask, fragmentPoints, allocator);
+        public static FragmentResult Fragment(FragmentGeometry target, FragmentGeometry mask, ReadOnlySpan<Vector2> fragmentPoints, Allocator allocator = Allocator.Temp) => PhysicsDestructor_FragmentMasked(target, mask, fragmentPoints, allocator);
 
         /// <summary>
         /// Slice the specified target geometry using the specified slice line.
@@ -187,7 +187,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="translation">The translation relative to the origin of the slice ray. This must have a non-zero magnitude.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The slice results. The transform returned here is the one provided in the target geometry. These results must be disposed of after use otherwise leaks will occur.</returns>
-        public static SliceResult Slice(FragmentGeometry target, Vector2 origin, Vector2 translation, Allocator allocator) => PhysicsDestructor_Slice(target, origin, translation, allocator);
+        public static SliceResult Slice(FragmentGeometry target, Vector2 origin, Vector2 translation, Allocator allocator = Allocator.Temp) => PhysicsDestructor_Slice(target, origin, translation, allocator);
     }
 }
 
