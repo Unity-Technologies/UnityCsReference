@@ -284,6 +284,11 @@ namespace UnityEditor
             OnRenderTextureGUI(s_AllGUIElements);
         }
 
+        public override bool RequiresConstantRepaint()
+        {
+            return target is RenderTexture || base.RequiresConstantRepaint();
+        }
+
         private bool RenderTextureHasDepth()
         {
             return RenderTextureIsDepthOnly() || m_DepthStencilFormat.enumValueIndex != 0;

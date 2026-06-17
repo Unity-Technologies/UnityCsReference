@@ -864,6 +864,7 @@ namespace UnityEngine.UIElements.UIR
             Texture gradientSettings,
             Texture shaderInfo,
             Rect? scissor,
+            Vector2 boundsMin,
             float pixelsPerPoint,
             bool isSerializing,
             TextureSlotCount defaultTextureSlotCount,
@@ -907,6 +908,7 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
+            drawParams.boundsMin = boundsMin;
 
             RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
 

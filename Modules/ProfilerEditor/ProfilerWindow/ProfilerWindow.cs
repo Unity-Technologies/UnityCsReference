@@ -2283,7 +2283,7 @@ namespace UnityEditor
         string IProfilerWindowController.ConnectedTargetName { get => ConnectedTargetName; }
         bool IProfilerWindowController.ConnectedToEditor { get => ConnectedToEditor; }
 
-        bool IProfilerWindowController.CpuProfilerAssistantSupported => m_CpuProfilerAssistantController.Supported;
+        bool IProfilerWindowController.CpuProfilerAssistantSupported => ProcessService.level == ProcessLevel.Main && m_CpuProfilerAssistantController.Supported;
 
         void IProfilerWindowController.RequestCpuProfilerAssistance(Rect screenRect, CpuProfilerAssistantController.CpuProfilerContext attachment, string request)
         {

@@ -254,7 +254,19 @@ namespace Unity.GraphToolkit.Editor
             {
                 e.StopPropagation();
             });
-
+            // Release any active TreeView pointer capture when cursor genuinely leaves the
+            // Blackboard, so cross-panel drags reach GraphView (UUM-131405).
+            RegisterCallback<DragLeaveEvent>(e =>
+            {
+                if (!worldBound.Contains(e.mousePosition) && m_TreeView != null)
+                {
+                    for (int i = 0; i < PointerId.maxPointers; i++)
+                    {
+                        if (m_TreeView.HasPointerCapture(i))
+                            m_TreeView.ReleasePointer(i);
+                    }
+                }
+            });
             RegisterCallback<PromptItemLibraryEvent>(OnPromptItemLibrary);
             RegisterCallback<ShortcutShowItemLibraryEvent>(OnShortcutShowItemLibraryEvent);
         }
@@ -337,8 +349,6 @@ namespace Unity.GraphToolkit.Editor
         /// <returns> A <see cref="DragVisualMode"/> indicating if the drop would be accepted.</returns>
         protected virtual DragVisualMode OnDragAndDropUpdate(HandleDragAndDropArgs args)
         {
-            m_TreeView.ReleaseMouse();
-
             var draggedOnModel = args.parentId == -1 ? BlackboardView.BlackboardRootViewModel.GraphModelState.GraphModel.GetSectionModel(GraphModel.DefaultSectionName) : m_TreeView.GetItemDataForId<IGroupItemModel>(args.parentId);
 
             if (draggedOnModel is GroupModel group)

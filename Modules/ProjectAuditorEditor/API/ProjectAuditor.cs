@@ -272,7 +272,7 @@ namespace Unity.ProjectAuditor.Editor
             return "Unknown";
         }
 
-        void InitModules()
+        internal void InitModules()
         {
             if (ProjectAuditorRulesPackage.IsInstalled == false)
                 return;

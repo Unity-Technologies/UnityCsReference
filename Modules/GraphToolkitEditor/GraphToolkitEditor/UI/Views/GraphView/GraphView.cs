@@ -2477,6 +2477,10 @@ namespace Unity.GraphToolkit.Editor
             // measure zoom level necessary to fit the canvas rect into the screen rect
             float zoomLevel = Math.Min(identity.width / rectToFit.width, identity.height / rectToFit.height);
 
+            // When layout isn't ready, zero dimensions produce NaN; default to 1f (100%).
+            if (float.IsNaN(zoomLevel))
+                zoomLevel = 1f;
+
             // clamp
             zoomLevel = Mathf.Clamp(zoomLevel, m_MinScale, Math.Min(m_MaxScale, maxZoomLevel > 0 ? maxZoomLevel : m_MaxScaleOnFrame));
 

@@ -483,12 +483,32 @@ namespace UnityEngine.UIElements
 
         internal float scrollableWidth
         {
-            get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
+            get
+            {
+                var width = contentContainer.boundingBox.width;
+                if (width > contentContainer.layout.width)
+                {
+                    var padding = contentContainer.resolvedStyle.paddingRight;
+                    if (!float.IsNaN(padding))
+                        width += padding;
+                }
+                return width - contentViewport.layout.width;
+            }
         }
 
         internal float scrollableHeight
         {
-            get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
+            get
+            {
+                var height = contentContainer.boundingBox.height;
+                if (height > contentContainer.layout.height)
+                {
+                    var padding = contentContainer.resolvedStyle.paddingBottom;
+                    if (!float.IsNaN(padding))
+                        height += padding;
+                }
+                return height - contentViewport.layout.height;
+            }
         }
 
         // For inertia: how quickly the scrollView stops from moving after PointerUp.
@@ -1599,7 +1619,17 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse || !m_TouchPointerMoveAllowed)
                 return;
 
-            // UUM-135860: don't allow multiple pointers to drive the scrolling behavior at once
+            // UUM-138133: A native dropdown menu can consume the pointer-up, so the ScrollView never receives a
+            // PointerUp/PointerCancel/PointerCaptureOut to disarm drag-scrolling. If the pointer driving the drag is
+            // no longer pressed, the drag is over: disarm and bail. Gated to the dragging pointer so a secondary
+            // hovering pointer (pressedButtons == 0) can't cancel an ongoing drag (see UUM-135860 below).
+            if (m_TouchDraggingPointerId != PointerId.invalidPointerId && m_TouchDraggingPointerId == evt.pointerId && evt.pressedButtons == 0)
+            {
+                ReleaseScrolling(evt.pointerId, evt.target);
+                return;
+            }
+
+            // UUM-135860: Don't allow multiple pointers to drive the scrolling behavior at once.
             if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 

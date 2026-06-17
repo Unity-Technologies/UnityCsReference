@@ -11,10 +11,16 @@ namespace UnityEditor.UIElements
     {
         static EditorContextualMenuManager()
         {
-            // UUM-73201: Reset mouse buttons when the ContextualMenu is called from IMGUI
             EditorUtility.onResetMouseDown += () =>
             {
+                // UUM-73201: Reset mouse buttons when the ContextualMenu is called from IMGUI.
                 ResetPointerDown(PointerId.mousePointerId);
+
+                // UUM-138133: A pen or touch can also open the native menu, which consumes the matching pointer-up and
+                // would otherwise leave the pointer stuck in a pressed state (keeping controls like ScrollView
+                // drag-scroll active).
+                ResetPointerDown(PointerId.penPointerIdBase);
+                ResetPointerDown(PointerId.touchPointerIdBase);
             };
         }
 

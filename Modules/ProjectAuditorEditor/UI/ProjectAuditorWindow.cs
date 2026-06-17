@@ -106,14 +106,33 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (RulesPackageInstallRequest.IsCompleted)
             {
                 if (RulesPackageInstallRequest.Status == StatusCode.Success)
+                {
                     Debug.Log("Installed: " + RulesPackageInstallRequest.Result.packageId);
+                    Events.registeredPackages += OnRulesPackageRegistered;
+                }
                 else if (RulesPackageInstallRequest.Status >= StatusCode.Failure)
+                {
                     Debug.Log(RulesPackageInstallRequest.Error.message);
+                }
 
                 EditorApplication.update -= RulesPackageInstallProgressCallback;
                 RulesPackageInstallRequest = null;
+            }
+        }
 
-                ProjectAuditorRulesPackage.Initialize();
+        static void OnRulesPackageRegistered(PackageRegistrationEventArgs args)
+        {
+#pragma warning disable UA2001
+            foreach (var p in args.added.Concat(args.changedTo))
+#pragma warning restore UA2001
+            {
+                if (p.name == ProjectAuditorRulesPackage.Name)
+                {
+                    Events.registeredPackages -= OnRulesPackageRegistered;
+                    ProjectAuditorRulesPackage.Initialize();
+                    Instance?.m_ProjectAuditor?.InitModules();
+                    return;
+                }
             }
         }
 

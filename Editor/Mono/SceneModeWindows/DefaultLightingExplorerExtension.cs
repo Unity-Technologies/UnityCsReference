@@ -257,15 +257,15 @@ namespace UnityEditor
                             var shadowIntensityEnabled = dep[1].boolValue;
 
                             EditorGUI.BeginDisabled(!shadowIntensityEnabled);
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
                             EditorGUI.BeginChangeCheck();
-                            var shadowIntensityProp = dep[0].serializedObject.FindProperty("m_ShadowIntensity");
+                            var newShadowIntensity = EditorGUI.Slider(r, prop.floatValue, 0f, 1f);
 
-                            var newShadowIntensity = EditorGUI.Slider(r, shadowIntensityProp.floatValue, 0f, 1f);
                             if (EditorGUI.EndChangeCheck())
                             {
-                                shadowIntensityProp.floatValue = Mathf.Clamp01(newShadowIntensity);
+                                prop.floatValue = Mathf.Clamp01(newShadowIntensity);
                             }
-
+                            EditorGUI.EndProperty();
                             EditorGUI.EndDisabled();
                         }
                     }

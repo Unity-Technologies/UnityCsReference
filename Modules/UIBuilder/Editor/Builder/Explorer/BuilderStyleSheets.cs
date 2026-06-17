@@ -150,7 +150,7 @@ namespace Unity.UI.Builder
 
             // TODO: Add validation
 
-            var sheet = m_PaneWindow.document.firstStyleSheet;
+            var sheet = m_PaneWindow.document.activeStyleSheet;
 
             if (sheet == null && !TryCreateNewUSSAsset(out sheet))
                 return;

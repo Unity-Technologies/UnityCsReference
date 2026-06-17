@@ -354,7 +354,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(assetPath);
             }
 
-            if (preloadAudioData)
+            // Preload Audio Data is disabled by Unity when Load Type is Streaming, so the serialized value is irrelevant.
+            if (preloadAudioData && !isStreaming)
             {
                 yield return context.CreateIssue(
                     IssueCategory.AssetIssue, k_AudioPreloadDescriptor.Id, clipName)
