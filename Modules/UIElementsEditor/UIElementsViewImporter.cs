@@ -1360,7 +1360,7 @@ namespace UnityEditor.UIElements
             switch (name)
             {
                 case k_ClassAttr:
-                    vea.classes = value.Split(' ');
+                    vea.SetClasses(value.Split(' '));
                     return true;
 
                 case "content-container":

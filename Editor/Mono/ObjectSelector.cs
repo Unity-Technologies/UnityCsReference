@@ -182,6 +182,7 @@ namespace UnityEditor
 
         bool m_SelectionCancelled;
         bool m_PreventSetSelectionOnClose;
+        bool m_FrameInitialSelection;
         EntityId m_LastSelectedInstanceId = EntityId.None;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
@@ -628,6 +629,7 @@ namespace UnityEditor
             SetSelectedInstanceID(obj?.GetEntityId() ?? EntityId.None);
             m_SelectionCancelled = false;
             m_PreventSetSelectionOnClose = false;
+            m_FrameInitialSelection = false;
             m_ShowNoneItem = showNoneItem;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
@@ -778,7 +780,7 @@ namespace UnityEditor
                 InitIfNeeded();
                 m_ListArea.InitSelection(new[] { initialSelection });
                 if (initialSelection != EntityId.None)
-                    m_ListArea.Frame(initialSelection, true, false);
+                    m_FrameInitialSelection = true;
             }
 
             InvokeWindowShown(this);
@@ -1320,6 +1322,12 @@ namespace UnityEditor
             PreviewArea();
 
             GUI.EndGroup();
+
+            if (m_FrameInitialSelection && Event.current.type == EventType.Layout && m_Position.height > 0)
+            {
+                m_FrameInitialSelection = false;
+                Frame();
+            }
 
             // overlay preview resize widget
             GUI.Label(new Rect(m_Position.width * .5f - 16, m_Position.height - m_PreviewSize + 2, 32, Styles.bottomResize.fixedHeight), GUIContent.none, Styles.bottomResize);

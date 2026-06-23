@@ -8,7 +8,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
     <LangVersion>12.0</LangVersion>
     <NoWarn>1701;626;8632</NoWarn>
     <Nullable>disable</Nullable>
@@ -898,6 +898,156 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ScriptableRootOutput.bindings.cs">
       <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ScriptableRootOutput.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstCompileAttribute.cs">
+      <Link>Modules\Burst\Managed\BurstCompileAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstCompileTarget.cs">
+      <Link>Modules\Burst\Managed\BurstCompileTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstCompiler.cs">
+      <Link>Modules\Burst\Managed\BurstCompiler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstCompilerOptions.cs">
+      <Link>Modules\Burst\Managed\BurstCompilerOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstCompilerService.bindings.cs">
+      <Link>Modules\Burst\Managed\BurstCompilerService.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstCompilerService.cs">
+      <Link>Modules\Burst\Managed\BurstCompilerService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstExecutionEnvironment.cs">
+      <Link>Modules\Burst\Managed\BurstExecutionEnvironment.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstRuntime.cs">
+      <Link>Modules\Burst\Managed\BurstRuntime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstString.Float.cs">
+      <Link>Modules\Burst\Managed\BurstString.Float.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\BurstString.cs">
+      <Link>Modules\Burst\Managed\BurstString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\Aliasing.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\Aliasing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\AssumeRangeAttribute.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\AssumeRangeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\Constant.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\Constant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\Hint.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\Hint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\IgnoreWarningAttribute.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\IgnoreWarningAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\Loop.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\Loop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\SPMD.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\SPMD.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\CompilerServices\SkipLocalsInitAttribute.cs">
+      <Link>Modules\Burst\Managed\CompilerServices\SkipLocalsInitAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\DiagnosticId.cs">
+      <Link>Modules\Burst\Managed\DiagnosticId.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\FunctionPointer.cs">
+      <Link>Modules\Burst\Managed\FunctionPointer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Arm\NEON.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Arm\NEON.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64_crypto.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64_crypto.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64_dotprod.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64_dotprod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64_rdma.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Arm\NEON_AArch64_rdma.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Arm\NEON_ctor.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Arm\NEON_ctor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\Common.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\Common.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\SimdDebugViews.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\SimdDebugViews.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\v128.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\v128.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\v256.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\v256.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\v64.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\v64.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Avx.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Avx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Avx2.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Avx2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Bmi1.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Bmi1.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Bmi2.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Bmi2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Common.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Common.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Csr.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Csr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\F16C.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\F16C.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Fma.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Fma.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Popcnt.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Popcnt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Sse.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Sse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Sse2.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Sse2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Sse3.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Sse3.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Sse4_1.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Sse4_1.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Sse4_2.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Sse4_2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Intrinsics\x86\Ssse3.cs">
+      <Link>Modules\Burst\Managed\Intrinsics\x86\Ssse3.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\NoAliasAttribute.cs">
+      <Link>Modules\Burst\Managed\NoAliasAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\SafeStringArrayHelper.cs">
+      <Link>Modules\Burst\Managed\SafeStringArrayHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\SharedStatic.cs">
+      <Link>Modules\Burst\Managed\SharedStatic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Burst\Managed\Unsafe\BurstUnsafeUtility.cs">
+      <Link>Modules\Burst\Managed\Unsafe\BurstUnsafeUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Cloth\Cloth.bindings.cs">
       <Link>Modules\Cloth\Cloth.bindings.cs</Link>
     </Compile>
@@ -1191,6 +1341,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs">
       <Link>Modules\Hierarchy\Managed\IHierarchyEntityIdConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs">
+      <Link>Modules\Hierarchy\ScriptBindings\HierarchyUndoManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\ATGIMGUITextHandle.cs">
       <Link>Modules\IMGUI\ATGIMGUITextHandle.cs</Link>
@@ -2224,6 +2377,15 @@
     <Compile Include="..\..\Modules\Scripting\Burst\BurstAuthorizedExternalMethodAttribute.cs">
       <Link>Modules\Scripting\Burst\BurstAuthorizedExternalMethodAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Scripting\Burst\BurstDiscardAttribute.cs">
+      <Link>Modules\Scripting\Burst\BurstDiscardAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Debug\LowLevelDebug.bindings.cs">
+      <Link>Modules\Scripting\Scripting\Debug\LowLevelDebug.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Debug\LowLevelDebug.cs">
+      <Link>Modules\Scripting\Scripting\Debug\LowLevelDebug.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Il2CppEagerStaticClassConstructionAttribute.cs">
       <Link>Modules\Scripting\Scripting\Il2CppEagerStaticClassConstructionAttribute.cs</Link>
     </Compile>
@@ -2278,8 +2440,14 @@
     <Compile Include="..\..\Modules\Scripting\Scripting\MonoPInvokeAttribute.cs">
       <Link>Modules\Scripting\Scripting\MonoPInvokeAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\NativeDisableUnsafePtrRestrictionAttribute.cs">
+      <Link>Modules\Scripting\Scripting\NativeDisableUnsafePtrRestrictionAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\NoAllocHelpers.bindings.cs">
       <Link>Modules\Scripting\Scripting\NoAllocHelpers.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\PreserveAttribute.cs">
+      <Link>Modules\Scripting\Scripting\PreserveAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs">
       <Link>Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs</Link>
@@ -2536,14 +2704,17 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\GlyphRenderInfo.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\GlyphRenderInfo.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeRichTextParser.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeRichTextParser.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextBuffer.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\RichTextTagParser.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\RichTextTagParser.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\RichTextAssetRegistry.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\RichTextAssetRegistry.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextEditingService.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextEditingService.bindings.cs</Link>
@@ -2577,9 +2748,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextPreprocessor.cs">
-      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextPreprocessor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs</Link>
@@ -3334,6 +3502,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\VerticalVirtualizationController.cs">
       <Link>Modules\UIElements\Core\Collections\Virtualization\VerticalVirtualizationController.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Components\VisualElementSelectorData.cs">
+      <Link>Modules\UIElements\Core\Components\VisualElementSelectorData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\ContextualMenuManager.cs">
       <Link>Modules\UIElements\Core\ContextualMenuManager.cs</Link>
     </Compile>
@@ -3475,6 +3646,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Controls\Image.cs">
       <Link>Modules\UIElements\Core\Controls\Image.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\AbstractBaseField.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\AbstractBaseField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\BaseField.cs">
       <Link>Modules\UIElements\Core\Controls\InputField\BaseField.cs</Link>
     </Compile>
@@ -3489,6 +3663,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TextInputFieldBase.cs">
       <Link>Modules\UIElements\Core\Controls\InputField\TextInputFieldBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TextInputUtilities.cs">
+      <Link>Modules\UIElements\Core\Controls\InputField\TextInputUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\InputField\TouchScreenTextEditor.cs">
       <Link>Modules\UIElements\Core\Controls\InputField\TouchScreenTextEditor.cs</Link>
@@ -3510,6 +3687,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\MaskField.cs">
       <Link>Modules\UIElements\Core\Controls\MaskField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\MaskFieldUtilities.cs">
+      <Link>Modules\UIElements\Core\Controls\MaskFieldUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\MinMaxSlider.cs">
       <Link>Modules\UIElements\Core\Controls\MinMaxSlider.cs</Link>
@@ -3582,6 +3762,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\SliderInt.cs">
       <Link>Modules\UIElements\Core\Controls\SliderInt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\SliderUtilities.cs">
+      <Link>Modules\UIElements\Core\Controls\SliderUtilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\StyleField\AngleField.cs">
       <Link>Modules\UIElements\Core\Controls\StyleField\AngleField.cs</Link>
@@ -4063,6 +4246,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\UIRendererUtility.bindings.cs">
       <Link>Modules\UIElements\Core\Native\Renderer\UIRendererUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\StyleSheets\NativeSelectorMatcher.bindings.cs">
+      <Link>Modules\UIElements\Core\Native\StyleSheets\NativeSelectorMatcher.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\TextNative.bindings.cs">
       <Link>Modules\UIElements\Core\Native\TextNative.bindings.cs</Link>
     </Compile>
@@ -4074,6 +4260,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElements\Core\Native\UIElementsUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Native\UIToolkitProfilerEventType.cs">
+      <Link>Modules\UIElements\Core\Native\UIToolkitProfilerEventType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\ObjectPool.cs">
       <Link>Modules\UIElements\Core\ObjectPool.cs</Link>
@@ -4204,6 +4393,15 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshManagerTracked.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRMeshManagerTracked.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshModifier.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshModifier.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshModifierChainCache.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshModifierChainCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRMeshModifierScheduler.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRMeshModifierScheduler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRNativeList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRNativeList.cs</Link>
     </Compile>
@@ -4276,11 +4474,17 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRVisualChangesProcessor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRVisualChangesProcessor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRBackdropFilterHelper.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRBackdropFilterHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRCircularRangeBuffer.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRCircularRangeBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRDataSet.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRDataSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRFilterHelper.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRFilterHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRenderer\UIRRawArray.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRenderer\UIRRawArray.cs</Link>
@@ -4305,9 +4509,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StringUtils.cs">
       <Link>Modules\UIElements\Core\StringUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\StyleClassList.cs">
-      <Link>Modules\UIElements\Core\StyleClassList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleEnums.cs">
       <Link>Modules\UIElements\Core\StyleEnums.cs</Link>
@@ -4359,6 +4560,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Specificity.cs">
       <Link>Modules\UIElements\Core\StyleSheets\Specificity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleClassList.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleClassList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleComplexSelector.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleComplexSelector.cs</Link>
@@ -4669,6 +4873,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleFontDefinition.cs">
       <Link>Modules\UIElements\Core\Style\StyleFontDefinition.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleHashUtility.cs">
+      <Link>Modules\UIElements\Core\Style\StyleHashUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleInt.cs">
       <Link>Modules\UIElements\Core\Style\StyleInt.cs</Link>
     </Compile>
@@ -4926,6 +5133,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementMathUtils.cs">
       <Link>Modules\UIElements\Core\VisualElementMathUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElementMeshModifier.cs">
+      <Link>Modules\UIElements\Core\VisualElementMeshModifier.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElementScheduler.cs">
       <Link>Modules\UIElements\Core\VisualElementScheduler.cs</Link>
@@ -5386,15 +5596,6 @@
     <Compile Include="..\..\Runtime\Export\BurstLike\BurstLike.bindings.cs">
       <Link>Runtime\Export\BurstLike\BurstLike.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Burst\BurstCompilerService.bindings.cs">
-      <Link>Runtime\Export\Burst\BurstCompilerService.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Burst\BurstCompilerService.cs">
-      <Link>Runtime\Export\Burst\BurstCompilerService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Burst\BurstDiscardAttribute.cs">
-      <Link>Runtime\Export\Burst\BurstDiscardAttribute.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Caching\Cache.bindings.cs">
       <Link>Runtime\Export\Caching\Cache.bindings.cs</Link>
     </Compile>
@@ -5668,9 +5869,6 @@
     <Compile Include="..\..\Runtime\Export\Graphics\D3D12DeviceFilterLists.bindings.cs">
       <Link>Runtime\Export\Graphics\D3D12DeviceFilterLists.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Graphics\D3D12Validation.bindings.cs">
-      <Link>Runtime\Export\Graphics\D3D12Validation.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Display.bindings.cs">
       <Link>Runtime\Export\Graphics\Display.bindings.cs</Link>
     </Compile>
@@ -5688,6 +5886,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Graphics.deprecated.cs">
       <Link>Runtime\Export\Graphics\Graphics.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsApiValidation.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsApiValidation.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsBuffer.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsBuffer.bindings.cs</Link>
@@ -6328,6 +6529,9 @@
     <Compile Include="..\..\Runtime\Export\Scripting\CustomYieldInstruction.cs">
       <Link>Runtime\Export\Scripting\CustomYieldInstruction.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\EntityIdStore.bindings.cs">
+      <Link>Runtime\Export\Scripting\EntityIdStore.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\EnumDataUtility.cs">
       <Link>Runtime\Export\Scripting\EnumDataUtility.cs</Link>
     </Compile>
@@ -6477,6 +6681,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\SerializationBackendManagedCommands.bindings.cs">
       <Link>Runtime\Export\Serialization\SerializationBackendManagedCommands.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\SerializationCommandObjectTable.cs">
+      <Link>Runtime\Export\Serialization\SerializationCommandObjectTable.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\TypeTreeStoreManager.bindings.cs">
       <Link>Runtime\Export\Serialization\TypeTreeStoreManager.bindings.cs</Link>
@@ -6896,6 +7103,6 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_1zvoxi0i/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_qb4bryd3/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

@@ -127,7 +127,7 @@ namespace UnityEditor.UIElements
         VisualElement m_GradientTextureImage;
         readonly Background m_DefaultBackground = new Background();
 
-        bool isShowingGradientPicker => GradientPicker.visible && rawValue != null && ReferenceEquals(GradientPicker.gradient, rawValue);
+        internal bool isShowingGradientPicker => GradientPicker.visible && rawValue != null && ReferenceEquals(GradientPicker.gradient, rawValue);
 
         /// <summary>
         /// Constructor.
@@ -223,7 +223,7 @@ namespace UnityEditor.UIElements
                 UpdateGradientTexture();
         }
 
-        void ShowGradientPicker()
+        internal void ShowGradientPicker()
         {
             // Re-clicking the field while the picker is already shown for it must NOT advance the
             // undo group or reset our bookkeeping. GradientPicker.Show() suppresses the previous

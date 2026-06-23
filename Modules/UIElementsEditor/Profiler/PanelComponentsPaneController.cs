@@ -42,7 +42,6 @@ namespace UnityEditor.UIElements
         const string k_UssScroll = "uitoolkit-profiler__pane-scroll";
         const string k_UssFoldout = "uitoolkit-profiler__pane-foldout";
         const string k_UssList = "uitoolkit-profiler__pane-list";
-        const string k_UssEventsPlaceholder = "uitoolkit-profiler__pane-events-placeholder";
         const string k_UssEmpty = "uitoolkit-profiler__pane-empty";
 
         // Height of the ListView when it has no items — gives the "none element" room to render
@@ -59,7 +58,6 @@ namespace UnityEditor.UIElements
             public static readonly string ComponentsFoldoutTooltip = L10n.Tr("IPanelComponent objects from UI Toolkit frame metadata for the selected panel or batch.");
             public static readonly string EventsFoldoutTitle = L10n.Tr("Events");
             public static readonly string EventsFoldoutTitleCounted = L10n.Tr("Events ({0})");
-            public static readonly string EventsPlaceholder = L10n.Tr("Event capture is not wired up yet. This list is a placeholder for the upcoming events overlay.");
             // Plain "Batch #N". The CSS adds a 6px left margin between the panel name and this
             // label for visual separation — no bullet/glyph in the string itself so the heading
             // reads cleanly when long localized panel names cause the strip to wrap or ellipsize.
@@ -78,6 +76,19 @@ namespace UnityEditor.UIElements
             //                   EntityIds don't resolve against this editor's object table.
             public static readonly string PingUnavailableNoEntityTooltip = L10n.Tr("Ping is unavailable: no object reference recorded for this component in frame metadata.");
             public static readonly string PingUnavailableCrossSessionTooltip = L10n.Tr("Ping is unavailable for frames captured outside this editor session, such as saved profiles or remote players.");
+
+            public static readonly string EventsListTooltip = L10n.Tr("Events dispatched on the selected panel during the frame (pointer, keyboard, navigation, and others), in dispatch order.");
+            public static readonly string EventsStatusSelectPanelRow = L10n.Tr("Select a panel row on the left to list the input events dispatched on it this frame.");
+            public static readonly string EventsStatusNoEvents = L10n.Tr("No input events dispatched on this panel this frame.");
+
+            // Event row composition. {0} = event type, {1} = target (VisualElement "Type#name" or, when
+            // the event had no element target, the owning IPanelComponent), {2} = owning IPanelComponent.
+            public static readonly string EventOnTarget = L10n.Tr("{0} on {1}");
+            public static readonly string EventOnTargetInOwner = L10n.Tr("{0} on {1} in {2}");
+            public static readonly string EventWithPayload = L10n.Tr("{0}  ({1})");
+            // Shown when an interned-string reference can't be resolved to a name (pool overflow or a
+            // truncated capture) — see ResolveInternedString.
+            public static readonly string Unknown = L10n.Tr("Unknown");
         }
 
         enum DetailsSplitMode { NoDetails = 0, RelatedData = 1 }
@@ -148,6 +159,10 @@ namespace UnityEditor.UIElements
         // SyncPanelComponentsListEmptyMessage call lands before the label exists. Cache the message
         // and apply it from CreatePanelComponentsListViewEmptyElement when the label is finally built.
         string m_PendingEmptyMessage;
+
+        ListView m_EventsListView;
+        Label m_EventsListEmptyLabel;
+        string m_PendingEventsEmptyMessage;
         DetailsSplitMode m_DetailsSplitMode = DetailsSplitMode.RelatedData;
         IVisualElementScheduledItem m_RefreshScheduleItem;
         bool m_HasRunInitialRefresh;
@@ -160,6 +175,30 @@ namespace UnityEditor.UIElements
         readonly Stack<List<EntityId>> m_PanelComponentIdListPool = new();
         readonly List<PanelComponentListEntry> m_PanelComponentListEntries = new();
         readonly Stack<PanelComponentListEntry> m_PanelComponentListEntryPool = new();
+
+        // Per-panel ordered list of events dispatched this frame; populated from the single
+        // PANEL_EVENTS chunk in LoadFrameMetadata. Lives in this controller (rather than the
+        // host details view) so the right pane can refresh independently of the left list and
+        // both details views can share the same wiring.
+        readonly Dictionary<EntityId, List<UIToolkitPanelEventInfo>> m_PanelToEvents = new();
+        readonly Stack<List<UIToolkitPanelEventInfo>> m_PanelEventListPool = new();
+        readonly List<UIToolkitPanelEventInfo> m_VisibleEvents = new();
+        // Per-session interned strings for captured events, decoded from the PANEL_EVENT_TYPE_NAMES
+        // session-metadata chunks: event type names plus each event's target VisualElement type and
+        // instance name. Index N is the string in chunk N; an event's eventNameIndex /
+        // targetTypeNameIndex / targetElementNameIndex reference into this list using the 1-based
+        // encoding documented on UIToolkitPanelEventInfo (0 = none, 0xFFFF = overflow), decoded by
+        // ResolveInternedString. Reused across frame selections (session metadata is identical from any
+        // frame of a session); rebuilt only on a session change or when strings were appended within
+        // the session — see LoadFrameMetadata. m_InternedStringsFrameIndex is the frame the list was
+        // last built/validated against, used to detect those cases.
+        readonly List<string> m_InternedStrings = new();
+        long m_InternedStringsFrameIndex = -1;
+        // Parallel to m_VisibleEvents: resolved display name of each event's target IPanelComponent,
+        // or empty when targetEntityId is None (editor panels / flat runtime panels). Resolved once
+        // per refresh from rawFrameData rather than per ListView bind, since BindEventsListRow runs
+        // on every layout pass while RefreshEventsList only runs on selection/frame change.
+        readonly List<string> m_VisibleEventTargetNames = new();
         long m_LastFrameIndex = -1;
 
         EntityId m_SelectedPanelEntityId = EntityId.None;
@@ -303,20 +342,26 @@ namespace UnityEditor.UIElements
 
             m_EventsFoldout = new Foldout
             {
-                // Until event capture is wired up the count is always 0 — surface it explicitly
-                // so the user reads "this panel has no events this frame" instead of wondering
-                // whether the section is loading. When event capture lands, update this title
-                // per selection with the real count.
+                // Count starts at 0 (no selection) and is refreshed per selection from the
+                // panel's dispatched-event count — see UpdateEventsFoldoutTitle.
                 text = string.Format(Strings.EventsFoldoutTitleCounted, 0),
                 value = false,
                 viewDataKey = m_ViewDataKeyPrefix + "-events-foldout",
             };
             m_EventsFoldout.AddToClassList(k_UssFoldout);
-            // Placeholder until events frame metadata is wired up — keeps the foldout shape in
-            // place so the layout doesn't shift when real data lands later.
-            var eventsPlaceholder = new Label(Strings.EventsPlaceholder) { focusable = false };
-            eventsPlaceholder.AddToClassList(k_UssEventsPlaceholder);
-            m_EventsFoldout.contentContainer.Add(eventsPlaceholder);
+            // Tooltip on the toggle (header) only, same reasoning as the components foldout above.
+            m_EventsFoldout.toggle.tooltip = Strings.EventsListTooltip;
+            m_EventsListView = new ListView
+            {
+                fixedItemHeight = k_ListItemHeightPx,
+                makeItem = CreateEventsListRow,
+                bindItem = BindEventsListRow,
+                makeNoneElement = CreateEventsListViewEmptyElement,
+                selectionType = SelectionType.None,
+                viewDataKey = m_ViewDataKeyPrefix + "-events-list",
+            };
+            m_EventsListView.AddToClassList(k_UssList);
+            m_EventsFoldout.contentContainer.Add(m_EventsListView);
 
             m_ContentScrollView.Add(m_ComponentsFoldout);
             m_ContentScrollView.Add(m_EventsFoldout);
@@ -421,6 +466,7 @@ namespace UnityEditor.UIElements
         {
             ReleaseAllPanelComponentEntityIdLists();
             ReleaseAllBatchOwnerLists();
+            ReleaseAllPanelEventLists();
             m_LastFrameIndex = frameIndex;
             // Centralized, shared with the other UI Toolkit profiler views and the name/icon resolver.
             // Handles null/invalid frames as "not current session". Frames loaded from a saved profile
@@ -495,6 +541,57 @@ namespace UnityEditor.UIElements
                                 batchOwners.Add(owners[i]);
                         }
                         perBatchLists.Add(batchOwners);
+                    }
+                }
+            }
+
+            // PANEL_EVENT_TYPE_NAMES: per-session UTF-8 strings naming each distinct captured event
+            // type. Emitted once per capture session (the first frame a type is seen) and stored in
+            // the session's shared SymbolCollection, so the set is identical from any frame of the
+            // session and read frame-independently via GetSessionMetaData — chunk N = the name an
+            // event references via eventNameIndex. Reuse the decoded list across frame selections;
+            // only rebuild when we cross into a different profiler session (a different loaded capture
+            // can have a coincidentally equal name count) or when new names were appended within the
+            // same session (a live capture growing as new event types first appear). The count query
+            // is cheap; the decode + string allocations it gates are not. Read before the events so
+            // the names are ready when the list builds.
+            var eventTypeNamesTag = ProfilerUIToolkit.kProfilerUIToolkitMetadataTagPanelEventTypeNames;
+            var eventTypeNamesChunkCount = rawFrameData.GetSessionMetaDataCount(guid, eventTypeNamesTag);
+            var sameSession = m_InternedStringsFrameIndex >= 0
+                && ProfilerDriver.GetFramesBelongToSameProfilerSession((int)m_InternedStringsFrameIndex, (int)frameIndex);
+            if (!sameSession || eventTypeNamesChunkCount != m_InternedStrings.Count)
+            {
+                m_InternedStrings.Clear();
+                for (var chunkIndex = 0; chunkIndex < eventTypeNamesChunkCount; chunkIndex++)
+                {
+                    using (var nameBytes = rawFrameData.GetSessionMetaData<byte>(guid, eventTypeNamesTag, chunkIndex))
+                    {
+                        m_InternedStrings.Add(nameBytes.Length > 0
+                            ? System.Text.Encoding.UTF8.GetString(nameBytes.ToArray())
+                            : string.Empty);
+                    }
+                }
+            }
+            m_InternedStringsFrameIndex = frameIndex;
+
+            // PANEL_EVENTS: a single per-frame chunk holding every captured EventDispatcher event
+            // for the frame across all panels (UIToolkitPanelEventInfo). We bucket by panelEntityId
+            // once here so RefreshEventsList can just look up the selected panel's list.
+            var eventsTag = ProfilerUIToolkit.kProfilerUIToolkitMetadataTagPanelEvents;
+            var eventsChunkCount = rawFrameData.GetFrameMetaDataCount(guid, eventsTag);
+            for (var chunkIndex = 0; chunkIndex < eventsChunkCount; chunkIndex++)
+            {
+                using (var events = rawFrameData.GetFrameMetaData<UIToolkitPanelEventInfo>(guid, eventsTag, chunkIndex))
+                {
+                    for (var i = 0; i < events.Length; i++)
+                    {
+                        var evt = events[i];
+                        if (!m_PanelToEvents.TryGetValue(evt.panelEntityId, out var list))
+                        {
+                            list = RentPanelEventList();
+                            m_PanelToEvents[evt.panelEntityId] = list;
+                        }
+                        list.Add(evt);
                     }
                 }
             }
@@ -650,6 +747,7 @@ namespace UnityEditor.UIElements
                 return;
 
             ApplyPaneVisibilityForSelection();
+            RefreshEventsList();
 
             if (!m_HasSelection)
             {
@@ -843,14 +941,18 @@ namespace UnityEditor.UIElements
         // count so the list shows every row without an inner scrollbar, and let the outer
         // ScrollView handle overflow across the two foldouts combined.
         void ApplyListViewHeight()
+            => ApplyListViewHeight(m_PanelComponentsListView, m_PanelComponentListEntries.Count);
+
+        void ApplyEventsListViewHeight()
+            => ApplyListViewHeight(m_EventsListView, m_VisibleEvents.Count);
+
+        static void ApplyListViewHeight(ListView listView, int itemCount)
         {
-            if (m_PanelComponentsListView == null)
+            if (listView == null)
                 return;
-            var itemCount = m_PanelComponentListEntries.Count;
-            var height = itemCount == 0
+            listView.style.height = itemCount == 0
                 ? k_EmptyListHeightPx
                 : itemCount * k_ListItemHeightPx + k_ListVerticalPaddingPx;
-            m_PanelComponentsListView.style.height = height;
         }
 
         void ReleaseAllPanelComponentEntityIdLists()
@@ -877,6 +979,19 @@ namespace UnityEditor.UIElements
             }
             m_PanelToBatchOwners.Clear();
         }
+
+        void ReleaseAllPanelEventLists()
+        {
+            foreach (var list in m_PanelToEvents.Values)
+            {
+                list.Clear();
+                m_PanelEventListPool.Push(list);
+            }
+            m_PanelToEvents.Clear();
+        }
+
+        List<UIToolkitPanelEventInfo> RentPanelEventList()
+            => m_PanelEventListPool.Count > 0 ? m_PanelEventListPool.Pop() : new List<UIToolkitPanelEventInfo>();
 
         List<EntityId> RentPanelComponentIdList()
             => m_PanelComponentIdListPool.Count > 0 ? m_PanelComponentIdListPool.Pop() : new List<EntityId>();
@@ -1052,6 +1167,232 @@ namespace UnityEditor.UIElements
                     UIToolkitProfilerToolbarHelpers.PingEntity(entry.entityId);
                 break;
             }
+        }
+
+        void RefreshEventsList()
+        {
+            if (m_EventsListView == null)
+                return;
+
+            m_VisibleEvents.Clear();
+            m_VisibleEventTargetNames.Clear();
+
+            var hasPanel = m_HasSelection && m_SelectedPanelEntityId != EntityId.None;
+            if (hasPanel && m_PanelToEvents.TryGetValue(m_SelectedPanelEntityId, out var events))
+            {
+                m_VisibleEvents.AddRange(events);
+                ResolveVisibleEventTargetNames();
+            }
+
+            // Title mirrors the components foldout ("Events (N)"); the selected panel name already
+            // shows in the sticky header strip, so it isn't repeated here.
+            UpdateEventsFoldoutTitle(m_VisibleEvents.Count);
+            m_EventsListView.itemsSource = m_VisibleEvents;
+            m_EventsListView.Rebuild();
+            ApplyEventsListViewHeight();
+            if (m_VisibleEvents.Count == 0)
+                SyncEventsListEmptyMessage(hasPanel ? Strings.EventsStatusNoEvents : Strings.EventsStatusSelectPanelRow);
+        }
+
+        void UpdateEventsFoldoutTitle(int count)
+        {
+            if (m_EventsFoldout == null)
+                return;
+            m_EventsFoldout.text = count > 0
+                ? string.Format(Strings.EventsFoldoutTitleCounted, count)
+                : Strings.EventsFoldoutTitle;
+        }
+
+        void ResolveVisibleEventTargetNames()
+        {
+            if (m_VisibleEvents.Count == 0 || m_LastFrameIndex < 0)
+                return;
+            using var rawFrameData = ProfilerDriver.GetRawFrameDataView((int)m_LastFrameIndex, k_MainThreadIndex);
+            if (!rawFrameData.valid)
+                return;
+            for (var i = 0; i < m_VisibleEvents.Count; i++)
+            {
+                var targetId = m_VisibleEvents[i].targetEntityId;
+                m_VisibleEventTargetNames.Add(targetId != EntityId.None
+                    ? UIToolkitProfilerToolbarHelpers.GetPanelDisplayName(rawFrameData, targetId)
+                    : string.Empty);
+            }
+        }
+
+        // Every event carries its concrete type name in the pool. "none" (0, shouldn't happen for an
+        // event type) and "overflow" (0xFFFF) both surface as "Unknown" via ResolveInternedString.
+        string FormatEventTypeName(in UIToolkitPanelEventInfo info)
+            => ResolveInternedString(info.eventNameIndex) ?? Strings.Unknown;
+
+        // Builds the target VisualElement descriptor in UI Toolkit selector form: "Type#name" when the
+        // element is named, just "Type" otherwise. Returns empty when the event had no VisualElement
+        // target (targetTypeNameIndex is "none") so the caller drops the "on <target>" clause; when the
+        // type overflowed the per-session pool it shows as "Unknown" (the target existed but couldn't
+        // be named). Both names resolve from the same interned-string pool as the event type name.
+        string FormatTargetDescriptor(in UIToolkitPanelEventInfo info)
+        {
+            var type = ResolveInternedString(info.targetTypeNameIndex);
+            if (type == null)
+                return string.Empty;
+            var name = ResolveInternedString(info.targetElementNameIndex);
+            return string.IsNullOrEmpty(name) ? type : $"{type}#{name}";
+        }
+
+        // Decodes a 1-based interned-string reference (see UIToolkitPanelEventInfo) against
+        // m_InternedStrings: 0 ("none") -> null so the caller renders nothing; 0xFFFF ("overflow") or a
+        // reference past the decoded pool (an older / truncated capture) -> the "Unknown" placeholder
+        // (a value existed but its string isn't available); otherwise the pooled string at value - 1.
+        string ResolveInternedString(ushort reference)
+        {
+            if (reference == 0)
+                return null;
+            var index = reference - 1;
+            if (reference != ushort.MaxValue && index < m_InternedStrings.Count)
+                return m_InternedStrings[index];
+            return Strings.Unknown;
+        }
+
+        // Renders the payload from UIToolkitPanelEventInfo according to its eventKind: "btn N @
+        // (X, Y) [Modifiers]" for pointer/mouse events (the "btn N" is dropped when no button is
+        // pressed — move / wheel events report button -1), "{KeyCode} 'c' [Modifiers]" for keyboard
+        // events (each piece shown only when it carries info — see the Keyboard case),
+        // "{Direction} (X, Y) [Modifiers]" for NavigationMoveEvent (the move vector is dropped when
+        // zero — keyboard / programmatic navigation reports a direction only), "[Modifiers]" for the
+        // other navigation events (NavigationSubmitEvent / NavigationCancelEvent), empty for events
+        // with no payload, so the caller can suppress the parenthesized suffix. EventModifiers live
+        // in the high 16 bits of keyCharAndModifiers for every event that carries them (see
+        // PopulateEventInfo).
+        static string FormatEventPayload(in UIToolkitPanelEventInfo info)
+        {
+            var kind = (UIToolkitProfilerEventKind)info.eventKind;
+            var modifiers = (EventModifiers)(info.keyCharAndModifiers >> 16);
+            switch (kind)
+            {
+                case UIToolkitProfilerEventKind.Pointer:
+                {
+                    // button is -1 for events with no pressed button (PointerMove, Wheel) — show
+                    // just the position rather than a meaningless "btn -1".
+                    var button = unchecked((int)info.buttonOrKeyCode);
+                    var text = button < 0
+                        ? string.Format(L10n.Tr("@ ({0:F2}, {1:F2})"), info.positionX, info.positionY)
+                        : string.Format(L10n.Tr("btn {0} @ ({1:F2}, {2:F2})"), button, info.positionX, info.positionY);
+                    return AppendModifiers(text, modifiers);
+                }
+                case UIToolkitProfilerEventKind.Keyboard:
+                {
+                    // The character lives in the low 16 bits of keyCharAndModifiers. Each piece is shown
+                    // only when it adds information: the KeyCode is dropped when None (the separate
+                    // text-input event), and the character only for visible glyphs (whitespace / control
+                    // keys are already named by the KeyCode).
+                    var keyCode = (KeyCode)info.buttonOrKeyCode;
+                    var character = (char)(info.keyCharAndModifiers & 0xFFFFu);
+                    var hasGlyph = !char.IsControl(character) && !char.IsWhiteSpace(character);
+
+                    string text;
+                    if (keyCode != KeyCode.None)
+                        text = hasGlyph ? $"{keyCode} '{character}'" : keyCode.ToString();
+                    else
+                        text = hasGlyph ? $"'{character}'" : string.Empty;
+
+                    return AppendModifiers(text, modifiers);
+                }
+                case UIToolkitProfilerEventKind.NavigationMove:
+                {
+                    var direction = (NavigationMoveEvent.Direction)info.buttonOrKeyCode;
+                    // The move vector is optional — keyboard / programmatic navigation reports a
+                    // direction with a zero vector — so show it only when an input source actually
+                    // provided one, the same way the keyboard case drops pieces that add no info.
+                    var text = (info.positionX != 0f || info.positionY != 0f)
+                        ? string.Format(L10n.Tr("{0} ({1:F2}, {2:F2})"), direction, info.positionX, info.positionY)
+                        : direction.ToString();
+                    return AppendModifiers(text, modifiers);
+                }
+                case UIToolkitProfilerEventKind.Navigation:
+                    return AppendModifiers(string.Empty, modifiers);
+                default:
+                    return string.Empty;
+            }
+        }
+
+        // Appends the "[Modifiers]" suffix when any modifier is set, handling the empty-text case
+        // (modifier-only payload, e.g. NavigationSubmitEvent with a modifier). Shared by the pointer,
+        // keyboard, and navigation payload renderers.
+        static string AppendModifiers(string text, EventModifiers modifiers)
+        {
+            if (modifiers == EventModifiers.None)
+                return text;
+            return text.Length == 0 ? $"[{modifiers}]" : $"{text} [{modifiers}]";
+        }
+
+        VisualElement CreateEventsListRow()
+        {
+            var label = new Label { focusable = false };
+            label.style.paddingLeft = 6;
+            label.style.paddingRight = 6;
+            label.style.flexGrow = 1;
+            label.style.overflow = Overflow.Hidden;
+            label.style.textOverflow = TextOverflow.Ellipsis;
+            return label;
+        }
+
+        void BindEventsListRow(VisualElement element, int index)
+        {
+            var label = (Label)element;
+            if (index >= 0 && index < m_VisibleEvents.Count)
+            {
+                var info = m_VisibleEvents[index];
+                var typeName = FormatEventTypeName(in info);
+                // target = the VisualElement the event hit ("Button#ok-button"); owner = the
+                // IPanelComponent that contains it, resolved from targetEntityId. Either can be absent.
+                var target = FormatTargetDescriptor(in info);
+                var owner = index < m_VisibleEventTargetNames.Count ? m_VisibleEventTargetNames[index] : string.Empty;
+                var payload = FormatEventPayload(in info);
+
+                // Secondary clause is the VisualElement target when present, else the owning
+                // IPanelComponent; only when both exist do we show "target in owner".
+                var hasTarget = !string.IsNullOrEmpty(target);
+                var hasOwner = !string.IsNullOrEmpty(owner);
+                string head;
+                if (hasTarget && hasOwner)
+                    head = string.Format(Strings.EventOnTargetInOwner, typeName, target, owner);
+                else if (hasTarget || hasOwner)
+                    head = string.Format(Strings.EventOnTarget, typeName, hasTarget ? target : owner);
+                else
+                    head = typeName;
+
+                label.text = string.IsNullOrEmpty(payload)
+                    ? head
+                    : string.Format(Strings.EventWithPayload, head, payload);
+            }
+            else
+                label.text = string.Empty;
+        }
+
+        VisualElement CreateEventsListViewEmptyElement()
+        {
+            var label = new Label
+            {
+                focusable = false,
+                text = m_PendingEventsEmptyMessage ?? string.Empty,
+                style =
+                {
+                    paddingLeft = 6,
+                    paddingRight = 6,
+                    paddingTop = 4,
+                    paddingBottom = 4,
+                    whiteSpace = WhiteSpace.Normal,
+                    flexGrow = 1,
+                },
+            };
+            m_EventsListEmptyLabel = label;
+            return label;
+        }
+
+        void SyncEventsListEmptyMessage(string message)
+        {
+            m_PendingEventsEmptyMessage = message;
+            if (m_EventsListEmptyLabel != null)
+                m_EventsListEmptyLabel.text = message;
         }
     }
 }

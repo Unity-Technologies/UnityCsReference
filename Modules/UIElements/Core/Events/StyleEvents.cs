@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// Event sent after the custom style properties of a <see cref="VisualElement"/> have been resolved.
     /// </summary>
     [EventCategory(EventCategory.Style)]
-    public class CustomStyleResolvedEvent : EventBase<CustomStyleResolvedEvent>
+    public class CustomStyleResolvedEvent : EventBase<CustomStyleResolvedEvent>, IProfilerIgnoredEvent
     {
         static CustomStyleResolvedEvent()
         {

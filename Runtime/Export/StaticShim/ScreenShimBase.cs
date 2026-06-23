@@ -54,6 +54,11 @@ namespace UnityEngine
             get { return EditorScreen.msaaSamples; }
         }
 
+        public virtual int currentBackbufferMSAASamples
+        {
+            get { return EditorScreen.currentBackbufferMSAASamples; }
+        }
+
         public virtual bool fullScreen
         {
             get { return EditorScreen.fullScreen; }

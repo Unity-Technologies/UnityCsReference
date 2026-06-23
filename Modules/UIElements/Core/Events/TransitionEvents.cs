@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements
     /// Refer to the [[wiki:UIE-Transition-Events|Transition events]] manual page for more information and examples.
     /// </remarks>
     [EventCategory(EventCategory.StyleTransition)]
-    public abstract class TransitionEventBase<T> : EventBase<T>, ITransitionEvent
+    public abstract class TransitionEventBase<T> : EventBase<T>, ITransitionEvent, IProfilerIgnoredEvent
         where T : TransitionEventBase<T>, new()
     {
         /// <summary>

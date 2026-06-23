@@ -16,7 +16,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         protected MultiSelectionTable m_SelectionTable;
         protected MultiColumnHeaderState m_MultiColumnHeaderState;
         protected TreeViewState m_TreeViewState;
-        protected bool m_RequestClose;
         protected Action<TreeViewSelection> m_OnSelection;
 
         protected abstract void CreateTable(TreeViewSelection selection, string[] names);
@@ -24,10 +23,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public static T Open<T>(string title, float screenX, float screenY,
             TreeViewSelection selection, string[] names, Action<TreeViewSelection> onSelection) where T : SelectionWindow
         {
-            var window = GetWindow<T>(title);
+            var window = CreateInstance<T>();
+            window.titleContent = new GUIContent(title);
             window.position = new Rect(screenX, screenY, 400, 500);
             window.SetData(selection, names, onSelection);
-            window.Show();
+
+            // Show as a non-dockable auxiliary window (like ColorPicker/GradientPicker):
+            // it cannot be docked or tabbed, and auto-closes when it loses focus. This
+            // makes the docked-tab vanishing impossible by construction (UUM-142406).
+            window.ShowAuxWindow();
 
             return window;
         }
@@ -47,11 +51,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return false;
         }
 
-        void OnEnable()
-        {
-            m_RequestClose = false;
-        }
-
         void OnDestroy()
         {
             ApplySelection();
@@ -68,17 +67,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             EditorGUILayout.EndVertical();
-        }
-
-        void OnLostFocus()
-        {
-            m_RequestClose = true;
-        }
-
-        void Update()
-        {
-            if (m_RequestClose)
-                Close();
         }
 
         protected void ApplySelection()

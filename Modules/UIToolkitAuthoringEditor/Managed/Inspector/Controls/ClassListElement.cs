@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using StyleSheetExtensions = UnityEditor.UIElements.StyleSheetExtensions;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -51,6 +53,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
     readonly Button m_AddClassButton;
     readonly Button m_ExtractInlineStylesButton;
     readonly VisualElement m_ClassListContainer;
+    readonly ClassCompleter m_ClassCompleter;
 
     VisualElement m_Target;
     bool m_IsReadOnly;
@@ -101,6 +104,13 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         m_ExtractInlineStylesButton = this.Q<Button>(className: ExtractInlineStylesButtonUssClass);
         m_ExtractInlineStylesButton.clicked += OnExtractLocalStylesToNewClass;
         m_ClassListContainer = this.Q(className: ClassListContainerUssClass);
+
+        m_ClassCompleter = new ClassCompleter(m_InputTextField)
+        {
+            DataSourceCallback = GetClassCompleterDataSource,
+            GetMatchingElementCount = CountMatchingElements,
+        };
+        m_ClassCompleter.ItemChosen += OnClassCompleterItemChosen;
     }
 
     void Release(VisualElement element)
@@ -193,6 +203,66 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             if (pill.canBeRemoved)
                 pill.onDeleteClickable.clickedWithEventInfo += OnStyleClassDelete;
         }
+    }
+
+    IEnumerable<ClassCompleterInfo> GetClassCompleterDataSource()
+    {
+        var results = new List<ClassCompleterInfo>();
+
+        var vta = Target?.visualElementAsset?.visualTreeAsset;
+        if (vta == null)
+            return results;
+
+        results.Add(new ClassCompleterInfo());
+
+        using var _ = ListPool<StyleSheet>.Get(out var sheets);
+        vta.GetAllReferencedStyleSheets(sheets);
+
+        using var __ = HashSetPool<string>.Get(out var appliedClasses);
+        foreach (var cls in Target.GetClasses())
+            appliedClasses.Add(cls);
+
+        foreach (var sheet in sheets)
+        {
+            var sheetHasEntries = false;
+
+            using var ___ = HashSetPool<string>.Get(out var seenInSheet);
+
+            foreach (var rule in sheet.rules)
+            foreach (var complexSelector in rule.complexSelectors)
+            foreach (var selector in complexSelector.selectors)
+            foreach (var part in selector.parts)
+            {
+                if (part.type != StyleSelectorType.Class || appliedClasses.Contains(part.value) || !seenInSheet.Add(part.value))
+                    continue;
+
+                if (!sheetHasEntries)
+                {
+                    results.Add(new ClassCompleterInfo(sheet));
+                    sheetHasEntries = true;
+                }
+
+                results.Add(new ClassCompleterInfo(part, sheet));
+            }
+        }
+
+        return results;
+    }
+
+    void OnClassCompleterItemChosen(int index)
+    {
+        var results = m_ClassCompleter.Results;
+        if (results == null || index < 0 || index >= results.Count)
+            return;
+
+        var chosen = results[index];
+
+        // Stylesheet header items are non-selectable dividers; ignore them
+        if (chosen.IsValidStyleSheetInfo())
+            return;
+
+        // For the "create new class" entry, the text field already has the typed text; just commit it
+        OnAddClassToElement();
     }
 
     void OnClassNameSubmitted(KeyUpEvent evt)
@@ -296,13 +366,20 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         return true;
     }
 
+    int CountMatchingElements(string selectorString)
+    {
+        if (Target?.panel == null)
+            return 0;
+
+        var className = selectorString.TrimStart('.');
+        var count = 0;
+        Target.panel.visualTree.Query(className: className).ForEach(_ => count++);
+        return count;
+    }
+
     bool IsClassInUxmlDoc(string className)
     {
-        var vea = Target?.visualElementAsset;
-        if (vea?.classes == null)
-            return false;
-
-        return Array.IndexOf(vea.classes, className) >= 0;
+        return Target?.visualElementAsset?.ContainsStyleClass(className) ?? false;
     }
 
     bool IsClassSelectorInAnyStyleSheet(VisualElement target , string className)
@@ -324,6 +401,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
 
         Target.RemoveFromClassList(className);
         RemoveClassFromElementCommand.Execute(CommandSources.Inspector, Target.visualElementAsset, className);
+        RefreshClassList();
         evt.StopPropagation();
     }
 
@@ -379,9 +457,9 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             return;
         }
 
-        AddStyleRuleCommand.Execute(CommandSources.Inspector, sheets[0], selectorString);
+        AddStyleRuleCommand.Execute(CommandSources.Inspector, activeStyleSheet, selectorString);
 
-        RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, sheets[0].rules[^1]);
+        RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, activeStyleSheet.rules[^1]);
     }
 
     void ResizeClassList(VisualElement element, int count, UnityEngine.Pool.ObjectPool<ClassPill> pool)

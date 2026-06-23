@@ -10,6 +10,7 @@ using UnityEngine.Scripting;
 using Unity.Profiling.LowLevel;
 using Unity.Profiling.LowLevel.Unsafe;
 using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.Profiling
 {
@@ -18,6 +19,7 @@ namespace UnityEngine.Profiling
     public class Sampler
     {
         internal IntPtr m_Ptr;
+        [NoAutoStaticsCleanup] // s_InvalidSampler is a marker value for invalid samplers. It can be reused across domain reloads, and does not reference user code
         internal static Sampler s_InvalidSampler = new Sampler();
 
         // This class can't be explicitly created
@@ -81,6 +83,7 @@ namespace UnityEngine.Profiling
     [NativeHeader("Runtime/Profiler/Marker.h")]
     public sealed class CustomSampler : Sampler
     {
+        [NoAutoStaticsCleanup] // s_InvalidCustomSampler is a marker value for invalid samplers. It can be reused across domain reloads, and does not reference user code
         internal static CustomSampler s_InvalidCustomSampler = new CustomSampler();
 
         // This class can't be explicitly created

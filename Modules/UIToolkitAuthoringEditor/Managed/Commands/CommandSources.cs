@@ -112,4 +112,10 @@ internal enum CommandCategory
     /// Commands in this category either request or process selection.
     /// </summary>
     Selection = 1 << 5,
+
+    /// <summary>
+    /// Command category for variable related commands.
+    /// Commands in this category either request or process variable changes.
+    /// </summary>
+    Variables = 1 << 6,
 }

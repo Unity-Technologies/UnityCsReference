@@ -79,6 +79,8 @@ namespace UnityEditor.Build.Profile
         /// is not supported.
         /// </summary>
         HelpBox m_CardWarningHelpBox;
+        VisualElement m_PlatformDeprecationBanner;
+        HelpBox m_PlatformDeprecationHelpBox;
         VisualElement m_HelpBoxWrapper;
         private BuildProfileRenameOverlay m_RenameOverlay;
 
@@ -250,6 +252,8 @@ namespace UnityEditor.Build.Profile
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
             m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>(BuildProfileModuleUtil.platformRequirementWarningHelpboxName);
+            m_PlatformDeprecationBanner = rootVisualElement.Q<VisualElement>("platform-deprecation-banner");
+            m_PlatformDeprecationHelpBox = rootVisualElement.Q<HelpBox>("platform-deprecation-helpbox");
             m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
             m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
@@ -473,6 +477,20 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        void UpdatePlatformDeprecationBanner(BuildProfileCard card)
+        {
+            if (!BuildProfileModuleUtil.BuildPlatformTryGetDeprecationMessage(card.platformId, out var message))
+            {
+                m_PlatformDeprecationBanner.Hide();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+                message = string.Format(TrText.platformDeprecatedDefaultWithDisplayName, card.displayName);
+            m_PlatformDeprecationHelpBox.text = message;
+            m_PlatformDeprecationBanner.Show();
+        }
+
         void ClearWindowData()
         {
             m_PlatformConfigs.Clear();
@@ -512,6 +530,8 @@ namespace UnityEditor.Build.Profile
                 m_PlatformBrowserHeaderBG.style.backgroundColor = bgColor;
             else
                 m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
+
+            UpdatePlatformDeprecationBanner(card);
 
             m_SupportedPlatformStatusContainer.Hide();
             if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId)

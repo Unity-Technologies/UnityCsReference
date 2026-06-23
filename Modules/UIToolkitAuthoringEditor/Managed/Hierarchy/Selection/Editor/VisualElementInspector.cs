@@ -85,8 +85,9 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_MatchingSelectorsElement.Target = m_Element;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.Target = m_Element;
-                m_VariablesSection?.Refresh(GetInlineStyleRule());
+                m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule);
             }
+            RefreshAttributeOverrideHelpbox();
             MarkSearchDirty();
             NotifyPropertyChanged(ElementProperty);
         }
@@ -130,6 +131,7 @@ internal sealed partial class VisualElementInspector : UIInspector
         // StyleSheet
         m_ClassListElement = this.Q<ClassListElement>(className: ClassListClass);
         m_MatchingSelectorsElement = this.Q<MatchingSelectorsElement>(className:MatchingSelectorsClass);
+        this.Q<OverrideFoldout>("MatchingSelectorsFoldout").AddTrackedProperty("Matching Selectors");
 
         // Styles
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
@@ -193,8 +195,22 @@ internal sealed partial class VisualElementInspector : UIInspector
                 throw new ArgumentOutOfRangeException();
         }
 
+        RefreshAttributeOverrideHelpbox();
         UpdateControlsState();
         m_StyleInspector.Refresh();
+    }
+
+    void RefreshAttributeOverrideHelpbox()
+    {
+        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
+        var isUnnamedTemplateElement = stage != null &&
+            m_EditFlags == VisualElementEditFlags.None
+            && m_Element?.visualElementAsset != null
+            && string.IsNullOrEmpty(m_Element.name)
+            && m_Element.templateAsset != null
+            && m_Element.visualTreeAssetSource != stage.EditedVisualTreeAsset;
+
+        m_AttributesInspector.SetAttributeOverrideHelpboxVisible(isUnnamedTemplateElement);
     }
 
 
@@ -229,7 +245,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     /// or the selection changes while recording. Updates the recording banner, OpenInBuilder
     /// visibility, and passes the controller to the style inspector.
     /// </summary>
-    internal void RefreshRecordingState(StyleInspectorAnimationRecordingContext controller)
+    internal override void RefreshRecordingState(StyleInspectorAnimationRecordingContext controller)
     {
         IsRecording = controller != null;
         m_StyleInspector.SetAnimationController(controller);
@@ -247,6 +263,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
                 InitializeVariablesSection();
                 InitializeAnimationSectionVisibility();
+                UICommandQueue.RegisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 break;
             }
             case DetachFromPanelEvent detachFromPanelEvent:
@@ -258,6 +275,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForVariables;
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
                 }
+                UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
                 m_StyleInspectorDefaultContent = null;
@@ -291,6 +309,17 @@ internal sealed partial class VisualElementInspector : UIInspector
             m_VariablesSection.enabledSelf = (EditFlags & VisualElementEditFlags.Styles) == VisualElementEditFlags.Styles;
             m_VariablesSection.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule);
         }
+    }
+
+    void OnVariableChange(in CommandContext context)
+    {
+        var inlineRule = GetInlineStyleRule();
+        var inlineSheet = m_Element?.visualTreeAssetSource?.inlineSheet;
+        if (m_Element == null || inlineSheet == null || inlineRule == null)
+             return;
+
+        m_Element.UpdateInlineRule(inlineSheet, inlineRule);
+        m_Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     void InitializeAnimationSectionVisibility()

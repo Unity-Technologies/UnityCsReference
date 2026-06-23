@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEngine.AdaptivePerformance
@@ -14,9 +15,13 @@ namespace UnityEngine.AdaptivePerformance
     /// </summary>
     public static class AdaptivePerformanceRenderSettings
     {
+        [NoAutoStaticsCleanup] // render quality multiplier actively managed by the scaler system
         private static float s_MaxShadowDistanceMultiplier = 1;
+        [NoAutoStaticsCleanup] // render quality multiplier actively managed by the scaler system
         private static float s_ShadowResolutionMultiplier = 1;
+        [NoAutoStaticsCleanup] // render quality multiplier actively managed by the scaler system
         private static float s_RenderScaleMultiplier = 1;
+        [NoAutoStaticsCleanup] // render quality value actively managed by the scaler system
         private static float s_DecalsMaxDistance = 1000;
 
         /// <summary>
@@ -40,6 +45,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Adjust the number of shadow cascades for the main camera in the scene.
         /// </summary>
+        [NoAutoStaticsCleanup] // render quality setting actively managed by the scaler system
         public static int MainLightShadowCascadesCountBias
         {
             get;
@@ -49,6 +55,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Adjust the quality setting of shadows.
         /// </summary>
+        [NoAutoStaticsCleanup] // render quality setting actively managed by the scaler system
         public static int ShadowQualityBias
         {
             get;
@@ -57,6 +64,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Adjust the size of lookup tables that are used for color grading.
         /// </summary>
+        [NoAutoStaticsCleanup] // render quality setting actively managed by the scaler system
         public static float LutBias
         {
             get;
@@ -81,6 +89,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Adjust the quality of MSAA.
         /// </summary>
+        [NoAutoStaticsCleanup] // render quality setting actively managed by the scaler system
         public static int AntiAliasingQualityBias
         {
             get;
@@ -102,6 +111,7 @@ namespace UnityEngine.AdaptivePerformance
         /// When enabled, there is a higher load on the CPU but less rendering overdraw.
         /// When disabled, there is less CPU utilization but more overdraw.
         /// </summary>
+        [NoAutoStaticsCleanup] // render quality setting actively managed by the scaler system
         public static bool SkipFrontToBackSorting
         {
             get;
@@ -112,6 +122,7 @@ namespace UnityEngine.AdaptivePerformance
         /// Whether transparent objects should be rendered
         /// When enabled, there is less rendering overdraw, but entire objects can disappear.
         /// </summary>
+        [NoAutoStaticsCleanup] // render quality setting actively managed by the scaler system
         public static bool SkipTransparentObjects
         {
             get;

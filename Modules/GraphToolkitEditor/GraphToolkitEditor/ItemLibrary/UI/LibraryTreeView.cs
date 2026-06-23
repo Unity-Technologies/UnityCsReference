@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -39,26 +38,43 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
         const int k_IndentDepthFactor = 15;
         const string k_EntryName = "smartSearchItem";
-        const string k_FavoriteButtonname = "favoriteButton";
+        const string k_FavoriteButtonName = "favoriteButton";
 
         static readonly string k_ItemTemplateFileName = $"{VisualElementsHelpers.k_ItemLibraryUxmlPath}/Item.uxml";
 
         ItemLibraryLibrary m_Library;
         Action<ItemLibraryItem> m_ItemChosenCallback;
-        HashSet<ItemLibraryItem> m_MultiSelectSelection;
-        Dictionary<ItemLibraryItem, Toggle> m_SearchItemToVisualToggle;
+        HashSet<ItemLibraryItem> m_MultiSelectSelection = [];
+        Dictionary<ItemLibraryItem, Toggle> m_SearchItemToVisualToggle = new();
         CategoryView m_FavoriteCategoryView;
         IReadOnlyList<ItemLibraryItem> m_Results;
+        HashSet<ItemLibraryItem> m_ResultsHashSet;
         readonly VisualTreeAsset m_ItemTemplate;
 
         ICategoryView m_ResultsHierarchy;
-        List<ITreeItemView> m_VisibleItems;
-        Stack<ITreeItemView> m_RootItems;
+        List<ITreeItemView> m_VisibleItems = [];
+        Stack<ITreeItemView> m_RootItems = new();
 
         ItemLibraryItem m_LastFavoriteClicked;
         ITreeItemView m_LastItemViewClicked;
 
+        // Last leaf the user selected in OnSelectionChanged. Not cleared when a folder row is selected.
+        // If that folder is collapsed while its row is highlighted, copied into
+        // m_CollapsedCategorySelections so expand can restore this leaf.
+        IItemView m_LeafSelectionForExpandRestore;
+
+        // Set from Collapse or Expand before RegenerateVisibleResults. When folder visibility changes, the
+        // ListView selection may point at a hidden row; use this as the highlight target for the regeneration that follows.
+        ITreeItemView m_SelectionAdjustedForExpandCollapse;
+
+        Dictionary<ICategoryView, ITreeItemView> m_CollapsedCategorySelections = new();
+
         double m_LastFavoriteClickTime;
+
+        // While RegenerateVisibleResults updates itemsSource, the ListView can briefly report no selection.
+        // This bool is used to ensure m_ItemChosenCallback(null) does not get invoked during that window,
+        // otherwise the searcher could get dismissed.
+        bool m_IsRebuildingVisibleList;
 
         TypeHandleInfos m_TypeHandleInfos;
 
@@ -67,15 +83,11 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
         public LibraryTreeView(TypeHandleInfos typeHandleInfos)
         {
             m_TypeHandleInfos = typeHandleInfos;
-            m_MultiSelectSelection = new HashSet<ItemLibraryItem>();
-            m_SearchItemToVisualToggle = new Dictionary<ItemLibraryItem, Toggle>();
             m_FavoriteCategoryView = new CategoryView("Favorites")
             {
                 Help = k_FavoriteCategoryHelp,
                 StyleName = favoriteCategoryStyleName
             };
-            m_VisibleItems = new List<ITreeItemView>();
-            m_RootItems = new Stack<ITreeItemView>();
 
             m_ItemTemplate = EditorGUIUtility.Load(k_ItemTemplateFileName) as VisualTreeAsset;
 
@@ -88,9 +100,13 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             itemsChosen += obj =>
             {
-                #pragma warning disable UA2011 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var first = obj.FirstOrDefault();
-#pragma warning restore UA2011
+                object first = null;
+                foreach (var o in obj)
+                {
+                    first = o;
+                    break;
+                }
+
                 if (first is IItemView itemView) // do not notify if the item chosen is a category and not an item
                     OnItemChosen(itemView.Item);
             };
@@ -115,7 +131,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             AddToClassList(RootView.ussClassName);
 
             // Add a single dummy Item to warn users that data is not ready to display yet
-            m_VisibleItems = new List<ITreeItemView> { new PlaceHolderItemView() };
+            m_VisibleItems = [new PlaceHolderItemView()];
             RefreshListView();
         }
 
@@ -131,72 +147,84 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                         selectedItemView.AddItem(new ItemView(selectedItemView, portItem));
                 }
             }
+
             RegenerateVisibleResults();
         }
 
         void RegenerateVisibleResults()
         {
-            m_VisibleItems.Clear();
+            m_IsRebuildingVisibleList = true;
 
-            m_RootItems.Clear();
-
-            for (var i = m_ResultsHierarchy.SubCategories.Count - 1; i >= 0; i--)
+            try
             {
-                m_RootItems.Push(m_ResultsHierarchy.SubCategories[i]);
-            }
+                m_VisibleItems.Clear();
 
-            for (var i = m_ResultsHierarchy.Items.Count - 1; i >= 0; i--)
-            {
-                m_RootItems.Push(m_ResultsHierarchy.Items[i]);
-            }
+                m_RootItems.Clear();
 
-            var selectedItemView = selectedItem as IItemView;
-
-            if (ViewMode == ResultsViewMode.Hierarchy)
-            {
-                m_FavoriteCategoryView.ClearItems();
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                foreach (var favoriteItem in m_Library.CurrentFavorites.Where(f => m_Results.Contains(f)))
-#pragma warning restore UA2001
+                for (var i = m_ResultsHierarchy.SubCategories.Count - 1; i >= 0; i--)
                 {
-                    IItemView itemViewToAdd = null;
-                    if (selectedItemView != null && selectedItemView.IsInCategory(m_FavoriteCategoryView))
-                    {
-                        if (selectedItemView.PortToConnect != null)
-                        {
-                            if (selectedItemView.Parent is IItemView parentItemView && parentItemView.Item == favoriteItem)
-                                itemViewToAdd = parentItemView;
-                        }
-                        else if (selectedItemView.Item == favoriteItem)
-                        {
-                            itemViewToAdd = selectedItemView;
-                        }
-                    }
-                    m_FavoriteCategoryView.AddItem(itemViewToAdd ?? new ItemView(m_FavoriteCategoryView, favoriteItem));
+                    m_RootItems.Push(m_ResultsHierarchy.SubCategories[i]);
                 }
 
-                m_RootItems.Push(m_FavoriteCategoryView);
-            }
-
-            while (m_RootItems.Count > 0)
-            {
-                var item = m_RootItems.Pop();
-                m_VisibleItems.Add(item);
-
-                if (item is IItemView itemView)
+                for (var i = m_ResultsHierarchy.Items.Count - 1; i >= 0; i--)
                 {
-                    if (itemView == selectedItemView)
-                        selectedIndex = m_VisibleItems.Count - 1;
-
-                    for (var i = itemView.Items.Count - 1; i >= 0; i--)
-                    {
-                        m_RootItems.Push(itemView.Items[i]);
-                    }
-                    itemView.ClearItems();
+                    m_RootItems.Push(m_ResultsHierarchy.Items[i]);
                 }
 
-                if (item is ICategoryView category && !m_Library.IsCollapsed(category))
+                var selectionTarget = m_SelectionAdjustedForExpandCollapse ?? selectedItem as ITreeItemView;
+                var selectedItemView = selectionTarget as IItemView;
+
+                if (ViewMode == ResultsViewMode.Hierarchy)
                 {
+                    m_FavoriteCategoryView.ClearItems();
+                    foreach (var favoriteItem in m_Library.CurrentFavorites)
+                    {
+                        if (!m_ResultsHashSet.Contains(favoriteItem))
+                            continue;
+
+                        IItemView itemViewToAdd = null;
+                        if (selectedItemView != null && selectedItemView.IsInCategory(m_FavoriteCategoryView))
+                        {
+                            if (selectedItemView.PortToConnect != null)
+                            {
+                                if (selectedItemView.Parent is IItemView parentItemView && parentItemView.Item == favoriteItem)
+                                    itemViewToAdd = parentItemView;
+                            }
+                            else if (selectedItemView.Item == favoriteItem)
+                            {
+                                itemViewToAdd = selectedItemView;
+                            }
+                        }
+
+                        m_FavoriteCategoryView.AddItem(itemViewToAdd ?? new ItemView(m_FavoriteCategoryView, favoriteItem));
+                    }
+
+                    m_RootItems.Push(m_FavoriteCategoryView);
+                }
+
+                var selectionIndex = -1;
+
+                while (m_RootItems.Count > 0)
+                {
+                    var item = m_RootItems.Pop();
+                    m_VisibleItems.Add(item);
+
+                    if (item == selectionTarget)
+                        selectionIndex = m_VisibleItems.Count - 1;
+
+                    if (item is IItemView itemView)
+                    {
+                        for (var i = itemView.Items.Count - 1; i >= 0; i--)
+                        {
+                            m_RootItems.Push(itemView.Items[i]);
+                        }
+
+                        itemView.ClearItems();
+                    }
+
+                    if (item is not ICategoryView category || m_Library.IsCollapsed(category))
+                        continue;
+
                     for (var i = category.Items.Count - 1; i >= 0; i--)
                     {
                         m_RootItems.Push(category.Items[i]);
@@ -206,9 +234,17 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                         m_RootItems.Push(category.SubCategories[i]);
                     }
                 }
-            }
 
-            RefreshListView();
+                RefreshListView();
+
+                if (selectionTarget != null && selectionIndex >= 0)
+                    SelectItemInListView(selectionIndex);
+            }
+            finally
+            {
+                m_SelectionAdjustedForExpandCollapse = null;
+                m_IsRebuildingVisibleList = false;
+            }
         }
 
         public void SetResults(IReadOnlyList<ItemLibraryItem> results)
@@ -216,6 +252,9 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             var firstItemWasSelected = selectedIndex == 0;
 
             m_Results = results;
+            m_ResultsHashSet = new HashSet<ItemLibraryItem>(m_Results);
+
+            m_CollapsedCategorySelections.Clear();
 
             m_ResultsHierarchy = CategoryView.BuildViewModels(m_Results, ViewMode, m_Library.CategoryPathStyleNames);
 
@@ -225,15 +264,18 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             // force selection callback if first viewmodel was already selected
             if (firstItemWasSelected)
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                OnModelViewSelectionChange?.Invoke(m_VisibleItems.Take(1).ToList());
-#pragma warning restore UA2001
+            {
+                var firstItem = new List<ITreeItemView>();
+                if (m_VisibleItems.Count > 0)
+                    firstItem.Add(m_VisibleItems[0]);
+
+                OnModelViewSelectionChange?.Invoke(firstItem);
+            }
         }
 
         void OnKeyDownEvent(KeyDownEvent evt)
         {
-            var itemView = selectedItem as IItemView;
-            var categoryView = itemView is null ? selectedItem as ICategoryView : null;
+            var categoryView = selectedItem is not IItemView ? selectedItem as ICategoryView : null;
 
             switch (evt.keyCode)
             {
@@ -328,10 +370,6 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             var nameLabel = new Label(treeItem.Name);
             nameLabel.AddToClassList(itemNameClassName);
             nameLabelsContainer.Add(nameLabel);
-            // TODO VladN: support highlight for parts of the string?
-            // Highlight was disabled because it was inconsistent with fuzzy search
-            // and with searching allowing to match item path (e.g. 'Debug/Log message' will be matched by DbgLM)
-            // We need to figure out if there's a good way to highlight results.
 
             if ((treeItem.Parent == m_FavoriteCategoryView || ViewMode == ResultsViewMode.Flat)
                 && !string.IsNullOrEmpty(treeItem.GetPath()))
@@ -344,8 +382,8 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             target.userData = treeItem;
             target.name = k_EntryName;
 
-            var favButton = target.Q(k_FavoriteButtonname);
-            if (favButton != null && itemView != null && itemView.PortToConnect == null)
+            var favButton = target.Q(k_FavoriteButtonName);
+            if (favButton != null && itemView is { PortToConnect: null })
             {
                 favButton.AddToClassList(favoriteButtonClassName);
 
@@ -431,8 +469,8 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             var resolvedType = type.Resolve();
             if (resolvedType != null)
             {
-                bool overrideIcon = true;
-                (Texture2D icon, Color color)? typeStyle = graphModel != null ?
+                var overrideIcon = true;
+                var typeStyle = graphModel != null ?
                     graphModel.GetDataTypeStyle(resolvedType)
                     : BaseDataTypeStyleMapper.GetDataTypeStyle(resolvedType);
 
@@ -525,9 +563,10 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
                     }
                 }
             }
+
             RemoveCustomClassIfFound(iconElement);
 
-            var favButton = target.Q(k_FavoriteButtonname);
+            var favButton = target.Q(k_FavoriteButtonName);
             if (favButton != null)
             {
                 favButton.RemoveFromClassList(favoriteButtonClassName);
@@ -537,10 +576,16 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
             void RemoveCustomClassIfFound(VisualElement visualElement)
             {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var customClass = visualElement.GetClasses()
-#pragma warning restore UA2001
-                    .FirstOrDefault(c => c.StartsWith(customItemClassName));
+                string customClass = null;
+                foreach (var visualElementClass in visualElement.GetClasses())
+                {
+                    if (visualElementClass.StartsWith(customItemClassName))
+                    {
+                        customClass = visualElementClass;
+                        break;
+                    }
+                }
+
                 if (customClass != null)
                     visualElement.RemoveFromClassList(customClass);
             }
@@ -593,20 +638,39 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (SelectionIsInvalidOrAFavoriteClick())
                 return;
 
+            if (m_IsRebuildingVisibleList && selectedItem == null)
+                return;
+
             var selectedItemView = selectedItem as IItemView;
             if (m_LastItemViewClicked == selectedItemView)
                 return;
 
             m_LastItemViewClicked = selectedItemView;
 
-#pragma warning disable UA2001, UA2002 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            if (!selectedItems.Any())
-                m_ItemChosenCallback(null);
+            if (selectedItem is IItemView itemView)
+            {
+                m_LeafSelectionForExpandRestore = itemView;
+                m_CollapsedCategorySelections.Clear();
+            }
+
+            var hasSelection = false;
+            var selectedTreeItems = new List<ITreeItemView>();
+            foreach (var item in selectedItems)
+            {
+                hasSelection = true;
+                if (item is ITreeItemView treeItemView)
+                    selectedTreeItems.Add(treeItemView);
+            }
+
+            if (!hasSelection)
+            {
+                if (!m_IsRebuildingVisibleList)
+                    m_ItemChosenCallback(null);
+            }
             else
-                OnModelViewSelectionChange?.Invoke(selectedItems
-                    .OfType<ITreeItemView>()
-                    .ToList());
-#pragma warning restore UA2001, UA2002
+            {
+                OnModelViewSelectionChange?.Invoke(selectedTreeItems);
+            }
         }
 
         void OnItemChosen(ItemLibraryItem item)
@@ -664,43 +728,57 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             return itemElement;
         }
 
-        // ReSharper disable once UnusedMember.Local
-
-        void RefreshListViewOn()
-        {
-            // TODO: Call ListView.Refresh() when it is fixed.
-            // Need this workaround until then.
-            // See: https://fogbugz.unity3d.com/f/cases/1027728/
-            // And: https://gitlab.internal.unity3d.com/upm-packages/editor/com.unity.library/issues/9
-
-            var scroller = scrollView?.Q<Scroller>("VerticalScroller");
-            if (scroller == null)
-                return;
-
-            var oldValue = scroller.value;
-            scroller.value = oldValue + 1.0f;
-            scroller.value = oldValue - 1.0f;
-            scroller.value = oldValue;
-        }
-
         void Expand(ICategoryView itemView)
         {
+            if (m_CollapsedCategorySelections.TryGetValue(itemView, out var savedSelection))
+            {
+                m_SelectionAdjustedForExpandCollapse = savedSelection;
+                m_CollapsedCategorySelections.Remove(itemView);
+            }
+
             m_Library.SetCollapsed(itemView, false);
             RegenerateVisibleResults();
         }
 
         void Collapse(ICategoryView itemView)
         {
+            if (selectedItem is ITreeItemView selectedTreeItem)
+            {
+                if (selectedTreeItem == itemView)
+                {
+                    if (m_LeafSelectionForExpandRestore != null && IsUnderCategory(m_LeafSelectionForExpandRestore, itemView))
+                        m_CollapsedCategorySelections[itemView] = m_LeafSelectionForExpandRestore;
+                    else
+                        m_CollapsedCategorySelections.Remove(itemView);
+
+                    m_SelectionAdjustedForExpandCollapse = itemView;
+                }
+                else if (IsUnderCategory(selectedTreeItem, itemView))
+                {
+                    m_CollapsedCategorySelections[itemView] = selectedTreeItem;
+                    m_SelectionAdjustedForExpandCollapse = itemView;
+                }
+            }
+
             m_Library.SetCollapsed(itemView);
             RegenerateVisibleResults();
+        }
+
+        static bool IsUnderCategory(ITreeItemView item, ICategoryView category)
+        {
+            for (var current = item; current != null; current = current.Parent)
+            {
+                if (current == category)
+                    return true;
+            }
+
+            return false;
         }
 
         void ToggleFavorite(PointerDownEvent evt)
         {
             // Check that we're clicking on a favorite
-            if (!(evt.target is VisualElement target
-                  && target.name == k_FavoriteButtonname
-                  && target.parent?.parent?.userData is ItemView itemView))
+            if (evt.target is not VisualElement { name: k_FavoriteButtonName, parent.parent.userData: ItemView itemView } target)
             {
                 return;
             }
@@ -738,7 +816,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 
         void ExpandOrCollapse(MouseDownEvent evt)
         {
-            if (!(evt.target is VisualElement target))
+            if (evt.target is not VisualElement target)
                 return;
 
             VisualElement itemElement = target.GetFirstAncestorOfType<TemplateContainer>();
@@ -746,7 +824,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             if (target.name != expandingItemName)
                 target = itemElement.Q(expandingItemName);
 
-            if (target == null || !(itemElement?.userData is ICategoryView item) || itemElement.userData is IItemView)
+            if (target == null || itemElement?.userData is not ICategoryView item || itemElement.userData is IItemView)
                 return;
 
             if (m_Library.IsCollapsed(item))
@@ -766,6 +844,18 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
             public string GetPath() => null;
             public string Name => "Indexing databases...";
             public string Help => "The Database is being indexed...";
+        }
+
+        public class TestAccess
+        {
+            readonly LibraryTreeView m_TreeView;
+
+            public TestAccess(LibraryTreeView treeView)
+            {
+                m_TreeView = treeView;
+            }
+
+            public void RegenerateVisibleResults() => m_TreeView.RegenerateVisibleResults();
         }
     }
 }

@@ -50,8 +50,8 @@ namespace UnityEditor
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
             public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("Unable to start the baking process as the required version of Apple Rosetta could not be found", MessageType.Error);
 
-            public static readonly GUIContent GPUUseHardwareRayTracing = EditorGUIUtility.TrTextContent("Hardware ray tracing", "Use hardware ray tracing if the GPU device supports it.");
-            public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = EditorGUIUtility.TrTextContent("Hardware ray tracing", "Hardware ray tracing is not supported by the GPU device.");
+            public static readonly GUIContent GPUUseHardwareRayTracing = EditorGUIUtility.TrTextContent("Hardware Ray Tracing", "Use hardware ray tracing if the GPU device supports it.");
+            public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = EditorGUIUtility.TrTextContent("Hardware Ray Tracing", "Hardware ray tracing is not supported by the GPU device.");
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
@@ -536,7 +536,9 @@ namespace UnityEditor
         void DrawBakingProfileSelector()
         {
             // Handle the baking profile setting
+#pragma warning disable 618 // ProgressiveCPU is deprecated; comparison disables the GPU baking profile when CPU is selected.
             using (new EditorGUI.DisabledScope(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.ProgressiveCPU))
+#pragma warning restore 618
             {
                 int bakingProfile = Styles.bakingProfileDefault;
                 string bakingProfileString = EditorUserSettings.GetConfigValue(m_BakingProfileKey);

@@ -1228,6 +1228,16 @@ namespace Unity.U2D.Physics
         public readonly bool fastRotationAllowed { get => PhysicsBody_GetFastRotationAllowed(this); set => PhysicsBody_SetFastRotationAllowed(this, value); }
 
         /// <summary>
+        /// Controls contact recycling for this body. Enabled by default.
+        /// Contact recycling reuses contact manifolds when bodies move only slightly, improving performance.
+        /// Disabling it can avoid ghost collisions, at the cost of higher simulation time.
+        /// Both bodies in a contact must have recycling enabled for that contact to be recycled.
+        /// Existing contacts retain their prior setting; only contacts created after a change will be recycled.
+        /// See <see cref="PhysicsBodyDefinition.contactRecyclingAllowed"/>.
+        /// </summary>
+        public readonly bool contactRecyclingAllowed { get => PhysicsBody_GetContactRecyclingAllowed(this); set => PhysicsBody_SetContactRecyclingAllowed(this, value); }
+
+        /// <summary>
         /// Treat this body as high speed object that performs continuous collision detection against dynamic and kinematic bodies, but not other high speed bodies.
         /// Fast collision bodies should be used sparingly. They are not a solution for general dynamic-versus-dynamic continuous collision.
         /// </summary>

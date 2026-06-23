@@ -3,32 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
 [CustomEditor(typeof(StyleRuleSelection))]
-class StyleRuleSelectionEditor : UnityEditor.Editor
+class StyleRuleSelectionEditor : UISelectionEditor
 {
     StyleRuleInspector m_Inspector;
     StyleRuleHeader m_Header;
 
-    private StyleRuleSelection Target => (StyleRuleSelection)target;
+    StyleRuleSelection Target => (StyleRuleSelection)target;
 
-    void OnEnable() => StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+    protected override UIInspector Inspector => m_Inspector;
 
-    void OnDisable() => StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
-
-    void OnStageChanged(Stage _) => m_Inspector?.ResetSearch();
-
-    public override bool UseDefaultMargins()
-    {
-        // We don't want to have an artificial padding
-        return false;
-    }
-
-    internal override bool isHeaderSticky => true;
+    protected override StyleInspectorAnimationRecordingContext CreateRecordingContext()
+        => StyleInspectorAnimationRecordingContext.TryCreateForRule(Target.StyleRule);
 
     internal override VisualElement CreateInspectorHeaderGUI()
     {
@@ -53,8 +43,7 @@ class StyleRuleSelectionEditor : UnityEditor.Editor
             bindingMode = BindingMode.ToTarget
         });
         m_Inspector.InitializeSearchField(m_Header.SearchField);
+        ApplyState();
         return m_Inspector;
     }
-
-    void OnDestroy() => m_Inspector?.Dispose();
 }

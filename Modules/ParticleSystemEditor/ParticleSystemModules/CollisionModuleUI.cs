@@ -6,10 +6,11 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEditor.EditorTools;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    class CollisionModuleUI : ModuleUI
+    partial class CollisionModuleUI : ModuleUI
     {
         enum CollisionTypes { Plane = 0, World = 1 }
         enum CollisionModes { Mode3D = 0, Mode2D = 1 }
@@ -37,10 +38,13 @@ namespace UnityEditor
 
         ReorderableList m_PlanesList;
 
+        [NoAutoStaticsCleanup] // editor visualization state
         static PlaneVizType m_PlaneVisualizationType = PlaneVizType.Solid;
+        [NoAutoStaticsCleanup] // editor state; no user refs
         static float m_ScaleGrid = 1.0f;
+        [NoAutoStaticsCleanup] // editor UI state flag
         static bool s_VisualizeBounds = false;
-        internal static PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
+        internal static readonly PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
 
         static readonly string s_UndoCollisionPlaneString = L10n.Tr("Modified Collision Plane Transform");
 
@@ -96,12 +100,14 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Solid")
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         [EditorTool("Transform Collider", typeof(ParticleSystem))]
-        class CollisionModuleTransformTool : EditorTool
+        partial class CollisionModuleTransformTool : EditorTool
         {
             private HashSet<Transform> m_ScenePlanes = new HashSet<Transform>();
+            [AutoStaticsCleanupOnCodeReload] // editor selection state
             private static Transform s_SelectedTransform;    // static to ensure there is only one selected Transform across multiple particle systems
 
             public override GUIContent toolbarIcon

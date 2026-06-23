@@ -344,6 +344,27 @@ namespace UnityEditor
         internal static extern bool inspectorUseIMGUIDefaultInspector { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        [NativeName("UseLegacyHierarchy")]
+        private static extern bool useLegacyHierarchyImpl { get; set; }
+
+        [VisibleToOtherModules]
+        internal static bool useLegacyHierarchy
+        {
+            get => useLegacyHierarchyImpl;
+            set
+            {
+                if (useLegacyHierarchyImpl == value)
+                    return;
+
+                useLegacyHierarchyImpl = value;
+                useLegacyHierarchyChanged?.Invoke();
+            }
+        }
+
+        [VisibleToOtherModules]
+        internal static Action useLegacyHierarchyChanged;
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool referencedClipsExactNaming { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

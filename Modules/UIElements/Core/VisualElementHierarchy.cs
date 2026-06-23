@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -65,6 +66,24 @@ namespace UnityEngine.UIElements
         // parent in visual tree
         private VisualElement m_PhysicalParent;
         private VisualElement m_LogicalParent;
+
+        // Mirrors m_LogicalParent into the VisualElementSelectorData component so the native
+        // selector matcher can chase parents via a direct pointer. Must be called from every
+        // site that assigns m_LogicalParent. Pass null when there is no logical parent.
+        // Safe to call on a released element (e.g. during recursive cleanup): the layoutNode is
+        // already gone in that case and there is nothing left to update.
+        private void UpdateHierarchySelectorData(VisualElement logicalParent)
+        {
+            if (resourcesReleased)
+                return;
+
+            unsafe
+            {
+                layoutNode.SelectorData.logicalParent = logicalParent != null
+                    ? (VisualElementSelectorData*)Unsafe.AsPointer(ref logicalParent.layoutNode.SelectorData)
+                    : null;
+            }
+        }
 
         /// <summary>
         /// The parent of this VisualElement.
@@ -197,6 +216,7 @@ namespace UnityEngine.UIElements
                 container?.Add(child);
             }
             child.m_LogicalParent = this;
+            child.UpdateHierarchySelectorData(this);
         }
 
         internal void Add(VisualElement child, bool ignoreContentContainer)
@@ -227,6 +247,7 @@ namespace UnityEngine.UIElements
             }
 
             element.m_LogicalParent = this;
+            element.UpdateHierarchySelectorData(this);
         }
 
         internal void Insert(int index, VisualElement element, bool ignoreContentContainer)
@@ -584,6 +605,7 @@ namespace UnityEngine.UIElements
         public struct Hierarchy
         {
             private const string k_InvalidHierarchyChangeMsg = "Cannot modify VisualElement hierarchy during layout calculation";
+
             private readonly VisualElement m_Owner;
 
             /// <summary>
@@ -607,7 +629,7 @@ namespace UnityEngine.UIElements
                     throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
 
                 if (m_Owner.resourcesReleased)
-                    throw new InvalidOperationException("You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.");
+                    throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
             }
 
             /// <summary>
@@ -663,6 +685,17 @@ namespace UnityEngine.UIElements
                 }
 
                 bool childWasEnabledInHierarchy = child.enabledInHierarchy;
+
+                // backdropFilterDescendantCount is self-inclusive (a bd-filter element counts itself),
+                // unlike imguiContainerDescendantCount which excludes self. The self contribution is
+                // already maintained by SyncBackdropFilterState on style transitions, so the contribution
+                // to ancestors is just the subtree count.
+                int backdropFilterCount = child.backdropFilterDescendantCount;
+                if (backdropFilterCount > 0)
+                {
+                    m_Owner.ChangeBackdropFilterDescendantCount(backdropFilterCount);
+                }
+
                 child.PropagateParentEnabled(m_Owner.enabledInHierarchy);
 
                 child.hierarchy.SetParent(m_Owner);
@@ -733,6 +766,13 @@ namespace UnityEngine.UIElements
                 if (imguiContainerCount > 0)
                 {
                     m_Owner.ChangeIMGUIContainerCount(-imguiContainerCount);
+                }
+
+                // See comment in Add: backdropFilterDescendantCount is self-inclusive.
+                int backdropFilterCount = child.backdropFilterDescendantCount;
+                if (backdropFilterCount > 0)
+                {
+                    m_Owner.ChangeBackdropFilterDescendantCount(-backdropFilterCount);
                 }
 
                 child.hierarchy.SetParent(null);
@@ -873,6 +913,7 @@ namespace UnityEngine.UIElements
                             // because their entire hierarchy is being cleared
                             descendant.m_PhysicalParent = null;
                             descendant.m_LogicalParent = null;
+                            descendant.UpdateHierarchySelectorData(null);
 
                             if (releaseResources)
                             {
@@ -1036,6 +1077,8 @@ namespace UnityEngine.UIElements
             {
                 m_Owner.m_PhysicalParent = value;
                 m_Owner.m_LogicalParent = value;
+                m_Owner.UpdateHierarchySelectorData(value);
+
                 m_Owner.DirtyNextParentWithEventInterests();
                 m_Owner.SetPanel(value?.elementPanel);
                 if (m_Owner.m_PhysicalParent != value)
@@ -1048,6 +1091,8 @@ namespace UnityEngine.UIElements
             {
                 m_Owner.m_PhysicalParent = value;
                 m_Owner.m_LogicalParent = value;
+                m_Owner.UpdateHierarchySelectorData(value);
+
                 m_Owner.DirtyNextParentWithEventInterests();
                 m_Owner.SetPanelBatched(value?.elementPanel, selfAndDescendants);
                 if (m_Owner.m_PhysicalParent != value)

@@ -247,9 +247,26 @@ namespace UnityEditor.Build.Analysis
                     DirectSizeBytes = s.DirectSize,
                     TotalAssetCount = s.TotalAssets,
                     TotalSizeBytes = s.TotalSize,
+                    ReferencedAssetIds = ResolveReferencedAssetIds(s.ReferencedAssetPaths, pathToAssetId),
                 });
             }
             return result.ToArray();
+        }
+
+        private static int[] ResolveReferencedAssetIds(
+            string[] referencedAssetPaths,
+            Dictionary<string, int> pathToAssetId)
+        {
+            if (referencedAssetPaths == null || referencedAssetPaths.Length == 0)
+                return Array.Empty<int>();
+
+            var ids = new List<int>(referencedAssetPaths.Length);
+            foreach (var path in referencedAssetPaths)
+            {
+                if (pathToAssetId.TryGetValue(path, out var id))
+                    ids.Add(id);
+            }
+            return ids.Count == 0 ? Array.Empty<int>() : ids.ToArray();
         }
 
         private static BuildAnalysisComputed BuildComputed(

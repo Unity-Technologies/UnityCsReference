@@ -4,6 +4,7 @@
 
 using UnityEditorInternal;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -31,6 +32,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Layer Mask and List")
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         public ExternalForcesModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

@@ -10,6 +10,7 @@ using System.Text;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
 using Unity.Profiling.LowLevel.Unsafe;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Profiling;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -84,62 +85,77 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Profiler counter to report cpu frametime.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> CurrentCPUMarker = new CustomProfilerMarker<float>("CPU frametime", ProfilerMarkerDataUnit.TimeNanoseconds);
         /// <summary>
         /// Profiler counter to report cpu average frametime.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> AvgCPUMarker = new CustomProfilerMarker<float>("CPU avg frametime", ProfilerMarkerDataUnit.TimeNanoseconds);
         /// <summary>
         /// Profiler counter to report gpu frametime.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> CurrentGPUMarker = new CustomProfilerMarker<float>("GPU frametime", ProfilerMarkerDataUnit.TimeNanoseconds);
         /// <summary>
         /// Profiler counter to report gpu average frametime.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> AvgGPUMarker = new CustomProfilerMarker<float>("GPU avg frametime", ProfilerMarkerDataUnit.TimeNanoseconds);
         /// <summary>
         /// Profiler counter to report cpu performance level.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<int> CurrentCPULevelMarker = new CustomProfilerMarker<int>("CPU performance level", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report gpu performance level.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<int> CurrentGPULevelMarker = new CustomProfilerMarker<int>("GPU performance level", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report frametime.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> CurrentFrametimeMarker = new CustomProfilerMarker<float>("Frametime", ProfilerMarkerDataUnit.TimeNanoseconds);
         /// <summary>
         /// Profiler counter to report average frametime.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> AvgFrametimeMarker = new CustomProfilerMarker<float>("Avg frametime", ProfilerMarkerDataUnit.TimeNanoseconds);
         /// <summary>
         /// Profiler counter to report the thermal warning level.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<int> WarningLevelMarker = new CustomProfilerMarker<int>("Thermal Warning Level", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report the temperature level.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> TemperatureLevelMarker = new CustomProfilerMarker<float>("Temperature Level", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report the temperature trend.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> TemperatureTrendMarker = new CustomProfilerMarker<float>("Temperature Trend", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report the bottleneck.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<int> BottleneckMarker = new CustomProfilerMarker<int>("Bottleneck", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report the performance mode.
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<int> PerformanceModeMarker = new CustomProfilerMarker<int>("Performance Mode", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report the CPU utilization (normalized 0-1).
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> CpuUtilizationMarker = new CustomProfilerMarker<float>("CPU Utilization", ProfilerMarkerDataUnit.Count);
         /// <summary>
         /// Profiler counter to report the GPU utilization (normalized 0-1).
         /// </summary>
+        [NoAutoStaticsCleanup] // public API field; profiler counter initialized once at startup
         public static CustomProfilerMarker<float> GpuUtilizationMarker = new CustomProfilerMarker<float>("GPU Utilization", ProfilerMarkerDataUnit.Count);
 
         /// <summary>
@@ -154,7 +170,9 @@ namespace UnityEngine.AdaptivePerformance
 
         const int kMaxScalerNameSizeInBytes = 320;
 
+        [NoAutoStaticsCleanup] // per-frame profiler buffer, populated fresh each frame
         static List<ScalerInfo> scalerInfos = new List<ScalerInfo>();
+        [NoAutoStaticsCleanup] // per-frame profiler buffer index, populated fresh each frame
         static Dictionary<string, int> scalerInfosIndex = new Dictionary<string, int>();
 
         /// <summary>

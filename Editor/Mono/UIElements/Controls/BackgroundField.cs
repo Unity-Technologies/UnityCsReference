@@ -42,6 +42,7 @@ namespace UnityEditor.UIElements
         {
             m_TypeOptions = new Dictionary<string, Type>();
             m_ObjectField = new ObjectField().WithClassList(objectFieldUssClassName);
+            m_ObjectField.allowBuiltinResources = false;
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 
             m_ObjectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>() { typeof(Texture2D), typeof(RenderTexture), typeof(Sprite), typeof(VectorImage) });

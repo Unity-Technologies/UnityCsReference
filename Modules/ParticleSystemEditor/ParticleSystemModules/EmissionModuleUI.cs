@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditorInternal;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -34,6 +35,7 @@ namespace UnityEditor
             public GUIContent burstRepeatInterval = EditorGUIUtility.TrTextContent("Interval", "Repeat the burst every N seconds.");
             public GUIContent burstProbability = EditorGUIUtility.TrTextContent("Probability", "0-1 Chance that the burst will trigger.");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         public EmissionModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

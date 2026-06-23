@@ -154,6 +154,7 @@ internal partial class DictionaryDrawer
         public bool hasStaticInlineHeight; // inline compound type with fixed height (no expandable children)
         public bool needsHeightClassification; // deferred until first element exists to inspect
         public bool needsHeightRefresh; // a rendered row's measured height drifted from cached value
+        public bool needsHeightMeasure; // row-height measurement deferred to the next OnGUI Layout pass
         public bool sortAscending = true;
         public readonly float attributeKeyFraction;
         public readonly Hash128 stateCacheKey;
@@ -191,6 +192,13 @@ internal partial class DictionaryDrawer
         public bool pendingSortToggle;
         public int[] pendingSortToggleSelectionArrayIndices;
         public bool needsTreeViewFocus;
+        // Display index to (re)frame once row heights have settled. A structural mutation
+        // (AddEntry) runs before the deferred height measurement is consumed on the Layout
+        // pass, so framing right away scrolls against pre-measurement row rects and can miss
+        // the target — e.g. a freshly added bottom row not scrolled fully into view. We record
+        // the target here and frame it from GetExpandedPropertyHeight once heights are settled.
+        // -1 means nothing is pending.
+        public int pendingFrameDisplayIndex = -1;
 
         // Interaction check. When RunDeferredStructuralWork finds needsReload but
         // EditorInteractionMonitor.IsReadyToApplyDeferredChanges is false, we install a
@@ -262,8 +270,7 @@ internal partial class DictionaryDrawer
             if (displayedItemCount > 0)
                 ClassifyRowHeights();
             else
-                needsHeightClassification = IsGenericInlineType(keyType, keyHasCustomDrawer)
-                    || IsGenericInlineType(valueType, valueHasCustomDrawer);
+                needsHeightClassification = IsComplexCellType(keyType, keyHasCustomDrawer) || IsComplexCellType(valueType, valueHasCustomDrawer);
 
             treeView.Reload();
         }
@@ -322,7 +329,11 @@ internal partial class DictionaryDrawer
             if (!property.isExpanded)
                 return EditorGUIUtility.singleLineHeight;
 
-            // Invariant: PropertyDrawer's OnGUI / GetPropertyHeight only run while in an IMGUIContainer
+            // Invariant: size is only ever computed inside an OnGUI pass, so an IMGUIContainer
+            // is always on the stack here. The deferred reload (delayCall / update) rebuilds row
+            // *structure* but never measures, so it can't reach this from a container-less
+            // context — including a nested dictionary's GetPropertyHeight queried via the parent
+            // drawer's row measurement, which now runs on the parent's OnGUI Layout pass.
             var imguiContainer = IMGUIContainer.GetCurrentIMGUIContainer();
             Debug.Assert(imguiContainer != null, Texts.ExpectedCurrentContainerMessage);
 
@@ -360,10 +371,48 @@ internal partial class DictionaryDrawer
 
         float GetExpandedPropertyHeight()
         {
+            // Row heights are measured only on the OnGUI Layout pass, where an IMGUIContainer is
+            // guaranteed (the inspector calls GetPropertyHeight from its own OnGUI). The deferred
+            // reload rebuilds row *structure* and classifies cells, but never measures: measuring
+            // a custom-drawer cell (e.g. a nested dictionary) calls into that drawer's
+            // GetPropertyHeight, which needs the container. We measure here and let
+            // RefreshCustomRowHeights cache it so the Repaint / event passes of the same frame
+            // read a consistent total.
+            //
+            // For variable-height rows we measure *every* row, not just a sample: with custom row
+            // heights the TreeView's scroll view clamps scrollPos to (totalHeight - viewport)
+            // each frame, so a totalHeight that keeps changing as rows are lazily measured would
+            // repeatedly clamp the scroll and walk it away from a framed position. Measuring all
+            // rows once makes totalHeight exact and stable, so framing (and the scrollbar) hold.
+            if (Event.current.type == EventType.Layout && displayedItemCount > 0 && needsHeightMeasure)
+            {
+                needsHeightMeasure = false;
+                if (variableRowHeight)
+                    treeView.MeasureAllRowHeights();
+                else if (hasStaticInlineHeight)
+                    treeView.ComputeFixedInlineRowHeight();
+                treeView.RefreshCustomRowHeights();
+            }
+
             if (dynamicRowHeight && displayedItemCount > 0 && needsHeightRefresh)
             {
                 treeView.RefreshCustomRowHeights();
                 needsHeightRefresh = false;
+            }
+
+            // Apply a deferred frame request (e.g. a newly added row) once row heights are
+            // settled — after the measure/refresh above on this Layout pass — so the scroll uses
+            // final row rects instead of the pre-measurement estimate. Repaint so the scroll
+            // position the frame sets is rendered.
+            if (pendingFrameDisplayIndex >= 0 && Event.current.type == EventType.Layout
+                && !needsHeightMeasure && !needsHeightRefresh)
+            {
+                if (pendingFrameDisplayIndex < displayedItemCount)
+                {
+                    treeView.FrameItem(pendingFrameDisplayIndex);
+                    HandleUtility.Repaint();
+                }
+                pendingFrameDisplayIndex = -1;
             }
 
             float foldoutLine = EditorGUIUtility.singleLineHeight;
@@ -695,6 +744,38 @@ internal partial class DictionaryDrawer
             return true;
         }
 
+        // True for a key/value type whose cell can render taller than a single line, so the
+        // row height must be derived from the property instead of using the default
+        // single-line height. Covers two cases the row classifier must treat alike:
+        //   - generic inline compounds (struct/class drawn by expanding their children), and
+        //   - types with a custom PropertyDrawer, which can be multi-line and/or expandable
+        //     (e.g. a nested Dictionary<,>). The bare IsGenericInlineType check excludes the
+        //     latter, which is why a nested dictionary value otherwise collapses to a single
+        //     row line and the nested drawer overlaps the rows below it.
+        // Simple single-line types (primitive, string, enum, Object reference) return false.
+        static bool IsComplexCellType(Type type, bool hasCustomDrawer)
+        {
+            if (type == null)
+                return false;
+            return hasCustomDrawer || IsGenericInlineType(type, false);
+        }
+
+        // Whether a cell's rendered height can change after the initial layout, which forces
+        // per-row lazy height tracking instead of a single fixed row height. A custom-drawer cell
+        // is always treated as dynamic because the drawer can expand (foldout) or resize at
+        // runtime (e.g. a nested Dictionary<,>) and its height at classification time — while
+        // collapsed — is not representative. An array/list cell is likewise dynamic: it has a
+        // foldout and a resizable element count. A generic inline compound is dynamic only when
+        // it contains expandable children.
+        static bool CellHeightCanChange(SerializedProperty prop, bool hasCustomDrawer)
+        {
+            if (hasCustomDrawer)
+                return true;
+            if (prop != null && prop.isArray)
+                return true;
+            return HasExpandableChildren(prop);
+        }
+
         static bool HasExpandableChildren(SerializedProperty prop)
         {
             if (prop == null || !prop.isValid || prop.propertyType != SerializedPropertyType.Generic)
@@ -723,23 +804,25 @@ internal partial class DictionaryDrawer
         {
             needsHeightClassification = false;
 
-            bool keyIsInline = IsGenericInlineType(keyType, keyHasCustomDrawer);
-            bool valueIsInline = IsGenericInlineType(valueType, valueHasCustomDrawer);
+            bool keyIsComplex = IsComplexCellType(keyType, keyHasCustomDrawer);
+            bool valueIsComplex = IsComplexCellType(valueType, valueHasCustomDrawer);
 
-            if (!keyIsInline && !valueIsInline)
+            if (!keyIsComplex && !valueIsComplex)
                 return;
 
             var element = arrayProperty.GetArrayElementAtIndex(0);
             GetKeyAndValueProperties(element, out var keyProp, out var valueProp);
-            bool keyDynamic = keyIsInline && HasExpandableChildren(keyProp);
-            bool valueDynamic = valueIsInline && HasExpandableChildren(valueProp);
+            bool keyDynamic = keyIsComplex && CellHeightCanChange(keyProp, keyHasCustomDrawer);
+            bool valueDynamic = valueIsComplex && CellHeightCanChange(valueProp, valueHasCustomDrawer);
 
             dynamicRowHeight = keyDynamic || valueDynamic;
             variableRowHeight = dynamicRowHeight;
             hasStaticInlineHeight = !dynamicRowHeight;
 
-            if (hasStaticInlineHeight)
-                treeView.ComputeFixedInlineRowHeight();
+            // Classification only decides the row-height *kind*. The actual measurement
+            // (fixed inline height or variable estimate) runs on the next OnGUI Layout pass —
+            // see GetExpandedPropertyHeight — so this stays safe to call from the deferred reload.
+            needsHeightMeasure = true;
         }
 
         // Calculates the rendered height of an EditorGUI.HelpBox(rect, message, type) at a given width
@@ -985,6 +1068,11 @@ internal partial class DictionaryDrawer
 
             int newDisplayIndex = sortedIndices.ToDisplayIndex(lastIndex);
             treeView.SetSelection(new[] { newDisplayIndex }, TreeViewSelectionOptions.RevealAndFrame);
+            // Row heights for the just-rebuilt tree are measured on the next Layout pass, so the
+            // RevealAndFrame above scrolls against the pre-measurement estimate. Re-frame the new
+            // row once heights have settled (see GetExpandedPropertyHeight) so it lands correctly
+            // at the bottom even when the tree is tall enough to show the scroll view.
+            pendingFrameDisplayIndex = newDisplayIndex;
             treeView.SetFocus();
         }
 
@@ -1052,6 +1140,11 @@ internal partial class DictionaryDrawer
             sortedIndices = SortedIndexMap.Build(arrayProperty, sortAscending);
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
             TryRefreshDuplicateIndicesInto(dictionaryProperty, duplicateEntryIndices);
+            // Classification only sets flags (which cells are dynamic); it never measures, so it
+            // is safe here in the deferred (container-less) path. It must run before Reload so
+            // InitializeLazyHeights allocates per-row tracking for a dictionary that became
+            // dynamic on this reload (e.g. its first entry was just added). The measurement that
+            // depends on these flags is deferred to the OnGUI Layout pass (GetExpandedPropertyHeight).
             if (needsHeightClassification && currentSize > 0)
                 ClassifyRowHeights();
             treeView.Reload();
@@ -1298,11 +1391,13 @@ internal partial class DictionaryDrawer
         {
             readonly DrawerInstanceIMGUI m_Instance;
 
-            // Per-row measured heights; -1 = unmeasured. Allocated only when variableRowHeight is true.
-            // Populated lazily by RowGUI; unmeasured rows use m_EstimatedRowHeight so totalHeight is
-            // approximately correct before all rows have painted. Stale entries are caught by
-            // RecordDynamicRowHeight setting needsHeightRefresh on the owning instance when a measured
-            // row drifts.
+            // Per-row measured heights; -1 = unmeasured. Allocated only when variableRowHeight is
+            // true. Filled by MeasureAllRowHeights on the Layout pass after a reload so totalHeight
+            // is exact (a partially-measured total is unstable and fights the scroll view's clamp —
+            // see GetExpandedPropertyHeight). RowGUI keeps entries current via RecordDynamicRowHeight
+            // for runtime height changes (e.g. expanding an inline nested dictionary). Any row left
+            // unmeasured falls back to m_EstimatedRowHeight (the tallest measured row) in
+            // GetCustomRowHeight.
             float[] m_LazyHeights;
             float m_EstimatedRowHeight;
 
@@ -1327,8 +1422,58 @@ internal partial class DictionaryDrawer
                 rowHeight = Mathf.Max(keyH, valH) + Styles.k_RowVerticalPadding * 2;
             }
 
+            // Measures every variable-height row into m_LazyHeights so totalHeight is exact and
+            // stable. We measure all rows (not just a sample) because the TreeView scroll view
+            // re-clamps scrollPos to (totalHeight - viewport) every frame: a totalHeight that
+            // keeps shrinking as rows are measured one-at-a-time would repeatedly clamp the scroll
+            // and walk it away from a framed row. Measures cell heights via GetPropertyHeight, so
+            // it must run inside an OnGUI pass — called from GetExpandedPropertyHeight on the
+            // Layout pass, never from the deferred reload.
+            public void MeasureAllRowHeights()
+            {
+                int count = m_Instance.displayedItemCount;
+                if (count == 0)
+                    return;
+
+                if (m_LazyHeights == null || m_LazyHeights.Length != count)
+                    m_LazyHeights = new float[count];
+
+                bool prevWideMode = EditorGUIUtility.wideMode;
+                EditorGUIUtility.wideMode = true;
+
+                float maxH = 0f;
+                for (int displayIndex = 0; displayIndex < count; displayIndex++)
+                {
+                    float h;
+                    if (TryGetEntryProperties(displayIndex, out var keyProp, out var valueProp, out _))
+                    {
+                        float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
+                        float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
+                        h = Mathf.Max(keyH, valH) + Styles.k_RowVerticalPadding * 2;
+                    }
+                    else
+                    {
+                        h = rowHeight;
+                    }
+                    m_LazyHeights[displayIndex] = h;
+                    if (h > maxH)
+                        maxH = h;
+                }
+
+                EditorGUIUtility.wideMode = prevWideMode;
+
+                m_EstimatedRowHeight = maxH;
+            }
+
+            // Structure only — never measures. BuildRoot/Reload run from the deferred reload
+            // (delayCall / update) with no IMGUIContainer on the stack, so per-row heights (which
+            // for a custom-drawer cell call into that drawer's GetPropertyHeight) are measured
+            // later on the OnGUI Layout pass via MeasureAllRowHeights. Until then unmeasured rows
+            // fall back to the default rowHeight in GetCustomRowHeight.
             void InitializeLazyHeights()
             {
+                m_Instance.needsHeightMeasure = true;
+
                 int count = m_Instance.displayedItemCount;
                 if (!m_Instance.variableRowHeight || count == 0)
                 {
@@ -1336,19 +1481,7 @@ internal partial class DictionaryDrawer
                     return;
                 }
 
-                bool prevWideMode = EditorGUIUtility.wideMode;
-                EditorGUIUtility.wideMode = true;
-
-                var element = m_Instance.arrayProperty.GetArrayElementAtIndex(0);
-                GetKeyAndValueProperties(element, out var keyProp, out var valueProp);
-
-                float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
-                float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
-
-                EditorGUIUtility.wideMode = prevWideMode;
-
-                m_EstimatedRowHeight = Mathf.Max(keyH, valH) + Styles.k_RowVerticalPadding * 2;
-
+                m_EstimatedRowHeight = 0f;
                 m_LazyHeights = new float[count];
                 for (int i = 0; i < count; i++)
                     m_LazyHeights[i] = -1f;
@@ -1404,7 +1537,7 @@ internal partial class DictionaryDrawer
                 if (prop == null)
                     return EditorGUIUtility.singleLineHeight;
 
-                if (prop.propertyType == SerializedPropertyType.Generic && !hasCustomDrawer)
+                if (ShouldInlineChildren(prop, hasCustomDrawer))
                     return GetInlineChildrenHeight(prop);
 
                 return EditorGUI.GetPropertyHeight(prop, GUIContent.none, true);
@@ -1591,20 +1724,20 @@ internal partial class DictionaryDrawer
 
             // Returns the smallest acceptable field-rect width for a cell. The dictionary drawer
             // dispatches in DrawPropertyField:
-            //   - Generic + no custom drawer  → DrawInlineChildren expands child properties and
-            //     each child's PropertyField reserves EditorGUIUtility.labelWidth for its own
-            //     label (e.g. "Color", "Target", "Vector"). The cell therefore needs room for
-            //     both a min label and a min control, plus the kPrefixPaddingRight gap that
-            //     PrefixLabel inserts between them.
-            //   - Anything else              → EditorGUI.PropertyField is called with
-            //     GUIContent.none, so PrefixLabel's "no label" branch hands the entire rect to
-            //     the control and labelWidth is irrelevant. Only a min control width is needed.
+            //   - inline children (ShouldInlineChildren) → DrawInlineChildren expands child
+            //     properties and each child's PropertyField reserves EditorGUIUtility.labelWidth
+            //     for its own label (e.g. "Color", "Target", "Vector"). The cell therefore needs
+            //     room for both a min label and a min control, plus the kPrefixPaddingRight gap
+            //     that PrefixLabel inserts between them.
+            //   - anything else (custom drawer, array/list, leaf) → EditorGUI.PropertyField is
+            //     called with GUIContent.none, so PrefixLabel's "no label" branch hands the entire
+            //     rect to the control and labelWidth is irrelevant. Only a min control width is needed.
             // IMGUI labels default to TextClipping.Overflow, so simply setting labelWidth = 0
             // does not hide the label — it keeps overflowing onto the control area. Reserving
             // the right amount of space up front is the only way to keep both visible.
             static float GetCellMinFieldWidth(SerializedProperty prop, bool hasCustomDrawer)
             {
-                bool willInlineChildren = prop != null && prop.propertyType == SerializedPropertyType.Generic && !hasCustomDrawer;
+                bool willInlineChildren = ShouldInlineChildren(prop, hasCustomDrawer);
                 return willInlineChildren
                     ? Styles.k_CellLabelMinWidth + EditorGUI.kPrefixPaddingRight + Styles.k_CellControlMinWidth
                     : Styles.k_CellControlMinWidth;
@@ -1639,7 +1772,16 @@ internal partial class DictionaryDrawer
                     m_LazyHeights[displayIndex] = measuredH;
 
                 if (!m_Instance.needsHeightRefresh && Mathf.Abs(currentRowHeight - measuredH) > 0.5f)
+                {
                     m_Instance.needsHeightRefresh = true;
+                    // The row was drawn at the wrong height (it used the estimate, or a child's
+                    // height just changed — e.g. a nested dictionary expanded, or a row scrolled
+                    // into view for the first time). The fix (RefreshCustomRowHeights) is applied
+                    // on the next Layout pass in GetExpandedPropertyHeight, so we must request a
+                    // repaint to make that pass happen; otherwise the rows only reflow when some
+                    // unrelated event (mouse move) repaints the inspector.
+                    HandleUtility.Repaint();
+                }
             }
 
             void DrawRowSelectionOutlineIfSelected(RowGUIArgs args)
@@ -1661,12 +1803,26 @@ internal partial class DictionaryDrawer
                 EditorGUI.DrawRect(new Rect(rect.xMax - w, rect.y + w, w, rect.height - 2 * w), color);
             }
 
+            // A cell expands its children inline (DrawInlineChildren) only for a plain serializable
+            // compound: Generic, no custom drawer, and NOT an array/list. Arrays and lists are
+            // Generic too, but must go through EditorGUI.PropertyField so they get their real
+            // drawer (foldout + size + element list / reorderable list). Iterating their raw
+            // children instead would draw the hidden size field and the elements flat, with no
+            // foldout and no way to resize — which is how array/list cells were rendering wrong.
+            static bool ShouldInlineChildren(SerializedProperty prop, bool hasCustomDrawer)
+            {
+                return prop != null
+                    && prop.propertyType == SerializedPropertyType.Generic
+                    && !hasCustomDrawer
+                    && !prop.isArray;
+            }
+
             static void DrawPropertyField(Rect rect, SerializedProperty prop, Type type, bool hasCustomDrawer)
             {
                 if (prop == null)
                     return;
 
-                if (prop.propertyType == SerializedPropertyType.Generic && !hasCustomDrawer)
+                if (ShouldInlineChildren(prop, hasCustomDrawer))
                 {
                     DrawInlineChildren(rect, prop);
                 }

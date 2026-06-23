@@ -124,6 +124,7 @@ namespace Unity.GraphToolkit.Editor
                 graphElement.UpdateSelectionVisuals(graphElement.IsSelected());
             }
             s_OverriddenSelectionElementsBackup.Clear();
+            s_OverriddenSelectionElements.Clear();
         }
 
         protected void OnMouseUp(MouseUpEvent e)
@@ -249,18 +250,25 @@ namespace Unity.GraphToolkit.Editor
                 model.AppendAllViews(graphView, e => e is GraphElement, s_OverriddenSelectionElements);
             }
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var element in s_OverriddenSelectionElementsBackup.Except(s_OverriddenSelectionElements))
-#pragma warning restore UA2001
+            foreach (var element in s_OverriddenSelectionElementsBackup)
             {
-                var graphElement = (GraphElement)element;
-                graphElement.UpdateSelectionVisuals(graphElement.IsSelected());
+                if (s_OverriddenSelectionElements.Contains(element))
+                    continue;
+
+                if (element is GraphElement graphElement)
+                {
+                    // we cache GraphElements references in s_OverriddenSelectionElements
+                    // It's possible those elements have been destroyed before the RectangleSelect is used again and their RootView is set to null
+                    // No need to update their selection visuals if they aren't in a view anymore
+                    if (graphElement.GraphView != null)
+                        graphElement.UpdateSelectionVisuals(graphElement.IsSelected());
+                }
             }
 
             foreach (var element in s_OverriddenSelectionElements)
             {
-                var graphElement = (GraphElement)element;
-                graphElement.UpdateSelectionVisuals(true);
+                if (element is GraphElement graphElement)
+                    graphElement.UpdateSelectionVisuals(true);
             }
 
             m_PanHelper.OnMouseMove(e);

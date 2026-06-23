@@ -291,15 +291,10 @@ namespace UnityEditor.Search
             throw new NotImplementedException();
         }
 
-        public DragVisualMode CanDrop(in HierarchyViewDragAndDropHandlingData data)
-        {
-            return DragVisualMode.Rejected;
-        }
-
-        public DragVisualMode OnDrop(in HierarchyViewDragAndDropHandlingData data)
-        {
-            throw new NotImplementedException();
-        }
+        public DragVisualMode CanReorder(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
+        public void OnReorder(in HierarchyViewDragAndDropHandlingData data) { }
+        public DragVisualMode CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
+        public DragVisualMode OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
         #endregion
 
         public bool TryGetNode(SearchItem searchItem, out HierarchyNode node)

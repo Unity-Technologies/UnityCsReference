@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -125,16 +124,16 @@ partial class StyleRuleHeader : UISelectionObjectHeader
         if (Rule == null || string.CompareOrdinal(evt.previousValue, evt.newValue) == 0)
             return;
 
-        if (string.IsNullOrEmpty(evt.newValue))
+        var selectorStrings = StyleSheetExtensions.SplitSelectors(evt.newValue);
+        if (selectorStrings.Length == 0)
         {
             m_RuleName.SetValueWithoutNotify(evt.previousValue);
             return;
         }
 
-        var selectorStrings = evt.newValue.Split(',', StringSplitOptions.RemoveEmptyEntries);
         foreach (var selectorString in selectorStrings)
         {
-            if (StyleSheetExtensions.ValidateSelector(selectorString, out var error))
+            if (StyleSheetExtensions.ValidateStyleRule(selectorString, out var error))
                 continue;
 
             Debug.LogError( $"Invalid selector string '{selectorString}': {error}.");

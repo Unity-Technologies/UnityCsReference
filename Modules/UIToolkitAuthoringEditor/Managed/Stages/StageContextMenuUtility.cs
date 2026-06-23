@@ -3,9 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Hierarchy;
-using Unity.Hierarchy.Editor;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -23,12 +28,143 @@ internal static class StageContextMenuUtility
     static readonly string k_DeselectAll = L10n.Tr("Deselect All");
     static readonly string k_InvertSelection = L10n.Tr("Invert Selection");
     static readonly string k_SelectChildren = L10n.Tr("Select Children");
+    internal static readonly string OpenInUIBuilder = L10n.Tr("Open in UI Builder");
+    internal static readonly string OpenInstanceInUIBuilderInIsolation = L10n.Tr("Open Instance in UI Builder/In Isolation");
+    internal static readonly string OpenInstanceInUIBuilderInContext = L10n.Tr("Open Instance in UI Builder/In Context");
+    internal static readonly string OpenInstanceInIsolation = L10n.Tr("Open Instance/In Isolation");
+    internal static readonly string OpenInstanceInContext = L10n.Tr("Open Instance/In Context");
 
-    public static void PopulateMenu(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
+    public static void PopulateMenu(HierarchyView view, in HierarchyNode node, VisualElement element, DropdownMenu menu,
+        IHierarchyEditorNodeTypeHandler handler)
     {
         PopulateEditOperations(view, in node, menu, handler);
         menu.AppendSeparator();
+        PopulateOpenActions(element, menu);
+        menu.AppendSeparator();
         PopulateElementOperations(menu);
+    }
+
+    static void PopulateOpenActions(VisualElement element, DropdownMenu menu)
+    {
+        var vtaSource = element.visualTreeAssetSource
+            ? element.visualTreeAssetSource
+            : element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
+
+        if (vtaSource == null)
+            return;
+
+        var vea = element.visualElementAsset ?? element.GetFirstAncestorWhere(ve => ve.visualElementAsset != null)
+            ?.visualElementAsset;
+
+        // For a TemplateContainer, Open in UI Builder navigates to the template's own file, not the containing document.
+        VisualTreeAsset openInBuilderVta;
+        int openInBuilderSelectedId;
+        if (element is TemplateContainer templateContainer)
+        {
+            openInBuilderVta = (templateContainer.visualElementAsset as TemplateAsset)?.ResolveTemplate() ?? templateContainer.templateSource ?? vtaSource;
+            openInBuilderSelectedId = -1;
+        }
+        else
+        {
+            openInBuilderVta = vtaSource;
+            openInBuilderSelectedId = vea?.id ?? -1;
+        }
+
+        var ancestorInstances = new List<TemplateAsset>();
+        element.GenerateSubDocumentPath(ancestorInstances);
+
+        PopulateOpenActions(menu, element, openInBuilderVta, openInBuilderSelectedId, ancestorInstances);
+    }
+
+    /// <summary>
+    /// Appends "Open in UI Builder" and, when the element is inside a template instance, the
+    /// "Open Instance…" sub-menu items for both UI Builder (In Isolation / In Context) and the
+    /// staging environment (In Isolation / In Context). The "Open Instance/In Context" stage
+    /// action is disabled when the element is already the active staging context or falls outside
+    /// the current sub-document scope.
+    /// </summary>
+    internal static void PopulateOpenActions(
+        DropdownMenu menu,
+        VisualElement element,
+        VisualTreeAsset openInBuilderVta,
+        int openInBuilderSelectedId,
+        List<TemplateAsset> ancestorInstances)
+    {
+        menu.AppendAction(
+            OpenInUIBuilder,
+            _ =>
+            {
+                if (openInBuilderVta == null)
+                    return;
+                var cmd = new LoadUIDocumentCommand { selectedId = openInBuilderSelectedId };
+                SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
+                AssetDatabase.OpenAsset(openInBuilderVta.GetEntityId());
+                SessionState.EraseString(LoadUIDocumentCommand.CommandId);
+            });
+
+        if (ancestorInstances.Count == 0)
+            return;
+
+        var rootVisualTreeAsset = ancestorInstances[0].visualTreeAsset;
+        var ancestorVTAs = new List<VisualTreeAsset>();
+
+        foreach (var ancestorInstance in ancestorInstances)
+        {
+            var ancestorVTA = ancestorInstance.ResolveTemplate();
+
+            if (ancestorVTA != null)
+                ancestorVTAs.Add(ancestorVTA);
+        }
+
+        menu.AppendAction(
+            OpenInstanceInUIBuilderInIsolation,
+            _ =>
+            {
+                var cmd = new LoadUIDocumentCommand
+                {
+                    subDocumentOptions = SubDocumentOptions.Isolation, subDocuments = ancestorVTAs
+                };
+                SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
+                AssetDatabase.OpenAsset(rootVisualTreeAsset.GetEntityId());
+                SessionState.EraseString(LoadUIDocumentCommand.CommandId);
+            });
+
+        menu.AppendAction(
+            OpenInstanceInUIBuilderInContext,
+            _ =>
+            {
+                var cmd = new LoadUIDocumentCommand
+                {
+                    selectedId = ancestorInstances[^1].id,
+                    subDocumentOptions = SubDocumentOptions.InContext,
+                    subDocuments = ancestorVTAs,
+                    contextInstances = ancestorInstances
+                };
+                SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
+                AssetDatabase.OpenAsset(rootVisualTreeAsset.GetEntityId());
+                SessionState.EraseString(LoadUIDocumentCommand.CommandId);
+            });
+
+        GetOpenOptions(element, ancestorInstances, out _, out var canOpenInContext);
+
+        menu.AppendAction(
+            OpenInstanceInIsolation,
+            _ => VisualElementEditingStage.GoToStage(new VisualTreeAssetEditingContext(
+                rootVisualTreeAsset,
+                ancestorInstances.ToArray(),
+                SubDocumentOptions.Isolation,
+                element.GetPanelSettings()
+            ), BreadcrumbBar.SeparatorStyle.Line));
+
+        menu.AppendAction(
+            OpenInstanceInContext,
+            _ => VisualElementEditingStage.GoToStage(new VisualTreeAssetEditingContext(
+                rootVisualTreeAsset,
+                ancestorInstances.ToArray(),
+                SubDocumentOptions.InContext,
+                element.GetPanelSettings()
+            ), BreadcrumbBar.SeparatorStyle.Arrow),
+            canOpenInContext ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
     }
 
     static void PopulateEditOperations(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
@@ -127,5 +263,64 @@ internal static class StageContextMenuUtility
             menu.AppendAction(name, _ => action?.Invoke(), status);
         else
             menu.AppendAction($"{name} {hotkey}", _ => action?.Invoke(), status);
+    }
+
+    public static void GetOpenOptions(VisualElement element, out bool showTemplateOptions, out bool canOpenInContext)
+    {
+        using var _ = ListPool<TemplateAsset>.Get(out var templateAssetPath);
+        element.GenerateSubDocumentPath(templateAssetPath);
+        GetOpenOptions(element, templateAssetPath, out showTemplateOptions, out canOpenInContext);
+    }
+
+    static void GetOpenOptions(VisualElement element, List<TemplateAsset> templateAssetPath, out bool showTemplateOptions, out bool canOpenInContext)
+    {
+        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
+        var subDocPath = stage?.Context.SubDocumentPath;
+        var isTemplateContainer = element is TemplateContainer;
+
+        showTemplateOptions = isTemplateContainer || templateAssetPath.Count > 0;
+        canOpenInContext = true;
+
+        if (subDocPath is not { Length: > 0 })
+            return;
+
+        bool matchesSubDocuments;
+        if (subDocPath.Length <= templateAssetPath.Count)
+        {
+            matchesSubDocuments = true;
+            for (var i = 0; i < subDocPath.Length; i++)
+            {
+                if (subDocPath[i] != templateAssetPath[i])
+                {
+                    matchesSubDocuments = false;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            matchesSubDocuments = false;
+        }
+
+        bool isEditedTemplateContainer = isTemplateContainer
+                                         && matchesSubDocuments
+                                         && subDocPath.Length == templateAssetPath.Count;
+
+        // canOpenInContext is false when the element is not under the currently edited sub-document
+        // (it's outside the staging scope), when it is the edited template container itself, or when
+        // it is a plain element at the root depth of the edited template. This mirrors the Enter Staging
+        // arrow visibility rules in the Hierarchy — you cannot open-in-context what is already the
+        // context, nor what lives outside it.
+        if (matchesSubDocuments)
+        {
+            if (isEditedTemplateContainer)
+                canOpenInContext = false;
+            else if (!isTemplateContainer && subDocPath.Length == templateAssetPath.Count)
+                canOpenInContext = false;
+        }
+        else
+        {
+            canOpenInContext = false;
+        }
     }
 }

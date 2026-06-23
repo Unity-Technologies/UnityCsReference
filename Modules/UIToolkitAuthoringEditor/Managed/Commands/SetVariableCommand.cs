@@ -43,7 +43,7 @@ internal sealed class SetVariableCommand : Command<SetVariableCommand>
     public string VariableName { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.Styling;
+    public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
 
     protected override void Init()
     {

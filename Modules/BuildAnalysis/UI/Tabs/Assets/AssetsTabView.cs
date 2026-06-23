@@ -32,8 +32,10 @@ namespace UnityEditor.Build.Analysis
 
         private bool m_HasLaidOut;
         private bool m_InspectorOpen;
+        private bool m_SuppressSelectionClear;
 
         private BuildAnalysisImporterType[] m_CachedImporterTypes = Array.Empty<BuildAnalysisImporterType>();
+        private BuildAnalysisAsset[] m_CachedAssets = Array.Empty<BuildAnalysisAsset>();
 
         public VisualElement Root => m_Root;
 
@@ -65,6 +67,7 @@ namespace UnityEditor.Build.Analysis
             m_InspectorHost.Add(m_AssetInspector);
 
             m_AssetTable.SelectionChanged += OnAssetSelectionChanged;
+            m_RootAssetTable.SelectionChanged += OnRootAssetSelectionChanged;
 
             // Defer first CollapseChild call until after first layout — TwoPaneSplitView
             // throws if collapsed before its initial geometry is computed.
@@ -75,12 +78,44 @@ namespace UnityEditor.Build.Analysis
 
         private void OnAssetSelectionChanged(BuildAnalysisAsset? asset)
         {
-            var importerType = asset.HasValue ? ResolveImporterType(asset.Value.ImporterTypeId) : null;
-            m_AssetInspector.SetAsset(asset, importerType);
-
             if (asset.HasValue)
+            {
+                m_SuppressSelectionClear = true;
+                m_RootAssetTable.ClearSelection();
+                m_SuppressSelectionClear = false;
+
+                m_AssetInspector.ShowAsset(asset.Value, ResolveImporterType(asset.Value.ImporterTypeId));
                 InspectorOpenRequested?.Invoke();
+                return;
+            }
+
+            if (m_SuppressSelectionClear || m_AssetInspector.CurrentMode != AssetInspector.Mode.Asset)
+                return;
+            m_AssetInspector.ShowEmpty();
         }
+
+        private void OnRootAssetSelectionChanged(BuildAnalysisRootAsset? root)
+        {
+            if (root.HasValue)
+            {
+                m_SuppressSelectionClear = true;
+                m_AssetTable.ClearSelection();
+                m_SuppressSelectionClear = false;
+
+                var r = root.Value;
+                var rootAsset = ResolveAsset(r.AssetId);
+
+                m_AssetInspector.ShowRootAsset(r, rootAsset ?? default, m_CachedAssets);
+                InspectorOpenRequested?.Invoke();
+                return;
+            }
+
+            if (m_SuppressSelectionClear || m_AssetInspector.CurrentMode != AssetInspector.Mode.Root)
+                return;
+            m_AssetInspector.ShowEmpty();
+        }
+
+        private void ResetInspector() => m_AssetInspector.ShowEmpty();
 
         private BuildAnalysisImporterType? ResolveImporterType(int id)
         {
@@ -89,21 +124,33 @@ namespace UnityEditor.Build.Analysis
             return m_CachedImporterTypes[id];
         }
 
+        private BuildAnalysisAsset? ResolveAsset(int assetId)
+        {
+            if (assetId < 0 || assetId >= m_CachedAssets.Length)
+                return null;
+            return m_CachedAssets[assetId];
+        }
+
         public void SetSelection(BuildEntry selection, BuildAnalysis analysis)
         {
             var hasSelection = selection != null && analysis != null;
             m_NoSelection.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
             m_Body.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
 
+            ResetInspector();
+
             if (!hasSelection)
             {
                 m_CachedImporterTypes = Array.Empty<BuildAnalysisImporterType>();
+                m_CachedAssets = Array.Empty<BuildAnalysisAsset>();
                 m_RootAssetsCard.style.display = DisplayStyle.None;
                 m_RootAssetTable.style.display = DisplayStyle.None;
                 return;
             }
 
-            m_CachedImporterTypes = analysis.Tables.ImporterTypes ?? Array.Empty<BuildAnalysisImporterType>();
+            m_CachedImporterTypes = analysis.Tables.ImporterTypes;
+            m_CachedAssets = analysis.Tables.Assets;
+
             m_Header.Bind(selection, analysis);
             var counts = analysis.Computed.Counts;
             m_ScenesValue.text = counts.SceneCount.ToString();
@@ -129,6 +176,7 @@ namespace UnityEditor.Build.Analysis
             {
                 m_AssetTable.ClearSelection();
                 m_RootAssetTable.ClearSelection();
+                ResetInspector();
             }
         }
 

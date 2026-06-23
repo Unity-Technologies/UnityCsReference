@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
             0, // All
             0, // AnimationPlayState
             1, // AspectRatio
+            72, // BackdropFilter
             4, // BackgroundColor
             1, // BackgroundImage
             0, // BackgroundPosition
@@ -48,7 +49,7 @@ namespace UnityEngine.UIElements
             0, // BorderWidth
             2, // Bottom
             4, // Color
-            0, // Cursor
+            3, // Cursor
             0, // Display
             72, // Filter
             0, // Flex
@@ -129,6 +130,7 @@ namespace UnityEngine.UIElements
             PropertyType.Shorthand,
             PropertyType.Enum,
             PropertyType.Ratio,
+            PropertyType.Filter,
             PropertyType.Color,
             PropertyType.Background,
             PropertyType.Shorthand,
@@ -394,7 +396,12 @@ namespace UnityEngine.UIElements
             {
                 ""
             }, // FontDefinition
-            System.Array.Empty<string>(), // Cursor
+            new string[]
+            {
+                ".image",
+                ".hotspot.x",
+                ".hotspot.y"
+            }, // Cursor
             new string[]
             {
                 ".color.r",
@@ -576,7 +583,12 @@ namespace UnityEngine.UIElements
             {
                 AnimationChannelKind.PPtr
             }, // FontDefinition
-            System.Array.Empty<AnimationChannelKind>(), // Cursor
+            new AnimationChannelKind[]
+            {
+                AnimationChannelKind.PPtr,
+                AnimationChannelKind.Float,
+                AnimationChannelKind.Float
+            }, // Cursor
             new AnimationChannelKind[]
             {
                 AnimationChannelKind.Float,

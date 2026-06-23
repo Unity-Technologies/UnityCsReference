@@ -37,4 +37,6 @@ internal class SDKPlatformInfo
     public PlatformPackageList internalPackages;
     public PlatformPackageList partnerPackages;
     public SDKPlatformFlags flags;
+    public bool isDeprecated;
+    public string deprecationMessage;
 }

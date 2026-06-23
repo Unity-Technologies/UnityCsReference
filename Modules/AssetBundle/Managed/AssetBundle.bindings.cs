@@ -35,7 +35,7 @@ namespace UnityEngine
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromManagedStreamAsyncOperation.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadAssetOperation.h")]
     [NativeHeader("Runtime/Scripting/ScriptingExportUtility.h")]
-    [NativeHeader("Runtime/Scripting/ScriptingUtility.h")]
+    [NativeHeader("Scripting/ScriptingUtility.h")]
     [NativeHeader("AssetBundleScriptingClasses.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleSaveAndLoadHelper.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleUtility.h")]

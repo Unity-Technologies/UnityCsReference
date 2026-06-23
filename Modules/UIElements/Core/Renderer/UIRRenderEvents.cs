@@ -464,6 +464,14 @@ namespace UnityEngine.UIElements.UIR
                 renderTreeManager.device.Free(renderData.headMesh);
                 renderData.headMesh = null;
             }
+            renderTreeManager.visualChangesProcessor.ReleaseChainRef(renderData.m_EffectiveModifiers);
+
+            if (renderData.hasBackdropFilterAllocated)
+            {
+                BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
+                renderTreeManager.panel?.DecrementBackdropFilterCount();
+                renderData.owner.ChangeBackdropFilterDescendantCount(-1);
+            }
 
             renderTreeManager.ReturnPoolRenderData(renderData);
         }
@@ -814,6 +822,11 @@ namespace UnityEngine.UIElements.UIR
                 UpdateZeroScaling(renderData);
             }
 
+            // Backdrop-filter UVs depend on world transform, so meshes regen on transform change.
+            if (renderData.owner.hasBackdropFilter &&
+                (renderData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0)
+                renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
+
             bool dirtyHasBeenResolved = true;
             if (RenderData.AllocatesID(renderData.transformID))
             {
@@ -1155,6 +1168,31 @@ namespace UnityEngine.UIElements.UIR
             ve.renderData.borderRightColorID = BMPAlloc.Invalid;
             ve.renderData.borderBottomColorID = BMPAlloc.Invalid;
             ve.renderData.tintColorID = BMPAlloc.Invalid;
+        }
+
+        // Pre-build sync: on a backdrop-filter on/off transition, allocates or releases the TextureId/temp RT
+        // and updates the panel and descendant counters. Kept out of mesh-recording so that stays side-effect-free.
+        public static void SyncBackdropFilterState(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            VisualElement ve = renderData.owner;
+            bool wasEnabled = renderData.hasBackdropFilterAllocated;
+            bool isEnabled = ve.hasBackdropFilter;
+
+            if (wasEnabled == isEnabled)
+                return;
+
+            if (isEnabled)
+            {
+                BackdropFilterHelper.AllocBackdropFilterTextureId(renderTreeManager, renderData);
+                renderTreeManager.panel?.IncrementBackdropFilterCount();
+                ve.ChangeBackdropFilterDescendantCount(+1);
+            }
+            else
+            {
+                BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
+                renderTreeManager.panel?.DecrementBackdropFilterCount();
+                ve.ChangeBackdropFilterDescendantCount(-1);
+            }
         }
 
         public static void SetColorValues(RenderTreeManager renderTreeManager, VisualElement ve)

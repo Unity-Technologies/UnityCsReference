@@ -25,13 +25,7 @@ namespace Unity.Profiling.Editor.UI
 
         public async Task<FrameGCCollectModel> BuildAsync(CancellationToken cancellationToken)
         {
-            var task = Task.Run(() =>
-            {
-                return BuildFrameGCCollectModel(cancellationToken);
-            });
-            await task;
-
-            return await task;
+            return await Task.Run(() => BuildFrameGCCollectModel(cancellationToken), cancellationToken);
         }
 
         FrameGCCollectModel BuildFrameGCCollectModel(CancellationToken cancellationToken)

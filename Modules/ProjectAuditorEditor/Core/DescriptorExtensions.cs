@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -82,6 +83,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             return descriptor.Platforms[0].Equals(buildTarget.ToString());
         }
 
+        [NoAutoStaticsCleanup] // Current Unity version string; never changes within a session
         static Version s_UnityVersion = (Version)null;
 
         /// <summary>

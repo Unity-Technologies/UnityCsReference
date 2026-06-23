@@ -344,6 +344,22 @@ namespace Unity.UIToolkit.Editor
                     }
                     return false;
 
+                case StylePropertyRecordingChannel.Cursor3:
+                    if (typeof(T) == typeof(StyleCursor))
+                    {
+                        var sc = Unsafe.As<T, StyleCursor>(ref v);
+                        if (sc.keyword != StyleKeyword.Undefined)
+                            return false;
+                        cs.ApplyPropertyAnimation(element, id, sc.value);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(UnityEngine.UIElements.Cursor))
+                    {
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, UnityEngine.UIElements.Cursor>(ref v));
+                        return true;
+                    }
+                    return false;
+
                 default:
                     return false;
             }
@@ -655,6 +671,21 @@ namespace Unity.UIToolkit.Editor
                     {
                         var tmp = cs.ReadPropertyAnimationTextShadow(stylePropertyId);
                         previousValue = Unsafe.As<TextShadow, T>(ref tmp);
+                        return true;
+                    }
+                    return false;
+
+                case StylePropertyRecordingChannel.Cursor3:
+                    if (typeof(T) == typeof(StyleCursor))
+                    {
+                        var tmp = new StyleCursor(cs.ReadPropertyAnimationCursor(stylePropertyId));
+                        previousValue = Unsafe.As<StyleCursor, T>(ref tmp);
+                        return true;
+                    }
+                    if (typeof(T) == typeof(UnityEngine.UIElements.Cursor))
+                    {
+                        var tmp = cs.ReadPropertyAnimationCursor(stylePropertyId);
+                        previousValue = Unsafe.As<UnityEngine.UIElements.Cursor, T>(ref tmp);
                         return true;
                     }
                     return false;
@@ -1087,6 +1118,35 @@ namespace Unity.UIToolkit.Editor
                         return false;
                     }
                     AnimationRecordingStyleBridge.AddFilterMods(list, target, elementPath, propName, prevFilters, curFilters);
+                    return true;
+                }
+
+                case StylePropertyRecordingChannel.Cursor3:
+                {
+                    // 3 channels: .image (Texture2D PPtr) + .hotspot.x / .hotspot.y (Float).
+                    UnityEngine.UIElements.Cursor prevCursor;
+                    UnityEngine.UIElements.Cursor curCursor;
+                    if (typeof(T) == typeof(StyleCursor))
+                    {
+                        var scPrev = Unsafe.As<T, StyleCursor>(ref p);
+                        var scCur = Unsafe.As<T, StyleCursor>(ref c);
+                        if (scPrev.keyword != StyleKeyword.Undefined || scCur.keyword != StyleKeyword.Undefined)
+                            return false;
+                        prevCursor = scPrev.value;
+                        curCursor = scCur.value;
+                    }
+                    else if (typeof(T) == typeof(UnityEngine.UIElements.Cursor))
+                    {
+                        prevCursor = Unsafe.As<T, UnityEngine.UIElements.Cursor>(ref p);
+                        curCursor = Unsafe.As<T, UnityEngine.UIElements.Cursor>(ref c);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    AnimationRecordingStyleBridge.AddObjectModification(list, target, elementPath, propName, ".image", prevCursor.texture, curCursor.texture);
+                    AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".hotspot.x", prevCursor.hotspot.x, curCursor.hotspot.x);
+                    AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, ".hotspot.y", prevCursor.hotspot.y, curCursor.hotspot.y);
                     return true;
                 }
 

@@ -25,7 +25,7 @@ namespace Unity.Hierarchy.Editor
     /// Represents the Hierarchy Window in the Unity Editor. Use this class to customize the Hierarchy window, register node type handlers, and handle view events.
     /// </summary>
     [EditorWindowTitle(title = "Hierarchy")]
-    public sealed class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
+    public sealed partial class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
     {
         [InitializeOnLoadMethod]
         static void RegisterType()
@@ -33,7 +33,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.HierarchyV2WindowType = typeof(HierarchyWindow);
         }
 
-        internal sealed class ScopedLazyClass
+        internal partial class ScopedLazyClass
         {
             StateCache<HierarchyViewState> m_StateCache;
             public StateCache<HierarchyViewState> StateCache { get => m_StateCache; set => m_StateCache = value; }
@@ -64,7 +64,9 @@ namespace Unity.Hierarchy.Editor
         static readonly string s_HierarchyToolbarGoToSearchButtonName = "HierarchyGotoSearchButton";
         static readonly string s_JumpButton = "SearchJump Icon";
         static readonly string s_JumpButtonTooltip = L10n.Tr("Open query in Search Window");
-        static readonly List<HierarchyWindow> s_HierarchyWindows = [];
+        [AutoStaticsCleanupOnCodeReload]
+        static List<HierarchyWindow> s_HierarchyWindows = [];
+        [AutoStaticsCleanupOnCodeReload]
         static HierarchyWindow s_LastInteractedHierarchy;
 
         const string k_HierarchyStatusBarStyleName = "hierarchy__status-bar";
@@ -103,6 +105,8 @@ namespace Unity.Hierarchy.Editor
         [SerializeField]
         string m_WindowGUID;
         [SerializeField]
+        int m_UndoId;
+        [SerializeField]
         readonly EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
         // Note: These internal members are used in testing.
@@ -126,6 +130,11 @@ namespace Unity.Hierarchy.Editor
             public static HierarchyGlobalSelectionHandler GetSelectionHandler(HierarchyWindow hierarchyWindow)
             {
                 return hierarchyWindow.m_SelectionHandler;
+            }
+
+            public static int GetHierarchyUndoId(HierarchyWindow hierarchyWindow)
+            {
+                return hierarchyWindow.m_UndoId;
             }
         }
 
@@ -306,6 +315,7 @@ namespace Unity.Hierarchy.Editor
         /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate.
         /// If the user right-clicks in empty space, the callback receives null for the view item.
         /// </remarks>
+        [AutoStaticsCleanupOnCodeReload]
         public static event PopulateContextMenuEventHandler PopulateContextMenu;
 
         /// <summary>
@@ -344,6 +354,8 @@ namespace Unity.Hierarchy.Editor
 
             if (string.IsNullOrEmpty(m_WindowGUID))
                 m_WindowGUID = GUID.Generate().ToString();
+            if (m_UndoId == 0)
+                m_UndoId = m_WindowGUID.GetHashCode();
 
             // Load styling for the SearchField + Query Builder.
             SearchElement.AppendStyleSheets(rootVisualElement);
@@ -433,14 +445,20 @@ namespace Unity.Hierarchy.Editor
 
             HierarchyPreferences.UseQueryBuilder.valueChanged += OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged += OnToggleBackgroundStyleChange;
-            HierarchyPreferences.UseNewHierarchy.valueChanged += OnUseNewHierarchyChanged;
+            EditorSettings.useLegacyHierarchyChanged += OnUseLegacyHierarchyChanged;
             HierarchyPreferences.GameObjectIconModeChanged += OnGameObjectIconModeChanged;
 
             // Now that the UI is initialized, set the hierarchy source.
             m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
             m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
+            // Opt this hierarchy into Hierarchy-level undo/redo (cross-type child ordering on drops).
+            // Per-window stable id; cleaned up in OnDisable.
+            HierarchyUndoManager.Register(m_UndoId, m_Hierarchy);
+
             RefreshDescriptors();
+
+            HierarchyAnalytics.AddWindow(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -516,10 +534,13 @@ namespace Unity.Hierarchy.Editor
 
             HierarchyPreferences.UseQueryBuilder.valueChanged -= OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged -= OnToggleBackgroundStyleChange;
-            HierarchyPreferences.UseNewHierarchy.valueChanged -= OnUseNewHierarchyChanged;
+            EditorSettings.useLegacyHierarchyChanged -= OnUseLegacyHierarchyChanged;
             HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
 
             m_StageNavigationView?.Dispose();
+
+            // Drop the hierarchy undo registration before tearing down the view-model.
+            HierarchyUndoManager.Unregister(m_UndoId);
 
             if (m_HierarchyView != null)
             {
@@ -546,6 +567,8 @@ namespace Unity.Hierarchy.Editor
                     m_Hierarchy.Dispose();
                 m_Hierarchy = null;
             }
+
+            HierarchyAnalytics.RemoveWindow(this);
         }
 
         void OnFocus() => s_LastInteractedHierarchy = this;
@@ -649,7 +672,7 @@ namespace Unity.Hierarchy.Editor
 
         void OnGetTooltip(HierarchyView view, HierarchyViewItem item, StringBuilder tooltip, bool filtering) => GetTooltip?.Invoke(this, view, item, tooltip, filtering);
 
-        void OnUseNewHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
+        void OnUseLegacyHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
 
         void OnGameObjectIconModeChanged() => m_HierarchyView.ListView.RefreshItems();
 
@@ -1529,7 +1552,7 @@ namespace Unity.Hierarchy.Editor
         /// Raised when the <see cref="HierarchyView"/> is initializing, typically
         /// allowing callers to load additional stylesheets and add styles to <see cref="HierarchyView.StyleContainer"/>.
         /// </summary>
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup] // [Obsolete(error: true)] — no one can subscribe; no cleanup needed
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("InitializingView is deprecated. Use BindView instead, which provides direct access to the HierarchyView and has a symmetric UnbindView event.", true)]
 #pragma warning disable CS0067

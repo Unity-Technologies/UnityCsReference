@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -82,7 +83,7 @@ namespace UnityEngine.Video
     [RequiredByNativeCode]
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Modules/Video/Public/VideoPlayer.h")]
-    public sealed class VideoPlayer : Behaviour
+    public sealed partial class VideoPlayer : Behaviour
     {
         public extern VideoSource source { get; set; }
         public extern VideoTimeUpdateMode timeUpdateMode { get; set; }
@@ -362,6 +363,7 @@ namespace UnityEngine.Video
                 source.clockResyncOccurred(source, seconds);
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<string> analyticsSent;
 
         [RequiredByNativeCode]

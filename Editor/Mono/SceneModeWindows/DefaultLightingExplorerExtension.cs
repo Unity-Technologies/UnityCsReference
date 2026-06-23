@@ -228,7 +228,7 @@ namespace UnityEditor
                         }
                     }
                 }, null, null, new[] { 2 }),  // 7: Falloff intensity
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.TargetSortingLayer, "m_ApplyToSortingLayers", 120, // 8
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.TargetSortingLayer, "m_ApplyToSortingLayers", 120, // 8
                     (r, prop, dep) =>
                     {
                         if (prop != null && prop.isArray)

@@ -8,6 +8,7 @@ using UnityEditor.AnimatedValues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Video;
 using UnityEditor.Build;
 using UnityEngineObject = UnityEngine.Object;
@@ -115,6 +116,7 @@ namespace UnityEditor
             public GUIContent content;
         }
 
+        [NoAutoStaticsCleanup] // lazy GUIStyles cache; safe to persist across reload
         static Styles s_Styles;
 
         SerializedProperty m_DataSource;

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -38,7 +39,7 @@ sealed class AddStyleRuleCommand : Command<AddStyleRuleCommand>
         SelectorString = null;
     }
 
-    public override bool Validate() => StyleSheet != null && !string.IsNullOrWhiteSpace(SelectorString);
+    public override bool Validate() => StyleSheet != null && StyleSheetExtensions.ValidateStyleRule(SelectorString, out _);
 
     public override void Prepare(in PrepareContext context)
     {
@@ -49,7 +50,11 @@ sealed class AddStyleRuleCommand : Command<AddStyleRuleCommand>
     public override CommandExecutionStatus Execute()
     {
         var styleRule = StyleSheet.AddRule();
-        styleRule.AddSelector(SelectorString);
+        foreach (var selector in StyleSheetExtensions.SplitSelectors(SelectorString))
+        {
+            if (!styleRule.TryAddSelector(selector, out _))
+                return CommandExecutionStatus.ExecutionFailed;
+        }
         return CommandExecutionStatus.Success;
     }
 }

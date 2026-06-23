@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEditorInternal;
 
@@ -20,6 +21,7 @@ namespace UnityEditor
             public GUIStyle foldout = "IN foldout";
         }
 
+        [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
         private static Styles m_Styles;
 
         protected static Styles styles

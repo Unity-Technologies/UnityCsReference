@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Connect;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
@@ -72,7 +73,7 @@ namespace UnityEditor.Profiling.Analytics
     }
 
 
-    internal static class ProfilerWindowAnalytics
+    internal static partial class ProfilerWindowAnalytics
     {
         const int k_MaxEventsPerHour = 1000; // Max Events send per hour.
         const int k_MaxNumberOfElements = 1000; //Max number of elements sent.
@@ -83,13 +84,18 @@ namespace UnityEditor.Profiling.Analytics
         const string k_ProfilerCapture = "profilerCapture";
         const string k_BottlenecksModuleLinkSelected = "bottlenecksModuleLinkSelected";
 
+        [NoAutoStaticsCleanup] // no possible references to user code
         static ProfilerAnalyticsViewUsabilitySession s_ProfilerSession;
+        [NoAutoStaticsCleanup] // no possible references to user code (it is not views in the sense of UI)
         static List<ProfilerAnalyticsViewUsability> s_Views;
+        [NoAutoStaticsCleanup] // Simple index tracking analytics state; safe to persist
         static int s_CurrentViewIndex;
 
+        [AutoStaticsCleanupOnCodeReload]
         static IAnalyticsService s_AnalyticsService;
 
-        static ProfilerWindowAnalytics()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             // Instantiate default editor analytics, but only for user sessions when analytics is enabled.
             if (!InternalEditorUtility.inBatchMode && EditorAnalytics.enabled)

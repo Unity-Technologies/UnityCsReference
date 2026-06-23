@@ -18,8 +18,9 @@ namespace UnityEditor.Build.Analysis
 
         internal const string k_FooterWarningClass = "build-list-footer--warning";
         private const double k_FooterWarnThreshold = 0.8;
-        private const string k_FooterWarningTooltip = "Build limit approaching. To edit the limit, go to Project Settings > Build Pipeline.";
-        private const string k_FooterExceededTooltip = "Build limit exceeded. Older builds will be removed on the next build. To edit the limit, go to Project Settings > Build Pipeline.";
+        internal const string k_FooterDefaultTooltip = "To edit the build limit, go to Project Settings > Build Pipeline.";
+        private const string k_FooterWarningTooltip = "Build limit approaching. Older builds will be automatically deleted once the limit is hit. To edit the limit, go to Project Settings > Build Pipeline.";
+        private const string k_FooterExceededTooltip = "Build limit exceeded. Older builds will be automatically deleted on the next build. To edit the limit, go to Project Settings > Build Pipeline.";
 
         public event Action<BuildEntry> SelectionChanged;
 
@@ -28,7 +29,6 @@ namespace UnityEditor.Build.Analysis
         private readonly ToolbarMenu m_SettingsMenu;
         private readonly ListView m_BuildListView;
         private readonly VisualElement m_EmptyState;
-        private readonly Label m_EmptyStateTitle;
         private readonly Label m_EmptyStateDescription;
         private readonly VisualElement m_FooterRoot;
         private readonly Label m_FooterLabel;
@@ -52,7 +52,6 @@ namespace UnityEditor.Build.Analysis
             m_SettingsMenu = this.Q<ToolbarMenu>("build-settings-menu");
             m_BuildListView = this.Q<ListView>("build-list");
             m_EmptyState = this.Q<VisualElement>("empty-state");
-            m_EmptyStateTitle = this.Q<Label>("empty-state-title");
             m_EmptyStateDescription = this.Q<Label>("empty-state-description");
             m_FooterRoot = this.Q<VisualElement>("build-list-footer");
             m_FooterLabel = this.Q<Label>("build-list-footer__label");
@@ -110,7 +109,7 @@ namespace UnityEditor.Build.Analysis
 
         private void SetupSettingsMenu()
         {
-            m_SettingsMenu.menu.AppendAction("Delete All Builds...", _ => m_Actions.DeleteAllBuilds());
+            m_SettingsMenu.menu.AppendAction("Delete All...", _ => m_Actions.DeleteAllBuilds());
         }
 
         private VisualElement MakeListItem()
@@ -292,13 +291,11 @@ namespace UnityEditor.Build.Analysis
 
             if (m_AllBuilds.Length == 0)
             {
-                m_EmptyStateTitle.text = "No builds available";
-                m_EmptyStateDescription.text = "Builds will appear here automatically\nafter you build your project.";
+                m_EmptyStateDescription.text = "No Build Reports available.\nReports will be listed here\nafter a player or content build\nhas been created.";
             }
             else
             {
-                m_EmptyStateTitle.text = "No matching builds";
-                m_EmptyStateDescription.text = $"No builds match '{m_CurrentSearchText}'";
+                m_EmptyStateDescription.text = $"No builds match '{m_CurrentSearchText}'.";
             }
         }
 
@@ -308,7 +305,7 @@ namespace UnityEditor.Build.Analysis
             {
                 m_FooterLabel.text = $"{count} builds";
                 m_FooterRoot.RemoveFromClassList(k_FooterWarningClass);
-                m_FooterRoot.tooltip = string.Empty;
+                m_FooterRoot.tooltip = k_FooterDefaultTooltip;
                 return;
             }
 
@@ -318,7 +315,7 @@ namespace UnityEditor.Build.Analysis
             m_FooterRoot.EnableInClassList(k_FooterWarningClass, exceeded || approaching);
             m_FooterRoot.tooltip = exceeded ? k_FooterExceededTooltip
                                  : approaching ? k_FooterWarningTooltip
-                                 : string.Empty;
+                                 : k_FooterDefaultTooltip;
         }
 
         internal void PopulateContextMenu(DropdownMenu menu, BuildEntry selection, bool isDeveloperMode)
@@ -335,7 +332,7 @@ namespace UnityEditor.Build.Analysis
 
             menu.AppendSeparator();
 
-            menu.AppendAction("Delete", _ => m_Actions.DeleteBuild(selection), status);
+            menu.AppendAction("Delete Build Report Directory", _ => m_Actions.DeleteBuild(selection), status);
         }
     }
 }

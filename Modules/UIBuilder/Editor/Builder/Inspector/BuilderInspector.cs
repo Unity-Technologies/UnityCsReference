@@ -850,6 +850,11 @@ namespace Unity.UI.Builder
                     var filterField = field.GetFirstAncestorOfType<FilterStyleField>();
                     styleFields.RefreshStyleField(filterField);
                 }
+                else if (id == StylePropertyId.BackdropFilter)
+                {
+                    var backdropFilterField = field.GetFirstAncestorOfType<FilterStyleField>();
+                    styleFields.RefreshBackdropFilterStyleField(backdropFilterField);
+                }
                 else if (id == StylePropertyId.UnityMaterial)
                 {
                     var materialStyleField = field as MaterialDefinitionStyleField;
@@ -939,24 +944,15 @@ namespace Unity.UI.Builder
 
             UpdateFieldTooltip(field, valueInfo, currentElement);
 
-            var styleRow = field.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
-            var bindingAttributeTypeButtonGroup = styleRow?.Q<ToggleButtonGroup>();
-            if (bindingAttributeTypeButtonGroup == null)
-                return;
-
-            if (valueInfo.valueBinding.type == FieldValueBindingInfoType.Constant && valueInfo.valueSource.type == FieldValueSourceInfoType.Inherited)
+            // When the data source object is inherited, truncate its display label to fit.
+            if (valueInfo.valueBinding.type == FieldValueBindingInfoType.Constant
+                && valueInfo.valueSource.type == FieldValueSourceInfoType.Inherited
+                && valueInfo.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSource))
             {
                 var parent = currentElement.parent;
                 if (parent == null)
                     return;
 
-                // update the label to show that source is inherited
-                bindingAttributeTypeButtonGroup.label = string.Format(BuilderConstants.BuilderLabelWithInheritedLabelSuffix, StyleSheetUtility.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource));
-
-                if (!valueInfo.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSource))
-                    return;
-
-                // Object field display label must be truncated to fit in the display.
                 var objectFieldDisplay = field.Q<ObjectField.ObjectFieldDisplay>();
                 DataBindingUtility.TryGetRelativeDataSourceFromHierarchy(inInspector ? parent : currentElement, out var dataSource);
                 var dataSourceName = BuilderNameUtilities.GetNameByReflection(dataSource);
@@ -967,10 +963,6 @@ namespace Unity.UI.Builder
                         string.Format(BuilderConstants.BuilderBindingObjectFieldEmptyMessage, dataSource)
                         : dataSourceName;
                 }
-            }
-            else
-            {
-                bindingAttributeTypeButtonGroup.label = StyleSheetUtility.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource);
             }
         }
 

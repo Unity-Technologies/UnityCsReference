@@ -14,6 +14,13 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    [NativeHeader("NativeKernel/Logging/LogSystem.h")]
+    internal static class LoggingFramework
+    {
+        [FreeFunction("FlushLoggingFramework")]
+        internal static extern void Flush();
+    }
+
     // Must be kept in sync with enum in IntegrityCheck.h
     [NativeHeader("Runtime/Diagnostics/IntegrityCheck.h")]
     public enum IntegrityCheckLevel

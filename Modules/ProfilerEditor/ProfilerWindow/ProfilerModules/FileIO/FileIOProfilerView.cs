@@ -140,11 +140,11 @@ namespace UnityEditor
     [Serializable]
     internal class FileIOProfilerView : LoadingProfilerViewBase
     {
-        static ProfilerMarker s_PullData = new ProfilerMarker("FileIOProfiler.PullData");
-        static ProfilerMarker s_SummarizeData = new ProfilerMarker("FileIOProfiler.SummarizeData");
-        static ProfilerMarker s_GetMarkerIDs = new ProfilerMarker("FileIOProfiler.GetMarkerIDs");
-        static ProfilerMarker s_AddNewMarker = new ProfilerMarker("FileIOProfiler.AddNewMarkerToList");
-        static ProfilerMarker s_CheckSamples = new ProfilerMarker("FileIOProfiler.CheckSamples");
+        static readonly ProfilerMarker s_PullData = new ProfilerMarker("FileIOProfiler.PullData");
+        static readonly ProfilerMarker s_SummarizeData = new ProfilerMarker("FileIOProfiler.SummarizeData");
+        static readonly ProfilerMarker s_GetMarkerIDs = new ProfilerMarker("FileIOProfiler.GetMarkerIDs");
+        static readonly ProfilerMarker s_AddNewMarker = new ProfilerMarker("FileIOProfiler.AddNewMarkerToList");
+        static readonly ProfilerMarker s_CheckSamples = new ProfilerMarker("FileIOProfiler.CheckSamples");
 
         private FileAccessCaptureData m_CaptureData;
         private FileSummary m_TempFileSummary;

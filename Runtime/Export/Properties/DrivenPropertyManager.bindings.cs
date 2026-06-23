@@ -37,7 +37,6 @@ namespace UnityEngine
             UnregisterPropertyPartial(driver, target, propertyPath);
         }
 
-
         [Conditional("UNITY_EDITOR")]
         [NativeConditional("UNITY_EDITOR")]
         [StaticAccessor("GetDrivenPropertyManager()", StaticAccessorType.Dot)]

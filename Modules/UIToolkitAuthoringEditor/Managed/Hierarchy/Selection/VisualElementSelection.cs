@@ -27,6 +27,10 @@ internal class VisualElementSelection : UISelectionObject
         }
     }
 
+    // NonSerialized prevents Unity's debug inspector from exposing this field as a
+    // SerializedProperty and writing back an invalid value (e.g. -1) when the inspector
+    // mode is switched.
+    [System.NonSerialized]
     private VisualElementEditFlags m_EditFlags;
 
     [CreateProperty]

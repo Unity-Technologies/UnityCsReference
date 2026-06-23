@@ -86,7 +86,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool setAlphaIfTransparentWhenPicked;
 
         bool m_ShowAlpha;

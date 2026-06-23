@@ -91,7 +91,7 @@ internal partial class DictionaryDrawer
         internal static readonly string EmptyDictionaryLabel = L10n.Tr("Dictionary is empty");
         internal static readonly string ResetToDefaultsLabel = L10n.Tr("Reset to Defaults");
         internal static readonly string MultiEditUnsupportedMessage = L10n.Tr("Dictionary: Multi-object editing is not supported."); // Entries are sorted by key, so a given row may correspond to different entries across targets, so edits could affect unrelated entries
-        internal static readonly string DuplicateMarkerTooltip = L10n.Tr("An element with the same key already exists, so this element will not be part of the Dictionary");
+        internal static readonly string DuplicateMarkerTooltip = L10n.Tr("An element with the same key already exists, so this element is excluded from the runtime dictionary.");
         internal static readonly string SingleItemCountLabel = L10n.Tr("1 item");
         internal static readonly string MultipleItemsCountFormat = L10n.Tr("{0} items");
         internal static readonly string DuplicatesFormat = L10n.Tr("{0} ignored");
@@ -99,8 +99,8 @@ internal partial class DictionaryDrawer
         internal static readonly string DuplicatesHelpBoxFormat = L10n.Tr("{0} duplicate keys ignored. Ensure all keys are unique.");
         internal static readonly string SelectFirstDuplicateButtonLabel = L10n.Tr("Select Duplicate");
 
-        internal static readonly string DefaultKeyLabel = "Key";
-        internal static readonly string DefaultValueLabel = "Value";
+        internal static readonly string DefaultKeyLabel = L10n.Tr("Key");
+        internal static readonly string DefaultValueLabel = L10n.Tr("Value");
         internal static readonly string ExpectedCurrentContainerMessage = "Expected a current IMGUIContainer, please report a bug with repro steps";
 
         internal static string GetItemCountText(int count)

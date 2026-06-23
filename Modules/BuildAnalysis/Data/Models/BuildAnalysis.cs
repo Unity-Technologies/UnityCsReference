@@ -84,6 +84,7 @@ namespace UnityEditor.Build.Analysis
         public ulong DirectSizeBytes;
         public int TotalAssetCount;
         public ulong TotalSizeBytes;
+        public int[] ReferencedAssetIds;
     }
 
     [Serializable]

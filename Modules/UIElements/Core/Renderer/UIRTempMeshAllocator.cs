@@ -195,7 +195,7 @@ namespace UnityEngine.UIElements.UIR
                 mesh.indices = AllocChannel<ushort>(indexCount);
         }
 
-        NativeSlice<T> AllocChannel<T>(int count) where T : unmanaged
+        public NativeSlice<T> AllocChannel<T>(int count) where T : unmanaged
         {
             if (!JobsUtility.IsExecutingJob)
                 return m_TempAllocator.Alloc<T>(count);

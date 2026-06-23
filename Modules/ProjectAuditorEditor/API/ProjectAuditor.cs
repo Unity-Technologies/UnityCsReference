@@ -14,13 +14,14 @@ using Debug = UnityEngine.Debug;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using Unity.ProjectAuditor.Editor.Modules;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor
 {
     /// <summary>
     /// The ProjectAuditor class is responsible for auditing the Unity project.
     /// </summary>
-    public sealed class ProjectAuditor : IPostprocessBuildWithReport
+    public sealed partial class ProjectAuditor : IPostprocessBuildWithReport
     {
         /// <summary>
         /// Returns the relative callback order for callbacks. Callbacks with lower values are called before ones with higher values.
@@ -43,8 +44,10 @@ namespace Unity.ProjectAuditor.Editor
             }
         }
 
+        [NoAutoStaticsCleanup] // Lazy cache: project path never changes within a session
         static string s_CachedProjectPath;
-        static readonly Dictionary<string, IssueCategory> s_CustomCategories = new Dictionary<string, IssueCategory>();
+        [AutoStaticsCleanupOnCodeReload] // Category registry: accumulates custom categories, must be reset on code reload
+        static Dictionary<string, IssueCategory> s_CustomCategories = new Dictionary<string, IssueCategory>();
 
         readonly List<Module> m_Modules = new List<Module>();
 
@@ -366,7 +369,7 @@ namespace Unity.ProjectAuditor.Editor
             return "Unknown";
         }
 
-        void InitModules()
+        internal void InitModules()
         {
             if (ProjectAuditorRulesPackage.IsInstalled == false)
                 return;

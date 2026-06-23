@@ -5,7 +5,6 @@
 using System;
 using System.IO;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
@@ -24,12 +23,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             const string prefix = "UnityEngine.";
             if (descriptor.Type.StartsWith(prefix))
             {
-                var unityVersion = InternalEditorUtility.GetUnityVersion();
                 var type = descriptor.Type.Substring(prefix.Length);
                 var method = descriptor.Method;
-                var url = string.Format("https://docs.unity3d.com/{0}.{1}/Documentation/ScriptReference/{2}{3}{4}.html",
-                    unityVersion.Major, unityVersion.Minor, type, Char.IsUpper(method[0]) ? "." : "-", method);
-                Application.OpenURL(url);
+                var separator = char.IsUpper(method[0]) ? "." : "-";
+                var url = $"https://docs.unity3d.com/ScriptReference/{type}{separator}{method}.html";
+                Application.OpenURL(Utility.GetVersionedDocsUrl(url));
             }
         }
 

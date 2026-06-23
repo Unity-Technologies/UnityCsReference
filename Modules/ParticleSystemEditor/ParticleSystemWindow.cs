@@ -6,23 +6,27 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    internal class ParticleSystemWindow : EditorWindow, ParticleEffectUIOwner
+    internal partial class ParticleSystemWindow : EditorWindow, ParticleEffectUIOwner
     {
+        [AutoStaticsCleanupOnCodeReload] // singleton; survives code reload by design
         static ParticleSystemWindow s_Instance;
 
         ParticleSystem m_Target;
         ParticleEffectUI m_ParticleEffectUI;
         bool m_IsVisible;
 
+        [NoAutoStaticsCleanup] // cached UI labels
         private static GUIContent[] s_Icons;
 
         class Texts
         {
             public GUIContent lockParticleSystem = EditorGUIUtility.TrTextContent("", "Lock the current selected Particle System");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         public Editor customEditor { get; set; }

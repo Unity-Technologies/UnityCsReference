@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Profiling
 {
@@ -13,6 +14,7 @@ namespace UnityEditor.Profiling
     /// </summary>
     internal static partial class MarkersInformationProvider
     {
+        [NoAutoStaticsCleanup] // constant lookup table, no user code references
         private static readonly Dictionary<string, string> k_MarkersInfo = new Dictionary<string, string>
         {
             { "WaitForJobGroupID", "CPU thread is waiting for a specific Job System job group to complete. High values indicate either job dependency chains that are too long, insufficient parallelization, or jobs that take too long to execute. Check job scheduling and consider breaking down complex jobs into smaller parallel tasks." },

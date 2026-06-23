@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
@@ -66,6 +67,7 @@ namespace UnityEditorInternal.Profiling
             ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
 
             List<ObjectInformation> m_ObjectsData;
+            [NoAutoStaticsCleanup] // Fixed content, safe to persist
             static readonly IList<int> k_DefaultSelection = new int[] { 0 };
 
             public event FrameItemCallback frameItemEvent;

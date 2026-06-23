@@ -25,6 +25,7 @@ namespace Unity.UIToolkit.Editor
         public VisualElement parametersContainer => m_ParametersContainer;
 
         private EnumField m_FilterFunctionTypeField;
+        private DropdownField m_FilterFunctionTypeDropdown;
         private ObjectField m_CustomDefinitionField;
         private FloatField[] m_FloatFields;
         private ColorField[] m_ColorFields;
@@ -46,10 +47,14 @@ namespace Unity.UIToolkit.Editor
             m_FilterFunctionTypeField.includeObsoleteValues = false;
             m_FilterFunctionTypeField.RegisterValueChangedCallback(OnFilterFunctionTypeChanged);
 
+            // Will be replaced with DropdownField if custom filters are not allowed
+            m_FilterFunctionTypeDropdown = null;
+
             m_ParametersContainer = this.Q<VisualElement>(k_ParamtersContainerName);
 
             // Create custom definition field
             m_CustomDefinitionField = new ObjectField("Definition");
+            m_CustomDefinitionField.allowBuiltinResources = false;
             m_CustomDefinitionField.objectType = typeof(FilterFunctionDefinition);
             m_CustomDefinitionField.RegisterValueChangedCallback(OnCustomValueChanged);
             m_CustomDefinitionField.style.display = DisplayStyle.None;
@@ -71,6 +76,7 @@ namespace Unity.UIToolkit.Editor
             for (int i = 0; i < k_MaxParameters; ++i)
             {
                 var field = new ColorField();
+                field.setAlphaIfTransparentWhenPicked = true;
                 field.RegisterValueChangedCallback(OnParameterValueChanged);
                 field.style.display = DisplayStyle.None;
                 m_ColorFields[i] = field;
@@ -80,9 +86,85 @@ namespace Unity.UIToolkit.Editor
             AddToClassList(k_BaseClass);
         }
 
+        void ReplaceEnumFieldWithDropdown()
+        {
+            // Get enum choices excluding Custom
+            var enumData = UnityEngine.EnumDataUtility.GetCachedEnumData(
+                typeof(FilterFunctionType),
+                UnityEngine.EnumDataUtility.CachedType.ExcludeObsolete,
+                NameFormatter.FormatVariableName);
+
+            var choices = new System.Collections.Generic.List<string>();
+            var choiceToEnum = new System.Collections.Generic.Dictionary<string, FilterFunctionType>();
+
+            for (int i = 0; i < enumData.displayNames.Length; i++)
+            {
+                var enumValue = (FilterFunctionType)enumData.values[i];
+                if (enumValue != FilterFunctionType.Custom)
+                {
+                    var displayName = enumData.displayNames[i];
+                    choices.Add(displayName);
+                    choiceToEnum[displayName] = enumValue;
+                }
+            }
+
+            // Create dropdown field with formatSelectedValueCallback to show display names
+            m_FilterFunctionTypeDropdown = new DropdownField(m_FilterFunctionTypeField.label, choices, 0);
+            m_FilterFunctionTypeDropdown.name = m_FilterFunctionTypeField.name;
+            m_FilterFunctionTypeDropdown.userData = choiceToEnum;
+
+            // Copy classes
+            foreach (var className in m_FilterFunctionTypeField.GetClasses())
+            {
+                m_FilterFunctionTypeDropdown.AddToClassList(className);
+            }
+
+            // Register callback
+            m_FilterFunctionTypeDropdown.RegisterValueChangedCallback(OnFilterFunctionTypeDropdownChanged);
+
+            // Replace in hierarchy
+            var parent = m_FilterFunctionTypeField.parent;
+            var index = parent.IndexOf(m_FilterFunctionTypeField);
+            parent.Remove(m_FilterFunctionTypeField);
+            parent.Insert(index, m_FilterFunctionTypeDropdown);
+        }
+
+        void OnFilterFunctionTypeDropdownChanged(ChangeEvent<string> evt)
+        {
+            // Get the enum value from the stored dictionary
+            var choiceToEnum = m_FilterFunctionTypeDropdown.userData as System.Collections.Generic.Dictionary<string, FilterFunctionType>;
+            if (choiceToEnum != null && choiceToEnum.TryGetValue(evt.newValue, out var filterType))
+            {
+                var f = new FilterFunction(filterType);
+
+                var def = f.GetDefinition();
+                if (def != null)
+                {
+                    for (int i = 0; i < def.parameters.Length; ++i)
+                        f.AddParameter(def.parameters[i].defaultValue);
+                }
+
+                m_FilterFunction = f;
+                GetFirstAncestorOfType<FilterStyleField>()?.FilterFunctionTypeChanged(this);
+            }
+            evt.StopPropagation();
+        }
+
         void OnFilterFunctionTypeChanged(ChangeEvent<Enum> evt)
         {
             var filterType = (FilterFunctionType)evt.newValue;
+
+            // Check if Custom filter is allowed
+            var parentField = GetFirstAncestorOfType<FilterStyleField>();
+            if (filterType == FilterFunctionType.Custom && parentField != null && !parentField.allowCustomFilters)
+            {
+                // Revert to previous value
+                m_FilterFunctionTypeField.SetValueWithoutNotify(evt.previousValue);
+                Debug.LogWarning("Custom filters are not supported for backdrop-filter.");
+                evt.StopPropagation();
+                return;
+            }
+
             var f = new FilterFunction(filterType);
 
             var def = f.GetDefinition();
@@ -93,14 +175,31 @@ namespace Unity.UIToolkit.Editor
             }
 
             m_FilterFunction = f;
-            GetFirstAncestorOfType<FilterStyleField>().FilterFunctionTypeChanged(this);
+            parentField?.FilterFunctionTypeChanged(this);
             evt.StopPropagation();
         }
 
         public void SetFilterFunction(FilterFunction func)
         {
             m_FilterFunction = func;
-            m_FilterFunctionTypeField.SetValueWithoutNotify(func.type);
+
+            // Check if we need to replace EnumField with DropdownField
+            var parentField = GetFirstAncestorOfType<FilterStyleField>();
+            if (parentField != null && !parentField.allowCustomFilters && m_FilterFunctionTypeDropdown == null)
+            {
+                ReplaceEnumFieldWithDropdown();
+            }
+
+            if (m_FilterFunctionTypeDropdown != null)
+            {
+                // Use dropdown (custom filters excluded)
+                m_FilterFunctionTypeDropdown.SetValueWithoutNotify(func.type.ToString());
+            }
+            else
+            {
+                // Use enum field (all filters allowed)
+                m_FilterFunctionTypeField.SetValueWithoutNotify(func.type);
+            }
 
             // Hide all fields initially
             m_CustomDefinitionField.style.display = DisplayStyle.None;

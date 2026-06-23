@@ -11,6 +11,7 @@ using Unity.ProjectAuditor.Editor.Build;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using System.Collections;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
@@ -92,7 +93,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             IsHierarchy = true
         };
 
-        internal static LastBuildReportProvider BuildReportProvider = new LastBuildReportProvider();
+        [NoAutoStaticsCleanup] // Stateless provider instance; safe to persist across code reload
+        internal static readonly LastBuildReportProvider BuildReportProvider = new LastBuildReportProvider();
 
         public override string Name => "Build Report";
 

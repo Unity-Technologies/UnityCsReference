@@ -19,5 +19,6 @@ namespace UnityEditor.Build.Analysis
         public ulong DirectSize;
         public int TotalAssets;
         public ulong TotalSize;
+        public string[] ReferencedAssetPaths;
     }
 }

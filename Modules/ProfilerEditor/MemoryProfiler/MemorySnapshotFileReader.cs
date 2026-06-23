@@ -77,6 +77,16 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             NativeCallstackSymbol_ReadableStackTrace,
             NativeObjects_GCHandleIndex
         }
+
+        /// <summary>
+        /// Sentinel for "no row" used across uint32_t index columns in v19+ (ManagedObjects_TypeIndex,
+        /// ManagedReferences_*Index, ManagedRoots_ManagedObjectIndex, NativeObjects_GCHandleIndex).
+        /// Mirrors FileFormat::kInvalidIndex on the native side.
+        /// </summary>
+        internal static class FileFormatConstants
+        {
+            public const uint InvalidIndex = 0xFFFFFFFFu;
+        }
     }
 
     [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]

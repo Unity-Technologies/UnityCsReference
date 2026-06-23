@@ -309,7 +309,8 @@ partial class MsBuildCompilation
             precompiledAssemblyPaths = precompiledPaths,
             precompiledAssemblyExplicitlyReferenced = precompiledExplicitlyReferenced,
             errors = new List<string>(),
-            warnings = new List<string>()
+            warnings = new List<string>(),
+            predefinedAssembliesAllowUnsafeCode = PlayerSettings.allowUnsafeCode
         };
         AsmDefConverter.Convert(context);
 

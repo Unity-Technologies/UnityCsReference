@@ -42,6 +42,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleRatio aspectRatio { get; set; }
         /// <summary>
+        /// Filter effects to apply to the area behind the element.
+        /// </summary>
+        StyleList<FilterFunction> backdropFilter { get; set; }
+        /// <summary>
         /// Background color to paint in the element's box.
         /// </summary>
         StyleColor backgroundColor { get; set; }

@@ -255,10 +255,28 @@ namespace UnityEngine.UIElements
                     break;
                 }
 
+                case PropertyType.Cursor:
+                {
+                    // Channel 0 (.image) is PPtr and routes through SetObjectValue; here we
+                    // only see the hotspot floats (.hotspot.x = 1, .hotspot.y = 2). Skip any
+                    // other channel so we don't trigger a redundant write/repaint.
+                    if (channel != 1 && channel != 2)
+                        break;
+                    var cursor = e.computedStyle.ReadPropertyAnimationCursor(id);
+                    var hotspot = cursor.hotspot;
+                    if (channel == 1)
+                        hotspot.x = value;
+                    else
+                        hotspot.y = value;
+                    cursor.hotspot = hotspot;
+                    e.computedStyle.ApplyPropertyAnimation(e, id, cursor);
+                    break;
+                }
+
             }
 
         }
-      
+
         internal float GetFloatValue(int elementIndex, int propertyId, int channel)
         {
             if (elementIndex < 0 || elementIndex >= GetElementCount())
@@ -325,7 +343,13 @@ namespace UnityEngine.UIElements
                 PropertyType.Background => throw new NotImplementedException(),
                 PropertyType.Font => throw new NotImplementedException(),
                 PropertyType.FontDefinition => throw new NotImplementedException(),
-                PropertyType.Cursor => throw new NotImplementedException(),
+                // Channel 0 (.image) is PPtr and goes through GetObjectValue; 1/2 are hotspot.x/.y.
+                PropertyType.Cursor => channel switch
+                {
+                    1 => element.computedStyle.ReadPropertyAnimationCursor(id).hotspot.x,
+                    2 => element.computedStyle.ReadPropertyAnimationCursor(id).hotspot.y,
+                    _ => throw new NotImplementedException(),
+                },
                 PropertyType.TextAutoSize => throw new NotImplementedException(),
                 PropertyType.List => throw new NotImplementedException(),
                 PropertyType.MaterialDefinition => throw new NotImplementedException(),
@@ -360,6 +384,15 @@ namespace UnityEngine.UIElements
                     // a managed Material to repopulate property values; go through the typed overload.
                     var mat = (Material)Resources.EntityIdToObject(value);
                     e.computedStyle.ApplyPropertyAnimation(e, id, new MaterialDefinition(mat));
+                    break;
+                }
+
+                case PropertyType.Cursor:
+                {
+                    // Only the `.image` (channel 0) PPtr arrives here; hotspot floats go through SetFloatValue.
+                    var cursor = e.computedStyle.ReadPropertyAnimationCursor(id);
+                    cursor.textureId = value;
+                    e.computedStyle.ApplyPropertyAnimation(e, id, cursor);
                     break;
                 }
 
@@ -425,8 +458,10 @@ namespace UnityEngine.UIElements
                 // `.p<n>` and `.type` go through GetFloatValue; only `.customDefinition` arrives here.
                 PropertyType.Filter => ReadFilterCustomDefinitionChannel(element, channel),
 
+                // Only the `.image` (channel 0) PPtr arrives here; hotspot floats go through GetFloatValue.
+                PropertyType.Cursor => element.computedStyle.ReadPropertyAnimationCursor(id).textureId,
+
                 //Not implemented
-                PropertyType.Cursor => throw new NotImplementedException(),
                 PropertyType.List => throw new NotImplementedException(),
                 _ => throw new NotImplementedException(),// Why does c# think the list is not exhaustive? seems related to the cast...
             };

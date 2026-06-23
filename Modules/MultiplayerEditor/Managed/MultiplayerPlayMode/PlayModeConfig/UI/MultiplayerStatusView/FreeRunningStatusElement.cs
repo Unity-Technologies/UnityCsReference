@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.PlayMode.Editor;
+using UnityEditor.Build.Profile;
 using UnityEngine.UIElements;
 using UnityEngine;
 
@@ -130,6 +131,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 UpdateUI();
             };
+
+            ReuseBuildElement.RebuildStateChanged += OnRebuildStateChanged;
+        }
+
+        private void OnRebuildStateChanged(BuildProfile rebuildingProfile)
+        {
+            UpdateUI();
         }
 
         private void OnSetFreeRunningModeSelected(ChangeEvent<RunModeState> evt)
@@ -223,12 +231,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var isScenarioRunning = ScenarioRunner.instance.IsRunning;
             var isInstanceRunning = IsInstanceRunning();
             var isEditorInstance = m_Instance != null && m_Instance.Controller is CloneEditorController;
+            var isLocalInstance = m_Instance != null && m_Instance.Controller is LocalPlayerController;
             var isButtonDisplayed = m_FreeRunButton.style.display == DisplayStyle.Flex;
 
+            // Check if this instance's build profile is being rebuilt
+            var isThisProfileRebuilding = false;
+            if (isLocalInstance && m_Instance.Controller is LocalPlayerController localController)
+            {
+                var rebuildingProfile = ReuseBuildElement.RebuildingBuildProfile;
+                isThisProfileRebuilding = rebuildingProfile != null && localController.Settings.BuildProfile == rebuildingProfile;
+            }
+
             var shouldEnable = isEditorInstance || isInstanceRunning || !isScenarioRunning;
+
+            // Disable run button for local instances while their build profile is rebuilding
+            if (isLocalInstance && isThisProfileRebuilding && !isInstanceRunning)
+                shouldEnable = false;
+
             m_FreeRunButton.SetEnabled(shouldEnable);
-            m_DisabledFreeRunButtonHelpbox.style.display = isButtonDisplayed
-                                                           && !shouldEnable ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Show help box only for play mode restriction, not for rebuilding
+            var showPlayModeHelpBox = isButtonDisplayed && !shouldEnable && !isThisProfileRebuilding;
+            m_DisabledFreeRunButtonHelpbox.style.display = showPlayModeHelpBox ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private bool IsInstanceRunning()

@@ -48,6 +48,7 @@ namespace UnityEngine
             Enlighten = 0,
 
             // Lightmaps are baked by the CPU Progressive lightmapper (Wintermute + OpenRL based).
+            [Obsolete("Lightmapper.ProgressiveCPU is deprecated, use Lightmapper.UnityComputeGPU instead.", false)]
             ProgressiveCPU = 1,
 
             // Lightmaps are baked by the GPU Progressive lightmapper (RadeonRays + OpenCL based).

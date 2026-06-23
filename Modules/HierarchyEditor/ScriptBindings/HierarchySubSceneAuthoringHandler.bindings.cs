@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -26,6 +27,17 @@ namespace Unity.Hierarchy.Editor
         IHierarchyEditorNodeTypeHandler
     {
         static readonly UniqueStyleString k_SubSceneNodeUssClass = new("hierarchy-item__scene-node");
+
+        [NoAutoStaticsCleanup]
+        internal static Action<GameObject> OpenSubScene;
+        [NoAutoStaticsCleanup]
+        internal static Action<GameObject> CloseSubScene;
+        [NoAutoStaticsCleanup]
+        internal static Action<GameObject> ReimportSubScene;
+        [NoAutoStaticsCleanup]
+        internal static Func<GameObject, bool> IsSubSceneOpen;
+        [NoAutoStaticsCleanup]
+        internal static Action<GameObject> OnSubSceneDoubleClick;
 
         internal new static class BindingsMarshaller
         {
@@ -161,8 +173,17 @@ namespace Unity.Hierarchy.Editor
         bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view) => false;
         bool IHierarchyEditorNodeTypeHandler.CanFindReferences(HierarchyView view) => false;
         bool IHierarchyEditorNodeTypeHandler.OnFindReferences(HierarchyView view) => false;
-        bool IHierarchyEditorNodeTypeHandler.CanDoubleClick(HierarchyView view, in HierarchyNode node) => false;
-        bool IHierarchyEditorNodeTypeHandler.OnDoubleClick(HierarchyView view, in HierarchyNode node) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanDoubleClick(HierarchyView view, in HierarchyNode node) => OnSubSceneDoubleClick != null;
+
+        bool IHierarchyEditorNodeTypeHandler.OnDoubleClick(HierarchyView view, in HierarchyNode node)
+        {
+            var go = GetGameObject(in node);
+            if (go == null || OnSubSceneDoubleClick == null)
+                return false;
+
+            OnSubSceneDoubleClick(go);
+            return true;
+        }
 
         void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
         {
@@ -184,7 +205,7 @@ namespace Unity.Hierarchy.Editor
                 return;
 
             var scene = GetScene(item.Node);
-            BuildSubSceneContextMenu(view, menu);
+            BuildSubSceneContextMenu(view, item.Node, menu);
             menu.AppendSeparator();
 
             if (scene.IsValid())
@@ -230,28 +251,60 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
         {
+            // If there's a GameObject in the selection, the drag and drop operation is
+            // handled by the GameObject handler instead of the SubScene handler,
+            // so we shouldn't populate entity IDs for this drag and drop.
+            if (HasGameObjectInSelection(data.View.ViewModel))
+                return;
+
             var nodeSpan = data.Nodes;
             for (var i = 0; i < nodeSpan.Length; ++i)
             {
                 var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || data.View.ViewModel.GetNodeTypeHandler(in node) != this)
+                if (node == HierarchyNode.Null)
                     continue;
-                var go = GetGameObject(in node);
-                if (go == null)
+                var entityId = GetEntityId(in node);
+                if (entityId == EntityId.None)
                     continue;
-                data.EntityIds.Add(go.GetEntityId());
+                data.EntityIds.Add(entityId);
             }
         }
 
-        DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+        // SubScene nodes are backed by GameObjects; the actual transform reparenting + sibling-index
+        // update goes through HierarchyGameObjectHandler.OnReorder. For mixed SubScene+GO drags
+        // GameObjectHandler is also participating and runs its own CanReorder/OnReorder - we skip
+        // here to keep that single coordinated two-phase pass and avoid double-execution.
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data)
+        {
+            if (HasGameObjectInSelection(data.View.ViewModel))
+                return DragVisualMode.None;
 
-        DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+            if (Hierarchy.GetOrCreateNodeTypeHandler<HierarchyGameObjectHandler>() is IHierarchyEditorNodeTypeHandler handler)
+                return handler.CanReorder(in data);
+
+            // If there is no GameObject handler, we shouldn't allow reordering of SubScene nodes,
+            // because the necessary transform and sibling-index updates won't happen.
+            return DragVisualMode.Rejected;
+        }
+
+        void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
+        {
+            if (HasGameObjectInSelection(data.View.ViewModel))
+                return;
+
+            if (Hierarchy.GetOrCreateNodeTypeHandler<HierarchyGameObjectHandler>() is IHierarchyEditorNodeTypeHandler handler)
+                handler.OnReorder(in data);
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
         #endregion
 
         protected override void OnBindItem(HierarchyViewItem item)
             => item.AddToClassList(k_SubSceneNodeUssClass);
 
-        void BuildSubSceneContextMenu(HierarchyView view, DropdownMenu menu)
+        void BuildSubSceneContextMenu(HierarchyView view, in HierarchyNode node, DropdownMenu menu)
         {
             menu.AppendAction(L10n.Tr("Cut"), _ => ClipboardUtility.CutGO());
             menu.AppendAction(L10n.Tr("Paste"), _ => ClipboardUtility.PasteGO(null),
@@ -262,9 +315,27 @@ namespace Unity.Hierarchy.Editor
                 ClipboardUtility.CanPasteAsChild()
                     ? DropdownMenuAction.Status.Normal
                     : DropdownMenuAction.Status.Disabled);
+            menu.AppendAction(L10n.Tr("Delete"), _ => Unsupported.DeleteGameObjectSelection());
 
             menu.AppendSeparator();
-            menu.AppendAction(L10n.Tr("Delete"), _ => Unsupported.DeleteGameObjectSelection());
+
+            menu.AppendAction(L10n.Tr("Reimport"), _ => InvokeForSelectedSubScenes(ReimportSubScene));
+
+            var go = GetGameObject(in node);
+            var isOpen = IsSubSceneOpen?.Invoke(go) ?? false;
+            if (isOpen)
+                menu.AppendAction(L10n.Tr("Close"), _ => InvokeForSelectedSubScenes(CloseSubScene));
+            else
+                menu.AppendAction(L10n.Tr("Open"), _ => InvokeForSelectedSubScenes(OpenSubScene));
+        }
+
+        static void InvokeForSelectedSubScenes(Action<GameObject> action)
+        {
+            if (action == null)
+                return;
+
+            foreach (var go in Selection.gameObjects)
+                action(go);
         }
 
         static void AddCustomSubSceneHeaderContextMenuItems(GenericMenu menu, Scene subScene)
@@ -320,6 +391,17 @@ namespace Unity.Hierarchy.Editor
                 // Name might have changed
                 CommandList.SetName(in sceneNode, scene.name);
             }
+        }
+
+        bool HasGameObjectInSelection(HierarchyViewModel viewModel)
+        {
+            var goNodeType = Hierarchy.GetNodeType<HierarchyGameObjectHandler>();
+            foreach (ref readonly var node in viewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
+            {
+                if (viewModel.GetNodeType(in node) == goNodeType)
+                    return true;
+            }
+            return false;
         }
 
         [FreeFunction("HierarchySubSceneAuthoringHandlerBindings::GetStaticNodeType", IsThreadSafe = true)]

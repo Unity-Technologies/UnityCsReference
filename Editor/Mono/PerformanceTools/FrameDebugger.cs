@@ -14,10 +14,11 @@ using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Pool;
 using UnityEngine.Profiling;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    internal class FrameDebuggerWindow : EditorWindow
+    internal partial class FrameDebuggerWindow : EditorWindow
     {
         // Serialized
         [SerializeField] private float m_TreeWidth = FrameDebuggerStyles.Window.k_MinTreeWidth;
@@ -34,6 +35,7 @@ namespace UnityEditor
         private FrameDebuggerEventDetailsView m_EventDetailsView;
         private FrameDebuggerToolbarView m_Toolbar;
 
+        [NoAutoStaticsCleanup] // lifecycle managed by ReleaseGraphicsBuffers (OnDestroy/playModeStateChanged) and [OnCodeUnloading] for code-reload safety
         private static Lazy<GraphicsBuffer> m_ShadingRateLut =
                     new Lazy<GraphicsBuffer>(CreateShadingRateLutGraphicsBuffer);
         internal static GraphicsBuffer shadingRateLut => m_ShadingRateLut.Value;
@@ -68,8 +70,15 @@ namespace UnityEditor
                 new Lazy<GraphicsBuffer>(CreateShadingRateLutGraphicsBuffer);
         }
 
+        [OnCodeUnloading]
+        private static void OnCodeUnloading()
+        {
+            ReleaseGraphicsBuffers();
+        }
+
         // Statics
-        private static List<FrameDebuggerWindow> s_FrameDebuggers = new List<FrameDebuggerWindow>();
+        [AutoStaticsCleanupOnCodeReload]
+        private static readonly List<FrameDebuggerWindow> s_FrameDebuggers = new();
 
         // Constants
 

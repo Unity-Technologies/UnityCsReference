@@ -3,20 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Accessibility;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace Unity.Profiling.Editor.UI
 {
-    class BottlenecksChartViewModel : IDisposable
+    partial class BottlenecksChartViewModel : IDisposable
     {
-        const int k_CurrentVersion = 2;
+        const int k_CurrentVersion = 3;
         const string k_HighlightsFileHeader = "HIGHLIGHTS_INFO";
         public const string k_HighlightFileExtension = ".highlights";
 
@@ -100,6 +103,7 @@ namespace Unity.Profiling.Editor.UI
         static readonly Color k_InvalidColorNonPro = new Color(0.247f, 0.247f, 0.247f);
 
         // The color for invalid data values in all data series.
+        [AutoStaticsCleanupOnCodeReload]
         static Color s_InvalidColor;
         public static Color InvalidColor
         {
@@ -161,6 +165,20 @@ namespace Unity.Profiling.Editor.UI
 
         public string DeviceSystemVersion { get; private set; } = string.Empty;
 
+        // Screenshot frames cache (highlights file version 3+). The Screenshots module shares
+        // this model as its only chart-side store that survives the Profiler window being closed
+        // and re-opened. Each entry holds both the LogicalFrame (what the user sees on the chart
+        // strip) and the EmissionFrame (where the GPU readback metadata actually lives); persisting
+        // both avoids re-reading kFramesSinceScreenshotRequested per entry on cache load.
+        List<ScreenshotFrame> m_ScreenshotFrames = new List<ScreenshotFrame>();
+
+        public IReadOnlyList<ScreenshotFrame> ScreenshotFrames => m_ScreenshotFrames;
+
+        public void SetScreenshotFrames(IReadOnlyList<ScreenshotFrame> frames)
+        {
+            // Defensive copy: caller's list keeps growing as new frames are recorded.
+            m_ScreenshotFrames = new List<ScreenshotFrame>(frames);
+        }
 
         public bool IsDisposed { get; private set; }
 
@@ -297,6 +315,14 @@ namespace Unity.Profiling.Editor.UI
                     bWriter.Write(TimeOfRecordingNative);
                     bWriter.Write(DeviceModel);
                     bWriter.Write(DeviceSystemVersion);
+
+                    // Version 3: Screenshot frames — (LogicalFrame, EmissionFrame) pairs.
+                    bWriter.Write(m_ScreenshotFrames.Count);
+                    foreach (var frame in m_ScreenshotFrames)
+                    {
+                        bWriter.Write(frame.LogicalFrame);
+                        bWriter.Write(frame.EmissionFrame);
+                    }
                 }
                 CachedFilePath = path;
 
@@ -359,6 +385,30 @@ namespace Unity.Profiling.Editor.UI
                         TimeOfRecordingNative = bReader.ReadInt64();
                         DeviceModel = bReader.ReadString();
                         DeviceSystemVersion = bReader.ReadString();
+                    }
+
+                    // Clear unconditionally so reloading a v1/v2 file into an already-populated
+                    // model doesn't leak stale frames from the previous load. v1/v2 files have
+                    // no screenshot block, so the loop below simply doesn't execute.
+                    m_ScreenshotFrames.Clear();
+                    if (HighlightsFileVersion >= 3)
+                    {
+                        int screenshotCount = bReader.ReadInt32();
+                        // Guard a corrupted file: a negative count, or one whose payload can't
+                        // fit in what's left of the stream, would otherwise either throw deep
+                        // inside the loop or pre-grow the list to an OOM-sized capacity.
+                        // Each entry is two ints (LogicalFrame + EmissionFrame).
+                        var remainingBytes = fileStream.Length - fileStream.Position;
+                        if (screenshotCount < 0 || (long)screenshotCount * sizeof(int) * 2 > remainingBytes)
+                            throw new Exception($"Invalid highlights file screenshot count ({screenshotCount})");
+                        if (screenshotCount > m_ScreenshotFrames.Capacity)
+                            m_ScreenshotFrames.Capacity = screenshotCount;
+                        for (int i = 0; i < screenshotCount; i++)
+                        {
+                            int logicalFrame = bReader.ReadInt32();
+                            int emissionFrame = bReader.ReadInt32();
+                            m_ScreenshotFrames.Add(new ScreenshotFrame(logicalFrame, emissionFrame));
+                        }
                     }
                 }
                 CachedFilePath = path;

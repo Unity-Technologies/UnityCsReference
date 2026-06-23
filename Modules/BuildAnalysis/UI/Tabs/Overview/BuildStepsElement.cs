@@ -178,11 +178,11 @@ namespace UnityEditor.Build.Analysis
             var errorBadge = element.Q(className: "build-step-badge--error");
 
             warnBadge.style.display = data.WarningCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            warnBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCount(data.WarningCount);
+            warnBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCappedCount(data.WarningCount);
             warnBadge.tooltip = FormatBadgeTooltip(data.WarningCount, "Warning");
 
             errorBadge.style.display = data.ErrorCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            errorBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCount(data.ErrorCount);
+            errorBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCappedCount(data.ErrorCount);
             errorBadge.tooltip = FormatBadgeTooltip(data.ErrorCount, "Error");
         }
 

@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.Collections;
 using UnityEngine.Bindings;
 using CollectionExtensions = Unity.Collections.CollectionExtensions;
 
@@ -27,10 +29,32 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private string[] m_Classes = Array.Empty<string>();
 
-        public string[] classes
+        public IReadOnlyList<string> classes => m_Classes;
+
+        internal void SetClasses(string[] newClasses)
         {
-            get => m_Classes;
-            internal set => m_Classes = value;
+            // Copy the array reference as is. Behavior is undefined if the original is mutated afterwards.
+            m_Classes = newClasses;
+            m_ClassesUnique = null;
+        }
+
+        // A lazy evaluated, once per asset conversion to make AddToClassList faster during CloneTree.
+        // Resets whenever the class list is modified.
+        [NonSerialized]
+        private UniqueStyleString[] m_ClassesUnique;
+        public UniqueStyleString[] classesUnique
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (m_ClassesUnique == null && m_Classes != null)
+                {
+                    m_ClassesUnique = m_Classes.Length > 0 ?
+                        Array.ConvertAll(m_Classes, s => new UniqueStyleString(s)) :
+                        Array.Empty<UniqueStyleString>();
+                }
+                return m_ClassesUnique;
+            }
         }
 
         [SerializeField]
@@ -148,10 +172,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (classes != null)
-            {
-                ve.AddToClassList(classes);
-            }
+            AssignClassListToElement(ve);
 
             if (hasAuthoringId && parentAuthoringNode != null)
                 parentAuthoringNode.AddElement(id, ve);
@@ -208,6 +229,7 @@ namespace UnityEngine.UIElements
             if (Array.IndexOf(m_Classes, className) == -1)
             {
                 CollectionExtensions.AddToArray(ref m_Classes, className);
+                m_ClassesUnique = null;
             }
         }
 
@@ -217,12 +239,33 @@ namespace UnityEngine.UIElements
             if (m_Classes == null)
                 return;
             CollectionExtensions.RemoveFromArray(ref m_Classes, className);
+            m_ClassesUnique = null;
+        }
+
+        public bool ContainsStyleClass(string className)
+        {
+            return m_Classes != null && m_Classes.Contains(className);
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public void ClearStyleSheets()
         {
             stylesheets.Clear();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void AssignClassListToElement(VisualElement ve)
+        {
+            if (m_Classes != null && m_Classes.Length > 0)
+            {
+                ve.AddToClassList(classesUnique);
+            }
+        }
+
+        // For performance tests
+        internal void ResetCachedClassList()
+        {
+            m_ClassesUnique = null;
         }
 
         private protected override void OnVisualTreeAssetChanged(VisualTreeAsset previousVta, VisualTreeAsset newVta)

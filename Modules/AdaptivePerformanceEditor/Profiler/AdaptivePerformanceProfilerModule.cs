@@ -5,6 +5,7 @@
 using System;
 using Unity.Profiling;
 using Unity.Profiling.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.AdaptivePerformance;
 namespace UnityEditor.AdaptivePerformance.Editor
 {
@@ -12,6 +13,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
     [ProfilerModuleMetadata("Adaptive Performance")]
     internal class AdaptivePerformanceProfilerModule : ProfilerModule
     {
+        [NoAutoStaticsCleanup] // fixed compile-time list of profiler counter descriptors
         static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
         {
             new ProfilerCounterDescriptor("CPU frametime", ProfilerCategory.Scripts),

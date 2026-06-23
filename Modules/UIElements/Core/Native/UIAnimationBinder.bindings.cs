@@ -212,7 +212,8 @@ namespace UnityEngine.UIElements
                     m_ElementsMap[rootPropName] = animationRoot;
                 }
 
-                GatherAnimatableElements(string.Empty, animationRoot, !exposeRootElement);
+                // Root is the path origin: skip its own name so children are "#a"/"#b", not "#root/#a".
+                GatherAnimatableElements(string.Empty, animationRoot, skipElement: true);
             }
 
             var names = new string[m_Elements.Count]; //TODO: Don't allocate each time
@@ -246,8 +247,12 @@ namespace UnityEngine.UIElements
                     return element.resolvedStyle.backgroundImage.GetSelectedImage();
                 case StylePropertyId.UnityFont:
                     return element.resolvedStyle.unityFont;
+                // FontDefinition holds either a Font or a FontAsset; surface whichever is set.
                 case StylePropertyId.UnityFontDefinition:
-                    return element.resolvedStyle.unityFontDefinition.font;
+                    return element.resolvedStyle.unityFontDefinition.GetSelectedFont();
+                // Cursor is hidden from resolvedStyle; read its texture from computedStyle.
+                case StylePropertyId.Cursor:
+                    return element.computedStyle.ReadPropertyAnimationCursor(StylePropertyId.Cursor).texture;
 
                 default:
                     return invalid;

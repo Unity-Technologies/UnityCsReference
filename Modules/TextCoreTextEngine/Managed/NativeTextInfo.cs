@@ -19,6 +19,7 @@ namespace UnityEngine.TextCore.Text
         public int totalWidth;
         public int totalHeight;
         public bool isElided;
+        public bool hasMultipleColors;
 
         public unsafe Span<ATGMeshInfo> meshInfos
         {

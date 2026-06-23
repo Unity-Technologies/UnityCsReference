@@ -147,6 +147,11 @@ namespace Unity.ProjectAuditor.Editor
         /// A library of deprecated API
         /// </summary>
         ObsoleteAPI,
+        
+        /// <summary>
+        /// Category for showing MeshColliders
+        /// </summary>
+        MeshCollider,
 
         /// <summary>
         /// Enum value indicating the first available custom category

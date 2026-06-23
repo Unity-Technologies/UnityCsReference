@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
@@ -15,6 +16,7 @@ namespace UnityEditor.IMGUI.Controls
             set { m_DisplayedOptions = value; }
         }
 
+        [NoAutoStaticsCleanup] // selection index for currently open dropdown, safe to persist
         private static int m_SelectedIndex;
 #pragma warning disable 0649
         private AdvancedDropdownState m_State;

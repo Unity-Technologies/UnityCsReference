@@ -1278,28 +1278,25 @@ namespace UnityEditor
                     ToggleFromInt(m_SpriteGenerateFallbackPhysicsShape, s_Styles.spriteGenerateFallbackPhysicsShape);
 
                 EditorGUI.indentLevel--;
-                using (new EditorGUI.DisabledScope(targets.Length != 1))
+                if (SpriteUtilityWindow.DoOpenSpriteEditorWindowUI(targets.Length == 1))
                 {
-                    if (SpriteUtilityWindow.DoOpenSpriteEditorWindowUI())
+                    if (HasModified())
                     {
-                        if (HasModified())
+                        // To ensure Sprite Editor Window to have the latest texture import setting,
+                        // We must applied those modified values first.
+                        var dialogText = string.Format(s_Styles.applyAndContinueToSpriteEditor.text, ((TextureImporter)target).assetPath);
+                        if (EditorUtility.DisplayDialog(s_Styles.unappliedImportSettings.text, dialogText, s_Styles.yes.text, s_Styles.no.text))
                         {
-                            // To ensure Sprite Editor Window to have the latest texture import setting,
-                            // We must applied those modified values first.
-                            var dialogText = string.Format(s_Styles.applyAndContinueToSpriteEditor.text, ((TextureImporter)target).assetPath);
-                            if (EditorUtility.DisplayDialog(s_Styles.unappliedImportSettings.text, dialogText, s_Styles.yes.text, s_Styles.no.text))
-                            {
-                                SaveChanges();
-                                SpriteUtilityWindow.ShowSpriteEditorWindow(this.assetTarget);
-
-                                // We reimported the asset which destroyed the editor, so we can't keep running the UI here.
-                                GUIUtility.ExitGUI();
-                            }
-                        }
-                        else
-                        {
+                            SaveChanges();
                             SpriteUtilityWindow.ShowSpriteEditorWindow(this.assetTarget);
+
+                            // We reimported the asset which destroyed the editor, so we can't keep running the UI here.
+                            GUIUtility.ExitGUI();
                         }
+                    }
+                    else
+                    {
+                        SpriteUtilityWindow.ShowSpriteEditorWindow(this.assetTarget);
                     }
                 }
             }

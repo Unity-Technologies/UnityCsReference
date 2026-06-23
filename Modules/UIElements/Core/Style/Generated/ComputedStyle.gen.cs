@@ -35,6 +35,7 @@ namespace UnityEngine.UIElements
         public Align alignSelf => layoutData.Read().alignSelf;
         public AnimationPlayState animationPlayState => rareData.Read().animationPlayState;
         public Ratio aspectRatio => layoutData.Read().aspectRatio;
+        public ReadOnlySpan<UnmanagedFilterFunction> backdropFilter => rareData.Read().backdropFilter;
         public Color backgroundColor => visualData.Read().backgroundColor;
         public EntityId backgroundImage => visualData.Read().backgroundImage;
         public BackgroundPosition backgroundPositionX => visualData.Read().backgroundPositionX;
@@ -227,6 +228,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.AspectRatio:
                         layoutData.Write().aspectRatio = reader.ReadRatio(0);
+                        break;
+                    case StylePropertyId.BackdropFilter:
+                        reader.ReadListUnmanagedFilterFunction(ref rareData.Write().backdropFilter, 0);
                         break;
                     case StylePropertyId.BackgroundColor:
                         visualData.Write().backgroundColor = reader.ReadColor(0);
@@ -767,6 +771,12 @@ namespace UnityEngine.UIElements
                 return;
             switch (sv.id)
             {
+                case StylePropertyId.BackdropFilter:
+                    if (sv.keyword is StyleKeyword.Initial or StyleKeyword.Null)
+                        rareData.Write().backdropFilter.CopyFrom(InitialStyle.Get().rareData.Read().backdropFilter);
+                    else
+                        rareData.Write().backdropFilter.CopyFrom(sv.value as List<FilterFunction>);
+                    break;
                 case StylePropertyId.BackgroundImage:
                     visualData.Write().backgroundImage = sv.GetResource<UnityEngine.Object>()?.GetEntityId() ?? EntityId.None;
                     break;
@@ -851,6 +861,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = other.layoutData.Read().aspectRatio;
+                    break;
+                case StylePropertyId.BackdropFilter:
+                    rareData.Write().backdropFilter.CopyFrom(other.rareData.Read().backdropFilter);
                     break;
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = other.visualData.Read().backgroundColor;
@@ -1561,12 +1574,33 @@ namespace UnityEngine.UIElements
         {
             switch (id)
             {
+                case StylePropertyId.BackdropFilter:
+                    rareData.Write().backdropFilter.CopyFrom(newValue);
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
                 case StylePropertyId.Filter:
                     rareData.Write().filter.CopyFrom(newValue);
                     ve.IncrementVersion(VersionChangeType.Repaint);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List<FilterFunction>' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Cursor newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Cursor:
+                    if (rareData.Read().cursor != newValue)
+                    {
+                        rareData.Write().cursor = newValue;
+                        ve.IncrementVersion(VersionChangeType.Styles);
+                    }
+
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Cursor' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }
         }
 
@@ -1896,6 +1930,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public Cursor ReadPropertyAnimationCursor(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Cursor:
+                    return rareData.Read().cursor;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Cursor' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
         public TextShadow ReadPropertyAnimationTextShadow(StylePropertyId id)
         {
             switch (id)
@@ -2001,6 +2046,15 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.AspectRatio:
                 {
                     return element.styleAnimation.Start(StylePropertyId.AspectRatio, oldStyle.layoutData.Read().aspectRatio, newStyle.layoutData.Read().aspectRatio, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BackdropFilter:
+                {
+                    using var _1 = ListPool<FilterFunction>.Get(out var from);
+                    using var _2 = ListPool<FilterFunction>.Get(out var to);
+                    oldStyle.rareData.Read().backdropFilter.CopyTo(ref from);
+                    newStyle.rareData.Read().backdropFilter.CopyTo(ref to);
+                    return element.styleAnimation.Start(StylePropertyId.BackdropFilter, from, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.BackgroundColor:
@@ -2187,6 +2241,11 @@ namespace UnityEngine.UIElements
                     }
 
                     return result;
+                }
+
+                case StylePropertyId.Cursor:
+                {
+                    return element.styleAnimation.Start(StylePropertyId.Cursor, oldStyle.rareData.Read().cursor, newStyle.rareData.Read().cursor, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.Filter:
@@ -2878,6 +2937,22 @@ namespace UnityEngine.UIElements
             {
                 ref readonly var oldData = ref oldStyle.rareData.Read();
                 ref readonly var newData = ref newStyle.rareData.Read();
+                if (hasRunningAnimation ||
+                    oldData.backdropFilter != newData.backdropFilter)
+                {
+                    using var _1 = ListPool<FilterFunction>.Get(out var from);
+                    using var _2 = ListPool<FilterFunction>.Get(out var to);
+                    oldData.backdropFilter.CopyTo(ref from);
+                    newData.backdropFilter.CopyTo(ref to);
+                    result |= element.styleAnimation.Start(StylePropertyId.BackdropFilter, from, to, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
+                    oldData.cursor != newData.cursor)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Cursor, oldData.cursor, newData.cursor, durationMs, delayMs, easingCurve);
+                }
+
                 if (hasRunningAnimation ||
                     oldData.filter != newData.filter)
                 {
@@ -3612,6 +3687,18 @@ namespace UnityEngine.UIElements
         {
             switch (id)
             {
+                case StylePropertyId.BackdropFilter:
+                {
+                    using var _1 = ListPool<FilterFunction>.Get(out var from);
+                    using var _2 = ListPool<FilterFunction>.Get(out var to);
+                    computedStyle.rareData.Read().backdropFilter.CopyTo(ref from);
+                    if (sv.keyword == StyleKeyword.Initial)
+                        InitialStyle.Get().rareData.Read().backdropFilter.CopyTo(ref to);
+                    else
+                        to = (List<FilterFunction>)sv.value;
+                    return element.styleAnimation.Start(StylePropertyId.BackdropFilter, from, to, durationMs, delayMs, easingCurve);
+                }
+
                 case StylePropertyId.BackgroundImage:
                 {
                     var from = computedStyle.visualData.Read().backgroundImage;
@@ -3718,6 +3805,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AspectRatio:
                     layoutData.Write().aspectRatio = InitialStyle.Get().layoutData.Read().aspectRatio;
+                    break;
+                case StylePropertyId.BackdropFilter:
+                    rareData.Write().backdropFilter.CopyFrom(InitialStyle.Get().rareData.Read().backdropFilter);
                     break;
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = InitialStyle.Get().visualData.Read().backgroundColor;
@@ -4273,7 +4363,8 @@ namespace UnityEngine.UIElements
                     changes |= VersionChangeType.AnimationProperty;
                 }
 
-                if ((changes & VersionChangeType.Repaint) == 0 && (x.filter != y.filter ||
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.backdropFilter != y.backdropFilter ||
+                    x.filter != y.filter ||
                     x.unityOverflowClipBox != y.unityOverflowClipBox ||
                     x.unitySliceBottom != y.unitySliceBottom ||
                     x.unitySliceLeft != y.unitySliceLeft ||
@@ -4282,6 +4373,11 @@ namespace UnityEngine.UIElements
                     x.unityTextOverflowPosition != y.unityTextOverflowPosition))
                 {
                     changes |= VersionChangeType.Repaint;
+                }
+
+                if (x.cursor != y.cursor)
+                {
+                    changes |= VersionChangeType.Styles;
                 }
 
                 if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unitySliceType != y.unitySliceType ||

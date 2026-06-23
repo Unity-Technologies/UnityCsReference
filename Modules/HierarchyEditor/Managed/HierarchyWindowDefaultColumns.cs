@@ -20,7 +20,7 @@ namespace Unity.Hierarchy.Editor
     /// Utility class containing Column definition for Object Active state in Scene.
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed class HierarchyWindowColumnActive
+    internal sealed partial class HierarchyWindowColumnActive
     {
         /// <summary>
         /// Column Id for Active property of objects in a scene.
@@ -89,7 +89,7 @@ namespace Unity.Hierarchy.Editor
     /// Utility class containing Column definition for GameObject and Scene Visibility in Scene.
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed class HierarchyWindowColumnVisibility
+    internal sealed partial class HierarchyWindowColumnVisibility
     {
         /// <summary>
         /// Column Id for object Visibility in Scene.
@@ -264,7 +264,7 @@ namespace Unity.Hierarchy.Editor
     /// Utility class containing Column definition for GameObject and Scene Pickable ability in Scene.
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed class HierarchyWindowColumnPicking
+    internal sealed partial class HierarchyWindowColumnPicking
     {
         /// <summary>
         /// Column Id for object Pickability in Scene.
@@ -448,7 +448,7 @@ namespace Unity.Hierarchy.Editor
     /// Utility class containing Column definition for GameObject Tag
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a TagField for editing.
     /// </summary>
-    internal sealed class HierarchyWindowColumnTag
+    internal sealed partial class HierarchyWindowColumnTag
     {
         /// <summary>
         /// Column Id for object Tag
@@ -517,7 +517,7 @@ namespace Unity.Hierarchy.Editor
     /// Utility class containing Column definition for GameObject Layer
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a LayerField for editing.
     /// </summary>
-    internal sealed class HierarchyWindowColumnLayer
+    internal sealed partial class HierarchyWindowColumnLayer
     {
         /// <summary>
         /// Column Id for object Layer
@@ -588,7 +588,7 @@ namespace Unity.Hierarchy.Editor
     /// Utility class containing Column definition for GameObject Is Static property.
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
-    internal sealed class HierarchyWindowColumnStatic
+    internal sealed partial class HierarchyWindowColumnStatic
     {
         /// <summary>
         /// Column Id for object Static

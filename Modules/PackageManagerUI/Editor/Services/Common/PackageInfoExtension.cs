@@ -85,6 +85,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             return !string.IsNullOrEmpty(productIdString) ? productIdString : packageInfo?.name ?? string.Empty;
         }
 
+        /// <summary>
+        /// Deprecation info for <c>unityLifecycle</c>.
+        /// </summary>
+        public static bool IsPackageLifeCycleDeprecated(this PackageInfo packageInfo)
+        {
+            return packageInfo?.unityLifecycle?.isDeprecated ?? false;
+        }
+
+        /// <summary>
+        /// Deprecation tooltip for platform browser / build profile. Prefers top-level <see cref="PackageInfo.deprecationMessage"/>, then lifecycle.
+        /// </summary>
+        public static string GetDeprecationMessageForBuildProfile(this PackageInfo packageInfo)
+        {
+            if (packageInfo == null)
+                return string.Empty;
+            if (!string.IsNullOrEmpty(packageInfo.deprecationMessage))
+                return packageInfo.deprecationMessage;
+            if (packageInfo.unityLifecycle?.isDeprecated == true)
+                return packageInfo.unityLifecycle.deprecationMessage ?? string.Empty;
+            return string.Empty;
+        }
+
         public static RegistryType GetAvailableRegistryType(this PackageInfo packageInfo)
         {
             // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry

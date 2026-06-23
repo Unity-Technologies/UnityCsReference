@@ -708,7 +708,7 @@ namespace UnityEditor
 
             instance.PickableContentChanged();
 
-            if (!HierarchyPreferences.UseNewHierarchy)
+            if (EditorSettings.useLegacyHierarchy)
                 EditorApplication.RepaintHierarchyWindow();
         }
 

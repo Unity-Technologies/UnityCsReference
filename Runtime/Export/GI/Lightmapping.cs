@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 using Unity.Collections.LowLevel.Unsafe;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -715,7 +716,7 @@ namespace UnityEngine
             }
         }
 
-        public static class Lightmapping
+        public static partial class Lightmapping
         {
             public delegate void RequestLightsDelegate(Light[] requests, NativeArray<LightDataGI> lightsOutput);
 
@@ -737,6 +738,7 @@ namespace UnityEngine
             }
 
             [RequiredByNativeCode]
+            [NoAutoStaticsCleanup]
             private static readonly RequestLightsDelegate s_DefaultDelegate   = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
             {
                 // get all lights in the scene
@@ -773,6 +775,7 @@ namespace UnityEngine
                 }
             };
             [RequiredByNativeCode]
+            [AutoStaticsCleanupOnCodeReload]
             private static RequestLightsDelegate s_RequestLightsDelegate = s_DefaultDelegate;
 
         }

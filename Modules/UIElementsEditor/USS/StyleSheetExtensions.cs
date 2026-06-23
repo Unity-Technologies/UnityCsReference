@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -74,6 +76,56 @@ namespace UnityEditor.UIElements
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Splits a comma-separated selector list, trimming entries and dropping empty or whitespace-only groups.
+        /// </summary>
+        public static string[] SplitSelectors(string selectorList)
+        {
+            if (string.IsNullOrEmpty(selectorList))
+                return [];
+
+            using var _ = ListPool<string>.Get(out var selectors);
+            foreach (var selector in selectorList.Split(','))
+            {
+                if (!string.IsNullOrWhiteSpace(selector))
+                    selectors.Add(selector.Trim());
+            }
+            return selectors.ToArray();
+        }
+
+        public static bool ValidateStyleRule(string selectorString, out string errorMessage)
+        {
+            errorMessage = null;
+
+            var selectors = SplitSelectors(selectorString);
+            if (selectors.Length == 0)
+            {
+                errorMessage = "Selector string is empty.";
+                return false;
+            }
+
+            foreach (var selector in selectors)
+            {
+                if (!ValidateSingleSelector(selector, out errorMessage))
+                    return false;
+            }
+
+            return true;
+        }
+
+        static bool ValidateSingleSelector(string selectorString, out string errorMessage)
+        {
+            errorMessage = null;
+
+            if (!styleSelectorRegex.IsMatch(selectorString))
+            {
+                errorMessage = "Style Selector can only contain *_-.#>, letters, and numbers.";
+                return false;
+            }
+
+            return SelectorUtility.ExtractSelectorsAndSpecificityFromString(selectorString, out _, out _, out errorMessage);
         }
     }
 }

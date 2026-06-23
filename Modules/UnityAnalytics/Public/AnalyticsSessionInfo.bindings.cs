@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -19,9 +20,10 @@ namespace UnityEngine.Analytics
     [RequiredByNativeCode]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
-    public static class AnalyticsSessionInfo
+    public static partial class AnalyticsSessionInfo
     {
         public delegate void SessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged);
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered session-state change handlers
         public static event SessionStateChanged sessionStateChanged;
 
         [RequiredByNativeCode]
@@ -100,6 +102,7 @@ namespace UnityEngine.Analytics
         }
 
         public delegate void IdentityTokenChanged(string token);
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered identity-token change handlers
         public static event IdentityTokenChanged identityTokenChanged;
 
         [RequiredByNativeCode]

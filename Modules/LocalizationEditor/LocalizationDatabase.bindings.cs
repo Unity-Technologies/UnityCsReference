@@ -11,7 +11,7 @@ namespace UnityEditor
 {
     [NativeHeader("Runtime/Mono/MonoUtility.h")]
     [NativeHeader("Modules/LocalizationEditor/LocalizationDatabase.h")]
-    [NativeHeader("Runtime/Scripting/ScriptingUtility.h")]
+    [NativeHeader("Scripting/ScriptingUtility.h")]
     [NativeHeader("Runtime/Scripting/ScriptingExportUtility.h")]
 
     internal class LocalizationDatabase

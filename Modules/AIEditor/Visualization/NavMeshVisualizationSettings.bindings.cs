@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Scripting.APIUpdating;
@@ -20,6 +21,7 @@ namespace UnityEditor.AI
     public sealed class NavMeshVisualizationSettings
     {
         [Obsolete("showNavigation is no longer supported and will be removed.")]
+        [NoAutoStaticsCleanup] // obsolete infrastructure property; value does not affect runtime behavior
         public static int showNavigation { get; set; }
 
         internal static extern bool showOnlySelectedSurfaces { get; set; }
@@ -59,8 +61,11 @@ namespace UnityEditor.AI
         [StaticAccessor("GetNavMeshManager()", StaticAccessorType.Dot)]
         internal static extern void GetAgentsDebugInfoRejectedRequestsCount(out int rejected, out int allowed);
 
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered debug event handlers
         internal static event Action<int, int> agentRejectedDebugInfoRequestsCountChanged;
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered debug event handlers
         internal static event Action agentDebugRequestsPending;
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered debug event handlers
         internal static event Action agentDebugRequestsProcessed;
 
         [RequiredByNativeCode]

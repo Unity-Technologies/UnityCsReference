@@ -107,7 +107,7 @@ namespace Unity.UIToolkit.Editor
         public void AddKey(PropertyModification[] modifications)
         {
             var animClip = animationClip;
-            var binder = m_Selection?.GetOrCreateElementBinder();
+            var binder = m_Selection?.GetCanonicalBinder();
             if (animClip == null || binder == null)
                 return;
 
@@ -244,9 +244,9 @@ namespace Unity.UIToolkit.Editor
 
         // --- helpers ---
 
-        // Channel-kind-driven binding shape mirrors ProcessConsumedModifications: PPtr rows need
-        // a Component-derived discriminator type, Int rows are discrete curves, Float rows are
-        // continuous curves. All carry path="" because per-element clips are GameObject-less.
+        // Channel-kind-driven binding shape mirrors ProcessConsumedModifications: PPtr rows are
+        // object-reference curves, Int rows are discrete curves, Float rows are continuous curves.
+        // All use the UIAnimationClip type and path="" because per-element clips are GameObject-less.
         IEnumerable<EditorCurveBinding> EnumerateBindings(PropertyModification[] modifications)
         {
             if (modifications == null)
@@ -271,8 +271,7 @@ namespace Unity.UIToolkit.Editor
             switch (kind)
             {
                 case UIAnimationBinder.AnimationChannelKind.PPtr:
-                    return EditorCurveBinding.PPtrCurve(string.Empty,
-                        VisualElementAnimationClipUtility.PerElementPPtrDiscriminatorType, propertyName);
+                    return EditorCurveBinding.PPtrCurve(string.Empty, typeof(UIAnimationClip), propertyName);
                 case UIAnimationBinder.AnimationChannelKind.Int:
                     return EditorCurveBinding.DiscreteCurve(string.Empty, typeof(UIAnimationClip), propertyName);
                 default:

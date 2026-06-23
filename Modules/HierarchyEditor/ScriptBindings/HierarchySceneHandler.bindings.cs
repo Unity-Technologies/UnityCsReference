@@ -305,7 +305,7 @@ namespace Unity.Hierarchy.Editor
             for (var i = 0; i < nodeSpan.Length; ++i)
             {
                 var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || data.View.ViewModel.GetNodeTypeHandler(in node) != this)
+                if (node == HierarchyNode.Null)
                     continue;
                 var scene = GetScene(in node);
                 if (!string.IsNullOrEmpty(scene.path))
@@ -315,12 +315,107 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data)
+        {
+            if (StageNavigationManager.instance.currentStage is not MainStage)
+                return DragVisualMode.Rejected;
+
+            return DragVisualMode.Move;
+        }
+
+        void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
+        {
+            // SetParentOfSelection has already moved the scene nodes in the hierarchy.
+            // Sync the SceneManager scene order to match the new hierarchy order.
+            var viewModel = data.View.ViewModel;
+            var sceneNodeType = GetNodeType();
+            var root = data.View.Source.Root;
+
+            // Collect scenes in their new hierarchy order, tracking which are selected (moved).
+            // Use Source.GetChildren (not viewModel.GetChild): ViewModel read buffer is stale until
+            // Update(); Source's children array is synchronously updated by SetParentOfSelection.
+            using var _ = ListPool<(Scene scene, bool isSelected)>.Get(out var scenesWithSelection);
+            foreach (var child in data.View.Source.EnumerateChildren(in root))
+            {
+                if (data.View.Source.GetNodeType(in child) != sceneNodeType)
+                    continue;
+                var scene = GetScene(in child);
+                if (!scene.IsValid())
+                    continue;
+                scenesWithSelection.Add((scene, viewModel.HasFlags(in child, HierarchyNodeFlags.Selected)));
+            }
+
+            // Gather moved scenes
+            using var __ = ListPool<Scene>.Get(out var movedScenes);
+            foreach (var (scene, isSelected) in scenesWithSelection)
+            {
+                if (isSelected)
+                    movedScenes.Add(scene);
+            }
+
+            if (movedScenes.Count == 0)
+                return;
+
+            // Find the reference scene: the non-selected scene immediately before the moved group.
+            Scene dstScene = default;
+            bool dropAbove = false;
+            Scene lastNonSelected = default;
+            for (var i = 0; i < scenesWithSelection.Count; i++)
+            {
+                var (scene, isSelected) = scenesWithSelection[i];
+                if (!isSelected)
+                {
+                    lastNonSelected = scene;
+                }
+                else
+                {
+                    if (lastNonSelected.IsValid())
+                    {
+                        dstScene = lastNonSelected;
+                        dropAbove = false;
+                    }
+                    else
+                    {
+                        // No non-selected scene before the moved group; find the first after
+                        for (var j = i; j < scenesWithSelection.Count; j++)
+                        {
+                            var (nextScene, nextIsSelected) = scenesWithSelection[j];
+                            if (!nextIsSelected)
+                            {
+                                dstScene = nextScene;
+                                dropAbove = true;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+
+            if (!dstScene.IsValid())
+                return;
+
+            if (dropAbove)
+            {
+                for (var i = 0; i < movedScenes.Count; i++)
+                    EditorSceneManager.MoveSceneBefore(movedScenes[i], dstScene);
+            }
+            else
+            {
+                for (var i = movedScenes.Count - 1; i >= 0; i--)
+                    EditorSceneManager.MoveSceneAfter(movedScenes[i], dstScene);
+            }
+
+            // Sort index sync is handled by HierarchySceneHandler::UpdateEnd, which runs every
+            // hierarchy update and iterates scenes in their current SceneManager order.
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data)
         {
             return DoHandleDrop(data, false);
         }
 
-        DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data)
         {
             return DoHandleDrop(data, true);
         }

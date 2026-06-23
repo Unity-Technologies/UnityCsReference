@@ -10,6 +10,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+// EntityId lives in namespace UnityEngine (UnityEngineObject.bindings.cs:141). The
+// test-resources compile context (UNITY_NATIVE_TEST_RESOURCES) provides a stub in the
+// same namespace via Runtime/Testing/ScriptWithManagedRefTestFixture.Resources_cs, so
+// the bare `EntityId` field type below resolves identically in both compile contexts.
+using UnityEngine;
 
 namespace UnityEngine.Serialization;
 
@@ -87,6 +92,20 @@ internal enum RttiDataType : byte
     CallOnAfterDeserializeClass  = 30,
     CallOnAfterDeserializeStruct = 31,
 
+    // Dictionary<K,V> field. See ManagedCommandDictionary in SerializationCommands.h
+    // for the wire / executor contract. Slot picked to sit past the batch's
+    // FixedBuffer (26) / Matrix4x4 renumber and managed-callbacks' 28-31 range.
+    Dictionary              = 32,
+
+    //LoadableSceneId/LoadableObjectId
+    NativeValueStruct       = 33,
+
+    // [SerializeReference] inline RefId field (write). The gather pass resolved the
+    // RefId already (incl. missing-type write-back); the executor pops it from the
+    // shared per-host cursor and writes one SInt64 (RefId_Null for null). Same
+    // command-group shape as UnityObject.
+    ManagedReference        = 34,
+
     Unknown                 = 0xFF,
 }
 
@@ -135,12 +154,31 @@ internal struct UnityObjectWriteEntry // 8 bytes
 // Pack = 4 because entries sit immediately after a 4B FBP header in the
 // entry stream; without it, the runtime would assume the 8B alignment
 // IntPtr requires on 64-bit and read past the actual buffer alignment.
+//
+// A parallel (fieldBackendPtr, fieldParentClassPtr) table follows the entry
+// array (see FieldTableFor in SerializationCommands.h); the executor forwards
+// each slot to ReadUnityObjectFromBuffer for the resolver-miss fake-null wrapper.
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 internal struct UnityObjectReadEntry
 {
     public uint fieldOffset;
     public uint destOffset;
     public IntPtr klass;
+}
+
+// EntityId group entries (LazyLoadReference<T>), mirroring ManagedCommandEntityIdEntry:
+// {fieldOffset, destOffset}, 12-byte LSOI on the wire. The id is the field value,
+// so there's no klass or field-table; read and write entries are identical.
+internal struct EntityIdWriteEntry // 8 bytes
+{
+    public uint fieldOffset;
+    public uint destOffset;
+}
+
+internal struct EntityIdReadEntry // 8 bytes
+{
+    public uint fieldOffset;
+    public uint destOffset;
 }
 
 // Mirrors UnityObjectTransferFlags in ReadUnityObjectFromBuffer.h. Used by
@@ -151,6 +189,7 @@ internal static class UnityObjectTransferFlags
     public const int DontCreateMonoBehaviourScriptWrapper = 1 << 1;
     public const int AllowPPtrRead                        = 1 << 2;
     public const int PackEntityIdInLSOI                   = 1 << 3;
+    public const int SerializeForGameRelease              = 1 << 4;
 }
 
 // Mirrors ManagedCommandStringEntry in SerializationCommands.h (8 bytes).
@@ -160,6 +199,17 @@ internal unsafe struct ManagedCommandStringEntry  // 8 bytes
 {
     public RttiDataType opCode;
     public fixed byte   reserved[3];
+    public uint         fieldOffset;
+}
+
+// Mirrors ManagedCommandPropertyNameEntry in SerializationCommands.h (8 bytes).
+// serializesAsId: 1 = persist the decimal id (player / editor game-release),
+// 0 = persist the resolved name (editor non-game-release).
+internal unsafe struct ManagedCommandPropertyNameEntry  // 8 bytes
+{
+    public RttiDataType opCode;
+    public byte         serializesAsId;
+    public fixed byte   reserved[2];
     public uint         fieldOffset;
 }
 
@@ -201,6 +251,36 @@ internal unsafe struct ManagedCommandSimpleNativeTypeEntry  // 24 bytes (64-bit)
     public uint         fieldOffset;
     public IntPtr       fnPtr;
     public IntPtr       userData;
+}
+
+// Mirrors ManagedCommandSimpleNativeTypeReadEntry in SerializationCommands.h.
+// 48 bytes on 64-bit (8 + 5*sizeof(IntPtr)); the preceding fields sum to 8 bytes
+// so the IntPtrs are naturally aligned, no Pack annotation needed.
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct ManagedCommandSimpleNativeTypeReadEntry  // 48 bytes (64-bit)
+{
+    public RttiDataType opCode;
+    public byte         reserved;
+    public ushort       reserved2;
+    public uint         fieldOffset;
+    public IntPtr       fnPtr;
+    public IntPtr       userData;                 // m_Ptr offset within the wrapper
+    public IntPtr       runtimeTypeHandle;
+    public IntPtr       ctorFunctionPtr;
+    public IntPtr       managedPostDispatchFnPtr;
+}
+
+// Mirrors ManagedCommandNativeValueStructEntry in SerializationCommands.h.
+// 16 bytes on 64-bit (8 + sizeof(IntPtr)). Inline value struct, transferred via
+// the type's native Transfer — no wrapper, so no userData / ctor / post-dispatch.
+[StructLayout(LayoutKind.Sequential)]
+internal struct ManagedCommandNativeValueStructEntry  // 16 bytes (64-bit)
+{
+    public RttiDataType opCode;
+    public byte         reserved;
+    public ushort       reserved2;
+    public uint         fieldOffset;
+    public IntPtr       fnPtr;
 }
 
 // Mirrors ManagedCommandCallback in SerializationCommands.h. Emitted at the
@@ -253,6 +333,165 @@ internal struct FixedBufferHeader  // 12 bytes
     public uint         elementCount; // compile-time count; total payload bytes = elementCount * elementSize
 }
 
+// NOTE: This enum must be kept in sync with RttiGatherOp in
+// Runtime/Mono/SerializationBackend_DirectMemoryAccess/SerializationCommands.h.
+// See the native header for the per-opcode wire / executor contract.
+internal enum RttiGatherOp : byte
+{
+    RegisterRef                      = 0,
+    RegisterRefArray                 = 1,
+    RegisterRefList                  = 2,
+    RecurseClass                     = 3,
+    RecurseStruct                    = 4,
+    RecurseClassArray                = 5,
+    RecurseClassList                 = 6,
+    RecurseStructArray               = 7,
+    RecurseStructList                = 8,
+    InvokeOnBeforeSerializeClass     = 9,
+    InvokeOnBeforeSerializeStruct    = 10,
+    RecurseDictionary                = 11,
+
+    Unknown                          = 0xFF,
+}
+
+// Mirrors of native gather entry structs in SerializationCommands.h. Natural
+// sequential layout matches the native side exactly. Reserved bytes pad each
+// opcode to its declared size so the gather byte stream stays 4-byte aligned;
+// entries with IntPtr fields also pad to 8-byte alignment for the pointer.
+
+internal struct GatherRegisterRefEntry  // 8 + sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public IntPtr       propertyPathTemplate;  // baked template, resolved by MoveToBuffer's gather fixup pass
+}
+
+internal struct GatherRegisterRefArrayEntry  // 8 + sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public IntPtr       propertyPathTemplate;
+}
+
+internal struct GatherRegisterRefListEntry  // 8 + sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public IntPtr       propertyPathTemplate;
+}
+
+internal struct GatherRecurseClassEntry  // 16 + 2*sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+    public uint         reserved3;
+    public IntPtr       runtimeTypeHandle;
+    public IntPtr       ctorFunctionPtr;
+}
+
+internal struct GatherRecurseStructEntry  // 12 bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+}
+
+internal struct GatherRecurseClassArrayEntry  // 16 + 2*sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+    public uint         reserved3;
+    public IntPtr       runtimeTypeHandle;
+    public IntPtr       ctorFunctionPtr;
+}
+
+internal struct GatherRecurseStructArrayEntry  // 16 bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+    public uint         elementSize;
+}
+
+internal struct GatherRecurseClassListEntry  // 16 + 2*sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+    public uint         reserved3;  // explicit pad — see native GatherRecurseClassListEntry::_pad2
+    public IntPtr       runtimeTypeHandle;
+    public IntPtr       ctorFunctionPtr;
+}
+
+internal struct GatherRecurseStructListEntry  // 16 bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+    public uint         elementSize;
+}
+
+internal struct GatherInvokeOnBeforeSerializeClassEntry  // 8 + sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         reserved3;
+    public IntPtr       methodFnPtr;
+}
+
+internal struct GatherInvokeOnBeforeSerializeStructEntry  // 8 + sizeof(IntPtr) bytes
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         reserved3;
+    public IntPtr       methodFnPtr;
+}
+
+internal struct GatherRecurseDictionaryEntry  // 16 + sizeof(IntPtr) bytes (24 on 64-bit)
+{
+    public RttiGatherOp opCode;
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;
+    public uint         nestedByteCount;
+    public uint         elementSize;
+    public IntPtr       propertyPathTemplate;  // baked dict-path FUID template; resolved by MoveToBuffer's gather fixup pass
+}
+
 internal static class LinearCollectionFlags
 {
     public const byte TriviallyCopyable = 1 << 0;
@@ -263,6 +502,43 @@ internal static class LinearCollectionFlags
     // and ExecuteWriteCommands recursion. Wire output is byte-identical to the
     // per-element recursion path. See ConsumeLinearCollectionShufflePath.
     public const byte ShufflePath      = 1 << 1;
+}
+
+// Mirrors ManagedCommandDictionaryWrite in SerializationCommands.h. Body of
+// nestedByteCount bytes immediately follows (per-entry FBP-bracketed DC +
+// optional String body, walked once per SerializedKeyValue<K,V> entry against
+// the entry-pinned base).
+internal struct DictionaryHeaderWrite  // 24 + sizeof(IntPtr) bytes
+{
+    public RttiDataType opCode;                        // = RttiDataType.Dictionary
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;                   // post-header offset of the dictionary reference on the parent
+    public uint         entryStride;                   // sizeof(SerializedKeyValue<K,V>)
+    public uint         nestedByteCount;               // bytes of FBP-bracketed body that follow
+    public int          getEntriesTypedIndex;          // SerializationCommandObjectTable index for closed GetEntriesTyped<K,V>; -1 = falls back to non-typed entry point
+    public uint         reserved3;                     // pad to 8-byte align fieldUniqueIdentifierTemplate
+    public IntPtr       fieldUniqueIdentifierTemplate; // editor-only; IntPtr.Zero in player builds
+}
+
+// Mirrors ManagedCommandDictionaryRead in SerializationCommands.h. Same opcode
+// value as DictionaryHeaderWrite — the dispatchers live in separate switches
+// (write inside ObjectToSerializationBuffer, read inside SerializationBufferToObject)
+// so opcode reuse is unambiguous.
+internal struct DictionaryHeaderRead  // 24 + 2*sizeof(IntPtr) bytes
+{
+    public RttiDataType opCode;                          // = RttiDataType.Dictionary
+    public byte         reserved0;
+    public byte         reserved1;
+    public byte         reserved2;
+    public uint         fieldOffset;                     // post-header offset of the dictionary reference on the parent
+    public uint         entryStride;                     // sizeof(SerializedKeyValue<K,V>)
+    public uint         nestedByteCount;                 // bytes of FBP-bracketed body that follow
+    public int          dictDefaultAllocateFactoryIndex; // SerializationCommandObjectTable index for Func<object> => new Dictionary<K,V>(); -1 = leave null on read
+    public int          setEntriesTypedIndex;            // SerializationCommandObjectTable index for closed SetEntriesTyped<K,V>; -1 = falls back to non-typed entry point
+    public IntPtr       elementTypeHandle;               // SerializedKeyValue<K,V> RuntimeTypeHandle.Value for Array.CreateInstance
+    public IntPtr       fieldUniqueIdentifierTemplate;   // editor-only; IntPtr.Zero in player builds
 }
 
 // Mirrors NativeBufferContext in SerializationCommands.h. Used by every
@@ -280,15 +556,25 @@ internal static class LinearCollectionFlags
 //   - C# can therefore write up to writerAvailable bytes into writerPtr
 //     unconditionally, with no per-site stack-vs-writer branching.
 //
+// Pack = 8 keeps EntityId's UInt64 8-byte aligned on every runtime, matching the
+// native C++ ABI (EntityID.h:68). Without an explicit Pack, some 32-bit Mono
+// configurations reduce the alignment to 4, which would shift hostingEntityId
+// four bytes earlier than the native struct on 32-bit and corrupt the per-block
+// hostingEntityId reads.
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
 internal unsafe struct NativeBufferContext
 {
-    public void*  writer;            // native CachedWriter* — opaque to C#
-    public byte*  stackBuffer;       // native-side spill buffer (size = kManagedBlockSpillBufferSize); stable for the lifetime of the call
-    public byte*  writerPtr;         // current write destination — writer's tail or stackBuffer; updated by flushBuffer
-    public int    writerAvailable;   // bytes available at writerPtr; updated by flushBuffer; always >= kManagedBlockMaxPayloadSize after a flush / initial setup
+    public void*    writer;            // native CachedWriter* — opaque to C#
+    public byte*    stackBuffer;       // native-side spill buffer (size = kManagedBlockSpillBufferSize); stable for the lifetime of the call
+    public byte*    writerPtr;         // current write destination — writer's tail or stackBuffer; updated by flushBuffer
+    public int      writerAvailable;   // bytes available at writerPtr; updated by flushBuffer; always >= kManagedBlockMaxPayloadSize after a flush / initial setup
     public delegate* unmanaged[Cdecl]<NativeBufferContext*, byte*, int, void> flushBuffer;
-    public IntPtr resolverHandle;    // ILSOIResolver*; forwarded to WriteUnityObjectToBuffer. Null falls back to the global PersistentManager path.
-    public int    flags;             // UnityObjectTransferFlags bits (write path consults PackEntityIdInLSOI).
+    public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to WriteUnityObjectToBuffer. Null falls back to the global PersistentManager path.
+    public int      flags;             // UnityObjectTransferFlags bits (write path consults PackEntityIdInLSOI).
+    public int      _pad;              // pad to 8-byte align fuidContext on 64-bit
+    public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to DictionaryFieldUniqueIdentifierStack.Push/PopDictionaryFUIDFrame. IntPtr.Zero when no transfer-side context is active.
+    public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.
+    public IntPtr   transferState;     // native ManagedReferencesTransferState*; forwarded to WriteManagedReferenceToBuffer for the [SerializeReference] inline-RefId opcode. IntPtr.Zero on transfers without managed references.
 }
 
 // Read-side mirror of NativeBufferContext. The C++ dispatcher
@@ -300,22 +586,40 @@ internal unsafe struct NativeBufferContext
 //
 // The struct layout must match SerializationCommands.h::NativeReadBufferContext
 // exactly. Field order matters: native code reads/writes by offset.
-[StructLayout(LayoutKind.Sequential)]
+//
+// Pack = 8 keeps EntityId's UInt64 8-byte aligned on every runtime, matching the
+// native C++ ABI (same reasoning as NativeBufferContext above).
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
 internal unsafe struct NativeReadBufferContext
 {
-    public void*  reader;            // native CachedReader* — opaque to C#
-    public byte*  stackBuffer;       // native-side spill buffer (size = stackBufferSize); stable for the lifetime of the call
-    public byte*  readerPtr;         // current read source — reader's cache or stackBuffer; updated by ensureReadable
-    public int    readerAvailable;   // bytes available at readerPtr; decremented by C# as it consumes; refilled by ensureReadable
-    public int    stackBufferSize;   // size of stackBuffer; cap on a single ensureReadable request
+    public void*    reader;            // native CachedReader* — opaque to C#
+    public byte*    stackBuffer;       // native-side spill buffer (size = stackBufferSize); stable for the lifetime of the call
+    public byte*    readerPtr;         // current read source — reader's cache or stackBuffer; updated by ensureReadable
+    public int      readerAvailable;   // bytes available at readerPtr; decremented by C# as it consumes; refilled by ensureReadable
+    public int      stackBufferSize;   // size of stackBuffer; cap on a single ensureReadable request
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, int, void> ensureReadable;
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, byte*, int, void> readBytesDirect;
-    public IntPtr resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
-    public int    flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
+    // Rewinds the CachedReader by readerAvailable and empties the spill window before a
+    // SimpleNativeType dispatch reads straight off the CachedReader.
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, void> syncReader;
+    public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
+    public int      flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
+    public bool     warnOnDuplicates;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
+    public byte     _pad0;
+    public byte     _pad1;
+    public byte     _pad2;             // align fuidContext to 8-byte boundary
+    public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to ConsumeDictionaryRead for FUID Push/Pop bracketing. IntPtr.Zero when no transfer-side context is active.
+    public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.
+    public IntPtr   transferState;     // native ManagedReferencesTransferState*; forwarded to ReadManagedReferenceFromBuffer for the [SerializeReference] inline-RefId read opcode. IntPtr.Zero on transfers without managed references.
+    public IntPtr   instance;          // native GeneralMonoObject* (host being read into); forwarded to ReadManagedReferenceFromBuffer for RegisterFixupRequest.
 }
 
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/WriteUnityObjectToBuffer.h")]
+[NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/WriteManagedReferenceToBuffer.h")]
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/ReadUnityObjectFromBuffer.h")]
+[NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/ReadManagedReferenceFromBuffer.h")]
+[NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/GatherDictionaryEntries.h")]
+[NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/DictionaryFieldUniqueIdentifierStack.h")]
 internal static unsafe class SerializationBackendManagedCommands
 {
     // IsThreadSafe disables the default serialization-thread guard (the icall
@@ -341,13 +645,123 @@ internal static unsafe class SerializationBackendManagedCommands
         IntPtr outputPtr,
         int flags);
 
+    // Write-side icall for the RttiDataType.ManagedReference opcode
+    // ([SerializeReference] inline RefId). Pops the next inline RefId from the
+    // active per-object cursor on transferState (the native
+    // ManagedReferencesTransferState* from NativeBufferContext.transferState) — the
+    // gather pass resolved and recorded it in field order, so the icall reads no
+    // field. outputPtr receives the 8-byte SInt64 RefId.
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
-    private static extern object ReadUnityObjectFromBuffer(
+    private static extern void WriteManagedReferenceToBuffer(
+        IntPtr transferState,
+        IntPtr outputPtr);
+
+    // Gather-pass dictionary enumeration. Returns the dictionary's merged
+    // SerializedKeyValue<K,V>[] (live + preserved-duplicate rows) via the native
+    // DictionarySerializationProxy so the gather walker doesn't need a C#-compile-time
+    // reference to UnityEngine.DictionarySerialization (absent in some native
+    // test-resource assemblies). Routes through the same proxy the write uses
+    // (DictionaryField::GetArray), and the native side reconstructs the write's FUID
+    // context (host refid + array-index stack + dict template) so the duplicate-row
+    // lookup matches — keeping gather and write enumeration in lockstep for the
+    // inline-RefId cursor. dictObjRaw / transferState / templatePtr / indices are raw
+    // pointers (IntPtr, same marshalling rationale as the other icalls); indexCount is
+    // the live array-index depth. See GatherDictionaryEntries.h.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe object GetDictionaryEntriesForGather(IntPtr dictObjRaw, IntPtr transferState, IntPtr templatePtr, IntPtr indices, int indexCount);
+
+    // field / fieldParent (from the wire field-table) let the native side stamp
+    // the editor fake-null wrapper on resolver-miss; ignored in player builds.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern unsafe object ReadUnityObjectFromBuffer(
         IntPtr resolverHandle,
         IntPtr inputPtr,
         IntPtr klass,
-        int flags);
+        int flags,
+        IntPtr field,
+        IntPtr fieldParent);
+
+    // Read-side icall for the RttiDataType.ManagedReference opcode
+    // ([SerializeReference] inline RefId). Reads the 8-byte SInt64 RefId from
+    // inputPtr, activates the managed-references state so the `references:` blob
+    // is read into the registry, and registers a deferred fixup (the existing
+    // PerformFixups flow resolves it once the registry blob has been read).
+    // transferState / instance are forwarded from NativeReadBufferContext —
+    // non-null whenever this opcode is emitted (build only emits it for SR fields
+    // in StreamedBinaryRead transfers). fieldOffset is the post-header offset
+    // matching the wire format; the icall adds SCRIPTING_OBJECT_HEADERSIZE back
+    // before passing to RegisterFixupRequest.
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern void ReadManagedReferenceFromBuffer(
+        IntPtr transferState,
+        IntPtr instance,
+        int    fieldOffset,
+        IntPtr inputPtr);
+
+    // EntityId opcode (LazyLoadReference<T>) leaf codec. Encodes/decodes via the same
+    // WriteEntityIdToBuffer / ReadEntityIdFromBuffer the UnityObject path uses
+    // (wire-identical), but the resolver arm calls them through these cached pointers —
+    // a direct calli, like SimpleNativeType's fnPtr — rather than a per-element icall.
+    // The addresses are process-wide constants (no per-type variation, unlike
+    // SimpleNativeType), so they are fetched once at type init and live here instead of
+    // on the per-block NativeBufferContext. Clone / EntityId.None still pack inline
+    // (PackEntityIdIntoLsoi) with no native call at all.
+    private static readonly delegate* unmanaged[Cdecl]<ulong, IntPtr, IntPtr, int, void> s_writeEntityIdToBuffer =
+        (delegate* unmanaged[Cdecl]<ulong, IntPtr, IntPtr, int, void>)(void*)GetWriteEntityIdToBufferFunctionPointer();
+    private static readonly delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, ulong> s_readEntityIdFromBuffer =
+        (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, ulong>)(void*)GetReadEntityIdFromBufferFunctionPointer();
+
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern IntPtr GetWriteEntityIdToBufferFunctionPointer();
+
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern IntPtr GetReadEntityIdFromBufferFunctionPointer();
+
+    // FieldUniqueIdentifierContext stack bracketing for dictionary entries.
+    // ConsumeDictionary brackets the per-entry walk with these so descendant
+    // commands (and the GetDictionaryEntriesForSerialization helper itself,
+    // when checking the duplicate-row cache) can resolve the dict's
+    // duplicate-storage key via FormatDictionaryFieldUniqueIdentifierForActiveContext.
+    //
+    // Push returns false when the fixed-capacity native stack is full (depth
+    // cap is 64); the dispatcher MUST consult the return value before deciding
+    // whether to call Pop, matching the contract that
+    // DictionaryFieldUniqueIdentifierStackScope already enforces in C++.
+    //
+    // Player builds (UNITY_SERIALIZATION_SUPPORT_FIELD_UNIQUE_IDENTIFIER off)
+    // get the inline `return false;` / no-op stubs from the native header
+    // (DictionaryFieldUniqueIdentifierStack.h:35-36).
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(Name = "PushDictionaryFieldUniqueIdentifierStackFrame", IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern bool PushDictionaryFUIDFrame(IntPtr fuidContext);
+
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(Name = "PopDictionaryFieldUniqueIdentifierStackFrame", IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern void PopDictionaryFUIDFrame();
+
+    // Read-side helpers (ConsumeDictionaryRead). Format the dict's FUID template
+    // against the currently-pushed FUID frame to get the duplicate-storage key
+    // (matches what DictionaryField::SetArray does on the legacy path), and
+    // emit the clickable duplicate-key Console warning when the read side
+    // detects keys that the live dict couldn't accept.
+    //
+    // [FreeFunction] is incompatible with [MethodImpl(InternalCall)] — the
+    // BindingsGenerator processes FreeFunction-attributed methods and rejects
+    // ones already marked InternalCall. The gate below mirrors the gate on the
+    // sole caller (ConsumeDictionaryRead), so the extern declarations are absent
+    // in the UNITY_NATIVE_TEST_RESOURCES compile context where the test
+    // TestAssembly.dll doesn't run the BindingsGenerator.
+    [FreeFunction("DictionaryFieldUniqueIdentifierBindings::FormatDictionaryFieldUniqueIdentifierForActiveContext", IsThreadSafe = true)]
+    private static extern string FormatDictionaryFieldUniqueIdentifier(IntPtr dictionaryIdentifierTemplate);
+
+    [FreeFunction("DictionaryFieldUniqueIdentifierBindings::LogDictionaryDuplicateKeyWarning", IsThreadSafe = true)]
+    private static extern void LogDictionaryDuplicateKeyWarning(string message, EntityId hostingEntityId);
 
     // Must match the C++ constants in SerializationCommands.h.
     //
@@ -382,6 +796,10 @@ internal static unsafe class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void InvokeEnsureReadable(NativeReadBufferContext* ctx, int needed)
         => ctx->ensureReadable(ctx, needed);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void InvokeSyncReader(NativeReadBufferContext* ctx)
+        => ctx->syncReader(ctx);
 
     // Bulk-stream `n` bytes into `dst` bypassing the spill buffer. Used by
     // linear-collection trivial bodies so large arrays don't chunk through it.
@@ -444,12 +862,33 @@ internal static unsafe class SerializationBackendManagedCommands
     // re-binds against the same BCL method — idempotent.
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Type UnmarshalSystemType(IntPtr handlePtr)
+    internal static Type UnmarshalSystemType(IntPtr handlePtr)
     {
         if (handlePtr == IntPtr.Zero)
             return null;
         return Type.GetTypeFromHandle(
             Unsafe.As<IntPtr, RuntimeTypeHandle>(ref handlePtr));
+    }
+
+    // RuntimeMethodHandle marshalling. Same shape as the RuntimeTypeHandle
+    // helper above and for the same reason: on CoreCLR RuntimeMethodHandle is
+    // { IRuntimeMethodInfo m_value; } — a managed reference, NOT a raw IntPtr
+    // — so an Unsafe.As<IntPtr, RuntimeMethodHandle> reinterpret produces a
+    // handle whose m_value is a bogus "managed reference" pointing into
+    // runtime metadata. GetFunctionPointer then dispatches the IRuntimeMethodInfo
+    // interface call through VSD on that non-object, crashing in
+    // VSD_ResolveWorker. The supported BCL entry point is
+    // RuntimeMethodHandle.FromIntPtr (.NET 5+), but it's not exposed by the
+    // netstandard2.1 reference assembly this file builds against, so we
+    // resolve it via reflection on first call and cache the delegate.
+    //
+    // Mono's RuntimeMethodHandle is a single-IntPtr struct, so the reinterpret
+    // is benign there and the #else arm is correct.
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static RuntimeMethodHandle UnmarshalRuntimeMethodHandle(IntPtr methodHandleValue)
+    {
+        return Unsafe.As<IntPtr, RuntimeMethodHandle>(ref methodHandleValue);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -470,7 +909,7 @@ internal static unsafe class SerializationBackendManagedCommands
     // Source-side reads (baseAddr + entry.fieldOffset) can still be unaligned since managed
     // class layout is outside this writer's control; they are handled separately.
     [RequiredByNativeCode]
-    public static unsafe int ObjectToSerializationBuffer(
+    public static unsafe void ObjectToSerializationBuffer(
         IntPtr pinnedBase,
         IntPtr entriesPtr,
         int    entryBufferSize,
@@ -499,8 +938,6 @@ internal static unsafe class SerializationBackendManagedCommands
             InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
         if (dstSize > 0)
             InvokeFlushBuffer(ctx, output, dstSize);
-
-        return 0;
     }
 
     // Walks the entries between [entriesPtr, entriesPtr + entryBufferSize),
@@ -789,6 +1226,51 @@ internal static unsafe class SerializationBackendManagedCommands
                     break;
                 }
 
+                // [SerializeReference] inline RefId. Reuses the UnityObject write
+                // group shape (UnityObjectWriteEntry: {fieldOffset, destOffset}), but
+                // the field is NOT read: the gather pass resolved every SR field's
+                // inline RefId (incl. the missing-type upgrade) in field order and the
+                // icall pops the next one from the per-object cursor on transferState.
+                // The native SR-collection arm advances the same cursor, so scalar and
+                // collection SR fields stay in lockstep. fieldOffset is unused here
+                // (kept for the shared entry shape). transferState is non-null whenever
+                // this opcode is emitted (build only emits it for SR fields).
+                case RttiDataType.ManagedReference:
+                {
+                    var entry = ConsumeDirectCopyGroup<UnityObjectWriteEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* dst = output + entry->destOffset;
+                        WriteManagedReferenceToBuffer(ctx->transferState, (IntPtr)dst);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                case RttiDataType.EntityId:
+                {
+                    var entry = ConsumeDirectCopyGroup<EntityIdWriteEntry>(ref pos, out var end);
+                    // Clone transfers (and EntityId.None) encode the id in managed code;
+                    // serialized-file transfers map it through the native resolver, which
+                    // also records the dependency (WriteEntityIdToBuffer).
+                    bool packInLSOI = (ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0;
+                    do
+                    {
+                        ref byte fieldByteRef = ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset);
+                        ulong entityId = Unsafe.ReadUnaligned<ulong>(ref fieldByteRef);
+                        byte* dst = output + entry->destOffset;
+
+                        if (packInLSOI || entityId == 0UL)
+                            PackEntityIdIntoLsoi(dst, entityId);
+                        else
+                            s_writeEntityIdToBuffer(entityId, ctx->resolverHandle, (IntPtr)dst, ctx->flags);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
                 case RttiDataType.DirectCopyBlock:
                     // DirectCopyBlock is a build-time-only opcode: the accumulator
                     // (AppendToManagedBlock in ManagedBlockAccumulator.h) decomposes it
@@ -826,6 +1308,34 @@ internal static unsafe class SerializationBackendManagedCommands
                     // many small VRT children coalesces into a single flush.
                     ConsumeValueReference(ctx, ref baseAddr, transfer, ref output, ref dstSize, ref pendingAdvance, ref pos);
                     break;
+
+                case RttiDataType.NativeValueStruct:
+                {
+                    var entry = (ManagedCommandNativeValueStructEntry*)pos;
+                    pos += sizeof(ManagedCommandNativeValueStructEntry);
+
+                    if (pendingAdvance > 0)
+                    {
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                        pendingAdvance = 0;
+                    }
+                    if (dstSize > 0)
+                    {
+                        InvokeFlushBuffer(ctx, output, dstSize);
+                        dstSize = 0;
+                    }
+
+                    // Inline value struct: hand the field's own address to the native
+                    // Transfer dispatcher. baseAddr is pinned by the ExecuteWriteCommands
+                    // caller, so this interior pointer stays valid for the synchronous call.
+                    ref byte nvsField = ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset);
+                    IntPtr nvsFieldPtr = (IntPtr)Unsafe.AsPointer(ref nvsField);
+
+                    ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)entry->fnPtr)(nvsFieldPtr, transfer, IntPtr.Zero);
+
+                    InvokeFlushBuffer(ctx, ctx->writerPtr, 0);
+                    break;
+                }
 
                 case RttiDataType.SimpleNativeType:
                 {
@@ -906,23 +1416,31 @@ internal static unsafe class SerializationBackendManagedCommands
                     ConsumeLinearCollection(ctx, ref baseAddr, transfer, ref output, ref dstSize, ref pendingAdvance, ref pos);
                     break;
 
-                case RttiDataType.FixedBuffer:
-                    // Build emits FBP(0) before every FixedBuffer header, so dstSize == 0
-                    if (dstSize != 0)
-                        throw new InvalidOperationException("FixedBuffer must be preceded by FBP(0) — see AppendFixedBufferToManagedBlock.");
-                    // Flush deferred bytes before the consumer writes through writerPtr.
+                case RttiDataType.Dictionary:
+                    // Same FBP(0)-before-header invariant as LinearCollection above:
+                    // build closes any pending segment, dstSize == 0, and the
+                    // dispatcher writes the count + per-entry body via writerPtr.
                     if (pendingAdvance > 0)
                     {
                         InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
                         pendingAdvance = 0;
                     }
-                    ConsumeFixedBuffer(ctx, ref baseAddr, ref pos);
+                    ConsumeDictionary(ctx, ref baseAddr, transfer, ref output, ref dstSize, ref pendingAdvance, ref pos);
+                    break;
+
+                case RttiDataType.FixedBuffer:
+                    // Build emits FBP(0) before every FixedBuffer header, so dstSize == 0
+                    if (dstSize != 0)
+                        throw new InvalidOperationException("FixedBuffer must be preceded by FBP(0) — see AppendFixedBufferToManagedBlock.");
+                    ConsumeFixedBuffer(ctx, ref baseAddr, ref pos, ref pendingAdvance);
+                    break;
+
+                case RttiDataType.PropertyNameId:
+                    ConsumePropertyNameEditor(ctx, ref baseAddr, ref pos, ref dstSize, ref pendingAdvance);
                     break;
 
                 case RttiDataType.Reference:
-                case RttiDataType.EntityId:
                 case RttiDataType.DynamicBuffer:
-                case RttiDataType.PropertyNameId:
                 case RttiDataType.Unknown:
                     throw new NotSupportedException(
                         $"OpCode {(RttiDataType)pos[0]} is not implemented for managed command blocks.");
@@ -1044,6 +1562,182 @@ internal static unsafe class SerializationBackendManagedCommands
         }
     }
 
+    // Write side of the PropertyName opcode. Frames byte-identically to
+    // SerializeTraits<PropertyName> so assets round-trip with the native system.
+
+    // Player / game-release: always serializes the decimal id (no editor string table).
+    // The native-test fake { int id; } uses this path too.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ConsumePropertyNamePlayer(
+        NativeBufferContext* ctx, ref byte baseAddr, ref byte* pos,
+        ref int dstSize, ref int pendingAdvance)
+    {
+        var entry = (ManagedCommandPropertyNameEntry*)pos;
+        pos += sizeof(ManagedCommandPropertyNameEntry);
+        int id = Unsafe.ReadUnaligned<int>(ref Unsafe.AddByteOffset(ref baseAddr, entry->fieldOffset));
+        WriteFramedDecimalInt32(ctx, id, ref dstSize, ref pendingAdvance);
+    }
+
+    // Editor non-game-release: persists the resolved name. Reads the whole struct so
+    // conflictIndex disambiguates the id (matches the native system). Game-release
+    // writes the id.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ConsumePropertyNameEditor(
+        NativeBufferContext* ctx, ref byte baseAddr, ref byte* pos,
+        ref int dstSize, ref int pendingAdvance)
+    {
+        var entry = (ManagedCommandPropertyNameEntry*)pos;
+        byte serializesAsId = entry->serializesAsId;
+        pos += sizeof(ManagedCommandPropertyNameEntry);
+        ref byte field = ref Unsafe.AddByteOffset(ref baseAddr, entry->fieldOffset);
+
+        if (serializesAsId == 0)
+        {
+            PropertyName pn = Unsafe.ReadUnaligned<PropertyName>(ref field);
+            string s = PropertyNameUtils.StringFromPropertyName(pn);
+            // null (unregistered id) → empty string, matching the native system.
+            WriteFramedString(ctx, (s ?? string.Empty).AsSpan(), ref dstSize, ref pendingAdvance);
+        }
+        else
+        {
+            int id = Unsafe.ReadUnaligned<int>(ref field);
+            WriteFramedDecimalInt32(ctx, id, ref dstSize, ref pendingAdvance);
+        }
+    }
+
+    // Length-prefixed UTF-8 framing (same wire shape as the String opcode), coalescing
+    // into pendingAdvance. Editor PropertyName-name path. The chunked arm handles names
+    // larger than one buffer region — rare in practice, kept for correctness.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void WriteFramedString(NativeBufferContext* ctx, ReadOnlySpan<char> chars,
+        ref int dstSize, ref int pendingAdvance)
+    {
+        // Roll any open fixed segment into the deferred region (FBP(0) precedes the opcode, so usually 0).
+        if (dstSize > 0)
+        {
+            pendingAdvance += dstSize;
+            dstSize = 0;
+        }
+
+        int nullIdx = chars.IndexOf('\0');
+        if (nullIdx >= 0)
+            chars = chars.Slice(0, nullIdx);
+
+        int totalByteCount = Encoding.UTF8.GetByteCount(chars);
+        int padBytes = (4 - (totalByteCount & 3)) & 3;
+        int totalFramedSize = 4 + totalByteCount + padBytes;
+
+        // Coalesce path: fits after the deferred bytes — write there and defer; no flush.
+        if (ctx->writerAvailable - pendingAdvance >= totalFramedSize)
+        {
+            byte* dst = ctx->writerPtr + pendingAdvance;
+            Unsafe.WriteUnaligned(dst, totalByteCount);
+            if (totalByteCount > 0)
+                Encoding.UTF8.GetBytes(chars, new Span<byte>(dst + 4, totalByteCount));
+            if (padBytes > 0)
+                Unsafe.InitBlockUnaligned(dst + 4 + totalByteCount, 0, (uint)padBytes);
+            pendingAdvance += totalFramedSize;
+            return;
+        }
+
+        // Won't fit alongside the deferred bytes: flush them, freeing a full region.
+        if (pendingAdvance > 0)
+        {
+            InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+            pendingAdvance = 0;
+        }
+
+        // Fits in a fresh region: write at offset 0 and defer so a following field coalesces.
+        if (ctx->writerAvailable >= totalFramedSize)
+        {
+            byte* dst = ctx->writerPtr;
+            Unsafe.WriteUnaligned(dst, totalByteCount);
+            if (totalByteCount > 0)
+                Encoding.UTF8.GetBytes(chars, new Span<byte>(dst + 4, totalByteCount));
+            if (padBytes > 0)
+                Unsafe.InitBlockUnaligned(dst + 4 + totalByteCount, 0, (uint)padBytes);
+            pendingAdvance = totalFramedSize;
+            return;
+        }
+
+        // Chunked path (oversized name). Length header first; pendingAdvance stays 0.
+        WriteFramedInt32(ctx, totalByteCount);
+        if (totalByteCount > 0)
+        {
+            // flush:false while input remains so the encoder can hold a high surrogate
+            // across chunks until its low surrogate arrives in the next call.
+            Encoder encoder = s_Utf8Encoder ??= Encoding.UTF8.GetEncoder();
+            encoder.Reset();
+            ReadOnlySpan<char> remaining = chars;
+            while (!remaining.IsEmpty)
+            {
+                encoder.Convert(remaining, new Span<byte>(ctx->writerPtr, ctx->writerAvailable),
+                                flush: false, out int charsUsed, out int bytesUsed, out _);
+                if (bytesUsed > 0)
+                    InvokeFlushBuffer(ctx, ctx->writerPtr, bytesUsed);
+                remaining = remaining.Slice(charsUsed);
+            }
+            encoder.Convert(ReadOnlySpan<char>.Empty, new Span<byte>(ctx->writerPtr, ctx->writerAvailable),
+                            flush: true, out _, out int tailBytes, out _);
+            if (tailBytes > 0)
+                InvokeFlushBuffer(ctx, ctx->writerPtr, tailBytes);
+        }
+
+        if (padBytes > 0)
+        {
+            Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
+            InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
+        }
+    }
+
+    // Decimal-ASCII Int32 (== native IntToString) in the String wire shape. Framed
+    // payload ≤16 bytes always fits after a flush, so no chunked arm. Not inlined:
+    // IL2CPP would accumulate the stackalloc into the caller's frame (alloca is only
+    // reclaimed on return).
+    private static unsafe void WriteFramedDecimalInt32(NativeBufferContext* ctx, int value,
+        ref int dstSize, ref int pendingAdvance)
+    {
+        if (dstSize > 0)
+        {
+            pendingAdvance += dstSize;
+            dstSize = 0;
+        }
+
+        // Build digits least-significant-first in a stack scratch, then emit in order.
+        // long magnitude so Int32.MinValue is representable.
+        bool negative = value < 0;
+        long magnitude = negative ? -(long)value : value;
+        byte* rev = stackalloc byte[10];             // up to 10 digits
+        int d = 0;
+        do
+        {
+            rev[d++] = (byte)('0' + (int)(magnitude % 10));
+            magnitude /= 10;
+        }
+        while (magnitude > 0);
+
+        int n = d + (negative ? 1 : 0);
+        int padBytes = (4 - (n & 3)) & 3;
+        int totalFramedSize = 4 + n + padBytes;
+
+        if (ctx->writerAvailable - pendingAdvance < totalFramedSize && pendingAdvance > 0)
+        {
+            InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+            pendingAdvance = 0;
+        }
+
+        byte* dst = ctx->writerPtr + pendingAdvance;
+        Unsafe.WriteUnaligned(dst, n);
+        int w = 4;
+        if (negative)
+            dst[w++] = (byte)'-';
+        for (int i = d - 1; i >= 0; i--)
+            dst[w++] = rev[i];
+        if (padBytes > 0)
+            Unsafe.InitBlockUnaligned(dst + 4 + n, 0, (uint)padBytes);
+        pendingAdvance += totalFramedSize;
+    }
+
     // Writes a 4-byte int32 into the writable region. The flushBuffer contract
     // guarantees writerAvailable >= kManagedBlockMaxPayloadSize >= 4 on entry
     // here (every caller has just flushed or is at start-of-execution), so this
@@ -1055,23 +1749,58 @@ internal static unsafe class SerializationBackendManagedCommands
         InvokeFlushBuffer(ctx, ctx->writerPtr, 4);
     }
 
+    // Wrapper construction path for SimpleNativeType reads in ExecuteReadCommands.
+    // For SimpleNativeType wrappers the parameterless ctor is what allocates the
+    // native peer, so running it is required to get a usable m_Ptr afterwards.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe object CreateWrapperInstance(IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+    {
+        // ctorFunctionPtr is baked at build time on every backend now that the
+        // native ResolveParameterlessCtorFunctionPointer passes kConstructor to
+        // the method lookup (CoreCLR included), so no per-backend fallback is
+        // needed here. Zero still means the type has no parameterless ctor.
+        Type type = UnmarshalSystemType(runtimeTypeHandle);
+        object obj = RuntimeHelpers.GetUninitializedObject(type);
+        if (ctorFunctionPtr != IntPtr.Zero)
+        {
+            try
+            {
+                ((delegate*<object, void>)ctorFunctionPtr)(obj);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+        return obj;
+    }
+
+    // Takes the individual fields rather than a ValueReferenceHeader* so the
+    // gather pass (ProcessGatherRecurseClass) can reuse the same materialization
+    // logic with its own GatherRecurseClassEntry layout — the field set
+    // (fieldOffset / runtimeTypeHandle / ctorFunctionPtr) is identical between
+    // the two opcode spaces, only the surrounding struct layout differs.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe object GetOrCreateVrtInstance(
-        ref byte baseAddr, ValueReferenceHeader* header)
+        ref byte baseAddr, uint fieldOffset, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
     {
         ref object slot = ref Unsafe.As<byte, object>(
-            ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
         object obj = slot;
         if (obj != null)
             return obj;
 
-        Type type = UnmarshalSystemType(header->runtimeTypeHandle);
+        Type type = UnmarshalSystemType(runtimeTypeHandle);
+        if (type == null)
+            return null;
+        // ctorFunctionPtr is baked at build time on every backend (see
+        // CreateWrapperInstance); zero means the type has no parameterless ctor.
         obj = RuntimeHelpers.GetUninitializedObject(type);
-        if (header->ctorFunctionPtr != IntPtr.Zero)
+        if (ctorFunctionPtr != IntPtr.Zero)
         {
             try
             {
-                ((delegate*<object, void>)header->ctorFunctionPtr)(obj);
+                ((delegate*<object, void>)ctorFunctionPtr)(obj);
             }
             catch (Exception e)
             {
@@ -1082,10 +1811,21 @@ internal static unsafe class SerializationBackendManagedCommands
         return obj;
     }
 
-    // Consumes a ValueReferenceType entry: resolves (or allocates) the
-    // inner instance, then recurses into ExecuteWriteCommands with that
-    // instance pinned as the source. The body's own FBP(N)..FBP(0)
+    // Consumes a ValueReferenceType entry and recurses into ExecuteWriteCommands
+    // with the inner instance pinned as the source. The body's own FBP(N)..FBP(0)
     // bracketing drives buffer claims and flushes.
+    //
+    // runtimeTypeHandle discriminates the encoding:
+    //   - Non-zero (class field): resolve via GetOrCreateVrtInstance and pin
+    //     ObjectWrapper.Data as the offset-zero source.
+    //   - Zero (struct field): struct lives inline at baseAddr + fieldOffset;
+    //     the outer caller's pin on the containing GC object covers this
+    //     recursion, so just shift the base and recurse.
+    //
+    // ctorFunctionPtr is not the sentinel: a class whose parameterless ctor
+    // lookup fails also stamps a zero ctorFunctionPtr and would alias as a
+    // struct. runtimeTypeHandle (raw MonoType* / MethodTable*) is non-zero
+    // for every real class.
     private static unsafe void ConsumeValueReference(
         NativeBufferContext* ctx, ref byte baseAddr, IntPtr transfer,
         ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
@@ -1101,26 +1841,764 @@ internal static unsafe class SerializationBackendManagedCommands
             return;
         }
 
-        object obj = GetOrCreateVrtInstance(ref baseAddr, header);
-
-        // ObjectWrapper.Data is the offset-zero reference for the nested
-        // entries' fieldOffsets.
-        fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+        if (header->runtimeTypeHandle == IntPtr.Zero)
         {
-            ExecuteWriteCommands(ctx, (IntPtr)nestedBase,
-                (IntPtr)nestedStart, nestedBytes, transfer, ref output, ref dstSize, ref pendingAdvance);
+            // Struct: inline at baseAddr + fieldOffset. Re-pinning via
+            // `fixed (byte* p = &baseAddr)` would create an IL slot the GC
+            // root-scan walks as an interior pointer — crashes when baseAddr
+            // was reconstructed from a raw IntPtr.
+            ref byte nestedBase = ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset);
+            ExecuteWriteCommands(ctx,
+                (IntPtr)Unsafe.AsPointer(ref nestedBase),
+                (IntPtr)nestedStart, nestedBytes, transfer,
+                ref output, ref dstSize, ref pendingAdvance);
+        }
+        else
+        {
+            // Class: ObjectWrapper.Data is the offset-zero reference for nested fieldOffsets.
+            object obj = GetOrCreateVrtInstance(ref baseAddr, header->fieldOffset, header->runtimeTypeHandle, header->ctorFunctionPtr);
+            fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+            {
+                ExecuteWriteCommands(ctx, (IntPtr)nestedBase,
+                    (IntPtr)nestedStart, nestedBytes, transfer, ref output, ref dstSize, ref pendingAdvance);
+            }
         }
 
         pos = nestedStart + nestedBytes;
     }
 
-    // TODO: replace the reinterpret with RuntimeMethodHandle.FromIntPtr
-    // (.NET 5+) once UnityEngine.dll's reference assembly moves past
-    // netstandard2.1.
+    // -----------------------------------------------------------------------
+    // Gather pass — pre-write walker
+    //
+    // Walks the parallel gather byte stream emitted by the native build side
+    // (see RttiGatherOp in SerializationCommands.h). For each entry:
+    //
+    //   - Register{Ref,RefArray,RefList}: read the [SerializeReference]
+    //     object reference(s) at base+fieldOffset and hand each non-null
+    //     reference to the native registry through registerRefFnPtr.
+    //   - Recurse{Class,Struct}{,Array,List}: descend into a non-ref class
+    //     or struct field; class variants null-materialize the field via
+    //     runtimeTypeHandle + ctorFunctionPtr (mirroring GetOrCreateVrtInstance)
+    //     so that constructor-initialized [SerializeReference] fields aren't
+    //     missed when the parent ctor populates them.
+    //   - InvokeOnBeforeSerialize{Class,Struct}: fire the user's
+    //     ISerializationCallbackReceiver.OnBeforeSerialize callback so any
+    //     [SerializeReference] fields set up in the callback are visible to
+    //     the subsequent Register entries in this subtree. The write pass
+    //     skips its own OnBeforeSerialize invocations whenever a gather pass
+    //     ran for the root (the native side flips IsGatherCompleted on the
+    //     ManagedReferencesTransferState).
+    //
+    // All recurse entries store a uint childCount = number of nested gather
+    // entries that follow them; the walker advances by entry size as it
+    // dispatches and uses childCount to bound the nested recursion. For
+    // arrays / lists the nested block is walked once per element with a
+    // per-element base; the byte cursor is rewound to nestedStart before each
+    // iteration and ends at the end of the nested block after the last
+    // iteration, so the outer loop in GatherWalkN can continue from there.
+    // SkipGatherEntries handles the "field is null / collection is empty"
+    // edge case by walking the same byte structure without executing.
+
+    // All three gather callbacks (register-ref, mark-OBS-invoked, resolve-
+    // missing-type) are invoked via `delegate* unmanaged[Cdecl]<...>` calli
+    // directly off the IntPtr the native side hands the walker. Native passes
+    // a real C function pointer (& a static function in ExecuteManagedCommands
+    // .cpp), so no GCHandle indirection is needed; calli is allocation-free,
+    // no per-call delegate marshalling, no thread-static caching.
+    //
+    // The managed `object` reference holds the raw header pointer on
+    // Mono / IL2CPP / CoreCLR — the same value ScriptingObjectPtr carries
+    // on the native side — so we forward it directly via Unsafe.As without
+    // boxing through GCHandle. The object stays rooted in the array / list /
+    // field that produced it, so no extra keep-alive is needed for the
+    // duration of the synchronous P/Invoke.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void InvokeRegisterGatheredRef(IntPtr fnPtr, IntPtr transferState, object obj)
+    {
+        IntPtr objPtr = Unsafe.As<object, IntPtr>(ref obj);
+        ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void>)fnPtr)(transferState, objPtr);
+    }
+
+    // Missing-type resolve callback. The native shim (ExecuteManagedCommands
+    // .cpp / ResolveMissingTypeForGather) formats the template by substituting
+    // "%d" placeholders with indices[0..indexCount-1], looks the resulting path
+    // up in the MissingTypeRegistry against the gather host refid cached at
+    // InvokeManagedGather entry, and stuffs any matching missing-type refid
+    // into m_MissingTypeSet. Only invoked from Register* handlers when the
+    // SerializeReference value is null AND collectMissingTypes is true.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void InvokeResolveMissingTypeForGather(
+        IntPtr fnPtr, IntPtr transferState, IntPtr templatePtr, int* indices, int indexCount)
+    {
+        // Defensive: fnPtr is IntPtr.Zero when native built without FUID/missing-
+        // type support. Register handlers gate on collectMissingTypes which is
+        // false in that configuration, but a NULL-check here is cheap insurance.
+        if (fnPtr == IntPtr.Zero || templatePtr == IntPtr.Zero)
+            return;
+        ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int*, int, void>)fnPtr)(transferState, templatePtr, indices, indexCount);
+    }
+
+    // Top-level entry point invoked from the native side per root object,
+    // once the build-time check (hasSerializeReferenceInSubtree) has cleared
+    // the gather pass for execution. `rootInstance` is the user object the
+    // outer Transfer is about to write; `gatherEntriesPtr` / `gatherEntryCount`
+    // describe the per-type gather byte stream produced at build time.
+    // Native passes `transferStatePtr` (opaque ManagedReferencesTransferState*)
+    // and `registerRefFnPtr` (cdecl void(*)(transferState, objectRef)) so the
+    // walker can hand each discovered reference straight to the native registry
+    // without going back through a managed proxy class.
+    // Max collection-nesting depth for the index stack. Matches
+    // FieldUniqueIdentifierContext::kMaxArrayDepth on the native side. The
+    // gather walker pushes one slot per active Recurse*Array / Recurse*List /
+    // Recurse*Dictionary frame; Register* handlers read indices[0..indexDepth]
+    // to substitute %d placeholders in the baked property-path template.
+    private const int kMaxGatherIndexDepth = 10;
+
+    [RequiredByNativeCode]
+    public static unsafe int GatherRefs(
+        object rootInstance,
+        IntPtr gatherEntriesPtr,
+        int    gatherEntryBufferSize,
+        IntPtr transferStatePtr,
+        IntPtr registerRefFnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        int    emitCallbacksFlag,
+        int    collectMissingTypesFlag)
+    {
+        if (rootInstance == null || gatherEntryBufferSize == 0 || gatherEntriesPtr == IntPtr.Zero)
+            return 0;
+
+        bool emitCallbacks = emitCallbacksFlag != 0;
+        bool collectMissingTypes = collectMissingTypesFlag != 0;
+        // Stack-allocated index stack — zero managed allocations, fits the
+        // expected collection-nesting depth comfortably. Recurse*Array/List/
+        // Dictionary handlers write indices[indexDepth] before recursing with
+        // indexDepth+1; Register* handlers pass indices[0..indexDepth-1] to
+        // the missing-type resolve callback.
+        int* indexStack = stackalloc int[kMaxGatherIndexDepth];
+        fixed (byte* rootBase = &Unsafe.As<ObjectWrapper>(rootInstance).Data)
+        {
+            byte* pos = (byte*)gatherEntriesPtr;
+            byte* end = pos + gatherEntryBufferSize;
+            // Top-level walk by byte-end: native passes the buffer size, not the
+            // entry count. The total entry count includes children of Recurse
+            // entries, but the Recurse handlers consume their own children
+            // recursively — using the total count at top-level would walk past
+            // the buffer end.
+            GatherWalkToEnd(ref *rootBase, rootInstance, rootBase, ref pos, end,
+                transferStatePtr, registerRefFnPtr, resolveMissingTypeFnPtr,
+                emitCallbacks, collectMissingTypes, indexStack, 0);
+        }
+        return 0;
+    }
+
+    private static unsafe void GatherWalkToEnd(
+        ref byte baseAddr, object thisObject, byte* heapObjDataArea,
+        ref byte* pos, byte* end,
+        IntPtr transferState, IntPtr registerRefFnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        while (pos < end)
+        {
+            GatherWalkOne(ref baseAddr, thisObject, heapObjDataArea, ref pos,
+                transferState, registerRefFnPtr, resolveMissingTypeFnPtr,
+                emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+        }
+    }
+
+    // `thisObject` is the boxed object whose data area `baseAddr` points into,
+    // carried through class frames so that InvokeOnBeforeSerializeClass can
+    // dispatch via interface cast (avoids backend-specific arithmetic from
+    // data-area back to object-header pointer). Set to null when the current
+    // frame is a struct (RecurseStruct / per-element of a struct array or
+    // list) — struct frames only ever invoke InvokeOnBeforeSerializeStruct,
+    // which uses baseAddr.
+    //
+    // emitCallbacks: false during cloning-without-LSOI; the walker still
+    // discovers refs via Register* / Recurse* entries but skips both class
+    // and struct OnBeforeSerialize invocations to match the gate in the
+    // write-side InvokeMethod handler.
+    //
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void GatherWalkOne(
+        ref byte baseAddr, object thisObject, byte* heapObjDataArea,
+        ref byte* pos,
+        IntPtr transferState, IntPtr registerRefFnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var op = (RttiGatherOp)pos[0];
+        switch (op)
+        {
+            case RttiGatherOp.RegisterRef:
+                ProcessGatherRegisterRef(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RegisterRefArray:
+                ProcessGatherRegisterRefArray(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RegisterRefList:
+                ProcessGatherRegisterRefList(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseClass:
+                ProcessGatherRecurseClass(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseStruct:
+                ProcessGatherRecurseStruct(ref baseAddr, thisObject, heapObjDataArea, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseClassArray:
+                ProcessGatherRecurseClassArray(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseClassList:
+                ProcessGatherRecurseClassList(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseStructArray:
+                ProcessGatherRecurseStructArray(ref baseAddr, thisObject, heapObjDataArea, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseStructList:
+                ProcessGatherRecurseStructList(ref baseAddr, thisObject, heapObjDataArea, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.RecurseDictionary:
+                ProcessGatherRecurseDictionary(ref baseAddr, ref pos, transferState, registerRefFnPtr,
+                    resolveMissingTypeFnPtr, emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+                break;
+            case RttiGatherOp.InvokeOnBeforeSerializeClass:
+                if (emitCallbacks)
+                    ProcessGatherInvokeOnBeforeSerializeClass(thisObject, ref pos);
+                else
+                    pos += sizeof(GatherInvokeOnBeforeSerializeClassEntry);
+                break;
+            case RttiGatherOp.InvokeOnBeforeSerializeStruct:
+                if (emitCallbacks)
+                    ProcessGatherInvokeOnBeforeSerializeStruct(ref baseAddr, ref pos);
+                else
+                    pos += sizeof(GatherInvokeOnBeforeSerializeStructEntry);
+                break;
+            default:
+                throw new InvalidOperationException("Unknown gather opcode: " + op);
+        }
+    }
+
+    private static unsafe void ProcessGatherRegisterRef(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRegisterRefEntry*)pos;
+        uint fieldOffset = entry->fieldOffset;
+        IntPtr templatePtr = entry->propertyPathTemplate;
+        pos += sizeof(GatherRegisterRefEntry);
+
+        // Always register, including null. The legacy RemapPPtrTransfer walks
+        // every SerializeReference value and ends up calling RegisterReference
+        // for null too — that's what creates the registry's RefId_Null entry
+        // when the user's data actually has a null SerializeReference field.
+        object obj = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        InvokeRegisterGatheredRef(fnPtr, transferState, obj);
+        // Missing-type resolution for null SerializeReference fields. Mirror of
+        // the null arm of ResolveMissingType on the write side: if a missing-
+        // type entry was registered at this (hostRefId, propertyPath) on load,
+        // record its refid in m_MissingTypeSet so the upstream collection loop
+        // pulls it (and its dependencies) into the on-disk refs array. No-op
+        // when the field is non-null (the live value supersedes any registered
+        // missing-type) or when the gather pass isn't collecting missing types.
+        if (obj == null && collectMissingTypes)
+            InvokeResolveMissingTypeForGather(resolveMissingTypeFnPtr, transferState, templatePtr, indexStack, indexDepth);
+    }
+
+    private static unsafe void ProcessGatherRegisterRefArray(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRegisterRefArrayEntry*)pos;
+        uint fieldOffset = entry->fieldOffset;
+        IntPtr templatePtr = entry->propertyPathTemplate;
+        pos += sizeof(GatherRegisterRefArrayEntry);
+
+        // T[] of a reference type is castable to object[] via array covariance —
+        // safe for read-only iteration. The build side only emits this opcode
+        // for [SerializeReference] collections (always reference-typed elements).
+        object[] arr = Unsafe.As<byte, object[]>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (arr == null)
+            return;
+        for (int e = 0; e < arr.Length; e++)
+        {
+            // Null elements still register (RefId_Null) — see ProcessGatherRegisterRef
+            // for the rationale.
+            object elem = arr[e];
+            InvokeRegisterGatheredRef(fnPtr, transferState, elem);
+            if (elem == null && collectMissingTypes && indexDepth < kMaxGatherIndexDepth)
+            {
+                // Per-element index push for the %d at the end of the baked
+                // template (e.g. "m_Refs.Array.data[%d]"); index stays on the
+                // stack only for the duration of this missing-type lookup.
+                indexStack[indexDepth] = e;
+                InvokeResolveMissingTypeForGather(resolveMissingTypeFnPtr, transferState, templatePtr, indexStack, indexDepth + 1);
+            }
+        }
+    }
+
+    private static unsafe void ProcessGatherRegisterRefList(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRegisterRefListEntry*)pos;
+        uint fieldOffset = entry->fieldOffset;
+        IntPtr templatePtr = entry->propertyPathTemplate;
+        pos += sizeof(GatherRegisterRefListEntry);
+
+        object listObj = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (listObj == null)
+            return;
+        var layout = Unsafe.As<ListLayout>(listObj);
+        byte[] itemsBytes = layout._items;
+        if (itemsBytes == null)
+            return;
+        // List<T>'s _items is T[]; for a reference T it is castable to object[].
+        object[] items = Unsafe.As<byte[], object[]>(ref itemsBytes);
+        int size = layout._size;
+        for (int e = 0; e < size; e++)
+        {
+            // Null elements still register (RefId_Null) — same reasoning as
+            // ProcessGatherRegisterRef.
+            object elem = items[e];
+            InvokeRegisterGatheredRef(fnPtr, transferState, elem);
+            if (elem == null && collectMissingTypes && indexDepth < kMaxGatherIndexDepth)
+            {
+                indexStack[indexDepth] = e;
+                InvokeResolveMissingTypeForGather(resolveMissingTypeFnPtr, transferState, templatePtr, indexStack, indexDepth + 1);
+            }
+        }
+    }
+
+    private static unsafe void ProcessGatherRecurseClass(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseClassEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        IntPtr rth = entry->runtimeTypeHandle;
+        IntPtr cfp = entry->ctorFunctionPtr;
+        pos += sizeof(GatherRecurseClassEntry);
+        byte* nestedEnd = pos + nestedBytes;
+
+        // Reuse VRT's materialize-if-null helper — same field set
+        // (fieldOffset / runtimeTypeHandle / ctorFunctionPtr), same behavior
+        // (writes back to the field slot so the materialized instance shows
+        // up in the user's data the same way the write transfer would
+        // materialize a null class field). GetOrCreateVrtInstance returns
+        // null only when UnmarshalSystemType fails (no runtimeTypeHandle).
+        object obj = GetOrCreateVrtInstance(ref baseAddr, fieldOffset, rth, cfp);
+        if (obj == null)
+        {
+            pos = nestedEnd;
+            return;
+        }
+
+        // Entering a new heap-object frame: thisObject and heapObjDataArea
+        // both update to this nested class, so any OBS callsites discovered
+        // below mark/check using the new instance.
+        fixed (byte* objBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+        {
+            GatherWalkToEnd(ref *objBase, obj, objBase, ref pos, nestedEnd,
+                transferState, fnPtr, resolveMissingTypeFnPtr,
+                emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+        }
+    }
+
+    private static unsafe void ProcessGatherRecurseStruct(
+        ref byte baseAddr, object thisObject, byte* heapObjDataArea,
+        ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseStructEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        pos += sizeof(GatherRecurseStructEntry);
+        byte* nestedEnd = pos + nestedBytes;
+
+        // Struct lives inline at base+fieldOffset. Propagate thisObject /
+        // heapObjDataArea unchanged — the struct's OBS is keyed off (host,
+        // struct field offset), so we need the same host context inside the
+        // struct frame.
+        GatherWalkToEnd(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset),
+            thisObject, heapObjDataArea,
+            ref pos, nestedEnd, transferState, fnPtr, resolveMissingTypeFnPtr,
+            emitCallbacks, collectMissingTypes, indexStack, indexDepth);
+    }
+
+    private static unsafe void ProcessGatherRecurseClassArray(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseClassArrayEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        pos += sizeof(GatherRecurseClassArrayEntry);
+        byte* nestedStart = pos;
+        byte* nestedEnd = nestedStart + nestedBytes;
+
+        object[] arr = Unsafe.As<byte, object[]>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (arr == null || arr.Length == 0)
+        {
+            pos = nestedEnd;
+            return;
+        }
+
+        // Null elements are skipped, NOT materialized: a null element
+        // serializes as an empty/default container slot on disk with no live
+        // SerializeReference refs, and missing-type entries can only exist at
+        // paths the previous write actually traversed — which the legacy
+        // RemapPPtrTransfer walk also skipped for null elements. Materializing
+        // here would mutate the user's data (arr[i] no longer null) and waste
+        // work walking a default-initialized instance that has nothing the
+        // accumulator hasn't already seen via real refs.
+        int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
+        for (int e = 0; e < arr.Length; e++)
+        {
+            object elem = arr[e];
+            if (elem == null)
+                continue;
+            if (indexDepth < kMaxGatherIndexDepth)
+                indexStack[indexDepth] = e;
+            pos = nestedStart;
+            fixed (byte* elemBase = &Unsafe.As<ObjectWrapper>(elem).Data)
+            {
+                GatherWalkToEnd(ref *elemBase, elem, elemBase, ref pos, nestedEnd,
+                    transferState, fnPtr, resolveMissingTypeFnPtr,
+                    emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
+            }
+        }
+        // Always end at nestedEnd, even if no element was walked (all null).
+        // Skipping nested bytes is just pointer advancement — no need to walk
+        // entry-by-entry now that the byte size is stored.
+        pos = nestedEnd;
+    }
+
+    private static unsafe void ProcessGatherRecurseClassList(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseClassListEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        pos += sizeof(GatherRecurseClassListEntry);
+        byte* nestedStart = pos;
+        byte* nestedEnd = nestedStart + nestedBytes;
+
+        object listObj = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (listObj == null)
+        {
+            pos = nestedEnd;
+            return;
+        }
+        var layout = Unsafe.As<ListLayout>(listObj);
+        byte[] itemsBytes = layout._items;
+        int size = layout._size;
+        if (itemsBytes == null || size == 0)
+        {
+            pos = nestedEnd;
+            return;
+        }
+        object[] items = Unsafe.As<byte[], object[]>(ref itemsBytes);
+
+        // Null elements skipped — see RecurseClassArray for rationale.
+        int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
+        for (int e = 0; e < size; e++)
+        {
+            object elem = items[e];
+            if (elem == null)
+                continue;
+            if (indexDepth < kMaxGatherIndexDepth)
+                indexStack[indexDepth] = e;
+            pos = nestedStart;
+            fixed (byte* elemBase = &Unsafe.As<ObjectWrapper>(elem).Data)
+            {
+                GatherWalkToEnd(ref *elemBase, elem, elemBase, ref pos, nestedEnd,
+                    transferState, fnPtr, resolveMissingTypeFnPtr,
+                    emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
+            }
+        }
+        pos = nestedEnd;
+    }
+
+    private static unsafe void ProcessGatherRecurseStructArray(
+        ref byte baseAddr, object thisObject, byte* heapObjDataArea,
+        ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseStructArrayEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        uint stride = entry->elementSize;
+        pos += sizeof(GatherRecurseStructArrayEntry);
+        byte* nestedStart = pos;
+        byte* nestedEnd = nestedStart + nestedBytes;
+
+        object arrObj = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (arrObj == null)
+        {
+            pos = nestedEnd;
+            return;
+        }
+        Array arr = (Array)arrObj;
+        int length = arr.Length;
+        if (length == 0)
+        {
+            pos = nestedEnd;
+            return;
+        }
+
+        // Reinterpret T[] as byte[] for `fixed` pinning. Layout of any T[]
+        // is { Length, T[0], T[1], ... }; byte[] of the same managed object
+        // exposes the data area as bytes for stride-based addressing.
+        // Struct array elements have no class identity of their own; pass
+        // thisObject=null so struct-OBS marking is skipped for these
+        // elements (an embedded struct array's element-OBS callsite is not
+        // representable in the (host, fieldOffset) gate's key space, so the
+        // main-write OBS fires normally — at the cost of double-firing for
+        // those elements. Tests for this case are not in the editor suite).
+        byte[] arrBytes = Unsafe.As<byte[]>(arrObj);
+        int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
+        fixed (byte* itemsBase = arrBytes)
+        {
+            for (int e = 0; e < length; e++)
+            {
+                if (indexDepth < kMaxGatherIndexDepth)
+                    indexStack[indexDepth] = e;
+                pos = nestedStart;
+                GatherWalkToEnd(
+                    ref Unsafe.AsRef<byte>(itemsBase + (uint)e * stride),
+                    null, null,
+                    ref pos, nestedEnd, transferState, fnPtr, resolveMissingTypeFnPtr,
+                    emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
+            }
+        }
+    }
+
+    private static unsafe void ProcessGatherRecurseStructList(
+        ref byte baseAddr, object thisObject, byte* heapObjDataArea,
+        ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseStructListEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        uint stride = entry->elementSize;
+        pos += sizeof(GatherRecurseStructListEntry);
+        byte* nestedStart = pos;
+        byte* nestedEnd = nestedStart + nestedBytes;
+
+        object listObj = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (listObj == null)
+        {
+            pos = nestedEnd;
+            return;
+        }
+        var layout = Unsafe.As<ListLayout>(listObj);
+        byte[] itemsBytes = layout._items;
+        int size = layout._size;
+        if (itemsBytes == null || size == 0)
+        {
+            pos = nestedEnd;
+            return;
+        }
+
+        int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
+        fixed (byte* itemsBase = itemsBytes)
+        {
+            for (int e = 0; e < size; e++)
+            {
+                if (indexDepth < kMaxGatherIndexDepth)
+                    indexStack[indexDepth] = e;
+                pos = nestedStart;
+                GatherWalkToEnd(
+                    ref Unsafe.AsRef<byte>(itemsBase + (uint)e * stride),
+                    null, null,
+                    ref pos, nestedEnd, transferState, fnPtr, resolveMissingTypeFnPtr,
+                    emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
+            }
+        }
+    }
+
+    private static unsafe void ProcessGatherRecurseDictionary(
+        ref byte baseAddr, ref byte* pos, IntPtr transferState, IntPtr fnPtr,
+        IntPtr resolveMissingTypeFnPtr,
+        bool emitCallbacks, bool collectMissingTypes,
+        int* indexStack, int indexDepth)
+    {
+        var entry = (GatherRecurseDictionaryEntry*)pos;
+        uint nestedBytes = entry->nestedByteCount;
+        uint fieldOffset = entry->fieldOffset;
+        uint stride = entry->elementSize;
+        IntPtr templatePtr = entry->propertyPathTemplate;
+        pos += sizeof(GatherRecurseDictionaryEntry);
+        byte* nestedStart = pos;
+        byte* nestedEnd = nestedStart + nestedBytes;
+
+        object dictObj = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
+        if (dictObj == null)
+        {
+            pos = nestedEnd;
+            return;
+        }
+
+        // Materialize SerializedKeyValue<K, V>[] via the native
+        // DictionarySerializationProxy (the same proxy the main write uses through
+        // DictionaryField::GetArray), routed through the GetDictionaryEntriesForGather
+        // icall. This avoids a C#-compile-time dependency on
+        // UnityEngine.DictionarySerialization — which is NOT present in every native
+        // test-resource assembly — while still enumerating dicts in those builds. The
+        // gather MUST enumerate the SAME entries the write does: the StreamedBinaryWrite
+        // managed opcode for each dict value's [SerializeReference] field consumes a
+        // per-host cursor that this enumeration populates (the older "register on the
+        // fly during main write" fallback no longer applies, because the opcode pops the
+        // cursor instead of calling RegisterReference). To match the write's MERGED
+        // (live + preserved-duplicate) array — duplicate rows carry real SR refs that
+        // must be gathered — the icall reconstructs the write's FUID context from the
+        // baked dict template + this host's refid + the live array-index stack, so the
+        // duplicate-row lookup keys identically. Returns null when DictionarySerialization
+        // is unavailable, in which case gather harmlessly no-ops on this dict.
+        IntPtr dictRaw = Unsafe.As<object, IntPtr>(ref dictObj);
+        Array entriesArray = GetDictionaryEntriesForGather(dictRaw, transferState, templatePtr, (IntPtr)indexStack, indexDepth) as Array;
+        if (entriesArray == null || entriesArray.Length == 0)
+        {
+            pos = nestedEnd;
+            return;
+        }
+
+        // Same reinterpret-and-stride pattern as RecurseStructArray: the T[]
+        // backing storage IS a byte[] for `fixed` pinning purposes, and we
+        // walk each element inline at (itemsBase + e * stride).
+        byte[] arrBytes = Unsafe.As<byte[]>(entriesArray);
+        int length = entriesArray.Length;
+        int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
+        fixed (byte* itemsBase = arrBytes)
+        {
+            for (int e = 0; e < length; e++)
+            {
+                if (indexDepth < kMaxGatherIndexDepth)
+                    indexStack[indexDepth] = e;
+                pos = nestedStart;
+                GatherWalkToEnd(
+                    ref Unsafe.AsRef<byte>(itemsBase + (uint)e * stride),
+                    null, null,
+                    ref pos, nestedEnd, transferState, fnPtr, resolveMissingTypeFnPtr,
+                    emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
+            }
+        }
+        pos = nestedEnd;
+    }
+
+    private static unsafe void ProcessGatherInvokeOnBeforeSerializeClass(
+        object thisObject, ref byte* pos)
+    {
+        // methodFnPtr is unused for the class path — interface dispatch on
+        // the boxed instance picks the correct OnBeforeSerialize override
+        // without us having to resolve and call a raw function pointer.
+        // The field is kept in the wire layout for symmetry with the struct
+        // variant (and so future opcodes that need it don't have to widen
+        // the entry).
+        //
+        // No write-side dedup is needed: a type whose subtree contains a
+        // [SerializeReference] field emits ONLY the gather OBS entry (never a
+        // write-side InvokeMethodCommand), so this fire is the single OBS
+        // invocation for the callsite — see EmitInvokeInterfaceMethodCommandIfRequired.
+        pos += sizeof(GatherInvokeOnBeforeSerializeClassEntry);
+        if (thisObject == null)
+            return;
+
+        try
+        {
+            (thisObject as ISerializationCallbackReceiver)?.OnBeforeSerialize();
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    private static unsafe void ProcessGatherInvokeOnBeforeSerializeStruct(
+        ref byte baseAddr, ref byte* pos)
+    {
+        var entry = (GatherInvokeOnBeforeSerializeStructEntry*)pos;
+        IntPtr fnPtr = entry->methodFnPtr;
+        pos += sizeof(GatherInvokeOnBeforeSerializeStructEntry);
+        if (fnPtr == IntPtr.Zero)
+            return;
+
+        // No write-side dedup is needed: a struct type whose subtree contains a
+        // [SerializeReference] field emits ONLY the gather OBS entry (never a
+        // write-side InvokeMethodCommand), so this is the single OBS invocation
+        // for the callsite — see EmitInvokeInterfaceMethodCommandIfRequired.
+
+        // Instance methods on value types take their `this` as a managed
+        // byref to the struct data (NOT as a boxed MonoObject*). The build
+        // side resolves the function pointer via GetMethodFunctionPointer
+        // below, which goes through MethodInfo.MethodHandle.GetFunctionPointer
+        // — that returns the underlying instance entry, not the unboxing
+        // thunk — so passing `ref baseAddr` to the struct's inline data
+        // matches the ABI calli expects.
+        try
+        {
+            ((delegate*<ref byte, void>)fnPtr)(ref baseAddr);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+
+    // Returns the JIT/AOT entry-point address for the method identified by
+    // methodHandleValue (the backend method-handle pointer the native side
+    // resolves via scripting_class_get_method_from_name). The C# executor calls
+    // through it directly — e.g. `delegate*<object, void>` for a parameterless
+    // ctor or a post-dispatch hook. This is the single CoreCLR-safe replacement
+    // for a ScriptingInvocation (SCRIPTING-000): no reflection Invoke, no
+    // UnmanagedCallersOnly, just RuntimeMethodHandle.GetFunctionPointer. Despite
+    // the name it is method-agnostic — the ctor and post-dispatch-hook resolvers
+    // in Common.cpp share it.
     [RequiredByNativeCode]
     internal static IntPtr GetConstructorMethodFunctionPointer(IntPtr methodHandleValue)
     {
-        var handle = Unsafe.As<IntPtr, RuntimeMethodHandle>(ref methodHandleValue);
+        RuntimeMethodHandle handle = UnmarshalRuntimeMethodHandle(methodHandleValue);
         RuntimeHelpers.PrepareMethod(handle);
         return handle.GetFunctionPointer();
     }
@@ -1131,16 +2609,35 @@ internal static unsafe class SerializationBackendManagedCommands
     [RequiredByNativeCode]
     internal static IntPtr GetMethodFunctionPointer(IntPtr methodHandleValue)
     {
-        var handle = Unsafe.As<IntPtr, RuntimeMethodHandle>(ref methodHandleValue);
+        RuntimeMethodHandle handle = UnmarshalRuntimeMethodHandle(methodHandleValue);
         RuntimeHelpers.PrepareMethod(handle);
         return handle.GetFunctionPointer();
+    }
+
+
+    // CoreCLR-only interface-method resolver for struct-callback dispatch.
+    // Reinterpreting the raw MethodDesc* as a RuntimeMethodHandle and calling
+    // GetFunctionPointer aborts for methods in dynamically-loaded ALCs, and even when it
+    // resolves, invoking the result through a `delegate*<ref byte, void>` calli mismatches
+    // CoreCLR's value-type instance-method calling convention (it works on Mono). So the
+    // native side (Common.cpp ResolveInterfaceMethodFunctionPointer, ENABLE_CORECLR) passes
+    // the declaring TYPE handle + the interface method NAME, and this returns a GCHandle to
+    // an Action<IntPtr> invoker that boxes the struct, invokes the method, and copies the
+    // (possibly mutated) struct back. The struct-callback consumers decode the GCHandle
+    // under ENABLE_CORECLR. Limitation: Marshal.PtrToStructure/StructureToPtr only handle
+    // blittable value types; non-blittable structs throw NotSupportedException here.
+    [RequiredByNativeCode]
+    internal static IntPtr GetInterfaceMethodFunctionPointer(IntPtr typeHandleValue, string methodName)
+    {
+        // Not reachable on Mono/IL2CPP — native only calls this under ENABLE_CORECLR
+        // (see Common.cpp ResolveInterfaceMethodFunctionPointer).
+        return IntPtr.Zero;
     }
 
     // Consumes one ManagedCommandLinearCollection entry. Three paths share
     // the same header + length prefix, then diverge:
     //   - Trivially-copyable: count*elementStride raw bytes streamed in
-    //     one or more chunks, plus a 0..3 byte tail pad. Wire format
-    //     matches the legacy native Transfer_Blittable_ArrayField.
+    //     one or more chunks, plus a 0..3 byte tail pad.
     //   - Shuffle path: per-element body is purely DC + FBP and fits in
     //     a single segment. Reserves count*elementWireSize in batches
     //     sized to the writable region, runs the DC entries once per
@@ -1151,8 +2648,8 @@ internal static unsafe class SerializationBackendManagedCommands
     //     of FBP-bracketed body executed once per element via
     //     ExecuteWriteCommands with an element-pinned base.
     //
-    // Null array / null List → write a 0 length prefix and return; matches
-    // the legacy auto-empty-on-write behavior in TransferField_LinearCollection.
+    // Null array / null List → write a 0 length prefix and return (a null
+    // collection serialises as a zero-length empty one).
     private static unsafe void ConsumeLinearCollection(
         NativeBufferContext* ctx, ref byte baseAddr, IntPtr transfer,
         ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
@@ -1200,8 +2697,8 @@ internal static unsafe class SerializationBackendManagedCommands
         if ((header->flags & LinearCollectionFlags.TriviallyCopyable) != 0)
         {
             long  totalBytesL = (long)count * (long)header->elementStride;
-            // The legacy reader walks an SInt32 length then count*elementStride
-            // raw bytes; element counts above int.MaxValue are not representable.
+            // Wire format: SInt32 length then count*elementStride raw bytes;
+            // element counts above int.MaxValue are not representable.
             int   totalBytes  = checked((int)totalBytesL);
             int   padBytes    = (4 - (totalBytes & 3)) & 3;
 
@@ -1319,71 +2816,192 @@ internal static unsafe class SerializationBackendManagedCommands
         pos = nestedStart + nestedBytes;
     }
 
+    // Consumes one ManagedCommandDictionary entry. Bridges the live
+    // Dictionary<K,V> to a SerializedKeyValue<K,V>[] via the existing managed
+    // helper, then walks the per-entry FBP-bracketed body once per entry
+    // against the entry-pinned base (same shape as ConsumeLinearCollection's
+    // per-element-recursion path).
+    //
+    // FUID stack bracketing: PushDictionaryFUIDFrame installs the dict's
+    // FieldUniqueIdentifierContext for descendant FormatDictionaryFieldUniqueIdentifierForActiveContext
+    // calls, then Pop on the finally arm. Editor-only behavior; player builds
+    // get inline no-op stubs from the native header (Push always returns false,
+    // Pop is a nop), so the try/finally is a cheap pair of icalls + a branch.
+    //
+    // Null dictionary → write a 0 length prefix and return; matches the
+    // legacy auto-empty-on-write behavior in TransferField_Dictionary.
+    private static unsafe void ConsumeDictionary(
+        NativeBufferContext* ctx, ref byte baseAddr, IntPtr transfer,
+        ref byte* output, ref int dstSize, ref int pendingAdvance, ref byte* pos)
+    {
+        var header = (DictionaryHeaderWrite*)pos;
+        pos += sizeof(DictionaryHeaderWrite);
+        byte* nestedStart = pos;
+        int   nestedBytes = (int)header->nestedByteCount;
+
+        // Field at (baseAddr + fieldOffset) holds a Dictionary<K,V> reference.
+        object dictRef = Unsafe.As<byte, object>(
+            ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset));
+        if (dictRef == null)
+        {
+            WriteFramedInt32(ctx, 0);
+            pos = nestedStart + nestedBytes;
+            return;
+        }
+
+        bool pushed = SerializationBackendManagedCommands.PushDictionaryFUIDFrame(ctx->fuidContext);
+        try
+        {
+            // Bridge live dict → SerializedKeyValue<K,V>[]. The helper handles
+            // duplicate-row merging when the host has stored duplicates and
+            // dictionaryIdentifierTemplateUtf8 is non-null; otherwise it just
+            // walks the live dict. InvokeGetEntriesTyped uses the build-time
+            // interned closed delegate via getEntriesTypedIndex to avoid the
+            // per-call dict.GetType() + GetGenericArguments() + ConcurrentDictionary
+            // lookup; falls back to the non-typed path when the index is -1.
+            Array entries = DictionarySerialization.InvokeGetEntriesTyped(
+                header->getEntriesTypedIndex,
+                ctx->hostingEntityId, dictRef, header->fieldUniqueIdentifierTemplate);
+
+            int count = entries?.Length ?? 0;
+            WriteFramedInt32(ctx, count);
+
+            if (count > 0)
+            {
+                // Pin the entry array as bytes and walk per-entry via
+                // ExecuteWriteCommands — same shape as ConsumeLinearCollection's
+                // per-element-recursion arm.
+                byte[] dataAsBytes = Unsafe.As<byte[]>(entries);
+                fixed (byte* dataPtr = dataAsBytes)
+                {
+                    long stride = (long)header->entryStride;
+                    for (int i = 0; i < count; ++i)
+                    {
+                        byte* entryPtr = dataPtr + i * stride;
+                        ExecuteWriteCommands(ctx, (IntPtr)entryPtr,
+                            (IntPtr)nestedStart, nestedBytes, transfer,
+                            ref output, ref dstSize, ref pendingAdvance);
+                    }
+                }
+            }
+
+            // Same per-element-recursion commit / pad as ConsumeLinearCollection:
+            // flush any bytes the last entry's closing FBP(0) rolled into
+            // pendingAdvance, then 0..3 byte aggregate alignment pad.
+            if (pendingAdvance > 0)
+            {
+                InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                pendingAdvance = 0;
+            }
+
+            // entryStride doubles as elementWireSize for the dict path — the
+            // probe-built per-entry body's wire bytes equal the managed entry
+            // size by construction (SerializedKeyValue<K,V> has no inline
+            // arrays/strings on the bulk-memcpy path). For bodies that contain
+            // variable-length entries (strings, refs), individual writes are
+            // already self-aligned and the aggregate pad is a no-op.
+            int totalWritten = count * (int)header->entryStride;
+            int padBytes     = (4 - (totalWritten & 3)) & 3;
+            if (padBytes > 0)
+            {
+                Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
+                InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
+            }
+        }
+        finally
+        {
+            if (pushed)
+                SerializationBackendManagedCommands.PopDictionaryFUIDFrame();
+        }
+
+        pos = nestedStart + nestedBytes;
+    }
+
     // Mirrors ConsumeLinearCollection's trivially-copyable arm, but sourced from
     // an inline buffer at baseAddr + fieldOffset — no array reference, null check,
     // or reflection.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void ConsumeFixedBuffer(
-        NativeBufferContext* ctx, ref byte baseAddr, ref byte* pos)
+        NativeBufferContext* ctx, ref byte baseAddr, ref byte* pos, ref int pendingAdvance)
     {
         var header = (FixedBufferHeader*)pos;
         pos += sizeof(FixedBufferHeader);
 
-        // checked() is defense-in-depth: a corrupted header throws instead of
-        // wrapping into a negative MemoryCopy length.
-        int count       = checked((int)header->elementCount);
-        int totalBytes  = checked(count * (int)header->elementSize);
+        int count       = (int)header->elementCount;
+        int totalBytes  = count * (int)header->elementSize;
         int padBytes    = (4 - (totalBytes & 3)) & 3;
 
-        // baseAddr is pinned by the outer ExecuteWriteCommands caller, so the
-        // inline buffer address is stable for the duration of this entry.
+        // baseAddr is pinned by the ExecuteWriteCommands caller, so this pointer stays valid.
         byte* dataPtr = (byte*)Unsafe.AsPointer(
             ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset));
 
-        // totalBytes == 0 is unreachable: C# forbids `fixed T buf[0]` (CS1665) and
-        // the build side rejects zero-sized inline structs. Throw if a regression
-        // emits elementCount=0 rather than writing a malformed zero-length record.
-        if (totalBytes <= 0)
-            throw new InvalidOperationException("FixedBuffer wire payload must be non-zero; build side enforces elementCount > 0.");
+        // 4-byte count + padded payload, so the record keeps pendingAdvance 4-byte aligned.
+        int record = 4 + totalBytes + padBytes;
 
-        int needed = 4 + totalBytes;
-        if (ctx->writerAvailable >= needed + padBytes)
+        // Append the record into the writer window and grow pendingAdvance without
+        // flushing, so a run of fixed buffers (and adjacent DirectCopy segments)
+        // commits in one flush — the batching the DirectCopy segment path relies on.
+        if (ctx->writerAvailable - pendingAdvance >= record)
         {
-            // Single-flush fast path: count + payload + pad in one P/Invoke. FBP(0)
-            // bracketing gives full capacity on entry and the build side caps an
-            // in-segment FixedBuffer at kManagedBlockMaxPayloadSize - 4 payload
-            // bytes, so only buffers in the top 3-byte size sliver fall through to
-            // the two-flush arm below.
-            Unsafe.WriteUnaligned(ctx->writerPtr, count);
-            Buffer.MemoryCopy(dataPtr, ctx->writerPtr + 4, totalBytes, totalBytes);
+            byte* dst = ctx->writerPtr + pendingAdvance;
+            Unsafe.WriteUnaligned(dst, count);
+            Buffer.MemoryCopy(dataPtr, dst + 4, totalBytes, totalBytes);
             if (padBytes > 0)
-                Unsafe.InitBlockUnaligned(ctx->writerPtr + needed, 0, (uint)padBytes);
-            InvokeFlushBuffer(ctx, ctx->writerPtr, needed + padBytes);
+                Unsafe.InitBlockUnaligned(dst + 4 + totalBytes, 0, (uint)padBytes);
+            pendingAdvance += record;
             return;
         }
 
-        if (ctx->writerAvailable >= needed)
+        // Record won't fit alongside the deferred bytes: flush them so it can start
+        // at writerPtr, then retry against the refilled window.
+        if (pendingAdvance > 0)
+        {
+            InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+            pendingAdvance = 0;
+        }
+
+        if (ctx->writerAvailable >= record)
         {
             Unsafe.WriteUnaligned(ctx->writerPtr, count);
             Buffer.MemoryCopy(dataPtr, ctx->writerPtr + 4, totalBytes, totalBytes);
-            InvokeFlushBuffer(ctx, ctx->writerPtr, needed);
-        }
-        else
-        {
-            // Hand the inline source straight to FlushBuffer's spill arm so
-            // an arbitrarily large buffer crosses any number of cache-writer
-            // blocks in a single P/Invoke.
-            WriteFramedInt32(ctx, count);
-            InvokeFlushBuffer(ctx, dataPtr, totalBytes);
+            if (padBytes > 0)
+                Unsafe.InitBlockUnaligned(ctx->writerPtr + 4 + totalBytes, 0, (uint)padBytes);
+            pendingAdvance = record;
+            return;
         }
 
+        // Payload exceeds a whole window: frame the count, then hand the inline
+        // source to FlushBuffer's spill arm so it crosses any number of cache-writer
+        // blocks in one flush. The tail pad always fits — FlushBuffer leaves
+        // writerAvailable >= kManagedBlockMaxPayloadSize.
+        WriteFramedInt32(ctx, count);
+        InvokeFlushBuffer(ctx, dataPtr, totalBytes);
         if (padBytes > 0)
         {
-            // Post-flush writerAvailable >= kManagedBlockMaxPayloadSize (>= 3),
-            // so the 0..3-byte pad always fits without a fresh refill check.
             Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
             InvokeFlushBuffer(ctx, ctx->writerPtr, padBytes);
         }
+    }
+
+    // EntityId <-> 12-byte LocalSerializedObjectIdentifier, the pure-managed
+    // counterparts of PackEntityIdIntoLSOI / UnpackEntityIdFromLSOI (BaseObject.h):
+    // low 32 bits -> localSerializedFileIndex, high 32 bits -> localIdentifierInFile.
+    // Used for the clone (PackEntityIdInLSOI) path and for EntityId.None, which
+    // encodes as a zero record with no native call. The record is only 4-byte
+    // aligned, so both halves go through the unaligned intrinsics.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void PackEntityIdIntoLsoi(byte* dst, ulong entityId)
+    {
+        Unsafe.WriteUnaligned<int>(dst, (int)(entityId & 0xFFFFFFFFu));
+        Unsafe.WriteUnaligned<long>(dst + 4, (long)(entityId >> 32));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe ulong UnpackEntityIdFromLsoi(byte* src)
+    {
+        uint lo = (uint)Unsafe.ReadUnaligned<int>(src);
+        uint hi = (uint)Unsafe.ReadUnaligned<long>(src + 4);
+        return ((ulong)hi << 32) | lo;
     }
 
     // Shuffle-path consumer for linear collections of value-type elements
@@ -1823,6 +3441,128 @@ internal static unsafe class SerializationBackendManagedCommands
         }
     }
 
+    // Reads a length-prefixed UTF-8 string. Editor PropertyName name read path only.
+    private static unsafe string ReadFramedString(NativeReadBufferContext* ctx)
+    {
+        // Length prefix: 4-byte SInt32, little-endian.
+        if (ctx->readerAvailable < 4)
+            InvokeEnsureReadable(ctx, 4);
+        int length = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+        ctx->readerPtr      += 4;
+        ctx->readerAvailable -= 4;
+
+        if (length < 0)
+            throw new InvalidOperationException(
+                $"Managed PropertyName deserialization read a negative length prefix ({length}). The serialized data is corrupted.");
+
+        int padBytes = (4 - (length & 3)) & 3;
+
+        string result;
+        if (length == 0)
+        {
+            result = string.Empty;
+        }
+        else if (length <= ctx->stackBufferSize)
+        {
+            if (ctx->readerAvailable < length)
+                InvokeEnsureReadable(ctx, length);
+            result = DecodeStringBody(ctx->readerPtr, length);
+            ctx->readerPtr      += length;
+            ctx->readerAvailable -= length;
+        }
+        else
+        {
+            byte[] buf = new byte[length];
+            fixed (byte* bufPtr = buf)
+            {
+                InvokeReadBytesDirect(ctx, bufPtr, length);
+                result = DecodeStringBody(bufPtr, length);
+            }
+        }
+
+        // Skip 0-3 bytes of alignment padding.
+        if (padBytes > 0)
+        {
+            if (ctx->readerAvailable < padBytes)
+                InvokeEnsureReadable(ctx, padBytes);
+            ctx->readerPtr      += padBytes;
+            ctx->readerAvailable -= padBytes;
+        }
+        return result;
+    }
+
+    // Reads [SInt32 len][ascii digits][0..3 pad] and parses the decimal straight from the
+    // wire into an Int32 — no managed string, no int.Parse. Avoids a per-field string
+    // allocation, whose GC cost dominates on Mono/IL2CPP. long accumulator so
+    // Int32.MinValue ("-2147483648") round-trips.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe int ReadFramedDecimalInt32(NativeReadBufferContext* ctx)
+    {
+        if (ctx->readerAvailable < 4)
+            InvokeEnsureReadable(ctx, 4);
+        int length = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+        ctx->readerPtr      += 4;
+        ctx->readerAvailable -= 4;
+
+        // An Int32 decimal is at most 11 bytes ("-2147483648"). Anything longer is corrupt;
+        // rejecting it also keeps the digit loop inside the spill buffer (the reader caps a
+        // fill at stackBufferSize, so an unbounded length would read out of bounds).
+        if (length < 0 || length > 11)
+            throw new InvalidOperationException(
+                $"Managed PropertyName deserialization read an invalid decimal length prefix ({length}). The serialized data is corrupted.");
+
+        // Writer always emits ≥1 digit (id 0 → "0"), so length 0 only arises from corruption; treat as 0.
+        long magnitude = 0;
+        bool negative = false;
+        if (length > 0)
+        {
+            if (ctx->readerAvailable < length)
+                InvokeEnsureReadable(ctx, length);
+            byte* p = ctx->readerPtr;
+            int i = 0;
+            if (p[0] == (byte)'-')
+            {
+                negative = true;
+                i = 1;
+            }
+            for (; i < length; i++)
+                magnitude = magnitude * 10 + (p[i] - (byte)'0');
+            ctx->readerPtr      += length;
+            ctx->readerAvailable -= length;
+        }
+
+        int padBytes = (4 - (length & 3)) & 3;
+        if (padBytes > 0)
+        {
+            if (ctx->readerAvailable < padBytes)
+                InvokeEnsureReadable(ctx, padBytes);
+            ctx->readerPtr      += padBytes;
+            ctx->readerAvailable -= padBytes;
+        }
+        return negative ? (int)(-magnitude) : (int)magnitude;
+    }
+
+    // Read side of the PropertyName opcode. Reconstructs the PropertyName exactly as
+    // SerializeTraits<PropertyName> does: id off the wire, or the name resolved in the editor.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ConsumePropertyNameRead(
+        NativeReadBufferContext* ctx, ref byte baseAddr, ref byte* pos)
+    {
+        var entry = (ManagedCommandPropertyNameEntry*)pos;
+        pos += sizeof(ManagedCommandPropertyNameEntry);
+        ref byte field = ref Unsafe.AddByteOffset(ref baseAddr, entry->fieldOffset);
+
+        PropertyName pn;
+        // serializesAsId == 0 means the editor persisted the resolved name; otherwise the id.
+        if (entry->serializesAsId == 0)
+            pn = new PropertyName(ReadFramedString(ctx));               // == PropertyNameFromString(s)
+        else
+            pn = new PropertyName(ReadFramedDecimalInt32(ctx));
+        // Write the whole struct (8 B editor, 4 B player). In the editor the ctor sets
+        // conflictIndex — resolved from the name, or zeroed from an id — matching the native read.
+        Unsafe.WriteUnaligned(ref field, pn);
+    }
+
     // Read-path mirror of ConsumeLinearCollection. Reads the count prefix, then
     // routes on the same flag set the writer used:
     //   - Trivially-copyable: bulk memcpy count*elementStride from input into
@@ -1847,6 +3587,7 @@ internal static unsafe class SerializationBackendManagedCommands
     private static unsafe void ConsumeLinearCollectionRead(
         NativeReadBufferContext* ctx,
         ref byte baseAddr,
+        IntPtr transfer,
         ref byte* pos)
     {
         var header = (LinearCollectionHeader*)pos;
@@ -1866,16 +3607,13 @@ internal static unsafe class SerializationBackendManagedCommands
         // The wire format collapses null and empty source collections to the
         // same `count == 0` framing (see ConsumeLinearCollection on the write
         // side: both `arr == null` and `arr.Length == 0` short-circuit to
-        // WriteFramedInt32(0) with no body). The legacy linear-collection
-        // readers (Transfer_Blittable_ArrayField via ResizeSTLStyleArray,
-        // ArrayOfManagedObjectsTransferer via scripting_array_new(..., 0))
-        // both materialize a non-null zero-length collection in that case,
-        // so user OnAfterDeserialize callbacks (e.g. UpmCache iterating
-        // `m_SerializedProductSearchPackageInfoProductIds.Length`) treat
-        // post-deserialize fields as guaranteed-non-null. Skipping the
-        // assignment here would leave the field at its CLR default (null)
-        // and silently break that contract — observed as a NullReferenceException
-        // in UpmCache.OnAfterDeserialize during code-reload backup restore.
+        // WriteFramedInt32(0) with no body). A non-null zero-length collection
+        // is the contract user OnAfterDeserialize callbacks (e.g. UpmCache
+        // iterating `m_SerializedProductSearchPackageInfoProductIds.Length`)
+        // rely on. Skipping the assignment here would leave the field at its
+        // CLR default (null) and silently break that contract — observed as
+        // a NullReferenceException in UpmCache.OnAfterDeserialize during
+        // code-reload backup restore.
         //
         // The build side stamped the native MethodTable* (via
         // scripting_class_get_type(elementClass).GetBackendPtr()) into
@@ -2013,6 +3751,7 @@ internal static unsafe class SerializationBackendManagedCommands
                             ctx,
                             ref Unsafe.AsRef<byte>(elemBase),
                             nestedStart, nestedBytes,
+                            transfer,
                             ref segSize);
                     }
                 }
@@ -2056,6 +3795,156 @@ internal static unsafe class SerializationBackendManagedCommands
         pos = nestedStart + nestedBytes;
     }
 
+    // Read-path mirror of ConsumeDictionary. Reads the count prefix and per-entry
+    // body (same shape ConsumeLinearCollectionRead's per-element-recursion path
+    // produces) into a SerializedKeyValue<K,V>[] staging array, then calls
+    // DictionarySerialization.SetEntriesFromSerializedData to populate the live
+    // dictionary and store any duplicate-key entries in the Editor cache.
+    //
+    // FUID bracketing: PushDictionaryFUIDFrame installs the dict's
+    // FieldUniqueIdentifierContext so FormatDictionaryFieldUniqueIdentifier
+    // (which walks the FUID stack) produces the canonical dict path used as
+    // the duplicate-row storage key — must match what the legacy DictionaryField::SetArray
+    // produces (DictionaryField.cpp:142-144) so write→read round-trips through
+    // the cache are stable.
+    //
+    // Duplicate-key warning: when ctx->warnOnDuplicates is set (serialized-file
+    // load or Object.Instantiate clone) AND SetEntriesFromSerializedData reports
+    // hadDuplicates AND we have a non-empty dictionary identifier, emit the
+    // clickable Console warning via LogDictionaryDuplicateKeyWarning — same
+    // flags + EntityId hookup as DictionaryField::LogDuplicateKeyWarning.
+    private static unsafe void ConsumeDictionaryRead(
+        NativeReadBufferContext* ctx,
+        ref byte baseAddr,
+        IntPtr transfer,
+        ref byte* pos)
+    {
+        var header = (DictionaryHeaderRead*)pos;
+        pos += sizeof(DictionaryHeaderRead);
+        byte* nestedStart = pos;
+        int   nestedBytes = (int)header->nestedByteCount;
+
+        // Count prefix — same framing as ConsumeLinearCollectionRead.
+        if (ctx->readerAvailable < 4)
+            InvokeEnsureReadable(ctx, 4);
+        int count = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+        ctx->readerPtr      += 4;
+        ctx->readerAvailable -= 4;
+
+        // Allocate the staging entries array. elementTypeHandle was stamped at
+        // build time with the SerializedKeyValue<K,V> RuntimeTypeHandle.Value;
+        // UnmarshalSystemType handles the Mono/IL2CPP vs CoreCLR backend split.
+        Type entryType = UnmarshalSystemType(header->elementTypeHandle);
+        Array entries  = Array.CreateInstance(entryType, count);
+
+        bool pushed = PushDictionaryFUIDFrame(ctx->fuidContext);
+        try
+        {
+            if (count > 0)
+            {
+                // Per-entry recursion: each entry's FBP-bracketed body walked
+                // by ExecuteReadCommands with the entry pinned — same shape as
+                // ConsumeLinearCollectionRead's per-element-recursion arm.
+                byte[] dataAsBytes = Unsafe.As<byte[]>(entries);
+                fixed (byte* dataPtr = dataAsBytes)
+                {
+                    long stride  = (long)header->entryStride;
+                    int  segSize = 0;
+                    for (int i = 0; i < count; ++i)
+                    {
+                        byte* entryBase = dataPtr + (long)i * stride;
+                        ExecuteReadCommands(
+                            ctx,
+                            ref Unsafe.AsRef<byte>(entryBase),
+                            nestedStart, nestedBytes,
+                            transfer,
+                            ref segSize);
+                    }
+                }
+
+                // Skip the 0..3-byte tail pad written by the per-entry write
+                // path. entryStride doubles as the per-entry wire size here
+                // (SerializedKeyValue<K,V> has no inline arrays/strings on
+                // the bulk-memcpy path); for bodies with variable-length
+                // entries individual writes self-align and the pad is 0.
+                int totalBytes = count * (int)header->entryStride;
+                int padBytes   = (4 - (totalBytes & 3)) & 3;
+                if (padBytes > 0)
+                {
+                    if (ctx->readerAvailable < padBytes)
+                        InvokeEnsureReadable(ctx, padBytes);
+                    ctx->readerPtr      += padBytes;
+                    ctx->readerAvailable -= padBytes;
+                }
+            }
+
+            // Field at (baseAddr + fieldOffset) holds a Dictionary<K,V> reference.
+            // Default-allocate when the live reference is null so the deserialized
+            // host has a usable (possibly empty) dictionary instead of a null field --
+            // matches legacy DictionaryField's ctor at DictionaryField.cpp:100-102
+            // ("Default-allocate the dictionary if the field is null, matching
+            // List<T>/array behavior"). The Func<object> factory was interned
+            // once at build time by DictionarySerialization.InternDictionaryDefaultAllocateFactory
+            // and the integer index stamped into the dict header; here we pull it
+            // back via SerializationCommandObjectTable and invoke directly -- no
+            // execute-time reflection, no hash lookup, no per-call generic dispatch.
+            // Index -1 means the helper was unavailable at build time; leave the
+            // field null in that case.
+            ref byte dictSlot = ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset);
+            object dictRef = Unsafe.As<byte, object>(ref dictSlot);
+            if (dictRef == null && header->dictDefaultAllocateFactoryIndex >= 0)
+            {
+                var factory = (Func<object>)SerializationCommandObjectTable.Get(header->dictDefaultAllocateFactoryIndex);
+                dictRef = factory();
+                Unsafe.As<byte, object>(ref dictSlot) = dictRef;
+            }
+            if (dictRef != null)
+            {
+                // Resolve the dict's canonical identifier so SetEntriesFromSerializedData
+                // can key the duplicate-row cache by it. Empty when no FUID context or
+                // no template — duplicate-row tracking simply doesn't apply in those cases.
+                string dictionaryIdentifier = string.Empty;
+                if (ctx->hostingEntityId != EntityId.None
+                    && header->fieldUniqueIdentifierTemplate != IntPtr.Zero)
+                {
+                    dictionaryIdentifier = FormatDictionaryFieldUniqueIdentifier(
+                        header->fieldUniqueIdentifierTemplate) ?? string.Empty;
+                }
+
+                // InvokeSetEntriesTyped uses the build-time interned closed
+                // delegate via setEntriesTypedIndex to avoid the per-call
+                // dict.GetType() + ConcurrentDictionary lookup; falls back to
+                // the non-typed SetEntriesFromSerializedData entry point when
+                // the index is -1.
+                bool hadDuplicates;
+                DictionarySerialization.InvokeSetEntriesTyped(
+                    header->setEntriesTypedIndex,
+                    ctx->hostingEntityId, dictRef, entries, dictionaryIdentifier, out hadDuplicates);
+
+                // Warn-on-duplicates policy mirrors the legacy DictionaryField::SetArray
+                // path: only fires for serialized-file loads + Object.Instantiate clones
+                // (ctx->warnOnDuplicates set by the native dispatcher), and only when
+                // we actually have a formatted identifier — without one we can't tell
+                // the user which dictionary field is affected.
+                if (ctx->warnOnDuplicates && hadDuplicates && !string.IsNullOrEmpty(dictionaryIdentifier))
+                {
+                    string message =
+                        "Dictionary field '" + dictionaryIdentifier + "' contains duplicate key entries. " +
+                        "Ensure all keys are unique. Only the first occurrence of each key will be added " +
+                        "to the dictionary object.";
+                    LogDictionaryDuplicateKeyWarning(message, ctx->hostingEntityId);
+                }
+            }
+        }
+        finally
+        {
+            if (pushed)
+                PopDictionaryFUIDFrame();
+        }
+
+        pos = nestedStart + nestedBytes;
+    }
+
     // Read-path mirror of ConsumeFixedBuffer. Truncating on overflow and leaving
     // trailing inline bytes untouched on underflow matches the native
     // Transfer_Blittable_FixedBufferField semantic (Blittable.h), so wire bytes
@@ -2076,38 +3965,26 @@ internal static unsafe class SerializationBackendManagedCommands
         ctx->readerPtr      += 4;
         ctx->readerAvailable -= 4;
 
-        // Without this guard a negative length would make copyBytes negative;
-        // InvokeReadBytesDirect would then sign-extend to size_t and over-read the
-        // stream. Surface the corruption here instead of crashing deeper down.
+        // A negative length would sign-extend into an over-read in InvokeReadBytesDirect.
         if (wireCount < 0)
             throw new InvalidOperationException(
                 $"Managed fixed-buffer deserialization read a negative length prefix ({wireCount}). The serialized data is corrupted.");
 
-        // Validate elementSize before any arithmetic uses it: the build side only
-        // asserts elementSize ∈ {1, 2, 4, 8} in debug, which the read path can't
-        // rely on for a stream that may have been corrupted in transit.
         int elementSize = header->elementSize;
-        if (elementSize != 1 && elementSize != 2 && elementSize != 4 && elementSize != 8)
-            throw new InvalidOperationException(
-                $"Managed fixed-buffer header has invalid elementSize {elementSize}; expected 1, 2, 4, or 8.");
-
-        // checked() rationale: see ConsumeFixedBuffer. The read path can't rely on
-        // the build side's debug-only int32 bound, so a wrap throws instead of
-        // producing a negative copyBytes that InvokeReadBytesDirect would
-        // sign-extend into an over-read.
-        int capacity    = checked((int)header->elementCount);
+        int capacity    = (int)header->elementCount;
         int copyCount   = wireCount < capacity ? wireCount : capacity;
-        int copyBytes   = checked(copyCount * elementSize);
+        int copyBytes   = copyCount * elementSize;
         long wireBytesL = (long)wireCount * (long)elementSize;
         int  alignBytes = (int)((4 - (wireBytesL & 3)) & 3);
 
         if (copyBytes > 0)
         {
-            // Bulk-stream straight into the inline buffer, bypassing the
-            // spill buffer (same direct-pin pattern as the trivially-
-            // copyable arm of ConsumeLinearCollectionRead).
             byte* dstPtr = (byte*)Unsafe.AsPointer(
                 ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset));
+
+            // Stream straight into the inline buffer: ReadBytesDirect drains any
+            // already-buffered bytes and reads the remainder in a single call,
+            // spanning any number of cache-reader blocks at any size.
             InvokeReadBytesDirect(ctx, dstPtr, copyBytes);
         }
 
@@ -2397,10 +4274,10 @@ internal static unsafe class SerializationBackendManagedCommands
     }
 
     // Read-path mirror of ConsumeValueReference. The inner body is its own
-    // self-contained FBP(N)..FBP(0) chain, so we hand ExecuteReadCommands a
-    // fresh innerSegmentSize=0.
+    // self-contained FBP(N)..FBP(0) chain, so ExecuteReadCommands gets a fresh
+    // innerSegmentSize=0. Same class / struct split — see ConsumeValueReference.
     private static unsafe void ConsumeValueReferenceRead(
-        NativeReadBufferContext* ctx, ref byte baseAddr, ref byte* pos)
+        NativeReadBufferContext* ctx, ref byte baseAddr, IntPtr transfer, ref byte* pos)
     {
         var header = (ValueReferenceHeader*)pos;
         pos += sizeof(ValueReferenceHeader);
@@ -2413,29 +4290,45 @@ internal static unsafe class SerializationBackendManagedCommands
             return;
         }
 
-        object obj = GetOrCreateVrtInstance(ref baseAddr, header);
-
-        // `fixed` pins the inner instance across the native ensureReadable
-        // / readBytesDirect P/Invokes inside the recursion.
-        fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+        if (header->runtimeTypeHandle == IntPtr.Zero)
         {
+            // Struct: inline; outer pin covers this recursion (see ConsumeValueReference).
+            ref byte nestedBase = ref Unsafe.AddByteOffset(ref baseAddr, header->fieldOffset);
             int innerSegmentSize = 0;
             ExecuteReadCommands(
                 ctx,
-                ref Unsafe.AsRef<byte>(nestedBase),
+                ref nestedBase,
                 nestedStart, nestedBytes,
+                transfer,
                 ref innerSegmentSize);
+        }
+        else
+        {
+            // Class: `fixed` pins the inner instance across native P/Invokes in the recursion.
+            object obj = GetOrCreateVrtInstance(ref baseAddr, header->fieldOffset, header->runtimeTypeHandle, header->ctorFunctionPtr);
+            fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
+            {
+                int innerSegmentSize = 0;
+                ExecuteReadCommands(
+                    ctx,
+                    ref Unsafe.AsRef<byte>(nestedBase),
+                    nestedStart, nestedBytes,
+                    transfer,
+                    ref innerSegmentSize);
+            }
         }
 
         pos = nestedStart + nestedBytes;
     }
 
+    // Read counterpart of ObjectToSerializationBuffer.
     [RequiredByNativeCode]
-    public static unsafe int SerializationBufferToObject(
+    public static unsafe void SerializationBufferToObject(
         IntPtr pinnedBase,
         IntPtr entriesPtr,
         int entryBufferSize,
-        IntPtr readContext)
+        IntPtr readContext,
+        IntPtr transfer)
     {
         // Managed object memory: accessed via ref so the GC can track it (the caller
         // currently pins, but the contract is "managed memory"). Unmanaged buffers
@@ -2448,8 +4341,8 @@ internal static unsafe class SerializationBackendManagedCommands
             ctx,
             ref baseAddr,
             (byte*)entriesPtr, entryBufferSize,
+            transfer,
             ref currentSegmentSize);
-        return 0;
     }
 
     // Inner loop shared by SerializationBufferToObject (top-level) and
@@ -2466,6 +4359,7 @@ internal static unsafe class SerializationBackendManagedCommands
         NativeReadBufferContext* ctx,
         ref byte baseAddr,
         byte* entryBase, int entryBufSize,
+        IntPtr transfer,
         ref int currentSegmentSize)
     {
         byte* pos    = entryBase;
@@ -2693,17 +4587,80 @@ internal static unsafe class SerializationBackendManagedCommands
                     break;
                 }
 
-                // 16B read entry carries klass per-entry. We always invoke the
-                // icall — fake-null / EntityId_None handling lives in
-                // TransferPPtrToMonoObject.
+                // Each entry's field-table slot is forwarded to
+                // ReadUnityObjectFromBuffer so a resolver-miss becomes an editor
+                // fake-null wrapper that keeps the EntityId for re-save, matching
+                // the native Transfer_UnityEngineObject path.
                 case RttiDataType.UnityObject:
                 {
                     var entry = ConsumeDirectCopyGroup<UnityObjectReadEntry>(ref pos, out var end);
+                    int count = (int)(end - entry);
+                    // The field-table mirrors FixedSegment_UnityObjectRead_Emit's
+                    // memcpy on the native side: pos lands at a 4-byte-aligned
+                    // offset (4B group header + count * 16B Pack=4 entries), so
+                    // direct IntPtr* deref is UB on arm64 / SIGBUS under IL2CPP.
+                    byte* fieldTableBase = pos;
+                    pos += count * 2 * sizeof(IntPtr);
+
+                    int i = 0;
                     do
                     {
                         ref object fieldRef = ref Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset));
                         byte* src = input + entry->destOffset;
-                        fieldRef = ReadUnityObjectFromBuffer(ctx->resolverHandle, (IntPtr)src, entry->klass, ctx->flags);
+
+                        byte* slotBase = fieldTableBase + i * 2 * sizeof(IntPtr);
+                        IntPtr fieldPtr       = Unsafe.ReadUnaligned<IntPtr>(slotBase);
+                        IntPtr fieldParentPtr = Unsafe.ReadUnaligned<IntPtr>(slotBase + sizeof(IntPtr));
+
+                        fieldRef = ReadUnityObjectFromBuffer(
+                            ctx->resolverHandle, (IntPtr)src, entry->klass, ctx->flags,
+                            fieldPtr, fieldParentPtr);
+                        entry++;
+                        i++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                // [SerializeReference] inline RefId read. Same on-wire shape as the
+                // ManagedReference write case (UnityObjectWriteEntry: {fieldOffset,
+                // destOffset}) — the build emits one descriptor for both directions
+                // because the per-entry layout is identical. The icall reads 8 bytes
+                // from the wire, activates the managed-references state (so the
+                // `references:` blob is consumed into the registry), and registers a
+                // deferred fixup; the existing PerformFixups flow resolves it once
+                // the registry blob has been read. transferState / instance come
+                // from the read context (set by Transfer_ManagedBlock_StreamedBinaryRead);
+                // both are non-null whenever this opcode appears (build only emits
+                // it for SR fields in StreamedBinaryRead transfers). SR collection
+                // elements stay on the native ManagedRefArrayItemTransferer arm,
+                // which calls RegisterFixupRequest per element on its own — no
+                // cursor coordination needed on read.
+                case RttiDataType.ManagedReference:
+                {
+                    var entry = ConsumeDirectCopyGroup<UnityObjectWriteEntry>(ref pos, out var end);
+                    do
+                    {
+                        byte* src = input + entry->destOffset;
+                        ReadManagedReferenceFromBuffer(ctx->transferState, ctx->instance, (int)entry->fieldOffset, (IntPtr)src);
+                        entry++;
+                    }
+                    while (entry < end);
+                    break;
+                }
+
+                case RttiDataType.EntityId:
+                {
+                    var entry = ConsumeDirectCopyGroup<EntityIdReadEntry>(ref pos, out var end);
+                    bool packInLSOI = (ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0;
+                    do
+                    {
+                        byte* src = input + entry->destOffset;
+                        ulong entityId = packInLSOI
+                            ? UnpackEntityIdFromLsoi(src)
+                            : s_readEntityIdFromBuffer(ctx->resolverHandle, (IntPtr)src, ctx->flags);
+                        ref byte fieldByteRef = ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset);
+                        Unsafe.WriteUnaligned<ulong>(ref fieldByteRef, entityId);
                         entry++;
                     }
                     while (entry < end);
@@ -2713,7 +4670,13 @@ internal static unsafe class SerializationBackendManagedCommands
                 case RttiDataType.Array:
                 case RttiDataType.List:
                 {
-                    ConsumeLinearCollectionRead(ctx, ref baseAddr, ref pos);
+                    ConsumeLinearCollectionRead(ctx, ref baseAddr, transfer, ref pos);
+                    break;
+                }
+
+                case RttiDataType.Dictionary:
+                {
+                    ConsumeDictionaryRead(ctx, ref baseAddr, transfer, ref pos);
                     break;
                 }
 
@@ -2725,7 +4688,7 @@ internal static unsafe class SerializationBackendManagedCommands
 
                 case RttiDataType.ValueReferenceType:
                 {
-                    ConsumeValueReferenceRead(ctx, ref baseAddr, ref pos);
+                    ConsumeValueReferenceRead(ctx, ref baseAddr, transfer, ref pos);
                     break;
                 }
 
@@ -2758,12 +4721,70 @@ internal static unsafe class SerializationBackendManagedCommands
                     break;
                 }
 
+                case RttiDataType.NativeValueStruct:
+                {
+                    var entry = (ManagedCommandNativeValueStructEntry*)pos;
+                    pos += sizeof(ManagedCommandNativeValueStructEntry);
+
+                    // Inline value struct: the storage is inline (no wrapper to
+                    // construct), so just hand the field's own address to the native
+                    // Transfer dispatcher. baseAddr is caller-pinned.
+                    ref byte nvsField = ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset);
+                    IntPtr nvsFieldPtr = (IntPtr)Unsafe.AsPointer(ref nvsField);
+
+                    // Dispatch reads straight off the CachedReader; rewind it first.
+                    InvokeSyncReader(ctx);
+                    ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)entry->fnPtr)(nvsFieldPtr, transfer, IntPtr.Zero);
+                    break;
+                }
+
+                case RttiDataType.SimpleNativeType:
+                {
+                    var entry = (ManagedCommandSimpleNativeTypeReadEntry*)pos;
+                    pos += sizeof(ManagedCommandSimpleNativeTypeReadEntry);
+
+                    // Wrapper field is a reference slot in the host instance. If null,
+                    // construct via the entry's runtimeTypeHandle + ctorFunctionPtr so
+                    // the wrapper's parameterless ctor runs and allocates the native peer.
+                    // Init refuses registration when ctorFunctionPtr would be zero, so we
+                    // can rely on a usable m_Ptr after construction.
+                    ref object slot = ref Unsafe.As<byte, object>(
+                        ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset));
+                    object wrapper = slot;
+                    if (wrapper == null)
+                    {
+                        wrapper = CreateWrapperInstance(entry->runtimeTypeHandle, entry->ctorFunctionPtr);
+                        slot = wrapper;
+                    }
+
+                    // m_Ptr lives at userData bytes past the wrapper's post-header data
+                    // start (offset queried by scripting_field_get_offset at init time
+                    // so it's correct for the active scripting backend).
+                    IntPtr nativePtr = Unsafe.ReadUnaligned<IntPtr>(ref Unsafe.AddByteOffset(
+                        ref Unsafe.As<ObjectWrapper>(wrapper).Data,
+                        entry->userData));
+
+                    // Dispatch reads straight off the CachedReader, which EnsureReadable
+                    // has pre-fetched past the cursor; rewind it before handing over.
+                    InvokeSyncReader(ctx);
+
+                    // Reads the wire bytes into the native peer.
+                    ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)entry->fnPtr)(nativePtr, transfer, entry->userData);
+
+                    // Managed post-deserialize hook for wrappers that opted in
+                    // (e.g. GUIStyle.InternalOnAfterDeserialize).
+                    if (entry->managedPostDispatchFnPtr != IntPtr.Zero)
+                        ((delegate*<object, IntPtr, void>)entry->managedPostDispatchFnPtr)(wrapper, nativePtr);
+                    break;
+                }
+
+                case RttiDataType.PropertyNameId:
+                    ConsumePropertyNameRead(ctx, ref baseAddr, ref pos);
+                    break;
+
                 case RttiDataType.DirectCopyBlock:
                 case RttiDataType.Reference:
-                case RttiDataType.EntityId:
                 case RttiDataType.DynamicBuffer:
-                case RttiDataType.PropertyNameId:
-                case RttiDataType.SimpleNativeType:
                 case RttiDataType.Unknown:
                     throw new NotSupportedException(
                         $"OpCode {opCode} is not implemented for managed command blocks.");

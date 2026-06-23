@@ -23,7 +23,11 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
     public static BindingId TargetProperty = nameof(Target);
     public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
 
+    internal const string k_NoNameHelpBoxName = "no-name-help-box";
+    static readonly string k_NoNameMessage = L10n.Tr("A name is required in order to override attributes.");
+
     readonly UxmlAttributesView m_AttributesView;
+    readonly HelpBox m_NoNameHelpBox;
     PropertyField m_RootPropertyField;
 
     private bool m_IsReadOnly;
@@ -75,6 +79,10 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
         AddToClassList(InspectorElement.uIECustomVariantUssClassName);
         AddToClassList(InspectorElement.customInspectorUssClassName);
 
+        m_NoNameHelpBox = new HelpBox(k_NoNameMessage, HelpBoxMessageType.Info) { name = k_NoNameHelpBoxName };
+        m_NoNameHelpBox.style.display = DisplayStyle.None;
+        Add(m_NoNameHelpBox);
+
         m_AttributesView = new UxmlAttributesView();
         m_AttributesView.ContextChanged += OnContextChanged;
         Add(m_AttributesView);
@@ -94,6 +102,11 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
             }
             ve = ve.parent;
         }
+    }
+
+    internal void SetAttributeOverrideHelpboxVisible(bool visible)
+    {
+        m_NoNameHelpBox.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)

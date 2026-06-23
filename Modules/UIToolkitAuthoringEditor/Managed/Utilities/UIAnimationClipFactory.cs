@@ -80,6 +80,9 @@ internal static class UIAnimationClipFactory
         var newClip = new UIAnimationClip { animationClip = innerClip };
         AssetDatabase.CreateAsset(newClip, path);
         innerClip.name = newClip.name; // Sub-asset name follows the parent, which is named by CreateAsset.
+        // The inner clip is an implementation detail of the UIAnimationClip; hide it so it doesn't
+        // show as a separate sub-asset row in the Project window or a second Inspector section.
+        innerClip.hideFlags = HideFlags.HideInHierarchy;
         AssetDatabase.AddObjectToAsset(innerClip, newClip);
         AssetDatabase.SaveAssets();
         return AssetDatabase.LoadAssetAtPath<UIAnimationClip>(path);
@@ -98,6 +101,9 @@ internal static class UIAnimationClipFactory
                 var preservedName = inner.name; // CopySerialized would clobber the sub-asset name.
                 EditorUtility.CopySerialized(pristine, inner);
                 inner.name = preservedName;
+                // Re-assert in case CopySerialized cleared the flag, and to retro-fit clips authored
+                // before the inner clip was hidden.
+                inner.hideFlags = HideFlags.HideInHierarchy;
                 EditorUtility.SetDirty(inner);
             }
             finally
@@ -111,6 +117,7 @@ internal static class UIAnimationClipFactory
             Undo.RegisterCompleteObjectUndo(existing, k_CreateAssetUndoName);
             var freshInner = BuildPristineInnerClip();
             freshInner.name = existing.name;
+            freshInner.hideFlags = HideFlags.HideInHierarchy;
             existing.animationClip = freshInner;
             AssetDatabase.AddObjectToAsset(freshInner, existing);
         }

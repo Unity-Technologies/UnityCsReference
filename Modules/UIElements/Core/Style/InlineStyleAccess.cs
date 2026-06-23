@@ -775,10 +775,38 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        // Shared skeleton for inline properties whose transitions are handled by non-generated code.
+        // Starts a transition when one is configured for the property (cancelling any stale animation
+        // otherwise). Returns false when the value should instead be applied directly.
+        private bool TryStartInlineTransition(StylePropertyId id, out ComputedTransitionProperty transition)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
+
+            if (computedTransitions.Length > 0 && ve.styleInitialized &&
+                computedTransitions.GetTransitionProperty(id, out transition))
+            {
+                return true;
+            }
+
+            // In case there were older animations running, cancel them.
+            ve.styleAnimation.CancelAnimation(id);
+            transition = default;
+            return false;
+        }
+
         private void ApplyStyleCursor(StyleCursor cursor)
         {
+            if (TryStartInlineTransition(StylePropertyId.Cursor, out var t) &&
+                ComputedStyle.StartAnimationInlineCursor(ve, ref ve.computedStyle, cursor, t.durationMs, t.delayMs, t.easingCurve))
+            {
+                return;
+            }
+
             ve.computedStyle.ApplyStyleCursor(cursor.value);
 
+            // The transition path doesn't push to the cursor manager: the animated value changes lazily
+            // and is picked up by the next pointer event (matching USS cursor transitions). Only the
+            // immediate apply updates the live cursor while the element is under the pointer.
             if (ve.elementPanel?.GetTopElementUnderPointer(PointerId.mousePointerId) == ve)
                 ve.elementPanel.cursorManager.SetCursor(cursor.value);
         }
@@ -814,25 +842,13 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleTextShadow(StyleTextShadow textShadow)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-
-            bool startedTransition = false;
-            if (computedTransitions.Length > 0 && ve.styleInitialized &&
-                computedTransitions.GetTransitionProperty(StylePropertyId.TextShadow, out var t))
+            if (TryStartInlineTransition(StylePropertyId.TextShadow, out var t) &&
+                ComputedStyle.StartAnimationInlineTextShadow(ve, ref ve.computedStyle, textShadow, t.durationMs, t.delayMs, t.easingCurve))
             {
-                startedTransition = ComputedStyle.StartAnimationInlineTextShadow(ve, ref ve.computedStyle,
-                    textShadow, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.TextShadow);
+                return;
             }
 
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleTextShadow(textShadow.value);
-            }
+            ve.computedStyle.ApplyStyleTextShadow(textShadow.value);
         }
 
         private bool SetInlineTextAutoSize(StyleTextAutoSize inlineValue)
@@ -898,26 +914,13 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleTransformOrigin(StyleTransformOrigin transformOrigin)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-
-            bool startedTransition = false;
-            if (computedTransitions.Length > 0 && ve.styleInitialized &&
-                computedTransitions.GetTransitionProperty(StylePropertyId.TransformOrigin, out var t))
+            if (TryStartInlineTransition(StylePropertyId.TransformOrigin, out var t) &&
+                ComputedStyle.StartAnimationInlineTransformOrigin(ve, ref ve.computedStyle, transformOrigin, t.durationMs, t.delayMs, t.easingCurve))
             {
-                startedTransition = ComputedStyle.StartAnimationInlineTransformOrigin(ve, ref ve.computedStyle,
-                    transformOrigin, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.TransformOrigin);
+                return;
             }
 
-
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleTransformOrigin(transformOrigin.value);
-            }
+            ve.computedStyle.ApplyStyleTransformOrigin(transformOrigin.value);
         }
 
         private bool SetInlineTranslate(StyleTranslate inlineValue)
@@ -949,25 +952,13 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleTranslate(StyleTranslate translate)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-
-            bool startedTransition = false;
-            if (computedTransitions.Length > 0 && ve.styleInitialized &&
-                computedTransitions.GetTransitionProperty(StylePropertyId.Translate, out var t))
+            if (TryStartInlineTransition(StylePropertyId.Translate, out var t) &&
+                ComputedStyle.StartAnimationInlineTranslate(ve, ref ve.computedStyle, translate, t.durationMs, t.delayMs, t.easingCurve))
             {
-                startedTransition = ComputedStyle.StartAnimationInlineTranslate(ve, ref ve.computedStyle,
-                    translate, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.Translate);
+                return;
             }
 
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleTranslate(translate.value);
-            }
+            ve.computedStyle.ApplyStyleTranslate(translate.value);
         }
 
         private bool SetInlineScale(StyleScale inlineValue)
@@ -999,26 +990,13 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleScale(StyleScale scale)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-
-            bool startedTransition = false;
-            if (computedTransitions.Length > 0 && ve.styleInitialized &&
-                computedTransitions.GetTransitionProperty(StylePropertyId.Scale, out var t))
+            if (TryStartInlineTransition(StylePropertyId.Scale, out var t) &&
+                ComputedStyle.StartAnimationInlineScale(ve, ref ve.computedStyle, scale, t.durationMs, t.delayMs, t.easingCurve))
             {
-                startedTransition = ComputedStyle.StartAnimationInlineScale(ve, ref ve.computedStyle,
-                    scale, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.Scale);
+                return;
             }
 
-
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleScale(scale.value);
-            }
+            ve.computedStyle.ApplyStyleScale(scale.value);
         }
 
         private bool SetInlineRotate(StyleRotate inlineValue)
@@ -1050,26 +1028,13 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleRotate(StyleRotate rotate)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-
-            bool startedTransition = false;
-            if (computedTransitions.Length > 0 && ve.styleInitialized &&
-                computedTransitions.GetTransitionProperty(StylePropertyId.Rotate, out var t))
+            if (TryStartInlineTransition(StylePropertyId.Rotate, out var t) &&
+                ComputedStyle.StartAnimationInlineRotate(ve, ref ve.computedStyle, rotate, t.durationMs, t.delayMs, t.easingCurve))
             {
-                startedTransition = ComputedStyle.StartAnimationInlineRotate(ve, ref ve.computedStyle,
-                    rotate, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.Rotate);
+                return;
             }
 
-
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleRotate(rotate.value);
-            }
+            ve.computedStyle.ApplyStyleRotate(rotate.value);
         }
 
         private bool SetInlineBackgroundSize(StyleBackgroundSize inlineValue)
@@ -1100,25 +1065,13 @@ namespace UnityEngine.UIElements
 
         private void ApplyStyleBackgroundSize(StyleBackgroundSize backgroundSize)
         {
-            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
-
-            bool startedTransition = false;
-            if (computedTransitions.Length > 0 && ve.styleInitialized &&
-                computedTransitions.GetTransitionProperty(StylePropertyId.BackgroundSize, out var t))
+            if (TryStartInlineTransition(StylePropertyId.BackgroundSize, out var t) &&
+                ComputedStyle.StartAnimationInlineBackgroundSize(ve, ref ve.computedStyle, backgroundSize, t.durationMs, t.delayMs, t.easingCurve))
             {
-                startedTransition = ComputedStyle.StartAnimationInlineBackgroundSize(ve, ref ve.computedStyle,
-                    backgroundSize, t.durationMs, t.delayMs, t.easingCurve);
-            }
-            else
-            {
-                // In case there were older animations running, cancel them.
-                ve.styleAnimation.CancelAnimation(StylePropertyId.BackgroundSize);
+                return;
             }
 
-            if (!startedTransition)
-            {
-                ve.computedStyle.ApplyStyleBackgroundSize(backgroundSize.value);
-            }
+            ve.computedStyle.ApplyStyleBackgroundSize(backgroundSize.value);
         }
 
         private void ApplyStyleValue(StyleValue value)

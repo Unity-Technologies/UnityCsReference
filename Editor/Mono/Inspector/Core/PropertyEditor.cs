@@ -23,6 +23,7 @@ using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
 using Unity.Collections;
 using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using Button = UnityEngine.UIElements.Button;
@@ -50,7 +51,7 @@ namespace UnityEditor
         Object hoveredObject { get; }
     }
 
-    class PropertyEditor : EditorWindow, IPropertyView, IHasCustomMenu
+    partial class PropertyEditor : EditorWindow, IPropertyView, IHasCustomMenu
     {
         internal const string k_AssetPropertiesMenuItemName = "Assets/Properties... _&P";
         protected const string s_MultiEditClassName = "unity-inspector-no-multi-edit-warning";
@@ -77,7 +78,6 @@ namespace UnityEditor
         protected const int k_AutoScrollZoneHeight = 24;
         const float m_PreviewDefaultHeight = 200;
         const float m_PreviewMinHeight = 20;
-
         static readonly string k_DebugInfoPanelTooltip = L10n.Tr("In Debug mode, the Inspector also displays the item's private properties and doesn't use custom inspector code.");
         static readonly string k_ExitDebugButtonTooltip = L10n.Tr("Change the Inspector window back to Normal mode.");
         static readonly string k_DebugModeLabel = L10n.Tr("Inspector mode: Debug");
@@ -105,14 +105,15 @@ namespace UnityEditor
         [SerializeField] protected List<EntityId> m_EntityIdsLockedBeforeSerialization = new List<EntityId>();
         [SerializeField] protected PreviewResizer m_PreviewResizer = new PreviewResizer();
                          protected LabelGUI m_LabelGUI = new LabelGUI();
-        [SerializeField] protected EntityId m_LastInspectedObjectEntityId = EntityId.None;
         [SerializeField] protected float m_LastVerticalScrollValue = 0;
         [SerializeField] protected string m_GlobalObjectId = "";
         [SerializeField] protected InspectorMode m_InspectorMode = InspectorMode.Normal;
 
-        private static readonly List<PropertyEditor> m_AllPropertyEditors = new List<PropertyEditor>();
+        [AutoStaticsCleanupOnCodeReload]
+        private static List<PropertyEditor> m_AllPropertyEditors = new List<PropertyEditor>();
         private Object m_InspectedObject;
         private string m_ExpectedTitle;
+        [AutoStaticsCleanupOnCodeReload]
         private static PropertyEditor s_LastPropertyEditor;
         protected EntityId m_LastInitialEditorEntityId;
         protected Component[] m_ComponentsInPrefabSource;
@@ -140,6 +141,7 @@ namespace UnityEditor
         protected VisualElement previewAndLabelElement => m_PreviewAndLabelElement ?? (m_PreviewAndLabelElement = FindVisualElementInTreeByClassName(s_FooterInfoClassName));
         protected VisualElement m_VersionControlElement;
         protected VisualElement versionControlElement => m_VersionControlElement ?? (m_VersionControlElement = FindVisualElementInTreeByClassName(s_HeaderInfoClassName));
+        [AutoStaticsCleanupOnCodeReload]
         protected static Dictionary<Editor, VersionControlBarState> m_VersionControlBarState = new Dictionary<Editor, VersionControlBarState>();
         protected VisualElement m_MultiEditLabel;
         protected ScrollView m_ScrollView;
@@ -156,13 +158,16 @@ namespace UnityEditor
         Button m_ExitDebugModeButton;
 
         List<DataMode> m_SupportedDataModes = new(4);
+        [NoAutoStaticsCleanup] // fixed singleton list of disabled modes, safe to persist
         static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
 
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
         public EditorDragging editorDragging { get; }
         public Editor lastInteractedEditor { get; set; }
+        [AutoStaticsCleanupOnCodeReload]
         internal static PropertyEditor HoveredPropertyEditor { get; private set; }
+        [AutoStaticsCleanupOnCodeReload]
         internal static PropertyEditor FocusedPropertyEditor { get; private set; }
 
         EditorElementUpdater m_EditorElementUpdater;
@@ -208,7 +213,7 @@ namespace UnityEditor
 
         internal Rect scrollViewportRect => m_ScrollView.contentViewport.rect;
 
-        protected static class Styles
+        protected static partial class Styles
         {
             public static readonly GUIStyle preToolbar = "preToolbar";
             public static readonly GUIStyle preToolbar2 = "preToolbar2";
@@ -220,15 +225,15 @@ namespace UnityEditor
             public static readonly GUIContent preTitle = EditorGUIUtility.TrTextContent("Preview");
             public static readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
             public static readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
-            public static GUIStyle preBackground = "preBackground";
-            public static GUIStyle footer = "IN Footer";
-            public static GUIStyle preMargins = new GUIStyle() {margin = new RectOffset(0, 0, 0, 4)};
-            public static GUIStyle preOptionsButton = new GUIStyle(EditorStyles.toolbarButtonRight) { padding = new RectOffset(), contentOffset = new Vector2(1, 0) };
-            public static GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
-            public static GUIStyle addComponentButtonStyle = "AC Button";
+            public static readonly GUIStyle preBackground = "preBackground";
+            public static readonly GUIStyle footer = "IN Footer";
+            public static readonly GUIStyle preMargins = new GUIStyle() {margin = new RectOffset(0, 0, 0, 4)};
+            public static readonly GUIStyle preOptionsButton = new GUIStyle(EditorStyles.toolbarButtonRight) { padding = new RectOffset(), contentOffset = new Vector2(1, 0) };
+            public static readonly GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
+            public static readonly GUIStyle addComponentButtonStyle = "AC Button";
             public static readonly GUIContent menuIcon = EditorGUIUtility.TrIconContent("_Menu");
-            public static GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
-            public static GUIStyle typeSelection = "IN TypeSelection";
+            public static readonly GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
+            public static readonly GUIStyle typeSelection = "IN TypeSelection";
 
             public static readonly GUIContent vcsCheckoutHint = EditorGUIUtility.TrTextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
             public static readonly GUIContent vcsNotConnected = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
@@ -242,11 +247,15 @@ namespace UnityEditor
             public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
             public static readonly GUIContent vcsRevert = EditorGUIUtility.TrTextContent("Revert");
             public static readonly GUIContent vcsRevertUnchanged = EditorGUIUtility.TrTextContent("Revert Unchanged");
+            [NoAutoStaticsCleanup] // array of auto-exempt GUIContent refs, safe to persist
             public static readonly GUIContent[] vcsRevertMenuNames = {vcsRevertUnchanged};
+            [NoAutoStaticsCleanup] // ok the static method assigned here is stateless
             public static readonly GenericMenu.MenuFunction2[] vcsRevertMenuActions = {DoRevertUnchanged};
             public static readonly GUIStyle vcsButtonStyle = EditorStyles.miniButton;
+            [NoAutoStaticsCleanup] // GUIStyle persists safely; static constructor applies modifiers on first access
             public static GUIStyle vcsRevertStyle = new GUIStyle(EditorStyles.dropDownList);
             public static readonly GUIStyle vcsBarStyleOneRow = EditorStyles.toolbar;
+            [NoAutoStaticsCleanup] // GUIStyle persists safely; static constructor applies modifiers on first access
             public static GUIStyle vcsBarStyleTwoRows = new GUIStyle(EditorStyles.toolbar);
             public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
@@ -255,8 +264,10 @@ namespace UnityEditor
                 "The built-in package '{0}', which is required by the package '{1}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
             );
 
-            public static SVC<float> lineSeparatorOffset = new SVC<float>("AC-Button", "--separator-line-top-offset");
-            public static SVC<Color> lineSeparatorColor = new SVC<Color>("--theme-line-separator-color", Color.red);
+            [NoAutoStaticsCleanup]
+            public static readonly SVC<float> lineSeparatorOffset = new SVC<float>("AC-Button", "--separator-line-top-offset");
+            [NoAutoStaticsCleanup]
+            public static readonly SVC<Color> lineSeparatorColor = new SVC<Color>("--theme-line-separator-color", Color.red);
 
             static Styles()
             {
@@ -428,9 +439,9 @@ namespace UnityEditor
 
             ClearPreviewables();
 
-            // save vertical scroll position
-            m_LastInspectedObjectEntityId = GetInspectedObject()?.GetEntityId() ?? EntityId.None;
-            m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
+            // Persist the live scroll offset so it survives a domain reload.
+            if (m_ScrollView != null)
+                m_LastVerticalScrollValue = m_ScrollView.verticalScroller.value;
 
             EditorApplication.focusChanged -= OnFocusChanged;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
@@ -526,7 +537,8 @@ namespace UnityEditor
                 m_HasPreviewPeriodicCheckDelayer?.Execute();
         }
 
-        static readonly List<Editor> s_Editors = new List<Editor>();
+        [AutoStaticsCleanupOnCodeReload]
+        static List<Editor> s_Editors = new List<Editor>();
 
         [UsedImplicitly]
         protected virtual void Update()
@@ -661,7 +673,6 @@ namespace UnityEditor
                     m_PreviewResizer.SetExpanded(false);
                 }
             }
-            RestoreVerticalScrollIfNeeded();
         }
 
         internal static void ClearAndRebuildAll()
@@ -1171,6 +1182,12 @@ namespace UnityEditor
         protected virtual void EndRebuildContentContainers() {}
         internal virtual void RebuildContentsContainers()
         {
+            // Capture the live scroll offset before teardown so it survives the rebuild. Skip on the
+            // first rebuild after a domain reload, where the ScrollView is freshly at 0 and the
+            // serialized value is authoritative.
+            if (!m_FirstInitialize && m_ScrollView != null)
+                m_LastVerticalScrollValue = m_ScrollView.verticalScroller.value;
+
             ClearPreviewables();
             m_TypeSelectionList = null;
             m_FirstInitialize = false;
@@ -1294,11 +1311,23 @@ namespace UnityEditor
             }
             k_CreateInspectorElements.End();
 
+            // When restoring scroll, build just enough editors for the saved offset to stay reachable, so it can be
+            // re-applied below without the scroller clamping it to 0. The remaining editors keep building time-sliced.
+            if (m_LastVerticalScrollValue > 0f && editorsElement != null && m_ScrollView != null)
+            {
+                m_EditorElementUpdater.CreateInspectorElementsToReachScrollOffset(m_ScrollView, editorsElement, m_LastVerticalScrollValue);
+            }
+
             rootVisualElement.MarkDirtyRepaint();
 
             ScriptAttributeUtility.ClearGlobalCache();
 
             EndRebuildContentContainers();
+
+            // Re-apply the preserved scroll offset now that the content height is final.
+            if (m_LastVerticalScrollValue > 0f && m_ScrollView != null)
+                m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
+
             Repaint();
             RefreshTitle();
         }
@@ -2473,16 +2502,6 @@ namespace UnityEditor
                     m_RemovedPrefabComponentsElement = prefabsComponentElement;
                 }
             }
-        }
-
-        private void RestoreVerticalScrollIfNeeded()
-        {
-            if (m_LastInspectedObjectEntityId == EntityId.None)
-                return;
-            var inspectedObjectInstanceID = GetInspectedObject()?.GetEntityId() ?? EntityId.None;
-            if (inspectedObjectInstanceID == m_LastInspectedObjectEntityId && inspectedObjectInstanceID != EntityId.None)
-                m_ScrollView.verticalScroller.value = m_LastVerticalScrollValue;
-            m_LastInspectedObjectEntityId = EntityId.None; // reset to make sure the restore occurs once
         }
 
         void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance, PrefabUnpackMode unpackMode)

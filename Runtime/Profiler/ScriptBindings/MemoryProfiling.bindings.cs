@@ -9,6 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Profiling.Memory
 {
@@ -31,13 +32,17 @@ namespace Unity.Profiling.Memory
     }
 
     [NativeHeader("Runtime/Profiler/Runtime/MemorySnapshotManager.h")]
-    public static class MemoryProfiler
+    public static partial class MemoryProfiler
     {
+        [AutoStaticsCleanupOnCodeReload]
         private static event Action<string, bool> m_SnapshotFinished;
+        [AutoStaticsCleanupOnCodeReload]
         private static event Action<string, bool, DebugScreenCapture> m_SaveScreenshotToDisk;
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<MemorySnapshotMetadata>     CreatingMetadata;
 
+        [AutoStaticsCleanupOnCodeReload]
         static bool isCompiling = false;
         internal static void StartedCompilationCallback(object msg)
         {

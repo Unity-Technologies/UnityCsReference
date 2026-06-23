@@ -104,6 +104,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string packageContainerTitle = L10n.Tr("Packages");
         public static readonly string partnerPackageListTitle = L10n.Tr("Partner Packages");
         public static readonly string required = L10n.Tr("Required");
+        public static readonly string deprecated = L10n.Tr("Deprecated");
         public static readonly string publisherLabel = L10n.Tr("Publisher: {0}");
         public static readonly string selectAll = L10n.Tr("Select All");
         public static readonly string deselectAll = L10n.Tr("Deselect All");
@@ -114,6 +115,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string requiredPackagesInstalled = L10n.Tr("Required packages are installed. ");
         public static readonly string requiredPackagesNotInstalled = L10n.Tr("Required packages are not installed. ");
         public static readonly string signInButton = L10n.Tr("Sign in");
+        public static readonly string platformDeprecatedDefaultWithDisplayName = L10n.Tr("The {0} platform is deprecated.");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");

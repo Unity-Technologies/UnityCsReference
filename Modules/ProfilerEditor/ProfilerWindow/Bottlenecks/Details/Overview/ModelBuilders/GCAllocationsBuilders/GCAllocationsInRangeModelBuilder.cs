@@ -37,15 +37,9 @@ namespace Unity.Profiling.Editor.UI
 
         public async Task<GCAllocationsModel> BuildAsync(CancellationToken cancellationToken)
         {
-            var task = Task.Run(() =>
-            {
-                return BuildGCAllocationsModel(cancellationToken);
-            });
-            await task;
-
+            var result = await Task.Run(() => BuildGCAllocationsModel(cancellationToken), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-
-            return await task;
+            return result;
         }
 
         GCAllocationsModel BuildGCAllocationsModel(CancellationToken cancellationToken)

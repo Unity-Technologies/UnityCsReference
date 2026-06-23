@@ -22,7 +22,7 @@ namespace Unity.Hierarchy
     /// </summary>
     public sealed class HierarchyView : VisualElement, IDisposable
     {
-        internal const int k_ItemHeight = 20;
+        internal const int k_ItemHeight = 16;
         static readonly UniqueStyleString k_ListViewName = new("unity-tree-view__list-view");
         static readonly UniqueStyleString k_HierarchyViewRootStyleName = new("hierarchy");
         static readonly UniqueStyleString k_HierarchyViewStyleContainerStyleName = new("hierarchy__container");
@@ -345,13 +345,13 @@ namespace Unity.Hierarchy
             m_Selection = new HierarchyViewSelection();
             m_CollectionView = new CollectionView(m_Selection)
             {
-                name = (string)k_ListViewName,
                 fixedItemHeight = k_ItemHeight,
                 selectionType = SelectionType.Multiple,
                 reorderMode = ListViewReorderMode.Simple,
                 reorderable = true,
                 itemsSource = null
             };
+            m_CollectionView.SetName(k_ListViewName);
             m_CollectionView.animation = new CollectionViewClipAnimation();
             m_CollectionView.animationCompleted += OnCollectionViewAnimationCompleted;
 
@@ -1391,6 +1391,11 @@ namespace Unity.Hierarchy
             if (rowContainer.ClassListContains(k_HierarchyPingBase))
                 return;
 
+            // We need to clear the frozen cell's background so it participates in the ping animation uniformly.
+            var frozenCells = rowContainer.Query<VisualElement>().Class(CellRow.frozenCellUssClassName).ToList();
+            foreach (var cell in frozenCells)
+                cell.style.backgroundColor = Color.clear;
+
             // Begin ping animation
             // Note: Trigger start of anim next frame so the previous AnimatedValue resolved style is properly setup and Transition will occur.
             rowContainer.AddToClassList(k_HierarchyPingBase);
@@ -1404,8 +1409,15 @@ namespace Unity.Hierarchy
                 // 2-  Change background-color value. Background-color will transition over time until it reached k_HierarchyStartPingStyleName
                 rowContainer.AddToClassList(k_HierarchyPingRampIn_Start);
 
-                rowContainer.RegisterCallbackOnce<TransitionEndEvent>(_ =>
+                rowContainer.RegisterCallback<TransitionEndEvent>(OnRampInEnd);
+
+                void OnRampInEnd(TransitionEndEvent evt)
                 {
+                    if (evt.target != rowContainer)
+                        return;
+
+                    rowContainer.UnregisterCallback<TransitionEndEvent>(OnRampInEnd);
+
                     // 3- Remove k_HierarchyStartPingStyleName.
                     rowContainer.RemoveFromClassList(k_HierarchyPingRampIn_Start);
                     rowContainer.RemoveFromClassList(k_HierarchyPingRampIn_Style);
@@ -1414,15 +1426,24 @@ namespace Unity.Hierarchy
                     rowContainer.AddToClassList(k_HierarchyPingRampOut_Start);
                     rowContainer.AddToClassList(k_HierarchyPingRampOut_Style);
 
-                    rowContainer.RegisterCallbackOnce<TransitionEndEvent>(_ =>
-                    {
-                        // 5- Remove Transition styling.
+                    rowContainer.RegisterCallback<TransitionEndEvent>(OnRampOutEnd);
 
+                    void OnRampOutEnd(TransitionEndEvent evt)
+                    {
+                        if (evt.target != rowContainer)
+                            return;
+
+                        rowContainer.UnregisterCallback<TransitionEndEvent>(OnRampOutEnd);
+
+                        // 5- Remove Transition styling and restore frozen cell backgrounds.
                         rowContainer.RemoveFromClassList(k_HierarchyPingBase);
                         rowContainer.RemoveFromClassList(k_HierarchyPingRampOut_Start);
                         rowContainer.RemoveFromClassList(k_HierarchyPingRampOut_Style);
-                    });
-                });
+
+                        foreach (var cell in frozenCells)
+                            cell.style.backgroundColor = StyleKeyword.Null;
+                    }
+                }
             });
         }
 
@@ -1567,6 +1588,9 @@ namespace Unity.Hierarchy
             if (m_IsRenamingItem)
                 return;
 
+            if (m_CollectionView.animation is { isAnimating: true })
+                m_CollectionView.animation.SkipAnimation();
+
             // Cancel any pending rename on any key press (shortcuts like Cmd+D, Delete, etc.)
             CancelScheduledRename();
 
@@ -1590,7 +1614,13 @@ namespace Unity.Hierarchy
 
         void OnNavigationMove(NavigationMoveEvent evt)
         {
-            if (m_IsRenamingItem || m_Selection.indexCount == 0)
+            if (m_IsRenamingItem)
+                return;
+
+            if (m_CollectionView.animation is { isAnimating: true })
+                m_CollectionView.animation.SkipAnimation();
+
+            if (m_Selection.indexCount == 0)
                 return;
 
             var shouldStopPropagation = true;

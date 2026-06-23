@@ -46,6 +46,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 StylePropertyId.AspectRatio
             },
                         {
+                "backdrop-filter",
+                StylePropertyId.BackdropFilter
+            },
+                        {
                 "background-color",
                 StylePropertyId.BackgroundColor
             },
@@ -453,6 +457,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 StylePropertyId.AspectRatio,
                 "aspect-ratio"
+            },
+                        {
+                StylePropertyId.BackdropFilter,
+                "backdrop-filter"
             },
                         {
                 StylePropertyId.BackgroundColor,
@@ -864,6 +872,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "aspectRatio"
             },
                         {
+                "backdrop-filter",
+                "backdropFilter"
+            },
+                        {
                 "background-color",
                 "backgroundColor"
             },
@@ -1273,6 +1285,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "aspect-ratio"
             },
                         {
+                "backdropFilter",
+                "backdrop-filter"
+            },
+                        {
                 "backgroundColor",
                 "background-color"
             },
@@ -1654,7 +1670,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
                 };
 
-        internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>(new[] { StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.AspectRatio, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Filter, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing });
+        internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>(new[] { StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.AspectRatio, StylePropertyId.BackdropFilter, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Cursor, StylePropertyId.Filter, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing });
 
         internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
         {
@@ -1724,6 +1740,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VersionChangeType.Styles | VersionChangeType.AnimationProperty,
             /*StylePropertyId.AspectRatio*/
             VersionChangeType.Styles | VersionChangeType.Layout,
+            /*StylePropertyId.BackdropFilter*/
+            VersionChangeType.Styles | VersionChangeType.Repaint,
             /*StylePropertyId.BackgroundColor*/
             VersionChangeType.Styles | VersionChangeType.Color,
             /*StylePropertyId.BackgroundImage*/
@@ -1773,7 +1791,7 @@ namespace UnityEngine.UIElements.StyleSheets
             /*StylePropertyId.Color*/
             VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Color,
             /*StylePropertyId.Cursor*/
-            VersionChangeType.Styles,
+            VersionChangeType.Styles | VersionChangeType.Styles,
             /*StylePropertyId.Display*/
             VersionChangeType.Styles | VersionChangeType.Layout,
             /*StylePropertyId.Filter*/
@@ -2738,6 +2756,8 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StylePropertyId.AnimationPlayState:
                     return (int)&rareData.animationPlayState - (int)&rareData;
+                case StylePropertyId.BackdropFilter:
+                    return (int)&rareData.backdropFilter - (int)&rareData;
                 case StylePropertyId.BackgroundColor:
                     return (int)&visualData.backgroundColor - (int)&visualData;
                 case StylePropertyId.BackgroundImage:
@@ -2863,6 +2883,8 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StylePropertyId.AnimationPlayState:
                     return (int)(&rareData.animationPlayState + 1) - (int)&rareData.animationPlayState;
+                case StylePropertyId.BackdropFilter:
+                    return (int)(&rareData.backdropFilter + 1) - (int)&rareData.backdropFilter;
                 case StylePropertyId.BackgroundColor:
                     return (int)(&visualData.backgroundColor + 1) - (int)&visualData.backgroundColor;
                 case StylePropertyId.BackgroundImage:

@@ -601,7 +601,14 @@ namespace UnityEngine.UIElements
                 m_LastPendingFocusedElement = null;
 
             foreach (var element in m_FocusedElements)
+            {
+                // Check resourcesReleased property: unfortunately we do not update m_FocusedElements
+                // if an element is removed from the panel (removing an element is a precondition to releasing)
+                // so if the element is released, we just don't update it to avoid errors/exceptions
+                if (element.m_FocusedElement.resourcesReleased)
+                    continue;
                 element.m_FocusedElement.pseudoStates &= ~PseudoStates.Focus;
+            }
 
             DoFocusChange(f);
 

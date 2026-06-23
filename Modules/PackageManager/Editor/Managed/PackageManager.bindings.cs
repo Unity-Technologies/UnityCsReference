@@ -76,6 +76,9 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::SetCacheRoot::StartOperation")]
         private static extern NativeStatusCode SetCacheRoot([Out] out long operationId, string newPath);
 
+        [FreeFunction("PackageManager::Sign::StartOperation")]
+        private static extern NativeStatusCode Sign([Out] out long operationId, string packageFolder, string ownerOrgId);
+
         [FreeFunction("PackageManager::UpdateScopedRegistry::StartOperation")]
         private static extern NativeStatusCode UpdateScopedRegistry([Out] out long operationId, string registryId, UpdateScopedRegistryOptions options, bool dryRun);
     }
@@ -119,5 +122,4 @@ namespace UnityEditor.PackageManager
     {
         public static extern bool HasBypassPackageTrustEntitlement();
     }
-    
 }

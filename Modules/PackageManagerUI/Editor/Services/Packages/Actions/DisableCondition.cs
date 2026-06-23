@@ -129,6 +129,29 @@ internal class DisableIfPackageIsInInvalidLocation : DisableCondition
     }
 }
 
+internal class DisableIfSampleHasNoPath : DisableCondition
+{
+    private static readonly string k_Tooltip = L10n.Tr("The path property for this sample is missing.");
+    public DisableIfSampleHasNoPath(Sample sample)
+    {
+        active = sample is { isDefault: false, package: not null }
+                 && string.IsNullOrEmpty(sample.resolvedPath);
+        tooltip = k_Tooltip;
+    }
+}
+
+internal class DisableIfSamplePathDoesNotExist : DisableCondition
+{
+    private static readonly string k_Tooltip = L10n.Tr("The path specified for this sample doesn't exist.");
+    public DisableIfSamplePathDoesNotExist(Sample sample, IIOProxy ioProxy)
+    {
+        active = sample is { isDefault: false, package: not null }
+                 && !string.IsNullOrEmpty(sample.resolvedPath)
+                 && !ioProxy.DirectoryExists(sample.resolvedPath);
+        tooltip = k_Tooltip;
+    }
+}
+
 internal class DisableIfPackageDisabled : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("This package is no longer available.");

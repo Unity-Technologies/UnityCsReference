@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
@@ -54,11 +55,29 @@ namespace UnityEditor.EditorTools
         {
             SetActiveContext(typeof(T));
         }
-        
+
         internal static void SetActiveContext<T>(Type toolOwnerType) where T : EditorToolContext
         {
             SetActiveContext(typeof(T), toolOwnerType);
         }
+
+        internal static bool CanSetActiveContext(Type context, Type contextOwner = null)
+        {
+            if (contextOwner == null)
+                contextOwner = typeof(SceneView);
+
+            if (context == null || !typeof(EditorToolContext).IsAssignableFrom(context) || context.IsAbstract)
+                return false;
+
+            if (!EditorToolUtility.IsComponentEditor(context))
+                return true;
+
+            return EditorToolManager.GetComponentContext(context, toolOwner: contextOwner, true) != null;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static bool CanSetActiveContext<T>() where T : EditorToolContext
+            => CanSetActiveContext(typeof(T));
         
         internal static Type GetActiveToolType(Type toolOwnerType)
         {

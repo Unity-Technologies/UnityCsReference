@@ -6,19 +6,21 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
-    class IssueSearchProvider : SearchProvider
+    partial class IssueSearchProvider : SearchProvider
     {
         public const string kProviderId = "project-auditor-issues";
         private const string kProviderFilterId = "auditor:";
         private const string k_ProviderDisplayName = "Project Auditor Issues";
 
         private static readonly Regex kStartUntilColon = new(@"^([^:]*)(?::(.*))?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        [AutoStaticsCleanupOnCodeReload]
         private static Texture2D s_SearchIcon;
 
         private enum TypeOfReportItem
@@ -62,7 +64,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             // Categories
             {
-                var categories = (IssueCategory[])Enum.GetValues(typeof(IssueCategory));
+                var categoryArray = (IssueCategory[])Enum.GetValues(typeof(IssueCategory));
+                var categories = new List<IssueCategory>(categoryArray.Length);
+                foreach (var category in categoryArray)
+                {
+                    if (category < IssueCategory.FirstCustomCategory)
+                        categories.Add(category);
+                }
+
                 foreach (var category in categories)
                     sb.Append($"\"{category}\", ");
                 var allCategories = sb.ToString().TrimEnd(',', ' ');

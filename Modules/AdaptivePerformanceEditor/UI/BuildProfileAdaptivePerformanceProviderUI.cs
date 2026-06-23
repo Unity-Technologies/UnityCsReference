@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.AdaptivePerformance.Editor.Metadata;
 using UnityEditor.Build.Profile;
 using UnityEditor.PackageManager;
@@ -36,6 +37,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         DropdownField m_DropDown;
         List<string> m_LoaderNameList;
         ReorderableList m_ReorderableList;
+        [NoAutoStaticsCleanup] // dialog-guard flag, always restored to false after dialog closes
         static bool s_ShowingDialog = false;
 
         internal readonly GUIContent k_ViewGuide = new("View Guide");

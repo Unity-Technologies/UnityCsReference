@@ -4,11 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using Debug = UnityEngine.Debug;
@@ -27,7 +30,7 @@ internal enum TrackedPropertyType
 internal interface ITrackablePropertyProvider
 {
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
-    event Action<ITrackablePropertyProvider, string, bool, bool> OnTrackedPropertySourceChanged;
+    event Action<ITrackablePropertyProvider, string, bool, bool, bool> OnTrackedPropertySourceChanged;
 }
 
 internal interface INotifyCompositeStylePropertyChanged<in TValue>
@@ -199,15 +202,20 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     public static readonly string k_SetVariableText = L10n.Tr("Set variable");
     public static readonly string k_EditVariableText = L10n.Tr("Edit variable");
     public static readonly string k_RemoveVariableText = L10n.Tr("Remove variable");
+    public static readonly string k_GoToSelectorText = L10n.Tr("Go to selector");
+    public static readonly string k_OpenSelectorInIDEText = L10n.Tr("Open selector in IDE");
+    public static readonly string k_SetAsInlineValueText = L10n.Tr("Set as inline value");
+    public static readonly string k_SetAsValueText = L10n.Tr("Set as value");
+    public static readonly string k_UnsetText = L10n.Tr("Unset");
+    public static readonly string k_UnsetAllText = L10n.Tr("Unset All");
+    public static readonly string k_ExtractInlineStyleText = L10n.Tr("Extract Inlined Style to Selector");
+    public static readonly string k_ExtractAllInlineStylesText = L10n.Tr("Extract All Inlined Styles to Selector");
+    public static readonly string k_NewClassText = L10n.Tr("New Class...");
 
     public static readonly UniqueStyleString k_InlineFieldUssClassName = new("style-property-field__inline-value");
     public static readonly UniqueStyleString k_VariableFieldUssClassName = new("style-property-field__variable");
     public static readonly UniqueStyleString k_BoundFieldUssClassName = new("style-property-field__bound");
-
     public static readonly UniqueStyleString k_AnimationDrivenFieldUssClassName = new("style-property-field__animation-driven");
-    public static readonly UniqueStyleString k_AnimationAnimatedFieldUssClassName = new("style-property-field__animation-animated");
-    public static readonly UniqueStyleString k_AnimationRecordingFieldUssClassName = new("style-property-field__animation-recording");
-    public static readonly UniqueStyleString k_AnimationCandidateFieldUssClassName = new("style-property-field__animation-candidate");
 
     const string k_ContextualMenuManipulatorPropertyName = "__ContextMenuManipulator";
 
@@ -218,7 +226,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     private StylePropertyId stylePropertyId;
 
     public event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
-    public event Action<ITrackablePropertyProvider, string, bool, bool> OnTrackedPropertySourceChanged;
+    public event Action<ITrackablePropertyProvider, string, bool, bool, bool> OnTrackedPropertySourceChanged;
 
     internal const string k_DataSourcePathTooltip = "The name of the style property that is targeted.";
 
@@ -333,8 +341,15 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             }
             case StyleDiff.ContextType.StyleSheet:
             {
-                Debug.Assert(authoringContext.AnimationController == null,
-                    "AnimationController must be null in StyleSheet context.");
+                // While recording, save the rule's edit to its clip instead of the stylesheet; otherwise
+                // write to the stylesheet as usual. Shorthands aren't recorded - edit their parts instead.
+                if (authoringContext.AnimationController != null && AnimationMode.InAnimationRecording())
+                {
+                    if (!StyleDebug.IsShorthandProperty(binding.stylePropertyId))
+                        AnimationRecordingStyleBridge.TryRecordStyleRulePropertyChange(styleDiff.currentRule, binding.stylePropertyId, in value);
+                    break;
+                }
+
                 SetStyleSheetPropertyCommand<T>.Execute(CommandSources.Inspector, styleDiff.currentStyleSheet, styleDiff.currentRule, binding.stylePropertyId, setter, value);
 
                 // Update selector element
@@ -434,107 +449,364 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     }
 
     void SetupContextMenu<TInline, TComputed>(VisualElement field, FieldAffordanceElement fieldAffordanceElement,
-        StyleInspectorElement.AuthoringContext authoringContext, StylePropertyData<TInline, TComputed> value)
+        StyleInspectorElement.AuthoringContext authoringContext, StylePropertyData<TInline, TComputed> value,
+        BindingId id, VisualElement propertyContainer = null)
     {
-        if (!field.HasProperty(k_ContextualMenuManipulatorPropertyName))
-        {
-            var contextMenuManipulator = new ContextualMenuManipulator((evt) =>
-            {
-                // Dynamically retrieve the current affordance element instead of capturing it
-                var currentAffordanceElement = (field as IAffordanceField)?.affordanceElement;
-                currentAffordanceElement?.OnContextualMenuPopulate(evt);
-            });
-            contextMenuManipulator.acceptClicksIfDisabled = true;
-            field.AddManipulator(contextMenuManipulator);
-            field.SetProperty(k_ContextualMenuManipulatorPropertyName, contextMenuManipulator);
-        }
+        EnsureContextMenuManipulator(field);
 
         fieldAffordanceElement.populateMenuItems = menu =>
         {
             var ve = authoringContext.StyleDiff.currentTarget;
             var bindingPath = "style." + m_StylePropertyCSharpName;
-            var isBindableElement = UxmlSerializedDataRegistry.GetDescription(ve.GetType().FullName) != null;
-            var isBindableProperty = PropertyContainer.IsPathValid(ve, bindingPath);
 
             // Add a separator in case then menu is already filled with items (e.g: TextField's input)
             menu.AppendSeparator();
 
-            if (isBindableElement && isBindableProperty)
-            {
-                var hasDataBinding = false;
-                var vea = ve.visualElementAsset;
-
-                if (vea != null)
-                {
-                    hasDataBinding = ve.TryGetBinding(bindingPath, out _);
-                }
-
-                if (hasDataBinding)
-                {
-                    if (authoringContext.IsReadOnly)
-                    {
-                        menu.AppendAction(k_ViewBindingText,
-                            (a) => BindingWindow.OpenToView(ve, bindingPath, fieldAffordanceElement),
-                            (a) => DropdownMenuAction.Status.Normal,
-                            this);
-                    }
-                    else
-                    {
-                        menu.AppendAction(k_EditBindingText,
-                            (a) =>  BindingWindow.OpenToEdit(ve, bindingPath, fieldAffordanceElement),
-                            (a) => DropdownMenuAction.Status.Normal,
-                            this);
-
-                        menu.AppendAction(k_RemoveBindingText, (a) => {
-                            RemoveBindingCommand.Execute(CommandSources.Inspector, ve, stylePropertyId);
-                        }, (a) => DropdownMenuAction.Status.Normal, this);
-                    }
-                }
-                else
-                {
-                    if (!authoringContext.IsReadOnly && vea != null)
-                    {
-                        menu.AppendAction(k_AddBindingText,
-                            _ => { BindingWindow.OpenToCreate(ve, bindingPath, fieldAffordanceElement); });
-                    }
-                }
-            }
-
-            var isOverridden = value.uxmlValue.isInlined || value.binding != null || value.uxmlValue.requireVariableResolve;
-
-            var status = isOverridden && !authoringContext.IsReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-            menu.AppendAction("Unset", _ => UnsetStyleProperty(authoringContext.StyleDiff), status);
-
-            var hasAnyProperties = HasAnyProperties(authoringContext.StyleDiff);
-            var unsetAllStatus = hasAnyProperties && !authoringContext.IsReadOnly ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-            menu.AppendAction("Unset All", _ => UnsetAllStyleProperties(authoringContext.StyleDiff), unsetAllStatus);
+            AppendBindingMenuItems(menu, ve, bindingPath, fieldAffordanceElement, authoringContext.IsReadOnly);
+            AppendSetAsInlineValueMenuItems(menu, propertyContainer ?? field, value, authoringContext, id);
+            AppendUnsetMenuItems(menu, value, authoringContext);
+            AppendExtractInlineStyleMenuItems(menu, field, value, authoringContext);
 
             menu.AppendSeparator();
 
-            if (value.uxmlValue.requireVariableResolve)
-            {
-                menu.AppendAction(k_EditVariableText,
-                    ViewVariableViaContextMenu,
-                    a => VariableActionStatus(a, authoringContext.IsReadOnly),
-                    field);
-
-                var removeVariableStatus = !authoringContext.IsReadOnly
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled;
-                menu.AppendAction(k_RemoveVariableText, (a) => RemoveVariableViaContextMenu(authoringContext),
-                    (a) => removeVariableStatus, field);
-            }
-            else
-            {
-                menu.AppendAction(k_SetVariableText, ViewVariableViaContextMenu,
-                    a => VariableActionStatus(a, authoringContext.IsReadOnly),
-                    field);
-            }
+            AppendVariableMenuItems(menu, field, value.uxmlValue.requireVariableResolve, authoringContext);
+            AppendSelectorMenuItems(menu, fieldAffordanceElement, authoringContext);
 
             // Animation Window contextual items - no-op when no responder is active so the
             // menu is unchanged outside of preview/recording sessions.
             VisualElementContextualPropertyMenu.Populate(menu, ve, stylePropertyId);
         };
+    }
+
+    void AppendSetAsInlineValueMenuItems<TInline, TComputed>(DropdownMenu menu, VisualElement field,
+        StylePropertyData<TInline, TComputed> value, StyleInspectorElement.AuthoringContext authoringContext,
+        BindingId id)
+    {
+        var contextType = authoringContext.StyleDiff.currentContextType;
+        if (contextType == StyleDiff.ContextType.None)
+            return;
+
+        var label = contextType == StyleDiff.ContextType.VisualElement
+            ? k_SetAsInlineValueText
+            : k_SetAsValueText;
+
+        var isAlreadyInlined = value.uxmlValue.isInlined;
+        var hasVariable = value.uxmlValue.requireVariableResolve;
+        var status = (!isAlreadyInlined || hasVariable) && !authoringContext.IsReadOnly
+            ? DropdownMenuAction.Status.Normal
+            : DropdownMenuAction.Status.Disabled;
+
+        var computedValue = value.computedValue;
+        menu.AppendAction(label, _ => TriggerSetAsInlineValue<TInline, TComputed>(field, computedValue, id), _ => status);
+    }
+
+    void TriggerSetAsInlineValue<TInline, TComputed>(VisualElement field, TComputed capturedValue, BindingId id)
+    {
+        switch (field)
+        {
+            case BaseField<TComputed>:
+            {
+                using var evt = ChangeEvent<TComputed>.GetPooled(capturedValue, capturedValue);
+                evt.target = field;
+                field.SendEvent(evt);
+                break;
+            }
+            case BaseField<TInline>:
+            {
+                if (TypeConversion.TryConvert<TComputed, TInline>(ref capturedValue, out var converted))
+                {
+                    using var evt = ChangeEvent<TInline>.GetPooled(converted, converted);
+                    evt.target = field;
+                    field.SendEvent(evt);
+                }
+                break;
+            }
+            case INotifyCompositeStylePropertyChanged<TComputed> composite:
+                composite.SetValue(id, capturedValue, true);
+                break;
+            case INotifyCompositeStylePropertyChanged<TInline> compositeInline:
+            {
+                if (TypeConversion.TryConvert<TComputed, TInline>(ref capturedValue, out var converted))
+                    compositeInline.SetValue(id, converted, true);
+                break;
+            }
+            default:
+                PropertyContainer.SetValue(field, id, capturedValue);
+                break;
+        }
+    }
+
+    void EnsureContextMenuManipulator(VisualElement field)
+    {
+        if (field.HasProperty(k_ContextualMenuManipulatorPropertyName))
+            return;
+
+        var contextMenuManipulator = new ContextualMenuManipulator(evt =>
+        {
+            // Dynamically retrieve the current affordance element instead of capturing it
+            var currentAffordanceElement = (field as IAffordanceField)?.affordanceElement;
+            currentAffordanceElement?.OnContextualMenuPopulate(evt);
+        });
+        contextMenuManipulator.acceptClicksIfDisabled = true;
+        field.AddManipulator(contextMenuManipulator);
+        field.SetProperty(k_ContextualMenuManipulatorPropertyName, contextMenuManipulator);
+    }
+
+    void AppendBindingMenuItems(DropdownMenu menu, VisualElement ve, string bindingPath,
+        FieldAffordanceElement fieldAffordanceElement, bool isReadOnly)
+    {
+        var isBindableElement = UxmlSerializedDataRegistry.GetDescription(ve.GetType().FullName) != null;
+        var isBindableProperty = PropertyContainer.IsPathValid(ve, bindingPath);
+
+        if (!isBindableElement || !isBindableProperty)
+            return;
+
+        var vea = ve.visualElementAsset;
+        var hasDataBinding = vea != null && ve.TryGetBinding(bindingPath, out _);
+
+        if (hasDataBinding)
+        {
+            if (isReadOnly)
+            {
+                menu.AppendAction(k_ViewBindingText,
+                    _ => BindingWindow.OpenToView(ve, bindingPath, fieldAffordanceElement),
+                    _ => DropdownMenuAction.Status.Normal,
+                    this);
+            }
+            else
+            {
+                menu.AppendAction(k_EditBindingText,
+                    _ => BindingWindow.OpenToEdit(ve, bindingPath, fieldAffordanceElement),
+                    _ => DropdownMenuAction.Status.Normal,
+                    this);
+
+                menu.AppendAction(k_RemoveBindingText,
+                    _ => RemoveBindingCommand.Execute(CommandSources.Inspector, ve, stylePropertyId),
+                    _ => DropdownMenuAction.Status.Normal,
+                    this);
+            }
+        }
+        else if (!isReadOnly && vea != null)
+        {
+            menu.AppendAction(k_AddBindingText,
+                _ => BindingWindow.OpenToCreate(ve, bindingPath, fieldAffordanceElement));
+        }
+    }
+
+    void AppendUnsetMenuItems<TInline, TComputed>(DropdownMenu menu, StylePropertyData<TInline, TComputed> value,
+        StyleInspectorElement.AuthoringContext authoringContext)
+    {
+        var isOverridden = value.uxmlValue.isInlined || value.binding != null || value.uxmlValue.requireVariableResolve;
+        var unsetStatus = isOverridden && !authoringContext.IsReadOnly
+            ? DropdownMenuAction.Status.Normal
+            : DropdownMenuAction.Status.Disabled;
+        menu.AppendAction(k_UnsetText, _ => UnsetStyleProperty(authoringContext.StyleDiff), unsetStatus);
+
+        var hasAnyProperties = HasAnyProperties(authoringContext.StyleDiff);
+        var unsetAllStatus = hasAnyProperties && !authoringContext.IsReadOnly
+            ? DropdownMenuAction.Status.Normal
+            : DropdownMenuAction.Status.Disabled;
+        menu.AppendAction(k_UnsetAllText, _ => UnsetAllStyleProperties(authoringContext.StyleDiff), unsetAllStatus);
+    }
+
+    void AppendExtractInlineStyleMenuItems<TInline, TComputed>(DropdownMenu menu, VisualElement field,
+        StylePropertyData<TInline, TComputed> value, StyleInspectorElement.AuthoringContext authoringContext)
+    {
+        if (authoringContext.StyleDiff.currentContextType != StyleDiff.ContextType.VisualElement
+            || authoringContext.IsReadOnly)
+            return;
+
+        var ve = authoringContext.StyleDiff.currentTarget;
+        var vea = ve?.visualElementAsset;
+        var vta = vea?.visualTreeAsset;
+        if (ve == null || vea == null || vta == null)
+            return;
+
+        var hasInlineValue = value.uxmlValue.isInlined;
+        var hasAnyInlineValue = HasAnyProperties(authoringContext.StyleDiff);
+
+        var ussPropertyName = StylePropertyUtil.cSharpNameToUssName.GetValueOrDefault(m_StyleProperty, m_StyleProperty);
+
+        var extractOneLabel = k_ExtractInlineStyleText;
+        if (hasInlineValue)
+            extractOneLabel += "/" + k_NewClassText;
+        menu.AppendAction(extractOneLabel,
+            _ => OpenNewClassWindow(field, vea, vta, ussPropertyName),
+            _ => hasInlineValue ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+        var extractAllLabel = k_ExtractAllInlineStylesText;
+        if (hasAnyInlineValue)
+            extractAllLabel += "/" + k_NewClassText;
+        menu.AppendAction(extractAllLabel,
+            _ => OpenNewClassWindow(field, vea, vta, null),
+            _ => hasAnyInlineValue ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+        var matchingSelectors = authoringContext.StyleDiff.matchRecords;
+        if (matchingSelectors == null || matchingSelectors.Count == 0)
+            return;
+
+        var hasLocalSelector = false;
+        foreach (var record in matchingSelectors)
+        {
+            if (record.sheet != null && !record.sheet.IsUnityEditorStyleSheet() && !record.sheet.isDefaultStyleSheet)
+            {
+                hasLocalSelector = true;
+                break;
+            }
+        }
+
+        if (!hasLocalSelector)
+            return;
+
+        if (hasInlineValue)
+            menu.AppendSeparator(k_ExtractInlineStyleText + "/");
+        if (hasAnyInlineValue)
+            menu.AppendSeparator(k_ExtractAllInlineStylesText + "/");
+
+        foreach (var record in matchingSelectors)
+        {
+            if (record.sheet == null || record.sheet.IsUnityEditorStyleSheet() || record.sheet.isDefaultStyleSheet)
+                continue;
+
+            var selectorStr = StyleSheetExporter.Default.ToUssString(record.sheet, record.complexSelector);
+            selectorStr = selectorStr.Replace(" #", "\u00A0#").Replace("/", "\u2215");
+            var capturedRecord = record;
+
+            if (hasInlineValue)
+                menu.AppendAction(k_ExtractInlineStyleText + "/" + selectorStr,
+                    _ => ExtractInlineStyleToSelector(vea, vta, capturedRecord, ussPropertyName),
+                    _ => DropdownMenuAction.Status.Normal);
+
+            if (hasAnyInlineValue)
+                menu.AppendAction(k_ExtractAllInlineStylesText + "/" + selectorStr,
+                    _ => ExtractInlineStyleToSelector(vea, vta, capturedRecord, null),
+                    _ => DropdownMenuAction.Status.Normal);
+        }
+    }
+
+    void OpenNewClassWindow(VisualElement field, VisualElementAsset vea, VisualTreeAsset vta, string propertyName)
+    {
+        var screenRect = GUIUtility.GUIToScreenRect(field.worldBound);
+        NewClassWindow.Open(screenRect, className => ExtractInlineStylesToNewClass(vea, vta, className, propertyName)).ShowModal();
+    }
+
+    void ExtractInlineStylesToNewClass(VisualElementAsset vea, VisualTreeAsset vta, string className, string propertyName)
+    {
+        using var _ = UICommandQueue.BeginGroup(ExtractInlineStylesToNewClassCommand.CommandUndoName);
+
+        var activeStyleSheet = GetActiveStyleSheetQuery.Get();
+        if (activeStyleSheet == null)
+        {
+            var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
+            if (string.IsNullOrEmpty(ussPath))
+                return;
+
+            CreateStyleSheetCommand.Execute(CommandSources.Inspector, vta, ussPath);
+            activeStyleSheet = GetActiveStyleSheetQuery.Get();
+        }
+
+        if (activeStyleSheet == null)
+            return;
+
+        ExtractInlineStylesToNewClassCommand.Execute(CommandSources.Inspector, vea, vta, activeStyleSheet, className, propertyName);
+        AddClassCommand.Execute(CommandSources.Inspector, vea, className);
+    }
+
+    void ExtractInlineStyleToSelector(VisualElementAsset vea, VisualTreeAsset vta, SelectorMatchRecord record, string propertyName)
+    {
+        var rule = record.complexSelector?.rule;
+        if (rule == null)
+            return;
+
+        ExtractInlineStyleToStyleRuleCommand.Execute(CommandSources.Inspector, vea, vta, record.sheet, rule, propertyName);
+    }
+
+    void AppendVariableMenuItems(DropdownMenu menu, VisualElement field, bool requireVariableResolve,
+        StyleInspectorElement.AuthoringContext authoringContext)
+    {
+        if (requireVariableResolve)
+        {
+            menu.AppendAction(k_EditVariableText,
+                ViewVariableViaContextMenu,
+                a => VariableActionStatus(a, authoringContext.IsReadOnly),
+                field);
+
+            var removeStatus = !authoringContext.IsReadOnly
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled;
+            menu.AppendAction(k_RemoveVariableText,
+                _ => RemoveVariableViaContextMenu(authoringContext),
+                _ => removeStatus,
+                field);
+        }
+        else
+        {
+            menu.AppendAction(k_SetVariableText,
+                ViewVariableViaContextMenu,
+                a => VariableActionStatus(a, authoringContext.IsReadOnly),
+                field);
+        }
+    }
+
+    void AppendSelectorMenuItems(DropdownMenu menu, FieldAffordanceElement fieldAffordanceElement,
+        StyleInspectorElement.AuthoringContext authoringContext)
+    {
+        var sourceTypeInfo = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo;
+        var isMatchingSelector = sourceTypeInfo == FieldAffordanceSourceInfoType.MatchingUSSSelector;
+        var isLocalSelector = sourceTypeInfo == FieldAffordanceSourceInfoType.LocalUSSSelector;
+
+        if (!isMatchingSelector && !isLocalSelector)
+            return;
+
+        var selectorRecord = fieldAffordanceElement.fieldAffordanceData.selector;
+        if (isMatchingSelector && selectorRecord.sheet == null)
+            return;
+
+        // MatchingUSSSelector may resolve from a built-in or theme sheet. Skip navigation
+        // actions in that case since the sheet is not user-editable.
+        var isNavigable = isLocalSelector || !selectorRecord.sheet.isDefaultStyleSheet;
+
+        if (!isNavigable)
+            return;
+
+        menu.AppendSeparator();
+
+        if (isMatchingSelector)
+        {
+            var rule = selectorRecord.complexSelector?.rule;
+            if (rule != null)
+            {
+                menu.AppendAction(k_GoToSelectorText,
+                    _ => RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, rule),
+                    _ => authoringContext.IsReadOnly ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+            }
+        }
+
+        menu.AppendAction(k_OpenSelectorInIDEText,
+            _ => OpenSelectorInIDE(fieldAffordanceElement, authoringContext));
+    }
+
+    void OpenSelectorInIDE(FieldAffordanceElement fieldAffordanceElement,
+        StyleInspectorElement.AuthoringContext authoringContext)
+    {
+        StyleSheet sheet;
+        int line;
+        if (fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo == FieldAffordanceSourceInfoType.MatchingUSSSelector)
+        {
+            var record = fieldAffordanceElement.fieldAffordanceData.selector;
+            sheet = record.sheet;
+            line = record.complexSelector?.rule?.line ?? 0;
+        }
+        else
+        {
+            sheet = authoringContext.StyleDiff.currentStyleSheet;
+            line = authoringContext.StyleDiff.currentRule?.line ?? 0;
+        }
+        var fullPath = AssetDatabase.GetAssetPath(sheet);
+        var opened = !string.IsNullOrEmpty(fullPath) && File.Exists(fullPath)
+            && InternalEditorUtility.OpenFileAtLineExternal(fullPath, line, -1);
+        if (!opened)
+            Debug.LogWarning("Could not open the stylesheet containing the selector.");
     }
 
     DropdownMenuAction.Status VariableActionStatus(DropdownMenuAction action, bool isReadOnly)
@@ -561,11 +833,6 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     {
         var styleDiff = authoringContext.StyleDiff;
         RemoveVariableCommand.Execute(CommandSources.Inspector, styleDiff.currentStyleSheet, styleDiff.currentRule, stylePropertyId);
-
-        // Update selector element
-        var element = styleDiff.currentTarget;
-        element?.UpdateInlineRule(styleDiff.currentStyleSheet, styleDiff.currentRule, element.variableContext);
-        element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     void UnsetStyleProperty(StyleDiff styleDiff)
@@ -681,32 +948,48 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         targetElement.EnableInClassList(k_InlineFieldUssClassName, value.uxmlValue.isInlined);
         targetElement.EnableInClassList(k_VariableFieldUssClassName, value.uxmlValue.requireVariableResolve);
         targetElement.EnableInClassList(k_BoundFieldUssClassName, value.binding != null);
-        OnTrackedPropertySourceChanged?.Invoke(this, styleProperty, value.uxmlValue.requireVariableResolve, value.binding != null);
 
         var inlineValue = value.inlineValue;
         var computedValue = value.computedValue;
 
         var targetEnabled = true;
 
-        var fieldAffordanceElement = (targetElement as IAffordanceField)?.affordanceElement;
+        var affordanceField = targetElement as IAffordanceField;
         var animationSubState = FieldAffordanceSourceInfoType.Default;
-        if (fieldAffordanceElement != null)
+        if (targetElement is IPropertyMappedAffordanceField mappedField)
         {
-            FieldAffordanceController.UpdateFieldAffordanceData(fieldAffordanceElement.fieldAffordanceData,
-                authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentContextType, value);
-            SetupContextMenu(targetElement, fieldAffordanceElement, authoringContext, value);
-            var sourceType = fieldAffordanceElement.fieldAffordanceData.sourceTypeInfo;
-            var hasResolvedBinding = sourceType == FieldAffordanceSourceInfoType.ResolvedBinding;
-            var hasResolvedVariable = sourceType == FieldAffordanceSourceInfoType.USSVariable
-                && fieldAffordanceElement.fieldAffordanceData.variableSheet != null;
-            if (sourceType.IsAnimationDriven())
-                animationSubState = sourceType;
-            targetEnabled &= !hasResolvedBinding && !hasResolvedVariable && !animationSubState.ShouldDisableInlineEdit();
+            using var pool = ListPool<FieldAffordanceElement>.Get(out var affordanceElements);
+            mappedField.GetAffordanceElements(stylePropertyId, affordanceElements);
+            foreach (var fieldAffordanceElement in affordanceElements)
+            {
+                // Pass the sub-field (parent of the affordance element) so SetupContextMenu uses the correct
+                // element for var handler lookup, rather than the composite targetElement.
+                var subField = fieldAffordanceElement.parent;
+                if (subField == null)
+                    continue;
+                UpdateAffordanceElement(fieldAffordanceElement, subField, authoringContext, value, targetElement, id, ref animationSubState, ref targetEnabled);
+                subField.enabledSelf = targetEnabled;
+                // We don't want to disable the parent
+                targetEnabled = true;
+            }
         }
+        else if ((targetElement as IAffordanceField)?.affordanceElement is { } affordanceElement)
+        {
+            UpdateAffordanceElement(affordanceElement, targetElement, authoringContext, value, null, id, ref animationSubState, ref targetEnabled);
+        }
+        // Tint the value field's input exactly like the standard Inspector tints animated properties:
+        // reuse the shared unity-binding--animation-* classes so the global driven-property USS applies.
+        var animatedInput = affordanceField?.valueInputElement;
+        if (animatedInput != null)
+        {
+            animatedInput.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationAnimated);
+            animatedInput.EnableInClassList(BindingExtensions.animationRecordedUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationRecording);
+            animatedInput.EnableInClassList(BindingExtensions.animationCandidateUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationCandidate);
+        }
+
         targetElement.EnableInClassList(k_AnimationDrivenFieldUssClassName, animationSubState.IsAnimationDriven());
-        targetElement.EnableInClassList(k_AnimationAnimatedFieldUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationAnimated);
-        targetElement.EnableInClassList(k_AnimationRecordingFieldUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationRecording);
-        targetElement.EnableInClassList(k_AnimationCandidateFieldUssClassName, animationSubState == FieldAffordanceSourceInfoType.AnimationCandidate);
+
+        OnTrackedPropertySourceChanged?.Invoke(this, styleProperty, value.uxmlValue.requireVariableResolve, value.binding != null, animationSubState.IsAnimationDriven());
 
         var inRecording = authoringContext.AnimationController != null;
         Debug.Assert(inRecording == AnimationMode.InAnimationRecording(),
@@ -748,7 +1031,46 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 break;
         }
 
+        UpdateSetAlphaIfTransparentWhenPicked(targetElement, !value.uxmlValue.isInlined || value.uxmlValue.requireVariableResolve);
+
         return default;
+    }
+
+
+    void UpdateAffordanceElement<TInline, TComputed>(FieldAffordanceElement affordanceElement, VisualElement targetElement,
+        StyleInspectorElement.AuthoringContext authoringContext, StylePropertyData<TInline, TComputed> value,
+        VisualElement propertyContainer, in BindingId id, ref FieldAffordanceSourceInfoType animationSubState, ref bool targetEnabled)
+    {
+        FieldAffordanceController.UpdateFieldAffordanceData(affordanceElement.fieldAffordanceData,
+            authoringContext.StyleDiff.currentTarget, authoringContext.StyleDiff.currentContextType, value,
+            authoringContext.StyleDiff.currentStyleSheet);
+        SetupContextMenu(targetElement, affordanceElement, authoringContext, value, id, propertyContainer);
+        var sourceType = affordanceElement.fieldAffordanceData.sourceTypeInfo;
+        var hasResolvedBinding = sourceType == FieldAffordanceSourceInfoType.ResolvedBinding;
+        var hasResolvedVariable = sourceType == FieldAffordanceSourceInfoType.USSVariable
+            && affordanceElement.fieldAffordanceData.variableSheet != null;
+        if (sourceType.IsAnimationDriven())
+            animationSubState = sourceType;
+        targetEnabled &= !hasResolvedBinding && !hasResolvedVariable && !animationSubState.ShouldDisableInlineEdit();
+    }
+
+    private static void UpdateSetAlphaIfTransparentWhenPicked(VisualElement targetElement, bool setAlphaIfTransparent)
+    {
+        switch (targetElement)
+        {
+            case StyleColorField styleColorField:
+                styleColorField.valueField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
+                break;
+            case ColorField colorField:
+                colorField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
+                break;
+            case StyleTextShadowField styleTextShadowField:
+                styleTextShadowField.valueField.colorField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
+                break;
+            case TextShadowField textShadowField:
+                textShadowField.colorField.setAlphaIfTransparentWhenPicked = setAlphaIfTransparent;
+                break;
+        }
     }
 
     private static void SendTrackPropertyEvent(ITrackablePropertyProvider provider, VisualElement target, string styleProperty, PropertyTrackingType type)
@@ -758,7 +1080,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         target.SendEvent(evt);
     }
 
-    private static StylePropertyId GetPropertyId(string propertyName)
+    internal static StylePropertyId GetPropertyId(string propertyName)
     {
         // i.e. backgroundColor => background-color
         if (StylePropertyUtil.cSharpNameToUssName.TryGetValue(propertyName, out var ussName))

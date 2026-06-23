@@ -74,7 +74,7 @@ namespace UnityEngine.UIElements
             set => m_Angle = value;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal Vector3 axis
         {
             get => m_Axis;

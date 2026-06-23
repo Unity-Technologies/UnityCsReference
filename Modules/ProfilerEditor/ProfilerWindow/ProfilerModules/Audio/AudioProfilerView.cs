@@ -1071,8 +1071,8 @@ namespace UnityEditorInternal
             }
         }
 
-        static string[] m_LoadStateNames = new string[] { "Unloaded", "Loading Base", "Loading Sub", "Loaded", "Failed" };
-        static string[] m_InternalLoadStateNames = new string[] { "Pending", "Loaded", "Failed" };
+        static readonly string[] m_LoadStateNames = new string[] { "Unloaded", "Loading Base", "Loading Sub", "Loaded", "Failed" };
+        static readonly string[] m_InternalLoadStateNames = new string[] { "Pending", "Loaded", "Failed" };
 
         public static string GetColumnString(AudioProfilerClipInfoWrapper info, ColumnIndices index)
         {

@@ -3,24 +3,33 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditor;
-using UnityEditor.Build.Reporting;
-using UnityEngine;
-using UnityEditor.Build.Profile;
-using UnityEditor.Multiplayer.Internal;
-using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEditor;
+using UnityEditor.Build.Profile;
+using UnityEditor.Build.Reporting;
+using UnityEditor.Multiplayer.Internal;
+using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
+    internal class BuildReportData
+    {
+        public string outputPath;
+        public string executablePath;
+        public long buildEndedAtTicks;
+    }
+
     [Serializable]
     class BuildPlayerNode : ExecutionNode
     {
         [SerializeReference] public NodeInput<string> BuildPath;
         [SerializeReference] public NodeInput<BuildProfile> Profile;
+        [SerializeReference] public NodeInput<bool> ReuseExistingBuild;
 
         [SerializeReference] public NodeOutput<string> ExecutablePath;
         [SerializeReference] public NodeOutput<string> OutputPath;
@@ -32,6 +41,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             BuildPath = new(this);
             Profile = new(this);
+            ReuseExistingBuild = new(this);
 
             OutputPath = new(this);
             ExecutablePath = new(this);
@@ -42,26 +52,55 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            var buildPath = GetInput(BuildPath);
+            var buildProfile = GetInput(Profile);
+            var reuseExistingBuild = GetInput(ReuseExistingBuild);
+
             if (EditorUtility.scriptCompilationFailed)
-            {
-                DebugUtils.Trace("Can't build when there are compile errors, aborting build");
                 throw new ApplicationException("Script compilation failed, aborting build.");
+
+            if (reuseExistingBuild)
+            {
+                var buildOutputPath = InternalUtilities.AddBuildExtension(buildPath, buildProfile);
+                var absoluteBuildOutputPath = Path.GetFullPath(buildOutputPath);
+
+                if (File.Exists(absoluteBuildOutputPath) || Directory.Exists(absoluteBuildOutputPath))
+                {
+                    var outputPath = Path.GetDirectoryName(absoluteBuildOutputPath);
+                    var reportPath = Path.Combine(outputPath, ".buildreport");
+
+                    if (File.Exists(reportPath))
+                    {
+                        try
+                        {
+                            var reportData = JsonUtility.FromJson<BuildReportData>(File.ReadAllText(reportPath));
+                            var executablePath = reportData.executablePath;
+                            var relativeExecutablePath = Path.GetRelativePath(outputPath, executablePath);
+
+                            SetOutput(OutputPath, outputPath);
+                            SetOutput(ExecutablePath, executablePath);
+                            SetOutput(RelativeExecutablePath, relativeExecutablePath);
+                            SetOutput(BuildHash, ComputeBuildHash(outputPath));
+                            SetOutput(BuildReport, null);
+                            return;
+                        }
+                        catch (Exception)
+                        {
+                            Debug.LogWarning("Failed to load the executable path, cannot reuse existing build.");
+                        }
+                    }
+                }
             }
 
-            // TODO: Make sure we can reuse builds when possible.
-
-            // Build pipeline does not support parallel builds.
             while (BuildPipeline.isBuildingPlayer)
             {
                 await Task.Yield();
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            // Make sure the build is executed in the editor loop.
             var buildCompleted = false;
             var exception = default(Exception);
 
-            // This is important because it gives the UI extra time to set things up properly before it starts building, preventing it from blocking the Editor process.
             await Task.Yield();
 
             EditorApplication.delayCall += () =>
@@ -105,19 +144,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
             BuildReport report = null;
             try
             {
-                // Modify product name to include multiplayer role for window title
                 var role = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildProfile);
                 var roleText = InternalUtilities.GetMultiplayerRoleDisplayText(role);
                 PlayerSettings.productName = $"{originalProductName} ({roleText})";
 
-                // Build the player with the specified build profile.
                 report = BuildPipeline.BuildPlayer(
                     new BuildPlayerWithProfileOptions
                     {
                         buildProfile = buildProfile,
                         locationPathName = InternalUtilities.AddBuildExtension(buildPath, buildProfile),
                     });
-                
+
                 if (report == null)
                     throw new Exception("BuildPipeline.BuildPlayer failed to generate a build report. The build artifact is likely corrupted.");
                 if (report.summary.result != BuildResult.Succeeded)
@@ -125,14 +162,24 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     throw new Exception(report.SummarizeErrors());
                 }
 
-                // If the build is successful, set the node outputs
                 var outputPath = Path.GetDirectoryName(report.summary.outputPath);
                 var executablePath = ExtractExecutablePath(report);
+                var relativeExecutablePath = Path.GetRelativePath(outputPath, executablePath);
+
                 SetOutput(OutputPath, outputPath);
                 SetOutput(ExecutablePath, executablePath);
-                SetOutput(RelativeExecutablePath, Path.GetRelativePath(outputPath, executablePath));
+                SetOutput(RelativeExecutablePath, relativeExecutablePath);
                 SetOutput(BuildHash, ComputeBuildHash(outputPath));
                 SetOutput(BuildReport, report);
+
+                var reportPath = Path.Combine(outputPath, ".buildreport");
+                var localBuildTime = report.summary.buildEndedAt.ToLocalTime();
+                File.WriteAllText(reportPath, JsonUtility.ToJson(new BuildReportData
+                {
+                    outputPath = report.summary.outputPath,
+                    executablePath = executablePath,
+                    buildEndedAtTicks = localBuildTime.Ticks
+                }, prettyPrint: true));
             }
             catch (Exception e)
             {
@@ -144,7 +191,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             finally
             {
-                // Restore original product name and build profile state
                 PlayerSettings.productName = originalProductName;
                 InternalUtilities.BuildProfileState.Restore(previousProfile);
             }
@@ -194,6 +240,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             return report.summary.outputPath;
+        }
+
+        public static void BuildNow(BuildProfile buildProfile)
+        {
+            if (buildProfile == null)
+            {
+                Debug.LogError("Cannot build: No build profile provided");
+                return;
+            }
+
+            var buildPath = ScenarioFactory.GenerateBuildPath(buildProfile);
+
+            var tempNode = new BuildPlayerNode();
+            tempNode.BuildPath = new NodeInput<string>(tempNode);
+            tempNode.Profile = new NodeInput<BuildProfile>(tempNode);
+            tempNode.ReuseExistingBuild = new NodeInput<bool>(tempNode);
+
+            tempNode.BuildPath.SetValue(buildPath);
+            tempNode.Profile.SetValue(buildProfile);
+            tempNode.ReuseExistingBuild.SetValue(false);
+
+            tempNode.ExecuteBuildCommand();
         }
     }
 }

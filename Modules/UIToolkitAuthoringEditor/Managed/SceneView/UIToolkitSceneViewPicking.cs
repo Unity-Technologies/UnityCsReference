@@ -32,7 +32,7 @@ namespace Unity.UIToolkit.Editor
         {
             // Per-element picking only makes sense when the user has opted into the hierarchy
             // integration; otherwise the SceneView should just select the panel GameObject as a whole.
-            if (!UIToolkitAuthoringSettings.EnableHierarchyIntegration)
+            if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
                 return default;
 
             // Store system ignore/filter set and type for use in resolve callback
@@ -186,7 +186,7 @@ namespace Unity.UIToolkit.Editor
                     ? candidate.FindCorrespondingStageClone(stagePanel) ?? candidate
                     : candidate;
 
-                var selectionObject = selectionTarget.GetSelectionObject();
+                var selectionObject = selectionTarget.GetSelectionObject<VisualElementSelection>();
                 if (selectionObject == null)
                     continue;
 

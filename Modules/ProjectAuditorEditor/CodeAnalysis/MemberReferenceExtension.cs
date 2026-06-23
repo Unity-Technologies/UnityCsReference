@@ -5,6 +5,7 @@
 using System;
 using System.Text;
 using Mono.Cecil;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 {
@@ -13,6 +14,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
     static class MemberReferenceExtension
     {
         [ThreadStatic]
+        [NoAutoStaticsCleanup] // Thread-local StringBuilder allocated once for hot-path marshaling; safe to persist
         static StringBuilder ts_FullNameBuilder;
 
         internal static string FastFullName(this MemberReference member, StringBuilder builder = null)

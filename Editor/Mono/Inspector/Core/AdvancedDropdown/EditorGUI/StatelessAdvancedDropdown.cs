@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace UnityEditor
 {
+    [AutoStaticsCleanupOnCodeReload]
     internal static partial class StatelessAdvancedDropdown
     {
         private static AdvancedDropdownWindow s_Instance;

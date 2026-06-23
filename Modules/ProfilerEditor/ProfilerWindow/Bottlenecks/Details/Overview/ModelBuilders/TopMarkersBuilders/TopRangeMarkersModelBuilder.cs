@@ -55,10 +55,7 @@ namespace Unity.Profiling.Editor.UI
 
         public async Task<Result> BuildAsync(CancellationToken cancellationToken)
         {
-            return await Task.Run(() =>
-            {
-                return TopMarkersInRangeByExclusiveTimeAndGCAllocation(cancellationToken);
-            });
+            return await Task.Run(() => TopMarkersInRangeByExclusiveTimeAndGCAllocation(cancellationToken), cancellationToken);
         }
 
         async Task<Result> TopMarkersInRangeByExclusiveTimeAndGCAllocation(CancellationToken cancellationToken)
@@ -77,12 +74,8 @@ namespace Unity.Profiling.Editor.UI
             {
                 var frameIndex = firstFrameIndex + i;
                 var buildCombinedMarkersInFrame = Task.Run(() =>
-                {
-                    var combinedMarkersInFrame = ComputeCombinedExclusiveTimeAndGCAllocationForAllMarkersInFrame(
-                        frameIndex,
-                        cancellationToken);
-                    return combinedMarkersInFrame;
-                });
+                    ComputeCombinedExclusiveTimeAndGCAllocationForAllMarkersInFrame(frameIndex, cancellationToken),
+                    cancellationToken);
                 tasks.Add(buildCombinedMarkersInFrame);
 
                 // Store which task is building the longest frame so we can return those results separately.
@@ -128,7 +121,8 @@ namespace Unity.Profiling.Editor.UI
             return BuildTopMarkersModelsFromCollections(
                 dataService,
                 topMarkersInRangeByExclusiveTime,
-                topMarkersInRangeByGCAllocation);
+                topMarkersInRangeByGCAllocation,
+                cancellationToken);
         }
     }
 }

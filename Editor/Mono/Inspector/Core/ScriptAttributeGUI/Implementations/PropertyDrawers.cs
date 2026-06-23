@@ -17,7 +17,7 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(RangeAttribute))]
     internal sealed class RangeDrawer : PropertyDrawer
     {
-        private static string s_InvalidTypeMessage = L10n.Tr("Use Range with float or int.");
+        private static readonly string s_InvalidTypeMessage = L10n.Tr("Use Range with float or int.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -58,7 +58,7 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(MinAttribute))]
     internal sealed class MinDrawer : PropertyDrawer
     {
-        private static string s_InvalidTypeMessage = L10n.Tr("Use Min with float, int or Vector.");
+        private static readonly string s_InvalidTypeMessage = L10n.Tr("Use Min with float, int or Vector.");
 
         private MinAttribute minAttribute
         {
@@ -266,7 +266,7 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(MultilineAttribute))]
     internal sealed class MultilineDrawer : PropertyDrawer
     {
-        private static string s_InvalidTypeMessage = L10n.Tr("Use Multiline with string.");
+        private static readonly string s_InvalidTypeMessage = L10n.Tr("Use Multiline with string.");
         private const int kLineHeight = 13;
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -319,7 +319,7 @@ namespace UnityEditor
     internal sealed class TextAreaDrawer : PropertyDrawer
     {
         private const int kLineHeight = 15;
-        private static string s_InvalidTypeMessage = L10n.Tr("Use TextAreaDrawer with string.");
+        private static readonly string s_InvalidTypeMessage = L10n.Tr("Use TextAreaDrawer with string.");
         private Vector2 m_ScrollPosition = new Vector2();
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -399,7 +399,7 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(ColorUsageAttribute))]
     internal sealed class ColorUsageDrawer : PropertyDrawer
     {
-        private static string s_InvalidTypeMessage = L10n.Tr("Use ColorUsageDrawer with color.");
+        private static readonly string s_InvalidTypeMessage = L10n.Tr("Use ColorUsageDrawer with color.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -441,7 +441,7 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(GradientUsageAttribute))]
     internal sealed class GradientUsageDrawer : PropertyDrawer
     {
-        private static string s_InvalidTypeMessage = L10n.Tr("Use GradientUsageDrawer with gradient.");
+        private static readonly string s_InvalidTypeMessage = L10n.Tr("Use GradientUsageDrawer with gradient.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -475,8 +475,8 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(DelayedAttribute))]
     internal sealed class DelayedDrawer : PropertyDrawer
     {
-        static string s_InvalidTypeMessageIMGUI = L10n.Tr("Use Delayed with float, int or string when using IMGUI.");
-        static string s_InvalidTypeMessageUITK = L10n.Tr("Use Delayed with float, int, string, Vector or Rect when using UI Toolkit.");
+        static readonly string s_InvalidTypeMessageIMGUI = L10n.Tr("Use Delayed with float, int or string when using IMGUI.");
+        static readonly string s_InvalidTypeMessageUITK = L10n.Tr("Use Delayed with float, int, string, Vector or Rect when using UI Toolkit.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {

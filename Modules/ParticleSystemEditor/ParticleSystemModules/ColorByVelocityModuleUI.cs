@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -14,6 +15,7 @@ namespace UnityEditor
             public GUIContent color = EditorGUIUtility.TrTextContent("Color", "Controls the color of each particle based on its speed.");
             public GUIContent velocityRange = EditorGUIUtility.TrTextContent("Speed Range", "Remaps speed in the defined range to a color.");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
         SerializedMinMaxGradient m_Gradient;
         SerializedProperty m_Range;

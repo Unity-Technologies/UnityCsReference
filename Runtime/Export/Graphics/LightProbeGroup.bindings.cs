@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Graphics/LightProbeGroup.h")]
+    [UnityEngine.Scripting.RequiresEngineModule("Tetgen")]
     public sealed partial class LightProbeGroup : Behaviour
     {
         [NativeName("Positions")]

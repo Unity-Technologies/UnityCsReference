@@ -40,15 +40,9 @@ namespace Unity.Profiling.Editor.UI
 
         public async Task<BoxPlotModel> BuildAsync(CancellationToken cancellationToken)
         {
-            var task = Task.Run(() =>
-            {
-                return BoxPlotModelWithGCCollectTimes(cancellationToken);
-            });
-            await task;
-
+            var result = await Task.Run(() => BoxPlotModelWithGCCollectTimes(cancellationToken), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-
-            return await task;
+            return result;
         }
 
         BoxPlotModel BoxPlotModelWithGCCollectTimes(CancellationToken cancellationToken)

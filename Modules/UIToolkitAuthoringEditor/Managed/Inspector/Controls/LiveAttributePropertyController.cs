@@ -110,6 +110,8 @@ class LiveAttributePropertyController
         foreach (var attribute in context.uxmlSerializedDataDescription.serializedAttributes)
         {
             var property = serializedDataProperty.FindPropertyRelative(attribute.serializedField.Name);
+            if (property == null)
+                continue;
             CollectLiveAttributeValuePropertyModifications(context.element, context.uxmlSerializedData, attribute, property, propertyModifications, ref hasUnsupportedDrivenPropertyChange, syncOnlyBoundValues, resolvedBindingLookup);
         }
 

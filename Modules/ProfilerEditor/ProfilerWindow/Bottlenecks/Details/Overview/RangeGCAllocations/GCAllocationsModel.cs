@@ -6,7 +6,7 @@ namespace Unity.Profiling.Editor.UI
 {
     readonly struct GCAllocationsModel
     {
-        public static GCAllocationsModel Empty = default;
+        public static readonly GCAllocationsModel Empty = default;
 
         public GCAllocationsModel(
             ulong total,

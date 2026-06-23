@@ -1114,7 +1114,15 @@ namespace Unity.UI.Builder
 
             if (IsComputedStyleFilter(val) && fieldElement is FilterStyleField filterField)
             {
-                RefreshStyleField(filterField);
+                if (styleName == FilterConstants.Filter)
+                {
+                    RefreshStyleField(filterField);
+                }
+                else if (styleName == BackdropFilterConstants.BackdropFilter)
+                {
+                    RefreshBackdropFilterStyleField(filterField);
+                }
+
                 return false; // To skip UpdateFieldStatus, not applicable here
             }
 
@@ -2231,26 +2239,41 @@ namespace Unity.UI.Builder
 
         void OpenNewSelectorWindow(StyleProperty styleProperty = null)
         {
-            if (BuilderNewClassWindow.activeWindow != null)
-                BuilderNewClassWindow.activeWindow.Close();
-
             var worldBound = GUIUtility.GUIToScreenRect(m_Inspector.document.primaryViewportWindow.viewport.worldBound);
-            var window = BuilderNewClassWindow.Open(worldBound);
-            window.OnClassCreated += (className) => ExtractLocalStylesToNewClass(styleProperty, className);
-            window.ShowModal();
+            NewClassWindow.Open(worldBound, className => ExtractLocalStylesToNewClass(styleProperty, className)).ShowModal();
         }
 
-        void ExtractLocalStylesToNewClass(StyleProperty styleProperty, StyleComplexSelector className)
+        void ExtractLocalStylesToNewClass(StyleProperty styleProperty, string className)
         {
-            var classNameStr = BuilderStyleSheetExporter.GetSelectorString(className);
-            classNameStr = classNameStr.TrimStart(BuilderConstants.UssSelectorClassNameSymbol[0]);
-            // Add the new selector to the current element
-            currentVisualElement.AddToClassList(classNameStr);
-            // Update VisualTreeAsset.
-            BuilderAssetUtilities.AddStyleClassToElementInAsset(m_Inspector.document, currentVisualElement, classNameStr);
+            var builder = m_Inspector.paneWindow as Builder;
 
-            // Get Selector Match Record from the new selector
-            var selectorMatchRecord = new SelectorMatchRecord(m_Inspector.document.activeStyleSheet, 0, 0, className);
+            var styleSheet = m_Inspector.document.activeStyleSheet;
+            if (styleSheet == null)
+            {
+                if (!BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_Inspector.paneWindow))
+                    return;
+                styleSheet = m_Inspector.document.activeStyleSheet;
+                if (styleSheet == null)
+                    return;
+
+                if (builder != null)
+                {
+                    var p = (EditorPanel)builder.rootVisualElement.panel;
+                    if (p.ownerObject is HostView view && view)
+                        view.Focus();
+                }
+            }
+
+            if (builder == null)
+                return;
+
+            var selectorString = BuilderConstants.UssSelectorClassNameSymbol + className;
+            var newSelector = BuilderSharedStyles.CreateNewSelector(builder.viewport.styleSelectorElementContainer, styleSheet, selectorString);
+
+            currentVisualElement.AddToClassList(className);
+            BuilderAssetUtilities.AddStyleClassToElementInAsset(m_Inspector.document, currentVisualElement, className);
+
+            var selectorMatchRecord = new SelectorMatchRecord(styleSheet, 0, 0, newSelector);
             PushLocalStylesToSelector(selectorMatchRecord, styleProperty);
         }
 

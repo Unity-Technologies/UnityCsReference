@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Accessibility;
@@ -11,7 +12,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
-    internal class ColorPicker : EditorWindow
+    internal partial class ColorPicker : EditorWindow
     {
         private const string k_HeightPrefKey = "CPickerHeight";
         private const string k_ShowDefaultsPrefKey = "CPDefaultsShow";
@@ -43,6 +44,7 @@ namespace UnityEditor
         const int kColorBoxSize = 32;
         [SerializeField]
         Texture2D m_ColorBox;
+        [NoAutoStaticsCleanup] // hash code is stable across code reloads
         static int s_Slider2Dhash = "Slider2D".GetHashCode();
         [SerializeField]
         bool m_ShowDefaults = true;
@@ -142,8 +144,10 @@ namespace UnityEditor
                 return s_Instance;
             }
         }
+        [AutoStaticsCleanupOnCodeReload]
         static ColorPicker s_Instance;
 
+        [NoAutoStaticsCleanup] // numeric keyboard control value, safe to persist
         public static int originalKeyboardControl { get; private set; }
 
         // ------- Soerens 2D slider --------
@@ -473,6 +477,7 @@ namespace UnityEditor
 
             public static readonly float hueDialThumbSize;
 
+            [NoAutoStaticsCleanup] // immutable padding constants, safe to persist
             public static readonly RectOffset colorBoxPadding = new RectOffset(6, 6, 6, 6);
 
             public static readonly Color lowLuminanceContentColor = Color.white;
@@ -1158,7 +1163,9 @@ namespace UnityEditor
             }
         }
 
+        [NoAutoStaticsCleanup] // HideAndDontSave texture survives reload; re-initialized lazily if null
         static Texture2D s_LeftGradientTexture;
+        [NoAutoStaticsCleanup] // HideAndDontSave texture survives reload; re-initialized lazily if null
         static Texture2D s_RightGradientTexture;
 
         public static Texture2D GetGradientTextureWithAlpha1To0()
@@ -1351,16 +1358,19 @@ namespace UnityEditor
         }
     }
 
-    internal class EyeDropper : GUIView
+    internal partial class EyeDropper : GUIView
     {
         const int kPixelSize = 10;
         // Can't be larger right now since OSX Metal surfaces can't be larger than 16384 pixels.
         // This needs to be changed to a larger size since it will miss mouse events when using multiple 4K monitors
         private const int kDummyWindowSize = 100;
+        [NoAutoStaticsCleanup] // last picked color, value type, safe to persist
         internal static Color s_LastPickedColor;
         GUIView m_DelegateView;
         Texture2D m_Preview;
+        [AutoStaticsCleanupOnCodeReload]
         static EyeDropper s_Instance;
+        [NoAutoStaticsCleanup] // value type, safe to persist; overwritten at start of each EyeDropper session
         private static Vector2 s_PickCoordinates = Vector2.zero;
         private bool m_IsOpened;
         private bool m_IsCancelled;
@@ -1388,7 +1398,9 @@ namespace UnityEditor
             win.m_DontSaveToLayout = true;
             win.title = "EyeDropper";
             win.hideFlags = HideFlags.DontSave;
+#pragma warning disable UAL0018 // assigned to a ScriptableObject field, and as scriptable objects are cleaned up (serialized and recreated) on code reload, this should be good
             win.rootView = instance;
+#pragma warning restore UAL0018
             win.Show(ShowMode.PopupMenu, loadPosition: true, displayImmediately: true, setFocus: true);
             instance.AddToAuxWindowList();
             win.SetInvisible();

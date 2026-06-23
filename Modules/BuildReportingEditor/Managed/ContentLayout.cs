@@ -144,7 +144,7 @@ namespace UnityEditor.Build
         public int[] ArtifactReferences;
 
         /// <summary>The on-disk file extension for this artifact, derived from <see cref="Category"/>.
-        /// Returns an empty string for unrecognized categories.</summary>
+        /// For unrecognized categories, returns the category name.</summary>
         public string FileExtension
         {
             get
@@ -162,7 +162,7 @@ namespace UnityEditor.Build
                     case BuildArtifactCategory.Manifest:
                         return ".json";
                     default:
-                        return "";
+                        return string.IsNullOrEmpty(Category) ? "" : "." + Category;
                 }
             }
         }

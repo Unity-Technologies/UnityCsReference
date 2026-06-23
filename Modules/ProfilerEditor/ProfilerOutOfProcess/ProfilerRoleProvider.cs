@@ -10,10 +10,11 @@ using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEditor.MPE;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    static class ProfilerRoleProvider
+    static partial class ProfilerRoleProvider
     {
         const string k_RoleName = "profiler";
 
@@ -47,12 +48,14 @@ namespace UnityEditor
         }
 
         // Represents the Profiler Out-Of-Process is launched by the MainEditorProcess and connects to its EventServer at startup.
-        static class ProfilerProcess
+        static partial class ProfilerProcess
         {
+            [NoAutoStaticsCleanup] // Fixed default value, safe to persist
             static bool s_ProfilerDriverSetup = false;
+            [AutoStaticsCleanupOnCodeReload]
             static ProfilerWindow s_OOPProfilerWindow;
-            static string userPrefProfilerLayoutPath = Path.Combine(WindowLayout.layoutsDefaultModePreferencesPath, "Profiler.dwlt");
-            static string systemProfilerLayoutPath = Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts/Profiler.dwlt");
+            static readonly string userPrefProfilerLayoutPath = Path.Combine(WindowLayout.layoutsDefaultModePreferencesPath, "Profiler.dwlt");
+            static readonly string systemProfilerLayoutPath = Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts/Profiler.dwlt");
 
             [UsedImplicitly, RoleProvider(k_RoleName, ProcessEvent.Create)]
             static void InitializeProfilerProcess()

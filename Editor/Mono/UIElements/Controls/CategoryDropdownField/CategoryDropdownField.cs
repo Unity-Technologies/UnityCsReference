@@ -123,7 +123,33 @@ namespace UnityEditor.UIElements
         public override void SetValueWithoutNotify(string newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            ((INotifyValueChanged<string>) m_Input).SetValueWithoutNotify(value);
+            ((INotifyValueChanged<string>) m_Input).SetValueWithoutNotify(GetDisplayNameForValue(value));
+        }
+
+        string GetDisplayNameForValue(string itemValue)
+        {
+            if (TryGetDisplayName(ref recentCategoryContent, itemValue, out var displayName) || 
+                TryGetDisplayName(ref categoryContent, itemValue, out displayName))
+                return displayName;
+
+            return itemValue;
+        }
+
+        static bool TryGetDisplayName(ref CategoryDropdownContent content, string itemValue, out string displayName)
+        {
+            var items = content.Items;
+            for (var i = 0; i < items.Count; ++i)
+            {
+                var item = items[i];
+                if (item.itemType == CategoryDropdownContent.ItemType.Item && item.value == itemValue)
+                {
+                    displayName = item.displayName;
+                    return true;
+                }
+            }
+
+            displayName = null;
+            return false;
         }
 
         class PopupTextElement : TextElement

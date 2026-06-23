@@ -210,7 +210,7 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
     void OnDetachFromPanel(DetachFromPanelEvent evt)
     {
         m_Target.elementPanel.UnregisterChangeProcessor(this);
-        Refresh();
+        Resize(m_MatchingSelectorContainer, 0, s_MatchingSelectorPool);
     }
 
     void IVisualElementChangeProcessor.BeginProcessing(BaseVisualElementPanel p)

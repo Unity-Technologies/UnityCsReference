@@ -562,6 +562,21 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void Stroke()
         {
+            StrokeImpl(0);
+        }
+
+        /// <summary>
+        /// Strokes the currently defined path and tags every resulting <see cref="DrawData"/> with the given
+        /// user identifier, surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <param name="userData">User-defined identifier propagated to every <see cref="DrawData"/> produced by this stroke.</param>
+        public void Stroke(int userData)
+        {
+            StrokeImpl(userData);
+        }
+
+        void StrokeImpl(int userData)
+        {
             using (s_StrokeMarker.Auto())
             {
                 if (!ValidateState())
@@ -607,7 +622,7 @@ namespace UnityEngine.UIElements
                     // Take a snapshot for the job system
                     m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                     int snapshotIndex = UIPainter2D.TakeStrokeSnapshot(m_Handle);
-                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex, vectorImagePtr = vectorImagePtr, texturePtr = IntPtr.Zero });
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex, vectorImagePtr = vectorImagePtr, texturePtr = IntPtr.Zero, userData = userData });
                 }
             }
         }
@@ -705,6 +720,22 @@ namespace UnityEngine.UIElements
         /// <param name="fillRule">The fill rule (non-zero or odd-even) to use. Default is non-zero.</param>
         public void Fill(FillRule fillRule = FillRule.NonZero)
         {
+            FillImpl(fillRule, 0);
+        }
+
+        /// <summary>
+        /// Fills the currently defined path and tags every resulting <see cref="DrawData"/> with the given
+        /// user identifier, surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <param name="fillRule">The fill rule (non-zero or odd-even) to use.</param>
+        /// <param name="userData">User-defined identifier propagated to every <see cref="DrawData"/> produced by this fill.</param>
+        public void Fill(FillRule fillRule, int userData)
+        {
+            FillImpl(fillRule, userData);
+        }
+
+        void FillImpl(FillRule fillRule, int userData)
+        {
             using (s_FillMarker.Auto())
             {
                 if (!ValidateState())
@@ -761,7 +792,7 @@ namespace UnityEngine.UIElements
                     // Take a snapshot for the job system
                     m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                     int jobIndex = UIPainter2D.TakeFillSnapshot(m_Handle, fillRule);
-                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = jobIndex, vectorImagePtr = vectorImagePtr, texturePtr = texturePtr });
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = jobIndex, vectorImagePtr = vectorImagePtr, texturePtr = texturePtr, userData = userData });
                 }
             }
         }
@@ -814,6 +845,7 @@ namespace UnityEngine.UIElements
             public int snapshotIndex;
             public IntPtr vectorImagePtr;
             public IntPtr texturePtr;
+            public int userData;
         }
 
         struct Painter2DJob : IJobParallelFor
@@ -848,16 +880,16 @@ namespace UnityEngine.UIElements
                 {
                     GCHandle handle = GCHandle.FromIntPtr(data.vectorImagePtr);
                     VectorImage vi = (VectorImage)handle.Target;
-                    data.node.DrawGradientsInternal(vertices, indices, vi);
+                    data.node.DrawGradientsInternal(vertices, indices, vi, DrawPhase.Content, data.userData);
                 }
                 else if (data.texturePtr != IntPtr.Zero)
                 {
                     GCHandle handle = GCHandle.FromIntPtr(data.texturePtr);
                     Texture texture = handle.Target as Texture;
-                    data.node.DrawMesh(vertices, indices, texture);
+                    data.node.DrawMesh(vertices, indices, texture, TextureOptions.None, data.userData);
                 }
                 else
-                    data.node.DrawMesh(vertices, indices);
+                    data.node.DrawMesh(vertices, indices, null, TextureOptions.None, data.userData);
             }
         }
 

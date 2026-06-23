@@ -8,7 +8,8 @@ using Unity.Collections;
 
 namespace UnityEditor.Build
 {
-    ///<summary>Build Target by name. This allows to describe and identify build targets that are not fully represented by BuildTargetGroup and BuildTarget.</summary>
+    ///<summary>Identifies which platform's build settings an API applies to.</summary>
+    ///<remarks>Use <see cref="BuildTarget" /> to choose the platform output to build. Use <see cref="NamedBuildTarget" /> to choose which platform's settings to read or change.</remarks>
     public readonly struct NamedBuildTarget : IEquatable<NamedBuildTarget>, IComparable<NamedBuildTarget>
     {
         private static readonly string[] k_ValidNames =
@@ -40,7 +41,7 @@ namespace UnityEditor.Build
             "Kepler",
         };
 
-        ///<summary>Unknown.</summary>
+        ///<summary>An unknown or unspecified named build target, typically used as a placeholder.</summary>
         public static readonly NamedBuildTarget Unknown = new NamedBuildTarget("");
         ///<summary>Desktop Standalone.</summary>
         public static readonly NamedBuildTarget Standalone = new NamedBuildTarget("Standalone");

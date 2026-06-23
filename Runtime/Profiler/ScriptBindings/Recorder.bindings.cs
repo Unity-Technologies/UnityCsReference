@@ -11,6 +11,7 @@ using Unity.Profiling.LowLevel;
 using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.Profiling
 {
@@ -22,6 +23,7 @@ namespace UnityEngine.Profiling
             ProfilerRecorderOptions.WrapAroundWhenCapacityReached |
             ProfilerRecorderOptions.SumAllSamplesInFrame |
             ProfilerRecorderOptions.StartImmediately;
+        [NoAutoStaticsCleanup] // s_InvalidRecorder is a marker value for invalid recorders. It can be reused across domain reloads, and does not reference user code
         static internal Recorder s_InvalidRecorder = new Recorder();
 
         ProfilerRecorder m_RecorderCPU;

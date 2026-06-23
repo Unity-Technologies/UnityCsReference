@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.AdaptivePerformance;
 using UnityEngine.AdaptivePerformance.Basic;
 using UnityEngine.AdaptivePerformance.Provider;
@@ -18,6 +19,7 @@ namespace UnityEngine.AdaptivePerformance.Basic
     [VisibleToOtherModules("UnityEditor.AdaptivePerformanceModule")]
     internal class BasicProviderLoader : AdaptivePerformanceLoaderHelper
     {
+        [NoAutoStaticsCleanup] // populated by native subsystem registration, not C# state
         static List<AdaptivePerformanceSubsystemDescriptor> s_BasicSubsystemDescriptors =
             new List<AdaptivePerformanceSubsystemDescriptor>();
 

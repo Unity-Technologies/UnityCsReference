@@ -19,6 +19,8 @@ namespace Unity.U2D.Physics.Editor
         private FloatField m_RotationField;
         private Vector2Field m_DirectionField;
 
+        #region UITK
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
@@ -64,6 +66,31 @@ namespace Unity.U2D.Physics.Editor
             if (!Mathf.Approximately(PhysicsRotate.UnwindAngle(PhysicsMath.ToRadians(m_RotationField.value)), PhysicsRotate.UnwindAngle(rotation.radians)))
                 m_RotationField.value = LimitPrecision(rotation.degrees);
         }
+
+        #endregion
+
+        #region IMGUI
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            => EditorGUIUtility.singleLineHeight;
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            label = EditorGUI.BeginProperty(position, label, property);
+
+            var directionProperty = property.FindPropertyRelative(nameof(PhysicsRotate.direction));
+            var degrees = LimitPrecision(new PhysicsRotate { direction = directionProperty.vector2Value }.degrees);
+
+            var labelWithTooltip = new GUIContent(label.text, label.image, Tooltips.rotation);
+            EditorGUI.BeginChangeCheck();
+            var newDegrees = EditorGUI.FloatField(position, labelWithTooltip, degrees);
+            if (EditorGUI.EndChangeCheck())
+                directionProperty.vector2Value = PhysicsRotate.FromDegrees(newDegrees).direction;
+
+            EditorGUI.EndProperty();
+        }
+
+        #endregion
 
         static float LimitPrecision(float value) => Mathf.Round(value * 100.0f) * 0.01f;
     }

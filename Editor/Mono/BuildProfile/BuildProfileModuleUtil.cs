@@ -424,6 +424,41 @@ namespace UnityEditor.Build.Profile
             return BuildTargetDiscovery.GetModuleNameForBuildTarget(buildTarget);
         }
 
+        const string k_WindowsArchitecturePlatformSetting = "Architecture";
+
+        /// <summary>
+        /// Resolves the active build target when activating a build profile. Windows architecture
+        /// (x86/x64/ARM64) is not encoded in the GUID or <see cref="BuildProfile.buildTarget"/>, so for
+        /// Windows standalone targets this maps the architecture platform setting onto the matching
+        /// target (x86 -> <see cref="BuildTarget.StandaloneWindows"/>).
+        /// </summary>
+        internal static BuildTarget GetActiveBuildTargetForProfileSwitch(BuildProfile profile, BuildTarget buildTargetFromGuid)
+        {
+            if (profile?.platformBuildProfile == null)
+                return buildTargetFromGuid;
+
+            if (!IsWindowsStandaloneBuildTarget(buildTargetFromGuid))
+                return buildTargetFromGuid;
+
+            var architecture = profile.platformBuildProfile.GetRawPlatformSetting(k_WindowsArchitecturePlatformSetting);
+            if (string.IsNullOrEmpty(architecture))
+                return buildTargetFromGuid;
+
+            switch (architecture.ToLowerInvariant())
+            {
+                case "x86":
+                    return BuildTarget.StandaloneWindows;
+                case "x64":
+                case "arm64":
+                    return BuildTarget.StandaloneWindows64;
+                default:
+                    return buildTargetFromGuid;
+            }
+        }
+
+        static bool IsWindowsStandaloneBuildTarget(BuildTarget buildTarget) =>
+            buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64;
+
         /// <summary>
         /// Internal method for switching <see cref="EditorUserBuildSettings"/> active build target and subtarget.
         /// </summary>
@@ -1101,6 +1136,13 @@ namespace UnityEditor.Build.Profile
         {
             return BuildTargetDiscovery.GetPlatformColorString(platformGuid);
         }
+
+        /// <summary>
+        /// When the platform is marked deprecated, returns true and sets <paramref name="deprecationMessage"/> to the
+        /// configured text. The message may be empty if no custom copy was provided; callers should supply a fallback in that case.
+        /// </summary>
+        public static bool BuildPlatformTryGetDeprecationMessage(GUID platformGuid, out string deprecationMessage) =>
+            BuildTargetDiscovery.BuildPlatformTryGetDeprecationMessage(platformGuid, out deprecationMessage);
 
         public static void OnActiveProfileGraphicsSettingsChanged(bool hasGraphicsSettings)
         {

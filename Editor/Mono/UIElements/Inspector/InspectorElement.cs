@@ -287,16 +287,21 @@ namespace UnityEditor.UIElements
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
+            // Fill the inspector element and clip: bars are absolutely positioned at each field's
+            // offset, so without clipping a field inside a tall virtualized list would push the
+            // container's bounding box (and thus the inspector scroll range) far past the real content.
             prefabOverrideBlueBarsContainer = new VisualElement
             {
                 name = BindingExtensions.prefabOverrideBarContainerName,
-                style = { position = Position.Absolute }
+                pickingMode = PickingMode.Ignore,
+                style = { position = Position.Absolute, top = 0, left = 0, right = 0, bottom = 0, overflow = Overflow.Hidden }
             };
 
             livePropertyYellowBarsContainer = new VisualElement
             {
                 name = BindingExtensions.livePropertyBarContainerName,
-                style = { position = Position.Absolute }
+                pickingMode = PickingMode.Ignore,
+                style = { position = Position.Absolute, top = 0, left = 0, right = 0, bottom = 0, overflow = Overflow.Hidden }
             };
 
             Add(prefabOverrideBlueBarsContainer);

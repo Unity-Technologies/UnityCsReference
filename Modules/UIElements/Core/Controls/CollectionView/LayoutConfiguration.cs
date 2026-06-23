@@ -10,11 +10,14 @@ using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal class CellRow : VisualElement
     {
         public VisualElement scrollableClip;
         public VisualElement scrollableContainer;
         public List<VisualElement> cells = new();
+
+        public static readonly UniqueStyleString frozenCellUssClassName = new("unity-multi-column-view__cell--frozen");
 
         public CellRow()
         {
@@ -34,9 +37,11 @@ namespace UnityEngine.UIElements.HierarchyV2
                 case FreezeState.FreezeLeft:
                     var freeIndex = IndexOf(scrollableClip);
                     Insert(freeIndex, cellContainer);
+                    cellContainer.AddToClassList(frozenCellUssClassName);
                     break;
                 case FreezeState.FreezeRight:
                     Add(cellContainer);
+                    cellContainer.AddToClassList(frozenCellUssClassName);
                     break;
                 case FreezeState.None:
                     scrollableContainer.Add(cellContainer);
@@ -67,12 +72,18 @@ namespace UnityEngine.UIElements.HierarchyV2
         readonly PropertyName bindableElementPropertyName = "__unity-multi-column-bindable-element";
 
         static readonly UniqueStyleString k_HierarchyLastColumnHeader = new(MultiColumnHeaderColumn.ussClassName+"__last");
+        static readonly UniqueStyleString k_FrozenColumnBackgroundUssClassName = new("unity-multi-column-view__frozen-column-background");
 
+        VisualElement m_FrozenLeftBackground;
+        VisualElement m_FrozenRightBackground;
         float m_HorizontalScroll;
 
         public CollectionViewMultiColumnCollectionHeader header => m_MultiColumnHeader;
 
         public VisualElement headerContainer => m_HeaderContainer;
+
+        internal VisualElement frozenLeftBackground => m_FrozenLeftBackground;
+        internal VisualElement frozenRightBackground => m_FrozenRightBackground;
         public event Action<ContextualMenuPopulateEvent, Column> headerContextMenuPopulateEvent;
 
         public MultiColumnLayoutConfiguration()
@@ -353,16 +364,19 @@ namespace UnityEngine.UIElements.HierarchyV2
                 row.scrollableClip.style.width = scrollableWidth;
             }
 
+            UpdateFrozenColumnBackgrounds();
             m_View.UpdateScrollingRangeAfterLayout();
         }
 
         void OnColumnAdded(Column column, int index)
         {
+            UpdateFrozenColumnBackgrounds();
             m_View.Rebuild();
         }
 
         void OnColumnRemoved(Column column)
         {
+            UpdateFrozenColumnBackgrounds();
             m_View.Rebuild();
         }
 
@@ -425,11 +439,77 @@ namespace UnityEngine.UIElements.HierarchyV2
                 // Applying style.flexGrow = 1 to the last column
                 headers[^1].AddToClassList(k_HierarchyLastColumnHeader);
             }
+
+            UpdateFrozenColumnBackgrounds();
         }
 
         float CalculateTotalFrozenWidth()
         {
             return CollectionViewFrozenColumnUtility.CalculateTotalFrozenWidth(m_MultiColumnHeader, m_MultiColumnHeader.columns);
+        }
+
+        internal void CreateFrozenColumnBackgrounds()
+        {
+            if (m_FrozenLeftBackground == null)
+            {
+                m_FrozenLeftBackground = new VisualElement
+                {
+                    name = "frozen-column-background-left",
+                    pickingMode = PickingMode.Ignore,
+                    style = { left = 0 }
+                };
+                m_FrozenLeftBackground.AddToClassList(k_FrozenColumnBackgroundUssClassName);
+            }
+
+            if (m_FrozenRightBackground == null)
+            {
+                m_FrozenRightBackground = new VisualElement
+                {
+                    name = "frozen-column-background-right",
+                    pickingMode = PickingMode.Ignore,
+                    style = { right = 0 }
+                };
+                m_FrozenRightBackground.AddToClassList(k_FrozenColumnBackgroundUssClassName);
+            }
+        }
+
+        internal void GetFrozenColumnWidths(out float frozenLeftWidth, out float frozenRightWidth)
+        {
+            frozenLeftWidth = 0f;
+            frozenRightWidth = 0f;
+
+            if (m_MultiColumnHeader == null)
+                return;
+
+            foreach (var col in m_MultiColumnHeader.columns.visibleList)
+            {
+                var freezeState = m_MultiColumnHeader.GetColumnFreezeState(col);
+                if (freezeState != FreezeState.None &&
+                    m_MultiColumnHeader.columnDataMap.TryGetValue(col, out var colData))
+                {
+                    var w = colData.control.resolvedStyle.width;
+                    if (float.IsNaN(w))
+                        continue;
+                    if (freezeState == FreezeState.FreezeLeft)
+                        frozenLeftWidth += w;
+                    else
+                        frozenRightWidth += w;
+                }
+            }
+        }
+
+        internal void UpdateFrozenColumnBackgrounds()
+        {
+            if (m_FrozenLeftBackground == null || m_FrozenRightBackground == null)
+                return;
+
+            GetFrozenColumnWidths(out var frozenLeftWidth, out var frozenRightWidth);
+
+            m_FrozenLeftBackground.style.width = frozenLeftWidth;
+            m_FrozenLeftBackground.style.display = frozenLeftWidth > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            m_FrozenRightBackground.style.width = frozenRightWidth;
+            m_FrozenRightBackground.style.display = frozenRightWidth > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 

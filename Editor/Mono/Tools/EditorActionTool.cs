@@ -48,8 +48,8 @@ namespace UnityEditor.Actions
 
             if (window is SceneView sceneView)
                 action?.OnSceneGUI(sceneView);
-            if (window is EditorToolWindowBase toolOwnerWindow)
-                action?.OnToolOwnerGUI(toolOwnerWindow);
+            else if (window is ISupportsEditorTools)
+                action?.OnEditorToolWindowGUI(window);
         }
 
         void OnActionFinished(EditorActionResult result) => Dispose();

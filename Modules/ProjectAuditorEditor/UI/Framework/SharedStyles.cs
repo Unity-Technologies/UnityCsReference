@@ -2,59 +2,97 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
-    internal static class SharedStyles
+    internal static partial class SharedStyles
     {
         const int k_RowSize = 22;
 
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_Foldout;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_BoldLabel;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_IconLabel;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_IconLabelLeft;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_Label;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_LabelWithRichText;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_LabelWithRichTextGrey;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_LinkLabel;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_TextArea;
 
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_LabelWithDynamicSize;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; isProSkin is session-stable so cached value remains valid
         static GUIStyle s_LabelGreyWithDynamicSizeDark;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; isProSkin is session-stable so cached value remains valid
         static GUIStyle s_LabelGreyWithDynamicSizeLight;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_TextAreaWithDynamicSize;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_WelcomeTextArea;
 
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_TitleLabel;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_MediumTitleLabel;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_LargeLabel;
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_WhiteLargeLabel;
 
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_RowDark;
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_RowAlternateDark;
+        [NoAutoStaticsCleanup] // No embedded Texture2D; pure style settings survive code reload
         static GUIStyle s_RowLight;
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_RowAlternateLight;
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_RowDarkBackground;
         //static GUIStyle s_RowLightBackground;
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_RowDarkBackgroundAlternate;
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_RowLightBackgroundAlternate;
 
+        [NoAutoStaticsCleanup] // Background loaded by fixed name via EditorGUIUtility.LoadIcon; survives code reload
         static GUIStyle s_DocumentationButtonDark;
+        [NoAutoStaticsCleanup] // Background loaded by fixed name via EditorGUIUtility.LoadIcon; survives code reload
         static GUIStyle s_DocumentationButtonLight;
+        [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
         static GUIStyle s_CopyToClipboardButtonDark;
+        [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
         static GUIStyle s_CopyToClipboardButtonLight;
+        [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
         static GUIStyle s_CopyToClipboardButtonClickedDark;
+        [NoAutoStaticsCleanup] // Background loaded from asset database by fixed path; survives code reload
         static GUIStyle s_CopyToClipboardButtonClickedLight;
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         static GUIStyle s_TabBackgroundDark;
+        [NoAutoStaticsCleanup] // No embedded Texture2D; pure style settings survive code reload
         static GUIStyle s_TabBackgroundLight;
 
+        [NoAutoStaticsCleanup] // Lazily wraps EditorStyles; style survives code reload
         static GUIStyle s_MiniPulldown;
+        [NoAutoStaticsCleanup] // No embedded Texture2D; pure style settings survive code reload
         static GUIStyle s_OpenSearchWindowButton;
 
+        [AutoStaticsCleanupOnCodeReload] // Embeds a MakeColorTexture Texture2D which is destroyed on domain reload
         public static GUIStyle s_DarkTextBoxBackground;
+        [NoAutoStaticsCleanup] // No embedded Texture2D; pure style settings survive code reload
         public static GUIStyle s_LightTextBoxBackground;
 
         static readonly Color k_TabBottomActiveColor = new Color(0.23f, 0.55f, 0.82f, 1);

@@ -29,6 +29,8 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
     private VisualTreeAsset m_VisualTreeAsset;
     private TemplateAsset[] m_SubDocumentPath;
 
+    public Button OpenInContextButton => m_OpenInContextButton;
+
     public PanelSettings PanelSettings { get; set; }
 
     public TemplateAsset[] SubDocumentPath
@@ -76,14 +78,9 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
         m_OpenInBuilderButton.AddToClassList(HiddenOpenVtaButtonUssClass);
         m_OpenInBuilderButton.clicked += OpenInUIBuilder;
 
-        RegisterCallback<AttachToPanelEvent>(_ => UIToolkitAuthoringSettings.UIStagesChanged += OnUIStagesEnabledChanged);
-        RegisterCallback<DetachFromPanelEvent>(_ => UIToolkitAuthoringSettings.UIStagesChanged -= OnUIStagesEnabledChanged);
-    }
-
-    void OnUIStagesEnabledChanged(bool _)
-    {
         UpdateControlStates();
     }
+
 
     public void UpdateControlStates()
     {
@@ -97,7 +94,7 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
         }
 
         m_SelectButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isAssetPathValid);
-        m_OpenInContextButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !(UIToolkitAuthoringSettings.EnableUIStages && isAssetPathValid));
+        m_OpenInContextButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isAssetPathValid);
         m_OpenInBuilderButton.EnableInClassList(HiddenOpenVtaButtonUssClass, !isAssetPathValid);
     }
 
@@ -118,10 +115,7 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
             PanelSettings
         );
 
-        var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
-        stage.SeparatorStyle = BreadcrumbBar.SeparatorStyle.Line;
-        stage.SetContext(context);
-        StageUtility.GoToStage(stage, false);
+        VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Line);
     }
 
     private void OpenInUIBuilder()

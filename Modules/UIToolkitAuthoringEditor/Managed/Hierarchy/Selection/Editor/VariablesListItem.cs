@@ -55,7 +55,7 @@ namespace Unity.UIToolkit.Editor
             fieldsGroup.Add(itemFloatField = new FloatField()
                 { name = k_FloatFieldName, isDelayed = true }.WithClassList(k_HiddenFieldClassName));
             fieldsGroup.Add(itemColorField = new ColorField()
-                { name = k_ColorFieldName }.WithClassList(k_HiddenFieldClassName));
+                { name = k_ColorFieldName, setAlphaIfTransparentWhenPicked = true }.WithClassList(k_HiddenFieldClassName));
             fieldsGroup.Add(itemLengthField = new LengthField()
                 { name = k_LengthFieldName }.WithClassList(k_HiddenFieldClassName));
             fieldsGroup.Add(itemAngleField = new AngleField()
@@ -84,7 +84,7 @@ namespace Unity.UIToolkit.Editor
 
         protected virtual BaseField<UnityEngine.Object> CreateAssetField()
         {
-            return new ObjectField() { name = k_AssetFieldName }.WithClassList(k_HiddenFieldClassName);
+            return new ObjectField() { name = k_AssetFieldName, allowBuiltinResources = false }.WithClassList(k_HiddenFieldClassName);
         }
     }
 }

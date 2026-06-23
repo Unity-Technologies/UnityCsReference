@@ -5,13 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Analytics;
 
 namespace Unity.ProjectAuditor.Editor.UI
 {
-    static class AnalyticsReporter
+    static partial class AnalyticsReporter
     {
         const int k_MaxEventsPerHour = 100;
         const int k_MaxEventItems = 1000;
@@ -22,6 +23,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         const string k_EventTopicName = "projectAuditorUsage";
 
 #pragma warning disable CS0649 // TODO - remove if we implement a code path for the new analytics API (whatever that is..)
+        [AutoStaticsCleanupOnCodeReload]
         static bool s_EnableAnalytics;
 #pragma warning restore CS0649
 

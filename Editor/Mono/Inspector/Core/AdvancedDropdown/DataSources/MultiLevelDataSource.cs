@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -21,6 +22,7 @@ namespace UnityEditor.IMGUI.Controls
             set { m_Label = value; }
         }
 
+        [NoAutoStaticsCleanup] // selection index for currently open dropdown, safe to persist
         private static int m_SelectedIndex;
         internal int selectedIndex
         {

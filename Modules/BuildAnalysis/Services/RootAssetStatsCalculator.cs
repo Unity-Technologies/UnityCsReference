@@ -102,6 +102,14 @@ namespace UnityEditor.Build.Analysis
                     var direct = Traverse(rootSfIndex, includeLoadables: false);
                     var total = Traverse(rootSfIndex, includeLoadables: true);
 
+                    // References mirror the Total reachable set: after the includeLoadables pass,
+                    // m_UniqueSources holds the root's full reachable closure. Drop the root's own
+                    // path and copy the rest now, before the next root's Traverse clears the set.
+                    if (assetPath != null)
+                        m_UniqueSources.Remove(assetPath);
+                    var references = new string[m_UniqueSources.Count];
+                    m_UniqueSources.CopyTo(references);
+
                     results.Add(new RootAssetStats
                     {
                         AssetPath = assetPath ?? string.Empty,
@@ -109,6 +117,7 @@ namespace UnityEditor.Build.Analysis
                         DirectSize = direct.SizeBytes,
                         TotalAssets = total.AssetCount,
                         TotalSize = total.SizeBytes,
+                        ReferencedAssetPaths = references,
                     });
                 }
                 return results.ToArray();

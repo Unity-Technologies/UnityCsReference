@@ -32,7 +32,7 @@ internal sealed class ReorderStyleRulePropertiesCommand : Command<ReorderStyleRu
     public StyleProperty[] NewPropertyOrder { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.StylingContext;
+    public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Variables;
 
     protected override void Init()
     {

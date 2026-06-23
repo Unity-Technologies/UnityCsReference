@@ -80,7 +80,11 @@ namespace Unity.UI.Builder
                         }
                         else if (styleField is FilterStyleField filterField)
                         {
-                            m_StyleFields.BindStyleField(styleRow, filterField);
+                            var filterBindingPath = !string.IsNullOrEmpty(styleField.bindingPath) ? styleField.bindingPath : bindingPath;
+                            if (filterBindingPath == BuilderInspectorStyleFields.BackdropFilterConstants.BackdropFilter)
+                                m_StyleFields.BindBackdropFilterStyleField(styleRow, filterField);
+                            else
+                                m_StyleFields.BindStyleField(styleRow, filterField);
                         }
                         else if (styleField is MaterialDefinitionStyleField materialDefinitionStyleField)
                         {
@@ -209,7 +213,11 @@ namespace Unity.UI.Builder
                     }
                     else if (styleField is FilterStyleField filterField)
                     {
-                        m_StyleFields.RefreshStyleField(filterField);
+                        var filterBindingPath = !string.IsNullOrEmpty(styleField.bindingPath) ? styleField.bindingPath : bindingPath;
+                        if (filterBindingPath == BuilderInspectorStyleFields.BackdropFilterConstants.BackdropFilter)
+                            m_StyleFields.RefreshBackdropFilterStyleField(filterField);
+                        else
+                            m_StyleFields.RefreshStyleField(filterField);
                     }
                     else if (styleField is MaterialDefinitionStyleField materialDefinitionStyleField)
                     {

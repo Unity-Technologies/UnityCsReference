@@ -9,6 +9,11 @@ using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {
+    // Marker interface for events the UI Toolkit profiler should not capture. These are framework-generated
+    // lifecycle and notification events (panel attach/detach, geometry, style, transitions, bindings, tooltip)
+    // rather than user input, so surfacing them in the profiler's event list would only add noise.
+    interface IProfilerIgnoredEvent {}
+
     /// <summary>
     /// The base class for all UIElements events.  The class implements IDisposable to ensure proper release of the event from the pool and of any unmanaged resources, when necessary.
     /// </summary>

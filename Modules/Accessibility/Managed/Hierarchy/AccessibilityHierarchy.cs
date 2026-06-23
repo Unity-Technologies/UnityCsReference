@@ -111,27 +111,21 @@ namespace UnityEngine.Accessibility
         internal static int nextUniqueNodeId;
 
         /// <summary>
-        /// The set of all node IDs currently in use across all instances of <see cref="AccessibilityHierarchy"/>.
-        /// Used to guarantee global ID uniqueness even after <see cref="nextUniqueNodeId"/> wraps around
-        /// <see cref="int.MaxValue"/>.
+        /// Weak references to every <see cref="AccessibilityHierarchy"/> that has been created and not yet garbage
+        /// collected. The live hierarchies are the source of truth for which node IDs are currently in use, which lets
+        /// <see cref="CreateNode"/> guarantee global ID uniqueness even after <see cref="nextUniqueNodeId"/> wraps
+        /// around <see cref="int.MaxValue"/>. Using weak references means a hierarchy that is simply dropped (for
+        /// example during a scene transition) frees its IDs as soon as it is collected, with no finalizer or explicit
+        /// cleanup required.
         /// </summary>
-        internal static readonly HashSet<int> usedNodeIds = new();
+        static readonly List<WeakReference<AccessibilityHierarchy>> s_LiveHierarchies = new();
 
         /// <summary>
-        /// Finalizer that releases all node IDs back to the global pool when this hierarchy is garbage collected
-        /// without having been explicitly cleared. Without this, IDs would accumulate in <see cref="usedNodeIds"/>
-        /// permanently for every hierarchy that is created and then simply dropped (e.g. during scene transitions or
-        /// in tests), eventually exhausting all available IDs.
+        /// Initializes and returns an empty <see cref="AccessibilityHierarchy"/>.
         /// </summary>
-        ~AccessibilityHierarchy()
+        public AccessibilityHierarchy()
         {
-            lock (usedNodeIds)
-            {
-                foreach (var id in nodes.Keys)
-                {
-                    usedNodeIds.Remove(id);
-                }
-            }
+            s_LiveHierarchies.Add(new WeakReference<AccessibilityHierarchy>(this));
         }
 
         /// <summary>
@@ -333,12 +327,9 @@ namespace UnityEngine.Accessibility
 
             if (removeChildren)
             {
-                var nodeIdsToRemove = new List<int>();
-
                 void RemoveFromNodes(AccessibilityNode child)
                 {
                     nodes.Remove(child.id);
-                    nodeIdsToRemove.Add(child.id);
 
                     foreach (var descendant in child.children)
                     {
@@ -347,23 +338,10 @@ namespace UnityEngine.Accessibility
                 }
 
                 RemoveFromNodes(node);
-
-                lock (usedNodeIds)
-                {
-                    foreach (var nodeId in nodeIdsToRemove)
-                    {
-                        usedNodeIds.Remove(nodeId);
-                    }
-                }
             }
             else
             {
                 nodes.Remove(node.id);
-
-                lock (usedNodeIds)
-                {
-                    usedNodeIds.Remove(node.id);
-                }
             }
 
             if (m_RootNodes.Contains(node))
@@ -399,13 +377,17 @@ namespace UnityEngine.Accessibility
         /// <remarks>
         /// <para>
         /// This is a convenience method that updates the <see cref="AccessibilityNode.frame"/> of all nodes in the
-        /// accessibility hierarchy (based on <see cref="AccessibilityNode.frameGetter"/>) and notifies the screen
-        /// reader of these updates by calling <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/>
+        /// accessibility hierarchy based on <see cref="AccessibilityNode.frameGetter"/> and notifies the screen reader
+        /// of these updates by calling <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/>
         /// (with a @@null@@ parameter).
         /// </para>
         /// <para>
         /// Call this method when most or all of the nodes on the screen require a layout update. For example, when the
         /// user scrolls the application's interface, or when the orientation of the screen changes.
+        /// </para>
+        /// <para>
+        /// **Note**: For nodes with no <see cref="AccessibilityNode.frameGetter"/> set, this method resets their
+        /// <see cref="AccessibilityNode.frame"/> to <see cref="Rect.zero"/>.
         /// </para>
         /// </remarks>
         public void RefreshNodeFrames()
@@ -413,6 +395,21 @@ namespace UnityEngine.Accessibility
             foreach (var node in nodes.Values)
             {
                 node.frame = node.frameGetter?.Invoke() ?? Rect.zero;
+            }
+
+            if (AssistiveSupport.activeHierarchy == this)
+            {
+                AssistiveSupport.notificationDispatcher.SendLayoutChanged();
+            }
+        }
+
+        internal void RefreshNodeFramesWithoutResetting()
+        {
+            foreach (var node in nodes.Values)
+            {
+                // Set the frame even if it is the same, because it needs to be converted to screen coordinates on the
+                // native side, which could be different if the app window was moved, for example.
+                node.frame = node.frameGetter?.Invoke() ?? node.frame;
             }
 
             if (AssistiveSupport.activeHierarchy == this)
@@ -503,37 +500,56 @@ namespace UnityEngine.Accessibility
         /// <returns>The new node.</returns>
         AccessibilityNode CreateNode()
         {
-            // Guard and select the next free ID. Both the count check and the Contains loop must run inside
-            // the lock so that a concurrent finalizer Remove() cannot corrupt the HashSet while we read it.
-            int nodeId;
+            var startId = nextUniqueNodeId;
 
-            lock (usedNodeIds)
+            // Skip over any IDs that are still in use by a node in a live hierarchy. This is important after
+            // nextUniqueNodeId wraps around int.MaxValue.
+            while (IsNodeIdInUse(nextUniqueNodeId))
             {
-                if (usedNodeIds.Count >= int.MaxValue)
+                nextUniqueNodeId = nextUniqueNodeId == int.MaxValue ? 0 : nextUniqueNodeId + 1;
+
+                // If we cycle all the way back to where we started, every possible ID is in use and we cannot create
+                // a new node.
+                if (nextUniqueNodeId == startId)
                 {
                     throw new InvalidOperationException("Could not create a new accessibility node. A maximum of " +
                         $"{int.MaxValue} nodes can exist at a time across all hierarchies. Try clearing unused " +
                         "hierarchies or removing unused nodes.");
                 }
-
-                // Skip over any IDs that are still in use by nodes in any hierarchy. This is important after
-                // nextUniqueNodeId wraps around int.MaxValue.
-                while (usedNodeIds.Contains(nextUniqueNodeId))
-                {
-                    nextUniqueNodeId = nextUniqueNodeId == int.MaxValue ? 0 : nextUniqueNodeId + 1;
-                }
-
-                // Reserve the ID.
-                nodeId = nextUniqueNodeId;
-
-                // Mark this ID as in use.
-                usedNodeIds.Add(nodeId);
-
-                // Loop the counter. We do not expect to have that many accessibility nodes at the same time.
-                nextUniqueNodeId = nodeId == int.MaxValue ? 0 : nodeId + 1;
             }
 
+            // Reserve the ID.
+            var nodeId = nextUniqueNodeId;
+
+            // Loop the counter. We do not expect to have that many accessibility nodes at the same time.
+            nextUniqueNodeId = nodeId == int.MaxValue ? 0 : nodeId + 1;
+
             return new AccessibilityNode(nodeId, this);
+        }
+
+        /// <summary>
+        /// Determines whether the given node ID is currently in use by a node in any live hierarchy. Dead weak
+        /// references encountered along the way are pruned from <see cref="s_LiveHierarchies"/>.
+        /// </summary>
+        static bool IsNodeIdInUse(int id)
+        {
+            for (var i = s_LiveHierarchies.Count - 1; i >= 0; i--)
+            {
+                if (s_LiveHierarchies[i].TryGetTarget(out var hierarchy))
+                {
+                    if (hierarchy.nodes.ContainsKey(id))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    // The hierarchy has been garbage collected, so its IDs are free again. Prune the dead reference.
+                    s_LiveHierarchies.RemoveAt(i);
+                }
+            }
+
+            return false;
         }
 
         AccessibilityNode CreateNodeAndSetParent(int childIndex, string label, AccessibilityNode parent)

@@ -28,10 +28,10 @@ namespace UnityEngine.UIElements.UIR
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales, bool usesPerGlyphTextCoreSettings = false);
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, bool usesPerGlyphTextCoreSettings = false);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font, bool useAdvanced = true);
-        public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
-        public void DrawBorder(MeshGenerator.BorderParams borderParams);
-        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
-        public void DrawRectangleRepeat(MeshGenerator.RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint);
+        public void DrawRectangle(MeshGenerator.RectangleParams rectParams, DrawPhase phase = DrawPhase.Content);
+        public void DrawBorder(MeshGenerator.BorderParams borderParams, DrawPhase phase = DrawPhase.Content);
+        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale, int userData = 0);
+        public void DrawRectangleRepeat(MeshGenerator.RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint, DrawPhase phase = DrawPhase.Content);
 
         public void ScheduleJobs(MeshGenerationContext mgc);
     }
@@ -186,6 +186,14 @@ namespace UnityEngine.UIElements.UIR
             internal ColorId colorId;
 
             internal MeshGenerationContext.MeshFlags meshFlags;
+
+            // UV corners for non-axis-aligned UV mapping (e.g., rotated elements)
+            // When uvCornersValid is true, these are used instead of the uv rect for bilinear interpolation
+            public Vector2 uvTopLeft;
+            public Vector2 uvTopRight;
+            public Vector2 uvBottomRight;
+            public Vector2 uvBottomLeft;
+            public bool uvCornersValid;
 
             public static RectangleParams MakeSolid(Rect rect, Color color, Color playModeTintColor)
             {
@@ -567,7 +575,12 @@ namespace UnityEngine.UIElements.UIR
                     sliceScale = sliceScale,
                     rectInset = rectInset,
                     colorId = colorId.ToNativeColorId(),
-                    meshFlags = (int)meshFlags
+                    meshFlags = (int)meshFlags,
+                    uvTopLeft = uvTopLeft,
+                    uvTopRight = uvTopRight,
+                    uvBottomRight = uvBottomRight,
+                    uvBottomLeft = uvBottomLeft,
+                    uvCornersValid = uvCornersValid ? 1 : 0
                 };
             }
         }
@@ -755,8 +768,7 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            List<bool> hasMultipleColorsByMesh = null;
-            s_TextLib.ProcessMeshInfos(nativeTextInfo, m_NativeSettings, ref m_DrawTextAdvancedMeshIndices, ref hasMultipleColorsByMesh, false);
+            s_TextLib.ProcessMeshInfos(nativeTextInfo, m_NativeSettings, ref m_DrawTextAdvancedMeshIndices, false);
 
             DrawTextBaseNative(nativeTextInfo, pos);
         }
@@ -1014,7 +1026,7 @@ namespace UnityEngine.UIElements.UIR
                 m_MeshGenerationContext.entryRecorder.DrawRasterText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, multiChannel, usesPerGlyphTextCoreSettings);
         }
 
-        public void DrawRectangle(RectangleParams rectParams)
+        public void DrawRectangle(RectangleParams rectParams, DrawPhase phase = DrawPhase.Content)
         {
             if (rectParams.rect.width < UIRUtility.k_Epsilon || rectParams.rect.height < UIRUtility.k_Epsilon)
                 return; // Nothing to draw
@@ -1024,7 +1036,7 @@ namespace UnityEngine.UIElements.UIR
                 if (currentElement.panel.contextType == ContextType.Editor)
                     rectParams.color *= rectParams.playmodeTintColor;
 
-                var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false };
+                var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false, phase = phase };
                 rectParams.ToNativeParams(out rectangleJobParameters.rectParams);
 
                 rectangleJobParameters.rectParams.texture = m_GCHandlePool.GetIntPtr(rectParams.texture);
@@ -1056,7 +1068,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void DrawBorder(BorderParams borderParams)
+        public void DrawBorder(BorderParams borderParams, DrawPhase phase = DrawPhase.Content)
         {
             using (k_MarkerDrawBorder.Auto())
             {
@@ -1068,7 +1080,7 @@ namespace UnityEngine.UIElements.UIR
                     borderParams.bottomColor *= borderParams.playmodeTintColor;
                 }
 
-                var borderJobParams = new TessellationJobParameters() { isBorderJob = true, borderParams = borderParams };
+                var borderJobParams = new TessellationJobParameters() { isBorderJob = true, borderParams = borderParams, phase = phase };
                 m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                 borderJobParams.node = unsafeNode;
                 m_TesselationJobParameters.Add(borderJobParams);
@@ -1076,7 +1088,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale)
+        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale, int userData = 0)
         {
             if (vectorImage == null || vectorImage.vertices.Length == 0 || vectorImage.indices.Length == 0)
                 return;
@@ -1087,9 +1099,9 @@ namespace UnityEngine.UIElements.UIR
 
                 bool hasGradients = vectorImage.atlas != null;
                 if (hasGradients)
-                    m_MeshGenerationContext.entryRecorder.DrawGradients(m_MeshGenerationContext.parentEntry, vertices, indices, vectorImage);
+                    m_MeshGenerationContext.entryRecorder.DrawGradients(m_MeshGenerationContext.parentEntry, vertices, indices, vectorImage, DrawPhase.Content, userData);
                 else
-                    m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices);
+                    m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices, DrawPhase.Content, userData);
 
                 var matrix = Matrix4x4.TRS(offset, Quaternion.AngleAxis(rotationAngle.ToDegrees(), Vector3.forward), new Vector3(scale.x, scale.y, 1.0f));
                 bool flipWinding = (scale.x < 0.0f) ^ (scale.y < 0.0f);
@@ -1124,18 +1136,18 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void DrawRectangleRepeat(RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint)
+        public void DrawRectangleRepeat(RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint, DrawPhase phase = DrawPhase.Content)
         {
             using (k_MarkerDrawRectangleRepeat.Auto())
             {
-                DoDrawRectangleRepeat(ref rectParams, totalRect, scaledPixelsPerPoint);
+                DoDrawRectangleRepeat(ref rectParams, totalRect, scaledPixelsPerPoint, phase);
             }
         }
 
         // This method should not be called directly. Use the DrawRectangleRepeat wrapper instead which is properly
         // instrumented with performance counters.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void DoDrawRectangleRepeat(ref RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint)
+        void DoDrawRectangleRepeat(ref RectangleParams rectParams, Rect totalRect, float scaledPixelsPerPoint, DrawPhase phase)
         {
             var uv = new Rect(0, 0, 1, 1);
 
@@ -1607,7 +1619,7 @@ namespace UnityEngine.UIElements.UIR
                         targetRect.width = left;
                     }
 
-                    StampRectangleWithSubRect(rectParams, targetRect, totalRect, uv, ref rectParams.backgroundRepeatInstanceList);
+                    StampRectangleWithSubRect(rectParams, targetRect, totalRect, uv, ref rectParams.backgroundRepeatInstanceList, phase);
                     currentTotalRepeatCount++;
 
                     // Make sure to do some work in parallel
@@ -1618,7 +1630,7 @@ namespace UnityEngine.UIElements.UIR
                             currentTotalRepeatCount = 0;
 
                             rectParams.backgroundRepeatInstanceListEndIndex = m_BackgroundRepeatInstanceList.GetCount();
-                            DrawRectangle(rectParams);
+                            DrawRectangle(rectParams, phase);
 
                             rectParams.backgroundRepeatInstanceListStartIndex = rectParams.backgroundRepeatInstanceListEndIndex;
                         }
@@ -1629,11 +1641,11 @@ namespace UnityEngine.UIElements.UIR
             if (rectParams.backgroundRepeatInstanceList != null && currentTotalRepeatCount > 0)
             {
                 rectParams.backgroundRepeatInstanceListEndIndex = m_BackgroundRepeatInstanceList.GetCount();
-                DrawRectangle(rectParams);
+                DrawRectangle(rectParams, phase);
             }
         }
 
-        void StampRectangleWithSubRect(RectangleParams rectParams, Rect targetRect, Rect totalRect, Rect targetUV, ref NativePagedList<BackgroundRepeatInstance> backgroundRepeatInstanceList)
+        void StampRectangleWithSubRect(RectangleParams rectParams, Rect targetRect, Rect totalRect, Rect targetUV, ref NativePagedList<BackgroundRepeatInstance> backgroundRepeatInstanceList, DrawPhase phase)
         {
             const float epsilon = 0.001f;
 
@@ -1713,7 +1725,7 @@ namespace UnityEngine.UIElements.UIR
             }
             else
             {
-                DrawRectangle(rectParams);
+                DrawRectangle(rectParams, phase);
             }
         }
 
@@ -1781,6 +1793,7 @@ namespace UnityEngine.UIElements.UIR
         struct TessellationJobParameters
         {
             public bool isBorderJob;
+            public DrawPhase phase;
             public MeshBuilderNative.NativeRectParams rectParams;
             public MeshGenerator.BorderParams borderParams;
             public UnsafeMeshGenerationNode node;
@@ -1798,17 +1811,17 @@ namespace UnityEngine.UIElements.UIR
 
                 if (jobParams.isBorderJob)
                 {
-                    DrawBorder(jobParams.node, ref jobParams.borderParams);
+                    DrawBorder(jobParams.node, ref jobParams.borderParams, jobParams.phase);
                 }
                 else
                 {
                     ref var rectParams = ref jobParams.rectParams;
                     if (rectParams.vectorImage != IntPtr.Zero)
-                        DrawVectorImage(jobParams.node, ref rectParams, ExtractHandle<VectorImage>(rectParams.vectorImage));
+                        DrawVectorImage(jobParams.node, ref rectParams, ExtractHandle<VectorImage>(rectParams.vectorImage), jobParams.phase);
                     else if (rectParams.sprite != IntPtr.Zero)
-                        DrawSprite(jobParams.node, ref rectParams, ExtractHandle<Sprite>(rectParams.sprite));
+                        DrawSprite(jobParams.node, ref rectParams, ExtractHandle<Sprite>(rectParams.sprite), jobParams.phase);
                     else
-                        DrawRectangle(jobParams.node, ref rectParams, ExtractHandle<Texture>(rectParams.texture));
+                        DrawRectangle(jobParams.node, ref rectParams, ExtractHandle<Texture>(rectParams.texture), jobParams.phase);
                 }
             }
 
@@ -1818,7 +1831,7 @@ namespace UnityEngine.UIElements.UIR
                 return handle.IsAllocated ? handle.Target as T : null;
             }
 
-            void DrawBorder(UnsafeMeshGenerationNode node, ref BorderParams borderParams)
+            void DrawBorder(UnsafeMeshGenerationNode node, ref BorderParams borderParams, DrawPhase phase)
             {
                 borderParams.ToNativeParams(out MeshBuilderNative.NativeBorderParams nativeBorderParams);
                 var meshData = MeshBuilderNative.MakeBorder(ref nativeBorderParams);
@@ -1843,10 +1856,10 @@ namespace UnityEngine.UIElements.UIR
                 vertices.CopyFrom(nativeVertices);
                 indices.CopyFrom(nativeIndices);
 
-                node.DrawMesh(vertices, indices);
+                node.DrawMesh(vertices, indices, null, TextureOptions.None, phase);
             }
 
-            void DrawRectangle(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Texture tex)
+            void DrawRectangle(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Texture tex, DrawPhase phase)
             {
                 bool skipAtlas = (rectParams.meshFlags & (int)MeshFlags.SkipDynamicAtlas) == (int)MeshFlags.SkipDynamicAtlas;
                 TextureOptions textureOptions = skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None;
@@ -1904,7 +1917,7 @@ namespace UnityEngine.UIElements.UIR
                                 node.DrawMesh(
                                     vertices.Slice(0, vertices.Length - freeVertices),
                                     indices.Slice(0, indices.Length - freeIndices),
-                                    tex, textureOptions);
+                                    tex, textureOptions, phase);
                             }
 
                             nextVerticesAllocSize = Math.Min(Math.Max(meshData.vertexCount, nextVerticesAllocSize) * 2, (int)UIRenderDevice.maxVerticesPerPage);
@@ -1942,7 +1955,7 @@ namespace UnityEngine.UIElements.UIR
                         node.DrawMesh(
                            vertices.Slice(0, vertices.Length - freeVertices),
                             indices.Slice(0, indices.Length - freeIndices),
-                            tex, textureOptions);
+                            tex, textureOptions, phase);
                     }
                 }
                 else
@@ -1973,11 +1986,11 @@ namespace UnityEngine.UIElements.UIR
                     vertices.CopyFrom(nativeVertices);
                     indices.CopyFrom(nativeIndices);
 
-                    node.DrawMesh(vertices, indices, tex, textureOptions);
+                    node.DrawMesh(vertices, indices, tex, textureOptions, phase);
                 }
             }
 
-            void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
+            void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite, DrawPhase phase)
             {
                 if (rectParams.spriteTexture == IntPtr.Zero)
                     return; // Textureless sprites not supported, should use VectorImage instead
@@ -2027,10 +2040,10 @@ namespace UnityEngine.UIElements.UIR
                 var meshFlags = (MeshGenerationContext.MeshFlags)rectParams.meshFlags;
                 bool skipAtlas = (meshFlags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) != 0;
 
-                node.DrawMesh(vertices, indices, spriteTexture, skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None);
+                node.DrawMesh(vertices, indices, spriteTexture, skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None, phase);
             }
 
-            void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi)
+            void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi, DrawPhase phase)
             {
                 bool isUsingGradients = (rectParams.meshFlags & (int)MeshGenerationContext.MeshFlags.IsUsingVectorImageGradients) != 0;
 
@@ -2080,9 +2093,9 @@ namespace UnityEngine.UIElements.UIR
                 indices.CopyFrom(nativeIndices);
 
                 if (isUsingGradients)
-                    node.DrawGradientsInternal(vertices, indices, vi);
+                    node.DrawGradientsInternal(vertices, indices, vi, phase);
                 else
-                    node.DrawMesh(vertices, indices);
+                    node.DrawMesh(vertices, indices, null, TextureOptions.None, phase);
             }
         }
 

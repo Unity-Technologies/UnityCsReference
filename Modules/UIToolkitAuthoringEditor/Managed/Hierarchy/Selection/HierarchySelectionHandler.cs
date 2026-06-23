@@ -118,6 +118,7 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
         {
             var vtaSelection = Acquire<VisualTreeAssetSelection>(element);
             element.SetProperty(VisualElementRemapper.k_PanelComponentId, GlobalObjectId.GetGlobalObjectIdSlow((Object)panelComponentRootElement.panelComponent));
+            element.SetSelectionObject(vtaSelection);
             vtaSelection.panelComponent = panelComponentRootElement.panelComponent;
             return vtaSelection.GetEntityId();
         }

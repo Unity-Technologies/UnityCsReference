@@ -4,6 +4,7 @@
 
 using System.Linq;
 using Unity.ProjectAuditor.Editor.Utils;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.PackageManager;
 
@@ -53,17 +54,24 @@ namespace Unity.ProjectAuditor.Editor
             }
         }
 
+        [NoAutoStaticsCleanup] // package state is set by static ctor at startup; packages don't change during script-only reloads, so the value is safe to persist
         public static bool IsInstalled { get; private set; }
+        [NoAutoStaticsCleanup] // same as IsInstalled
         public static bool IsLatest { get; private set; }
+        [NoAutoStaticsCleanup] // same as IsInstalled
         public static bool IsLocal { get; private set; }
 
         public const string Name = "com.unity.project-auditor-rules";
 
+        [NoAutoStaticsCleanup] // same as IsInstalled
         public static string Path { get; private set; }
 
+        [NoAutoStaticsCleanup] // same as IsInstalled
         public static string Version { get; private set; }
+        [NoAutoStaticsCleanup] // same as IsInstalled
         public static string LatestVersion { get; private set; }
 
+        [NoAutoStaticsCleanup] // same as IsInstalled
         public static string VersionShort { get; private set; }
     }
 }

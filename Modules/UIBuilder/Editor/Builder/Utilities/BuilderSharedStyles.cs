@@ -2,12 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
+using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -344,6 +345,58 @@ namespace Unity.UI.Builder
             documentElement.pseudoStates = previousPseudoStates;
 
             return complexSelectors;
+        }
+
+        public static IEnumerable<ClassCompleterInfo> GetAllUnappliedClasses(VisualElement documentRootElement, VisualElement currentVisualElement)
+        {
+            var results = new List<ClassCompleterInfo>();
+
+            if (documentRootElement == null)
+                return results;
+
+            var selectorContainer = GetSelectorContainerElement(documentRootElement);
+            if (selectorContainer == null)
+                return results;
+
+            using var appliedClassesHandle = HashSetPool<string>.Get(out var appliedClasses);
+            foreach (var cls in currentVisualElement.GetClasses())
+                appliedClasses.Add(cls);
+
+            foreach (var styleSheetElement in selectorContainer.Children())
+            {
+                var styleSheet = GetStyleSheetElementProperty(styleSheetElement);
+                if (styleSheet == null)
+                    continue;
+
+                var sheetHeader = new ClassCompleterInfo(styleSheet);
+                var headerAdded = false;
+
+                using var seenInSheetHandle = HashSetPool<string>.Get(out var seenInSheet);
+
+                foreach (var selectorElement in styleSheetElement.Children())
+                {
+                    var complexSelector = GetSelectorProperty(selectorElement);
+                    if (complexSelector == null)
+                        continue;
+
+                    foreach (var selector in complexSelector.selectors)
+                    foreach (var part in selector.parts)
+                    {
+                        if (part.type != StyleSelectorType.Class || appliedClasses.Contains(part.value) || !seenInSheet.Add(part.value))
+                            continue;
+
+                        if (!headerAdded)
+                        {
+                            results.Add(sheetHeader);
+                            headerAdded = true;
+                        }
+
+                        results.Add(new ClassCompleterInfo(part, styleSheet));
+                    }
+                }
+            }
+
+            return results;
         }
 
         public static List<VisualElement> GetMatchingElementsForSelector(VisualElement documentRootElement, string selectorStr)

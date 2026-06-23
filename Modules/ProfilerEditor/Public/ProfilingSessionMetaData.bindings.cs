@@ -16,6 +16,15 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Profiling.Editor
 {
+    // Must be in sync with ProfilingSessionMetaDataEntryVersion in Profiler.h!
+    internal enum ProfilingSessionMetaDataEntryVersion
+    {
+        InitialVersion = 0,
+        ScreenshotVersion = 1,
+        ScreenshotVersionV2 = 2,
+        ScreenshotVersionV3 = 3,
+    }
+
     // Must be in sync with UnityProfilingSessionMetaDataEntry in Profiler.h!
     internal enum ProfilingSessionMetaDataEntry
     {

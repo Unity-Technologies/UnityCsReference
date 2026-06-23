@@ -364,8 +364,9 @@ namespace UnityEngine.UIElements
             if (isDirty)
             {
                 element.stylesDirty = true; // Propagate inherited dirty to this element's flag for children
-                element.triggerPseudoMask = 0;
-                element.dependencyPseudoMask = 0;
+                ref var selectorData = ref element.layoutNode.SelectorData;
+                selectorData.triggerPseudoMask = PseudoStates.None;
+                selectorData.dependencyPseudoMask = PseudoStates.None;
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetCount;

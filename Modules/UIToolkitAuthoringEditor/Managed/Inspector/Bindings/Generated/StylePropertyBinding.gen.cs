@@ -39,6 +39,8 @@ namespace Unity.UIToolkit.Editor
                     return Update(in id, authoringContext.StyleDiff.animationPlayState, authoringContext, targetElement);
                 case StylePropertyId.AspectRatio:
                     return Update(in id, authoringContext.StyleDiff.aspectRatio, authoringContext, targetElement);
+                case StylePropertyId.BackdropFilter:
+                    return Update(in id, authoringContext.StyleDiff.backdropFilter, authoringContext, targetElement);
                 case StylePropertyId.BackgroundColor:
                     return Update(in id, authoringContext.StyleDiff.backgroundColor, authoringContext, targetElement);
                 case StylePropertyId.BackgroundImage:
@@ -231,6 +233,10 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyId.AspectRatio:
                     RegisterCallbacks<StyleRatio, Ratio>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
+                case StylePropertyId.BackdropFilter:
+                case StylePropertyId.Filter:
+                    RegisterCallbacks<StyleList<FilterFunction>, List<FilterFunction>>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
+                    break;
                 case StylePropertyId.BackgroundColor:
                 case StylePropertyId.BorderBottomColor:
                 case StylePropertyId.BorderLeftColor:
@@ -299,9 +305,6 @@ namespace Unity.UIToolkit.Editor
                     break;
                 case StylePropertyId.Display:
                     RegisterEnumCallbacks<DisplayStyle>(binding, id, targetElement);
-                    break;
-                case StylePropertyId.Filter:
-                    RegisterCallbacks<StyleList<FilterFunction>, List<FilterFunction>>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.FlexDirection:
                     RegisterEnumCallbacks<FlexDirection>(binding, id, targetElement);
@@ -424,6 +427,13 @@ namespace Unity.UIToolkit.Editor
                     targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Ratio>, CallbackContext>(binding.ProcessChange);
                     targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleRatio>, CallbackContext>(binding.ProcessChange);
                     break;
+                case StylePropertyId.BackdropFilter:
+                case StylePropertyId.Filter:
+                    targetElement.UnregisterCallback<ChangeEvent<List<FilterFunction>>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<ChangeEvent<StyleList<FilterFunction>>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<List<FilterFunction>>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleList<FilterFunction>>, CallbackContext>(binding.ProcessChange);
+                    break;
                 case StylePropertyId.BackgroundColor:
                 case StylePropertyId.BorderBottomColor:
                 case StylePropertyId.BorderLeftColor:
@@ -518,12 +528,6 @@ namespace Unity.UIToolkit.Editor
                     targetElement.UnregisterCallback<ChangeEvent<DisplayStyle>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<StyleEnum<DisplayStyle>>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<ChangeEvent<Enum>, CallbackContext>(ProcessChange);
-                    break;
-                case StylePropertyId.Filter:
-                    targetElement.UnregisterCallback<ChangeEvent<List<FilterFunction>>, CallbackContext>(ProcessChange);
-                    targetElement.UnregisterCallback<ChangeEvent<StyleList<FilterFunction>>, CallbackContext>(ProcessChange);
-                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<List<FilterFunction>>, CallbackContext>(binding.ProcessChange);
-                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleList<FilterFunction>>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.FlexDirection:
                     targetElement.UnregisterCallback<ChangeEvent<FlexDirection>, CallbackContext>(ProcessChange);
@@ -706,6 +710,16 @@ namespace Unity.UIToolkit.Editor
             SetStyleValue<StyleRatio, Ratio>(property, sheet, styleValue, SetRatio);
         }
 
+        internal static void SetFilterFunctionList(StyleProperty property, StyleSheet sheet, List<FilterFunction> value)
+        {
+            property.SetFilterFunctionList(sheet, value);
+        }
+
+        internal static void SetFilterFunctionList(StyleProperty property, StyleSheet sheet, StyleList<FilterFunction> styleValue)
+        {
+            SetStyleValue<StyleList<FilterFunction>, List<FilterFunction>>(property, sheet, styleValue, SetFilterFunctionList);
+        }
+
         internal static void SetColor(StyleProperty property, StyleSheet sheet, Color value)
         {
             property.SetColor(sheet, value);
@@ -784,16 +798,6 @@ namespace Unity.UIToolkit.Editor
         internal static void SetCursor(StyleProperty property, StyleSheet sheet, StyleCursor styleValue)
         {
             SetStyleValue<StyleCursor, UnityEngine.UIElements.Cursor>(property, sheet, styleValue, SetCursor);
-        }
-
-        internal static void SetFilterFunctionList(StyleProperty property, StyleSheet sheet, List<FilterFunction> value)
-        {
-            property.SetFilterFunctionList(sheet, value);
-        }
-
-        internal static void SetFilterFunctionList(StyleProperty property, StyleSheet sheet, StyleList<FilterFunction> styleValue)
-        {
-            SetStyleValue<StyleList<FilterFunction>, List<FilterFunction>>(property, sheet, styleValue, SetFilterFunctionList);
         }
 
         internal static void SetRotate(StyleProperty property, StyleSheet sheet, Rotate value)
@@ -973,6 +977,26 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetRatio);
         }
 
+        private static void ProcessChange(ChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFilterFunctionList);
+        }
+
+        private static void ProcessChange(ChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFilterFunctionList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFilterFunctionList);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetFilterFunctionList);
+        }
+
         private static void ProcessChange(ChangeEvent<Color> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetColor);
@@ -1131,26 +1155,6 @@ namespace Unity.UIToolkit.Editor
         private void ProcessChange(CompositeStylePropertyChangeEvent<StyleCursor> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetCursor);
-        }
-
-        private static void ProcessChange(ChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
-        {
-            ProcessChange(evt, ctx, SetFilterFunctionList);
-        }
-
-        private static void ProcessChange(ChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
-        {
-            ProcessChange(evt, ctx, SetFilterFunctionList);
-        }
-
-        private void ProcessChange(CompositeStylePropertyChangeEvent<List<FilterFunction>> evt, CallbackContext ctx)
-        {
-            ProcessChange(evt, ctx, SetFilterFunctionList);
-        }
-
-        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleList<FilterFunction>> evt, CallbackContext ctx)
-        {
-            ProcessChange(evt, ctx, SetFilterFunctionList);
         }
 
         private static void ProcessChange(ChangeEvent<Rotate> evt, CallbackContext ctx)
@@ -1481,7 +1485,7 @@ namespace Unity.UIToolkit.Editor
             PropertyContainer.Accept(visitor, ref element, evt.property);
         }
 
-        private partial class GenericValueAtPath : PathVisitor, IProcessGenericChange<Align>, IProcessGenericChange<StyleEnum<Align>>, IProcessGenericChange<AnimationPlayState>, IProcessGenericChange<StyleEnum<AnimationPlayState>>, IProcessGenericChange<Ratio>, IProcessGenericChange<StyleRatio>, IProcessGenericChange<Color>, IProcessGenericChange<StyleColor>, IProcessGenericChange<Background>, IProcessGenericChange<StyleBackground>, IProcessGenericChange<BackgroundPosition>, IProcessGenericChange<StyleBackgroundPosition>, IProcessGenericChange<BackgroundRepeat>, IProcessGenericChange<StyleBackgroundRepeat>, IProcessGenericChange<BackgroundSize>, IProcessGenericChange<StyleBackgroundSize>, IProcessGenericChange<Length>, IProcessGenericChange<StyleLength>, IProcessGenericChange<float>, IProcessGenericChange<StyleFloat>, IProcessGenericChange<UnityEngine.UIElements.Cursor>, IProcessGenericChange<StyleCursor>, IProcessGenericChange<DisplayStyle>, IProcessGenericChange<StyleEnum<DisplayStyle>>, IProcessGenericChange<List<FilterFunction>>, IProcessGenericChange<StyleList<FilterFunction>>, IProcessGenericChange<FlexDirection>, IProcessGenericChange<StyleEnum<FlexDirection>>, IProcessGenericChange<Wrap>, IProcessGenericChange<StyleEnum<Wrap>>, IProcessGenericChange<Justify>, IProcessGenericChange<StyleEnum<Justify>>, IProcessGenericChange<OverflowInternal>, IProcessGenericChange<StyleEnum<Overflow>>, IProcessGenericChange<Position>, IProcessGenericChange<StyleEnum<Position>>, IProcessGenericChange<Rotate>, IProcessGenericChange<StyleRotate>, IProcessGenericChange<Scale>, IProcessGenericChange<StyleScale>, IProcessGenericChange<TextOverflow>, IProcessGenericChange<StyleEnum<TextOverflow>>, IProcessGenericChange<TextShadow>, IProcessGenericChange<StyleTextShadow>, IProcessGenericChange<TransformOrigin>, IProcessGenericChange<StyleTransformOrigin>, IProcessGenericChange<List<TimeValue>>, IProcessGenericChange<StyleList<TimeValue>>, IProcessGenericChange<List<StylePropertyName>>, IProcessGenericChange<StyleList<StylePropertyName>>, IProcessGenericChange<List<EasingFunction>>, IProcessGenericChange<StyleList<EasingFunction>>, IProcessGenericChange<Translate>, IProcessGenericChange<StyleTranslate>, IProcessGenericChange<UIAnimationClip>, IProcessGenericChange<StyleUIAnimationClip>, IProcessGenericChange<EditorTextRenderingMode>, IProcessGenericChange<StyleEnum<EditorTextRenderingMode>>, IProcessGenericChange<Font>, IProcessGenericChange<StyleFont>, IProcessGenericChange<FontDefinition>, IProcessGenericChange<StyleFontDefinition>, IProcessGenericChange<FontStyle>, IProcessGenericChange<StyleEnum<FontStyle>>, IProcessGenericChange<MaterialDefinition>, IProcessGenericChange<StyleMaterialDefinition>, IProcessGenericChange<OverflowClipBox>, IProcessGenericChange<StyleEnum<OverflowClipBox>>, IProcessGenericChange<int>, IProcessGenericChange<StyleInt>, IProcessGenericChange<SliceType>, IProcessGenericChange<StyleEnum<SliceType>>, IProcessGenericChange<TextAnchor>, IProcessGenericChange<StyleEnum<TextAnchor>>, IProcessGenericChange<TextAutoSize>, IProcessGenericChange<StyleTextAutoSize>, IProcessGenericChange<TextGeneratorType>, IProcessGenericChange<StyleEnum<TextGeneratorType>>, IProcessGenericChange<TextOverflowPosition>, IProcessGenericChange<StyleEnum<TextOverflowPosition>>, IProcessGenericChange<Visibility>, IProcessGenericChange<StyleEnum<Visibility>>, IProcessGenericChange<WhiteSpace>, IProcessGenericChange<StyleEnum<WhiteSpace>>
+        private partial class GenericValueAtPath : PathVisitor, IProcessGenericChange<Align>, IProcessGenericChange<StyleEnum<Align>>, IProcessGenericChange<AnimationPlayState>, IProcessGenericChange<StyleEnum<AnimationPlayState>>, IProcessGenericChange<Ratio>, IProcessGenericChange<StyleRatio>, IProcessGenericChange<List<FilterFunction>>, IProcessGenericChange<StyleList<FilterFunction>>, IProcessGenericChange<Color>, IProcessGenericChange<StyleColor>, IProcessGenericChange<Background>, IProcessGenericChange<StyleBackground>, IProcessGenericChange<BackgroundPosition>, IProcessGenericChange<StyleBackgroundPosition>, IProcessGenericChange<BackgroundRepeat>, IProcessGenericChange<StyleBackgroundRepeat>, IProcessGenericChange<BackgroundSize>, IProcessGenericChange<StyleBackgroundSize>, IProcessGenericChange<Length>, IProcessGenericChange<StyleLength>, IProcessGenericChange<float>, IProcessGenericChange<StyleFloat>, IProcessGenericChange<UnityEngine.UIElements.Cursor>, IProcessGenericChange<StyleCursor>, IProcessGenericChange<DisplayStyle>, IProcessGenericChange<StyleEnum<DisplayStyle>>, IProcessGenericChange<FlexDirection>, IProcessGenericChange<StyleEnum<FlexDirection>>, IProcessGenericChange<Wrap>, IProcessGenericChange<StyleEnum<Wrap>>, IProcessGenericChange<Justify>, IProcessGenericChange<StyleEnum<Justify>>, IProcessGenericChange<OverflowInternal>, IProcessGenericChange<StyleEnum<Overflow>>, IProcessGenericChange<Position>, IProcessGenericChange<StyleEnum<Position>>, IProcessGenericChange<Rotate>, IProcessGenericChange<StyleRotate>, IProcessGenericChange<Scale>, IProcessGenericChange<StyleScale>, IProcessGenericChange<TextOverflow>, IProcessGenericChange<StyleEnum<TextOverflow>>, IProcessGenericChange<TextShadow>, IProcessGenericChange<StyleTextShadow>, IProcessGenericChange<TransformOrigin>, IProcessGenericChange<StyleTransformOrigin>, IProcessGenericChange<List<TimeValue>>, IProcessGenericChange<StyleList<TimeValue>>, IProcessGenericChange<List<StylePropertyName>>, IProcessGenericChange<StyleList<StylePropertyName>>, IProcessGenericChange<List<EasingFunction>>, IProcessGenericChange<StyleList<EasingFunction>>, IProcessGenericChange<Translate>, IProcessGenericChange<StyleTranslate>, IProcessGenericChange<UIAnimationClip>, IProcessGenericChange<StyleUIAnimationClip>, IProcessGenericChange<EditorTextRenderingMode>, IProcessGenericChange<StyleEnum<EditorTextRenderingMode>>, IProcessGenericChange<Font>, IProcessGenericChange<StyleFont>, IProcessGenericChange<FontDefinition>, IProcessGenericChange<StyleFontDefinition>, IProcessGenericChange<FontStyle>, IProcessGenericChange<StyleEnum<FontStyle>>, IProcessGenericChange<MaterialDefinition>, IProcessGenericChange<StyleMaterialDefinition>, IProcessGenericChange<OverflowClipBox>, IProcessGenericChange<StyleEnum<OverflowClipBox>>, IProcessGenericChange<int>, IProcessGenericChange<StyleInt>, IProcessGenericChange<SliceType>, IProcessGenericChange<StyleEnum<SliceType>>, IProcessGenericChange<TextAnchor>, IProcessGenericChange<StyleEnum<TextAnchor>>, IProcessGenericChange<TextAutoSize>, IProcessGenericChange<StyleTextAutoSize>, IProcessGenericChange<TextGeneratorType>, IProcessGenericChange<StyleEnum<TextGeneratorType>>, IProcessGenericChange<TextOverflowPosition>, IProcessGenericChange<StyleEnum<TextOverflowPosition>>, IProcessGenericChange<Visibility>, IProcessGenericChange<StyleEnum<Visibility>>, IProcessGenericChange<WhiteSpace>, IProcessGenericChange<StyleEnum<WhiteSpace>>
         {
             void IProcessGenericChange<Align>.ProcessGenericChange(ref Align value)
             {
@@ -1528,6 +1532,22 @@ namespace Unity.UIToolkit.Editor
                 if (ShouldProcessChange())
                 {
                     ProcessChange(value, authoringContext, binding, SetRatio);
+                }
+            }
+
+            void IProcessGenericChange<List<FilterFunction>>.ProcessGenericChange(ref List<FilterFunction> value)
+            {
+                if (ShouldProcessChange())
+                {
+                    ProcessChange(value, authoringContext, binding, SetFilterFunctionList);
+                }
+            }
+
+            void IProcessGenericChange<StyleList<FilterFunction>>.ProcessGenericChange(ref StyleList<FilterFunction> value)
+            {
+                if (ShouldProcessChange())
+                {
+                    ProcessChange(value, authoringContext, binding, SetFilterFunctionList);
                 }
             }
 
@@ -1672,22 +1692,6 @@ namespace Unity.UIToolkit.Editor
                 if (ShouldProcessChange())
                 {
                     ProcessChange(value, authoringContext, binding, SetEnum);
-                }
-            }
-
-            void IProcessGenericChange<List<FilterFunction>>.ProcessGenericChange(ref List<FilterFunction> value)
-            {
-                if (ShouldProcessChange())
-                {
-                    ProcessChange(value, authoringContext, binding, SetFilterFunctionList);
-                }
-            }
-
-            void IProcessGenericChange<StyleList<FilterFunction>>.ProcessGenericChange(ref StyleList<FilterFunction> value)
-            {
-                if (ShouldProcessChange())
-                {
-                    ProcessChange(value, authoringContext, binding, SetFilterFunctionList);
                 }
             }
 

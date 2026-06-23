@@ -132,16 +132,33 @@ namespace Unity.GraphToolkit.Editor
             double now = EditorApplication.timeSinceStartup;
             double deltaTime = now - m_LastEditorTime;
             m_LastEditorTime = now;
-            if (deltaTime < 0)
-                deltaTime = 0;
-            if (deltaTime > k_MaxDeltaTimeSeconds)
-                deltaTime = k_MaxDeltaTimeSeconds;
+
+            TickInternal(ClampDeltaTime(deltaTime));
+        }
+
+        // Test seam: drives the same per-tick work as EditorTick without depending on
+        // EditorApplication.update cadence or the GraphView panel state.
+        internal void TickInternal(double deltaTime)
+        {
+            if (m_Disposed)
+                return;
 
             foreach (var animatable in m_Active)
-            {
                 animatable.AnimationUpdate(deltaTime);
-            }
         }
+
+        // Test seam: the same delta-time clamping EditorTick applies before ticking, exposed so the
+        // clamping behavior can be exercised deterministically.
+        internal static double ClampDeltaTime(double deltaTime)
+        {
+            if (deltaTime < 0)
+                return 0;
+            if (deltaTime > k_MaxDeltaTimeSeconds)
+                return k_MaxDeltaTimeSeconds;
+            return deltaTime;
+        }
+
+        internal bool IsSubscribedToEditorUpdate => m_Subscribed;
 
         /// <inheritdoc />
         public void Dispose()

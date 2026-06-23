@@ -723,6 +723,8 @@ namespace UnityEngine.UIElements
         }
 
         internal static Action<BaseRuntimePanel> CreateRuntimePanelDebug;
+
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
         internal static Func<int, IGameViewRenderInfo> GetGameViewRenderInfo
         {
@@ -762,11 +764,13 @@ namespace UnityEngine.UIElements
 
         internal BaseRuntimePanel panel
         {
-            [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
+            [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
             get { return m_PanelAccess.panel; }
         }
 
         internal bool isInitialized => m_PanelAccess?.isInitialized ?? false;
+
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal bool isTransient { get => m_PanelAccess.isTransient; set => m_PanelAccess.isTransient = value; }
 
         /// <summary>
@@ -1015,6 +1019,7 @@ namespace UnityEngine.UIElements
             m_PanelAccess.SetTargetTexture();
         }
 
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal void ApplyPanelSettings()
         {
             CacheDisplayRectAndScale();

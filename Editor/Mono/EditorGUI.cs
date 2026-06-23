@@ -2283,10 +2283,7 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            var dragSensitivity = Event.current.GetTypeForControl(id) == EventType.MouseDown
-                ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue)
-                : 0.0f;
-            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kFloatFieldFormatString, style, true, dragSensitivity);
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kFloatFieldFormatString, style, true);
         }
 
         internal static double DoubleFieldInternal(Rect position, double value, GUIStyle style)
@@ -2308,10 +2305,7 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            var dragSensitivity = Event.current.GetTypeForControl(id) == EventType.MouseDown
-                ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue)
-                : 0.0;
-            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kDoubleFieldFormatString, style, true, dragSensitivity);
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kDoubleFieldFormatString, style, true);
         }
 
         // Handle dragging of value
@@ -2351,6 +2345,13 @@ namespace UnityEditor
                         s_DragStartIntValue = value.longVal;
                         s_DragStartPos = evt.mousePosition;
                         s_DragSensitivity = dragSensitivity;
+
+                        // NaN means the caller wants the default sensitivity.
+                        if (double.IsNaN(s_DragSensitivity))
+                        {
+                            s_DragSensitivity = value.isDouble ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(value.doubleVal) : NumericFieldDraggerUtility.CalculateIntDragSensitivity(value.longVal);
+                        }
+
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
@@ -2418,7 +2419,7 @@ namespace UnityEditor
 
         internal static float DoFloatField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, float value, string formatString, GUIStyle style, bool draggable)
         {
-            return DoFloatField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            return DoFloatField(editor, position, dragHotZone, id, value, formatString, style, draggable, float.NaN);
         }
 
         internal static float DoFloatField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, float value, string formatString, GUIStyle style, bool draggable, float dragSensitivity)
@@ -2440,7 +2441,7 @@ namespace UnityEditor
 
         internal static double DoDoubleField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, double value, string formatString, GUIStyle style, bool draggable)
         {
-            return DoDoubleField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0);
+            return DoDoubleField(editor, position, dragHotZone, id, value, formatString, style, draggable, double.NaN);
         }
 
         internal static double DoDoubleField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, double value, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
@@ -2574,7 +2575,7 @@ namespace UnityEditor
         }
         internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id,
             ref NumberFieldValue value, string formatString, GUIStyle style, bool draggable,
-            double dragSensitivity)
+            double dragSensitivity = double.NaN)
         {
             bool changed;
             string allowedCharacters = value.isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
@@ -2656,30 +2657,40 @@ namespace UnityEditor
             string str = DelayedTextFieldInternal(position, id, label, value.ToString(kIntFieldFormatString), "0123456789-", style);
             if (EndChangeCheck())
             {
-                if (!int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out int newValue))
+                if (!TryConfirmArraySizeChange(value, str, out int newValue))
                 {
-                    EditorUtility.DisplayDialog(
-                        L10n.Tr("Invalid array size"),
-                        string.Format(L10n.Tr("\"{0}\" is not a valid array size. Allowed values are between 0 and {1:N0}."), str, int.MaxValue),
-                        L10n.Tr("OK"));
                     GUI.changed = wasChanged;
                     return value;
-                }
-                if (newValue > kArraySizeConfirmationThreshold && newValue > value)
-                {
-                    if (!EditorUtility.DisplayDialog(
-                        L10n.Tr("Resize array"),
-                        string.Format(L10n.Tr("You are about to resize this array to {0:N0} elements. This may take a long time and use a lot of memory. Are you sure?"), newValue),
-                        L10n.Tr("Resize"),
-                        L10n.Tr("Cancel")))
-                    {
-                        GUI.changed = wasChanged;
-                        return value;
-                    }
                 }
                 value = newValue;
             }
             return value;
+        }
+
+        internal static bool TryConfirmArraySizeChange(int currentSize, string str, out int newSize)
+        {
+            if (!int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out newSize))
+            {
+                EditorUtility.DisplayDialog(
+                    L10n.Tr("Invalid array size"),
+                    string.Format(L10n.Tr("\"{0}\" is not a valid array size. Allowed values are between 0 and {1:N0}."), str, int.MaxValue),
+                    L10n.Tr("OK"));
+                newSize = currentSize;
+                return false;
+            }
+            if (newSize > kArraySizeConfirmationThreshold && newSize > currentSize)
+            {
+                if (!EditorUtility.DisplayDialog(
+                    L10n.Tr("Resize array"),
+                    string.Format(L10n.Tr("You are about to resize this array to {0:N0} elements. This may take a long time and use a lot of memory. Are you sure?"), newSize),
+                    L10n.Tr("Resize"),
+                    L10n.Tr("Cancel")))
+                {
+                    newSize = currentSize;
+                    return false;
+                }
+            }
+            return true;
         }
 
         internal static string DelayedTextFieldInternal(Rect position, string value, string allowedLetters, GUIStyle style)
@@ -2764,7 +2775,7 @@ namespace UnityEditor
 
         internal static void DelayedNumberFieldInternal(Rect position, Rect dragHotZone, int id, bool isDouble,
             ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable,
-            double dragSensitivity)
+            double dragSensitivity = double.NaN)
         {
             NumberFieldValue val = default;
             val.isDouble = isDouble;
@@ -2874,7 +2885,7 @@ namespace UnityEditor
             bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
 
             BeginChangeCheck();
-            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref doubleValue, ref dummy, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref doubleValue, ref dummy, kFloatFieldFormatString, style, draggable);
             if (EndChangeCheck())
             {
                 if ((float)doubleValue != value)
@@ -2907,7 +2918,7 @@ namespace UnityEditor
             bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
 
             BeginChangeCheck();
-            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref newDoubleValue, ref dummy, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref newDoubleValue, ref dummy, kFloatFieldFormatString, style, draggable);
             if (EndChangeCheck())
             {
                 if (newDoubleValue != value)
@@ -4958,7 +4969,13 @@ namespace UnityEditor
             MultiFloatFieldInternal(position, s_XYZLabels, s_Vector3Floats);
             if (EndChangeCheck())
             {
-                property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+                bool isFinite = (!float.IsNaN(s_Vector3Floats[0]) && !float.IsInfinity(s_Vector3Floats[0]) &&
+                    !float.IsNaN(s_Vector3Floats[1]) && !float.IsInfinity(s_Vector3Floats[1]) &&
+                    !float.IsNaN(s_Vector3Floats[2]) && !float.IsInfinity(s_Vector3Floats[2]));
+                if (isFinite)
+                {
+                    property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+                }
             }
         }
 

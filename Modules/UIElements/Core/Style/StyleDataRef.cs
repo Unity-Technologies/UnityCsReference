@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -54,14 +55,7 @@ namespace UnityEngine.UIElements
                 return UnsafeUtility.MemCmp(&self->value, &other->value, k_SizeOf) == 0;
             }
 
-            public static int GetValueHashCode(RefCounted* self)
-            {
-                int h = 0;
-                var p = (int*)&self->value;
-                for (int i = 0; i < k_IntDataCount; i++)
-                    h = (h * 397) ^ *p++;
-                return h;
-            }
+            public static int GetValueHashCode(RefCounted* self) => StyleHashUtility.Hash32(&self->value, k_IntDataCount);
         }
 
         private RefCounted* m_Ref;

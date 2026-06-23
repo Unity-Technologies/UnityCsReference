@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         PrimitiveType,
         SubmeshCount,
         LodCount,
+        Volume,
+        VertexDensity,
         MeshCompression,
         SizeOnDisk,
         Readable,
@@ -38,6 +41,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.PrimitiveType), Format = PropertyFormat.String, Name = "Topology", LongName = "Primitive Type" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.SubmeshCount), Format = PropertyFormat.Integer, Name = "Submeshes", LongName = "Submesh Count" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.LodCount), Format = PropertyFormat.Integer, Name = "LODs", LongName = "LOD Count" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.Volume), Format = PropertyFormat.Float, DecimalPlaces = 2, Name = "Volume", LongName = "Volume (Unit³, cubic units)" },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.VertexDensity), Format = PropertyFormat.Float, DecimalPlaces = 2, Name = "Density", LongName = "Vertex Density (Verts/Unit³, Verts per cubic unit)" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.MeshCompression), Format = PropertyFormat.String, Name = "Compression", LongName = "Mesh Compression" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.SizeOnDisk), Format = PropertyFormat.Bytes, Name = "Size", LongName = "Mesh Size" },
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshProperty.Readable), Format = PropertyFormat.Bool, Name = "Readable", LongName = "Readable" },
@@ -52,6 +57,22 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_MeshLayout,
             AssetsModule.k_IssueLayout
         ];
+
+        public override void Initialize()
+        {
+            base.Initialize();
+
+            AddNumericComparer(MeshProperty.Volume);
+            AddNumericComparer(MeshProperty.VertexDensity);
+        }
+
+        static void AddNumericComparer(MeshProperty property)
+        {
+            var propertyType = PropertyTypeUtil.FromCustom(property);
+            ProjectIssueExtensions.AddCustomComparer(IssueCategory.Mesh, propertyType,
+                (a, b) => ProjectIssueExtensions.StringCompareWithDoubleSupport(
+                    a.GetProperty(propertyType), b.GetProperty(propertyType)));
+        }
 
         public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
@@ -132,6 +153,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                             topologyString = "Mixed";
                     }
 
+                    float vol = CalcVolume3DOr2D(mesh.bounds.size);
+                    float density = IsZero(vol) ? float.NaN : mesh.vertexCount / vol;
                     issues.Add(context.CreateInsight(IssueCategory.Mesh, meshName)
                         .WithCustomProperties(
                             [
@@ -140,6 +163,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
                                 topologyString,
                                 mesh.subMeshCount,
                                 mesh.lodCount,
+                                vol,
+                                density,
                                 modelImporter?.meshCompression ?? ModelImporterMeshCompression.Off,
                                 size,
                                 modelImporter?.isReadable ?? mesh.isReadable
@@ -161,5 +186,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
             progress?.Clear(progressState);
             analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
         }
+
+        private static float CalcVolume3DOr2D(Vector3 size)
+        {
+            if (IsZero(size.x)) return size.y * size.z;
+            if (IsZero(size.y)) return size.x * size.z;
+            if (IsZero(size.z)) return size.x * size.y;
+
+            return size.x * size.y * size.z;
+        }
+
+        private static bool IsZero(float val) => Mathf.Approximately(val, 0f);
+
     }
 }

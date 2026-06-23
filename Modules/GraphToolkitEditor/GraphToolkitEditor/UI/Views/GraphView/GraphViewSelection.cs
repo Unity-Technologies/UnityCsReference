@@ -94,7 +94,7 @@ namespace Unity.GraphToolkit.Editor
                 elements.AddRange(data.StickyNotes);
                 for (var i = 0; i < elements.Count; i++)
                 {
-                    if (elements[i] is not IMovable)
+                    if (!elements[i].IsMovable())
                         continue;
                     var childView = elements[i].GetView(graphView);
                     if (childView is not null)
@@ -128,6 +128,41 @@ namespace Unity.GraphToolkit.Editor
         public override IReadOnlyList<GraphElementModel> GetSelection()
         {
             return m_SelectionState?.GetSelection(GraphModel) ?? s_EmptyList;
+        }
+
+        /// <inheritdoc />
+        protected override bool CanPaste()
+        {
+            if (!base.CanPaste())
+                return false;
+
+            var graphModel = GraphModel;
+            if (graphModel == null)
+                return false;
+
+            using var copyPasteData = m_ClipboardProvider.DeserializeDataFromClipboard();
+            if (copyPasteData == null)
+                return false;
+
+            if (copyPasteData.Nodes != null)
+            {
+                foreach (var node in copyPasteData.Nodes)
+                {
+                    if (!graphModel.CanPasteNode(node))
+                        continue;
+                    if (node.NeedsContainer())
+                        continue;
+                    if (!graphModel.AllowPortalCreation && node is WirePortalModel)
+                        continue;
+                    if (!graphModel.AllowSubgraphCreation && node is SubgraphNodeModel)
+                        continue;
+
+                    return true;
+                }
+            }
+
+            return (copyPasteData.StickyNotes?.Count ?? 0) > 0
+                || (copyPasteData.Placemats?.Count ?? 0) > 0;
         }
 
         /// <inheritdoc />

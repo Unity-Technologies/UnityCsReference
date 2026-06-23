@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.U2D;
 using UnityEditor.AssetImporters;
@@ -555,26 +556,17 @@ namespace Unity.VectorGraphics.Editor
         private void GenerateVectorImageAsset(AssetImportContext ctx, List<VectorUtils.Geometry> geometry, string name, Rect rect)
         {
             var vi = VectorUtils.BuildVectorImage(geometry, rect, GradientResolution);
-
-            if (vi == null)
-            {
-                Debug.LogError("UIElement asset generation failed");
-                return;
-            }
-
-            if (vi.atlas != null)
-                vi.atlas.name = name + "Atlas";
-
-            ctx.AddObjectToAsset("uiAsset", vi);
-            if (vi.atlas != null)
-                ctx.AddObjectToAsset("tex", vi.atlas);
-            ctx.SetMainObject(vi);
+            AddVectorImageToAsset(ctx, vi, name);
         }
 
         private void GenerateVectorImageAsset(AssetImportContext ctx, SVGParser.SceneInfo sceneInfo, Rect viewport)
         {
             var vi = VectorUtils.BuildVectorImage(sceneInfo, viewport);
+            AddVectorImageToAsset(ctx, vi, name);
+        }
 
+        private void AddVectorImageToAsset(AssetImportContext ctx, VectorImage vi, string name)
+        {
             if (vi == null)
             {
                 Debug.LogError("UIElement asset generation failed");
@@ -584,10 +576,31 @@ namespace Unity.VectorGraphics.Editor
             if (vi.atlas != null)
                 vi.atlas.name = name + "Atlas";
 
-            ctx.AddObjectToAsset("uiAsset", vi);
+            ctx.AddObjectToAsset("uiAsset", vi, BuildVectorImageThumbnail(vi));
             if (vi.atlas != null)
                 ctx.AddObjectToAsset("tex", vi.atlas);
             ctx.SetMainObject(vi);
+        }
+
+        private static Texture2D BuildVectorImageThumbnail(VectorImage vi)
+        {
+            const int kThumbnailSize = 128;
+            int width = kThumbnailSize;
+            int height = kThumbnailSize;
+            if (vi.width > 0 && vi.height > 0)
+            {
+                float ratio = vi.width / vi.height;
+                if (ratio >= 1.0f)
+                    height = Mathf.Max(1, Mathf.RoundToInt(kThumbnailSize / ratio));
+                else
+                    width = Mathf.Max(1, Mathf.RoundToInt(kThumbnailSize * ratio));
+            }
+            var tex = VectorImageUtils.RenderToTexture2D(vi, width, height, 4);
+            // Clear HideAndDontSave so UnloadUnusedAssets can reclaim the thumbnail once the
+            // asset pipeline has copied its pixels into the asset's preview metadata.
+            if (tex != null)
+                tex.hideFlags = HideFlags.None;
+            return tex;
         }
 
         private Texture2D BuildTexture(Sprite sprite, string name)

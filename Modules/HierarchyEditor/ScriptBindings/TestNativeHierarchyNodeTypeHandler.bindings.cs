@@ -19,7 +19,7 @@ namespace Unity.Hierarchy.Editor.Tests
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/TestNativeHierarchyNodeTypeHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/TestNativeHierarchyNodeTypeHandlerBindings.h")]
-    internal sealed class TestNativeHierarchyNodeTypeHandler : HierarchyNodeTypeHandler
+    internal sealed partial class TestNativeHierarchyNodeTypeHandler : HierarchyNodeTypeHandler
     {
         internal new static class BindingsMarshaller
         {

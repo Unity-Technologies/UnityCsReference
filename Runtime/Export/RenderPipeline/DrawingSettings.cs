@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine.Bindings;
-
 namespace UnityEngine.Rendering
 {
     // match layout of DrawSettings on C++ side
@@ -34,6 +33,7 @@ namespace UnityEngine.Rendering
         int m_MainLightIndex;
         int m_UseSrpBatcher; // only needed to match native struct
         int m_LodCrossFadeStencilMask;
+        CullingSplitMask m_SplitMask; // Per-view split mask
 #pragma warning restore 414
 
         public DrawingSettings(ShaderTagId shaderPassName, SortingSettings sortingSettings)
@@ -60,6 +60,7 @@ namespace UnityEngine.Rendering
 
             m_UseSrpBatcher = 0;
             m_LodCrossFadeStencilMask = 0;
+            m_SplitMask = CullingSplitMask.DrawAll;
         }
 
         public SortingSettings sortingSettings
@@ -135,6 +136,13 @@ namespace UnityEngine.Rendering
             set { m_LodCrossFadeStencilMask = value; }
         }
 
+        // Per-view split mask for QuadView culling.
+        public CullingSplitMask splitMask
+        {
+            get { return m_SplitMask; }
+            set { m_SplitMask = value; }
+        }
+
         public ShaderTagId GetShaderPassName(int index)
         {
             if (index >= maxShaderPasses || index < 0)
@@ -172,7 +180,8 @@ namespace UnityEngine.Rendering
                 && m_OverrideMaterialPassIndex == other.m_OverrideMaterialPassIndex
                 && m_fallbackMaterialEntityId == other.m_fallbackMaterialEntityId
                 && m_UseSrpBatcher == other.m_UseSrpBatcher
-                && m_LodCrossFadeStencilMask == other.m_LodCrossFadeStencilMask;
+                && m_LodCrossFadeStencilMask == other.m_LodCrossFadeStencilMask
+                && m_SplitMask == other.m_SplitMask;
         }
 
         public override bool Equals(object obj)
@@ -193,6 +202,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_fallbackMaterialEntityId.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_UseSrpBatcher;
                 hashCode = (hashCode * 397) ^ m_LodCrossFadeStencilMask;
+                hashCode = (hashCode * 397) ^ (int)m_SplitMask;
                 return hashCode;
             }
         }

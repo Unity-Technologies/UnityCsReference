@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId alignSelfProperty = "resolvedStyle." + nameof(IResolvedStyle.alignSelf);
             internal static readonly BindingId animationPlayStateProperty = "resolvedStyle." + nameof(IResolvedStyle.animationPlayState);
             internal static readonly BindingId aspectRatioProperty = "resolvedStyle." + nameof(IResolvedStyle.aspectRatio);
+            internal static readonly BindingId backdropFilterProperty = "resolvedStyle." + nameof(IResolvedStyle.backdropFilter);
             internal static readonly BindingId backgroundColorProperty = "resolvedStyle." + nameof(IResolvedStyle.backgroundColor);
             internal static readonly BindingId backgroundImageProperty = "resolvedStyle." + nameof(IResolvedStyle.backgroundImage);
             internal static readonly BindingId backgroundPositionXProperty = "resolvedStyle." + nameof(IResolvedStyle.backgroundPositionX);

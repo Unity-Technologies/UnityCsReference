@@ -480,7 +480,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public void ReadListEasingFunction(ref UnmanagedRefCountedList<EasingFunction> result, int index)
         {
-            using var _ = ListPool<EasingFunction>.Get(out var list);
+            using var list = new UnmanagedTempList<EasingFunction>(4);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -501,12 +501,12 @@ namespace UnityEngine.UIElements.StyleSheets
                 }
             }
             while (index < valueCount);
-            result.CopyFrom(list);
+            result.CopyFrom(list.Span);
         }
 
         public void ReadListTimeValue(ref UnmanagedRefCountedList<TimeValue> result, int index)
         {
-            using var _ = ListPool<TimeValue>.Get(out var list);
+            using var list = new UnmanagedTempList<TimeValue>(4);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -523,12 +523,12 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             while (index < valueCount);
 
-            result.CopyFrom(list);
+            result.CopyFrom(list.Span);
         }
 
         public void ReadListUnmanagedFilterFunction(ref UnmanagedRefCountedList<UnmanagedFilterFunction> result, int index)
         {
-            using var _ = ListPool<FilterFunction>.Get(out var list);
+            using var list = new UnmanagedTempList<UnmanagedFilterFunction>(4);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -591,12 +591,12 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             while (index < valueCount);
 
-            result.CopyFrom(list);
+            result.CopyFrom(list.Span);
         }
 
         public void ReadListStylePropertyId(ref UnmanagedRefCountedList<StylePropertyId> result, int index)
         {
-            using var _ = ListPool<StylePropertyId>.Get(out var list);
+            using var list = new UnmanagedTempList<StylePropertyId>(4);
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
@@ -623,7 +623,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             while (index < valueCount);
 
-            result.CopyFrom(list);
+            result.CopyFrom(list.Span);
         }
 
         public void ReadListString(List<string> list, int index)

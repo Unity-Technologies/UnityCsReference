@@ -8,10 +8,11 @@ using System.IO;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor.Experimental;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
-    internal static class RoslynTextLookup
+    internal static partial class RoslynTextLookup
     {
         [Serializable]
         struct RawStringLookup
@@ -35,6 +36,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload] // Lazy cache of Roslyn text lookups; must be reset on code reload
         private static Dictionary<string, StringLookup> m_StringLookup;
 
         public static void Initialize()
@@ -50,20 +52,21 @@ namespace Unity.ProjectAuditor.Editor.Core
             }
         }
 
-        public static string GetDescription(string id)
+        public static bool GetDescription(string id, out string description, out string recommendation)
         {
             if (m_StringLookup == null)
                 Initialize();
 
-            return m_StringLookup[id].description;
-        }
+            if (m_StringLookup.TryGetValue(id, out var result))
+            {
+                description = result.description;
+                recommendation = result.recommendation;
+                return true;
+            }
 
-        public static string GetRecommendation(string id)
-        {
-            if (m_StringLookup == null)
-                Initialize();
-
-            return m_StringLookup[id].recommendation;
+            description = string.Empty;
+            recommendation = string.Empty;
+            return false;
         }
     }
 }

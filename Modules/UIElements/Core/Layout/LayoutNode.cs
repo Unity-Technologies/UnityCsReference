@@ -56,6 +56,11 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     internal unsafe LayoutComputedData* ComputedDataPtr => m_Access.GetComputedDataPtr(m_Handle);
 
     /// <summary>
+    /// Gets the selector data for this node (used for CSS selector matching).
+    /// </summary>
+    internal unsafe ref VisualElementSelectorData SelectorData => ref m_Access.GetSelectorData(m_Handle);
+
+    /// <summary>
     /// Gets the ComputedStyle data for this node.
     /// </summary>
     internal ref ComputedStyle ComputedStyle => ref m_Access.GetComputedStyle(m_Handle);

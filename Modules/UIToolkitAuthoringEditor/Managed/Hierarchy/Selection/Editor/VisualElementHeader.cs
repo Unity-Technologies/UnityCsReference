@@ -35,12 +35,12 @@ partial class VisualElementHeader : UISelectionObjectHeader
     static bool s_ThemedStyleSheetIsProSkin;
 
     private VisualElement m_Element;
-    UxmlAttributesView m_AttributesView;
+    readonly UxmlAttributesView m_AttributesView;
 
-    VisualElement m_AssetPathContainer;
-    Image m_AssetPathTypeIcon;
-    TextField m_AssetPathField;
-    VisualTreeAssetInspectorActionsView m_AssetActionsView;
+    readonly VisualElement m_AssetPathContainer;
+    readonly Image m_AssetPathTypeIcon;
+    readonly TextField m_AssetPathField;
+    readonly VisualTreeAssetInspectorActionsView m_AssetActionsView;
 
     public UxmlAttributesView AttributesView => m_AttributesView;
     public InspectorSearchField SearchField { get; }
@@ -71,9 +71,15 @@ partial class VisualElementHeader : UISelectionObjectHeader
                 TypeIcon = UIResources.GetIconForElement(m_Element, UIResources.RequestSize.Px32);
                 TypeName = TypeUtility.GetTypeDisplayName(m_Element.GetType());
 
-                var visualTreeAsset = m_Element.visualTreeAssetSource
-                    ? m_Element.visualTreeAssetSource
-                    : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
+                VisualTreeAsset visualTreeAsset;
+                if (m_Element is TemplateContainer templateContainer)
+                    visualTreeAsset = templateContainer.templateSource;
+                else
+                {
+                    visualTreeAsset = m_Element.visualTreeAssetSource
+                        ? m_Element.visualTreeAssetSource
+                        : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
+                }
 
                 var assetPath = k_NoAssetPath;
                 var assetPathToolTip = string.Empty;
@@ -106,12 +112,36 @@ partial class VisualElementHeader : UISelectionObjectHeader
         m_AssetPathContainer?.SetEnabled(enabled);
     }
 
+    /// <summary>
+    /// Updates the visibility of the asset path field and asset actions buttons (asset views), and the enabled state of the
+    /// "Open In Context" button, based on the current editing context.
+    /// </summary>
     public void UpdateAssetVisibility(VisualElementEditFlags editFlags, bool isRecording = false, bool inStagingMode = false)
     {
-        m_AssetActionsView.style.display = (!inStagingMode && (isRecording || editFlags == VisualElementEditFlags.None))
+        if (m_Element == null)
+            return;
+
+        bool showTemplateOptions = false;
+        bool canOpenInContext = false;
+
+        if (inStagingMode)
+        {
+            StageContextMenuUtility.GetOpenOptions(m_Element, out showTemplateOptions, out canOpenInContext);
+        }
+
+        bool showActionsView = showTemplateOptions || (!inStagingMode && (isRecording || editFlags == VisualElementEditFlags.None));
+        m_AssetActionsView.style.display = showActionsView ? DisplayStyle.Flex : DisplayStyle.None;
+        m_AssetPathContainer.style.display = (showTemplateOptions || (editFlags == VisualElementEditFlags.None && !inStagingMode))
             ? DisplayStyle.Flex : DisplayStyle.None;
-        m_AssetPathContainer.style.display = (editFlags == VisualElementEditFlags.None && !inStagingMode)
-            ? DisplayStyle.Flex : DisplayStyle.None;
+        if (showActionsView)
+        {
+            var openInContextButton = m_AssetActionsView.OpenInContextButton;
+
+            openInContextButton.SetEnabled(canOpenInContext);
+            openInContextButton.tooltip = canOpenInContext
+                ? string.Empty
+                : L10n.Tr("Not available: this element is the currently edited template container.");
+        }
     }
 
     public VisualElementHeader()

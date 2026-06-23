@@ -33,6 +33,7 @@ namespace UnityEditor.UIElements
             new ProfilerCounterDescriptor("Hierarchy Version Changes", "Total number of hierarchy version changes since previous tick, summed across panels.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Repaint Version Changes", "Total number of version changes since previous repaint, summed across panels.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("VisualElement Count", "Total number of visual elements, summed across panels.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Event Count", "Total number of events dispatched (pointer, keyboard, navigation, and others), summed across panels.", ProfilerCategory.UIToolkit),
         };
 
         public UIToolkitDetailProfilerModule() : base(k_ChartCounters, ProfilerModuleChartType.Line, autoEnabledCategoryNames: k_AutoEnabledCategoryNames) { }

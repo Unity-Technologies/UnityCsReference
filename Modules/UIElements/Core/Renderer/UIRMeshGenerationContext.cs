@@ -152,6 +152,26 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Classifies the visual phase a draw belongs to in element rendering.
+    /// </summary>
+    /// <remarks>
+    /// Mirrors CSS's per-element paint phases (Background → Border → Content) with Mask as the stencil bracket.
+    /// Lets mesh modifiers filter by intent — for example, skip <see cref="Mask"/> draws so an effect
+    /// doesn't distort stencil geometry.
+    /// </remarks>
+    public enum DrawPhase : byte
+    {
+        /// <summary>Element's background fill (color or background image).</summary>
+        Background,
+        /// <summary>Element's border strokes.</summary>
+        Border,
+        /// <summary>Element's content — text, image, custom geometry from <c>generateVisualContent</c>, or <see cref="Painter2D"/> output.</summary>
+        Content,
+        /// <summary>Geometry that defines a stencil-clipping mask region for this element.</summary>
+        Mask
+    }
+
+    /// <summary>
     /// Bundle of vertex, index, and optional extras slices passed to
     /// <see cref="MeshGenerationContext.DrawMesh(ref UIMesh, Texture)"/>.
     /// </summary>
@@ -614,6 +634,57 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Records a draw command and tags it with a user-defined identifier surfaced on
+        /// <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <param name="vertices">The vertices to be drawn. All referenced vertices must be initialized.</param>
+        /// <param name="indices">The triangle list indices. Must be a multiple of 3.</param>
+        /// <param name="texture">An optional texture to be applied. Pass null to rely on vertex colors only.</param>
+        /// <param name="userData">User-defined identifier surfaced on <c>DrawData.userData</c>.</param>
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, int userData)
+        {
+            DrawMesh(vertices, indices, texture, TextureOptions.None, userData);
+        }
+
+        /// <summary>
+        /// Records a draw command and tags it with a user-defined identifier surfaced on
+        /// <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <param name="vertices">The vertices to be drawn. All referenced vertices must be initialized.</param>
+        /// <param name="indices">The triangle list indices. Must be a multiple of 3.</param>
+        /// <param name="texture">An optional texture to be applied. Pass null to rely on vertex colors only.</param>
+        /// <param name="textureOptions">Flags that apply to the provided texture for this draw call.</param>
+        /// <param name="userData">User-defined identifier surfaced on <c>DrawData.userData</c>.</param>
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            var mesh = new UIMesh { vertices = vertices, indices = indices };
+            DrawMesh(ref mesh, texture, textureOptions, userData);
+        }
+
+        /// <summary>
+        /// Records a draw command with a <see cref="UIMesh"/> bundle and tags it with a user-defined identifier
+        /// surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <remarks>See <see cref="DrawMesh(ref UIMesh, Texture)"/> for the lifetime contract and validation rules.</remarks>
+        public void DrawMesh(ref UIMesh mesh, Texture texture, int userData)
+        {
+            DrawMesh(ref mesh, texture, TextureOptions.None, userData);
+        }
+
+        /// <summary>
+        /// Records a draw command with a <see cref="UIMesh"/> bundle and tags it with a user-defined identifier
+        /// surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <remarks>See <see cref="DrawMesh(ref UIMesh, Texture)"/> for the lifetime contract and validation rules.</remarks>
+        public void DrawMesh(ref UIMesh mesh, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            if (mesh.vertices.Length == 0 || mesh.indices.Length == 0)
+                return;
+
+            entryRecorder.DrawMesh(parentEntry, ref mesh, texture, textureOptions, false, DrawPhase.Content, userData);
+        }
+
+        /// <summary>
         /// Draws a <see cref="VectorImage" /> asset.
         /// </summary>
         /// <param name="vectorImage">The vector image to draw.</param>
@@ -624,6 +695,21 @@ namespace UnityEngine.UIElements
         {
             using (k_DrawVectorImageMarker.Auto())
                 meshGenerator.DrawVectorImage(vectorImage, offset, rotationAngle, scale);
+        }
+
+        /// <summary>
+        /// Draws a <see cref="VectorImage" /> asset and tags the resulting draw with a user-defined identifier
+        /// surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        /// <param name="vectorImage">The vector image to draw.</param>
+        /// <param name="offset">The position offset where to draw the vector image.</param>
+        /// <param name="rotationAngle">The rotation of the vector image.</param>
+        /// <param name="scale">The scale of the vector image</param>
+        /// <param name="userData">User-defined identifier surfaced on <c>DrawData.userData</c>.</param>
+        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale, int userData)
+        {
+            using (k_DrawVectorImageMarker.Auto())
+                meshGenerator.DrawVectorImage(vectorImage, offset, rotationAngle, scale, userData);
         }
 
         /// <summary>

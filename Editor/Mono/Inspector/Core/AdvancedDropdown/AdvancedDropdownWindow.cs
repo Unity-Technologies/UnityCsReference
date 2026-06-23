@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using Event = UnityEngine.Event;
@@ -16,8 +17,11 @@ namespace UnityEditor.IMGUI.Controls
     {
         private static class Styles
         {
+            [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
             public static GUIStyle background = "DD Background";
+            [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
             public static GUIStyle previewHeader = new GUIStyle(EditorStyles.label);
+            [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
             public static GUIStyle previewText = new GUIStyle(EditorStyles.wordWrappedLabel);
 
             static Styles()
@@ -52,6 +56,9 @@ namespace UnityEditor.IMGUI.Controls
         private Stack<AdvancedDropdownItem> m_ViewsStack = new Stack<AdvancedDropdownItem>();
         private bool m_DirtyList = true;
         private bool m_NeedsResize = false;
+
+        // The dropdown width is computed once when it opens and then kept constant.
+        private float m_FixedWidth;
 
         // Caller-supplied size constraints captured in Init() so the dynamic resize logic can
         // still respect minimumSize/maximumSize even after they're overwritten by ShowAsDropDown.
@@ -235,6 +242,9 @@ namespace UnityEditor.IMGUI.Controls
             maxSize = initialSize;
 
             ShowAsDropDown(buttonRect, initialSize, GetLocationPriority());
+
+            // Remember the width chosen on open so later navigation only ever changes the height.
+            m_FixedWidth = position.width;
 
             if (setInitialSelectionPosition)
             {
@@ -422,7 +432,7 @@ namespace UnityEditor.IMGUI.Controls
                 if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                 {
                     var selected = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
-                    if (selected != null)
+                    if (selected != null && selected.IsSelectable())
                     {
                         if (selected.hasChildren)
                         {
@@ -541,6 +551,10 @@ namespace UnityEditor.IMGUI.Controls
                 if (item != m_CurrentlyRenderedTree)
                     continue;
 
+                // Decorative items (separators, help boxes) are not interactive.
+                if (!child.IsSelectable())
+                    continue;
+
                 // Select the element the mouse cursor is over.
                 // Only do it on mouse move - keyboard controls are allowed to overwrite this until the next time the mouse moves.
                 if (Event.current.type == EventType.MouseMove || Event.current.type == EventType.MouseDrag)
@@ -646,6 +660,9 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             var newSize = CalculateWindowSize(m_ButtonRectScreenPos);
+
+            // Keep the width fixed at the value chosen when the dropdown opened; recalc height only.
+            newSize.x = m_FixedWidth;
 
             // Skip if computed size matches current window size — common for subclasses that pin the window to a fixed size
             const float kEpsilon = 0.5f;

@@ -31,7 +31,7 @@ internal sealed class RemoveStyleRulePropertyCommand : Command<RemoveStyleRulePr
     public StyleProperty Property { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.StylingContext;
+    public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Variables;
 
     protected override void Init()
     {

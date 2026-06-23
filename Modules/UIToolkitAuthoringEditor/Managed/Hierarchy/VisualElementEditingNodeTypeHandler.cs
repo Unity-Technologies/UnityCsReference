@@ -274,7 +274,6 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         if (data.DropPosition == DragAndDropPosition.OverItem)
         {
-            Assert.IsTrue(data.ChildIndex == -1);
             foreach (var element in draggedVisualElements)
                 logicalParent.Add(element);
 
@@ -454,11 +453,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 break;
             case DragAndDropPosition.OutsideItems:
             {
-                // Here, we return `None` because the default handle drop behaviour will already handle it for us
-                // using AcceptParent/AcceptChild. We're using the same rules as dropping elements here, because we'll
-                // create elements.
                 if (!performDrop)
-                    return DragVisualMode.None;
+                    return DragVisualMode.Copy;
             }
                 break;
             default:
@@ -491,15 +487,14 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             : m_Stage.EditedVisualTreeAsset.visualTree;
         Assert.IsNotNull(parentAsset);
 
-        if (data.DropPosition == DragAndDropPosition.OverItem)
+        if (data.DropPosition is DragAndDropPosition.OverItem or DragAndDropPosition.OutsideItems)
         {
-            Assert.IsTrue(data.ChildIndex == -1);
             AddTemplatesToElementCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, visualTreeAssets.ToArray());
             m_Stage.RequestRefresh();
             return DragVisualMode.Move;
         }
 
-        var adjustedIndex = logicalParent.IndexOf(logicalParent[childIndex]);
+        var adjustedIndex = childIndex >= logicalParent.childCount ? logicalParent.childCount : childIndex;
         for (var i = 0; i < adjustedIndex; ++i)
         {
             if (logicalParent[i].visualElementAsset == null)
@@ -1017,7 +1012,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
     protected override void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element,
         DropdownMenu menu)
     {
-        StageContextMenuUtility.PopulateMenu(view, in node, menu, this);
+        StageContextMenuUtility.PopulateMenu(view, in node, element, menu, this);
     }
 
     void OnClassAddedToElement(in CommandContext context)

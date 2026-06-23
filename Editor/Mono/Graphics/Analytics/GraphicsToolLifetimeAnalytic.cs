@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Analytics;
 
@@ -12,7 +13,7 @@ namespace UnityEditor.Rendering.Analytics
 {
     // schema = com.unity3d.data.schemas.editor.analytics.uGraphicsToolLifetimeAnalytic_v2
     // taxonomy = editor.analytics.uGraphicsToolLifetimeAnalytic.v2
-    public class GraphicsToolLifetimeAnalytic
+    public partial class GraphicsToolLifetimeAnalytic
     {
         static bool IsInternalAssembly(Type type)
         {
@@ -91,6 +92,7 @@ namespace UnityEditor.Rendering.Analytics
             public DateTime openedTime;
         }
 
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
         static Dictionary<Type, WindowOpenedMetadata> s_WindowOpenedMetadata = new Dictionary<Type, WindowOpenedMetadata>();
 
         public static void WindowOpened<T>()

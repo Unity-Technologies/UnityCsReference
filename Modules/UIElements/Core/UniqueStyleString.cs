@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements;
 
@@ -12,14 +14,23 @@ namespace UnityEngine.UIElements;
 /// and reduced memory footprint.
 /// </summary>
 /// <remarks>
-/// Attempting to represent a null string with this structure has an undefined behavior and may throw exceptions.
-///
 /// Ids may very between consecutive runs and may be regenerated on domain reload.
 /// </remarks>
 public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
 {
-    private static Dictionary<string, int> k_StringToIndex = new();
-    private static List<string> k_IndexToString = new();
+    /// <summary>
+    /// The UniqueStyleString representation of a @@null@@ string.
+    /// </summary>
+    /// <remarks>This value is also equal to default(UniqueStyleString).</remarks>
+    public static readonly UniqueStyleString Null = default;
+
+    /// <summary>
+    /// The UniqueStyleString representation of an empty string.
+    /// </summary>
+    public static readonly UniqueStyleString Empty = new(1);
+
+    private static Dictionary<string, int> k_StringToIndex = new() { { "", 1 } };
+    private static List<string> k_IndexToString = new() { null, "" };
 
     // For tests, operations inside this scope target a fresh internal storage so that pollution
     // from built-in stylesheets or other tests does not skew the size — and therefore the cache
@@ -33,8 +44,8 @@ public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
         {
             m_PrevStringToIndex = k_StringToIndex;
             m_PrevIndexToString = k_IndexToString;
-            k_StringToIndex = new();
-            k_IndexToString = new();
+            k_StringToIndex = new() { { "", 1 } };
+            k_IndexToString = new() { null, "" };
         }
 
         public void Dispose()
@@ -60,7 +71,31 @@ public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
     /// <summary>
     /// A string value that's equal to the string that was used to obtain this UniqueStyleString.
     /// </summary>
-    public string value => k_IndexToString[m_Id];
+    internal string value
+    {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
+        get => k_IndexToString[m_Id];
+    }
+
+    /// <summary>
+    /// Returns whether this UniqueStyleString represents a @@null@@ string.
+    /// </summary>
+    public bool IsNull => m_Id == 0;
+
+    /// <summary>
+    /// Returns whether this UniqueStyleString represents an empty string.
+    /// </summary>
+    public bool IsEmpty => m_Id == 1;
+
+    /// <summary>
+    /// Returns @@true@@ if this UniqueStyleString represents either a @@null@@ or empty string.
+    /// </summary>
+    public bool IsNullOrEmpty() => IsNullOrEmpty(m_Id);
+
+    // Overload that operates directly on a raw id. Used in hot paths that already have the id
+    // and want to avoid constructing a UniqueStyleString just to call the instance method.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsNullOrEmpty(int id) => (uint)id <= 1u;
 
     internal UniqueStyleString(int id)
     {
@@ -72,18 +107,39 @@ public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
     /// </summary>
     /// <param name="s">A string value that this UniqueStyleString will represent.</param>
     /// <remarks>
-    /// Throws an exception if the provided string is null.
+    /// If provided string is null, the returned result is the same as <see cref="Null"/>.
+    /// If provided string is empty, the returned result is the same as <see cref="Empty"/>.
     /// String values used to create UniqueStyleStrings are stored together internally.
     /// UniqueStyleStrings can improve performance when used to replace strings that are very commonly use.
     /// Calling this constructor with single-use strings is not recommended.
     /// </remarks>
     public UniqueStyleString(string s)
     {
+        if (s == null)
+        {
+            m_Id = 0;
+            return;
+        }
+
         if (!k_StringToIndex.TryGetValue(s, out m_Id))
         {
-            k_StringToIndex.Add(s, m_Id = k_StringToIndex.Count);
+            k_StringToIndex.Add(s, m_Id = k_IndexToString.Count);
             k_IndexToString.Add(s);
         }
+    }
+
+    /// <summary>
+    /// Compares this UniqueStyleString to a given string for equality.
+    /// </summary>
+    /// <param name="s">The string with which to compare for equality.</param>
+    /// <returns>True if this UniqueStyleString represents an underlying string value that is equal to the provided string.</returns>
+    /// <remarks>
+    /// This method uses a lightweight operation that avoids creating intermediary data and can be faster than
+    /// converting the provided string to a UniqueStyleString.
+    /// </remarks>
+    public bool IsSame(string s)
+    {
+        return s == null ? this.IsNull : k_StringToIndex.TryGetValue(s, out var id) && m_Id == id;
     }
 
     /// <summary>
@@ -101,34 +157,34 @@ public readonly struct UniqueStyleString : IEquatable<UniqueStyleString>
     /// </remarks>
     public static bool TryGet(string value, out UniqueStyleString result)
     {
-        if (!k_StringToIndex.TryGetValue(value, out var id))
+        if (value == null)
         {
-            result = default;
-            return false;
+            result = Null;
+            return true;
         }
 
-        result = new(id);
-        return true;
+        if (k_StringToIndex.TryGetValue(value, out var id))
+        {
+            result = new(id);
+            return true;
+        }
+
+        result = default;
+        return false;
     }
 
     /// <summary>
-    /// Converts a UniqueStyleString to string.
+    /// Returns a string value with the same content as the string that was used to obtain this UniqueStyleString.
     /// </summary>
-    /// <param name="ss">The UniqueStyleString to convert</param>
-    /// <returns>The converted string value</returns>
     /// <remarks>
-    /// The returned string value is guaranteed to be equal to the string that was used to obtain this
-    /// UniqueStyleString. However, it may or may not have the same reference value.
+    /// The returned string may require access to large memory lookups or be reconstructed from other internal data.
+    /// For performance-critical scenarios where both the UniqueStyleString and its underlying string value
+    /// are required, keeping a local reference to both representations may give better results.
     /// </remarks>
-    public static explicit operator string(UniqueStyleString ss) => ss.value;
-
-    /// <summary>
-    /// Converts a string to UniqueStyleString.
-    /// </summary>
-    /// <param name="s">The string to convert from</param>
-    /// <returns>A UniqueStyleString representing the given string</returns>
-    /// <remarks>Throws an exception if the provided string is null.</remarks>
-    public static explicit operator UniqueStyleString(string s) => new(s);
+    public override string ToString()
+    {
+        return k_IndexToString[m_Id];
+    }
 
     /// <summary>
     /// Computes a valid hash code for this UniqueStyleString.

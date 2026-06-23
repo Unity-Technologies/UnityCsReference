@@ -15,7 +15,7 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// </summary>
 /// <remarks>
 /// Use <see cref="CreateVisualizationContext"/> to create a <see cref="Context"/> for a specific graph.
-/// Access visualization features such as port previews through <see cref="Context.PortPreview"/>.
+/// Provides access to visualization features in the provided graph.
 /// Dispose of the returned <see cref="Context"/> when it is no longer needed.
 /// </remarks>
 /// <example>
@@ -24,7 +24,6 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// </code>
 /// </example>
 /// <seealso cref="Context"/>
-/// <seealso cref="Context.PortPreview"/>
 public static class Registry
 {
     /// <summary>
@@ -58,6 +57,7 @@ public static class Registry
     /// <remarks>
     /// A registered <see cref="Context"/> is considered active when its underlying session is attached. If multiple contexts are registered for the graph but none is attached, this method returns <c>null</c>.
     /// The lookup is keyed on the authoring graph's ID; for subgraphs, pass the root graph's ID.
+    /// Throws <see cref="ArgumentException"/> when the provided <paramref name="graphID"/> isn't valid.
     /// </remarks>
     /// <example>
     /// <code>
@@ -71,7 +71,7 @@ public static class Registry
     {
         if (!graphID.isValid)
             throw new ArgumentException("The provided graph ID isn't valid.", nameof(graphID));
-            
+
         return RegistryService.Instance.GetActiveContext(graphID);
     }
 
@@ -117,7 +117,7 @@ sealed class RegistryService
     {
         if (!graphID.isValid)
             throw new ArgumentException("The provided graph ID isn't valid.", nameof(graphID));
-        
+
         if (!m_ContextsByGraph.TryGetValue(graphID, out var contexts) || contexts.Count == 0)
         {
             return null;
@@ -135,7 +135,7 @@ sealed class RegistryService
     internal Context CreateVisualizationContext(Hash128 graphGuid)
     {
         if (!graphGuid.isValid)
-            throw new ArgumentException("The provided graph ID is not valid.", nameof(graphGuid));
+            throw new ArgumentException("The provided graph ID isn't valid.", nameof(graphGuid));
 
         var context = new Context(new Session(graphGuid), this);
         Register(context);

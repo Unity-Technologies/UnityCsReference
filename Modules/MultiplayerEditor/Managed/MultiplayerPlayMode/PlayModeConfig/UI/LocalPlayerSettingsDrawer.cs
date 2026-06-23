@@ -20,7 +20,7 @@ class LocalPlayerSettingsDrawer : InstanceItemDrawer
     {
         var instanceItem = (InstanceItem<LocalPlayerController, InstanceSettings>)property.boxedValue;
         var scenario = property.serializedObject.targetObject as OrchestratedScenario;
-        var userSettingsProperty = OrchestratedScenarioUserSettings.GetSerializedSettingsProperty<UserSettings>(scenario, instanceItem);
+        var userSettingsProperty = OrchestratedScenarioUserSettings.GetSerializedSettingsProperty(scenario, instanceItem, LocalPlayerController.DefaultUserSettings);
         var container = base.CreatePropertyGUI(property);
         var deviceContainer = new VisualElement();
 

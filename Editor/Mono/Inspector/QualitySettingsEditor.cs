@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Unity.Collections;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
@@ -309,7 +310,6 @@ namespace UnityEditor
             // Clear cached property references for current quality level
             m_CurrentQualityProperty = null;
             m_CurrentSettings = null;
-            m_NameProperty = null;
             m_PixelLightCountProperty = null;
             m_ShadowsProperty = null;
             m_ShadowResolutionProperty = null;
@@ -382,7 +382,11 @@ namespace UnityEditor
             // Bind to SerializedObject once when the panel is attached
             m_CurrentRoot.RegisterCallback<AttachToPanelEvent>(evt =>
             {
+                m_QualitySettings.Update();
                 m_CurrentRoot.Bind(m_QualitySettings);
+
+                // Tracks changes to the quality settings, including external changes (e.g., from preset application, reset, file modifications) to ensure the UI stays in sync with the data
+                m_CurrentRoot.TrackSerializedObjectValue(m_QualitySettings, OnSerializedObjectChanged);
             });
 
             var titleBar = new ProjectSettingsTitleBar("Quality");
@@ -421,6 +425,31 @@ namespace UnityEditor
         {
             m_CurrentRoot?.Clear();
             m_CurrentRoot = null;
+        }
+
+        private void OnSerializedObjectChanged(SerializedObject obj)
+        {
+            RebindQualityLevelsListView();
+            EnsureValidQualityLevelNames();
+            OnQualityLevelSelectionChanged(m_QualitySettingsProperty);
+        }
+
+        private void EnsureValidQualityLevelNames()
+        {
+            // Ensure all quality levels have valid names, assign default ones if empty
+            for (int i = 0; i < m_QualitySettingsProperty.arraySize; i++)
+            {
+                var levelProp = m_QualitySettingsProperty.GetArrayElementAtIndex(i);
+                var nameProp = levelProp.FindPropertyRelative("name");
+                if (string.IsNullOrEmpty(nameProp.stringValue))
+                {
+                    nameProp.stringValue = "Level " + (i + 1);
+                    BuildProfileModuleUtil.RenameQualityLevelInAllProfiles(string.Empty, nameProp.stringValue);
+                    QualitySettings.OnActiveQualityLevelRenamed(string.Empty, nameProp.stringValue);
+                }
+            }
+
+            m_QualitySettings.ApplyModifiedProperties();
         }
 
         private void OnActiveQualityLevelChanged(int previousLevel, int currentLevel)
@@ -502,7 +531,6 @@ namespace UnityEditor
         private void RebuildPlatformDefaultsCache()
         {
             m_QualitySettings.Update();
-
             m_CachedPlatformDefaults.Clear();
 
             foreach (SerializedProperty prop in m_PerPlatformDefaultQualityProperty)
@@ -514,9 +542,12 @@ namespace UnityEditor
         // UITK Table Building Methods
         private void BuildQualityLevelTable()
         {
-            m_QualityTableContainer = new VisualElement();
-            m_QualityTableContainer.name = "QualityLevelTable";
+            m_QualityTableContainer = new VisualElement
+            {
+                name = "QualityLevelTable"
+            };
             m_QualityTableContainer.AddToClassList("quality-table");
+            m_CurrentRoot.Add(m_QualityTableContainer);
 
             // Build header
             var header = BuildHeaderRow();
@@ -534,40 +565,42 @@ namespace UnityEditor
                 virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
                 selectionType = SelectionType.Single,
                 showAddRemoveFooter = true,
-
-                // Set up makeItem callback
                 makeItem = MakeQualityLevelItem,
-
-                // Set up bindItem callback
                 bindItem = BindQualityLevelItem,
-
-                // Set up unbindItem callback
-                unbindItem = UnbindQualityLevelItem
+                unbindItem = UnbindQualityLevelItem,
+                destroyItem = DestroyQualityLevelItem
             };
 
             m_QualityLevelsListView.itemIndexChanged += OnQualityLevelItemIndexChanged;
-
-            // Handle selection changes
             m_QualityLevelsListView.selectionChanged += OnQualityLevelSelectionChanged;
-
-            // Handle add/remove
             m_QualityLevelsListView.onAdd += OnAddQualityLevel;
             m_QualityLevelsListView.onRemove += OnRemoveQualityLevel;
 
             m_QualityTableContainer.Add(m_QualityLevelsListView);
 
-            // Align levels label when the table is attached to panel
-            m_QualityTableContainer.RegisterCallback<GeometryChangedEvent>(evt => AlignLevelsLabelWidth());
-
-            m_QualityLevelsListView.RegisterCallback<AttachToPanelEvent>(evt =>
+            m_QualityTableContainer.RegisterCallback<GeometryChangedEvent>(evt =>
             {
-                m_QualityLevelsListView.BindProperty(m_QualitySettingsProperty);
-                UpdateInspectedLevelSelection();
+                // Make sure that the binding system has assigned the itemsSource before trying to align the levels label (which depends on the first row's toggle position)
+                // This will only be triggered the first GeometryChangedEvent, as after rebinding the ListView, the itemsSource will be assigned and this block will be skipped in subsequent GeometryChangedEvents
+                // Same functionality as AttachToPanelEvent, but guarantees that the ListView has been fully initialized and bound before trying to align the levels label
+                if (m_QualityLevelsListView.itemsSource == null)
+                {
+                    RebindQualityLevelsListView();
+                    RefreshQualityUI();
+                }
+
+                AlignLevelsLabelWidth();
             });
+        }
 
-            m_QualityLevelsListView.TrackPropertyValue(m_QualitySettingsProperty, OnQualityLevelSelectionChanged);
+        private void RebindQualityLevelsListView()
+        {
+            if (m_QualityLevelsListView == null)
+                return;
 
-            m_CurrentRoot.Add(m_QualityTableContainer);
+            m_QualitySettings.Update();
+            m_QualityLevelsListView.Unbind();
+            m_QualityLevelsListView.BindProperty(m_QualitySettingsProperty);
         }
 
         private int AdjustIndexAfterReorder(int currentIndex, int oldIndex, int newIndex)
@@ -622,8 +655,6 @@ namespace UnityEditor
 
         private void OnQualityLevelItemIndexChanged(int oldIndex, int newIndex)
         {
-            // Update cached platform defaults to reflect the reorder
-            // When a quality level moves, we need to adjust all default indices
             var platformKeys = new List<string>(m_CachedPlatformDefaults.Keys);
             foreach (var key in platformKeys)
             {
@@ -631,28 +662,24 @@ namespace UnityEditor
                 m_CachedPlatformDefaults[key] = AdjustIndexAfterReorder(value, oldIndex, newIndex);
             }
 
-            // Write back to serialized property
             SetDefaultQualityForPlatforms(m_CachedPlatformDefaults);
             m_QualitySettings.ApplyModifiedProperties();
 
-            // Update the current active quality level if it was moved
             var currentActiveLevel = GetCurrentTargetQualityLevel();
             int newActiveLevel = AdjustIndexAfterReorder(currentActiveLevel, oldIndex, newIndex);
 
-            // Apply the new active level if it changed
             if (newActiveLevel != currentActiveLevel)
             {
                 SetCurrentTargetQualityLevel(newActiveLevel);
             }
 
-            // Update the inspected level to follow the reordered item
             selectedLevel = AdjustIndexAfterReorder(selectedLevel, oldIndex, newIndex);
 
-            // Update selection
             UpdateInspectedLevelSelection();
 
-            // Refresh UI to show updated defaults and current tag
-            m_QualityLevelsListView?.RefreshItems();
+            RebindQualityLevelsListView();
+
+            RefreshQualityUI();
         }
 
         private void OnQualityLevelSelectionChanged(SerializedProperty property)
@@ -812,16 +839,8 @@ namespace UnityEditor
                 name = "QualityName"
             };
             nameField.AddToClassList("quality-table__quality-name");
-            nameField.isDelayed = true; // Only trigger callback on focus lost or Enter, not every keystroke
-
-            nameField.RegisterValueChangedCallback(evt =>
-            {
-                if (evt.target is TextField field && field.userData is int index)
-                {
-                    OnQualityNameChanged(index, evt.previousValue, evt.newValue);
-                }
-            });
-
+            nameField.isDelayed = true;
+            nameField.RegisterValueChangedCallback(OnQualityNameChanged);
             row.Add(nameField);
 
             for (int i = 0; i < m_ValidPlatforms.Count; i++)
@@ -844,6 +863,16 @@ namespace UnityEditor
             return row;
         }
 
+        private void DestroyQualityLevelItem(VisualElement element)
+        {
+            // Unregister callbacks to avoid memory leaks (in case elements are reused by ListView)
+            var nameField = element.Q<TextField>("QualityName");
+            if (nameField != null)
+            {
+                nameField.UnregisterValueChangedCallback(OnQualityNameChanged);
+            }
+        }
+
         private void BindQualityLevelItem(VisualElement element, int index)
         {
             if (index < 0 || index >= m_QualitySettingsProperty.arraySize)
@@ -859,17 +888,16 @@ namespace UnityEditor
             var currentTag = element.Q<Label>("CurrentQualityLevelTag");
             var spacer = element.Q<VisualElement>("CurrentQualityLevelSpacer");
             var nameField = element.Q<TextField>("QualityName");
-            bool showTag = m_IsEditingQualitySettings && isCurrentLevel;
 
             // Toggle between showing the "Current" tag or the spacer
             if (currentTag != null)
             {
-                currentTag.style.display = showTag ? DisplayStyle.Flex : DisplayStyle.None;
+                currentTag.style.display = isCurrentLevel ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             if (spacer != null)
             {
-                spacer.style.display = showTag ? DisplayStyle.None : DisplayStyle.Flex;
+                spacer.style.display = isCurrentLevel ? DisplayStyle.None : DisplayStyle.Flex;
             }
 
             if (nameField != null)
@@ -924,12 +952,13 @@ namespace UnityEditor
             }
         }
 
-
-        // Event Handlers
         private void OnQualityLevelSelectionChanged(IEnumerable<object> selectedItems)
         {
             if (m_QualityLevelsListView == null)
                 return;
+
+            // Commit any pending edits before we change selection
+            CommitPendingNameEdits();
 
             int selectedIndex = m_QualityLevelsListView.selectedIndex;
             if (selectedIndex >= 0)
@@ -943,8 +972,45 @@ namespace UnityEditor
             }
         }
 
+        private void CommitPendingNameEdits()
+        {
+            if (m_QualityLevelsListView == null)
+                return;
+
+            m_QualitySettings.Update();
+
+            m_QualityLevelsListView.Query<TextField>(className: "quality-table__quality-name")
+                .ForEach(field =>
+                {
+                    if (!field.hasFocus
+                        || field.userData is not int qualityIndex
+                        || qualityIndex < 0
+                        || qualityIndex >= m_QualitySettingsProperty.arraySize)
+                        return;
+
+                    var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(qualityIndex);
+                    var nameProperty = qualityProperty.FindPropertyRelative("name");
+                    var serializedValue = nameProperty.stringValue;
+
+                    // Get the current value from the text field's underlying text element as it is the source of truth for the displayed value,
+                    // rather than the TextField's value which may not have been updated yet due to delayed binding and event handling
+                    var textElement = field.Q<TextElement>();
+                    var fieldValue = textElement != null ? textElement.text : field.value;
+
+                    if (!string.Equals(serializedValue, fieldValue, StringComparison.Ordinal))
+                    {
+                        OnQualityNameCommitted(field, qualityProperty, qualityIndex, serializedValue, fieldValue);
+                    }
+
+                    // Blurring forces the delayed TextField to commit its uncommitted text to field.value and synchronously trigger the ChangeEvent
+                    field.Blur();
+                });
+        }
+
         private void OnPlatformToggleChanged(int qualityIndex, string platformName, bool enabled)
         {
+            m_QualitySettings.Update();
+
             // Validate index
             if (qualityIndex < 0 || qualityIndex >= m_QualitySettingsProperty.arraySize)
                 return;
@@ -997,28 +1063,41 @@ namespace UnityEditor
             m_QualitySettings.ApplyModifiedProperties();
         }
 
-        private void OnQualityNameChanged(int qualityIndex, string previousName, string newName)
+        // Regex to remove invalid characters from quality names. Allows only alphanumeric characters, spaces, underscores, and hyphens.
+        private static readonly Regex k_InvalidCharsRegex = new Regex(@"[^a-zA-Z0-9 _-]", RegexOptions.Compiled);
+
+        private static string CleanQualityName(string input) => input == null ? string.Empty : k_InvalidCharsRegex.Replace(input, string.Empty);
+
+        private void OnQualityNameChanged(ChangeEvent<string> evt)
         {
-            if (qualityIndex < 0 || qualityIndex >= m_QualitySettingsProperty.arraySize)
+            if (evt.currentTarget is not TextField field || field.userData is not int qualityIndex || qualityIndex < 0 || qualityIndex >= m_QualitySettingsProperty.arraySize)
                 return;
 
-            var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(qualityIndex);
+            OnQualityNameCommitted(
+                field,
+                m_QualitySettingsProperty.GetArrayElementAtIndex(qualityIndex),
+                qualityIndex,
+                evt.previousValue,
+                evt.newValue);
+
+            evt.StopPropagation();
+        }
+
+        private void OnQualityNameCommitted(TextField field, SerializedProperty qualityProperty, int qualityIndex, string previousName, string newName)
+        {
+            newName = CleanQualityName(newName);
+
             var nameProperty = qualityProperty.FindPropertyRelative("name");
             if (nameProperty != null)
             {
-                // Handle empty names
-                if (string.IsNullOrEmpty(newName))
-                    newName = "Level " + qualityIndex;
-
-                // Update the property and track the new name for pending rename
-                nameProperty.stringValue = newName;
-                m_QualitySettings.ApplyModifiedProperties();
-
                 if (m_IsEditingQualitySettings)
                 {
                     BuildProfileModuleUtil.RenameQualityLevelInAllProfiles(previousName, newName);
                     QualitySettings.OnActiveQualityLevelRenamed(previousName, newName);
                 }
+
+                nameProperty.stringValue = newName;
+                m_QualitySettings.ApplyModifiedProperties();
 
                 // Update the header if the renamed level is currently inspected
                 if (qualityIndex == selectedLevel)
@@ -1028,19 +1107,23 @@ namespace UnityEditor
 
         private void OnAddQualityLevel(BaseListView listView)
         {
-            int index = m_QualitySettingsProperty.arraySize;
+            CommitPendingNameEdits();
 
-            m_QualitySettingsProperty.InsertArrayElementAtIndex(index);
+            m_QualitySettings.Update();
 
-            var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(index);
+            int newItemIndex = m_QualitySettingsProperty.arraySize;
+
+            m_QualitySettingsProperty.InsertArrayElementAtIndex(newItemIndex);
+
+            var qualityProperty = m_QualitySettingsProperty.GetArrayElementAtIndex(newItemIndex);
             var nameProperty = qualityProperty.FindPropertyRelative("name");
             if (nameProperty != null)
-                nameProperty.stringValue = "Level " + (index + 1);
+                nameProperty.stringValue = string.Empty;
 
             m_QualitySettings.ApplyModifiedProperties();
 
             // Update inspected level to point to the new item
-            selectedLevel = index + 1;
+            selectedLevel = newItemIndex;
 
             // Select the newly added level
             UpdateInspectedLevelSelection();
@@ -1051,6 +1134,8 @@ namespace UnityEditor
 
         private void OnRemoveQualityLevel(BaseListView listView)
         {
+            CommitPendingNameEdits();
+
             m_QualitySettings.Update();
 
             if (m_QualitySettingsProperty.arraySize <= 1)
@@ -1101,18 +1186,15 @@ namespace UnityEditor
             // Update selection and cached properties
             UpdateInspectedLevelSelection();
 
-            // Adjust the current active quality level
-            if (m_IsEditingQualitySettings)
-            {
-                var currentActive = GetCurrentTargetQualityLevel();
-                int newActiveIndex = AdjustIndexAfterDeletion(currentActive, index);
+            var currentActive = GetCurrentTargetQualityLevel();
+            int newActiveIndex = AdjustIndexAfterDeletion(currentActive, index);
 
-                // Apply the adjustment if needed
-                if (newActiveIndex != currentActive)
-                {
-                    SetCurrentTargetQualityLevel(newActiveIndex);
+            // Apply the adjustment if needed
+            if (newActiveIndex != currentActive)
+            {
+                SetCurrentTargetQualityLevel(newActiveIndex);
+                if (m_IsEditingQualitySettings)
                     QualitySettings.OnActiveQualityLevelChanged(index, newActiveIndex);
-                }
             }
 
             // Refresh UI to update the "Current" tag
@@ -1199,22 +1281,11 @@ namespace UnityEditor
 
                 m_QualityLevelNameLabel.text = levelName;
 
-                // Show/hide "Current" tag and button based on whether we're editing QualitySettings
-                // and whether this is the current active level
-                if (m_IsEditingQualitySettings)
-                {
-                    var currentActiveLevel = GetCurrentTargetQualityLevel();
-                    bool isCurrentLevel = (selectedLevel == currentActiveLevel);
+                var currentActiveLevel = GetCurrentTargetQualityLevel();
+                bool isCurrentLevel = (selectedLevel == currentActiveLevel);
 
-                    m_QualityLevelCurrentTag.style.display = isCurrentLevel ? DisplayStyle.Flex : DisplayStyle.None;
-                    m_SetCurrentButton.style.display = isCurrentLevel ? DisplayStyle.None : DisplayStyle.Flex;
-                }
-                else
-                {
-                    // For presets, hide both tag and button
-                    m_QualityLevelCurrentTag.style.display = DisplayStyle.None;
-                    m_SetCurrentButton.style.display = DisplayStyle.None;
-                }
+                m_QualityLevelCurrentTag.style.display = isCurrentLevel ? DisplayStyle.Flex : DisplayStyle.None;
+                m_SetCurrentButton.style.display = isCurrentLevel ? DisplayStyle.None : DisplayStyle.Flex;
             }
         }
 
@@ -1261,6 +1332,7 @@ namespace UnityEditor
 
         private void RefreshQualityUI()
         {
+            m_QualitySettings.Update();
             UpdateQualityLevelHeader();
             m_QualityLevelsListView?.RefreshItems();
             m_QualityDetailsContainer?.MarkDirtyRepaint();
@@ -1748,7 +1820,6 @@ namespace UnityEditor
 
         // Cached SerializedProperty references for current quality level
         private SerializedProperty m_CurrentSettings;
-        private SerializedProperty m_NameProperty;
         private SerializedProperty m_PixelLightCountProperty;
         private SerializedProperty m_ShadowsProperty;
         private SerializedProperty m_ShadowResolutionProperty;
@@ -1801,7 +1872,6 @@ namespace UnityEditor
         {
             m_CurrentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
 
-            m_NameProperty = m_CurrentSettings.FindPropertyRelative("name");
             m_PixelLightCountProperty = m_CurrentSettings.FindPropertyRelative("pixelLightCount");
             m_ShadowsProperty = m_CurrentSettings.FindPropertyRelative("shadows");
             m_ShadowResolutionProperty = m_CurrentSettings.FindPropertyRelative("shadowResolution");

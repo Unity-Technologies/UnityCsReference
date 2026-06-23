@@ -15,6 +15,8 @@ namespace UnityEditor.Build.Analysis
     {
         private const string k_UxmlPath = "BuildAnalysis/UXML/RootAssetTable.uxml";
 
+        public event Action<BuildAnalysisRootAsset?> SelectionChanged;
+
         private readonly ToolbarSearchField m_SearchField;
         private readonly MultiColumnListView m_ListView;
         private readonly Label m_FooterCountLabel;
@@ -62,6 +64,12 @@ namespace UnityEditor.Build.Analysis
             m_ListView.columns["column-total-assets"].makeCell = MakeNumericCell;
             m_ListView.columns["column-total-assets"].bindCell = BindTotalCountCell;
 
+            // Column header tooltips
+            m_ListView.Q<VisualElement>("column-direct-size").tooltip = "Build output size for this root and what loads immediately with it. Excludes on-demand loadable content.";
+            m_ListView.Q<VisualElement>("column-direct-assets").tooltip = "Count of source assets that load immediately with this root. Excludes on-demand loadables.";
+            m_ListView.Q<VisualElement>("column-total-size").tooltip = "Build output size for everything reachable from this root, including on-demand loadable content.";
+            m_ListView.Q<VisualElement>("column-total-assets").tooltip = "Count of source assets reachable from this root, including on-demand loadables.";
+
             m_SearchField.RegisterValueChangedCallback(evt =>
             {
                 var newText = evt.newValue ?? string.Empty;
@@ -73,6 +81,7 @@ namespace UnityEditor.Build.Analysis
                 ApplySort();
                 m_ListView.RefreshItems();
             };
+            m_ListView.selectionChanged += OnListSelectionChanged;
         }
 
         public void ClearSelection()
@@ -80,10 +89,27 @@ namespace UnityEditor.Build.Analysis
             m_ListView.selectedIndex = -1;
         }
 
+        private void OnListSelectionChanged(IEnumerable<object> items)
+        {
+            BuildAnalysisRootAsset? root = null;
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    if (item is int rootIdx and >= 0 && rootIdx < m_RootAssets.Length)
+                    {
+                        root = m_RootAssets[rootIdx];
+                        break;
+                    }
+                }
+            }
+            SelectionChanged?.Invoke(root);
+        }
+
         public void Bind(BuildAnalysis analysis)
         {
-            m_RootAssets = analysis.Tables.RootAssets ?? Array.Empty<BuildAnalysisRootAsset>();
-            m_Assets = analysis.Tables.Assets ?? Array.Empty<BuildAnalysisAsset>();
+            m_RootAssets = analysis.Tables.RootAssets;
+            m_Assets = analysis.Tables.Assets;
             var n = m_RootAssets.Length;
 
             EnsureCapacity(ref m_Names, n);

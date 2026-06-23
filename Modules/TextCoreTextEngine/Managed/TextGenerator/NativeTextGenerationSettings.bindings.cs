@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.TextCore.Text;
-using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.TextCore
@@ -20,42 +19,46 @@ namespace UnityEngine.TextCore
     {
         public IntPtr fontAsset;
         public IntPtr textSettings;
-        public IntPtr textBufferPtr; // Contains the parsed text, meaning the rich text tags have been removed.
+        public IntPtr textBufferPtr;
         public int textBufferLength;
         public int screenWidth;     // Encoded in Fixed Point.
         public int screenHeight;    // Encoded in Fixed Point.
         public bool wordWrapEnabled;
         public TextOverflow overflow;
         public LanguageDirection languageDirection;
-        public int vertexPadding; // Encoded in Fixed Point.
+        public int vertexPadding;   // Encoded in Fixed Point.
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal HorizontalAlignment horizontalAlignment;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal VerticalAlignment verticalAlignment;
 
+        public PreProcessFlags preProcessFlags;
         public int fontSize;        // Encoded in Fixed Point.
 
         public bool bestFit;
-        public int maxFontSize;          // Encoded in Fixed Point.
-        public int minFontSize;          // Encoded in Fixed Point.
+        public int maxFontSize;     // Encoded in Fixed Point.
+        public int minFontSize;     // Encoded in Fixed Point.
 
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
-
-        public TextSpan[] textSpans;
-        public Color32 color;
 
         public int characterSpacing;        // Encoded in Fixed Point.
         public int wordSpacing;             // Encoded in Fixed Point.
         public int paragraphSpacing;        // Encoded in Fixed Point.
 
-        public PreProcessFlags preProcessFlags;
+        public Color32 color;
 
         public bool disableAdvancedFontFeatures;
         public bool richTextEnabled;
 
-        public bool hasLink => textSpans != null && Array.Exists(textSpans, span => span.linkID != -1);
+        // Index of the link currently hovered by the pointer (or a HoveredTag sentinel).
+        // Read by the native rich-text parser to apply hover styling.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+        internal HoveredTag hoveredTag;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+        internal int pixelsPerPointFixed64;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal unsafe void SetTextBuffer(Unity.Collections.NativeArray<char> buffer, int length)
@@ -66,87 +69,13 @@ namespace UnityEngine.TextCore
             textBufferLength = length;
         }
 
-        public readonly TextSpan CreateTextSpan()
-        {
-            return new TextSpan()
-            {
-                fontAsset = this.fontAsset,
-                fontSize = this.fontSize,
-                color = this.color,
-                fontStyle = this.fontStyle,
-                fontWeight = this.fontWeight,
-                alignment = this.horizontalAlignment,
-                highlightColor = RichTextTagParser.k_HighlightColor,
-                highlightPadding = Vector4.zero,
-                mspace = 0,
-                mspaceUnitType = RichTextTagParser.TagUnitType.Pixels,
-                cspace = 0,
-                cspaceUnitType = RichTextTagParser.TagUnitType.Pixels,
-                spriteColor = this.color,
-                spriteID = EntityId.None,
-                spriteScale = 0,
-                spriteTint = false,
-                margin = 0,
-                marginDirection = MarginDirection.Both,
-                marginUnitType = RichTextTagParser.TagUnitType.Pixels,
-                lineHeight = 0,
-                lineHeightUnitType = RichTextTagParser.TagUnitType.Pixels,
-                indent = 0,
-                indentUnitType = RichTextTagParser.TagUnitType.Pixels,
-                vOffset = 0,
-                vOffsetUnitType = RichTextTagParser.TagUnitType.Pixels,
-                subscriptNestingLevel = 0,
-                superscriptNestingLevel = 0,
-                linkID = -1
-            };
-        }
-
-        // Used by automated tests
-        public unsafe string GetTextSpanContent(int spanIndex)
-        {
-            if (textBufferPtr == IntPtr.Zero || textBufferLength == 0)
-            {
-                throw new InvalidOperationException("The text buffer is null or empty.");
-            }
-
-            if (textSpans == null || spanIndex < 0 || spanIndex >= textSpans.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid span index.");
-            }
-
-            TextSpan span = textSpans[spanIndex];
-
-            if (span.startIndex < 0 || span.startIndex >= textBufferLength || span.startIndex + span.length > textBufferLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid startIndex or length for the current text.");
-            }
-
-            return new string((char*)textBufferPtr, span.startIndex, span.length);
-        }
-
-        // TODO: Remove this method once placeholder supports the native buffer directly.
-        // Used by automated tests - string overload for use without a native buffer
-        public string GetTextSpanContent(int spanIndex, string text)
-        {
-            if (string.IsNullOrEmpty(text))
-                throw new InvalidOperationException("The text is null or empty.");
-
-            if (textSpans == null || spanIndex < 0 || spanIndex >= textSpans.Length)
-                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid span index.");
-
-            TextSpan span = textSpans[spanIndex];
-
-            if (span.startIndex < 0 || span.startIndex >= text.Length || span.startIndex + span.length > text.Length)
-                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid startIndex or length for the current text.");
-
-            return text.Substring(span.startIndex, span.length);
-        }
-
         public static NativeTextGenerationSettings Default => new ()
         {
             fontStyle = FontStyles.Normal,
             fontWeight = TextFontWeight.Regular,
             color = Color.black,
+            hoveredTag = HoveredTag.None,
+            pixelsPerPointFixed64 = 64,
         };
 
         // Used by automated tests
@@ -171,37 +100,21 @@ namespace UnityEngine.TextCore
             languageDirection = tgs.languageDirection;
             vertexPadding = tgs.vertexPadding;
             overflow = tgs.overflow;
-            textSpans = tgs.textSpans != null ? (TextSpan[])tgs.textSpans.Clone() : null;
             characterSpacing = tgs.characterSpacing;
             wordSpacing = tgs.wordSpacing;
             paragraphSpacing = tgs.paragraphSpacing;
             preProcessFlags = tgs.preProcessFlags;
             disableAdvancedFontFeatures = tgs.disableAdvancedFontFeatures;
             richTextEnabled = tgs.richTextEnabled;
+            hoveredTag = tgs.hoveredTag;
+            pixelsPerPointFixed64 = tgs.pixelsPerPointFixed64;
         }
 
         public override string ToString()
         {
-            string textSpansString = "null";
-            if (textSpans != null)
-            {
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.Append("[");
-                for (int i = 0; i < textSpans.Length; i++)
-                {
-                    if (i > 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.Append(textSpans[i].ToString());
-                }
-                sb.Append("]");
-                textSpansString = sb.ToString();
-            }
-
             return $"{nameof(fontAsset)}: {fontAsset}\n" +
                 $"{nameof(textSettings)}: {textSettings}\n" +
-                $"textBufferLength: {textBufferLength}\n" +
+                $"{nameof(textBufferLength)}: {textBufferLength}\n" +
                 $"{nameof(screenWidth)}: {screenWidth}\n" +
                 $"{nameof(screenHeight)}: {screenHeight}\n" +
                 $"{nameof(fontSize)}: {fontSize}\n" +
@@ -217,7 +130,6 @@ namespace UnityEngine.TextCore
                 $"{nameof(fontWeight)}: {fontWeight}\n" +
                 $"{nameof(vertexPadding)}: {vertexPadding}\n" +
                 $"{nameof(overflow)}: {overflow}\n" +
-                $"{nameof(textSpans)}: {textSpansString}\n" +
                 $"{nameof(characterSpacing)}: {characterSpacing}\n" +
                 $"{nameof(paragraphSpacing)}: {paragraphSpacing}\n" +
                 $"{nameof(wordSpacing)}: {wordSpacing}\n" +
@@ -262,57 +174,6 @@ namespace UnityEngine.TextCore
         }
     }
 
-    [VisibleToOtherModules( "UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct TextSpan
-    {
-        public int startIndex;
-        public int length;
-        public IntPtr fontAsset;
-        public IntPtr gradientAsset;
-        public int fontSize;        // Encoded in Fixed Point.
-        public Color32 color;
-        public FontStyles fontStyle;
-        public TextFontWeight fontWeight;
-        public int mspace;          // Encoded in Fixed Point.
-        public RichTextTagParser.TagUnitType mspaceUnitType;
-        public int cspace;           // Encoded in Fixed Point.
-        public RichTextTagParser.TagUnitType cspaceUnitType;
-        public int linkID;
-        public HorizontalAlignment alignment;
-        public Color32 highlightColor;
-        public Vector4 highlightPadding;
-        public GlyphMetrics spriteMetrics;
-        public EntityId spriteID;
-        public bool spriteTint;
-        public int spriteScale;
-        public Color32 spriteColor;
-        public int margin;
-        public MarginDirection marginDirection;
-        public RichTextTagParser.TagUnitType marginUnitType;
-        public int lineHeight;           // Encoded in Fixed Point. 0 means use default line height.
-        public RichTextTagParser.TagUnitType lineHeightUnitType;
-        public int indent;          // Encoded in Fixed Point.
-        public RichTextTagParser.TagUnitType indentUnitType;
-        public int vOffset;         // Encoded in Fixed Point.
-        public RichTextTagParser.TagUnitType vOffsetUnitType;
-        public sbyte subscriptNestingLevel;
-        public sbyte superscriptNestingLevel;
-
-        public override string ToString()
-        {
-            return $"{nameof(color)}: {color}\n" +
-                $"{nameof(fontStyle)}: {fontStyle}\n" +
-                $"{nameof(fontWeight)}: {fontWeight}\n" +
-                $"{nameof(linkID)}: {linkID}\n" +
-                $"{nameof(fontSize)}: {fontSize}\n" +
-                $"{nameof(fontAsset)}: {fontAsset}" +
-                $"{nameof(gradientAsset)}: {gradientAsset}\n" +
-                $"{nameof(startIndex)}: {startIndex}\n" +
-                $"{nameof(length)}: {length}";
-        }
-    }
-
     [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal enum HorizontalAlignment
     {
@@ -329,14 +190,6 @@ namespace UnityEngine.TextCore
         Top,
         Middle,
         Bottom
-    }
-
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    internal enum MarginDirection
-    {
-        Both,
-        Left,
-        Right
     }
 
     /// <summary>
@@ -377,5 +230,14 @@ namespace UnityEngine.TextCore
     {
         Clip,
         Ellipsis
+    }
+
+    // Identifies the link currently under the pointer for hover styling. Non-negative
+    // values are link indices; the values below are sentinels.
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+    internal enum HoveredTag
+    {
+        None = -1,              // No link is hovered.
+        UnderlineAllLinks = -2, // Treat every link as hovered (underline all links).
     }
 }

@@ -47,8 +47,8 @@ internal sealed class RenameStyleRuleCommand : Command<RenameStyleRuleCommand>
 
     public override CommandExecutionStatus Execute()
     {
-        foreach (var selector in ToUpdateStyleRule.complexSelectors)
-            ToUpdateStyleRule.RemoveSelector(selector);
+        while (ToUpdateStyleRule.complexSelectors.Length > 0)
+            ToUpdateStyleRule.RemoveSelector(0);
 
         foreach (var selector in NewSelectors)
         {

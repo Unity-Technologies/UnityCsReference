@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEditor.Rendering;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {
@@ -56,8 +57,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
 
         // Private Static Variables
+        [NoAutoStaticsCleanup] // lazy material cache; lazy-init pattern, no code-reload-sensitive state
         private static Material s_Material = null;
+        [NoAutoStaticsCleanup] // lazy material cache for VRS visualization; same pattern as s_Material
         private static Material s_ShadingRateImageMaterial = null;
+        [NoAutoStaticsCleanup] // reusable scratch buffer for building shader stage strings
         private static StringBuilder s_StringBuilder = new StringBuilder();
 
         // Functions
@@ -68,15 +72,15 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string _MSAA_8 = "_MSAA_8";
             internal const string _TEX2DARRAY = "_TEX2DARRAY";
             internal const string _CUBEMAP = "_CUBEMAP";
-            internal static int _Levels = Shader.PropertyToID("_Levels");
-            internal static int _MainTex = Shader.PropertyToID("_MainTex");
-            internal static int _MainTexDepth = Shader.PropertyToID("_MainTexDepth");
-            internal static int _Channels = Shader.PropertyToID("_Channels");
-            internal static int _ShouldYFlip = Shader.PropertyToID("_ShouldYFlip");
-            internal static int _UndoOutputSRGB = Shader.PropertyToID("_UndoOutputSRGB");
-            internal static int _MainTexWidth = Shader.PropertyToID("_MainTexWidth");
-            internal static int _MainTexHeight = Shader.PropertyToID("_MainTexHeight");
-            internal static int _VisualizationLut = Shader.PropertyToID("_VisualizationLut");
+            internal static readonly int _Levels = Shader.PropertyToID("_Levels");
+            internal static readonly int _MainTex = Shader.PropertyToID("_MainTex");
+            internal static readonly int _MainTexDepth = Shader.PropertyToID("_MainTexDepth");
+            internal static readonly int _Channels = Shader.PropertyToID("_Channels");
+            internal static readonly int _ShouldYFlip = Shader.PropertyToID("_ShouldYFlip");
+            internal static readonly int _UndoOutputSRGB = Shader.PropertyToID("_UndoOutputSRGB");
+            internal static readonly int _MainTexWidth = Shader.PropertyToID("_MainTexWidth");
+            internal static readonly int _MainTexHeight = Shader.PropertyToID("_MainTexHeight");
+            internal static readonly int _VisualizationLut = Shader.PropertyToID("_VisualizationLut");
         }
 
         internal static void BlitToRenderTexture(

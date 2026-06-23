@@ -131,7 +131,7 @@ namespace UnityEngine.UIElements
         {
             if (!useAdvancedText)
                 return textInfo?.linkCount ?? 0;
-            return m_Links?.Count ?? 0;
+            return m_Links?.Length ?? 0;
         }
 
         // This method assumes the textInfo is populated (TextCore) or text is generated (ATG).

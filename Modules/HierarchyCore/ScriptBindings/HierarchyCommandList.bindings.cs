@@ -22,6 +22,7 @@ namespace Unity.Hierarchy
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToUnmanaged(HierarchyCommandList cmdList) => cmdList.m_Ptr;
+            public static HierarchyCommandList ConvertToManaged(IntPtr ptr) => new HierarchyCommandList(ptr);
         }
 
         IntPtr m_Ptr;
@@ -51,6 +52,13 @@ namespace Unity.Hierarchy
         /// Determines if the command list is currently executing.
         /// </summary>
         public extern bool IsExecuting { [NativeMethod("IsExecuting", IsThreadSafe = true)] get; }
+
+        /// <summary>
+        /// Current read position in the command list.
+        /// </summary>
+        internal extern int ReadPosition { [VisibleToOtherModules, NativeMethod("ReadPosition", IsThreadSafe = true)] get; }
+
+        internal extern int LastWritePosition { [VisibleToOtherModules, NativeMethod("LastWritePosition", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// Constructs a new <see cref="HierarchyCommandList"/>.
@@ -300,6 +308,10 @@ namespace Unity.Hierarchy
         /// <returns><see langword="true"/> if additional invocations are needed to complete the execution, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool ExecuteIncrementalTimed(double milliseconds);
+
+        [VisibleToOtherModules]
+        [FreeFunction("HierarchyCommandListBindings::ScanAddedNodes", HasExplicitThis = true, IsThreadSafe = true)]
+        internal extern HierarchyNode[] ScanAddedNodes(int startOffset, int endOffset);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyCommandList FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyCommandList)GCHandle.FromIntPtr(handlePtr).Target : null;

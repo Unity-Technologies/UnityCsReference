@@ -124,5 +124,10 @@ namespace UnityEngine.Device
             get => ShimManager.screenShim.msaaSamples;
         }
 
+        public static int currentBackbufferMSAASamples
+        {
+            get => ShimManager.screenShim.currentBackbufferMSAASamples;
+        }
+
     }
 }

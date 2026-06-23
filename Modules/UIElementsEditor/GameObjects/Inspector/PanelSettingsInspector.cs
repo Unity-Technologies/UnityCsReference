@@ -63,6 +63,11 @@ namespace UnityEditor.UIElements.Inspector
 
         private HelpBox m_MissingThemeHelpBox;
 
+        protected override bool ShouldHideOpenButton()
+        {
+            return true;
+        }
+
         private void ConfigureFields()
         {
             // Using MandatoryQ instead of just Q to make sure modifications of the UXML file don't make the
@@ -111,7 +116,7 @@ namespace UnityEditor.UIElements.Inspector
                     }
                 }
 
-            }, TrickleDown.TrickleDown); 
+            }, TrickleDown.TrickleDown);
 
             m_ScreenMatchModeMatchWidthOrHeightGroup =
                 m_RootVisualElement.MandatoryQ("screen-match-mode-match-width-or-height");

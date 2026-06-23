@@ -90,6 +90,9 @@ sealed partial class UssCodePreview : CodePreview<StyleSheet>
             case PointerOverLinkTagEvent overTagEvent:
             {
                 var index = int.Parse(overTagEvent.linkID);
+                if (index >= Asset.rules.Length)
+                    break;
+
                 var rule = Asset.rules[index];
                 HighlightUtility.RequestHighlights(rule, CommandSources.UssPreview);
                 break;
@@ -97,6 +100,9 @@ sealed partial class UssCodePreview : CodePreview<StyleSheet>
             case PointerMoveLinkTagEvent overTagEvent:
             {
                 var index = int.Parse(overTagEvent.linkID);
+                if (index >= Asset.rules.Length)
+                    break;
+
                 var rule = Asset.rules[index];
                 HighlightUtility.RequestHighlights(rule, CommandSources.UssPreview);
                 break;

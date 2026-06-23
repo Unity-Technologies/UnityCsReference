@@ -330,12 +330,22 @@ namespace UnityEngine.Audio
             return reflectionData;
         }
 
-        internal static unsafe void InitializeRootOutputHandle(ProcessorHeader* header, ControlHeader* control, ProcessorInstance.InitializationFlags flags)
-            => InternalInitializeRootOutputHandle(header, control, flags);
+        internal static unsafe DualThreadHandle InitializeRootOutputHandle<TRealtime, TControl>(
+            ref IRootOutputControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage storage,
+            ControlHeader* control,
+            ProcessorInstance.InitializationFlags flags
+        )
+            where TRealtime : unmanaged, RootOutputInstance.IRealtime
+            where TControl : unmanaged, RootOutputInstance.IControl<TRealtime>
+
+        {
+            fixed (ProcessorHeader* header = &storage.HeaderAndProcessor.Header)
+                return InternalInitializeRootOutputHandle(header, sizeof(IRootOutputControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage), control, flags);
+        }
 
         // Intermediate above exists because otherwise bindings layer will throw.
         [NativeMethod(Name = "audio::InitializeRootOutputHandle", IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void InternalInitializeRootOutputHandle(/*ScriptingProcessorHeader*/ void* header, /*ControlHeader*/ void* control, ProcessorInstance.InitializationFlags flags);
+        static extern unsafe DualThreadHandle InternalInitializeRootOutputHandle(/*ScriptingProcessorHeader*/ void* header, int tailSize, /*ControlHeader*/ void* control, ProcessorInstance.InitializationFlags flags);
     }
 
     #endregion

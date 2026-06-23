@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.Presets;
 using UnityEditor.ShortcutManagement;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -21,6 +22,7 @@ namespace UnityEditor
         GUIContent hideWindowText = EditorGUIUtility.TrTextContent("Hide Editor");
         GUIContent selectSubEmitterOwner = EditorGUIUtility.TrTextContent("Select Sub-Emitter Owner");
 
+        [NoAutoStaticsCleanup] // cached UI label
         static GUIContent m_PlayBackTitle;
 
         public class ShortcutContext : IShortcutContext

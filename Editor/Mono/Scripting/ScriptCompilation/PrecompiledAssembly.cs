@@ -14,7 +14,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     [DebuggerDisplay("{Path}")]
     [NativeHeader("Editor/Src/ScriptCompilation/ScriptCompilationPipeline.h")]
-    [NativeHeader("Runtime/Scripting/ScriptingTypes.h")]
+    [NativeHeader("Scripting/ScriptingTypes.h")]
     [StructLayout(LayoutKind.Sequential)]
     struct PrecompiledAssembly
     {

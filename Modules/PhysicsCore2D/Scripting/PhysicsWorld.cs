@@ -2018,6 +2018,16 @@ namespace Unity.U2D.Physics
             public int contactCount { readonly get => m_ContactCount; set => m_ContactCount = value; }
 
             /// <summary>
+            /// The number of contacts active during the previous simulation step.
+            /// </summary>
+            public int awakeContactCount { readonly get => m_AwakeContactCount; set => m_AwakeContactCount = value; }
+
+            /// <summary>
+            /// The number of contacts recycled in the previous simulation step.
+            /// </summary>
+            public int recycledContactCount { readonly get => m_RecycledContactCount; set => m_RecycledContactCount = value; }
+
+            /// <summary>
             /// The number of joints.
             /// </summary>
             public int jointCount { readonly get => m_JointCount; set => m_JointCount = value; }
@@ -2066,6 +2076,8 @@ namespace Unity.U2D.Physics
                     bodyCount = countersA.bodyCount + countersB.bodyCount,
                     shapeCount = countersA.shapeCount + countersB.shapeCount,
                     contactCount = countersA.contactCount + countersB.contactCount,
+                    awakeContactCount = countersA.awakeContactCount + countersB.awakeContactCount,
+                    recycledContactCount = countersA.recycledContactCount + countersB.recycledContactCount,
                     jointCount = countersA.jointCount + countersB.jointCount,
                     islandCount = countersA.islandCount + countersB.islandCount,
                     stackUsed = countersA.stackUsed + countersB.stackUsed,
@@ -2090,6 +2102,8 @@ namespace Unity.U2D.Physics
                     bodyCount = Mathf.Max(countersA.bodyCount, countersB.bodyCount),
                     shapeCount = Mathf.Max(countersA.shapeCount, countersB.shapeCount),
                     contactCount = Mathf.Max(countersA.contactCount, countersB.contactCount),
+                    awakeContactCount = Mathf.Max(countersA.awakeContactCount, countersB.awakeContactCount),
+                    recycledContactCount = Mathf.Max(countersA.recycledContactCount, countersB.recycledContactCount),
                     jointCount = Mathf.Max(countersA.jointCount, countersB.jointCount),
                     islandCount = Mathf.Max(countersA.islandCount, countersB.islandCount),
                     stackUsed = Mathf.Max(countersA.stackUsed, countersB.stackUsed),
@@ -2105,6 +2119,8 @@ namespace Unity.U2D.Physics
             [SerializeField] int m_BodyCount;
             [SerializeField] int m_ShapeCount;
             [SerializeField] int m_ContactCount;
+            [SerializeField] int m_AwakeContactCount;
+            [SerializeField] int m_RecycledContactCount;
             [SerializeField] int m_JointCount;
             [SerializeField] int m_IslandCount;
             [SerializeField] int m_StackUsed;
@@ -2118,11 +2134,56 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Describes the expected world capacities used to presize internal allocations when a <see cref="PhysicsWorld"/> is created.
+        /// All counts default to zero, in which case the engine uses its own minimum defaults.
+        /// See <see cref="PhysicsWorldDefinition.capacity"/> and <see cref="PhysicsWorld.capacity"/>.
+        /// </summary>
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WorldCapacity
+        {
+            /// <summary>
+            /// The expected number of static shapes.
+            /// </summary>
+            public int staticShapeCount { readonly get => m_StaticShapeCount; set => m_StaticShapeCount = Mathf.Max(0, value); }
+
+            /// <summary>
+            /// The expected number of dynamic and kinematic shapes.
+            /// </summary>
+            public int dynamicShapeCount { readonly get => m_DynamicShapeCount; set => m_DynamicShapeCount = Mathf.Max(0, value); }
+
+            /// <summary>
+            /// The expected number of static bodies.
+            /// </summary>
+            public int staticBodyCount { readonly get => m_StaticBodyCount; set => m_StaticBodyCount = Mathf.Max(0, value); }
+
+            /// <summary>
+            /// The expected number of dynamic and kinematic bodies.
+            /// </summary>
+            public int dynamicBodyCount { readonly get => m_DynamicBodyCount; set => m_DynamicBodyCount = Mathf.Max(0, value); }
+
+            /// <summary>
+            /// The expected number of contacts.
+            /// </summary>
+            public int contactCount { readonly get => m_ContactCount; set => m_ContactCount = Mathf.Max(0, value); }
+
+            #region Internal
+
+            [SerializeField] [Min(0)] int m_StaticShapeCount;
+            [SerializeField] [Min(0)] int m_DynamicShapeCount;
+            [SerializeField] [Min(0)] int m_StaticBodyCount;
+            [SerializeField] [Min(0)] int m_DynamicBodyCount;
+            [SerializeField] [Min(0)] int m_ContactCount;
+
+            #endregion
+        }
+
+        /// <summary>
         /// PhysicsWorld profile that contains the timings of specific world simulation stages. All times are in milliseconds.
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct WorldProfile
+        public unsafe partial struct WorldProfile
         {
             /// <summary>
             /// Time spent stepping the simulation forward.
@@ -2145,14 +2206,14 @@ namespace Unity.U2D.Physics
 	        public float solving { readonly get => m_Solving; set => m_Solving = value; }
 
             /// <summary>
-            /// Time spent preparing simulation stages.
+            /// Time spent setting up the solver.
             /// </summary>
-	        public float prepareStages { readonly get => m_PrepareStages; set => m_PrepareStages = value; }
+	        public float solverSetup { readonly get => m_PrepareStages; set => m_PrepareStages = value; }
 
             /// <summary>
             /// Time spent solving constraints.
             /// </summary>
-	        public float solveConstraints { readonly get => m_SolveConstraints; set => m_SolveConstraints = value; }
+	        public float constraints { readonly get => m_SolveConstraints; set => m_SolveConstraints = value; }
 
             /// <summary>
             /// Time spent preparing joint and contact constraints.
@@ -2259,8 +2320,8 @@ namespace Unity.U2D.Physics
                     contactPairs = profileA.contactPairs + profileB.contactPairs,
                     contactUpdates = profileA.contactUpdates + profileB.contactUpdates,
                     solving = profileA.solving + profileB.solving,
-                    prepareStages = profileA.prepareStages + profileB.prepareStages,
-                    solveConstraints = profileA.solveConstraints + profileB.solveConstraints,
+                    solverSetup = profileA.solverSetup + profileB.solverSetup,
+                    constraints = profileA.constraints + profileB.constraints,
                     prepareConstraints = profileA.prepareConstraints + profileB.prepareConstraints,
                     integrateVelocities = profileA.integrateVelocities + profileB.integrateVelocities,
                     warmStarting = profileA.warmStarting + profileB.warmStarting,
@@ -2296,8 +2357,8 @@ namespace Unity.U2D.Physics
                     contactPairs = Mathf.Max(profileA.contactPairs, profileB.contactPairs),
                     contactUpdates = Mathf.Max(profileA.contactUpdates, profileB.contactUpdates),
                     solving = Mathf.Max(profileA.solving, profileB.solving),
-                    prepareStages = Mathf.Max(profileA.prepareStages, profileB.prepareStages),
-                    solveConstraints = Mathf.Max(profileA.solveConstraints, profileB.solveConstraints),
+                    solverSetup = Mathf.Max(profileA.solverSetup, profileB.solverSetup),
+                    constraints = Mathf.Max(profileA.constraints, profileB.constraints),
                     prepareConstraints = Mathf.Max(profileA.prepareConstraints, profileB.prepareConstraints),
                     integrateVelocities = Mathf.Max(profileA.integrateVelocities, profileB.integrateVelocities),
                     warmStarting = Mathf.Max(profileA.warmStarting, profileB.warmStarting),
@@ -2373,6 +2434,13 @@ namespace Unity.U2D.Physics
         /// Get the world timing profile, summed for all the active worlds.
         /// </summary>
         public static WorldProfile globalProfile => PhysicsWorld_GetGlobalProfile();
+
+        /// <summary>
+        /// Get the current world capacities reached since the world was created.
+        /// This reflects the peak object counts and can be used to presize a <see cref="PhysicsWorldDefinition.capacity"/> for similar worlds.
+        /// See <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// </summary>
+        public readonly WorldCapacity capacity => PhysicsWorld_GetMaxCapacity(this);
 
         #endregion
 

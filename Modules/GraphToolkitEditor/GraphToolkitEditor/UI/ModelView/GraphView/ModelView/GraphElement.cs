@@ -376,6 +376,10 @@ namespace Unity.GraphToolkit.Editor
         {
             if (OverrideHighlighted)
                 return true;
+
+            if (GraphView == null) // This GraphElement has been removed from its view
+                return false;
+
             if (GraphElementModel == null
                 || GraphView.GraphViewModel?.SelectionState == null
                 || GraphView.GraphViewModel.SelectionState.IsSelected(GraphElementModel))

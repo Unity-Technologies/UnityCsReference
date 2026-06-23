@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using Event = UnityEngine.Event;
@@ -15,22 +16,26 @@ namespace UnityEditor.IMGUI.Controls
     {
         private static class Styles
         {
-            public static GUIStyle itemStyle = "DD ItemStyle";
-            public static GUIStyle header = "DD HeaderStyle";
+            public static readonly GUIStyle itemStyle = "DD ItemStyle";
+            public static readonly GUIStyle header = "DD HeaderStyle";
+            [NoAutoStaticsCleanup] // mutated in static ctor (padding/clipping), cannot be readonly
             public static GUIStyle headerEllipsis = "DD HeaderStyle";
-            public static GUIStyle checkMark = "DD ItemCheckmark";
-            public static GUIStyle lineSeparator = "DefaultLineSeparator";
-            public static GUIStyle rightArrow = "ArrowNavigationRight";
-            public static GUIStyle leftArrow = "ArrowNavigationLeft";
-            public static GUIStyle searchFieldStyle = new GUIStyle(EditorStyles.toolbarSearchField)
+            public static readonly GUIStyle checkMark = "DD ItemCheckmark";
+            public static readonly GUIStyle lineSeparator = "DefaultLineSeparator";
+            public static readonly GUIStyle rightArrow = "ArrowNavigationRight";
+            public static readonly GUIStyle leftArrow = "ArrowNavigationLeft";
+            public static readonly GUIStyle searchFieldStyle = new GUIStyle(EditorStyles.toolbarSearchField)
             {
                 margin = new RectOffset(5, 4, 4, 5)
             };
-            public static SVC<Color> searchBackgroundColor = new SVC<Color>("--theme-toolbar-background-color", Color.black);
+            [NoAutoStaticsCleanup]
+            public static readonly SVC<Color> searchBackgroundColor = new SVC<Color>("--theme-toolbar-background-color", Color.black);
+            [NoAutoStaticsCleanup] // lazy GUI styles built from EditorStyles, safe to persist
             public static GUIStyle helpBox;
+            [NoAutoStaticsCleanup] // lazy GUI styles built from EditorStyles, safe to persist
             public static GUIStyle helpBoxText;
 
-            public static GUIContent checkMarkContent = new GUIContent("✔");
+            public static readonly GUIContent checkMarkContent = new GUIContent("✔");
 
             static Styles()
             {
@@ -54,11 +59,16 @@ namespace UnityEditor.IMGUI.Controls
             Debug.Assert(Event.current.type == EventType.Repaint && Styles.itemStyle != null);
         }
 
-        public static string k_SearchFieldName = "ComponentSearch";
+        public static readonly string k_SearchFieldName = "ComponentSearch";
 
         //This should ideally match line height
         private Vector2 s_IconSize = new Vector2(13, 13);
         private AdvancedDropdownDataSource m_DataSource;
+
+        // Help box layout: icon size and the gap between the icon and the text.
+        // Shared between DrawHelpBox and CalcHelpBoxHeight so the two stay in sync.
+        private const float k_HelpBoxIconSize = 24f;
+        private const float k_HelpBoxIconTextGap = 6f;
 
         internal Rect m_SearchRect;
         internal Rect m_HeaderRect;
@@ -165,18 +175,14 @@ namespace UnityEditor.IMGUI.Controls
             // Compute inner rect (respects helpbox padding)
             var inner = Styles.helpBox.padding.Remove(rect);
 
-            // Icon settings
-            const float iconSize = 24f;
-            const float gap = 6f;
-
             var icon = EditorGUIUtility.GetHelpIcon(helpBoxItem.type);
 
             // Center icon vertically within the inner rect
-            float iconY = inner.y + (inner.height - iconSize) * 0.5f;
-            var iconRect = new Rect(inner.x, iconY, iconSize, iconSize);
+            float iconY = inner.y + (inner.height - k_HelpBoxIconSize) * 0.5f;
+            var iconRect = new Rect(inner.x, iconY, k_HelpBoxIconSize, k_HelpBoxIconSize);
 
             // Text rect starts after icon
-            float textX = iconRect.xMax + gap;
+            float textX = iconRect.xMax + k_HelpBoxIconTextGap;
             var textRect = new Rect(textX, inner.y, inner.xMax - textX, inner.height);
 
             if (Event.current.type != EventType.Repaint)
@@ -192,8 +198,9 @@ namespace UnityEditor.IMGUI.Controls
 
         internal float CalcHelpBoxHeight(AdvancedDropdownItem.HelpBoxDropdownItem helpBoxItem)
         {
-            float contentWidth = EditorGUIUtility.currentViewWidth;
-            return Styles.helpBoxText.CalcHeight(new GUIContent(helpBoxItem.message), contentWidth) + Styles.helpBox.padding.vertical;
+            float contentWidth = EditorGUIUtility.currentViewWidth - Styles.helpBox.margin.horizontal;
+            float textWidth = contentWidth - Styles.helpBox.padding.horizontal - k_HelpBoxIconSize - k_HelpBoxIconTextGap;
+            return Mathf.Max(k_HelpBoxIconSize, Styles.helpBoxText.CalcHeight(new GUIContent(helpBoxItem.message), textWidth)) + Styles.helpBox.padding.vertical;
         }
 
         internal void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed, bool hasParent)

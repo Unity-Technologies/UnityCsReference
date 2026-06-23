@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using Unity.Profiling.Memory;
 using MemoryProfilerAPI = Unity.Profiling.Memory.MemoryProfiler;
@@ -17,12 +18,13 @@ namespace UnityEditor.MemoryProfiler
     // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
     // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
     [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler instead")]
-    public static class MemorySnapshot
+    public static partial class MemorySnapshot
     {
         // Not automatically Upgradable as the new API won't fire an event but calls a callback instead.
         // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
         // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
         [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<PackedMemorySnapshot> OnSnapshotReceived;
 
         private static void SnapshotFinished(string path, bool result)

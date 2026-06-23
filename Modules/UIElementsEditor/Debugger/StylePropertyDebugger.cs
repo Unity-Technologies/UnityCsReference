@@ -163,7 +163,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 foreach (var customProperty in customProperties)
                 {
-                    var styleName = (string)customProperty.Key;
+                    var styleName = customProperty.Key.ToString();
 
                     if (!string.IsNullOrEmpty(m_SearchFilter) &&
                         styleName.IndexOf(m_SearchFilter, StringComparison.InvariantCultureIgnoreCase) == -1)

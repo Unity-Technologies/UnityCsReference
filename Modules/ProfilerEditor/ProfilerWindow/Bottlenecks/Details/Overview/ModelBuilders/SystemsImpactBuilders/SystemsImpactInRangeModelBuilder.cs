@@ -47,6 +47,9 @@ namespace Unity.Profiling.Editor.UI
                 var systemValuesAccumulated = new long[systemsCount];
                 for (var i = 0; i < frameCount; ++i)
                 {
+                    // Check for cancellation.
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     const int k_MainThreadIndex = 0;
                     var frameIndex = firstFrameIndex + i;
                     using var mainThreadData = dataService.GetRawFrameDataView(frameIndex, k_MainThreadIndex);
@@ -59,14 +62,14 @@ namespace Unity.Profiling.Editor.UI
                         var legacyStatisticValue = GetLegacyStatisticValueAsFloat(mainThreadData, legacyStatisticName);
                         systemValuesAccumulated[j] += Convert.ToInt64(legacyStatisticValue);
                     }
-
-                    cancellationToken.ThrowIfCancellationRequested();
                 }
 
                 // Calculate mean value of each system over the range.
                 var systemImpacts = new SystemImpact[systemsCount];
                 for (var i = 0; i < systemsCount; ++i)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var sum = systemValuesAccumulated[i];
                     var meanSystemValueNs = Convert.ToUInt64(sum / frameCount);
                     systemImpacts[i] = new SystemImpact(
@@ -80,7 +83,7 @@ namespace Unity.Profiling.Editor.UI
                 cancellationToken.ThrowIfCancellationRequested();
 
                 return BuildModelFromSystemImpacts(m_FrameRange, systemImpacts);
-            });
+            }, cancellationToken);
 
             return await task;
         }

@@ -220,11 +220,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void IsCompiling(out bool isCompiling)
         {
-            if (MsBuildCompilationInterface.IsEnabled())
-            {
-                isCompiling = MsBuildCompilationInterface.Instance.IsCompiling();
-            }
-            isCompiling = Instance.IsCompiling();
+            isCompiling = MsBuildCompilationInterface.IsEnabled() ? MsBuildCompilationInterface.Instance.IsCompiling() : Instance.IsCompiling();
         }
 
         [RequiredByNativeCode]

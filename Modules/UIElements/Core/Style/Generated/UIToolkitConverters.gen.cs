@@ -29,6 +29,10 @@ namespace UnityEngine.UIElements
         static StyleKeyword ConvertRatioToStyleKeyword(ref StyleRatio value) => value.keyword;
         static StyleRatio ConvertRatioToStyleRatio(ref Ratio value) => value;
         static StyleRatio ConvertStyleKeywordToStyleRatio(ref StyleKeyword value) => value;
+        static List<FilterFunction> ConvertStyleFilterFunctionListToFilterFunctionList(ref StyleList<FilterFunction> value) => value.value;
+        static StyleKeyword ConvertFilterFunctionListToStyleKeyword(ref StyleList<FilterFunction> value) => value.keyword;
+        static StyleList<FilterFunction> ConvertFilterFunctionListToStyleFilterFunctionList(ref List<FilterFunction> value) => value;
+        static StyleList<FilterFunction> ConvertStyleKeywordToStyleFilterFunctionList(ref StyleKeyword value) => value;
         static Color ConvertStyleColorToColor(ref StyleColor value) => value.value;
         static StyleKeyword ConvertColorToStyleKeyword(ref StyleColor value) => value.keyword;
         static StyleColor ConvertColorToStyleColor(ref Color value) => value;
@@ -65,10 +69,6 @@ namespace UnityEngine.UIElements
         static StyleKeyword ConvertDisplayStyleToStyleKeyword(ref StyleEnum<DisplayStyle> value) => value.keyword;
         static StyleEnum<DisplayStyle> ConvertDisplayStyleToStyleDisplayStyleEnum(ref DisplayStyle value) => value;
         static StyleEnum<DisplayStyle> ConvertStyleKeywordToStyleDisplayStyleEnum(ref StyleKeyword value) => value;
-        static List<FilterFunction> ConvertStyleFilterFunctionListToFilterFunctionList(ref StyleList<FilterFunction> value) => value.value;
-        static StyleKeyword ConvertFilterFunctionListToStyleKeyword(ref StyleList<FilterFunction> value) => value.keyword;
-        static StyleList<FilterFunction> ConvertFilterFunctionListToStyleFilterFunctionList(ref List<FilterFunction> value) => value;
-        static StyleList<FilterFunction> ConvertStyleKeywordToStyleFilterFunctionList(ref StyleKeyword value) => value;
         static FlexDirection ConvertStyleFlexDirectionEnumToFlexDirection(ref StyleEnum<FlexDirection> value) => value.value;
         static StyleKeyword ConvertFlexDirectionToStyleKeyword(ref StyleEnum<FlexDirection> value) => value.keyword;
         static StyleEnum<FlexDirection> ConvertFlexDirectionToStyleFlexDirectionEnum(ref FlexDirection value) => value;
@@ -200,6 +200,10 @@ namespace UnityEngine.UIElements
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleRatio), typeof(StyleKeyword), () => (TypeConverter<StyleRatio, StyleKeyword>)ConvertRatioToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Ratio), typeof(StyleRatio), () => (TypeConverter<Ratio, StyleRatio>)ConvertRatioToStyleRatio);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleRatio), () => (TypeConverter<StyleKeyword, StyleRatio>)ConvertStyleKeywordToStyleRatio);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleList<FilterFunction>), typeof(List<FilterFunction>), () => (TypeConverter<StyleList<FilterFunction>, List<FilterFunction>>)ConvertStyleFilterFunctionListToFilterFunctionList);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleList<FilterFunction>), typeof(StyleKeyword), () => (TypeConverter<StyleList<FilterFunction>, StyleKeyword>)ConvertFilterFunctionListToStyleKeyword);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(List<FilterFunction>), typeof(StyleList<FilterFunction>), () => (TypeConverter<List<FilterFunction>, StyleList<FilterFunction>>)ConvertFilterFunctionListToStyleFilterFunctionList);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleList<FilterFunction>), () => (TypeConverter<StyleKeyword, StyleList<FilterFunction>>)ConvertStyleKeywordToStyleFilterFunctionList);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleColor), typeof(Color), () => (TypeConverter<StyleColor, Color>)ConvertStyleColorToColor);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleColor), typeof(StyleKeyword), () => (TypeConverter<StyleColor, StyleKeyword>)ConvertColorToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Color), typeof(StyleColor), () => (TypeConverter<Color, StyleColor>)ConvertColorToStyleColor);
@@ -236,10 +240,6 @@ namespace UnityEngine.UIElements
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<DisplayStyle>), typeof(StyleKeyword), () => (TypeConverter<StyleEnum<DisplayStyle>, StyleKeyword>)ConvertDisplayStyleToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(DisplayStyle), typeof(StyleEnum<DisplayStyle>), () => (TypeConverter<DisplayStyle, StyleEnum<DisplayStyle>>)ConvertDisplayStyleToStyleDisplayStyleEnum);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleEnum<DisplayStyle>), () => (TypeConverter<StyleKeyword, StyleEnum<DisplayStyle>>)ConvertStyleKeywordToStyleDisplayStyleEnum);
-            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleList<FilterFunction>), typeof(List<FilterFunction>), () => (TypeConverter<StyleList<FilterFunction>, List<FilterFunction>>)ConvertStyleFilterFunctionListToFilterFunctionList);
-            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleList<FilterFunction>), typeof(StyleKeyword), () => (TypeConverter<StyleList<FilterFunction>, StyleKeyword>)ConvertFilterFunctionListToStyleKeyword);
-            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(List<FilterFunction>), typeof(StyleList<FilterFunction>), () => (TypeConverter<List<FilterFunction>, StyleList<FilterFunction>>)ConvertFilterFunctionListToStyleFilterFunctionList);
-            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleList<FilterFunction>), () => (TypeConverter<StyleKeyword, StyleList<FilterFunction>>)ConvertStyleKeywordToStyleFilterFunctionList);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<FlexDirection>), typeof(FlexDirection), () => (TypeConverter<StyleEnum<FlexDirection>, FlexDirection>)ConvertStyleFlexDirectionEnumToFlexDirection);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<FlexDirection>), typeof(StyleKeyword), () => (TypeConverter<StyleEnum<FlexDirection>, StyleKeyword>)ConvertFlexDirectionToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(FlexDirection), typeof(StyleEnum<FlexDirection>), () => (TypeConverter<FlexDirection, StyleEnum<FlexDirection>>)ConvertFlexDirectionToStyleFlexDirectionEnum);

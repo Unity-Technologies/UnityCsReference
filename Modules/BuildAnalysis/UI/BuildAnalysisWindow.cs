@@ -35,6 +35,9 @@ namespace UnityEditor.Build.Analysis
         private const string k_SplitterKey = k_KeyPrefix + "SplitterPosition";
         private const string k_InspectorOpenKey = k_KeyPrefix + "InspectorPanelOpen";
 
+        private const string k_InspectorToggleTooltip = "Toggle Inspector";
+        private const string k_InspectorToggleDisabledTooltip = "The inspector is only available on the Assets tab";
+
         private TwoPaneSplitView m_SplitView;
         private ToolbarToggle m_InspectorToggle;
         private TabView m_TabView;
@@ -124,7 +127,7 @@ namespace UnityEditor.Build.Analysis
             m_InspectorToggle = new ToolbarToggle
             {
                 name = "inspector-toggle",
-                tooltip = "Toggle Inspector",
+                tooltip = k_InspectorToggleTooltip,
             };
             m_InspectorToggle.AddToClassList("inspector-toggle");
             tabViewport.Add(m_InspectorToggle);
@@ -146,9 +149,22 @@ namespace UnityEditor.Build.Analysis
             assetsTabView.InspectorOpenRequested += () => m_InspectorToggle.value = true;
             m_TabHost.Register(m_AssetsTab, assetsTabView);
 
+            // Only the Assets tab has an inspector; disable the toggle on tabs that don't.
+            m_TabView.activeTabChanged += (_, activeTab) => UpdateInspectorToggleEnabled(activeTab);
+            UpdateInspectorToggleEnabled(m_TabView.activeTab);
+
             m_TabHost.NotifyCurrentTabVisibility();
             m_TabHost.SetInspectorOpen(m_InspectorToggle.value);
             m_TabHost.SetSelection(null, null);
+        }
+
+        private void UpdateInspectorToggleEnabled(Tab activeTab)
+        {
+            var supportsInspector = activeTab == m_AssetsTab;
+            m_InspectorToggle.SetEnabled(supportsInspector);
+            m_InspectorToggle.tooltip = supportsInspector
+                ? k_InspectorToggleTooltip
+                : k_InspectorToggleDisabledTooltip;
         }
 
         private static void ApplyThemeClass(VisualElement view)
@@ -178,6 +194,11 @@ namespace UnityEditor.Build.Analysis
 
         private void SavePersistedState()
         {
+            // OnEnable/OnDisable can run without CreateGUI in between: on unmaximize Unity
+            // deserializes the maximize backup window (firing OnEnable) and immediately destroys
+            // it (firing OnDisable), but never shows it, so CreateGUI never assigns m_SplitView.
+            if (m_SplitView == null)
+                return;
             EditorPrefs.SetFloat(k_SplitterKey, m_SplitView.fixedPaneInitialDimension);
         }
 
@@ -189,8 +210,8 @@ namespace UnityEditor.Build.Analysis
                 return;
 
             var confirm = EditorUtility.DisplayDialog(
-                "Delete Build",
-                $"Delete build data for '{build.BuildName}'?\nThis cannot be undone.",
+                "Delete Build Report Directory",
+                $"Delete Build Report Directory from {BuildHistory.BuildHistoryDirectory}?\n\nThis does not delete asset database artifacts nor build outputs. This cannot be undone.",
                 "Delete",
                 "Cancel");
             if (!confirm)
@@ -218,10 +239,10 @@ namespace UnityEditor.Build.Analysis
             if (builds.Length == 0)
                 return;
 
-            var buildNoun = builds.Length == 1 ? "build" : "builds";
+            var directoryNoun = builds.Length == 1 ? "Build Report Directory" : "Build Report Directories";
             var confirm = EditorUtility.DisplayDialog(
-                "Delete All Builds",
-                $"Delete all {builds.Length} {buildNoun} from {BuildHistory.BuildHistoryDirectory}?\nThis cannot be undone.",
+                "Delete All Build Report Directories",
+                $"Delete all {builds.Length} {directoryNoun} from {BuildHistory.BuildHistoryDirectory}?\n\nThis does not delete asset database artifacts nor build outputs. This cannot be undone.",
                 "Delete All",
                 "Cancel");
             if (!confirm)

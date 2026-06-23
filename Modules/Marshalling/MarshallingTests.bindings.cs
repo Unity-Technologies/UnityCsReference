@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
+using Unity.Scripting.LifecycleManagement;
 
 #pragma warning disable 169
 
@@ -330,6 +331,15 @@ namespace UnityEngine
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
+    [StructLayout(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    internal class DerivedScriptableObject : ScriptableObject
+    {
+        public string Value { get; set;}
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [ExcludeFromDocs]
     internal struct StructUnityObject
     {
         public MarshallingTestObject field;
@@ -402,6 +412,10 @@ namespace UnityEngine
         public static extern StructUnityObjectPPtr[] ReturnStructUnityObjectPPtrVector();
 
         public static extern StructUnityObjectVector[] ReturnStructUnityObjectVectorVector();
+
+        public static extern ScriptableObject[] ReturnScriptableObjectArray(ScriptableObject param);
+
+        public static extern DerivedScriptableObject[] ReturnDerivedScriptableObjectArray(DerivedScriptableObject param);
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
@@ -1252,7 +1266,7 @@ namespace UnityEngine
         }
     }
 
-    internal static class CustomMarshallingTests
+    internal static partial class CustomMarshallingTests
     {
         [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
         public class CustomMarshalledClass : ICustomMarshalled
@@ -1291,8 +1305,9 @@ namespace UnityEngine
             public static CustomMarshalledClass ConvertToManaged(string s) => new CustomMarshalledClass { Value = s + "_ConvertedToManaged" };
         }
 
-        public class CustomMarshaller_WithFree
+        public sealed partial class CustomMarshaller_WithFree
         {
+            [AutoStaticsCleanupOnCodeReload]
             private static int _lastFreeValue = int.MinValue;
             public static int GetLastFreeValue() => _lastFreeValue;
             public static int ConvertToUnmanaged(CustomMarshalledClass c) => c == null ? 0 : int.Parse(c.Value) * 3;

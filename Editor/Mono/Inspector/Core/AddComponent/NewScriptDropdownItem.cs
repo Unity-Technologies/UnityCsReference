@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEditorInternal;
 using Microsoft.CSharp;
@@ -18,6 +19,7 @@ namespace UnityEditor.AddComponent
 
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
+        [NoAutoStaticsCleanup] // lazy provider, safe to persist; re-created on first use if null
         private static System.CodeDom.Compiler.CodeDomProvider s_CSharpDOMProvider;
 
         private string m_Directory = string.Empty;

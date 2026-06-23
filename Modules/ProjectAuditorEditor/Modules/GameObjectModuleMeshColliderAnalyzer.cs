@@ -16,6 +16,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
         internal const string PAA6010 = nameof(PAA6010);
         internal const string PAA6011 = nameof(PAA6011);
         internal const string PAA6012 = nameof(PAA6012);
+        internal const string PAA6013 = nameof(PAA6013);
+        internal const string PAA6014 = nameof(PAA6014);
 
         internal static readonly Descriptor k_MeshColliderReadWriteDescriptor = new Descriptor
             (
@@ -80,6 +82,30 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
+        internal static readonly Descriptor k_BuiltInMeshColliderConvexBakingDescriptor = new Descriptor
+            (
+            PAA6013,
+            "MeshCollider: Built-in mesh missing convex collision",
+            Areas.Quality | Areas.Upgrade,
+            "A convex MeshCollider uses a built-in mesh that is missing pre-baked convex collision data. Built-in meshes cannot have their import settings modified, so collision will be baked at runtime.",
+            "Consider using a custom mesh with pre-baked convex collision for better performance."
+            )
+        {
+            MessageFormat = "Built-in mesh '{0}' used by convex MeshCollider on '{1}' is missing pre-baked convex collision"
+        };
+
+        internal static readonly Descriptor k_BuiltInMeshColliderTriangleBakingDescriptor = new Descriptor
+            (
+            PAA6014,
+            "MeshCollider: Built-in mesh missing triangle collision",
+            Areas.Quality | Areas.Upgrade,
+            "A non-convex MeshCollider uses a built-in mesh that is missing pre-baked triangle collision data. Built-in meshes cannot have their import settings modified, so collision will be baked at runtime.",
+            "Consider using a custom mesh with pre-baked triangle collision for better performance."
+            )
+        {
+            MessageFormat = "Built-in mesh '{0}' used by triangle MeshCollider on '{1}' is missing pre-baked triangle collision"
+        };
+
         readonly HashSet<EntityId> m_VisitedAssets = new HashSet<EntityId>(512);
 
         public override void Initialize(Action<Descriptor> registerDescriptor)
@@ -87,6 +113,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             registerDescriptor(k_MeshColliderReadWriteDescriptor);
             registerDescriptor(k_MeshColliderConvexBakingDescriptor);
             registerDescriptor(k_MeshColliderTriangleBakingDescriptor);
+            registerDescriptor(k_BuiltInMeshColliderConvexBakingDescriptor);
+            registerDescriptor(k_BuiltInMeshColliderTriangleBakingDescriptor);
         }
 
         internal override void OnAnalysisStarted()
@@ -104,33 +132,39 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (mesh == null)
                 yield break;
 
-            // Only add one issue per mesh
-            if (m_VisitedAssets.Contains(mesh.GetEntityId()))
-                yield break;
+            Descriptor descriptor = null;
+            bool isBuiltIn = false;
 
             // Scale baking requires Read/Write
             if (meshCollider.IsScaleBakingRequired())
             {
                 if (!mesh.isReadable)
-                    yield return CreateIssue(context, mesh, k_MeshColliderReadWriteDescriptor);
+                    descriptor = k_MeshColliderReadWriteDescriptor;
             }
             // Convex collider needs BakeConvex
             else if (meshCollider.convex && !mesh.HasPreBakeCollisionMesh(true))
             {
-                yield return CreateIssue(context, mesh, k_MeshColliderConvexBakingDescriptor);
+                var meshPath = AssetDatabase.GetAssetPath(mesh);
+                InternalEditorUtility.IsReadOnlyAsset(meshPath, out isBuiltIn);
+                descriptor = isBuiltIn ? k_BuiltInMeshColliderConvexBakingDescriptor : k_MeshColliderConvexBakingDescriptor;
             }
             // Non-convex collider needs BakeTriangle
             else if (!meshCollider.convex && !mesh.HasPreBakeCollisionMesh(false))
             {
-                yield return CreateIssue(context, mesh, k_MeshColliderTriangleBakingDescriptor);
+                var meshPath = AssetDatabase.GetAssetPath(mesh);
+                InternalEditorUtility.IsReadOnlyAsset(meshPath, out isBuiltIn);
+                descriptor = isBuiltIn ? k_BuiltInMeshColliderTriangleBakingDescriptor : k_MeshColliderTriangleBakingDescriptor;
             }
-        }
 
-        private ReportItemBuilder CreateIssue(GameObjectAnalysisContext context, Mesh mesh, Descriptor descriptor)
-        {
-            m_VisitedAssets.Add(mesh.GetEntityId());
+            if (descriptor == null)
+                yield break;
 
-            return context.CreateIssue
+            // Only deduplicate for modifiable meshes (fix is on the mesh)
+            // For built-in meshes, report all GameObjects (fix is per-GameObject)
+            if (!isBuiltIn && !m_VisitedAssets.Add(mesh.GetEntityId()))
+                yield break;
+
+            yield return context.CreateIssue
             (
                 IssueCategory.GameObject,
                 descriptor.Id,

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Unity.Profiling.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -24,6 +25,7 @@ namespace UnityEditor.Profiling
         const int k_ToolbarHeight = 30;
         const int k_TotalBorderHeight = 2;
 
+        [NoAutoStaticsCleanup] // Timestamp used to suppress re-open flicker; persisting across reload is harmless
         static long s_LastClosedTime;
 
         // Data

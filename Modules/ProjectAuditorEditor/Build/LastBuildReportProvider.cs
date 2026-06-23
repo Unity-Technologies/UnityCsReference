@@ -7,12 +7,14 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Build
 {
-    internal class LastBuildReportProvider
+    internal partial class LastBuildReportProvider
     {
         public int callbackOrder => 0;
+        [AutoStaticsCleanupOnCodeReload] // Lazy cache of BuildReport (ScriptableObject-derived); must be reset on code reload
         static BuildReport s_LastBuildReport = null;
 
         public BuildReport GetBuildReport(BuildTarget platform)

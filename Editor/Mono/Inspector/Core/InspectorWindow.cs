@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -16,13 +17,15 @@ namespace UnityEditor
 {
     [VisibleToOtherModules("UnityEditor.PlayModeModule", "UnityEditor.UIToolkitAuthoringModule")]
     [EditorWindowTitle(title = k_InspectorWindowTitle, useTypeNameAsIconName = true)]
-    internal class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
+    internal partial class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
     {
         const string k_InspectorWindowTitle = "Inspector";
         const string k_InspectorWindowTitleDebug = "Inspector (Debug)";
         const string k_InspectorWindowTitleDebugInternal = "Inspector (Debug Internal)";
 
-        static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
+        [AutoStaticsCleanupOnCodeReload]
+        static List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
+        [NoAutoStaticsCleanup] // bool flag, safe to persist; rebuild triggered on next repaint
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
         [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();

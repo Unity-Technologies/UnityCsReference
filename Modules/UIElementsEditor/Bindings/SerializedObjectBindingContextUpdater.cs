@@ -155,7 +155,10 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 
     private void RegisterTrackedProperties()
     {
-        if (bindingContext != null)
+        // Called from OnActivated on every reactivation (the binding is reused, not recreated), so this
+        // re-resolves the tracked paths. After a domain reload or asset import the SerializedObject may be
+        // disposed - guard with IsValid() to avoid FindProperty on a dead object.
+        if (bindingContext != null && bindingContext.IsValid())
         {
             foreach (var trackedProp in trackedProperties)
             {

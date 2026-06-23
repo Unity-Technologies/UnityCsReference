@@ -6,7 +6,7 @@ namespace Unity.Profiling.Editor.UI
 {
     readonly struct BoxPlotModel
     {
-        public static BoxPlotModel Empty = default;
+        public static readonly BoxPlotModel Empty = default;
 
         public BoxPlotModel(
             ulong minimum,

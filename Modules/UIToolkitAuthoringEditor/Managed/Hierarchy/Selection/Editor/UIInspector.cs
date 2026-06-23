@@ -74,6 +74,10 @@ internal abstract class UIInspector : VisualElement, IDisposable
 
     internal void ResetSearch() => SearchField?.ResetSearch();
 
+    // Arms/clears the inspector's style fields for animation recording. No-op by default; selection
+    // inspectors that support recording override it. Driven by UISelectionEditor.
+    internal virtual void RefreshRecordingState(StyleInspectorAnimationRecordingContext controller) { }
+
     public virtual void Dispose()
     {
         if (SearchField != null)

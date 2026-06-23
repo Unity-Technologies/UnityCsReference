@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -54,6 +55,7 @@ namespace UnityEditor
                 "Duration"
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         ReorderableList m_EmittersList;

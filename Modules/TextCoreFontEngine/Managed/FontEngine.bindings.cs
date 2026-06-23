@@ -523,6 +523,9 @@ namespace UnityEngine.TextCore.LowLevel
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static extern bool IsColorFontFace();
 
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule", "UnityEditor.TextCoreTextEngineModule", "Unity.FontEngine.Editor.Tests")]
+        internal static extern bool IsVariableFontFace();
+
 
         /// <summary>
         /// Try finding and returning a reference to a system font for the given family name and style.

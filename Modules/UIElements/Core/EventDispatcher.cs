@@ -420,6 +420,10 @@ namespace UnityEngine.UIElements
 
                 evt.PostDispatch(panel);
 
+                // Feed the UI Toolkit profiler's PANEL_EVENTS chunk (a no-op unless a capture is
+                // recording this panel).
+                ProfilerUIToolkit.CapturePanelEvent(panel, evt);
+
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
             }
         }

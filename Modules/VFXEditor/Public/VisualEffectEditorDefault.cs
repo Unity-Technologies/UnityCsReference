@@ -14,7 +14,7 @@ namespace UnityEditor.VFX
     {
         class Styles
         {
-            public static GUIContent message = EditorGUIUtility.TrTextContent("The Visual Effect component requires the com.unity.visualeffectgraph package.");
+            public static readonly GUIContent message = EditorGUIUtility.TrTextContent("The Visual Effect component requires the com.unity.visualeffectgraph package.");
         }
 
         public override void OnInspectorGUI()

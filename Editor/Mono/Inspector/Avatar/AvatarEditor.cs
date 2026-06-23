@@ -135,6 +135,7 @@ namespace UnityEditor
                     if (GUILayout.Button("Apply"))
                     {
                         ApplyAndImport();
+                        GUIUtility.ExitGUI();
                     }
                 }
 

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -131,6 +132,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("2D Physics")
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         public InitialModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

@@ -34,17 +34,27 @@ namespace UnityEngine.UIElements.UIR
         // Profiler-only Begin/End markers.
         BeginPanelComponent,
         EndPanelComponent,
-        DedicatedPlaceholder
+        DedicatedPlaceholder,
+        GenerateBackdropFilterTexture
     }
 
     [Flags]
     enum EntryFlags : ushort
     {
-        UsesTextCoreSettings = 1 << 0,
-        IsPremultiplied = 1 << 1,
-        SkipDynamicAtlas = 1 << 2,
-        HasExtras = 1 << 3,
-        UsesPerGlyphTextCoreSettings = 1 << 4,
+        UsesTextCoreSettings         = 1 << 0,
+        IsPremultiplied              = 1 << 1,
+        SkipDynamicAtlas             = 1 << 2,
+        HasExtras                    = 1 << 3,
+
+        // DrawPhase packed in 2 bits; Background==0 so default flags read as Background.
+        DrawPhaseBitOffset           = 4,
+        DrawPhaseBackground          = 0 << DrawPhaseBitOffset,
+        DrawPhaseBorder              = 1 << DrawPhaseBitOffset,
+        DrawPhaseContent             = 2 << DrawPhaseBitOffset,
+        DrawPhaseMask                = 3 << DrawPhaseBitOffset,
+        DrawPhaseBits                = 3 << DrawPhaseBitOffset,
+
+        UsesPerGlyphTextCoreSettings = 1 << 6,
     }
 
     class Entry
@@ -73,11 +83,20 @@ namespace UnityEngine.UIElements.UIR
         public TextureId textureId;
         // Set on BeginPanelComponent entries only.
         public EntityId panelComponentId;
+        public int userData;
 
         public Entry nextSibling;
 
         public Entry firstChild;
         public Entry lastChild;
+
+        public DrawPhase phase
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (DrawPhase)((int)(flags & EntryFlags.DrawPhaseBits) >> (int)EntryFlags.DrawPhaseBitOffset);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => flags = (flags & ~EntryFlags.DrawPhaseBits) | (EntryFlags)((int)value << (int)EntryFlags.DrawPhaseBitOffset);
+        }
 
         public void Reset()
         {
@@ -89,6 +108,7 @@ namespace UnityEngine.UIElements.UIR
             userProps = null;
             gradientsOwner = null;
             flags = 0;
+            userData = 0;
             immediateCallback = null;
             panelComponentId = EntityId.None;
             texCoord1 = default;
@@ -114,18 +134,18 @@ namespace UnityEngine.UIElements.UIR
             m_PanelExtras = panelExtras;
         }
 
-        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
-            DrawMesh(parentEntry, vertices, indices, null);
+            DrawMesh(parentEntry, vertices, indices, null, TextureOptions.None, phase, userData);
         }
 
-        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions = TextureOptions.None)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions = TextureOptions.None, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
             var mesh = new UIMesh { vertices = vertices, indices = indices };
-            DrawMesh(parentEntry, ref mesh, texture, textureOptions, ignoreExtras: true);
+            DrawMesh(parentEntry, ref mesh, texture, textureOptions, true, phase, userData);
         }
 
-        public void DrawMesh(Entry parentEntry, ref UIMesh mesh, Texture texture, TextureOptions textureOptions = TextureOptions.None, bool ignoreExtras = false)
+        public void DrawMesh(Entry parentEntry, ref UIMesh mesh, Texture texture, TextureOptions textureOptions = TextureOptions.None, bool ignoreExtras = false, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
             int vertexCount = mesh.vertices.Length;
 
@@ -152,6 +172,7 @@ namespace UnityEngine.UIElements.UIR
             entry.vertices = mesh.vertices;
             entry.indices = mesh.indices;
             entry.texture = texture;
+            entry.userData = userData;
 
             EntryFlags entryFlags = 0;
 
@@ -178,6 +199,7 @@ namespace UnityEngine.UIElements.UIR
             }
 
             entry.flags = entryFlags;
+            entry.phase = phase;
 
             AppendMeshEntry(parentEntry, entry);
         }
@@ -200,7 +222,7 @@ namespace UnityEngine.UIElements.UIR
             return default;
         }
 
-        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, TextureId textureId, bool isPremultiplied = false)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, TextureId textureId, bool isPremultiplied = false, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
             Debug.Assert(textureId.IsValid());
             var entry = m_EntryPool.Get();
@@ -209,10 +231,12 @@ namespace UnityEngine.UIElements.UIR
             entry.textureId = textureId;
             entry.flags = isPremultiplied ? EntryFlags.IsPremultiplied : 0;
             entry.type = EntryType.DrawDynamicTexturedMesh;
+            entry.phase = phase;
+            entry.userData = userData;
             AppendMeshEntry(parentEntry, entry);
         }
 
-        public void DrawRasterText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool multiChannel, bool usesPerGlyphTextCoreSettings = false)
+        public void DrawRasterText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool multiChannel, bool usesPerGlyphTextCoreSettings = false, DrawPhase phase = DrawPhase.Content)
         {
             var entry = m_EntryPool.Get();
             entry.flags = EntryFlags.UsesTextCoreSettings; // For dynamic color
@@ -230,10 +254,11 @@ namespace UnityEngine.UIElements.UIR
             entry.texture = texture;
             entry.textScale = 0; // Used in the shader to indicate raster text
             entry.fontSharpness = 0; // N/A
+            entry.phase = phase;
             AppendMeshEntry(parentEntry, entry);
         }
 
-        public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness, bool usesPerGlyphTextCoreSettings = false)
+        public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness, bool usesPerGlyphTextCoreSettings = false, DrawPhase phase = DrawPhase.Content)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawTextMesh;
@@ -245,17 +270,20 @@ namespace UnityEngine.UIElements.UIR
             entry.texture = texture;
             entry.textScale = scale;
             entry.fontSharpness = sharpness;
+            entry.phase = phase;
             AppendMeshEntry(parentEntry, entry);
         }
 
         // Note: A vector image that doesn't use gradients must NOT be submitted with this call.
-        public void DrawGradients(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)
+        public void DrawGradients(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawGradients;
             entry.vertices = vertices;
             entry.indices = indices;
             entry.gradientsOwner = gradientsOwner;
+            entry.phase = phase;
+            entry.userData = userData;
             AppendMeshEntry(parentEntry, entry);
         }
 
@@ -387,6 +415,14 @@ namespace UnityEngine.UIElements.UIR
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.EndPanelComponent;
+            Append(parentEntry, entry);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void GenerateBackdropFilterTexture(Entry parentEntry)
+        {
+            var entry = m_EntryPool.Get();
+            entry.type = EntryType.GenerateBackdropFilterTexture;
             Append(parentEntry, entry);
         }
 

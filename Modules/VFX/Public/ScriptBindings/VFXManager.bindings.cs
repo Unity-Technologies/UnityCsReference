@@ -5,6 +5,7 @@
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
+using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -53,7 +54,7 @@ namespace UnityEngine.VFX
     [NativeHeader("Modules/VFX/Public/VFXManager.h")]
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VFXManagerBindings.h")]
     [StaticAccessor("GetVFXManager()", StaticAccessorType.Dot)]
-    public static class VFXManager
+    public static partial class VFXManager
     {
         extern public static VisualEffect[] GetComponents();
         extern internal static ScriptableObject runtimeResources { get; }
@@ -70,6 +71,8 @@ namespace UnityEngine.VFX
         extern internal static ScriptableObject editorResources { get; }
         extern internal static void ResyncMaterials([NotNull] VisualEffectAsset asset);
         extern internal static bool renderInSceneView { get; set; }
+        // Re-initialized only on code reload (VisualEffectAssetEditorUtility static ctor).
+        [AutoStaticsCleanupOnCodeReload]
         internal static bool activateVFX { get; set; }
 
         extern internal static void CleanupEmptyBatches(bool force = false);

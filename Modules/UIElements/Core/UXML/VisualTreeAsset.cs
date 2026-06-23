@@ -981,10 +981,7 @@ namespace UnityEngine.UIElements
 
         static void AssignClassListFromAssetToElement(VisualElementAsset asset, VisualElement element)
         {
-            if (asset.classes != null)
-            {
-                element.AddToClassList(asset.classes);
-            }
+            asset.AssignClassListToElement(element);
         }
 
         static void AssignStyleSheetFromAssetToElement(VisualElementAsset asset, VisualElement element)

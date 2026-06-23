@@ -193,7 +193,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     RefreshBinding m_RefreshBinding;
 
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
-    event Action<ITrackablePropertyProvider, string, bool, bool> OnTrackedPropertySourceChanged;
+    event Action<ITrackablePropertyProvider, string, bool, bool, bool> OnTrackedPropertySourceChanged;
 
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> ITrackablePropertyProvider.OnTrackedPropertyChanged
     {
@@ -201,7 +201,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         remove => OnTrackedPropertyChanged -= value;
     }
 
-    event Action<ITrackablePropertyProvider, string, bool, bool> ITrackablePropertyProvider.OnTrackedPropertySourceChanged
+    event Action<ITrackablePropertyProvider, string, bool, bool, bool> ITrackablePropertyProvider.OnTrackedPropertySourceChanged
     {
         add => OnTrackedPropertySourceChanged += value;
         remove => OnTrackedPropertySourceChanged -= value;
@@ -688,7 +688,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
         EnableInClassList(s_InlineFieldUssClassName, isInline);
         EnableInClassList(s_BoundFieldUssClassName, binding != null);
-        OnTrackedPropertySourceChanged?.Invoke(this, boundProperty.propertyPath, false, binding != null);
+        OnTrackedPropertySourceChanged?.Invoke(this, boundProperty.propertyPath, false, binding != null, false);
 
         if (m_ContentContainer.bindable is VisualElement bindableElement)
         {

@@ -134,6 +134,7 @@ namespace Unity.UIToolkit.Editor
 
             m_TypeOptions = new Dictionary<string, Type>();
             m_ObjectField = new ObjectField().WithClassList(ObjectFieldUssClass);
+            m_ObjectField.allowBuiltinResources = false;
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 
             m_ObjectField.objectFieldDisplay.RegisterDefaultDragAndDrop(s_SupportedImageTypes);

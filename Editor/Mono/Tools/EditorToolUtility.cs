@@ -4,18 +4,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using UnityEditor.Overlays;
+using UnityEditor.UIElements;
 using UnityEngine;
-using UObject = UnityEngine.Object;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.EditorTools
 {
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    interface ISupportsToolsOverlays {}
+    public interface ISupportsEditorTools : ISupportsOverlays
+    {
+        public Camera handlesCamera { get; }
+    }
 
     static class EditorToolUtility
     {
@@ -866,6 +868,17 @@ namespace UnityEditor.EditorTools
             return context != null && context.GetType() != typeof(GameObjectToolContext);
         }
 
+        internal static Type ResolveToolOwnerType(Type cachedType, string typeName)
+        {
+            if (cachedType == null && !String.IsNullOrEmpty(typeName))
+                cachedType = Type.GetType(typeName);
+
+            if (cachedType == null)
+                cachedType = typeof(SceneView);
+
+            return cachedType;
+        }
+
         internal static void OrderAvailableTools(List<ToolEntry> tools)
         {
             tools.Sort((a, b) =>
@@ -904,6 +917,25 @@ namespace UnityEditor.EditorTools
                 // Finally by hash code
                 return a.GetHashCode().CompareTo(b.GetHashCode());
             });
+        }
+
+        internal static VisualElement CreateEditorToolsIMGUIContainer(EditorWindow window, Action onGUIHandler)
+        {
+            var container = new IMGUIContainer()
+            {
+                onGUIHandler = onGUIHandler,
+                name = "EditorToolsIMGUIContainer",
+                pickingMode = PickingMode.Position,
+                viewDataKey = window.name,
+                renderHints = RenderHints.ClipWithScissors,
+                requireMeasureFunction = false
+            };
+
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(container);
+            container.style.overflow = Overflow.Hidden;
+            container.style.flexGrow = 1;
+
+            return container;
         }
     }
 }

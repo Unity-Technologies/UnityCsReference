@@ -94,6 +94,14 @@ namespace UnityEngine.UIElements
 
             public int meshFlags;
             public ScaleMode scaleMode;
+
+            // UV corners for non-axis-aligned UV mapping (e.g., rotated elements)
+            // When uvCornersValid is non-zero, these are used instead of the uv rect
+            public Vector2 uvTopLeft;
+            public Vector2 uvTopRight;
+            public Vector2 uvBottomRight;
+            public Vector2 uvBottomLeft;
+            public int uvCornersValid;
         }
 
         [NativeMethod(IsThreadSafe = true)] public static extern MeshWriteDataInterface MakeBorder(ref NativeBorderParams borderParams);

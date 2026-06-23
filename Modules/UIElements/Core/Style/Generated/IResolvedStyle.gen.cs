@@ -44,6 +44,11 @@ namespace UnityEngine.UIElements
         Ratio aspectRatio => default;
 
         /// <summary>
+        /// Filter effects to apply to the area behind the element.
+        /// </summary>
+        IEnumerable<FilterFunction> backdropFilter => default;
+
+        /// <summary>
         /// Background color to paint in the element's box.
         /// </summary>
         Color backgroundColor => default;

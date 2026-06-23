@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using Unity.Profiling;
 using Unity.Profiling.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Profiling;
@@ -19,8 +20,9 @@ using UnityEngine.UIElements;
 namespace UnityEditorInternal.Profiling
 {
     // Used with via Reflection (see MemoryProfilerModuleBridge.cs) from the Profiler Memory Profiler Package for the Memory Profiler Module UI Override.
-    internal static class MemoryProfilerOverrides
+    internal static partial class MemoryProfilerOverrides
     {
+        [AutoStaticsCleanupOnCodeReload]
         static public Func<ProfilerWindow, ProfilerModuleViewController> CreateDetailsViewController = null;
     }
 
@@ -167,7 +169,7 @@ namespace UnityEditorInternal.Profiling
                 m_UIState.DetailedMenuLabel.text = view == ProfilerMemoryView.Simple ? "Simple" : "Detailed";
             }
 
-            static ProfilerMarker s_UpdateMaxSystemUsedMemoryProfilerMarker = new ProfilerMarker("MemoryProfilerModule.UpdateMaxSystemUsedMemory");
+            static readonly ProfilerMarker s_UpdateMaxSystemUsedMemoryProfilerMarker = new ProfilerMarker("MemoryProfilerModule.UpdateMaxSystemUsedMemory");
             float[] m_CachedArray;
             // Total System Memory Used
             void UpdateMaxSystemUsedMemory(long firstFrameToCheck, long lastFrameToCheck)
@@ -460,6 +462,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
             public static readonly string packageInstallSuggestion = L10n.Tr("Install Memory Profiler Package{0}");
             public static readonly string packageInstallSuggestionVersionPart = L10n.Tr(" (Version {0})");
+            [NoAutoStaticsCleanup] // Not readonly: updated with version info when package search results arrive
             public static GUIContent packageInstallSuggestionButton = new GUIContent(string.Format(packageInstallSuggestion, ""));
         }
 
@@ -483,6 +486,7 @@ namespace UnityEditorInternal.Profiling
         };
         static readonly string k_MemoryCountersCategoryName = ProfilerCategory.Memory.Name;
 
+        [NoAutoStaticsCleanup] // Weak reference to the module instance; does not prevent GC, safe to persist
         static WeakReference instance;
 
         const string k_GatherObjectReferencesSettingsKey = "Profiler.MemoryProfilerModule.GatherObjectReferences";

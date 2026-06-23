@@ -4,15 +4,18 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Export/CrashReport/CrashReport.bindings.h")]
-    public sealed class CrashReport
+    public sealed partial class CrashReport
     {
+        [AutoStaticsCleanupOnCodeReload]
         static List<CrashReport> internalReports;
+        [AutoStaticsCleanupOnCodeReload]
         static object reportsLock = new object();
 
         static int Compare(CrashReport c1, CrashReport c2)

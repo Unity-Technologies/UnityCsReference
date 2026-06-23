@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Internal;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
 {
@@ -106,6 +107,7 @@ namespace UnityEngine
             ReflectionProbeRemoved = 1,
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<ReflectionProbe, ReflectionProbeEvent> reflectionProbeChanged;
         [UnityEngine.Scripting.RequiredByNativeCode]
         private static void CallReflectionProbeEvent(ReflectionProbe probe, ReflectionProbeEvent probeEvent)
@@ -129,6 +131,7 @@ namespace UnityEngine
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static Action<Texture> s_DefaultReflectionTexture;
 
         public static event Action<Texture> defaultReflectionTexture

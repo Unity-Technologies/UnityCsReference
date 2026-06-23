@@ -20,7 +20,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(GenerateProxy = true)]
-    [NativeHeader("Runtime/Scripting/ScriptingManagedProxySupport.h")]
+    [NativeHeader("Scripting/ScriptingManagedProxySupport.h")]
     class VersionMetaData
     {
         public string Name;

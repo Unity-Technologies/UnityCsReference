@@ -47,36 +47,41 @@ namespace UnityEditor.IMGUI.Controls
 
         internal void MoveDownSelection(AdvancedDropdownItem item)
         {
-            var state = GetStateForItem(item);
-            var selectedIndex = state.selectedIndex;
-            do
-            {
-                ++selectedIndex;
-            }
-            while (selectedIndex < item.childList.Count && item.childList[selectedIndex].IsSeparator());
-
-            if (selectedIndex >= item.childList.Count)
-                selectedIndex = 0;
-
-            if (selectedIndex < item.childList.Count)
-                SetSelectionOnItem(item, selectedIndex);
+            MoveSelection(item, 1);
         }
 
         internal void MoveUpSelection(AdvancedDropdownItem item)
         {
-            var state = GetStateForItem(item);
-            var selectedIndex = state.selectedIndex;
-            do
+            MoveSelection(item, -1);
+        }
+
+        // Moves the selection to the next selectable child in the given direction
+        // (+1 = down, -1 = up), wrapping around the list and skipping decorative rows
+        // (separators, help boxes). Does nothing if the level has no selectable child.
+        private void MoveSelection(AdvancedDropdownItem item, int direction)
+        {
+            var count = item.childList.Count;
+            if (count == 0)
+                return;
+
+            var index = GetStateForItem(item).selectedIndex;
+
+            // Normalize an empty selection (-1) so the first step lands on the natural
+            // end of the list: the top when moving down, the bottom when moving up.
+            if (index < 0)
+                index = direction > 0 ? -1 : count;
+
+            // Scan at most one full loop so the wrap path also skips decorative rows
+            // instead of landing on a leading/trailing separator or help box.
+            for (var step = 0; step < count; step++)
             {
-                --selectedIndex;
+                index = (index + direction + count) % count;
+                if (item.childList[index].IsSelectable())
+                {
+                    SetSelectionOnItem(item, index);
+                    return;
+                }
             }
-            while (selectedIndex >= 0 && item.childList[selectedIndex].IsSeparator());
-
-            if (selectedIndex < 0)
-                selectedIndex = item.childList.Count - 1;
-
-            if (selectedIndex >= 0)
-                SetSelectionOnItem(item, selectedIndex);
         }
 
         internal void SetSelectionOnItem(AdvancedDropdownItem item, int selectedIndex)

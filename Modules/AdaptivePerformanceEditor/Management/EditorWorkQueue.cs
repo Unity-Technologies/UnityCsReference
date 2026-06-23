@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 
 using UnityEngine;
@@ -22,7 +22,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         }
     }
 
-    internal class EditorWorkQueue<T> : EditorWorkQueueBase
+    internal partial class EditorWorkQueue<T> : EditorWorkQueueBase
     {
         [Serializable]
         struct Queue
@@ -33,6 +33,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         public string QueueName { get; set; }
 
+        [AutoStaticsCleanup]
         private static Lazy<EditorWorkQueue<T>> s_Instance = new Lazy<EditorWorkQueue<T>>();
         public static EditorWorkQueue<T> Instance => s_Instance.Value;
 

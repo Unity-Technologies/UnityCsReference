@@ -14,6 +14,7 @@ using Unity.ProjectAuditor.Editor.Modules;
 using Unity.ProjectAuditor.Editor.AssemblyUtils;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,7 +24,7 @@ using UnityEditor.PackageManager;
 
 namespace Unity.ProjectAuditor.Editor.UI
 {
-    internal class ProjectAuditorWindow : EditorWindow, IHasCustomMenu, IIssueFilter
+    internal partial class ProjectAuditorWindow : EditorWindow, IHasCustomMenu, IIssueFilter
     {
         enum AnalysisState
         {
@@ -38,7 +39,9 @@ namespace Unity.ProjectAuditor.Editor.UI
         static readonly string[] AreaNames = Enum.GetNames(typeof(Areas)).Where(a => a != "None" && a != "All").ToArray();
 #pragma warning restore UA2001
         static string[] NicifiedAreaNames { get { if (s_NicifiedAreaNames == null) s_NicifiedAreaNames = Array.ConvertAll(AreaNames, ObjectNames.NicifyVariableName); return s_NicifiedAreaNames; } }
+        [AutoStaticsCleanupOnCodeReload]
         static string[] s_NicifiedAreaNames;
+        [AutoStaticsCleanupOnCodeReload]
         static ProjectAuditorWindow s_Instance;
 
         public static ProjectAuditorWindow Instance
@@ -94,6 +97,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         Vector2 m_PreviousWindowSize;
 
+        [AutoStaticsCleanupOnCodeReload]
         static AddRequest RulesPackageInstallRequest;
 
         static void RulesPackageInstallProgressCallback()
@@ -105,14 +109,33 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (RulesPackageInstallRequest.IsCompleted)
             {
                 if (RulesPackageInstallRequest.Status == StatusCode.Success)
+                {
                     Debug.Log("Installed: " + RulesPackageInstallRequest.Result.packageId);
+                    Events.registeredPackages += OnRulesPackageRegistered;
+                }
                 else if (RulesPackageInstallRequest.Status >= StatusCode.Failure)
+                {
                     Debug.Log(RulesPackageInstallRequest.Error.message);
+                }
 
                 EditorApplication.update -= RulesPackageInstallProgressCallback;
                 RulesPackageInstallRequest = null;
+            }
+        }
 
-                ProjectAuditorRulesPackage.Initialize();
+        static void OnRulesPackageRegistered(PackageRegistrationEventArgs args)
+        {
+#pragma warning disable UA2001
+            foreach (var p in args.added.Concat(args.changedTo))
+#pragma warning restore UA2001
+            {
+                if (p.name == ProjectAuditorRulesPackage.Name)
+                {
+                    Events.registeredPackages -= OnRulesPackageRegistered;
+                    ProjectAuditorRulesPackage.Initialize();
+                    Instance?.m_ProjectAuditor?.InitModules();
+                    return;
+                }
             }
         }
 
@@ -154,7 +177,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 new Tab
                 {
                     id = TabId.GameObjects, name = "Game Objects",
-                    categories = [IssueCategory.GameObject]
+                    categories = [IssueCategory.GameObject, IssueCategory.MeshCollider]
                 },
                 new Tab
                 {
@@ -981,7 +1004,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             ViewDescriptor.Register(new ViewDescriptor
             {
                 Category = IssueCategory.GameObject,
-                DisplayName = "Game Objects",
+                DisplayName = "Game Object Issues",
                 MenuLabel = "Game Objects/Issues",
                 MenuOrder = 12,
                 ShowFilters = true,
@@ -990,6 +1013,17 @@ namespace Unity.ProjectAuditor.Editor.UI
                 OnOpenIssue = EditorInterop.FocusOnAssetInHierarchyWindow,
                 //AnalyticsEventId = (int)AnalyticsReporter.UIButton.ApiCalls,
                 Type = typeof(DiagnosticView)
+            });
+            ViewDescriptor.Register(new ViewDescriptor
+            {
+                Category = IssueCategory.MeshCollider,
+                DisplayName = "Mesh Colliders",
+                MenuLabel = "Game Objects/Mesh Colliders",
+                MenuOrder = 13,
+                DescriptionWithIcon = true,
+                ShowFilters = true,
+                OnOpenIssue = EditorInterop.FocusOnAssetInProjectWindow,
+                //AnalyticsEventId = (int)AnalyticsReporter.UIButton.MeshColliders
             });
         }
 

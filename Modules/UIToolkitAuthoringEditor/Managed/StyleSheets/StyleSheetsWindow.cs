@@ -33,7 +33,8 @@ internal class StyleSheetsWindow : EditorWindow
     HierarchyGlobalSelectionHandler m_GlobalSelectionHandler;
     VisualElement m_EmptyLabelElement;
     VisualElement m_NoResultsLabelElement;
-    VisualElement m_StagingModeLabelElement;
+    VisualElement m_StagingModeContainerElement;
+    Button m_OpenSettingsButton;
     VisualElement m_ContainerElement;
 
     [NonSerialized]
@@ -66,24 +67,7 @@ internal class StyleSheetsWindow : EditorWindow
         }
     }
 
-    [InitializeOnLoadMethod]
-    static void Initialize()
-    {
-        UIToolkitAuthoringSettings.UIStagesChanged += OnUIStagesChanged;
-        EditorApplication.delayCall += () => OnUIStagesChanged(UIToolkitAuthoringSettings.EnableUIStages);
-    }
-
-    static void OnUIStagesChanged(bool enabled)
-    {
-        if (enabled)
-        {
-            Menu.AddMenuItem(k_MenuPath, "", false, k_MenuPriority, ShowWindow, null);
-            return;
-        }
-
-        Menu.RemoveMenuItem(k_MenuPath);
-    }
-
+    [MenuItem(k_MenuPath, false, 3010, secondaryPriority = 4)]
     static void ShowWindow()
     {
         GetWindow<StyleSheetsWindow>().Show();
@@ -95,6 +79,7 @@ internal class StyleSheetsWindow : EditorWindow
         titleContent.image = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
 
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
 
         m_VisualTreeAssetTracker = new VisualTreeAssetTracker(OnVisualTreeAssetChanged);
         m_StyleSheetTracker = new StyleSheetAssetTracker(OnStyleSheetChanged);
@@ -116,6 +101,7 @@ internal class StyleSheetsWindow : EditorWindow
         RemoveAssetTrackers();
         DisposeHierarchyResources();
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
 
         m_LiveReloadSystem = null;
         m_ActiveStyleSheet = null;
@@ -204,8 +190,10 @@ internal class StyleSheetsWindow : EditorWindow
             if (m_NoResultsLabelElement != null)
                 m_NoResultsLabelElement.style.display = DisplayStyle.None;
 
-            if (m_StagingModeLabelElement != null)
-                m_StagingModeLabelElement.style.display = DisplayStyle.Flex;
+            if (m_StagingModeContainerElement != null)
+                m_StagingModeContainerElement.style.display = DisplayStyle.Flex;
+
+            UpdateOpenSettingsButton();
 
             return;
         }
@@ -216,11 +204,26 @@ internal class StyleSheetsWindow : EditorWindow
 
         m_CurrentStage = editingStage;
         m_ContainerElement.style.display = DisplayStyle.Flex;
-        m_StagingModeLabelElement.style.display = DisplayStyle.None;
+        m_StagingModeContainerElement.style.display = DisplayStyle.None;
 
         UpdateAssetTrackers();
         UICommandQueue.RegisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
+    }
+
+    void OnEnableInSceneAuthoringChanged(bool enabled)
+    {
+        UpdateOpenSettingsButton();
+    }
+
+    void UpdateOpenSettingsButton()
+    {
+        if (m_OpenSettingsButton == null)
+            return;
+
+        m_OpenSettingsButton.style.display = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
+            ? DisplayStyle.None
+            : DisplayStyle.Flex;
     }
 
     void OnSelectionRequested(in CommandContext context)
@@ -305,7 +308,9 @@ internal class StyleSheetsWindow : EditorWindow
         var styleSheet = EditorGUIUtility.Load(styleSheetPath) as StyleSheet;
         rootVisualElement.styleSheets.Add(styleSheet);
 
-        m_StagingModeLabelElement = rootVisualElement.Q<Label>("unity-style-sheets-window-staging-mode-label");
+        m_StagingModeContainerElement = rootVisualElement.Q<VisualElement>("unity-style-sheets-window-staging-mode-container");
+        m_OpenSettingsButton = rootVisualElement.Q<Button>("unity-style-sheets-window-open-settings-button");
+        m_OpenSettingsButton.clicked += UIToolkitAuthoringSettingsProvider.OpenSettings;
         m_EmptyLabelElement = rootVisualElement.Q<Label>("unity-style-sheets-window-empty-label");
         m_NoResultsLabelElement = rootVisualElement.Q<Label>("unity-style-sheets-window-no-results-label");
         m_ContainerElement = rootVisualElement.Q<VisualElement>("unity-style-sheets-window-container");
@@ -324,14 +329,15 @@ internal class StyleSheetsWindow : EditorWindow
             UpdateSearchResultsDisplay();
         });
 
-        var newSelectorField = rootVisualElement.Q<NewSelectorField>("new-selector-field");
-        newSelectorField.RegisterCallback<NewSelectorSubmitEvent>(OnCreateNewSelector);
+        var newStyleRuleField = rootVisualElement.Q<NewSelectorField>("new-selector-field");
+        newStyleRuleField.RegisterCallback<NewSelectorSubmitEvent>(OnCreateNewStyleRule);
 
         m_Hierarchy = new Hierarchy.Hierarchy();
         m_Handler = m_Hierarchy.GetOrCreateNodeTypeHandler<StyleSheetEditingNodeTypeHandler>();
         m_Handler.Window = this;
 
         m_HierarchyView = new HierarchyView();
+        m_HierarchyView.ListView.fixedItemHeight = 20;
         m_HierarchyView.AddToClassList(StyleSheetNodeTypeHandler.StyleSheetsWindowHierarchyViewUssClassName);
         m_HierarchyView.NameColumn.title = "Rules";
         m_HierarchyView.NameColumn.stretchable = true;
@@ -448,9 +454,9 @@ internal class StyleSheetsWindow : EditorWindow
         RefreshStyleSheetList();
     }
 
-    void OnCreateNewSelector(NewSelectorSubmitEvent evt)
+    void OnCreateNewStyleRule(NewSelectorSubmitEvent evt)
     {
-        if (!StyleSheetExtensions.ValidateSelector(evt.selectorStr, out var error))
+        if (!StyleSheetExtensions.ValidateStyleRule(evt.selectorStr, out var error))
         {
             Debug.LogError($"Invalid selector string '{evt.selectorStr}': {error}.");
             return;

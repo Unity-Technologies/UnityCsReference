@@ -8,13 +8,14 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
 {
-    // Drop-in overlay that continues a MultiColumnListView's alternating-row "zebra" pattern
+    // Drop-in overlay that continues a vertical collection view's alternating-row "zebra" pattern
     // past the last visible row, filling any leftover body space. Reads body geometry and row
-    // height live from the MCLV so it works equally for fixed-height tables and ones hosted
-    // inside a TwoPaneSplitView (where the body height is user-driven).
+    // height live from the list so it works equally for fixed-height tables and ones hosted
+    // inside a TwoPaneSplitView (where the body height is user-driven). Works with any
+    // BaseVerticalCollectionView (MultiColumnListView, ListView, ...).
     //
     //   m_EmptyBody = new ZebraEmptyBody(m_ListView);
-    //   hostContainer.Add(m_EmptyBody);   // any ancestor that visually overlaps the MCLV body
+    //   hostContainer.Add(m_EmptyBody);   // any ancestor that visually overlaps the list body
     //   // ...then after every m_ListView.RefreshItems():
     //   m_EmptyBody.Refresh();
     internal sealed class ZebraEmptyBody : VisualElement
@@ -24,12 +25,13 @@ namespace UnityEditor.Build.Analysis
         public static readonly string stripeAltUssClassName = stripeUssClassName + "--alt";
 
         // Public USS class name is part of MCLV's stable surface; the C# header type is internal.
+        // A headerless list (e.g. a plain ListView) simply has no element matching this class.
         private const string k_HeaderClassName = "unity-multi-column-header";
         private const string k_UssPath = "BuildAnalysis/StyleSheets/ZebraEmptyBody.uss";
 
-        private readonly MultiColumnListView m_ListView;
+        private readonly BaseVerticalCollectionView m_ListView;
 
-        internal ZebraEmptyBody(MultiColumnListView listView)
+        internal ZebraEmptyBody(BaseVerticalCollectionView listView)
         {
             m_ListView = listView;
 

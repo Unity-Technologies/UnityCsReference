@@ -268,6 +268,43 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     group.NumIgnoredChildren = ignoredChildrenCount;
                     group.DisplayName = groupName;
 
+                    if (childrenCount > 0)
+                    {
+                        var firstSeverity = children[0].ReportItem.Severity;
+                        var severityMixed = false;
+                        for (int i = 1; i < childrenCount; i++)
+                        {
+                            if (children[i].ReportItem.Severity != firstSeverity)
+                            {
+                                severityMixed = true;
+                                break;
+                            }
+                        }
+                        group.GroupSeverityMixed = severityMixed;
+                        group.GroupSeverity = firstSeverity;
+
+                        group.GroupAreas = null;
+                        group.GroupAreasMixed = false;
+                        for (int i = 0; i < childrenCount; i++)
+                        {
+                            var reportItem = children[i].ReportItem;
+                            var descriptor = reportItem.IsIssue() ? reportItem.Id.GetDescriptor() : null;
+                            if (descriptor == null)
+                                continue;
+
+                            var areas = descriptor.GetAreasSummary();
+                            if (group.GroupAreas == null)
+                            {
+                                group.GroupAreas = areas;
+                            }
+                            else if (areas != group.GroupAreas)
+                            {
+                                group.GroupAreasMixed = true;
+                                break;
+                            }
+                        }
+                    }
+
                     foreach (var child in children)
                     {
                         if (groupIsExpanded)
@@ -320,7 +357,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             string label = null;
             var customPropertyIndex = PropertyTypeUtil.ToCustomIndex(property.Type);
-            if (property.Format == PropertyFormat.Bytes || property.Format == PropertyFormat.Time || property.Format == PropertyFormat.Percentage)
+
+            if (property.Format == PropertyFormat.Bytes || property.Format == PropertyFormat.Time || property.Format == PropertyFormat.Percentage || property.Format == PropertyFormat.Float || property.Format == PropertyFormat.Integer)
             {
                 if (property.Format == PropertyFormat.Bytes)
                 {
@@ -333,6 +371,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     }
 
                     label = Formatting.FormatSize(sum);
+                }
+                else if (property.Format == PropertyFormat.Float)
+                {
+                    float sum = 0;
+                    foreach (var childItem in item.children)
+                    {
+                        var issueTableItem = childItem as IssueTableItem;
+                        var value = issueTableItem.ReportItem.GetCustomPropertyFloat(customPropertyIndex);
+                        sum += value;
+                    }
+                    label = Formatting.FormatFloat(sum, property.DecimalPlaces);
+                }
+                else if (property.Format == PropertyFormat.Integer)
+                {
+                    long sum = 0;
+                    foreach (var childItem in item.children)
+                    {
+                        var issueTableItem = childItem as IssueTableItem;
+                        sum += issueTableItem.ReportItem.GetCustomPropertyInt64(customPropertyIndex);
+                    }
+                    label = sum.ToString();
                 }
                 else
                 {
@@ -420,6 +479,26 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         EditorGUI.LabelField(cellRect, label, labelStyle);
                     }
                 }
+                else if (property.Type == PropertyType.Severity && item.NumVisibleChildren > 0)
+                {
+                    if (item.GroupSeverityMixed)
+                        EditorGUI.LabelField(cellRect, Styles.MixedSeverity, labelStyle);
+                    else
+                        EditorGUI.LabelField(cellRect, Utility.GetSeverityIconWithText(item.GroupSeverity), labelStyle);
+                }
+                else if (property.Type == PropertyType.Areas && item.NumVisibleChildren > 0)
+                {
+                    if (item.GroupAreasMixed)
+                    {
+                        EditorGUI.LabelField(cellRect, Styles.MixedArea, labelStyle);
+                    }
+                    else if (!string.IsNullOrEmpty(item.GroupAreas))
+                    {
+                        var content = EditorGUIUtility.TrTempContent(item.GroupAreas);
+                        content.tooltip = Styles.MixedArea.tooltip;
+                        EditorGUI.LabelField(cellRect, content, labelStyle);
+                    }
+                }
             }
             else
             {
@@ -461,7 +540,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                     case PropertyType.Areas:
                         var areaNames = issue.Id.GetDescriptor().GetAreasSummary();
-                        EditorGUI.LabelField(cellRect, new GUIContent(areaNames, Tooltip.Area), labelStyle);
+                        var content = EditorGUIUtility.TrTempContent(areaNames);
+                        content.tooltip = Styles.MixedArea.tooltip;
+                        EditorGUI.LabelField(cellRect, content, labelStyle);
                         break;
                     case PropertyType.Description:
                         GUIContent guiContent = null;
@@ -521,6 +602,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                                     break;
                                 case PropertyFormat.Percentage:
                                     EditorGUI.LabelField(cellRect, Formatting.FormatPercentage(issue.GetCustomPropertyFloat(customPropertyIndex), 1), labelStyle);
+                                    break;
+                                case PropertyFormat.Float:
+                                    EditorGUI.LabelField(cellRect, Formatting.FormatFloat(issue.GetCustomPropertyFloat(customPropertyIndex), property.DecimalPlaces), labelStyle);
                                     break;
                                 default:
                                     var value = issue.GetCustomProperty(customPropertyIndex);
@@ -963,10 +1047,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         return valueA > valueB ? 1 : (valueA < valueB ? -1 : 0);
                     }
                     if (property.Format == PropertyFormat.Time ||
-                        property.Format == PropertyFormat.Percentage)
+                        property.Format == PropertyFormat.Percentage ||
+                        property.Format == PropertyFormat.Float)
                     {
                         var valueA = GetGroupColumnSumFloat(itemA, customPropertyIndex);
                         var valueB = GetGroupColumnSumFloat(itemB, customPropertyIndex);
+
+                        return valueA > valueB ? 1 : (valueA < valueB ? -1 : 0);
+                    }
+
+                    if (property.Format == PropertyFormat.Integer)
+                    {
+                        var valueA = GetGroupColumnSumLong(itemA, customPropertyIndex);
+                        var valueB = GetGroupColumnSumLong(itemB, customPropertyIndex);
 
                         return valueA > valueB ? 1 : (valueA < valueB ? -1 : 0);
                     }
@@ -1014,6 +1107,19 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 return sum;
             }
 
+            long GetGroupColumnSumLong(IssueTableItem item, int customPropertyIndex)
+            {
+                long sum = 0;
+                foreach (var childItem in item.children)
+                {
+                    var issueTableItem = childItem as IssueTableItem;
+                    var value = issueTableItem.ReportItem.GetCustomPropertyInt64(customPropertyIndex);
+                    sum += value;
+                }
+
+                return sum;
+            }
+
             float GetGroupColumnSumFloat(IssueTableItem item, int customPropertyIndex)
             {
                 float sum = 0;
@@ -1037,10 +1143,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
-        static class Tooltip
+        static class Styles
         {
-            public static string Area = "Areas that this issue might have an impact on";
-            public static string HotPath = "Potential hot-path";
+            public static readonly GUIContent MixedArea = EditorGUIUtility.TrTextContent("Mixed", "Areas that this issue might have an impact on");
+            public static readonly GUIContent MixedSeverity = EditorGUIUtility.TrTextContent("Mixed");
         }
     }
 }

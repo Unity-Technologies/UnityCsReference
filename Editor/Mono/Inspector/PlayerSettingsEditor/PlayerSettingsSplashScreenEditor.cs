@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using UnityEngine;
 using UnityEditor.Build;
 using UnityEngine.Events;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -50,7 +51,9 @@ namespace UnityEditor
         static readonly Color32 k_DarkOnLightBgColor = new Color32(204, 204, 204, 255);// #CCCCCC
         static readonly Color32 k_LightOnDarkBgColor = new Color32(35, 31, 32, 255);
 
+        [NoAutoStaticsCleanup] // sprite is a built-in asset reference; safe to persist across code reload
         static Sprite s_UnityLogoLight; // We use this version as a placeholder when the logo is in the list.
+        [NoAutoStaticsCleanup] // sprite is a built-in asset reference; safe to persist across code reload
         static Sprite s_UnityLogoDark;
 
         readonly AnimBool m_ShowAnimationControlsAnimator = new AnimBool();

@@ -16,7 +16,7 @@ namespace Unity.Hierarchy
         readonly Dictionary<string, object> m_GenericData;
 
         /// <summary>
-        /// Gets the <see cref="HierarchyNode"/> instances involved in the drag and drop operation.
+        /// Gets the <see cref="HierarchyNode"/> instances involved in the drag and drop operation. Only nodes for the current handler are included.
         /// </summary>
         public ReadOnlySpan<HierarchyNode> Nodes { get; }
 

@@ -266,13 +266,15 @@ namespace UnityEditorInternal
         {
             CollectIncludedAndExcludedModules(out var forceIncludeModules, out var forceExcludeModules);
 
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var typesInScenes = GetTypesInScenesInformation(args.report, args.usedClassRegistry)
+                .OrderBy(data => data.fullManagedTypeName ?? data.nativeClass)
+                .ToArray();
+#pragma warning restore UA2001
+
             var editorToLinkerData = new EditorToLinkerData
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                typesInScenes = GetTypesInScenesInformation(args.report, args.usedClassRegistry)
-#pragma warning restore UA2001
-                    .OrderBy(data => data.fullManagedTypeName ?? data.nativeClass)
-                    .ToArray(),
+                typesInScenes = typesInScenes,
                 allNativeTypes = CollectNativeTypeData().ToArray(),
                 forceIncludeModules = forceIncludeModules.ToArray(),
                 forceExcludeModules = forceExcludeModules.ToArray()
@@ -291,9 +293,10 @@ namespace UnityEditorInternal
                 var unityType = UnityType.FindTypeByName(nativeClass);
 
                 var managedName = RuntimeClassMetadataUtils.ScriptingWrapperTypeNameForNativeID(unityType.persistentTypeID);
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var usedInScenes = rcr.GetScenesForClass(unityType.persistentTypeID)?.OrderBy(p => p);
-#pragma warning restore UA2001
+
+                var usedInScenes = rcr.GetScenesForClass(unityType.persistentTypeID)?.ToArray();
+                if (usedInScenes != null)
+                    Array.Sort(usedInScenes);
 
                 bool noManagedType = unityType.persistentTypeID != 0 && managedName == "UnityEngine.Object";
                 var information = new EditorToLinkerData.TypeInSceneData(
@@ -301,9 +304,7 @@ namespace UnityEditorInternal
                     noManagedType ? null : managedName,
                     nativeClass,
                     unityType.module,
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    usedInScenes != null ? usedInScenes.ToArray() : null);
-#pragma warning restore UA2001
+                    usedInScenes);
 
                 items.Add(information);
             }
@@ -407,26 +408,14 @@ namespace UnityEditorInternal
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var groupedByAssembly = rcr.GetMethodsToPreserve().GroupBy(m => m.assembly);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             foreach (var assembly in groupedByAssembly.OrderBy(a => a.Key))
-#pragma warning restore UA2001
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var assemblyName = assembly.Key;
-#pragma warning restore UA2001
                 sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\" ignoreIfMissing=\"1\">", assemblyName));
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var groupedByType = assembly.GroupBy(m => m.fullTypeName);
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 foreach (var type in groupedByType.OrderBy(t => t.Key))
-#pragma warning restore UA2001
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     sb.AppendLine(string.Format("\t\t<type fullname=\"{0}\">", EscapeXmlString(type.Key)));
-#pragma warning restore UA2001
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                     foreach (var method in type.OrderBy(m => m.methodName))
 #pragma warning restore UA2001
                         sb.AppendLine(string.Format("\t\t\t<method name=\"{0}\"/>", EscapeXmlString(method.methodName)));

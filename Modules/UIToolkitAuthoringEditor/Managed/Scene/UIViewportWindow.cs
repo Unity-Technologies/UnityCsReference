@@ -53,27 +53,16 @@ partial class UIViewportWindow : EditorWindow
 
     VisualElement m_EnterStageModeOverlay;
     VisualElement m_ViewportOverlay;
+    Button m_OpenSettingsButton;
 
     [OnCodeLoaded]
     static void Initialize()
     {
-        UIToolkitAuthoringSettings.UIStagesChanged += OnUIStagesChanged;
-        EditorApplication.delayCall += () => OnUIStagesChanged(UIToolkitAuthoringSettings.EnableUIStages);
         s_ShortcutContext = new ShortcutContext();
         EditorApplication.delayCall += () => ShortcutIntegration.instance.contextManager.RegisterToolContext(s_ShortcutContext);
     }
 
-    static void OnUIStagesChanged(bool enabled)
-    {
-        if (enabled)
-        {
-            Menu.AddMenuItem(k_MenuPath, "", false, k_MenuPriority, ShowWindow, null);
-            return;
-        }
-
-        Menu.RemoveMenuItem(k_MenuPath);
-    }
-
+    [MenuItem(k_MenuPath, false, 3010, secondaryPriority = 3)]
     static void ShowWindow()
     {
         GetWindow<UIViewportWindow>();
@@ -114,12 +103,14 @@ partial class UIViewportWindow : EditorWindow
         titleContent.text = "UI Viewport";
         titleContent.image = UIResources.GetIconForType(typeof(UIViewportWindow), UIResources.RequestSize.Px16, GetPixelsPerPoint(rootVisualElement)).texture;
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
         s_OpenWindows.Add(this);
     }
 
     void OnDisable()
     {
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
         s_OpenWindows.Remove(this);
         if (s_LastFocusedWindow == this)
             s_LastFocusedWindow = null;
@@ -146,13 +137,21 @@ partial class UIViewportWindow : EditorWindow
 
         m_EnterStageModeOverlay = rootVisualElement.Q(className: EnterStageModeWarningContainerUssClass);
         m_ViewportOverlay = rootVisualElement.Q(className: ViewportWrapperContainerUssClass);
+        m_OpenSettingsButton = rootVisualElement.Q<Button>("unity-ui-viewport__open-settings-button");
+        m_OpenSettingsButton.clicked += UIToolkitAuthoringSettingsProvider.OpenSettings;
+        UpdateOpenSettingsButton();
         m_Canvas = rootVisualElement.Q<UICanvas>(CanvasUssClass);
         m_Viewport = rootVisualElement.Q<UIViewport>(ViewportUssClass);
         m_UxmlPreview = rootVisualElement.Q<UxmlCodePreview>();
         m_UssPreview = rootVisualElement.Q<UssCodePreview>();
 
+        rootVisualElement.RegisterCallback<CanvasManipulatorMessageEvent>(OnCanvasManipulatorMessage);
+
         OnStageChanged(StageUtility.GetCurrentStage());
     }
+
+    void OnCanvasManipulatorMessage(CanvasManipulatorMessageEvent e) =>
+        ShowNotification(new GUIContent(e.Message, EditorGUIUtility.FindTexture("console.warnicon")), 4);
 
     void OnDestroy()
     {
@@ -176,6 +175,21 @@ partial class UIViewportWindow : EditorWindow
             SetToolbarBreadcrumbs();
         else
             m_Viewport.ClearBreadcrumbs();
+    }
+
+    void OnEnableInSceneAuthoringChanged(bool enabled)
+    {
+        UpdateOpenSettingsButton();
+    }
+
+    void UpdateOpenSettingsButton()
+    {
+        if (m_OpenSettingsButton == null)
+            return;
+
+        m_OpenSettingsButton.style.display = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
+            ? DisplayStyle.None
+            : DisplayStyle.Flex;
     }
 
     void SetToolbarBreadcrumbs()
@@ -242,16 +256,20 @@ partial class UIViewportWindow : EditorWindow
 
     void OnThemeMenuThemeSelected(ThemeStyleSheet theme)
     {
+        SetPreviewThemeCommand.Execute(CommandSources.Viewport, m_ThemeState, theme);
+
         if (m_Canvas.PanelElement != null)
             m_Canvas.PanelElement.ThemeStyleSheet = theme;
-        m_ThemeState.SelectedTheme = theme;
     }
 
     internal void ClearThemeMenu()
     {
         if (m_Viewport?.ThemeMenu != null)
+        {
             m_Viewport.ThemeMenu.ThemeSelected -= OnThemeMenuThemeSelected;
-        m_Viewport?.ThemeMenu.ClearItems();
+            m_Viewport.ThemeMenu.ClearItems();
+        }
+
         if (m_Canvas?.PanelElement != null)
             m_Canvas.PanelElement.ThemeStyleSheet = null;
     }

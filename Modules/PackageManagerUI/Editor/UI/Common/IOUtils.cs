@@ -40,6 +40,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string GetFileName(string filePath) => new NPath(filePath).FileName;
 
+        public static string GetFileNameWithoutExtension(string filePath) => new NPath(filePath).FileNameWithoutExtension;
+
         public static string GetParentDirectory(string path) => new NPath(path).Parent.ToString(SlashMode.Native);
     }
 }

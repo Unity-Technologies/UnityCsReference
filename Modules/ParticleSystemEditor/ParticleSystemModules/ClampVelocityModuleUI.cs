@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -34,6 +35,7 @@ namespace UnityEditor
             public GUIContent multiplyDragByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Size", "Adjust the drag based on the size of the particles.");
             public GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TrTextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
 

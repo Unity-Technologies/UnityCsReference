@@ -16,6 +16,8 @@ namespace UnityEditorInternal
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static partial class AnimationWindowUtility
     {
+        public const float MaxDisplayableKeyValue = 5e5f;
+
         private static readonly List<IAnimationWindowPropertyHandler> s_PropertyHandlers = new();
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -51,6 +53,10 @@ namespace UnityEditorInternal
             Type type = state.selection.GetValueType(curve.binding);
 
             object currentValue = CurveBindingUtility.GetCurrentValue(state, curve.binding);
+
+            if (currentValue is float f)
+                currentValue = float.IsNaN(f) ? 0f : Mathf.Clamp(f, -MaxDisplayableKeyValue, MaxDisplayableKeyValue);
+
             if (curve.length == 0.0F)
             {
                 AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, clip.frameRate));
@@ -561,9 +567,12 @@ namespace UnityEditorInternal
 
         private const string k_ComponentPathSeparator = "  :  ";
 
-        private static string FormatComponentPathDisplayName(Type componentType, string displayPath)
+        private static string FormatComponentPathDisplayName(Type componentType, string propertyName, string displayPath)
         {
-            return ObjectNames.NicifyVariableName(componentType.Name) + k_ComponentPathSeparator + displayPath.Replace("/", k_ComponentPathSeparator);
+            string path = displayPath.Replace("/", k_ComponentPathSeparator);
+            if (!ShouldPrefixWithTypeName(componentType, propertyName))
+                return path;
+            return ObjectNames.NicifyVariableName(componentType.Name) + k_ComponentPathSeparator + path;
         }
 
         // Takes raw animation curve propertyname and makes it pretty
@@ -593,6 +602,12 @@ namespace UnityEditorInternal
 
             if (animatableObjectType == typeof(SpriteRenderer) && propertyName == "m_Sprite")
                 return false;
+
+            // A registered handler may declare this curve component-less (e.g. binder-routed style
+            // channels with no owning component on a GameObject), in which case it gets no prefix.
+            foreach (var h in s_PropertyHandlers)
+                if (!h.ShouldPrefixWithTypeName(animatableObjectType, propertyName))
+                    return false;
 
             return true;
         }
@@ -624,7 +639,7 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(curveBinding.propertyName) && curveBinding.propertyName.IndexOf('/') >= 0)
             {
                 GetGroupDisplayPath(curveBinding.propertyName, out string displayPath, out fullPathForTooltip);
-                return FormatComponentPathDisplayName(animatableObjectType, displayPath);
+                return FormatComponentPathDisplayName(animatableObjectType, curveBinding.propertyName, displayPath);
             }
             fullPathForTooltip = null;
             return GetNicePropertyDisplayName(curveBinding, so);
@@ -665,7 +680,7 @@ namespace UnityEditorInternal
             if (!string.IsNullOrEmpty(curveBinding.propertyName) && curveBinding.propertyName.IndexOf('/') >= 0)
             {
                 GetGroupDisplayPath(curveBinding.propertyName, out string displayPath, out fullPathForTooltip);
-                return FormatComponentPathDisplayName(animatableObjectType, displayPath);
+                return FormatComponentPathDisplayName(animatableObjectType, curveBinding.propertyName, displayPath);
             }
             fullPathForTooltip = null;
             return GetNicePropertyGroupDisplayName(curveBinding, so);
@@ -875,7 +890,7 @@ namespace UnityEditorInternal
 
         public static int GetPropertyNodeID(int setId, string path, System.Type type, string propertyName)
         {
-            return (setId + path + type.Name + propertyName).GetHashCode();
+            return (setId + path + type.Name + RotationCurveInterpolation.GetPropertyNameForHashing(type, propertyName)).GetHashCode();
         }
 
         public static void SyncTimeArea(TimeArea from, TimeArea to)

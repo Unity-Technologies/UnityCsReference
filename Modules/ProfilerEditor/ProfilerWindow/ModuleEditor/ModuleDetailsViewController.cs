@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Profiling.ModuleEditor
@@ -407,6 +408,7 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         class ModuleDetailsItemData
         {
+            [NoAutoStaticsCleanup] // Counter resets to 0 on reload; tree view items are rebuilt on next use, safe to persist
             static int s_NextId = 0;
 
             public TreeViewItemData<string> treeViewItem { get; }

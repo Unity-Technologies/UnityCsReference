@@ -594,8 +594,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
             var outputModel = (PortModel)output;
             var inputModel = (PortModel)input;
 
-            if (VirtualWireBuilder.TryGetVirtualWire(outputModel, inputModel, out _))
-                return new Wire(output.ID, input.ID);
+            if (VirtualWireBuilder.TryGetVirtualWire(outputModel, inputModel, out var virtualWire))
+                return new Wire(output, input, virtualWire);
 
             return null;
         }

@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -17,7 +18,7 @@ namespace UnityEditor.Profiling
         Editmode
     }
 
-    internal class ProfilerUserSettings
+    internal partial class ProfilerUserSettings
     {
         // User setting keys. Don't localize!
         const string k_SettingsPrefix = "Profiler.";
@@ -46,10 +47,14 @@ namespace UnityEditor.Profiling
         private const int kMaxCustomIDLength = 26;
 
         [SerializeField]
+        [NoAutoStaticsCleanup] // Frame counter used for profiler capture; persisting avoids resetting the count on reload
         private static int m_FrameCount = 0;
 
+        [AutoStaticsCleanupOnCodeReload]
         public static Action settingsChanged;
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action CaptureStoragePathChanged;
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action targetFramesPerSecondChanged;
 
         public static string ProfilerCaptureStoragePath

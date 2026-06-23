@@ -13,3 +13,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Entities.Editor")]
+[assembly: InternalsVisibleTo("Unity.Scenes.Editor")]

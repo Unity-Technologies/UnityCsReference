@@ -8,10 +8,11 @@ using UnityEngine;
 namespace Unity.GraphToolkit.Editor.GraphVisualization;
 
 /// <summary>
-/// Identifies a node inside a visualization <see cref="Context"/> so visualization changes such as fill amount and progress can be applied to it.
+/// Identifies a node inside a visualization <see cref="Context"/> so visualization changes can be applied to it.
 /// </summary>
 /// <remarks>
 /// Obtain a <see cref="NodeReference"/> from <see cref="Context.GetNodeReference"/>. The reference is only meaningful for the <see cref="Context"/> that produced it.
+/// You can use its properties to set, retrieve, or clear customization for that specific node in the graph canvas.
 /// Two <see cref="NodeReference"/> values are equal when they share the same <see cref="NodeID"/> and refer to the same <see cref="Context"/> instance.
 /// </remarks>
 /// <example>
@@ -30,6 +31,8 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// context.Motion.Stop(nodeRef);
 /// </code>
 /// </example>
+/// <seealso cref="Context"/>
+/// <seealso cref="Context.GetNodeReference(Hash128)"/>
 public readonly struct NodeReference : IEquatable<NodeReference>
 {
     /// <summary>
@@ -38,7 +41,7 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     public readonly Hash128 NodeID { get; }
 
     /// <summary>
-    /// The visualization context that produced this reference.
+    /// Visualization context that produced the current node reference.
     /// </summary>
     public readonly Context Context { get; }
 
@@ -51,10 +54,12 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     /// <summary>
     /// The progress fill amount displayed on the referenced node's accent bar, expressed as a percentage.
     /// </summary>
+    /// <exception cref="ObjectDisposedException">Thrown when you access this method after you call <see cref="Context.Dispose"/> on the context.</exception>
     /// <remarks>
     /// Accepted values range from -100 to 100. A positive value fills the bar from left to right.
     /// A negative value fills it from right to left. A value of <c>0</c> hides the bar.
     /// Setting this property has no effect when the <see cref="NodeReference"/> has no associated <see cref="Context"/>, such as when it is <c>default</c>.
+    /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
     /// </remarks>
     public readonly float FillAmount
     {
@@ -65,62 +70,49 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     /// <summary>
     /// Clears all customization previously applied to the referenced node, removes any fill amount, and stops any looping animation.
     /// </summary>
+    /// <exception cref="ObjectDisposedException">Thrown when you access this method after you call <see cref="Context.Dispose"/> on the context.</exception>
     /// <remarks>
     /// Resets the referenced node's accent bar to its inactive state.
     /// This call removes any fill amount previously set through <see cref="FillAmount"/> and stops any looping animation started through <see cref="GraphMotion.Play"/>.
-    /// Once the request completes, the node returns to the visual state it would have without any visualization data.
-    /// Calling this method has no effect when the <see cref="NodeReference"/> has no associated <see cref="Context"/>, such as when it is <c>default</c>.
+    /// If the current reference does not correspond to any node in the graph, any stored visual data for that node is removed and the call has no further effect.
+    /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
     /// </remarks>
+    /// <example>
+    /// Remove every visual override previously applied to a node and resets the referenced node's accent bar to its inactive state.
+    /// <code>
+    /// NodeReference node = context.GetNodeReference(nodeID);
+    /// node.ClearCustomization();
+    /// </code>
+    /// </example>
     public readonly void ClearCustomization()
     {
         Context?.NodeAccent.ClearNodeAccent(NodeID);
     }
 
     /// <summary>
-    /// Indicates whether this <see cref="NodeReference"/> is equal to another <see cref="NodeReference"/>.
+    /// Indicates whether the current <see cref="NodeReference"/> is equal to another <see cref="NodeReference"/>.
     /// </summary>
-    /// <param name="other">The other <see cref="NodeReference"/> to compare with this instance.</param>
+    /// <param name="other">The other <see cref="NodeReference"/> to compare with the current instance.</param>
     /// <returns>true if both references share the same <see cref="NodeID"/> and refer to the same <see cref="Context"/> instance. Otherwise, false.</returns>
-    /// <example>
-    /// <code>
-    /// NodeReference a = context.GetNodeReference(nodeID);
-    /// NodeReference b = context.GetNodeReference(nodeID);
-    /// bool sameTarget = a.Equals(b); // true: same context, same node ID
-    /// </code>
-    /// </example>
     public bool Equals(NodeReference other)
     {
         return NodeID == other.NodeID && ReferenceEquals(Context, other.Context);
     }
 
     /// <summary>
-    /// Indicates whether this <see cref="NodeReference"/> is equal to another object.
+    /// Indicates whether the current <see cref="NodeReference"/> is equal to another object.
     /// </summary>
-    /// <param name="obj">The object to compare with this <see cref="NodeReference"/>.</param>
-    /// <returns>true if <paramref name="obj"/> is a <see cref="NodeReference"/> equal to this instance. Otherwise, false.</returns>
-    /// <example>
-    /// <code>
-    /// NodeReference nodeRef = context.GetNodeReference(nodeID);
-    /// object boxed = context.GetNodeReference(nodeID);
-    /// bool sameTarget = nodeRef.Equals(boxed); // true
-    /// </code>
-    /// </example>
+    /// <param name="obj">The object to compare with the current <see cref="NodeReference"/>.</param>
+    /// <returns>true if <paramref name="obj"/> is a <see cref="NodeReference"/> equal to the current instance. Otherwise, false.</returns>
     public override bool Equals(object obj)
     {
         return obj is NodeReference other && Equals(other);
     }
 
     /// <summary>
-    /// Returns a hash code for this <see cref="NodeReference"/>.
+    /// Returns a hash code for the current <see cref="NodeReference"/>.
     /// </summary>
-    /// <returns>A hash code derived from the <see cref="NodeID"/> and <see cref="Context"/> of this reference.</returns>
-    /// <example>
-    /// <code>
-    /// HashSet&lt;NodeReference&gt; seen = new HashSet&lt;NodeReference&gt;();
-    /// NodeReference nodeRef = context.GetNodeReference(nodeID);
-    /// seen.Add(nodeRef); // GetHashCode is used implicitly by the HashSet
-    /// </code>
-    /// </example>
+    /// <returns>A hash code derived from the <see cref="NodeID"/> and <see cref="Context"/> of the current reference.</returns>
     public override int GetHashCode()
     {
         return HashCode.Combine(NodeID, Context);

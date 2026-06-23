@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.Lighting.Utilities;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
@@ -12,11 +13,13 @@ namespace UnityEditor.Lighting.LightingSearch
     /// Caches lightmap textures with UV overlays and exposure adjustments.
     /// Call <see cref="Clear"/> when exposure changes to regenerate cached textures.
     /// </summary>
-    internal static class LightmapTextureCache
+    internal static partial class LightmapTextureCache
     {
+        [AutoStaticsCleanupOnCodeReload]
         static readonly Dictionary<EntityId, Texture2D> s_CachedTextures = new();
 
-        static LightmapTextureCache()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             LightingSearchExposureSettings.ExposureChanged += Clear;
         }

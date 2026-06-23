@@ -34,6 +34,7 @@ namespace UnityEditor.UIElements
         readonly List<EntityId> m_PanelOrder = new List<EntityId>();
         readonly HashSet<EntityId> m_PanelsSeen = new HashSet<EntityId>();
         readonly Dictionary<EntityId, UIToolkitPanelUpdateMetricsInfo> m_PanelUpdateMetrics = new Dictionary<EntityId, UIToolkitPanelUpdateMetricsInfo>();
+        readonly Dictionary<EntityId, int> m_PanelEventCounts = new Dictionary<EntityId, int>();
         readonly float[] m_CounterTotalsScratch;
 
         PanelComponentsPaneController m_PanelComponentsPane;
@@ -51,6 +52,7 @@ namespace UnityEditor.UIElements
             public uint hierarchyVersionChanges;
             public uint repaintVersionChanges;
             public int visualElementCount;
+            public int eventCount;
         }
 
         public UIToolkitProfilerModuleDetailsView(ProfilerWindow profilerWindow, ProfilerCounterDescriptor[] counters, string[] hierarchyMarkerNames, string[] columnDisplayTitles)
@@ -111,6 +113,20 @@ namespace UnityEditor.UIElements
                 column.bindHeader = (ve) => UIToolkitProfilerToolbarHelpers.BindColumnHeaderWithTooltip(ve, column, headerTooltip);
                 columns.Add(column);
             }
+
+            var eventsColumn = new Column
+            {
+                name = "events",
+                title = L10n.Tr("Events"),
+                minWidth = 60,
+                width = 80,
+                makeHeader = UIToolkitProfilerToolbarHelpers.CreateDefaultColumnHeaderContent,
+                comparison = (a, b) => GetRowData(a).eventCount.CompareTo(GetRowData(b).eventCount),
+                bindCell = (e, index) => ((Label)e).text = GetRowData(index).eventCount.ToString("N0"),
+            };
+            var eventsHeaderTooltip = L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.");
+            eventsColumn.bindHeader = (ve) => UIToolkitProfilerToolbarHelpers.BindColumnHeaderWithTooltip(ve, eventsColumn, eventsHeaderTooltip);
+            columns.Add(eventsColumn);
 
             columns.Add(new Column
             {
@@ -273,6 +289,7 @@ namespace UnityEditor.UIElements
 
                         CollectUpdaterSamplesFromHierarchy(hierarchyData, hierarchyData.GetRootItemID());
                         LoadPanelUpdateMetrics(rawFrameData);
+                        UIToolkitProfilerToolbarHelpers.CollectEventCountsByPanel(rawFrameData, m_PanelEventCounts);
 
                         BuildRows(rawFrameData);
                     }
@@ -453,6 +470,7 @@ namespace UnityEditor.UIElements
                 }
 
                 var hasUpdateMetrics = m_PanelUpdateMetrics.TryGetValue(panelEntityId, out var updateMetrics);
+                m_PanelEventCounts.TryGetValue(panelEntityId, out var eventCount);
 
                 m_RootItems.Add(new TreeViewItemData<PanelDetailRow>(nextId++, new PanelDetailRow
                 {
@@ -464,6 +482,7 @@ namespace UnityEditor.UIElements
                     hierarchyVersionChanges = updateMetrics.hierarchyVersionChanges,
                     repaintVersionChanges = updateMetrics.repaintVersionChanges,
                     visualElementCount = updateMetrics.visualElementCount,
+                    eventCount = eventCount,
                 }));
             }
         }
@@ -476,7 +495,7 @@ namespace UnityEditor.UIElements
             Array.Clear(m_CounterTotalsScratch, 0, m_CounterTotalsScratch.Length);
             var totalTimeSum = 0f;
             ulong hierarchySum = 0, repaintSum = 0;
-            long veSum = 0;
+            long veSum = 0, eventSum = 0;
             var anyMetrics = false;
             for (var r = 0; r < m_RootItems.Count; r++)
             {
@@ -484,6 +503,7 @@ namespace UnityEditor.UIElements
                 for (var i = 0; i < m_CounterTotalsScratch.Length && i < row.counterTimesMs.Length; i++)
                     m_CounterTotalsScratch[i] += row.counterTimesMs[i];
                 totalTimeSum += row.totalTimeMs;
+                eventSum += row.eventCount;
                 if (!row.hasUpdateMetrics)
                     continue;
                 anyMetrics = true;
@@ -496,6 +516,7 @@ namespace UnityEditor.UIElements
             for (var i = 0; i < m_Counters.Length; i++)
                 m_TreeView.SetTotalCell(m_Counters[i].Name, FormatTime(m_CounterTotalsScratch[i]));
             m_TreeView.SetTotalCell("total", FormatTime(totalTimeSum));
+            m_TreeView.SetTotalCell("events", eventSum.ToString("N0"));
             // Same '—' convention as the per-row cells when no panel reported metrics this frame.
             m_TreeView.SetTotalCell("hierarchyChanges", anyMetrics ? hierarchySum.ToString("N0") : UIToolkitProfilerToolbarHelpers.NoDataCell);
             m_TreeView.SetTotalCell("repaintChanges", anyMetrics ? repaintSum.ToString("N0") : UIToolkitProfilerToolbarHelpers.NoDataCell);

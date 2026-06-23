@@ -128,6 +128,7 @@ namespace UnityEditor
                 var toolManagerState = EditorToolManager.instance.GetOrCreateStateForType(stateToolOwnerType);
                 if (pivotModeType == null)
                 {
+                    m_ActivePivotMode?.OnWillBeDeactivated();
                     m_ActivePivotMode = null;
                     if (toolManagerState != null)
                         toolManagerState.pivotMode = PivotMode.Custom;
@@ -137,7 +138,9 @@ namespace UnityEditor
                 CheckAndThrowIfTypeIncompatible(pivotModeType, typeof(CustomPivotMode), stateToolOwnerType);
                 if (toolManagerState != null)
                 {
+                    m_ActivePivotMode?.OnWillBeDeactivated();
                     m_ActivePivotMode = (CustomPivotMode)toolManagerState.GetSingleton(pivotModeType);
+                    m_ActivePivotMode.OnActivated();
 
                     if (IsBuiltInPivotMode(m_ActivePivotMode))
                         m_LastBuiltInPivotMode = m_ActivePivotMode;
@@ -165,6 +168,7 @@ namespace UnityEditor
                 var toolManagerState = EditorToolManager.instance.GetOrCreateStateForType(stateToolOwnerType);
                 if (pivotRotationType == null)
                 {
+                    m_ActivePivotRotation?.OnWillBeDeactivated();
                     m_ActivePivotRotation = null;
                     if (toolManagerState != null)
                         toolManagerState.pivotRotation = PivotRotation.Custom;
@@ -174,7 +178,9 @@ namespace UnityEditor
                 CheckAndThrowIfTypeIncompatible(pivotRotationType, typeof(CustomPivotRotation), stateToolOwnerType);
                 if (toolManagerState != null)
                 {
+                    m_ActivePivotRotation?.OnWillBeDeactivated();
                     m_ActivePivotRotation = (CustomPivotRotation)toolManagerState.GetSingleton(pivotRotationType);
+                    m_ActivePivotRotation.OnActivated();
 
                     if (IsBuiltInPivotRotation(m_ActivePivotRotation))
                         m_LastBuiltInPivotRotation = m_ActivePivotRotation;

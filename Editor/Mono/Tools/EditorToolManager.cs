@@ -284,7 +284,11 @@ namespace UnityEditor.EditorTools
                     }
 
                     m_ActiveTool = tool;
-                    m_ActiveTool.Activate(stateToolOwnerType);
+
+                    if (m_ActiveTool is IHasToolOwner toolWithOwner)
+                        toolWithOwner.SetToolOwner(stateToolOwnerType);
+
+                    m_ActiveTool.Activate();
 
                     ToolManager.ActiveToolDidChange(stateToolOwnerType);
 
@@ -348,6 +352,9 @@ namespace UnityEditor.EditorTools
                     ToolManager.ActiveContextWillChange(stateToolOwnerType);
                     m_ActiveToolContext = ctx;
 
+                    if (ctx is IHasToolOwner ctxWithOwner)
+                        ctxWithOwner.SetToolOwner(stateToolOwnerType);
+
                     ctx.Activate();
 
                     RebuildAvailableTools();
@@ -408,7 +415,7 @@ namespace UnityEditor.EditorTools
                 AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
 
                 if (activeTool != null)
-                    EditorApplication.delayCall += () => activeTool.Activate(stateToolOwnerType);
+                    EditorApplication.delayCall += () => activeTool.Activate();
                 if (activeToolContext != null)
                     EditorApplication.delayCall += () => activeToolContext.Activate();
             }
@@ -685,16 +692,16 @@ namespace UnityEditor.EditorTools
 
                 if (res != null)
                 {
-                    if (res is EditorToolContext ctx)
-                        ctx.SetContextOwner(stateToolOwnerType);
+                    if (res is IHasToolOwner toolWithOwner)
+                        toolWithOwner.SetToolOwner(stateToolOwnerType);
                     return res;
                 }
 
                 res = CreateInstance(type);
                 res.hideFlags = HideFlags.DontSave;
                 singletonObjects.Add(res);
-                if (res is EditorToolContext context)
-                    context.SetContextOwner(stateToolOwnerType);
+                if (res is IHasToolOwner newToolWithOwner)
+                    newToolWithOwner.SetToolOwner(stateToolOwnerType);
 
                 return res;
             }

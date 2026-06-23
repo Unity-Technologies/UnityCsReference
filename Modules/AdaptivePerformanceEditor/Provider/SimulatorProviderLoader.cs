@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.AdaptivePerformance;
 using UnityEditor.AdaptivePerformance.Editor;
 using UnityEngine.AdaptivePerformance.Provider;
@@ -16,6 +17,7 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
     [AdaptivePerformanceSupportedBuildTargetAttribute(BuildTargetGroup.Standalone)]
     public class SimulatorProviderLoader : AdaptivePerformanceLoaderHelper
     {
+        [NoAutoStaticsCleanup] // populated by native subsystem registration, not C# state
         static List<AdaptivePerformanceSubsystemDescriptor> s_SimulatorSubsystemDescriptors =
             new List<AdaptivePerformanceSubsystemDescriptor>();
 

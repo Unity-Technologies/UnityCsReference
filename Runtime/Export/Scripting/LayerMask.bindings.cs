@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -64,6 +65,37 @@ namespace UnityEngine
                     mask |= 1 << layer;
             }
             return mask;
+        }
+
+        // LayerToName is a main-thread-only native call, so ToString would throw if a
+        // LayerMask were formatted (e.g. via Debug.Log) on a background thread. Off the
+        // main thread we skip the name lookup and list the set layer indices instead.
+        [NativeMethod(Name = "CurrentThreadIsMainThread", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static bool CurrentThreadIsMainThread();
+
+        public override string ToString()
+        {
+            if (m_Mask == 0)
+                return "Nothing";
+            if (m_Mask == -1)
+                return "Everything";
+
+            bool onMainThread = CurrentThreadIsMainThread();
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < 32; i++)
+            {
+                if ((m_Mask & (1 << i)) != 0)
+                {
+                    if (sb.Length > 0)
+                        sb.Append(", ");
+
+                    var name = onMainThread ? LayerToName(i) : null;
+                    sb.Append(string.IsNullOrEmpty(name) ? i.ToString() : name);
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }

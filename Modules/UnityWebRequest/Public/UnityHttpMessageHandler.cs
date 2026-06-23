@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.Networking
@@ -29,6 +30,7 @@ namespace UnityEngine.Networking
     public sealed class UnityHttpMessageHandler : HttpMessageHandler
     {
         private static readonly string ContentTypeHeaderKey = "Content-Type";
+        [NoAutoStaticsCleanup] // platform factory injected once at startup; resetting would break HTTP handling
         private static IUnityHttpMessageHandlerFactory s_underlyingHttpHandlerFactory = null;
         private HttpMessageHandler _underlyingHttpMessageHandler = null;
         private bool _underlyingMessageHandlerOwnsCertificateHandler = false;

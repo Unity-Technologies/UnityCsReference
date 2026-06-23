@@ -5,17 +5,6 @@
 using System;
 using UnityEngine.Scripting;
 
-namespace AOT
-{
-    // Mono AOT compiler detects this attribute by name and generates required wrappers for
-    // native->managed callbacks. Works only for static methods.
-    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = true)]
-    public class MonoPInvokeCallbackAttribute : Attribute
-    {
-        public MonoPInvokeCallbackAttribute(Type type) {}
-    }
-}
-
 namespace UnityEngine
 {
     [RequiredByNativeCode]

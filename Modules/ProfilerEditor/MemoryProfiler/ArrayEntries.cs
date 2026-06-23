@@ -461,6 +461,27 @@ namespace UnityEditor.Profiling.Memory.Experimental
             return BitConverter.ToUInt32(data, (int)startIndex);
         }
 
+        public static ulong ToUInt64Packed(byte[] data, uint startIndex, uint numBytes)
+        {
+            switch (numBytes)
+            {
+                case sizeof(ushort):
+                {
+                    ushort v = BitConverter.ToUInt16(data, (int)startIndex);
+                    return v == 0xFFFF ? ulong.MaxValue : v;
+                }
+                case sizeof(uint):
+                {
+                    uint v = BitConverter.ToUInt32(data, (int)startIndex);
+                    return v == 0xFFFFFFFF ? ulong.MaxValue : v;
+                }
+                case sizeof(ulong):
+                    return BitConverter.ToUInt64(data, (int)startIndex);
+                default:
+                    throw new IOException("Invalid packed index entry size");
+            }
+        }
+
         public static ulong ToUInt64WithMask(byte[] data, uint startIndex, uint numBytes)
         {
             const ulong bitMask = ulong.MaxValue >> 1;

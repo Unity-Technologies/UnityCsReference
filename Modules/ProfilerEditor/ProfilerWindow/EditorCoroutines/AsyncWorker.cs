@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace Unity.Profiling.Editor.UI
@@ -13,6 +14,7 @@ namespace Unity.Profiling.Editor.UI
     abstract class BaseAsyncWorker : IDisposable
     {
         // Track the active count of Async workers
+        [NoAutoStaticsCleanup] // instance counter, safe to persist across reloads
         protected static int s_ActiveInstanceCount = 0;
         public static int ActiveInstanceCount => Interlocked.Add(ref s_ActiveInstanceCount, 0);
 

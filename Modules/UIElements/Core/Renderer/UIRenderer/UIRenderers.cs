@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
@@ -11,23 +12,24 @@ namespace UnityEngine.UIElements.UIR
     [Flags]
     enum CommandType
     {
-        Draw                = 1 << 0,
-        Immediate           = 1 << 1,
-        ImmediateCull       = 1 << 2,
-        PushView            = 1 << 3,
-        PopView             = 1 << 4,
-        PushScissor         = 1 << 5,
-        PopScissor          = 1 << 6,
-        PushDefaultMaterial = 1 << 7,
-        PopDefaultMaterial  = 1 << 8,
-        BeginDisable        = 1 << 9,
-        EndDisable          = 1 << 10,
-        CutRenderChain      = 1 << 11,
-        BeginPanelComponent = 1 << 12,  // Profiler-only marker
-        EndPanelComponent   = 1 << 13,  // Profiler-only marker
+        Draw                          = 1 << 0,
+        Immediate                     = 1 << 1,
+        ImmediateCull                 = 1 << 2,
+        PushView                      = 1 << 3,
+        PopView                       = 1 << 4,
+        PushScissor                   = 1 << 5,
+        PopScissor                    = 1 << 6,
+        PushDefaultMaterial           = 1 << 7,
+        PopDefaultMaterial            = 1 << 8,
+        BeginDisable                  = 1 << 9,
+        EndDisable                    = 1 << 10,
+        CutRenderChain                = 1 << 11,
+        BeginPanelComponent           = 1 << 12,  // Profiler-only marker
+        EndPanelComponent             = 1 << 13,  // Profiler-only marker
+        GenerateBackdropFilterTexture = 1 << 14,
 
         // Pair masks for hot-path "is any variant of X" checks.
-        AnyImmediate        = Immediate | ImmediateCull,
+        AnyImmediate        = Immediate | ImmediateCull | GenerateBackdropFilterTexture,
         AnyView             = PushView | PopView,
         AnyScissor          = PushScissor | PopScissor,
         AnyDefaultMaterial  = PushDefaultMaterial | PopDefaultMaterial,
@@ -66,12 +68,15 @@ namespace UnityEngine.UIElements.UIR
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
             defaultMaterial.Clear();
+            boundsMin = Vector2.zero;
         }
 
         internal readonly Stack<Matrix4x4> view = new Stack<Matrix4x4>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
         internal readonly List<Material> defaultMaterial = new(8);
         internal readonly List<MaterialPropertyBlock> props = new(8);
+
+        internal Vector2 boundsMin;
     }
 
     class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
@@ -125,7 +130,7 @@ namespace UnityEngine.UIElements.UIR
                 case CommandType.ImmediateCull:
                 {
                     // TODO: Validate VisualElement access for RenderTrees
-                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.owner.worldBound, pixelsPerPoint);
+                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.owner.worldBound, drawParams.boundsMin, pixelsPerPoint);
                     if (!worldRect.Overlaps(Utility.GetActiveViewport()))
                         break;
 
@@ -216,15 +221,58 @@ namespace UnityEngine.UIElements.UIR
                 case CommandType.PushDefaultMaterial:
                 case CommandType.PopDefaultMaterial:
                     break;
+
+                case CommandType.GenerateBackdropFilterTexture:
+                {
+                    VisualElement ve = owner.owner;
+
+                    // GenerateBackdropFilterTexture switches render targets internally and restores only the
+                    // color buffer (via RenderTexture.active). When a separate depth/stencil is bound — e.g. the
+                    // screen-overlay composite's overlayDepthStencilBuffer — that binding would be dropped,
+                    // breaking stencil clipping for UI drawn after this element, so we rebind both color and
+                    // depth. Skip it when RenderTexture.active is null (overlay drawing straight to the
+                    // backbuffer): nothing to sample, and SetRenderTarget can't mix a screen color with an RT depth.
+                    //
+                    // Graphics.SetRenderTarget also resets the viewport to the full target. A filtered sub-tree
+                    // quad renders into a sub-rect of an atlas texture, so without restoring the viewport the
+                    // rebind would shift every element drawn after this one. Capture and restore it too.
+                    // The active scissor would likewise clip the off-screen capture RTs, so disable it across the call.
+                    bool restoreTargetState = RenderTexture.active != null;
+
+                    RenderBuffer oldColor = default, oldDepth = default;
+                    RectInt oldViewport = default;
+                    if (restoreTargetState)
+                    {
+                        oldColor = Graphics.activeColorBuffer;
+                        oldDepth = Graphics.activeDepthBuffer;
+                        oldViewport = Utility.GetActiveViewport();
+                        Utility.DisableScissor();
+                    }
+
+                    BackdropFilterHelper.GenerateBackdropFilterTexture(drawParams, ve, pixelsPerPoint, owner);
+
+                    if (restoreTargetState)
+                    {
+                        Graphics.SetRenderTarget(oldColor, oldDepth);
+                        GL.Viewport(UIRUtility.CastToRect(oldViewport));
+
+                        // Restore the entry scissor (mirrors PopScissor).
+                        Rect scissor = drawParams.scissor.Peek();
+                        if (scissor.x == DrawParams.k_UnlimitedRect.x)
+                            Utility.DisableScissor();
+                        else
+                            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(scissor, drawParams.boundsMin, pixelsPerPoint));
+                    }
+                    break;
+                }
             }
         }
 
         public static void PushScissor(DrawParams drawParams, Rect scissor, float pixelsPerPoint)
         {
-            // TODO: Offset the clipping rect by the offset within the RT and the post-effect margin
             Rect elemRect = CombineScissorRects(scissor, drawParams.scissor.Peek());
             drawParams.scissor.Push(elemRect);
-            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
+            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, drawParams.boundsMin, pixelsPerPoint));
         }
 
         public static void PopScissor(DrawParams drawParams, float pixelsPerPoint)
@@ -234,7 +282,7 @@ namespace UnityEngine.UIElements.UIR
             if (prevRect.x == DrawParams.k_UnlimitedRect.x)
                 Utility.DisableScissor();
             else
-                Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
+                Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, drawParams.boundsMin, pixelsPerPoint));
         }
 
         static Rect CombineScissorRects(Rect r0, Rect r1)
@@ -247,12 +295,14 @@ namespace UnityEngine.UIElements.UIR
             return r;
         }
 
-        static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, float pixelsPerPoint)
+        internal static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, Vector2 boundsMin, float pixelsPerPoint)
         {
-            float viewportHeight = Utility.GetActiveViewport().height;
+            // UUM-142586: Offset the scissor rect by boundsMin. This matters for nested render trees whose
+            // bounds are inflated by filters or contain negatively-positioned descendants.
+            RectInt viewport = Utility.GetActiveViewport();
             var r = new RectInt(0, 0, 0, 0);
-            r.x = Mathf.RoundToInt(rect.x * pixelsPerPoint);
-            r.y = Mathf.RoundToInt(viewportHeight - rect.yMax * pixelsPerPoint);
+            r.x = viewport.x + Mathf.RoundToInt((rect.x - boundsMin.x) * pixelsPerPoint);
+            r.y = viewport.y + viewport.height - Mathf.RoundToInt((rect.yMax - boundsMin.y) * pixelsPerPoint);
             r.width = Mathf.RoundToInt(rect.width * pixelsPerPoint);
             r.height = Mathf.RoundToInt(rect.height * pixelsPerPoint);
             return r;

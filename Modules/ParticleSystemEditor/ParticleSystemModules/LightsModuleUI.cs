@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -21,6 +22,7 @@ namespace UnityEditor
             public GUIContent intensityCurve = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
             public GUIContent maxLights = EditorGUIUtility.TrTextContent("Maximum Lights", "Limit the amount of lights the system can create. This module makes it very easy to create lots of lights, which can hurt performance.");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         SerializedProperty m_Ratio;

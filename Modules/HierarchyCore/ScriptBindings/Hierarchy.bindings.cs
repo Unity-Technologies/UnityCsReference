@@ -322,6 +322,9 @@ namespace Unity.Hierarchy
         /// <param name="index">The index at which to insert the node in the parent's children list.</param>
         public void SetParent(in HierarchyNode node, in HierarchyNode parent, int index) => SetNodeParentAt(in node, in parent, index);
 
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal void SetParent(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent, int index) => SetNodesParentAt(nodes, in parent, index);
+
         /// <summary>
         /// Gets the parent of a hierarchy node.
         /// </summary>
@@ -597,11 +600,19 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyBindings::AddNodeSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> nodes);
 
+        [VisibleToOtherModules]
+        [FreeFunction("HierarchyBindings::GetCommandList", HasExplicitThis = true, IsThreadSafe = true)]
+        internal extern HierarchyCommandList GetCommandList();
+
         [FreeFunction("HierarchyBindings::SetNodeParent", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void SetNodeParent(in HierarchyNode node, in HierarchyNode parent);
 
         [FreeFunction("HierarchyBindings::SetNodeParentAt", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void SetNodeParentAt(in HierarchyNode node, in HierarchyNode parent, int index);
+
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        [FreeFunction("HierarchyBindings::SetNodesParentAt", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        internal extern void SetNodesParentAt(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent, int index);
 
         [FreeFunction("HierarchyBindings::GetNodeChildrenSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetNodeChildrenSpan(in HierarchyNode node, Span<HierarchyNode> outChildren);

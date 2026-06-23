@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -22,9 +23,9 @@ static class MenuUtility
     const string k_UndoCreatePanelRenderer = "Create Panel Renderer";
     const string k_NewVisualTreeAssetDefaultName = "NewUXMLTemplate";
     const string k_StageEntryOptOutKey = "UIToolkit.AutoEnterEditingStage";
-    const string k_StageEntryDialogTitle = "Open UI stage";
+    const string k_StageEntryDialogTitle = "Open visual element editing stage";
     const string k_StageEntryDialogMessage =
-        "To add this element, Unity will open the UI Stage to edit the underlying UI Document. " +
+        "To add this element, Unity will open the Visual Element editing stage to edit the underlying UI Document. " +
         "You can return to the previous stage by clicking the breadcrumb or pressing the back button.";
 
     /// <summary>
@@ -53,6 +54,8 @@ static class MenuUtility
         if (!ConfirmStageEntry())
             return;
 
+        UIToolkitAuthoringSettings.EnableInSceneUIAuthoring = true;
+
         switch (Selection.activeObject)
         {
             case VisualTreeAssetSelection { panelComponent: not null } vtaSelection
@@ -78,11 +81,10 @@ static class MenuUtility
 
     static bool TryResolveNewVisualTreeAssetPath(out string assetPath)
     {
-        if (UIToolkitAuthoringSettings.NewVisualTreeAssetLocation == NewVisualTreeAssetLocation.UseCurrentFolder)
+        if (UIToolkitAuthoringSettings.NewVisualTreeAssetLocation == NewVisualTreeAssetLocation.DefaultLocation)
         {
-            var folder = ProjectWindowUtil.GetActiveFolderPath();
-            if (string.IsNullOrEmpty(folder))
-                folder = "Assets";
+            var folder = "Assets/UI Toolkit";
+            Directory.CreateDirectory(folder);
             assetPath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{k_NewVisualTreeAssetDefaultName}.uxml");
             return !string.IsNullOrEmpty(assetPath);
         }
@@ -97,9 +99,11 @@ static class MenuUtility
 
     static bool ConfirmStageEntry()
     {
+        var postFix = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring ? "" : "\n\nthis is an experimental feature that is currently disabled, continuing will automatically enable the feature.";
+
         return EditorDialog.DisplayDecisionDialogWithOptOut(
             k_StageEntryDialogTitle,
-            k_StageEntryDialogMessage,
+            k_StageEntryDialogMessage + postFix,
             yesButtonText: "Continue",
             noButtonText: "Cancel",
             DialogOptOutDecisionType.ForThisMachine,
@@ -314,9 +318,7 @@ static class MenuUtility
 
     static void EnterStageAndAdd(VisualTreeAssetEditingContext context, Type elementType, VisualElementAsset parentVea)
     {
-        var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
-        stage.SetContext(context);
-        StageUtility.GoToStage(stage, false);
+        var stage = VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Arrow);
         ExecuteAdd(stage, elementType, parentVea);
     }
 

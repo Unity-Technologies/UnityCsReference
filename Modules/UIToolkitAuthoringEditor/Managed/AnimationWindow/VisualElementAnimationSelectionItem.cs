@@ -23,7 +23,6 @@ namespace Unity.UIToolkit.Editor
     /// </summary>
     internal sealed class VisualElementAnimationSelectionItem : UIToolkitAnimationSelectionItemBase
     {
-        static readonly string k_OnboardingLabelFormat = L10n.Tr("To begin animating {0}, create a UI Animation Clip.");
         static readonly string k_OnboardingLabelUnnamedSubject = L10n.Tr("this VisualElement");
 
         readonly PanelRenderer m_PanelRenderer;
@@ -62,6 +61,33 @@ namespace Unity.UIToolkit.Editor
             var concretePanel = m_ClipOwner?.panel as Panel;
             return concretePanel?.GetOrCreateElementBinder(m_ClipOwner);
         }
+
+        // A per-element selection drives exactly one (element, binder) pair: the clip owner.
+        internal override void ForEachPreviewTarget(Action<VisualElement, UIAnimationBinder> action)
+        {
+            if (action == null || m_ClipOwner == null)
+                return;
+            var binder = GetOrCreateElementBinder();
+            if (binder == null)
+                return;
+            action(m_ClipOwner, binder);
+        }
+
+        internal override UIAnimationBinder GetCanonicalBinder() => GetOrCreateElementBinder();
+
+        // Routes inspector style edits to the per-element clip target (AnimationRecordingStyleBridge
+        // resolves through PerElementAnimationContext).
+        internal override void ActivateRecordingContext(UIAnimationClip clip, AnimationModeDriver driver)
+        {
+            if (clip == null || m_ClipOwner == null)
+                return;
+            var binder = GetOrCreateElementBinder();
+            if (binder == null)
+                return;
+            PerElementAnimationContext.SetActive(clip, m_ClipOwner, binder, driver);
+        }
+
+        internal override void DeactivateRecordingContext(UIAnimationClip clip) => PerElementAnimationContext.ClearActive(clip);
 
         // We currently avoid creating clips or modifying VisualTreeAssets in the Main stage.
         public override bool canCreateClips => m_ClipOwner != null && IsInVisualElementEditingStage();
@@ -181,43 +207,7 @@ namespace Unity.UIToolkit.Editor
         public override EditorCurveBinding[] GetAnimatableBindings(GameObject go) => GetAnimatableBindings();
 
         public override EditorCurveBinding[] GetAnimatableBindings()
-        {
-            if (m_ClipOwner == null)
-                return Array.Empty<EditorCurveBinding>();
-
-            var binder = GetOrCreateElementBinder();
-            if (binder == null)
-                return Array.Empty<EditorCurveBinding>();
-
-            binder.UpdateElementNamesIfNeeded();
-            var bindings = UIAnimationBinderEditorBindings.GetAllAnimatableProperties(binder, typeof(UIAnimationClip));
-
-            // PPtr rows need a Component-derived discriminator; see PerElementPPtrDiscriminatorType.
-            for (int i = 0; i < bindings.Length; i++)
-            {
-                if (!bindings[i].isPPtrCurve)
-                    continue;
-                if (typeof(Component).IsAssignableFrom(bindings[i].type))
-                    continue;
-                bindings[i] = EditorCurveBinding.PPtrCurve(
-                    bindings[i].path,
-                    VisualElementAnimationClipUtility.PerElementPPtrDiscriminatorType,
-                    bindings[i].propertyName);
-            }
-            return bindings;
-        }
-
-        public override Type GetValueType(EditorCurveBinding binding)
-        {
-            // Per-element clips have no GameObject root; rely on the binding's self-description
-            // (set by the native channel walk) so style-enum rows render as discrete int curves
-            // instead of continuous floats.
-            if (binding.isPPtrCurve)
-                return null;
-            if (binding.isDiscreteCurve)
-                return typeof(int);
-            return typeof(float);
-        }
+            => m_ClipOwner == null ? Array.Empty<EditorCurveBinding>() : GetAnimatableBindingsFromBinder(GetOrCreateElementBinder());
 
         // UI refresh hook, mirroring AnimationWindowSelectionItem.CurveWasModified. The per-element
         // deltas (binder housekeeping) replace what DrivenPropertyManager pruning does automatically

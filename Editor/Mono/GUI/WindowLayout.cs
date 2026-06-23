@@ -1765,10 +1765,10 @@ namespace UnityEditor
         [MenuItem("Window/General/Hierarchy %4", false, 4)]
         static void ShowNewHierarchy()
         {
-            if (HierarchyPreferences.UseNewHierarchy)
-                EditorWindow.GetWindow(HierarchyPreferences.HierarchyV2WindowType);
-            else
+            if (EditorSettings.useLegacyHierarchy)
                 EditorWindow.GetWindow<SceneHierarchyWindow>();
+            else
+                EditorWindow.GetWindow(HierarchyPreferences.HierarchyV2WindowType);
         }
 
         [MenuItem("Window/General/Project %5", false, 5)]

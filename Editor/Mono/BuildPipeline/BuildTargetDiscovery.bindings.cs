@@ -90,6 +90,8 @@ namespace UnityEditor
         static readonly string k_SDKProviderNotMultiTargetError = L10n.Tr("The SDK platform provider '{0}' with guid '{1}' references a platform that is not marked as a multi-target platform.");
         internal static readonly string k_SDKProviderNotDerivedTargetError = L10n.Tr("The SDK platform provider '{0}' with guid '{1}' references a platform that is not marked as a derived platform.");
         static readonly string k_CreateIPlatformProviderFailedError = L10n.Tr("Failed to create IPlatformProvider instance for type '{0}'.");
+        static readonly string k_PlatformDeprecatedDefaultWithDisplayName = L10n.Tr("The {0} platform is deprecated.");
+        static readonly string k_DerivedPlatformUsesDeprecatedBase = L10n.Tr("This platform is based on {0}, which is deprecated.");
 
         public static extern bool PlatformHasFlag(BuildTarget platform, TargetAttributes flag);
 
@@ -321,6 +323,11 @@ namespace UnityEditor
             // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
             public NameAndLink? temporaryLabelAndLinkForIndustrialOnboarding = null;
 
+            /// <summary>
+            /// Custom deprecation copy for UI when <see cref="PlatformAttributes.IsDeprecated"/> is set. May be empty if a generic fallback should be used.
+            /// </summary>
+            public string deprecationMessage = string.Empty;
+
             public PlatformInfo() {}
 
             public bool HasFlag(PlatformAttributes flag) { return (flags & flag) == flag; }
@@ -344,6 +351,20 @@ namespace UnityEditor
             public string description;
             public string publisher;
             public bool hasThumbnail;
+
+            /// <summary>
+            /// Optional catalog flag (e.g. SDK platform JSON, mock platforms). Used as a fallback deprecation
+            /// signal when Package Manager has no <see cref="PackageManager.PackageInfo"/> for this package.
+            /// </summary>
+            public bool deprecated;
+
+            /// <summary>
+            /// Optional deprecation tooltip when <see cref="deprecated"/> is true. Used as a fallback when
+            /// Package Manager has no <see cref="PackageManager.PackageInfo"/> for this package.
+            /// </summary>
+            public string deprecationMessage;
+
+            public PlatformPackageInfo() {}
 
             public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "", bool hasThumbnail = false)
             {
@@ -954,7 +975,46 @@ namespace UnityEditor
             return EmptyGuid;
         }
 
+        /// <summary>
+        /// Get the server platform GUID corresponding to the NamedBuildTarget.Server and BuildTarget.
+        /// </summary>
+        /// <param name="namedBuildTarget">The NamedBuildTarget to get the server platform GUID for.</param>
+        /// <param name="buildTarget">The BuildTarget to get the server platform GUID for.</param>
+        /// <param name="result">The server platform GUID. Derived server platform GUID when the active platform is a derived server platform. Base server platform GUID otherwise.</param>
+        /// <returns>True if a server platform GUID was found; otherwise, false.</returns>
         internal static bool TryGetServerGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget, out GUID result)
+        {
+            result = EmptyGuid;
+
+            if (namedBuildTarget != NamedBuildTarget.Server || !IsStandalonePlatform(buildTarget))
+                return false;
+
+            if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out var guid))
+            {
+                var module = ModuleManager.FindPlatformSupportModule(guid);
+                if (module is IDerivedBuildTargetProvider)
+                {
+                    var derivedPlatformGuid = module.PlatformBuildTarget.Guid;
+                    var (_, subtarget) = GetBuildTargetAndSubtargetFromGUID(derivedPlatformGuid);
+                    if (subtarget == StandaloneBuildSubtarget.Server)
+                    {
+                        result = derivedPlatformGuid;
+                        return true;
+                    }
+                }
+            }
+
+            return TryGetBaseServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out result);
+        }
+
+        /// <summary>
+        /// Get the base server platform GUID corresponding to the NamedBuildTarget.Server and BuildTarget.
+        /// </summary>
+        /// <param name="namedBuildTarget">The NamedBuildTarget to get the base server platform GUID for.</param>
+        /// <param name="buildTarget">The BuildTarget to get the base server platform GUID for.</param>
+        /// <param name="result">The base server platform GUID. If the platform is not a derived platform, the same GUID is returned.</param>
+        /// <returns>True if a base server platform GUID was found; otherwise, false.</returns>
+        internal static bool TryGetBaseServerGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget, out GUID result)
         {
             result = EmptyGuid;
 
@@ -978,7 +1038,7 @@ namespace UnityEditor
 
         internal static GUID GetBasePlatformGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
-            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
+            if (TryGetBaseServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
                 return value;
 
             if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out GUID guid))
@@ -1004,8 +1064,8 @@ namespace UnityEditor
             {
                 if (platformInfo.subtarget != StandaloneBuildSubtarget.Server)
                     return basePlatformGuid;
-
-                if (TryGetServerGUIDFromBuildTarget(NamedBuildTarget.Server, platformInfo.buildTarget, out var serverPlatformGuid))
+                
+                if (TryGetBaseServerGUIDFromBuildTarget(NamedBuildTarget.Server, platformInfo.buildTarget, out var serverPlatformGuid))
                     return serverPlatformGuid;
             }
 
@@ -1094,6 +1154,13 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(displayName))
                     Debug.LogWarning(string.Format(k_SDKPlatformMissingDisplayNameWarning, sdkPlatformGuid));
 
+                if (sdkPlatformInfo.isDeprecated)
+                    flags |= PlatformAttributes.IsDeprecated;
+
+                var deprecationMessage = sdkPlatformInfo.isDeprecated && !string.IsNullOrEmpty(sdkPlatformInfo.deprecationMessage)
+                    ? sdkPlatformInfo.deprecationMessage
+                    : string.Empty;
+
                 PlatformInfo platformInfo = new()
                 {
                     supportedPlatformGuids = sdkPlatformInfo.flags.platformType == SDKPlatformType.MultiTarget ?
@@ -1109,6 +1176,7 @@ namespace UnityEditor
                     buildProfilePlatformBannerBgColorHex = sdkPlatformInfo.bannerBackgroundColorHex ?? "#00000000",
                     internalPackages = sdkPlatformInfo.internalPackages,
                     partnerPackages = sdkPlatformInfo.partnerPackages,
+                    deprecationMessage = deprecationMessage,
                     flags = flags | PlatformAttributes.IsSDKPlatform | PlatformAttributes.IsVisibleInPlatformBrowserOnly |
                         PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget |
                         PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget,
@@ -1123,6 +1191,11 @@ namespace UnityEditor
                 }
 
                 var groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == targetGroupName);
+                // SDK platform JSON typically stores the English group identifier (e.g. "Web") while
+                // allPlatformGroups use localized titles (L10n.Tr("Web")). Without this fallback the
+                // platform is registered in allPlatforms but never added to a browser group.
+                if (groupIndex < 0)
+                    groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == L10n.Tr(targetGroupName));
                 if (groupIndex < 0)
                 {
                     Debug.LogWarning(string.Format(k_SDKPlatformUnknownPlatformGroupWarning, sdkPlatformGuid, targetGroupName));
@@ -1687,6 +1760,58 @@ namespace UnityEditor
                 return platformInfo.subtitle;
 
             return string.Empty;
+        }
+
+        /// <summary>
+        /// When the platform is marked deprecated, returns true and sets <paramref name="deprecationMessage"/> to the
+        /// configured text. The message may be empty if no custom copy was provided; callers should supply a fallback in that case.
+        /// Base platforms are checked directly. Derived platforms also check their immediate base platform.
+        /// Multi-target platforms are deprecated only when marked deprecated on their own platform entry.
+        /// </summary>
+        public static bool BuildPlatformTryGetDeprecationMessage(GUID guid, out string deprecationMessage)
+        {
+            deprecationMessage = string.Empty;
+            if (!TryGetPlatformInfo(guid, out PlatformInfo platformInfo))
+                return false;
+
+            if (platformInfo.HasFlag(PlatformAttributes.IsDeprecated))
+            {
+                deprecationMessage = platformInfo.deprecationMessage;
+                return true;
+            }
+
+            if (platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
+            {
+                var basePlatformGuid = GetBasePlatformGUID(guid);
+                if (!basePlatformGuid.Empty()
+                    && basePlatformGuid != guid
+                    && TryGetDirectDeprecationMessage(basePlatformGuid, out var baseDeprecationMessage))
+                {
+                    deprecationMessage = FormatDerivedInheritedDeprecationMessage(basePlatformGuid, baseDeprecationMessage);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool TryGetDirectDeprecationMessage(GUID guid, out string deprecationMessage)
+        {
+            deprecationMessage = string.Empty;
+            if (!TryGetPlatformInfo(guid, out PlatformInfo platformInfo) || !platformInfo.HasFlag(PlatformAttributes.IsDeprecated))
+                return false;
+
+            deprecationMessage = platformInfo.deprecationMessage;
+            return true;
+        }
+
+        static string FormatDerivedInheritedDeprecationMessage(GUID deprecatedBasePlatformGuid, string baseDeprecationMessage)
+        {
+            var baseDisplayName = BuildPlatformDisplayName(deprecatedBasePlatformGuid);
+            if (string.IsNullOrWhiteSpace(baseDeprecationMessage))
+                baseDeprecationMessage = string.Format(k_PlatformDeprecatedDefaultWithDisplayName, baseDisplayName);
+
+            return $"{baseDeprecationMessage}\n\n{string.Format(k_DerivedPlatformUsesDeprecatedBase, baseDisplayName)}";
         }
 
         public static PlatformGroup[] GetPlatformGroups()

@@ -90,7 +90,7 @@ namespace UnityEngine
                     UnityEngine.Debug.LogWarning("Attempting to register more than one AdditionalRootsHandlerDelegate! Only one may be registered at a time.");
             }
 
-            [UsedByNativeCode]
+            [RequiredByNativeCode]
             private static void GetAdditionalRoots(IntPtr state)
             {
                 if(AdditionalRootsHandler != null)

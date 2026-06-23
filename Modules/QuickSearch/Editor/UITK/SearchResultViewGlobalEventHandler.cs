@@ -61,11 +61,29 @@ namespace UnityEditor.Search
         public void RegisterGlobalEventHandlers()
         {
             ResultView.RegisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyDownEvent, 20);
+            ResultView.RegisterGlobalEventHandler<NavigationSubmitEvent>(OnGlobalNavigationSubmitEvent, 20);
         }
 
         public void UnregisterGlobalEventHandler()
         {
             ResultView.UnregisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyDownEvent);
+            ResultView.UnregisterGlobalEventHandler<NavigationSubmitEvent>(OnGlobalNavigationSubmitEvent);
+        }
+
+        SearchGlobalEventHandlerResult OnGlobalNavigationSubmitEvent(NavigationSubmitEvent evt)
+        {
+            if (evt.target is not VisualElement ve)
+                return false;
+
+            if (ve != ResultView && !ResultView.Contains(ve))
+                return false;
+
+            var currentIndex = GetCurrentIndex();
+            if (currentIndex == -1)
+                return false;
+
+            ExecuteActionForSelection(ResultView.viewModel.selection, executeSecondary: evt.altKey);
+            return true;
         }
 
         SearchGlobalEventHandlerResult OnGlobalKeyDownEvent(KeyDownEvent evt)
@@ -76,21 +94,15 @@ namespace UnityEditor.Search
             var currentIndex = GetCurrentIndex();
             var itemCount = GetItemCount();
 
-            // Handle Enter/Return even in the case of local events, i.e. events from the ResultView.
-            // This ensures that we have the same behavior with normal/Alt keydowns,
-            // regardless of whether the event is coming from the ResultView or from a global event.
-            if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && currentIndex != -1)
-            {
-                var selection = ResultView.viewModel.selection;
-                var action = evt.altKey ? SearchView.GetSecondaryAction(selection, null) : SearchView.GetDefaultAction(selection, null);
-
-                ResultView.viewModel.ExecuteAction(action, selection.ToArray(), true);
-                return true;
-            }
-
             // If the event target is from the Result View, do not handle it.
             if (ve == ResultView || ResultView.Contains(ve))
                 return false;
+
+            if ((evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter) && currentIndex != -1)
+            {
+                ExecuteActionForSelection(ResultView.viewModel.selection, executeSecondary: evt.altKey);
+                return true;
+            }
 
             // UITK collections have a selection, and can handle the event directly
             if (currentIndex != -1)
@@ -127,6 +139,12 @@ namespace UnityEditor.Search
             }
 
             return VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
+        }
+
+        void ExecuteActionForSelection(SearchSelection selection, bool executeSecondary)
+        {
+            var action = executeSecondary ? SearchView.GetSecondaryAction(selection, null) : SearchView.GetDefaultAction(selection, null);
+            ResultView.viewModel.ExecuteAction(action, selection.ToArray(), true);
         }
 
         static bool DefaultIsValidKey(IKeyboardEvent evt)

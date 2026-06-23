@@ -13,7 +13,7 @@ namespace Unity.UIToolkit.Editor;
 
 internal class StyleInspectorDefaultContent : VisualElement
 {
-    static bool s_TimeSlice = true;
+    internal static bool s_TimeSlice = true;
     static VisualTreeAsset s_DefaultContent;
     static UnityEngine.Pool.ObjectPool<StyleInspectorDefaultContent> s_StyleInspectorDefaultContentPool = new(Create);
 
@@ -101,9 +101,9 @@ internal class StyleInspectorDefaultContent : VisualElement
         if (Application.isBuildingEditorResources)
             return;
 
-        if (!UIToolkitAuthoringSettings.EnableHierarchyIntegration)
+        if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
         {
-            UIToolkitAuthoringSettings.HierarchyIntegrationChanged += OnEnableHierarchyIntegration;
+            UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableHierarchyIntegration;
             return;
         }
 
@@ -120,7 +120,7 @@ internal class StyleInspectorDefaultContent : VisualElement
             return;
 
         Prepare();
-        UIToolkitAuthoringSettings.HierarchyIntegrationChanged -= OnEnableHierarchyIntegration;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableHierarchyIntegration;
     }
 
     private static StyleInspectorDefaultContent Create()

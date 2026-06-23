@@ -38,7 +38,6 @@ namespace UnityEngine.UIElements
         public float unityTextOutlineWidth;
         public Visibility visibility;
         public WhiteSpace whiteSpace;
-        private int __dummy; // increasing group size to a multiple of 8
 
         public InheritedData GetDefault()
         {
@@ -163,10 +162,11 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 96)]
+    [StructLayout(LayoutKind.Sequential, Size = 104)]
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Color unityBackgroundImageTintColor;
+        public UnmanagedRefCountedList<UnmanagedFilterFunction> backdropFilter;
         public Cursor cursor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
         public EntityId unityAnimationClip;
@@ -190,6 +190,7 @@ namespace UnityEngine.UIElements
         {
             var data = new RareData();
             data.animationPlayState = animationPlayState;
+            data.backdropFilter.CopyFrom(backdropFilter);
             data.cursor = cursor;
             data.filter.CopyFrom(filter);
             data.textOverflow = textOverflow;
@@ -209,6 +210,7 @@ namespace UnityEngine.UIElements
         public void CopyFrom(ref RareData other)
         {
             animationPlayState = other.animationPlayState;
+            backdropFilter.CopyFrom(other.backdropFilter);
             cursor = other.cursor;
             filter.CopyFrom(other.filter);
             textOverflow = other.textOverflow;
@@ -226,12 +228,14 @@ namespace UnityEngine.UIElements
 
         public void Dispose()
         {
+            backdropFilter.Clear();
             filter.Clear();
         }
 
         public static bool operator ==(RareData lhs, RareData rhs)
         {
             return lhs.animationPlayState == rhs.animationPlayState &&
+                lhs.backdropFilter == rhs.backdropFilter &&
                 lhs.cursor == rhs.cursor &&
                 lhs.filter == rhs.filter &&
                 lhs.textOverflow == rhs.textOverflow &&
@@ -270,6 +274,7 @@ namespace UnityEngine.UIElements
             unchecked
             {
                 var hashCode = (int)animationPlayState;
+                hashCode = (hashCode * 397) ^ backdropFilter.GetHashCode();
                 hashCode = (hashCode * 397) ^ cursor.GetHashCode();
                 hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textOverflow;
@@ -295,7 +300,6 @@ namespace UnityEngine.UIElements
         public Rotate rotate;
         public Translate translate;
         public TransformOrigin transformOrigin;
-        private int __dummy; // increasing group size to a multiple of 8
 
         public TransformData GetDefault()
         {

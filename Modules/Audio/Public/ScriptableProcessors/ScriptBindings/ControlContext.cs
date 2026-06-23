@@ -229,30 +229,39 @@ namespace UnityEngine.Audio
         {
             m_Handle.CheckValidOrThrow();
 
-            var generatorChunk = ProcessorExtensions.CAllocChunk<IGeneratorControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage>();
-
-            var header = &generatorChunk->HeaderAndProcessor.Header;
-
-            header->Processor.ProcessorReflectionData = IGeneratorProcessorExtensions.GetReflectionData<TRealtime>();
-            header->Processor.ControlReflectionData = IGeneratorControlExtensions.GetReflectionData<TControl, TRealtime>();
-
-            header->Configuration.IsRealtime = realtimeState.isRealtime;
-            header->Configuration.IsFinite = realtimeState.isFinite;
-
-            if (realtimeState.length is DiscreteTime time)
+            DualThreadHandle createdHandle;
             {
-                header->Configuration.ReportedLength = time;
-                header->Configuration.HasKnownLength = true;
+                // Stage the ControlStorage on the stack. Native memcpys it into the bridge slab tail; this local
+                // dies as soon as InitializeGeneratorHandle returns.
+                IGeneratorControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage storage;
+
+                storage.HeaderAndProcessor.Header = default;
+                storage.HeaderAndProcessor.Header.Processor.ProcessorReflectionData = IGeneratorProcessorExtensions.GetReflectionData<TRealtime>();
+                storage.HeaderAndProcessor.Header.Processor.ControlReflectionData = IGeneratorControlExtensions.GetReflectionData<TControl, TRealtime>();
+
+                storage.HeaderAndProcessor.Header.Configuration.IsRealtime = realtimeState.isRealtime;
+                storage.HeaderAndProcessor.Header.Configuration.IsFinite = realtimeState.isFinite;
+
+                if (realtimeState.length is DiscreteTime time)
+                {
+                    storage.HeaderAndProcessor.Header.Configuration.ReportedLength = time;
+                    storage.HeaderAndProcessor.Header.Configuration.HasKnownLength = true;
+                }
+
+                storage.HeaderAndProcessor.UserProcessor = realtimeState;
+                storage.UserControl = controlState;
+
+                var config = (nestedFormat ?? default).audioConfiguration;
+
+                createdHandle = ScriptableGeneratorBindings.InitializeGeneratorHandle(
+                    ref storage,
+                    m_Header,
+                    nestedFormat.HasValue ? &config : null,
+                    creationParameters.BuildInitializationFlags()
+                );
             }
 
-            generatorChunk->HeaderAndProcessor.UserProcessor = realtimeState;
-            generatorChunk->UserControl = controlState;
-
-            var config = (nestedFormat ?? default).audioConfiguration;
-
-            ScriptableGeneratorBindings.InitializeGeneratorHandle(header, m_Header, nestedFormat.HasValue ? &config : null, creationParameters.BuildInitializationFlags());
-
-            return new(header);
+            return new GeneratorInstance(GetProcessorHeader<GeneratorInstance.GeneratorHeader>(createdHandle));
         }
 
         /// <summary>
@@ -275,20 +284,28 @@ namespace UnityEngine.Audio
             where TControl : unmanaged, RootOutputInstance.IControl<TRealtime>
         {
             m_Handle.CheckValidOrThrow();
+            DualThreadHandle createdHandle;
 
-            var outputChunk = ProcessorExtensions.CAllocChunk<IRootOutputControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage>();
+            {
+                // Stage the ControlStorage on the stack. Native memcpys it into the bridge slab tail; this local
+                // dies as soon as InitializeRootOutputHandle returns.
+                IRootOutputControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage storage;
 
-            var header = &outputChunk->HeaderAndProcessor.Header;
+                storage.HeaderAndProcessor.Header = default;
+                storage.HeaderAndProcessor.Header.ProcessorReflectionData = IRootOutputProcessorExtensions.GetReflectionData<TRealtime>();
+                storage.HeaderAndProcessor.Header.ControlReflectionData = IRootOutputControlExtensions.GetReflectionData<TControl, TRealtime>();
 
-            header->ProcessorReflectionData = IRootOutputProcessorExtensions.GetReflectionData<TRealtime>();
-            header->ControlReflectionData = IRootOutputControlExtensions.GetReflectionData<TControl, TRealtime>();
+                storage.HeaderAndProcessor.UserProcessor = realtimeState;
+                storage.UserControl = controlState;
 
-            outputChunk->HeaderAndProcessor.UserProcessor = realtimeState;
-            outputChunk->UserControl = controlState;
+                createdHandle = IRootOutputProcessorExtensions.InitializeRootOutputHandle(
+                    ref storage,
+                    m_Header,
+                    creationParameters.BuildInitializationFlags()
+                );
+            }
 
-            IRootOutputProcessorExtensions.InitializeRootOutputHandle(header, m_Header, creationParameters.BuildInitializationFlags());
-
-            return new(header);
+            return new RootOutputInstance(GetProcessorHeader<ProcessorHeader>(createdHandle));
         }
 
         /// <summary>
@@ -565,6 +582,18 @@ namespace UnityEngine.Audio
                     gcHandle.Free();
                 }
             }
+        }
+
+        /// <summary>
+        /// Transition API until a call is made on whether "headers" should be persistently available in "handle wrappers" or not.
+        /// Alternative being resolving on demand, making sure the handle is actually alive and available, at the expense of an ICall every time.
+        /// This is currently necessary to avoid a large number of changes across the codebase, but will likely be removed in the future.
+        /// </summary>
+        unsafe readonly THeader* GetProcessorHeader<THeader>(DualThreadHandle handle)
+            where THeader : unmanaged
+        {
+            m_Handle.CheckValidOrThrow();
+            return (THeader*)ScriptableProcessorBindings.GetProcessorHeaderFromHandle(m_Header, handle);
         }
 
         [NativeMethod(Name = "audio::GetBuiltInControlHeader", IsFreeFunction = true)]

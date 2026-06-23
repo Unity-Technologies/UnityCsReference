@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Bindings;
@@ -15,8 +16,9 @@ using Unity.Collections;
 namespace UnityEditor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class PropertyHandler : IDisposable
+    internal partial class PropertyHandler : IDisposable
     {
+        [AutoStaticsCleanupOnCodeReload]
         readonly static Dictionary<Type, List<(FieldInfo fieldInfo, Object objectReference)>> s_DefaultObjectReferenceCache = new();
 
         List<PropertyDrawer> m_PropertyDrawers;
@@ -43,11 +45,15 @@ namespace UnityEditor
 
         bool isCurrentlyNested => m_NestingLevel > 0;
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static Dictionary<string, ReorderableListWrapper> s_reorderableLists = new Dictionary<string, ReorderableListWrapper>();
+        [NoAutoStaticsCleanup] // transient inspector state counters, safe to persist
         static EntityId s_LastInspectionTarget;
+        [NoAutoStaticsCleanup] // transient inspector state counters, safe to persist
         static int s_LastInspectorNumComponents;
 
-        static PropertyHandler()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             Undo.undoRedoEvent += OnUndoRedo;
         }
@@ -459,6 +465,7 @@ namespace UnityEditor
                 method.Invoke(target, Array.Empty<object>());
         }
 
+        [NoAutoStaticsCleanup] // used for avoiding repeated allocations, cleared after use systematically
         static List<Component> s_CachedComponents = new List<Component>();
 
         internal void TestInvalidateCache()

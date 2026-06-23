@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,10 +15,12 @@ namespace Unity.Hierarchy.Editor
     /// </summary>
     static class GameObjectIconUtility
     {
+        [NoAutoStaticsCleanup] // pre-allocated marshal buffer; reused per-call, no user type retention
         static readonly List<Component> s_ComponentBuffer = new List<Component>(16);
 
         // Maps legacy sv_icon names to their Hv2 resource paths.
         // Dots 0–7 are circle variants; dots 8–15 are diamond variants.
+        [NoAutoStaticsCleanup] // constant compile-time icon name mapping table
         static readonly Dictionary<string, string> s_Hv2GizmoIconPaths = new()
         {
             { "sv_icon_dot0_pix16_gizmo",  "Hv2/Circles/CircleGray"      },
@@ -47,6 +50,7 @@ namespace Unity.Hierarchy.Editor
         };
 
         // Textures resolved from s_Hv2GizmoIconPaths on first use and cached here.
+        [NoAutoStaticsCleanup] // texture cache for fixed editor icon paths; safe to persist across code reload
         static readonly Dictionary<string, Texture2D> s_Hv2GizmoIconCache = new(s_Hv2GizmoIconPaths.Count);
 
         static Texture2D GetHv2GizmoIcon(string iconName)

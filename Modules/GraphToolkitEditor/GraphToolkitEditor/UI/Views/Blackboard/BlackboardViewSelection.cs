@@ -44,6 +44,40 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc />
+        protected override bool CanPaste()
+        {
+            if (!base.CanPaste())
+                return false;
+
+            using var copyPasteData = m_ClipboardProvider.DeserializeDataFromClipboard();
+            if (copyPasteData == null)
+                return false;
+
+            var nodeCount = copyPasteData.Nodes?.Count ?? 0;
+            var stickyCount = copyPasteData.StickyNotes?.Count ?? 0;
+            var placematCount = copyPasteData.Placemats?.Count ?? 0;
+
+            // Graph-canvas content (nodes, sticky notes, placemats) should not be pasteable in the blackboard.
+            if (nodeCount > 0 || stickyCount > 0 || placematCount > 0)
+                return false;
+
+            var hasOnePastableVariable = false;
+            if (copyPasteData.HasVariableContent())
+            {
+                foreach (var variableDeclaration in copyPasteData.VariableDeclarations)
+                {
+                    hasOnePastableVariable =
+                        m_BlackboardContentState.BlackboardModel.GraphModel.CanPasteVariable(variableDeclaration);
+
+                    if (hasOnePastableVariable)
+                        break;
+                }
+            }
+
+            return hasOnePastableVariable;
+        }
+
+        /// <inheritdoc />
         protected override CopyPasteData BuildCopyPasteData(HashSet<GraphElementModel> elementsToCopySet)
         {
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

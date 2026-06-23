@@ -40,8 +40,8 @@ namespace UnityEditorInternal.Profiling
         private PhysicsProfilerStatsView m_ShowStatsView = PhysicsProfilerStatsView.Current;
         private PhysicsProfilerStatsView m_CachedShowStatsView;
 
-        private static int k_labelWidthTitle = 220;
-        private static int k_labelWidthDetail = 120;
+        private const int k_labelWidthTitle = 220;
+        private const int k_labelWidthDetail = 120;
 
         static readonly ProfilerCounterData[] k_DefaultPhysicsAreaCounterNames =
         {

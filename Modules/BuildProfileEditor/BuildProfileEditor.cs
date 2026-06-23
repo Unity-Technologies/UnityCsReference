@@ -22,12 +22,12 @@ namespace UnityEditor.Build.Profile
         const string k_AdditionalPlatformSettings = "m_AdditionalPlatformBuildSettings";
         const string k_AdditionalPlatformSettingsPlatformGuid = "platformGuid";
         const string k_AdditionalPlatformSettingsValue = "platformSettings";
+        const string k_PlatformDeprecationHelpBox = "platform-deprecation-help-box";
         const string k_PlatformWarningHelpBox = "platform-warning-help-box";
         const string k_PlatformSettingsBaseRoot = "platform-settings-base-root";
 
         const string k_GlobalSceneLabel = "global-scene-label";
         const string k_SharedSettingsInfoHelpbox = "shared-settings-info-helpbox";
-        const string k_SharedSettingsInfoHelpboxButton = "shared-settings-info-helpbox-button";
         const string k_SceneListFoldout = "scene-list-foldout";
         const string k_SceneListFoldoutRoot = "scene-list-foldout-root";
         const string k_SceneListFoldoutAddOpenSection = "scene-list-foldout-add-open-section";
@@ -42,18 +42,23 @@ namespace UnityEditor.Build.Profile
         const string k_AddSettingsButton = "bp-add-settings-button";
         const string k_SettingsFoldoutRoot = "bp-editor-settings-container";
         const string k_InsightSettingsFoldout = "insights-analytics-foldout";
+        const string k_PlatformSelectionSection = "platform-selection-section";
         const string k_PlatformSelectionContainer = "platform-selection-container";
+        const string k_PlatformSelectionDeprecationHelpBox = "platform-selection-deprecation-help-box";
         const string k_PlatformSelectionDropdown = "platform-selection-dropdown";
         const string k_SwitchProfilePlatformButton = "switch-profile-platform-button";
         bool isClassic = false;
         BuildProfileSceneList m_SceneList;
         HelpBox m_CompilingWarningHelpBox;
         HelpBox m_VirtualTexturingHelpBox;
+        PlatformDeprecationHelpBox m_PlatformDeprecationHelpBox;
         Button m_AddSettingsButton;
         VisualElement m_SettingsFoldoutRoot;
         BuildProfile m_Profile;
         AddSettingsDataProvider m_AddSettingsDataSource;
+        VisualElement m_PlatformSelectionSection;
         VisualElement m_PlatformSelectionContainer;
+        SelectedPlatformDeprecationHelpBox m_SelectedPlatformDeprecationHelpBox;
         GUID m_SelectedPlatformGuid;
 
         public BuildProfileWindow parent { get; set; }
@@ -125,6 +130,7 @@ namespace UnityEditor.Build.Profile
             visualTree.CloneTree(root);
             root.styleSheets.Add(windowUss);
 
+            var platformDeprecationHelpBox = root.Q<HelpBox>(k_PlatformDeprecationHelpBox);
             var noModuleFoundHelpBox = root.Q<HelpBox>(k_PlatformWarningHelpBox);
             var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             var additionalSettingsWrapper = root.Q<VisualElement>(k_AdditionalSettingsWrapper);
@@ -150,8 +156,31 @@ namespace UnityEditor.Build.Profile
                     sharedSettingsInfoHelpBox.text = profileInfoMessage;
             }
 
+            m_PlatformSelectionSection = root.Q<VisualElement>(k_PlatformSelectionSection);
             m_PlatformSelectionContainer = root.Q<VisualElement>(k_PlatformSelectionContainer);
-            m_PlatformSelectionContainer.Hide();
+            m_PlatformSelectionSection.Hide();
+            m_SelectedPlatformDeprecationHelpBox = new SelectedPlatformDeprecationHelpBox(
+                root.Q<HelpBox>(k_PlatformSelectionDeprecationHelpBox));
+
+            BuildProfileModuleUtil.OnUpdateActiveEditors += this.OnUpdateEditorView;
+
+            m_PlatformDeprecationHelpBox = new PlatformDeprecationHelpBox(platformDeprecationHelpBox);
+            m_PlatformDeprecationHelpBox.Update(profile);
+
+            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformGuid);
+            isClassic = BuildProfileContext.IsClassicPlatformProfile(profile);
+
+            if (!isClassic)
+            {
+                sharedSettingsInfoHelpBox.Hide();
+            }
+            else
+            {
+                m_AddSettingsButton.Hide();
+                sharedSettingsInfoHelpBox.buttonText = TrText.addBuildProfile;
+                sharedSettingsInfoHelpBox.onButtonClicked += () => PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile.platformGuid);
+            }
+
             if (profile.isMultiTarget && (m_SDKExtension == null || m_SDKExtension.shouldShowPlatformSettings))
                 ShowProfilePlatformSelection();
 
@@ -172,22 +201,6 @@ namespace UnityEditor.Build.Profile
             }
             else
                 ShowSettingsFoldouts();
-
-            BuildProfileModuleUtil.OnUpdateActiveEditors += this.OnUpdateEditorView;
-
-            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformGuid);
-            isClassic = BuildProfileContext.IsClassicPlatformProfile(profile);
-
-            if (!isClassic)
-            {
-                sharedSettingsInfoHelpBox.Hide();
-            }
-            else
-            {
-                m_AddSettingsButton.Hide();
-                sharedSettingsInfoHelpBox.buttonText = TrText.addBuildProfile;
-                sharedSettingsInfoHelpBox.onButtonClicked += () => PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile.platformGuid);
-            }
 
             if (hasErrors)
             {
@@ -227,13 +240,14 @@ namespace UnityEditor.Build.Profile
             // it won't be visible - no manual hiding required. So we don't do it below this line
             var sharedSettingsHelpbox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
 
+            root.Q<HelpBox>(k_PlatformDeprecationHelpBox).Hide();
             root.Q<HelpBox>(k_PlatformWarningHelpBox).Hide();
             root.Q<VisualElement>(k_PlatformSettingsBaseRoot).Hide();
             root.Q<HelpBox>(k_VirtualTextureWarningHelpBox).Hide();
             root.Q<HelpBox>(k_CompilingWarningHelpBox).Hide();
             root.Q<Foldout>(k_BuildSettingsFoldout).Hide();
             root.Q<Button>(k_AddSettingsButton).Hide();
-            root.Q<VisualElement>(k_PlatformSelectionContainer).Hide();
+            root.Q<VisualElement>(k_PlatformSelectionSection).Hide();
 
             sharedSettingsHelpbox.text = TrText.sharedSettingsSectionInfo;
 
@@ -365,7 +379,7 @@ namespace UnityEditor.Build.Profile
         {
             if (!m_Profile.TryGetSupportedIBuildTargets(out var installedPlatforms))
             {
-                m_PlatformSelectionContainer.Hide();
+                m_PlatformSelectionSection.Hide();
                 return;
             }
 
@@ -374,7 +388,8 @@ namespace UnityEditor.Build.Profile
 
             SetUpPlatformSelectionDropdown();
             SetUpSwitchProfilePlatformButton();
-            m_PlatformSelectionContainer.Show();
+            m_PlatformSelectionSection.Show();
+            m_SelectedPlatformDeprecationHelpBox.Update(m_Profile);
 
             void SetUpPlatformSelectionDropdown()
             {

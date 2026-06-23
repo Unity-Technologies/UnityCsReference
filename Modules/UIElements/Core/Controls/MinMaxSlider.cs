@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
         internal VisualElement dragElement { get; private set; }
         internal VisualElement dragMinThumb { get; private set; }
         internal VisualElement dragMaxThumb { get; private set; }
-        internal ClampedDragger<float> clampedDragger { get; private set; }
+        internal ClampedDragger clampedDragger { get; private set; }
 
         // For dragging purpose
         Vector2 m_DragElementStartPos;
@@ -326,7 +326,7 @@ namespace UnityEngine.UIElements
             dragElement.Add(dragMinThumb);
             dragElement.Add(dragMaxThumb);
 
-            clampedDragger = new ClampedDragger<float>(null, SetSliderValueFromClick, SetSliderValueFromDrag);
+            clampedDragger = new ClampedDragger(SetSliderValueFromClick, SetSliderValueFromDrag);
             visualInput.AddManipulator(clampedDragger);
 
             m_MinLimit = minLimit;
@@ -535,7 +535,7 @@ namespace UnityEngine.UIElements
         // Handles slider drags
         void SetSliderValueFromDrag()
         {
-            if (clampedDragger.dragDirection != ClampedDragger<float>.DragDirection.Free)
+            if (clampedDragger.dragDirection != ClampedDragger.DragDirection.Free)
                 return;
 
             var originalPosition = m_DragElementStartPos.x;
@@ -546,7 +546,7 @@ namespace UnityEngine.UIElements
         // Handles slider clicks and page scrolls
         void SetSliderValueFromClick()
         {
-            if (clampedDragger.dragDirection == ClampedDragger<float>.DragDirection.Free)
+            if (clampedDragger.dragDirection == ClampedDragger.DragDirection.Free)
                 return;
 
             var worldStartMousePosition = visualInput.LocalToWorld(clampedDragger.startMousePosition);
@@ -591,7 +591,7 @@ namespace UnityEngine.UIElements
 
             // Start dragging
             m_ValueStartPos = value;
-            clampedDragger.dragDirection = ClampedDragger<float>.DragDirection.Free;
+            clampedDragger.dragDirection = ClampedDragger.DragDirection.Free;
             m_DragElementStartPos = clampedDragger.startMousePosition;
         }
 

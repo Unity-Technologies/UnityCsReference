@@ -86,6 +86,7 @@ namespace UnityEngine.UIElements.UIR
                 if (setsMaterial)
                     mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
+                DrawVisualElementBackdrop(mgc);
                 DrawVisualElementBackground(mgc);
                 DrawVisualElementBorder(mgc);
                 PushVisualElementClipping(mgc);
@@ -133,6 +134,9 @@ namespace UnityEngine.UIElements.UIR
             if (emittedPanelComponent)
                 mgc.entryRecorder.EndPanelComponent(mgc.parentEntry);
         }
+
+        // Records mesh + GenerateBackdropFilterTexture command when allocated; resource lifecycle is owned by RenderEvents.SyncBackdropFilterState (pre-build sync).
+        protected abstract void DrawVisualElementBackdrop(MeshGenerationContext mgc);
 
         protected abstract void DrawVisualElementBackground(MeshGenerationContext mgc);
 
@@ -195,7 +199,86 @@ namespace UnityEngine.UIElements.UIR
             return UIRUtility.IsRoundRect(ve) || UIRUtility.IsVectorImageBackground(ve);
         }
 
+        protected override void DrawVisualElementBackdrop(MeshGenerationContext mgc)
+        {
+            var ve = mgc.visualElement;
+            var renderData = mgc.renderData;
+
+            if (!renderData.hasBackdropFilterAllocated)
+                return;
+
+            var veSize = ve.layoutSize;
+            if (veSize.x <= UIRUtility.k_Epsilon || veSize.y <= UIRUtility.k_Epsilon)
+                return;
+
+            // UV corners depend on world transform; UIRRepaintUpdater forces a visuals-changed
+            // event for transform changes on backdrop-filter elements to keep these in sync.
+            BackdropFilterHelper.UpdateBackdropFilterUVCorners(ve, renderData);
+
+            var veRect = new Rect(0, 0, veSize.x, veSize.y);
+
+            // Compute texture size from world bound (same calculation as in UpdateBackdropFilterUVCorners)
+            Rect worldBound = ve.worldBound;
+            RectInt pixelRect = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(worldBound, Vector2.zero, ve.scaledPixelsPerPoint);
+            var texSize = new Vector2(pixelRect.width, pixelRect.height);
+
+            var rectParams = new MeshGenerator.RectangleParams
+            {
+                rect = veRect,
+                subRect = new Rect(0, 0, 1, 1),
+                uv = new Rect(0, 0, 1, 1), // Fallback UV rect (not used when uvCornersValid is true)
+                color = Color.white,
+                contentSize = texSize,
+                textureSize = texSize,
+                scaleMode = ScaleMode.StretchToFill,
+                playmodeTintColor = ve.playModeTintColor,
+                // Set UV corners for proper rotation support via bilinear interpolation
+                uvTopLeft = renderData.backdropFilterUVTopLeft,
+                uvTopRight = renderData.backdropFilterUVTopRight,
+                uvBottomRight = renderData.backdropFilterUVBottomRight,
+                uvBottomLeft = renderData.backdropFilterUVBottomLeft,
+                uvCornersValid = true
+            };
+
+            // Get border radii from the visual element
+            MeshGenerator.GetVisualElementRadii(ve,
+                out rectParams.topLeftRadius,
+                out rectParams.bottomLeftRadius,
+                out rectParams.topRightRadius,
+                out rectParams.bottomRightRadius);
+
+            MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
+
+            // Generate mesh using native builder
+            rectParams.ToNativeParams(out var nativeRectParams);
+            MeshWriteDataInterface meshData = MeshBuilderNative.MakeTexturedRect(ref nativeRectParams);
+
+            if (meshData.vertexCount == 0 || meshData.indexCount == 0)
+                return;
+
+            // Record command to capture backdrop and populate the texture during command execution
+            mgc.entryRecorder.GenerateBackdropFilterTexture(mgc.parentEntry);
+
+            mgc.AllocateTempMesh(meshData.vertexCount, meshData.indexCount, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
+
+            unsafe
+            {
+                NativeSlice<Vertex> nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                NativeSlice<ushort> nativeIndices = UIRenderDevice.PtrToSlice<ushort>((void*)meshData.indices, meshData.indexCount);
+                vertices.CopyFrom(nativeVertices);
+                indices.CopyFrom(nativeIndices);
+            }
+
+            // Draw using TextureId directly (texture will be bound during command execution by GenerateBackdropFilterTexture)
+            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, renderData.backdropFilterTextureId, false);
+        }
+
         protected override void DrawVisualElementBackground(MeshGenerationContext mgc)
+        {
+            DrawVisualElementBackground(mgc, DrawPhase.Background);
+        }
+
+        void DrawVisualElementBackground(MeshGenerationContext mgc, DrawPhase phase)
         {
             var ve = mgc.visualElement;
             var renderData = mgc.renderData;
@@ -233,7 +316,7 @@ namespace UnityEngine.UIElements.UIR
 
                 MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
 
-                mgc.meshGenerator.DrawRectangle(rectParams);
+                mgc.meshGenerator.DrawRectangle(rectParams, phase);
             }
 
             var slices = new Vector4(
@@ -374,11 +457,11 @@ namespace UnityEngine.UIElements.UIR
 
                 if (rectParams.texture != null || rectParams.vectorImage != null)
                 {
-                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint);
+                    mgc.meshGenerator.DrawRectangleRepeat(rectParams, ve.rect, ve.scaledPixelsPerPoint, phase);
                 }
                 else
                 {
-                    mgc.meshGenerator.DrawRectangle(rectParams);
+                    mgc.meshGenerator.DrawRectangle(rectParams, phase);
                 }
             }
         }
@@ -420,7 +503,7 @@ namespace UnityEngine.UIElements.UIR
                         out borderParams.bottomLeftRadius,
                         out borderParams.topRightRadius,
                         out borderParams.bottomRightRadius);
-                    mgc.meshGenerator.DrawBorder(borderParams);
+                    mgc.meshGenerator.DrawBorder(borderParams, DrawPhase.Border);
                 }
             }
         }
@@ -431,7 +514,7 @@ namespace UnityEngine.UIElements.UIR
                 // In the future, we should initially draw it into a detached context and just re-draw it here without
                 // tessellating once more as we do here. However this is better than the previous approach which would
                 // intercept entries (and would fail whenever more than 1 is used: e.g. with background-repeat
-                DrawVisualElementBackground(mgc);
+                DrawVisualElementBackground(mgc, DrawPhase.Mask);
             else
                 GenerateStencilClipEntryForRoundedRectBackground(mgc);
         }
@@ -482,7 +565,7 @@ namespace UnityEngine.UIElements.UIR
                 rp.rect.height -= resolvedStyle.paddingTop + resolvedStyle.paddingBottom;
             }
 
-            mgc.meshGenerator.DrawRectangle(rp);
+            mgc.meshGenerator.DrawRectangle(rp, DrawPhase.Mask);
         }
 
         public override void ScheduleMeshGenerationJobs(MeshGenerationContext mgc)

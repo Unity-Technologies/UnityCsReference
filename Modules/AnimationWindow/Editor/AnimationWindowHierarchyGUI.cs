@@ -43,8 +43,9 @@ namespace UnityEditorInternal
         private const float k_ValueFieldDragWidth = 15;
         private const float k_ValueFieldWidth = 80;
         private const float k_ValueFieldOffsetFromRightSide = 100;
-        private const float k_ObjectFieldAdditionalWidth = 30;
-        private const float k_ObjectFieldAdditionalOffset = k_ObjectFieldAdditionalWidth + 30;
+        private const float k_ObjectFieldWidth = 110;
+        private const float k_ObjectFieldOffsetFromRightSide = 160;
+        private const float k_LabelFieldSpacing = 2;
         private const float k_ObjectFieldMaxHeight = 18;
         private const float k_ColorIndicatorTopMargin = 3;
         public static readonly float k_DopeSheetRowHeight = EditorGUI.kSingleLineHeight;
@@ -110,6 +111,8 @@ namespace UnityEditorInternal
 
             float indent = k_BaseIndent + (node.depth + node.indent) * k_IndentWidth;
 
+            CalculateRects(rect, node, indent, out var labelRect, out var valueFieldRect);
+
             if (node is AnimationWindowHierarchyAddButtonNode)
             {
                 if (Event.current.type == EventType.MouseMove && s_WasInsideValueRectFrame >= 0)
@@ -128,13 +131,13 @@ namespace UnityEditorInternal
             else
             {
                 DoRowBackground(rect, row);
-                DoIconAndName(rect, node, selected, focused, indent);
+                DoIconAndName(rect, labelRect, node, selected, focused);
                 DoFoldout(node, rect, indent, row);
 
                 bool enabled = !state.selection.isReadOnly;
                 using (new EditorGUI.DisabledScope(!enabled))
                 {
-                    DoValueField(rect, node, row);
+                    DoValueField(rect, valueFieldRect, node, row);
                 }
                 DoCurveDropdown(rect, node, row, enabled);
                 HandleContextMenu(rect, node, enabled);
@@ -194,6 +197,49 @@ namespace UnityEditorInternal
         {
         }
 
+        void CalculateRects(Rect rect, AnimationWindowHierarchyNode node, float indent, out Rect labelRect, out Rect fieldRect)
+        {
+            // Calculate labelRect
+            labelRect = rect;
+
+            // Offset the labelRect with the amount of indent and the foldout width
+            labelRect.xMin += (int)(indent + foldoutStyleWidth + lineStyle.margin.left);
+            labelRect.yMin = rect.y + (rect.height - EditorGUIUtility.singleLineHeight) / 2;
+
+            // labelRect will take the entire row unless the node is a property.
+            // Return early and avoid fieldRect calculations.
+            if (node is not AnimationWindowHierarchyPropertyNode propertyNode)
+            {
+                fieldRect = Rect.zero; // no field on the right
+                return;
+            }
+
+            var offset = propertyNode.isPPtrNode
+                ? k_ObjectFieldOffsetFromRightSide
+                : k_ValueFieldOffsetFromRightSide;
+            var fieldWidth = propertyNode.isPPtrNode
+                ? k_ObjectFieldWidth
+                : k_ValueFieldWidth;
+
+            // Adjust labelRect based on the space taken by fieldRect
+            labelRect.xMax -= offset + k_LabelFieldSpacing;
+
+            // Calculate fieldRect
+            fieldRect = rect;
+            fieldRect.x = rect.xMax - offset;
+            fieldRect.width = fieldWidth;
+
+            // Limit height of PPtr field to avoid showing a squashed preview of the object
+            if (propertyNode.isPPtrNode)
+            {
+                var height = Mathf.Min(k_ObjectFieldMaxHeight, fieldRect.height);
+                var yOffset = (fieldRect.height - height) * 0.5f;
+
+                fieldRect.y += yOffset;
+                fieldRect.height = height;
+            }
+        }
+
         private void DoRowBackground(Rect rect, int row)
         {
             if (Event.current.type != EventType.Repaint)
@@ -244,7 +290,7 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DoIconAndName(Rect rect, AnimationWindowHierarchyNode node, bool selected, bool focused, float indent)
+        private void DoIconAndName(Rect rect, Rect labelRect, AnimationWindowHierarchyNode node, bool selected, bool focused)
         {
             EditorGUIUtility.SetIconSize(new Vector2(13, 13));   // If not set we see icons scaling down if text is being cropped
 
@@ -253,10 +299,6 @@ namespace UnityEditorInternal
             {
                 if (selected)
                     selectionStyle.Draw(rect, false, false, true, focused);
-
-                // Leave some space for the value field that comes after.
-                if (node is AnimationWindowHierarchyPropertyNode)
-                    rect.width -= k_ValueFieldOffsetFromRightSide + 2;
 
                 bool isLeftOverCurve = AnimationWindowUtility.IsNodeLeftOverCurve(state, node);
                 bool isAmbiguous = AnimationWindowUtility.IsNodeAmbiguous(state, node);
@@ -323,15 +365,13 @@ namespace UnityEditorInternal
 
                 SetStyleTextColor(lineStyle, textColor);
 
-                rect.xMin += (int)(indent + foldoutStyleWidth + lineStyle.margin.left);
-                rect.yMin = rect.y + (rect.height - EditorGUIUtility.singleLineHeight) / 2;
-                GUI.Label(rect, Styles.content, lineStyle);
+                GUI.Label(labelRect, Styles.content, lineStyle);
 
                 SetStyleTextColor(lineStyle, oldColor);
             }
 
             if (IsRenaming(node.id) && Event.current.type != EventType.Layout)
-                GetRenameOverlay().editFieldRect = new Rect(rect.x + k_IndentWidth, rect.y, rect.width - k_IndentWidth - 1, rect.height);
+                GetRenameOverlay().editFieldRect = new Rect(labelRect.x + k_IndentWidth, labelRect.y, labelRect.width - k_IndentWidth - 1, labelRect.height);
         }
 
         private string GetGameObjectName(GameObject rootGameObject, string path)
@@ -343,7 +383,7 @@ namespace UnityEditorInternal
             return splits[splits.Length - 1];
         }
 
-        private void DoValueField(Rect rect, AnimationWindowHierarchyNode node, int row)
+        private void DoValueField(Rect rect, Rect fieldRect, AnimationWindowHierarchyNode node, int row)
         {
             bool curvesChanged = false;
 
@@ -359,10 +399,9 @@ namespace UnityEditorInternal
 
                 int id = m_HierarchyItemValueControlIDs[row];
 
-                Rect valueFieldDragRect = new Rect(rect.xMax - k_ValueFieldOffsetFromRightSide - k_ValueFieldDragWidth, rect.y, k_ValueFieldDragWidth, rect.height);
-                Rect valueFieldRect = new Rect(rect.xMax - k_ValueFieldOffsetFromRightSide, rect.y, k_ValueFieldWidth, rect.height);
+                Rect valueFieldDragRect = new Rect(fieldRect.x - k_ValueFieldDragWidth, rect.y, k_ValueFieldDragWidth, rect.height);
 
-                if (Event.current.type == EventType.MouseMove && valueFieldRect.Contains(Event.current.mousePosition))
+                if (Event.current.type == EventType.MouseMove && fieldRect.Contains(Event.current.mousePosition))
                     s_WasInsideValueRectFrame = Time.frameCount;
 
                 EditorGUI.BeginChangeCheck();
@@ -370,7 +409,7 @@ namespace UnityEditorInternal
                 bool handledByCustomHandler = false;
                 foreach (var handler in AnimationWindowUtility.PropertyHandlers)
                 {
-                    if (handler.TryDoValueField(valueFieldRect, valueFieldDragRect, id,
+                    if (handler.TryDoValueField(fieldRect, valueFieldDragRect, id,
                             curve.binding, curve.valueType, node.animatableObjectType, value,
                             out var handlerValue, ref node.handlerData))
                     {
@@ -388,16 +427,12 @@ namespace UnityEditorInternal
 
                         if (typeof(UnityEngine.Object).IsAssignableFrom(objType))
                         {
-                            var height = Mathf.Min(k_ObjectFieldMaxHeight, valueFieldRect.height);
-                            var yOffset = (valueFieldRect.height - height) * 0.5f;
-                            valueFieldRect = new Rect(valueFieldRect.x - k_ObjectFieldAdditionalOffset, valueFieldRect.y + yOffset, valueFieldRect.width + k_ObjectFieldAdditionalWidth, height);
-                         
-                            value = EditorGUI.DoObjectField(valueFieldRect, valueFieldRect, id, value as UnityEngine.Object, null, objType, null, false);
+                            value = EditorGUI.DoObjectField(fieldRect, fieldRect, id, value as UnityEngine.Object, null, objType, null, false);
                         }
                     }
                     else if (curve.valueType == typeof(bool))
                     {
-                        value = GUI.Toggle(valueFieldRect, id, Convert.ToSingle(value) != 0f, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
+                        value = GUI.Toggle(fieldRect, id, Convert.ToSingle(value) != 0f, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
                     }
                     else
                     {
@@ -408,7 +443,7 @@ namespace UnityEditorInternal
 
                         // Force back keyboard focus to float field editor when editing it since the TreeView forces keyboard focus on itself at mouse down.
                         // The focus will be reclaimed after the TreeViewController.OnGUI call.
-                        if (EditorGUI.s_RecycledEditor.controlID == id && Event.current.type == EventType.MouseDown && valueFieldRect.Contains(Event.current.mousePosition))
+                        if (EditorGUI.s_RecycledEditor.controlID == id && Event.current.type == EventType.MouseDown && fieldRect.Contains(Event.current.mousePosition))
                         {
                             m_NeedsToReclaimFieldFocus = true;
                             m_FieldToReclaimFocus = id;
@@ -417,7 +452,7 @@ namespace UnityEditorInternal
                         if (curve.isDiscreteCurve)
                         {
                             value = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor,
-                                valueFieldRect,
+                                fieldRect,
                                 valueFieldDragRect,
                                 id,
                                 Convert.ToInt32(value),
@@ -434,7 +469,7 @@ namespace UnityEditorInternal
                         else
                         {
                             value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor,
-                                valueFieldRect,
+                                fieldRect,
                                 valueFieldDragRect,
                                 id,
                                 Convert.ToSingle(value),
@@ -749,7 +784,6 @@ namespace UnityEditorInternal
             }
 
             state.activeClip.SetInterpolations(curveBindings, mode, L10n.Tr("Rotation Interpolation"));
-            MaintainTreeviewStateAfterRotationInterpolation(mode);
             state.hierarchyData.ReloadData();
         }
 
@@ -822,54 +856,6 @@ namespace UnityEditorInternal
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             return curves.Distinct().ToList();
 #pragma warning restore UA2001
-        }
-
-        // Changing rotation interpolation will change the propertynames of the curves
-        // Propertynames are used in treeview node IDs, so we need to anticipate the new IDs by injecting them into treeview state
-        // This way treeview state (selection and expanding) will be preserved once the curve data is eventually reloaded
-        private void MaintainTreeviewStateAfterRotationInterpolation(RotationCurveInterpolation.Mode newMode)
-        {
-            List<int> selectedInstaceIDs = state.hierarchyState.selectedIDs;
-            List<int> expandedInstaceIDs = state.hierarchyState.expandedIDs;
-
-            List<int> oldIDs = new List<int>();
-            List<int> newIds = new List<int>();
-
-            for (int i = 0; i < selectedInstaceIDs.Count; i++)
-            {
-                AnimationWindowHierarchyNode node = state.hierarchyData.FindItem(selectedInstaceIDs[i]) as AnimationWindowHierarchyNode;
-
-                if (node != null && !node.propertyName.Equals(RotationCurveInterpolation.GetPrefixForInterpolation(newMode)))
-                {
-                    string oldPrefix = node.propertyName.Split('.')[0];
-                    string newPropertyName = node.propertyName.Replace(oldPrefix, RotationCurveInterpolation.GetPrefixForInterpolation(newMode));
-
-                    // old treeview node id
-                    oldIDs.Add(selectedInstaceIDs[i]);
-                    // and its new replacement
-                    newIds.Add((node.path + node.animatableObjectType.Name + newPropertyName).GetHashCode());
-                }
-            }
-
-            // Replace old IDs with new ones
-            for (int i = 0; i < oldIDs.Count; i++)
-            {
-                if (selectedInstaceIDs.Contains(oldIDs[i]))
-                {
-                    int index = selectedInstaceIDs.IndexOf(oldIDs[i]);
-                    selectedInstaceIDs[index] = newIds[i];
-                }
-                if (expandedInstaceIDs.Contains(oldIDs[i]))
-                {
-                    int index = expandedInstaceIDs.IndexOf(oldIDs[i]);
-                    expandedInstaceIDs[index] = newIds[i];
-                }
-                if (state.hierarchyState.lastClickedID == oldIDs[i])
-                    state.hierarchyState.lastClickedID = newIds[i];
-            }
-
-            state.hierarchyState.selectedIDs = new List<int>(selectedInstaceIDs);
-            state.hierarchyState.expandedIDs = new List<int>(expandedInstaceIDs);
         }
 
         private RotationCurveInterpolation.Mode GetRotationInterpolationMode(EditorCurveBinding[] curves)

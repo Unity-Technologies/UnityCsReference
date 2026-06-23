@@ -46,17 +46,21 @@ namespace Unity.Profiling.Editor.UI
                 var frameDurations = new (ulong, int)[frameCount];
                 for (var i = 0; i < frameCount; ++i)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var frameIndex = firstFrameIndex + i;
                     using (var mainThreadData = dataService.GetRawFrameDataView(frameIndex, k_MainThreadIndex))
+                    {
+                        if (!mainThreadData.valid)
+                            break;
                         frameDurations[i] = (mainThreadData.frameTimeNs, frameIndex);
-
-                    cancellationToken.ThrowIfCancellationRequested();
+                    }
                 }
 
                 Array.Sort(frameDurations, (a, b) => { return a.Item1.CompareTo(b.Item1); });
 
                 return BoxPlotModelExtensions.BoxPlotModelFromSortedData(frameDurations, true);
-            });
+            }, cancellationToken);
 
             return await task;
         }

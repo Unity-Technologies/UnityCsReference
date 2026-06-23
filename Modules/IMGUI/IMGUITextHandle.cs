@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
-using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine
 {

@@ -76,6 +76,7 @@ namespace UnityEngine.UIElements
         /// implement custom per‑glyph effects.
         /// </summary>
         public Action<GlyphsEnumerable> PostProcessTextVertices { get; set; }
+
         internal UITKTextHandle uitkTextHandle { get; set; }
 
         // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp

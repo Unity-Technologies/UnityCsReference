@@ -302,38 +302,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
        private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
        {
-            var invalidSignaturePackages = new List<PackageInfo>();
-            var missingSignaturePackages = new List<PackageInfo>();
-            var limitedTrustPackages = new List<PackageInfo>();
-
-            foreach (var info in requestResult)
-            {
-                if (info == null)
-                    continue;
-
-                var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(info, true);
-                var currentlyInstalled = m_UpmCache.GetInstalledPackageInfo(info.name);
-                if (currentlyInstalled?.packageId == info.packageId && TrustAndSignatureHelper.GetTrustAndSignature(info, true) == trustAndSignature)
-                    continue;
-                switch (trustAndSignature)
-                {
-                    case TrustAndSignature.UntrustedInvalidSignature:
-                        invalidSignaturePackages.Add(info);
-                        break;
-                    case TrustAndSignature.UntrustedNoSignature:
-                        missingSignaturePackages.Add(info);
-                        break;
-                    case TrustAndSignature.LimitedTrust:
-                        limitedTrustPackages.Add(info);
-                        break;
-                }
-            }
-
-            if (invalidSignaturePackages.Count == 0 && missingSignaturePackages.Count == 0 && limitedTrustPackages.Count == 0)
-                return true;
-
-            return ActiveTrustWindow.ShowActiveTrustWindow(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages, addAndRemoveOperation.operationType) == ActiveTrustReturnValue.ProceedAnyway;
-        }
+            var viewData = ActiveTrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion);
+            if (viewData != null)
+                return ActiveTrustWindow.Show(viewData) == ActiveTrustReturnValue.ProceedAnyway;
+            return true;
+       }
 
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
         {

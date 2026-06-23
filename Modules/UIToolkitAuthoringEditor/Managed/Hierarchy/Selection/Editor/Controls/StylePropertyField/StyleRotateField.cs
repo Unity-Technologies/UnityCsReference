@@ -39,6 +39,10 @@ namespace Unity.UIToolkit.Editor
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
+
+            var dragger = new FieldMouseDragger<Angle>(valueField.angleField);
+            dragger.SetDragZone(labelElement);
+            labelElement.EnableInClassList(labelDraggerVariantUssClassName, true);
         }
 
         protected override RotateField CreateValueField()

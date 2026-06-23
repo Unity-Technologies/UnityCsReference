@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("HierarchyModule")]
+    [VisibleToOtherModules("HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class HierarchyPreferences
     {
         public enum IconMode
@@ -19,8 +19,6 @@ namespace UnityEditor
             ComponentsOnly,
             GameObjectOnly
         }
-
-        const bool kUseNewHierarchy = false;
 
         public static PrefabStage.Mode DefaultPrefabModeFromHierarchy
         {
@@ -47,21 +45,22 @@ namespace UnityEditor
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action GameObjectIconModeChanged;
         public static readonly SavedBool RenameNewObjects = new SavedBool("SceneHierarchyWindow.RenameNewObjects", true);
         public static readonly SavedBool UseQueryBuilder = new SavedBool("HierarchyWindow.UseQueryBuilder", true);
         public static readonly SavedBool AlternatingRowBackground = new SavedBool("HierarchyWindow.AlternatingRowBackground", true);
-        public static readonly SavedBool UseNewHierarchy = new SavedBool("HierarchyWindow.UseNewHierarchy", kUseNewHierarchy);
+        public static readonly SavedBool AllowAlphaNumericHierarchy = new SavedBool("AllowAlphaNumericHierarchy", false);
 
         static readonly SavedInt s_GameObjectIconMode = new SavedInt("HierarchyWindow.GameObjectIconMode", 0);
 
         public static void EnsureCorrectHierarchyIsInUse(EditorWindow window)
         {
             var windowIsLegacy = window is SceneHierarchyWindow;
-            if (UseNewHierarchy != windowIsLegacy)
+            if (EditorSettings.useLegacyHierarchy == windowIsLegacy)
                 return;
 
-            var wndType = UseNewHierarchy ? HierarchyV2WindowType : typeof(SceneHierarchyWindow);
+            var wndType = EditorSettings.useLegacyHierarchy ? typeof(SceneHierarchyWindow) : HierarchyV2WindowType;
             var replacementWindow = (EditorWindow)ScriptableObject.CreateInstance(wndType);
 
             if (window.docked && window.m_Parent is DockArea dockParent)

@@ -91,18 +91,26 @@ namespace UnityEditor.UIElements
 
             bool isEditorExtensionMode = m_VTA.IsEditorExtensionMode();
 
-            // Get project default theme for marking with suffix
-            var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(isEditorExtensionMode);
+            var resolveSelection = m_SelectedThemeDisplayName == null;
+            var rebuildCache = m_CachedThemeChoices == null || m_CachedThemeData == null;
 
-            // Build menu options
-            if (m_CachedThemeChoices == null || m_CachedThemeData == null)
+            // Resolve the effective theme first: it can trigger an import that rebuilds the runtime
+            // theme list, so the dictionaries fetched below stay fresh. Both lookups can also re-enter
+            // and fire themeFilesChanged (which clears m_CachedTheme*), so they run before the cache is
+            // populated; they're skipped entirely on a warm repaint.
+            (CanvasTheme theme, ThemeStyleSheet sheet) effective = default;
+            if (resolveSelection)
+                effective = ThemeUtility.GetEffectiveTheme(isEditorExtensionMode);
+
+            if (rebuildCache)
             {
-                // Build into locals so a re-entrant themeFilesChanged callback can't null the
-                // fields mid-build and cause an NRE when we continue iterating.
+                var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(isEditorExtensionMode);
+                var editorThemes = ThemeUtility.GetEditorThemesToDisplayName();
+                var runtimeThemes = ThemeUtility.GetRuntimeThemesToDisplayName();
+
                 var newChoices = new List<string>();
                 var newData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
 
-                var editorThemes = ThemeUtility.GetEditorThemesToDisplayName();
                 foreach (var themeKvp in editorThemes)
                 {
                     var canvasTheme = themeKvp.Key;
@@ -124,7 +132,6 @@ namespace UnityEditor.UIElements
                 // Add separator between editor and runtime themes
                 newChoices.Add(k_Separator);
 
-                var runtimeThemes = ThemeUtility.GetRuntimeThemesToDisplayName();
                 foreach (var themeKvp in runtimeThemes)
                 {
                     var themeSheet = themeKvp.Key;
@@ -151,11 +158,8 @@ namespace UnityEditor.UIElements
             }
 
             // Initialize selection to effective theme if not yet set
-            if (m_SelectedThemeDisplayName == null)
-            {
-                var (effectiveTheme, effectiveThemeSheet) = ThemeUtility.GetEffectiveTheme(isEditorExtensionMode);
-                m_SelectedThemeDisplayName = FindDisplayNameForTheme(effectiveTheme, effectiveThemeSheet);
-            }
+            if (resolveSelection)
+                m_SelectedThemeDisplayName = FindDisplayNameForTheme(effective.theme, effective.sheet);
 
             // Show dropdown in toolbar
             GUILayout.Label(new GUIContent("Theme:", k_ThemeDropdownTooltip), GUILayout.Width(50));

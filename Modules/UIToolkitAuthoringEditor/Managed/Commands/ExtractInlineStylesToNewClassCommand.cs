@@ -11,7 +11,7 @@ sealed class ExtractInlineStylesToNewClassCommand : Command<ExtractInlineStylesT
 {
     public const string CommandUndoName = "Extract inline styles to new class";
 
-    public static ExtractInlineStylesToNewClassCommand GetPooled(object source, VisualElementAsset vea, VisualTreeAsset vta, StyleSheet ss, string className)
+    public static ExtractInlineStylesToNewClassCommand GetPooled(object source, VisualElementAsset vea, VisualTreeAsset vta, StyleSheet ss, string className, string propertyName = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
@@ -19,13 +19,14 @@ sealed class ExtractInlineStylesToNewClassCommand : Command<ExtractInlineStylesT
         cmd.VisualTreeAsset = vta;
         cmd.MainStyleSheet = ss;
         cmd.ClassName = className;
+        cmd.PropertyName = propertyName;
         return cmd;
     }
 
     public static void Execute(object source, VisualElementAsset vea, VisualTreeAsset vta, StyleSheet ss,
-        string className)
+        string className, string propertyName = null)
     {
-        using var command = GetPooled(source, vea, vta, ss, className);
+        using var command = GetPooled(source, vea, vta, ss, className, propertyName);
         UICommandQueue.Execute(command);
     }
 
@@ -33,6 +34,7 @@ sealed class ExtractInlineStylesToNewClassCommand : Command<ExtractInlineStylesT
     public VisualTreeAsset VisualTreeAsset { get; private set; }
     public StyleSheet MainStyleSheet { get; private set; }
     public string ClassName { get; private set; }
+    public string PropertyName { get; private set; }
 
     public override string UndoName => CommandUndoName;
 
@@ -42,6 +44,7 @@ sealed class ExtractInlineStylesToNewClassCommand : Command<ExtractInlineStylesT
         VisualTreeAsset = null;
         MainStyleSheet = null;
         ClassName = null;
+        PropertyName = null;
         base.Init();
     }
 
@@ -71,10 +74,33 @@ sealed class ExtractInlineStylesToNewClassCommand : Command<ExtractInlineStylesT
         newRule.AddSelector(selectorString);
 
         var fromRule = VisualTreeAsset.inlineSheet.rules[ElementAsset.ruleIndex];
-        TransferInlineStylePropertiesToRule(MainStyleSheet, newRule, VisualTreeAsset.inlineSheet, fromRule);
+        if (PropertyName != null)
+            TransferSinglePropertyToRule(MainStyleSheet, newRule, VisualTreeAsset.inlineSheet, fromRule, PropertyName);
+        else
+            TransferInlineStylePropertiesToRule(MainStyleSheet, newRule, VisualTreeAsset.inlineSheet, fromRule);
 
         ElementAsset.AddStyleClass(ClassName);
         return CommandExecutionStatus.Success;
+    }
+
+    static void TransferSinglePropertyToRule(
+        StyleSheet mainStyleSheet,
+        StyleRule newRule,
+        StyleSheet inlineSheet,
+        StyleRule fromRule,
+        string propertyName)
+    {
+        var property = fromRule.FindLastProperty(propertyName);
+        if (property == null)
+            return;
+
+        var existing = newRule.FindLastProperty(propertyName);
+        if (existing != null)
+            newRule.RemoveProperty(existing);
+
+        var toProperty = newRule.AddProperty(propertyName);
+        StyleSheetUtility.TransferStylePropertyHandles(inlineSheet, property, mainStyleSheet, toProperty);
+        fromRule.RemoveProperty(property);
     }
 
     static void TransferInlineStylePropertiesToRule(

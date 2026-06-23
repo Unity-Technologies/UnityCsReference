@@ -4,7 +4,9 @@
 
 using System;
 using Unity.Properties;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -37,6 +39,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
 
     private PanelElement m_PanelElement;
     private __SelectorElement m_Element;
+    private bool m_IsUpdating;
 
     [CreateProperty]
     public StyleRule StyleRule
@@ -88,6 +91,13 @@ internal sealed partial class StyleRuleInspector : UIInspector
         }
     }
 
+    // Pushes the animation recording context onto the style fields so a selected rule's edits
+    // route into its clip while the Animation Window records (mirrors VisualElementInspector).
+    internal override void RefreshRecordingState(StyleInspectorAnimationRecordingContext controller)
+    {
+        m_StyleInspector.SetAnimationController(controller);
+    }
+
     public StyleRuleInspector()
     {
         AddToClassList(UssClass);
@@ -100,6 +110,36 @@ internal sealed partial class StyleRuleInspector : UIInspector
         styleSheets.Add(styleSheet);
         m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
         IsReadOnly = false;
+    }
+
+    void OnPreviewThemeChanged(in CommandContext context) => SetSelectorElementInlineStyles();
+
+    void OnVariableChange(in CommandContext context)
+    {
+        if (m_IsUpdating)
+            return;
+        SetSelectorElementInlineStyles();
+    }
+
+    void OnUndoRedoPerformed()
+    {
+        if (m_PanelElement == null || m_StyleRule?.styleSheet == null)
+            return;
+
+        if (m_IsUpdating)
+            return;
+
+        m_IsUpdating = true;
+        try
+        {
+            m_StyleRule.styleSheet.RequestRebuild();
+            SetSelectorElementInlineStyles();
+            m_VariablesSection.Refresh(m_StyleRule);
+        }
+        finally
+        {
+            m_IsUpdating = false;
+        }
     }
 
     protected override void HandleEventBubbleUp(EventBase evt)
@@ -122,6 +162,10 @@ internal sealed partial class StyleRuleInspector : UIInspector
                 InitializeAnimationSectionVisibility();
 
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element, m_StyleRule?.styleSheet, m_StyleRule);
+
+                Undo.undoRedoPerformed += OnUndoRedoPerformed;
+                UICommandQueue.RegisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+                UICommandQueue.RegisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 break;
             }
             case DetachFromPanelEvent detachFromPanelEvent:
@@ -145,6 +189,10 @@ internal sealed partial class StyleRuleInspector : UIInspector
                 m_PanelElement.DestroySubPanel();
                 m_Element = null;
                 m_PanelElement = null;
+
+                Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+                UICommandQueue.UnregisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+                UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 break;
             }
         }
@@ -168,10 +216,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
         content.contentWasGenerated -= OnDefaultContentGenerated;
 
         m_VariablesSection = content.Q<VariablesInspector>();
-        if (m_VariablesSection == null)
-            return;
-
-        m_VariablesSection.Refresh(m_StyleRule);
+        m_VariablesSection?.Refresh(m_StyleRule);
     }
 
     void InitializeAnimationSectionVisibility()
@@ -203,20 +248,36 @@ internal sealed partial class StyleRuleInspector : UIInspector
             animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? StyleKeyword.Null : DisplayStyle.None;
     }
 
+    ThemeStyleSheet GetViewportTheme()
+    {
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        {
+            var selected = PreviewThemeState.ForDocument(stage.Context.RootVisualTreeAsset).SelectedTheme;
+            if (selected != null)
+                return selected;
+        }
+
+        return this.GetPanelSettings()?.themeStyleSheet;
+    }
+
     void SetSelectorElementInlineStyles()
     {
         if (m_StyleRule == null || m_StyleRule.styleSheet == null || m_Element == null)
             return;
 
         m_Element.styleSheets.Clear();
+
+        // Inject theme so theme variables appear in variableContext.
+        var theme = GetViewportTheme();
+        if (theme != null)
+            m_Element.styleSheets.Add(theme);
+
         m_Element.styleSheets.Add(m_StyleRule.styleSheet);
 
-        m_Element.SetInlineRule(m_StyleRule.styleSheet, m_StyleRule);
-
-        m_Element.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
+        m_Element.UpdateInlineRule(m_StyleRule.styleSheet, m_StyleRule);
+        m_Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
 
         // Force immediate style resolution to update the element's variableContext
         m_PanelElement.SubPanel.ApplyStyles();
     }
-
 }

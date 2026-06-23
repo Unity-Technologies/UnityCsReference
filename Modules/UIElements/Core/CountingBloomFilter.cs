@@ -119,10 +119,9 @@ namespace UnityEngine.UIElements
             // This ensures Hash2 (upper 14 bits) is non-zero, preventing slot 0 collisions
             AddHash(Hashes.MixBits(element.typeNameId) * (int)Salt.TagNameSalt);
 
-            // Use cached name ID if available
-            // nameId >= 0 means valid ID (negative values are sentinels: not initialized or not found)
+            // Only add the name hash when the element has a non-empty, non-null name.
             int nameId = element.nameId;
-            if (nameId >= 0)
+            if (!UniqueStyleString.IsNullOrEmpty(nameId))
                 AddHash(Hashes.MixBits(nameId) * (int)Salt.IdSalt);
 
             var classList = element.GetClassesForIteration();

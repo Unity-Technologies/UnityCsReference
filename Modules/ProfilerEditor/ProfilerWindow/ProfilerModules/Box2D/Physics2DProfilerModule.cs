@@ -20,8 +20,8 @@ namespace UnityEditorInternal.Profiling
         // Styles used to display the alternating background in the detail view.
         private static class DefaultStyles
         {
-            public static GUIStyle backgroundEven = "OL EntryBackEven";
-            public static GUIStyle backgroundOdd = "OL EntryBackOdd";
+            public static readonly GUIStyle backgroundEven = "OL EntryBackEven";
+            public static readonly GUIStyle backgroundOdd = "OL EntryBackOdd";
         }
 
         // The profiler view to use.
@@ -140,8 +140,8 @@ namespace UnityEditorInternal.Profiling
         private static readonly ushort k_Physics2DCategoryId = ProfilerCategory.Physics2D;
         private static readonly string k_Physics2DCategoryName = ProfilerCategory.Physics2D.Name;
         private static readonly string k_MemoryCategoryName = ProfilerCategory.Memory.Name;
-        private static int k_labelWidthTitle = 150;
-        private static int k_labelWidthDetail = 160;
+        private const int k_labelWidthTitle = 150;
+        private const int k_labelWidthDetail = 160;
 
         // Profiler module overrides.
         internal override ProfilerArea area => ProfilerArea.Physics2D;

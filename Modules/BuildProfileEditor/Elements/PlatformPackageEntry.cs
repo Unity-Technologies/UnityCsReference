@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
 using PlatformPackageInfo = UnityEditor.BuildTargetDiscovery.PlatformPackageInfo;
 
@@ -50,6 +51,18 @@ namespace UnityEditor.Build.Profile
         public bool required { get; private set; }
 
         /// <summary>
+        /// True when Package Manager marks this package deprecated. Falls back to the catalog deprecation flag
+        /// when PM has no <see cref="PackageManager.PackageInfo"/> for this package.
+        /// </summary>
+        public bool deprecated { get; private set; }
+
+        /// <summary>
+        /// Deprecation message from Package Manager. Falls back to the catalog deprecation message
+        /// when PM has no <see cref="PackageManager.PackageInfo"/> for this package.
+        /// </summary>
+        public string deprecationTooltip { get; private set; }
+
+        /// <summary>
         /// Set when <see cref="qualifiedName"/> is installed.
         /// </summary>
         public bool isInstalled { get; set; }
@@ -69,6 +82,8 @@ namespace UnityEditor.Build.Profile
             hasThumbnail = false;
             shouldInstalled = false;
             required = false;
+            deprecated = false;
+            deprecationTooltip = string.Empty;
             isInstalled = false;
         }
 
@@ -92,6 +107,19 @@ namespace UnityEditor.Build.Profile
             shouldInstalled = required || selected;
             this.required = required;
             this.isInstalled = isInstalled;
+
+            if (packageInfo != null)
+            {
+                deprecated = packageInfo.isDeprecated || packageInfo.IsPackageLifeCycleDeprecated();
+                deprecationTooltip = deprecated ? packageInfo.GetDeprecationMessageForBuildProfile() : string.Empty;
+            }
+            else
+            {
+                deprecated = platformPackageInfo.deprecated;
+                deprecationTooltip = deprecated && !string.IsNullOrEmpty(platformPackageInfo.deprecationMessage)
+                    ? platformPackageInfo.deprecationMessage
+                    : string.Empty;
+            }
         }
     }
 }

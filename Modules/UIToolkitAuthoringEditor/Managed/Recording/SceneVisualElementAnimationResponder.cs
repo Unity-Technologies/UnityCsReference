@@ -28,6 +28,10 @@ namespace Unity.UIToolkit.Editor
             if (selectedObject is VisualElementSelection visualElementSelection)
                 return TryEditVisualElement(window, visualElementSelection.Element, inStage, out newSelection);
 
+            // A USS rule edits one shared clip across every element it matches in the staging panel.
+            if (inStage && selectedObject is StyleRuleSelection styleRuleSelection)
+                return TryEditStyleRule(window, styleRuleSelection.StyleRule, out newSelection);
+
             // Stage has no scene Component for the panel-wide / Animator route to target.
             if (inStage)
                 return false;
@@ -103,6 +107,27 @@ namespace Unity.UIToolkit.Editor
             }
 
             newSelection = VisualElementAnimationSelectionItem.Create(window, panelRenderer, clipOwner, uiClip);
+            return true;
+        }
+
+        static bool TryEditStyleRule(AnimationWindow window, StyleRule rule, out IAnimationWindowSelectionItem newSelection)
+        {
+            newSelection = null;
+
+            if (rule == null || rule.styleSheet == null)
+                return false;
+
+            // Reuse the existing selection when it targets the same rule so the controller's preview
+            // state is preserved across the ControllerChanged refresh; Synchronize picks up the
+            // current resolved clip if it changed under us.
+            if (window.selection is StyleRuleAnimationSelectionItem existing && ReferenceEquals(existing.rule, rule))
+            {
+                existing.Synchronize();
+                newSelection = existing;
+                return true;
+            }
+
+            newSelection = StyleRuleAnimationSelectionItem.Create(window, rule.styleSheet, rule);
             return true;
         }
 

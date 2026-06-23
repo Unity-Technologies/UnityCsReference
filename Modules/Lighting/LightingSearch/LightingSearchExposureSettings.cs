@@ -4,17 +4,20 @@
 
 using UnityEditor.Lighting.Utilities;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Lighting.LightingSearch
 {
-    static class LightingSearchExposureSettings
+    static partial class LightingSearchExposureSettings
     {
         internal const float k_MinExposure = -16.0f;
         internal const float k_MaxExposure = 16.0f;
         const float k_DefaultExposure = 0.0f;
         const float k_AutoExposureTargetLuminance = 0.4f;
 
+        [AutoStaticsCleanupOnCodeReload]
         static float? s_CurrentExposure;
+        [AutoStaticsCleanupOnCodeReload]
         internal static event System.Action ExposureChanged;
 
         internal static bool IsInitialized => s_CurrentExposure.HasValue;

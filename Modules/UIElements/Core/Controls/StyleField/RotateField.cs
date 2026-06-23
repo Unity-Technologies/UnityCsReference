@@ -74,7 +74,7 @@ namespace UnityEngine.UIElements
 
         protected void AddLabelDragger()
         {
-            m_Dragger = new FieldMouseDragger<Rotate>(this);
+            m_Dragger = new FieldMouseDragger<Angle>(m_AngleField);
             EnableLabelDragger(!m_AngleField.isReadOnly);
         }
 

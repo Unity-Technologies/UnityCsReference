@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -35,9 +34,14 @@ namespace Unity.UIToolkit.Editor
         {
             SceneView.duringSceneGui += OnSceneGUI;
             Selection.selectionChanged += OnSelectionChanged;
+
+            // Undo can rebuild the panel (live-reload after asset revert) and may fire transient
+            // selection events; re-collect so the overlay doesn't disappear after Ctrl+Z.
+            Undo.undoRedoPerformed += OnSelectionChanged;
         }
 
-        static VisualElementSelection s_SelectedVisualElement;
+        static readonly List<VisualElement> s_SelectedElements = new();
+        static readonly HashSet<IPanelComponent> s_PanelsDrawnThisFrame = new();
 
         public static Bounds GetElementWorldBounds(VisualElement element, IPanelComponent panelComponent)
         {
@@ -45,7 +49,7 @@ namespace Unity.UIToolkit.Editor
             if (localBounds.width <= 0 || localBounds.height <= 0)
                 return new Bounds(Vector3.zero, Vector3.one);
 
-            var transformOwner = FindTransformOwner(panelComponent);
+            var transformOwner = VisualElementToolUtility.FindTransformOwner(panelComponent);
             if (transformOwner == null)
                 return new Bounds(Vector3.zero, Vector3.one);
 
@@ -74,42 +78,62 @@ namespace Unity.UIToolkit.Editor
 
         static void OnSelectionChanged()
         {
-            s_SelectedVisualElement = Selection.activeObject as VisualElementSelection;
+            s_SelectedElements.Clear();
+            foreach (var obj in Selection.objects)
+            {
+                if (obj is VisualElementSelection sel && sel.Element != null)
+                    s_SelectedElements.Add(sel.Element);
+            }
         }
 
         static void OnSceneGUI(SceneView sceneView)
         {
-            if (s_SelectedVisualElement == null)
+            if (s_SelectedElements.Count == 0)
                 return;
 
-            var element = s_SelectedVisualElement.Element;
-            if (element == null)
-                return;
-
-            // While a UXML editing stage is active the selected element belongs to the cloned
-            // tree hosted inside the stage's PanelElement — not to a scene PanelRenderer. Walk
-            // the clone back to its asset and draw outlines on every scene panel that contains
-            // a matching element (multiple PanelRenderers can share the edited UXML).
+            s_PanelsDrawnThisFrame.Clear();
             var stagePanel = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.GetAuthoringPanel();
-            if (stagePanel != null && element.panel == stagePanel)
+
+            for (var i = 0; i < s_SelectedElements.Count; i++)
             {
-                DrawOutlinesForSceneInstancesOfClone(element);
-                return;
+                var element = s_SelectedElements[i];
+                if (element == null)
+                    continue;
+
+                // Cached ref may have been detached if the panel rebuilt (e.g. after undo),
+                // re-resolve via the asset and update the cache so we keep drawing the outline.
+                if (element.panel == null)
+                {
+                    element = VisualElementToolUtility.FindFirstSceneInstanceOfAsset(element.visualElementAsset);
+                    if (element == null)
+                        continue;
+                    s_SelectedElements[i] = element;
+                }
+
+                if (stagePanel != null && element.panel == stagePanel)
+                {
+                    DrawOutlinesForSceneInstancesOfClone(element);
+                    continue;
+                }
+
+                var panelComponent = FindPanelComponentForElement(element);
+                if (panelComponent == null)
+                    continue;
+
+                var panelSettings = panelComponent.panelSettings;
+                if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
+                    continue;
+
+                DrawPanelOutlineOnce(panelComponent);
+                DrawElementOutline(element, panelComponent);
             }
+        }
 
-            var panelComponent = FindPanelComponentForElement(element);
-            if (panelComponent == null)
-                return;
-
-            var panelSettings = panelComponent.panelSettings;
-            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
-                return;
-
-            // Draw the overall panel outline (like when PanelRenderer is selected)
-            DrawPanelOutline(panelComponent);
-
-            // Draw the individual element outline
-            DrawElementOutline(element, panelComponent);
+        // Dedupes panel outlines so multiple selected elements inside one panel don't overdraw it.
+        static void DrawPanelOutlineOnce(IPanelComponent panelComponent)
+        {
+            if (s_PanelsDrawnThisFrame.Add(panelComponent))
+                DrawPanelOutline(panelComponent);
         }
 
         internal static IPanelComponent FindPanelComponentForElement(VisualElement element)
@@ -123,34 +147,11 @@ namespace Unity.UIToolkit.Editor
         // for the corresponding scene element in each. Mirrors what the picker does in reverse.
         static void DrawOutlinesForSceneInstancesOfClone(VisualElement cloneElement)
         {
-            var asset = cloneElement.visualElementAsset;
-            if (asset == null)
-                return;
-
-            foreach (var panelComponent in EnumerateScenePanels())
+            foreach (var (panelComponent, sceneElement) in VisualElementToolUtility.EnumerateScenePanelInstancesOfAsset(cloneElement.visualElementAsset))
             {
-                if (!panelComponent.gameObject.activeInHierarchy || !panelComponent.GetComponentEnabled())
-                    continue;
-
-                var panelSettings = panelComponent.panelSettings;
-                if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
-                    continue;
-
-                var sceneElement = panelComponent.GetRootVisualElement().FindElementByAsset(asset);
-                if (sceneElement == null)
-                    continue;
-
-                DrawPanelOutline(panelComponent);
+                DrawPanelOutlineOnce(panelComponent);
                 DrawElementOutline(sceneElement, panelComponent);
             }
-        }
-
-        static IEnumerable<IPanelComponent> EnumerateScenePanels()
-        {
-            foreach (var doc in UnityEngine.Object.FindObjectsByType<UIDocument>())
-                yield return doc;
-            foreach (var renderer in UnityEngine.Object.FindObjectsByType<PanelRenderer>())
-                yield return renderer;
         }
 
         static void DrawPanelOutline(IPanelComponent panelComponent)
@@ -162,7 +163,7 @@ namespace Unity.UIToolkit.Editor
             // When a PanelRenderer is nested with Position.Relative, its parentUI owns the rendering
             // and the GameObject transform. All pivot/ppu/matrix decisions have to flow from that
             // ancestor, not from the nested panelComponent itself.
-            var transformOwner = FindTransformOwner(panelComponent);
+            var transformOwner = VisualElementToolUtility.FindTransformOwner(panelComponent);
             if (transformOwner == null)
                 return;
 
@@ -187,7 +188,7 @@ namespace Unity.UIToolkit.Editor
             if (!PanelComponentUtils.IsValidBounds(bb))
                 return;
 
-            ApplyTransformOwnerMatrix(transformOwner, ref bb);
+            VisualElementToolUtility.ApplyTransformOwnerMatrix(transformOwner, ref bb);
 
             var originalColor = Handles.color;
 
@@ -204,7 +205,7 @@ namespace Unity.UIToolkit.Editor
             if (rect.width <= 0 || rect.height <= 0)
                 return;
 
-            var transformOwner = FindTransformOwner(panelComponent);
+            var transformOwner = VisualElementToolUtility.FindTransformOwner(panelComponent);
             if (transformOwner == null)
                 return;
 
@@ -212,20 +213,8 @@ namespace Unity.UIToolkit.Editor
             if (ownerRoot == null)
                 return;
 
-            // Compose the full element-local → world matrix:
-            //   GameObject local→world  *  pivot/ppu  *  ownerRoot worldTransform inverse  *  element worldTransform
-            //
-            // element.worldTransform goes element-local → *panel-world*, which already bakes in
-            // the root's UI-applied transform (the GameObject's transform converted into UI
-            // space by PanelRenderer.SetTransform). Applying goToWorld on top of that would
-            // double-count the GameObject transform — so we strip the root's contribution by
-            // multiplying by ownerRoot.worldTransformInverse first. The remainder is just the
-            // element's own (CSS-applied) transforms relative to the owner root, which is
-            // exactly what we want to feed into the pivot/ppu + GameObject chain.
             var elementToOwnerRoot = ownerRoot.worldTransformInverse * element.worldTransform;
-            var ownerToGameObject = GetTransformOwnerMatrix(transformOwner);
-            var goToWorld = transformOwner.gameObject.transform.localToWorldMatrix;
-            var elementToWorld = goToWorld * ownerToGameObject * elementToOwnerRoot;
+            var elementToWorld = VisualElementToolUtility.GetPanelPixelToWorldMatrix(transformOwner) * elementToOwnerRoot;
 
             var c0 = elementToWorld.MultiplyPoint3x4(new Vector3(0,          0,           0));
             var c1 = elementToWorld.MultiplyPoint3x4(new Vector3(rect.width, 0,           0));
@@ -250,16 +239,6 @@ namespace Unity.UIToolkit.Editor
             Handles.DrawLine(c1, c2, thickness);
             Handles.DrawLine(c2, c3, thickness);
             Handles.DrawLine(c3, c0, thickness);
-        }
-
-        // Walks up the parentUI chain to find the panel that owns the GameObject transform used
-        // for rendering. For top-level or Position.Absolute panels, this is the panel itself.
-        static IPanelComponent FindTransformOwner(IPanelComponent panelComponent)
-        {
-            var owner = panelComponent;
-            while (owner != null && !PanelComponentUtils.IsTransformControlledByGameObject(owner))
-                owner = owner.parentUI;
-            return owner;
         }
 
         // Pre-transforms the 8 corners through `toWorld` and draws with Handles.matrix at identity.
@@ -318,49 +297,8 @@ namespace Unity.UIToolkit.Editor
                 new Vector3(boundsInOwnerRoot.size.x, boundsInOwnerRoot.size.y, k_MinimumDepthForVisibility)
             );
 
-            ApplyTransformOwnerMatrix(transformOwner, ref bb);
+            VisualElementToolUtility.ApplyTransformOwnerMatrix(transformOwner, ref bb);
             return bb;
-        }
-
-        static void ApplyTransformOwnerMatrix(IPanelComponent transformOwner, ref Bounds bb)
-        {
-            var toGameObject = GetTransformOwnerMatrix(transformOwner);
-            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
-        }
-
-        // The transform owner's pivot+ppu matrix that converts panel pixel space into the owner's
-        // GameObject local space. Same math ApplyTransformOwnerMatrix uses, exposed so we can
-        // multiply it into a longer matrix chain (e.g. for the oriented element outline).
-        static Matrix4x4 GetTransformOwnerMatrix(IPanelComponent transformOwner)
-        {
-            var pivotOffset = ComputePivotOffset(transformOwner);
-            var pixelsPerUnit = GetPixelsPerUnit(transformOwner);
-            return PanelComponentUtils.TransformToGameObjectMatrix(pivotOffset, pixelsPerUnit);
-        }
-
-        static Vector2 ComputePivotOffset(IPanelComponent panelComponent)
-        {
-            var root = panelComponent.GetRootVisualElement();
-            if (root == null)
-                return Vector2.zero;
-
-            var pivotPercent = PanelComponentUtils.GetPivotAsPercent(panelComponent.pivot);
-            var localBounds = PanelComponentUtils.LocalBoundsFromPivotSource(root, panelComponent.pivotReferenceSize);
-
-            return new Vector2(
-                -localBounds.center.x - (pivotPercent.x - 0.5f) * localBounds.size.x,
-                -localBounds.center.y - (pivotPercent.y - 0.5f) * localBounds.size.y
-            );
-        }
-
-        static float GetPixelsPerUnit(IPanelComponent panelComponent)
-        {
-            var root = panelComponent.GetRootVisualElement();
-            if (root?.panel == null)
-                return 1.0f;
-
-            var runtimePanel = root.panel as BaseRuntimePanel;
-            return runtimePanel?.pixelsPerUnit ?? 1.0f;
         }
     }
 }

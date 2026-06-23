@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor.GraphVisualization;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -320,23 +322,36 @@ namespace Unity.GraphToolkit.Editor
                     GraphView.Animator.Stop(this);
             }
 
-            if (visitor.ChangeHints.HasChange(ChangeHint.Style))
+            UpdateWireControlColors();
+            m_WireControl.MarkDirtyRepaint();
+        }
+
+        public void SetAppearance(WireVisualData appearance)
+        {
+            if (appearance == null)
             {
-                if (WireModel != null)
-                {
-                    m_WireControl.IsDashed = WireModel.IsDashed;
+                GraphView.Animator.Stop(this);
+                m_WireControl.ResetIsDashed();
+                m_WireControl.ResetLineWidth();
+                m_WireControl.OpacityMultiplier = 1f;
+            }
+            else
+            {
+                if (appearance.IsAnimating)
+                    GraphView.Animator.Play(this, appearance.AnimationSpeed);
+                else
+                    GraphView.Animator.Stop(this);
 
-                    // Use the default line width if the override width value is 0, otherwise override it
-                    if (WireModel.WidthOverride == 0)
-                        m_WireControl.ResetLineWidth();
-                    else
-                        m_WireControl.LineWidth = WireModel.WidthOverride;
+                m_WireControl.IsDashed = appearance.IsDashed;
 
-                    m_WireControl.OpacityMultiplier = WireModel.Opacity;
-                }
+                if (appearance.WidthOverride == 0)
+                    m_WireControl.ResetLineWidth();
+                else
+                    m_WireControl.LineWidth = appearance.WidthOverride;
+
+                m_WireControl.OpacityMultiplier = appearance.Opacity;
             }
 
-            UpdateWireControlColors();
             m_WireControl.MarkDirtyRepaint();
         }
 

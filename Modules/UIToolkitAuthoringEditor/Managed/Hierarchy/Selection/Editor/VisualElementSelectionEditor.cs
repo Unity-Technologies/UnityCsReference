@@ -11,53 +11,22 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor;
 
 [CustomEditor(typeof(VisualElementSelection))]
-class VisualElementSelectionEditor : UnityEditor.Editor
+class VisualElementSelectionEditor : UISelectionEditor
 {
     VisualElementInspector m_Inspector;
     VisualElementHeader m_Header;
-    // Tracks AnimationMode preview-mode transitions that do NOT go through the recording
-    // start/stop events (e.g. a controller flips previewing=true without recording=true).
-    // The animation-driven inspector tint must update on those transitions, otherwise the
-    // affordance and field-background class stay stale until the user clicks the field.
-    bool m_LastInAnimationMode;
 
     private VisualElementSelection Target => (VisualElementSelection)target;
 
-    void OnEnable()
-    {
-        AnimationMode.onAnimationRecordingStart += OnRecordingStateChanged;
-        AnimationMode.onAnimationRecordingStop += OnRecordingStateChanged;
-        m_LastInAnimationMode = AnimationMode.InAnimationMode();
-        EditorApplication.update += OnEditorUpdate;
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
-    }
+    protected override UIInspector Inspector => m_Inspector;
 
-    void OnDisable()
+    protected override StyleInspectorAnimationRecordingContext CreateRecordingContext()
+        => StyleInspectorAnimationRecordingContext.TryCreateForElement(Target.Element);
+
+    protected override void OnDisable()
     {
-        AnimationMode.onAnimationRecordingStart -= OnRecordingStateChanged;
-        AnimationMode.onAnimationRecordingStop -= OnRecordingStateChanged;
-        EditorApplication.update -= OnEditorUpdate;
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+        base.OnDisable();
         Target.propertyChanged -= OnTargetPropertyChanged;
-    }
-
-    void OnStageChanged(Stage _) => m_Inspector?.ResetSearch();
-
-    void OnRecordingStateChanged()
-    {
-        ApplyState();
-    }
-
-    void OnEditorUpdate()
-    {
-        // Single bool comparison per editor tick; cheap. Re-runs ApplyState only on
-        // actual transitions so the inspector affordance pipeline does not churn on
-        // every preview frame (preview already redraws fields via the change processor).
-        var inMode = AnimationMode.InAnimationMode();
-        if (inMode == m_LastInAnimationMode)
-            return;
-        m_LastInAnimationMode = inMode;
-        ApplyState();
     }
 
     void OnTargetPropertyChanged(object sender, BindablePropertyChangedEventArgs e)
@@ -78,14 +47,12 @@ class VisualElementSelectionEditor : UnityEditor.Editor
     /// <see cref="VisualElementEditFlags.Styles"/> regardless of the base flags on
     /// <see cref="VisualElementSelection"/>. The selection itself is never modified.
     /// </summary>
-    void ApplyState()
+    protected override void ApplyState()
     {
         if (m_Inspector == null)
             return;
 
-        var controller = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot
-            ? StyleInspectorAnimationRecordingContext.TryCreateForElement(Target.Element)
-            : null;
+        var controller = CreateRecordingContextIfEnabled();
 
         // The controller will be null if the project setting is disabled or when we are not recording.
         // When the controller exists, we need to change the inspector visibility in two cases:
@@ -108,11 +75,6 @@ class VisualElementSelectionEditor : UnityEditor.Editor
         m_Header.UpdateAssetVisibility(editFlags, isRecording, inStagingMode);
     }
 
-    // We don't want to have an artificial padding.
-    public override bool UseDefaultMargins() => false;
-
-    internal override bool isHeaderSticky => true;
-
     internal override VisualElement CreateInspectorHeaderGUI()
     {
         m_Header = new VisualElementHeader { name = "Header" };
@@ -130,8 +92,6 @@ class VisualElementSelectionEditor : UnityEditor.Editor
         Target.propertyChanged += OnTargetPropertyChanged;
         return m_Inspector;
     }
-
-    void OnDestroy() => m_Inspector?.Dispose();
 
     public bool HasFrameBounds()
     {
@@ -160,6 +120,5 @@ class VisualElementSelectionEditor : UnityEditor.Editor
 
         bounds = VisualElementSceneViewOverlay.GetElementWorldBounds(element, panelComponent);
         return true;
-
     }
 }

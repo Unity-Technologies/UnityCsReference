@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Profiling;
@@ -35,6 +36,7 @@ namespace Unity.Profiling.Editor
         const int k_LabelLayoutMaxIterations = 5;
         const float k_LabelLerpToWhiteAmount = 0.5f;
 
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static Vector2 labelRange = new Vector2(Mathf.Epsilon, Mathf.Infinity);
 
         readonly List<LabelLayoutData> m_LabelData = new List<LabelLayoutData>(16);

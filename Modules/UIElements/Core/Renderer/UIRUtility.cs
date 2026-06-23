@@ -288,6 +288,10 @@ namespace UnityEngine.UIElements
             return exp;
         }
 
+        static long s_NextMeshModifierId;
+
+        public static long GetNextMeshModifierId() => unchecked(++s_NextMeshModifierId);
+
         [ThreadStatic]
         static int? s_ThreadIndex;
 

@@ -166,7 +166,7 @@ namespace Unity.UI.Builder
                     {
                         break;
                     }
-                    m_DataSourceField.label = " ";
+                    m_DataSourceField.label = "Data Source";
 
                     if (m_DataSourceField.value == null)
                     {
@@ -182,7 +182,7 @@ namespace Unity.UI.Builder
                         break;
                     }
 
-                    m_DataSourceTypeField.label = " ";
+                    m_DataSourceTypeField.label = "Data Source";
 
                     if (string.IsNullOrEmpty(m_DataSourceTypeField.value))
                     {
@@ -249,7 +249,7 @@ namespace Unity.UI.Builder
             {
                 m_BindingsFoldout = new PersistedFoldout() { text = "Bindings" }.WithClassList(PersistedFoldout.unindentedUssClassName);
 
-                m_ButtonStrip = new ToggleButtonGroup("Data Source")
+                m_ButtonStrip = new ToggleButtonGroup(" ")
                 {
                     viewDataKey = isBinding ? "builder__binding-window__data-source-field" : "builder__inspector-header__data-source-field"
                 };
@@ -291,7 +291,7 @@ namespace Unity.UI.Builder
             m_AssetFieldContainer.parent.Insert(0, m_ButtonStrip);
 
             // Only create the field and link it to the builder style row created above
-            m_TypeFieldContainer = CreateAttributeField(k_BindingAttr_DataSourceType);
+            m_TypeFieldContainer = CreateAttributeField(k_BindingAttr_DataSourceType, "Data Source");
             m_AssetFieldContainer.parent.Add(m_TypeFieldContainer);
             var attribute = uxmlSerializedDataDescription?.FindAttributeWithUxmlName(k_BindingAttr_DataSourceType);
             SetupStyleRow(styleRow, m_TypeFieldContainer, attribute);
@@ -332,7 +332,7 @@ namespace Unity.UI.Builder
             return CreateSerializedAttributeRow(attributeDesc, path, parent);
         }
 
-        VisualElement CreateAttributeField(string attribute)
+        VisualElement CreateAttributeField(string attribute, string label = null)
         {
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
             var fieldElement = new UxmlSerializedDataAttributeField{ name = attributeDesc.serializedField.Name };
@@ -342,7 +342,7 @@ namespace Unity.UI.Builder
             {
                 name = builderSerializedPropertyFieldName,
                 bindingPath = path,
-                label = StyleSheetUtility.ConvertDashToHuman(attribute)
+                label = label ?? StyleSheetUtility.ConvertDashToHuman(attribute)
             };
             propertyField.Bind(context.rootSerializedObject);
 

@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return result;
         }
 
-        private static Dictionary<string, Color32> s_NameToColor = new Dictionary<string, Color32>()
+        private static Dictionary<string, Color32> s_NameToColor = new Dictionary<string, Color32>(StringComparer.OrdinalIgnoreCase)
         {
             {"aliceblue", HexToColor32(0xf0f8ff)},
             {"antiquewhite", HexToColor32(0xfaebd7)},
