@@ -68,6 +68,7 @@ namespace Unity.UI.Builder
         public StyleSheet firstStyleSheet => activeOpenUXMLFile.firstStyleSheet;
         public List<BuilderDocumentOpenUSS> openUSSFiles => activeOpenUXMLFile.openUSSFiles;
         public List<BuilderDocumentOpenUXML> openUXMLFiles => m_OpenUXMLFiles;
+        public bool isLoadQueued => activeOpenUXMLFile.isLoadQueued;
 
         //
         // Getter/Setters

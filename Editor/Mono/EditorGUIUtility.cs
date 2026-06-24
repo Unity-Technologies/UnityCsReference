@@ -28,6 +28,7 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUIUtility : GUIUtility
     {
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static void RegisterResourceForCleanupOnDomainReload(UnityObject obj)
         {
 #pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using OnCodeUnloading/OnCodeLoaded

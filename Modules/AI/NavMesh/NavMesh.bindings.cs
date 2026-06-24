@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -172,11 +173,12 @@ namespace UnityEngine.AI
     [NativeHeader("Modules/AI/NavMesh/NavMesh.bindings.h")]
     [StaticAccessor("NavMeshBindings", StaticAccessorType.DoubleColon)]
     [MovedFrom("UnityEngine")]
-    public static class NavMesh
+    public static partial class NavMesh
     {
         public const int AllAreas = ~0;
 
         public delegate void OnNavMeshPreUpdate();
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered pre-update callbacks
         public static OnNavMeshPreUpdate onPreUpdate;
 
         [RequiredByNativeCode]

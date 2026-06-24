@@ -260,9 +260,9 @@ namespace Unity.UI.Builder
                     nameLabel.text = m_RenameTextField.text;
                 }
 
-                // We get the VTA from the documentRootElement.
+                // Record undo on the active document's VTA (the open sub-document when in context mode).
                 Undo.RegisterCompleteObjectUndo(
-                    selection.documentRootElement.GetVisualTreeAsset(), BuilderConstants.RenameUIElementUndoMessage);
+                    selection.document.visualTreeAsset, BuilderConstants.RenameUIElementUndoMessage);
 
                 // Update Uxml asset
                 documentElement.name = value;

@@ -298,6 +298,8 @@ namespace Unity.UI.Builder
 
         bool m_IsLoadQueued;
 
+        public bool isLoadQueued { get => m_IsLoadQueued; internal set => m_IsLoadQueued = value; }
+
         //
         // Initialize / Construct / Enable / Clear
         //

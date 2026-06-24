@@ -460,7 +460,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -1613,7 +1613,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule")]
     internal abstract class BaseRuntimePanel : Panel
     {
         private GameObject m_SelectableGameObject;

@@ -2282,10 +2282,7 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            var dragSensitivity = Event.current.GetTypeForControl(id) == EventType.MouseDown
-                ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue)
-                : 0.0f;
-            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kFloatFieldFormatString, style, true, dragSensitivity);
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kFloatFieldFormatString, style, true);
         }
 
         internal static double DoubleFieldInternal(Rect position, double value, GUIStyle style)
@@ -2307,10 +2304,7 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            var dragSensitivity = Event.current.GetTypeForControl(id) == EventType.MouseDown
-                ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue)
-                : 0.0;
-            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kDoubleFieldFormatString, style, true, dragSensitivity);
+            DoNumberField(s_RecycledEditor, position2, position, id, ref value, kDoubleFieldFormatString, style, true);
         }
 
         // Handle dragging of value
@@ -2350,6 +2344,13 @@ namespace UnityEditor
                         s_DragStartIntValue = value.longVal;
                         s_DragStartPos = evt.mousePosition;
                         s_DragSensitivity = dragSensitivity;
+
+                        // NaN means the caller wants the default sensitivity.
+                        if (double.IsNaN(s_DragSensitivity))
+                        {
+                            s_DragSensitivity = value.isDouble ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(value.doubleVal) : NumericFieldDraggerUtility.CalculateIntDragSensitivity(value.longVal);
+                        }
+
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
@@ -2417,7 +2418,7 @@ namespace UnityEditor
 
         internal static float DoFloatField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, float value, string formatString, GUIStyle style, bool draggable)
         {
-            return DoFloatField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            return DoFloatField(editor, position, dragHotZone, id, value, formatString, style, draggable, float.NaN);
         }
 
         internal static float DoFloatField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, float value, string formatString, GUIStyle style, bool draggable, float dragSensitivity)
@@ -2439,7 +2440,7 @@ namespace UnityEditor
 
         internal static double DoDoubleField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, double value, string formatString, GUIStyle style, bool draggable)
         {
-            return DoDoubleField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0);
+            return DoDoubleField(editor, position, dragHotZone, id, value, formatString, style, draggable, double.NaN);
         }
 
         internal static double DoDoubleField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, double value, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
@@ -2573,7 +2574,7 @@ namespace UnityEditor
         }
         internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id,
             ref NumberFieldValue value, string formatString, GUIStyle style, bool draggable,
-            double dragSensitivity)
+            double dragSensitivity = double.NaN)
         {
             bool changed;
             string allowedCharacters = value.isDouble ? s_AllowedCharactersForFloat : s_AllowedCharactersForInt;
@@ -2763,7 +2764,7 @@ namespace UnityEditor
 
         internal static void DelayedNumberFieldInternal(Rect position, Rect dragHotZone, int id, bool isDouble,
             ref double doubleVal, ref long longVal, string formatString, GUIStyle style, bool draggable,
-            double dragSensitivity)
+            double dragSensitivity = double.NaN)
         {
             NumberFieldValue val = default;
             val.isDouble = isDouble;
@@ -2873,7 +2874,7 @@ namespace UnityEditor
             bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
 
             BeginChangeCheck();
-            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref doubleValue, ref dummy, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref doubleValue, ref dummy, kFloatFieldFormatString, style, draggable);
             if (EndChangeCheck())
             {
                 if ((float)doubleValue != value)
@@ -2906,7 +2907,7 @@ namespace UnityEditor
             bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
 
             BeginChangeCheck();
-            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref newDoubleValue, ref dummy, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            DelayedNumberFieldInternal(position, dragHotzone, id, true, ref newDoubleValue, ref dummy, kFloatFieldFormatString, style, draggable);
             if (EndChangeCheck())
             {
                 if (newDoubleValue != value)

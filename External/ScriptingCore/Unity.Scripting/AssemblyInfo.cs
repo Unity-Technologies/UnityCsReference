@@ -28,6 +28,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEngine.IMGUIModule")]
+[assembly: InternalsVisibleTo("UnityEngine.AIModule")]
+[assembly: InternalsVisibleTo("UnityEditor.AIModule")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]

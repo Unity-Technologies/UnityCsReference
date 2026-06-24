@@ -552,6 +552,15 @@ namespace Unity.GraphToolkit.Editor
             if (IsMouseOnCapsuleNodeTitle(evt.mousePosition))
             {
                 m_HasContextualMenuBeenBuilt = false;
+
+                // The capsule node title lives inside the port container, so the port consumes the
+                // right-click and the node's own SelectOnMouseDown never runs (notably on macOS).
+                // Select the node here so GraphView.BuildContextualMenu builds the node's menu from
+                // the selection as the event bubbles up.
+                var node = GetParentNode(this);
+                if (node != null && !node.IsSelected())
+                    GraphViewClickSelector.SelectElements(node, evt.actionKey, true);
+
                 return;
             }
 

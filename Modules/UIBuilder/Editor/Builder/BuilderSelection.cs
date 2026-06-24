@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -124,6 +123,8 @@ namespace Unity.UI.Builder
             get { return m_DocumentRootElement; }
             set { m_DocumentRootElement = value; }
         }
+
+        public BuilderDocument document => m_PaneWindow.document;
 
         public bool isEmpty { get { return m_Selection.Count == 0; } }
 
@@ -293,19 +294,17 @@ namespace Unity.UI.Builder
             if (vea != null && vea.ruleIndex >= 0 && changeType.HasFlag(BuilderHierarchyChangeType.InlineStyle))
             {
                 var vta = m_PaneWindow.document.visualTreeAsset;
-                Assert.IsNotNull(vta.inlineSheet);
-                Assert.IsTrue(vea.ruleIndex < vta.inlineSheet.rules.Length);
-                var rule = vta.inlineSheet.GetRule(vea.ruleIndex);
-
-                element.UpdateInlineRule(vta.inlineSheet, rule);
-
-                // Need to enforce this specific style is updated.
-                element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow | VersionChangeType.StyleSheet);
+                if (vta.inlineSheet != null && vta.inlineSheet.rules != null && vea.ruleIndex < vta.inlineSheet.rules.Length)
+                {
+                    element.UpdateInlineRule(vta.inlineSheet, vta.inlineSheet.GetRule(vea.ruleIndex));
+                    // Need to enforce this specific style is updated.
+                    element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow | VersionChangeType.StyleSheet);
+                    return;
+                }
             }
-            else if (m_DocumentRootElement != null)
-            {
+
+            if (m_DocumentRootElement != null)
                 m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
-            }
         }
 
         public void NotifyOfStylingChange(IBuilderSelectionNotifier source = null, List<string> styles = null, BuilderStylingChangeType changeType = BuilderStylingChangeType.Default)
@@ -367,6 +366,13 @@ namespace Unity.UI.Builder
 
         void NotifyOfStylingChangePostStylingUpdate()
         {
+            // Skip the transient refresh while a USS reimport's reload is queued; it would bind orphaned StyleRules (UUM-139792).
+            if (m_PaneWindow.document.isLoadQueued)
+            {
+                m_Notifications.Clear();
+                return;
+            }
+
             // Order notifications from least to most specific.
 
             m_Notifications.Sort((left, right) =>

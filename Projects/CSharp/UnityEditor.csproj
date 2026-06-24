@@ -15609,6 +15609,9 @@
     <Compile Include="..\..\Modules\VectorGraphicsEditor\Editor\SVGSpriteData.cs">
       <Link>Modules\VectorGraphicsEditor\Editor\SVGSpriteData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\VectorGraphicsEditor\Editor\VectorImageUtils.cs">
+      <Link>Modules\VectorGraphicsEditor\Editor\VectorImageUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\VideoEditor\AssemblyInfo.cs">
       <Link>Modules\VideoEditor\AssemblyInfo.cs</Link>
     </Compile>
