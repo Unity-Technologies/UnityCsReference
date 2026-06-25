@@ -323,8 +323,8 @@ namespace Unity.UI.Builder
 
         static void UnpackTransitionProperty(StylePropertyManipulator manipulator, ReadOnlySpan<StylePropertyId> computedData, int maxCount)
         {
-            manipulator.ClearValues();
-            for (var i = 0; i < maxCount; ++i)
+            var existingCount = manipulator.GetValuesCount();
+            for (var i = existingCount; i < maxCount; ++i)
             {
                 if (i < computedData.Length)
                     manipulator.AddStylePropertyName(new StylePropertyName(computedData[i]));
@@ -333,21 +333,21 @@ namespace Unity.UI.Builder
             }
         }
 
-        static  void UnpackTransitionDurationOrDelay(StylePropertyManipulator manipulator, ReadOnlySpan<TimeValue> computedData, int maxCount)
+        static void UnpackTransitionDurationOrDelay(StylePropertyManipulator manipulator, ReadOnlySpan<TimeValue> computedData, int maxCount)
         {
-            manipulator.ClearValues();
-            for (var i = 0; i < maxCount; ++i)
+            var existingCount = manipulator.GetValuesCount();
+            for (var i = existingCount; i < maxCount; ++i)
             {
-                manipulator.AddTimeValue(computedData[i%computedData.Length]);
+                manipulator.AddTimeValue(computedData[i % computedData.Length]);
             }
         }
 
         static void UnpackTransitionTimingFunction(StylePropertyManipulator manipulator, ReadOnlySpan<EasingFunction> computedData, int maxCount)
         {
-            manipulator.ClearValues();
-            for (var i = 0; i < maxCount; ++i)
+            var existingCount = manipulator.GetValuesCount();
+            for (var i = existingCount; i < maxCount; ++i)
             {
-                manipulator.AddEasingFunction(computedData[i%computedData.Length]);
+                manipulator.AddEasingFunction(computedData[i % computedData.Length]);
             }
         }
 
@@ -618,7 +618,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             ref var computedData = ref currentVisualElement.computedStyle;
-            var setData = GetBuilderTransitionData();
+            using var setData = GetBuilderTransitionData();
 
             var maxCount = Mathf.Max(computedData.TransitionMaxCount(), setData.MaxCount());
             var index = evt.index;
@@ -631,7 +631,8 @@ namespace Unity.UI.Builder
 
             if ((changeType & TransitionChangeType.Property) == TransitionChangeType.Property)
             {
-                if (setData.transitionProperty.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
+                if (setData.transitionProperty.GetValuesCount() > 0 &&
+                    setData.transitionProperty.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
                     index != 0)
                 {
                     // Nothing to do..
@@ -645,7 +646,8 @@ namespace Unity.UI.Builder
 
             if ((changeType & TransitionChangeType.Duration) == TransitionChangeType.Duration)
             {
-                if (setData.transitionDuration.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
+                if (setData.transitionDuration.GetValuesCount() > 0 &&
+                    setData.transitionDuration.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
                     index != 0)
                 {
                     // Nothing to do..
@@ -660,7 +662,8 @@ namespace Unity.UI.Builder
 
             if ((changeType & TransitionChangeType.TimingFunction) == TransitionChangeType.TimingFunction)
             {
-                if (setData.transitionTimingFunction.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
+                if (setData.transitionTimingFunction.GetValuesCount() > 0 &&
+                    setData.transitionTimingFunction.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
                     index != 0)
                 {
                     // Nothing to do..
@@ -675,7 +678,8 @@ namespace Unity.UI.Builder
 
             if ((changeType & TransitionChangeType.Delay) == TransitionChangeType.Delay)
             {
-                if (setData.transitionDelay.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
+                if (setData.transitionDelay.GetValuesCount() > 0 &&
+                    setData.transitionDelay.GetValueContextAtIndex(0).handle.valueType == StyleValueType.Keyword &&
                     index != 0)
                 {
                     // Nothing to do..

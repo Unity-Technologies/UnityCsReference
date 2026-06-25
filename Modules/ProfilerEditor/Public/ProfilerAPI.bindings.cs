@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.MPE;
 using UnityEditor.Profiling;
@@ -136,6 +137,7 @@ namespace UnityEditorInternal
         // [NativeProperty("\"PLAYER_DIRECTCONNECT_PORT\"", true, TargetType.Field, IsThreadSafe = true)]
         // Must stay consistent with PLAYER_DIRECTCONNECT_PORT in GeneralConnection.h
 
+        [NoAutoStaticsCleanup] // Fixed port string matching PLAYER_DIRECTCONNECT_PORT; safe to persist
         static public string directConnectionPort = "34999";
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
@@ -159,6 +161,20 @@ namespace UnityEditorInternal
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static internal extern void SetAutomaticMemoryManagement(bool value);
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetFramesWithScreenshots", IsThreadSafe = true)]
+        static internal extern int[] GetFramesWithScreenshots(int firstFrameIndex, int lastFrameIndex);
+
+        // Bilinearly scale the screenshot for a given frame directly into dstBuffer. The buffer
+        // must be at least maxWidth*maxHeight*4 bytes. On return, the first actualWidth*actualHeight*4
+        // bytes (RGBA32, row-major) are the scaled image; the rest is untouched. Returns false on
+        // any failure (no screenshot, wrong format, buffer too small). Safe to call concurrently
+        // from background threads — native acquires the frames mutex per call.
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetScaledScreenshotBytes", IsThreadSafe = true)]
+        static internal extern bool GetScaledScreenshotBytes(int frameIndex, int maxWidth, int maxHeight,
+            [Out] byte[] dstBuffer, out int actualWidth, out int actualHeight);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static public extern string selectedPropertyPath
@@ -364,6 +380,7 @@ namespace UnityEditorInternal
             return frameData.runtimeSessionId == EditorConnectionInternal.GetLocalGuid();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<int, int> NewProfilerFrameRecorded;
 
         [RequiredByNativeCode]
@@ -372,6 +389,7 @@ namespace UnityEditorInternal
             NewProfilerFrameRecorded?.Invoke(connectionId, newFrameIndex);
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action profileLoaded;
 
         [RequiredByNativeCode]
@@ -380,6 +398,7 @@ namespace UnityEditorInternal
             profileLoaded?.Invoke();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action profileCleared;
 
         [RequiredByNativeCode]
@@ -388,6 +407,7 @@ namespace UnityEditorInternal
             profileCleared?.Invoke();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureLoaded;
 
         [RequiredByNativeCode]
@@ -407,6 +427,7 @@ namespace UnityEditorInternal
             });
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<ProfilerAnalyticsSaveLoadData> profilerCaptureSaved;
 
         [RequiredByNativeCode]
@@ -426,6 +447,7 @@ namespace UnityEditorInternal
             });
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<ProfilerAnalyticsConnectionData> profilerConnected;
 
         [RequiredByNativeCode]
@@ -452,6 +474,7 @@ namespace UnityEditorInternal
             });
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action profilerCaptureStarted;
 
         [RequiredByNativeCode]
@@ -652,7 +675,7 @@ namespace UnityEditorInternal
             }
         }
 
-        [NativeMethod(Name = "GetProfilerInternalSessionMetaDataGuid")]
+        [NativeMethod(Name = "GetProfilerInternalSessionMetaDataGuid", IsThreadSafe = true)]
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static unsafe extern void GetProfilerInternalMetaDataGuidInternal(void *guid, int size);
     }

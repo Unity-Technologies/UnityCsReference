@@ -61,6 +61,10 @@ readonly unsafe struct LayoutDataAccess
         => (VisualElementTransformData*) m_Nodes.GetComponentDataPtr(handle.Index, (int)LayoutNodeDataType.Transform);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal ref VisualElementSelectorData GetSelectorData(UnmanagedDataHandle handle)
+        => ref GetTypedNodeDataRef<VisualElementSelectorData>(handle, LayoutNodeDataType.SelectorData);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref LayoutConfigData GetConfigData(UnmanagedDataHandle handle)
         => ref GetTypedConfigDataRef<LayoutConfigData>(handle, LayoutConfigDataType.Config);
 

@@ -41,11 +41,13 @@ namespace Unity.UIToolkit.Editor
             m_FieldContainer.Add(m_Vector4Field);
 
             m_ColorField = new ColorField();
+            m_ColorField.setAlphaIfTransparentWhenPicked = true;
             m_ColorField.AddToClassList(ColorField.alignedFieldUssClassName);
             m_ColorField.RegisterValueChangedCallback(OnColorChanged);
             m_FieldContainer.Add(m_ColorField);
 
             m_ObjectField = new ObjectField();
+            m_ObjectField.allowBuiltinResources = false;
             m_ObjectField.objectType = typeof(Texture);
             m_ObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             m_ObjectField.RegisterValueChangedCallback(OnTextureChanged);

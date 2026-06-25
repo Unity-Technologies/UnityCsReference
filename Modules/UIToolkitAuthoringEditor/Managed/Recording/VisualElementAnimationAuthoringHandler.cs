@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEditorInternal;
+using UnityEngine.TextCore.Text;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Unity.UIToolkit.Editor
@@ -27,11 +28,6 @@ namespace Unity.UIToolkit.Editor
         private const float k_ValueFieldOffsetFromRightSide = 30f;
         private const float k_ValueLengthUnitFieldWidth = 50f;
         private const float k_ButtonSpacing = 1f;
-        private const float k_ObjectFieldAdditionalWidth = 30f;
-        private const float k_ObjectFieldAdditionalOffset = k_ObjectFieldAdditionalWidth + 30f;
-        private const float k_ObjectFieldMaxHeight = 18f;
-
-        private const string k_BackgroundImageSuffix = "/BackgroundImage";
 
         private static readonly Type[] k_BackgroundImageTypes =
         {
@@ -39,6 +35,22 @@ namespace Unity.UIToolkit.Editor
             typeof(RenderTexture),
             typeof(Sprite),
             typeof(VectorImage),
+        };
+
+        // FontDefinition accepts either a legacy Font or an SDF FontAsset.
+        private static readonly Type[] k_FontDefinitionTypes =
+        {
+            typeof(Font),
+            typeof(FontAsset),
+        };
+
+        // Base property name -> accepted asset types for PPtr curves whose property accepts several
+        // unrelated types. A single EditorCurveBinding can't filter the object field to one type, so
+        // these render a type-selecting object field (with an Asset Type context menu) instead.
+        private static readonly Dictionary<string, Type[]> k_MultiTypeObjectProperties = new()
+        {
+            { nameof(StylePropertyId.BackgroundImage), k_BackgroundImageTypes },
+            { nameof(StylePropertyId.UnityFontDefinition), k_FontDefinitionTypes },
         };
 
         internal static VisualElementAnimationAuthoringHandler Instance => s_Instance;
@@ -60,7 +72,7 @@ namespace Unity.UIToolkit.Editor
             if (element == null)
                 return EntityId.None;
 
-            var selection = VisualElementUtility.GetSelectionObject(element);
+            var selection = VisualElementUtility.GetSelectionObject<VisualElementSelection>(element);
 
             if(selection == null)
             {
@@ -199,6 +211,34 @@ namespace Unity.UIToolkit.Editor
             return propertyName.Substring(firstDot);
         }
 
+        // Curves routed through the UIAnimationBinder (style channels) have no owning component, so
+        // the Animation Window drops the type-name prefix - for both per-element UIAnimationClip and
+        // panel-wide PanelRenderer clips. A PanelRenderer's own component properties are not binder
+        // channels, so they keep the prefix; types this handler does not own also keep the default.
+        public bool ShouldPrefixWithTypeName(Type animatableObjectType, string propertyName)
+        {
+            if (animatableObjectType != typeof(UIAnimationClip) && animatableObjectType != typeof(PanelRenderer))
+                return true;
+            return !IsStyleChannelBinding(propertyName);
+        }
+
+        // True when the base property name maps to a StylePropertyId. Pure managed parse so it never
+        // logs, unlike the native attribute resolve which errors on non-style names.
+        private static bool IsStyleChannelBinding(string propertyName)
+        {
+            if (string.IsNullOrEmpty(propertyName))
+                return false;
+            int start = propertyName.LastIndexOf('/') + 1;
+            int dot = propertyName.IndexOf('.', start);
+            int end = dot < 0 ? propertyName.Length : dot;
+            string baseName = propertyName.Substring(start, end - start);
+            // Guard against TryParse accepting numeric strings ("5" -> (StylePropertyId)5); names are identifiers.
+            if (baseName.Length == 0 || !char.IsLetter(baseName[0]))
+                return false;
+            return Enum.TryParse<StylePropertyId>(baseName, out var id)
+                && id != StylePropertyId.Unknown && id != StylePropertyId.Custom;
+        }
+
         public int GetChannelIndex([NotNull] string propertyName)
         {
             string suffix = ExtractSubChannelSuffix(propertyName);
@@ -270,23 +310,31 @@ namespace Unity.UIToolkit.Editor
             return map;
         }
 
-        internal class BackgroundImageHandlerData
+        internal class MultiTypeObjectHandlerData
         {
-            public Type selectedType = typeof(Texture2D);
+            public Type selectedType;
             public bool needsTypeValidation;
         }
 
-        internal static bool IsBackgroundImageProperty(string propertyName)
+        // Returns the accepted asset types for a multi-type PPtr binding (BackgroundImage,
+        // FontDefinition), or null for any other property. Matches the trailing property segment so
+        // both panel-wide ("BackgroundImage") and per-element ("#elem/BackgroundImage") names resolve.
+        internal static Type[] GetMultiTypeObjectTypes(string propertyName)
         {
-            return propertyName != null && propertyName.EndsWith(k_BackgroundImageSuffix);
+            if (string.IsNullOrEmpty(propertyName))
+                return null;
+
+            string baseName = propertyName.Substring(propertyName.LastIndexOf('/') + 1);
+            return k_MultiTypeObjectProperties.TryGetValue(baseName, out var types) ? types : null;
         }
 
-        private static BackgroundImageHandlerData GetOrCreateHandlerData(ref object handlerData)
+        private static MultiTypeObjectHandlerData GetOrCreateHandlerData(ref object handlerData, Type[] types)
         {
-            if (handlerData is BackgroundImageHandlerData data)
+            if (handlerData is MultiTypeObjectHandlerData data)
                 return data;
 
-            data = new BackgroundImageHandlerData();
+            // Default to the first accepted type until the user picks one or a value forces it.
+            data = new MultiTypeObjectHandlerData { selectedType = types[0] };
             handlerData = data;
             return data;
         }
@@ -334,18 +382,18 @@ namespace Unity.UIToolkit.Editor
                     return true;
                 }
             }
-			
-			if (IsBackgroundImageProperty(curveBinding.propertyName))
+
+			var multiTypeObjectTypes = GetMultiTypeObjectTypes(curveBinding.propertyName);
+            if (multiTypeObjectTypes != null)
             {
                 newValue = currentValue;
-                HandleBackgroundImageValueField(valueFieldRect, controlId, ref newValue, ref handlerData);
+                HandleMultiTypeObjectValueField(valueFieldRect, controlId, multiTypeObjectTypes, ref newValue, ref handlerData);
                 return true;
             }
 
-            // PPtr sub-channels would render an EditorGUI.ObjectField at this point; no
-            // composite currently emits a PPtr sub-channel suffix, so nothing to dispatch
-            // yet. UIAnimationBinder.GetChannelKind already carries the metadata needed to
-            // wire this up once the first PPtr composite lands.
+            // Single-type PPtr channels (Font, Material, ...) already carry a specific
+            // EditorCurveBinding.type from native BindValue, so the AnimationWindow renders the
+            // right-typed object field for them without a handler hook.
 
             newValue = currentValue;
             return false;
@@ -371,14 +419,15 @@ namespace Unity.UIToolkit.Editor
             if (animatableObjectType != typeof(PanelRenderer) && animatableObjectType != typeof(UIAnimationClip))
                 return false;
 
-            if (!IsBackgroundImageProperty(curveBinding.propertyName))
+            var types = GetMultiTypeObjectTypes(curveBinding.propertyName);
+            if (types == null)
                 return false;
 
-            var data = GetOrCreateHandlerData(ref handlerData);
+            var data = GetOrCreateHandlerData(ref handlerData, types);
             var currentType = data.selectedType;
 
             menu.AddSeparator("");
-            foreach (var type in k_BackgroundImageTypes)
+            foreach (var type in types)
             {
                 var capturedType = type;
                 menu.AddItem(
@@ -405,12 +454,13 @@ namespace Unity.UIToolkit.Editor
             if (animatableObjectType != typeof(PanelRenderer) && animatableObjectType != typeof(UIAnimationClip))
                 return false;
 
-            if (!IsBackgroundImageProperty(curveBinding.propertyName))
+            var types = GetMultiTypeObjectTypes(curveBinding.propertyName);
+            if (types == null)
                 return false;
 
             foreach (var obj in draggedObjects)
             {
-                if (obj == null || GetAcceptedBackgroundImageType(obj) == null)
+                if (obj == null || GetAcceptedType(types, obj) == null)
                     return false;
             }
 
@@ -418,9 +468,9 @@ namespace Unity.UIToolkit.Editor
             return true;
         }
 
-        private void HandleBackgroundImageValueField(Rect valueFieldRect, int controlId, ref object value, ref object handlerData)
+        private void HandleMultiTypeObjectValueField(Rect valueFieldRect, int controlId, Type[] types, ref object value, ref object handlerData)
         {
-            var data = GetOrCreateHandlerData(ref handlerData);
+            var data = GetOrCreateHandlerData(ref handlerData, types);
             var currentObj = value as UnityEngine.Object;
             var currentObjectType = data.selectedType;
             if (data.needsTypeValidation)
@@ -445,21 +495,13 @@ namespace Unity.UIToolkit.Editor
                 currentObjectType = currentObj.GetType();
             }
 
-            var height = Mathf.Min(k_ObjectFieldMaxHeight, valueFieldRect.height);
-            var yOffset = (valueFieldRect.height - height) * 0.5f;
-            var fieldRect = new Rect(
-                valueFieldRect.x - k_ObjectFieldAdditionalOffset,
-                valueFieldRect.y + yOffset,
-                valueFieldRect.width + k_ObjectFieldAdditionalWidth,
-                height);
-
-            if (TryHandleBackgroundImageDragAndDrop(fieldRect, data, ref value))
+            if (TryHandleMultiTypeObjectDragAndDrop(valueFieldRect, types, data, ref value))
                 return;
 
-            value = EditorGUI.ObjectField(fieldRect, value as UnityEngine.Object, currentObjectType, false);
+            value = EditorGUI.ObjectField(valueFieldRect, value as UnityEngine.Object, currentObjectType, false);
         }
 
-        private static bool TryHandleBackgroundImageDragAndDrop(Rect dropRect, BackgroundImageHandlerData data, ref object value)
+        private static bool TryHandleMultiTypeObjectDragAndDrop(Rect dropRect, Type[] types, MultiTypeObjectHandlerData data, ref object value)
         {
             var evt = Event.current;
             if (evt.type != EventType.DragUpdated && evt.type != EventType.DragPerform)
@@ -476,7 +518,7 @@ namespace Unity.UIToolkit.Editor
             if (droppedObj == null)
                 return false;
 
-            var droppedType = GetAcceptedBackgroundImageType(droppedObj);
+            var droppedType = GetAcceptedType(types, droppedObj);
             if (droppedType == null)
                 return false;
 
@@ -495,9 +537,9 @@ namespace Unity.UIToolkit.Editor
             return true;
         }
 
-        private static Type GetAcceptedBackgroundImageType(UnityEngine.Object obj)
+        private static Type GetAcceptedType(Type[] types, UnityEngine.Object obj)
         {
-            foreach (var type in k_BackgroundImageTypes)
+            foreach (var type in types)
             {
                 if (type.IsInstanceOfType(obj))
                     return type;

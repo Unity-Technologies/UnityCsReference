@@ -77,6 +77,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
 
                 var sourcePath = sample.resolvedPath;
+                if (string.IsNullOrEmpty(sourcePath))
+                    return false;
                 m_IOProxy.DirectoryCopy(sourcePath, sample.importPath, true,
                     (fileName, progress) =>
                     {

@@ -13,6 +13,8 @@ namespace UnityEditor.Build.Analysis
     internal class MessagesConsole : VisualElement
     {
         private const string k_AllSteps = "All Steps";
+        // Tooltip shown when no specific step is selected; otherwise the tooltip is the full step name.
+        private const string k_StepFilterTooltip = "Filter messages by build step";
         private const string k_UxmlPath = "BuildAnalysis/UXML/MessagesConsole.uxml";
         private const int k_NoStepFilter = -1;
 
@@ -80,7 +82,7 @@ namespace UnityEditor.Build.Analysis
             m_FooterCountLabel = this.Q<Label>("footer-count-label");
 
             m_StepDropdown.choices = new List<string> { k_AllSteps };
-            m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
+            SetStepDropdownValue(k_AllSteps);
 
             m_CollapseToggle = this.Q<ToolbarToggle>("collapse-toggle");
 
@@ -154,9 +156,9 @@ namespace UnityEditor.Build.Analysis
             BuildStepDropdownChoices();
 
             var counts = analysis.Computed.Counts;
-            m_ErrorToggleCount.text = FormatUtility.FormatCount(counts.ErrorMessageCount);
-            m_WarnToggleCount.text = FormatUtility.FormatCount(counts.WarningMessageCount);
-            m_InfoToggleCount.text = FormatUtility.FormatCount(counts.InfoMessageCount);
+            m_ErrorToggleCount.text = FormatUtility.FormatCappedCount(counts.ErrorMessageCount);
+            m_WarnToggleCount.text = FormatUtility.FormatCappedCount(counts.WarningMessageCount);
+            m_InfoToggleCount.text = FormatUtility.FormatCappedCount(counts.InfoMessageCount);
 
             ResetFilterState();
             ShowNoDetail();
@@ -231,7 +233,7 @@ namespace UnityEditor.Build.Analysis
             var choices = new List<string>(m_StepNamePool.Length + 1) { k_AllSteps };
             choices.AddRange(m_StepNamePool);
             m_StepDropdown.choices = choices;
-            m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
+            SetStepDropdownValue(k_AllSteps);
         }
 
         private void SetStepFilter(string value)
@@ -244,8 +246,18 @@ namespace UnityEditor.Build.Analysis
                 return;
 
             m_StepFilterId = newId;
-            m_StepDropdown.SetValueWithoutNotify(newId == k_NoStepFilter ? k_AllSteps : m_StepNamePool[newId]);
+            SetStepDropdownValue(newId == k_NoStepFilter ? k_AllSteps : m_StepNamePool[newId]);
             ApplyFilters();
+        }
+
+        // Sets the dropdown value without firing its callback, and keeps the tooltip in sync: the
+        // full step name on hover (it ellipsizes in the field when long), or the filter hint for "All Steps".
+        private void SetStepDropdownValue(string value)
+        {
+            m_StepDropdown.SetValueWithoutNotify(value);
+            m_StepDropdown.tooltip = string.Equals(value, k_AllSteps, StringComparison.Ordinal)
+                ? k_StepFilterTooltip
+                : value;
         }
 
         private void SetSearchText(string value)
@@ -272,7 +284,7 @@ namespace UnityEditor.Build.Analysis
             m_InfoToggle.SetValueWithoutNotify(true);
             m_CollapseToggle.SetValueWithoutNotify(false);
             m_SearchField.SetValueWithoutNotify(string.Empty);
-            m_StepDropdown.SetValueWithoutNotify(k_AllSteps);
+            SetStepDropdownValue(k_AllSteps);
         }
 
         private void ApplyFilters()
@@ -475,7 +487,7 @@ namespace UnityEditor.Build.Analysis
 
             countLabel.style.display = m_Collapsed ? DisplayStyle.Flex : DisplayStyle.None;
             if (m_Collapsed)
-                countLabel.text = FormatUtility.FormatCount(m_CollapseCountByKey[m_CollapseKeyIds[msgIdx]]);
+                countLabel.text = FormatUtility.FormatCappedCount(m_CollapseCountByKey[m_CollapseKeyIds[msgIdx]]);
         }
     }
 }

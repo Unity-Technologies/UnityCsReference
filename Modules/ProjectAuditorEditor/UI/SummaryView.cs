@@ -542,11 +542,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                                         if (GUILayout.Button(firstIssue.WasFixed ? SharedContents.QuickFixDone : content, EditorStyles.miniButton,
                                             GUILayout.Width(buttonWidth)))
                                         {
-                                            using (new AssetDatabase.AssetEditingScope())
-                                            {
-                                                foreach (var issue in issueGroup)
-                                                    descriptor.Fix(issue, m_ViewManager.Report.SessionInfo);
-                                            }
+                                            ApplyQuickFixes(issueGroup, m_ViewManager.Report.SessionInfo);
                                             m_ViewManager.OnSelectedIssuesQuickFixRequested?.Invoke(issueGroup);
                                         }
                                     }

@@ -407,6 +407,14 @@ namespace UnityEngine.UIElements.UIR
                         AppendCommand(cmd);
                         break;
                     }
+                    case EntryType.GenerateBackdropFilterTexture:
+                    {
+                        var cmd = m_RenderTreeManager.AllocCommand();
+                        cmd.type = CommandType.GenerateBackdropFilterTexture;
+                        cmd.owner = m_CurrentRenderData;
+                        AppendCommand(cmd);
+                        break;
+                    }
                     default:
                         throw new NotImplementedException();
                 }

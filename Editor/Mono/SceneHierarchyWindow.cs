@@ -69,7 +69,7 @@ namespace UnityEditor
 
             PrefabUtility.prefabInstanceModificationCacheCleared += OnPrefabInstanceModificationCacheCleared;
 
-            HierarchyPreferences.UseNewHierarchy.valueChanged += OnUseNewHierarchyChanged;
+            EditorSettings.useLegacyHierarchyChanged += OnUseLegacyHierarchyChanged;
         }
 
         private void OnPrefabInstanceModificationCacheCleared()
@@ -89,10 +89,10 @@ namespace UnityEditor
             m_StageHandling.OnDisable();
 
             PrefabUtility.prefabInstanceModificationCacheCleared -= OnPrefabInstanceModificationCacheCleared;
-            HierarchyPreferences.UseNewHierarchy.valueChanged -= OnUseNewHierarchyChanged;
+            EditorSettings.useLegacyHierarchyChanged -= OnUseLegacyHierarchyChanged;
         }
 
-        void OnUseNewHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
+        void OnUseLegacyHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
 
         internal override void ClickedSearchField()
         {

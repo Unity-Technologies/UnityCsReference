@@ -746,15 +746,8 @@ namespace UnityEditor
 
         public static extern bool useFlipModelSwapchain { get; set; }
 
-        [NativeProperty(TargetType = TargetType.Field)]
-        public static extern bool openGLRequireES31
-        {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
-
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
-        }
+        [Obsolete("OpenGL ES 3.1 is now the Android minimum supported version; this setting has no effect.", false)]
+        public static bool openGLRequireES31 { get { return true; } set { } }
 
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool openGLRequireES31AEP
@@ -1264,6 +1257,10 @@ namespace UnityEditor
         [NativeMethod("GetApiCompatibilityLevel", ThrowsException = true)]
         private static extern ApiCompatibilityLevel GetApiCompatibilityLevelInternal(string buildTargetName);
         public static ApiCompatibilityLevel GetApiCompatibilityLevel(NamedBuildTarget buildTarget) => GetApiCompatibilityLevelInternal(buildTarget.TargetName);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("GetApiCompatibilityLevel_Internal", ThrowsException = true)]
+        internal static extern ApiCompatibilityLevel GetApiCompatibilityLevel_Internal(PlayerSettings instance, string buildTargetName);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetApiCompatibilityLevel", ThrowsException = true)]

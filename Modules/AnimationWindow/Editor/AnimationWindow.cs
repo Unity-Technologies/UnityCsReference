@@ -186,6 +186,9 @@ namespace UnityEditor
                 m_AnimEditor.hideFlags = HideFlags.HideAndDontSave;
             }
 
+            if (state != null)
+                state.onHierarchySelectionChange += SyncSceneSelection;
+
             s_AnimationWindows.Add(this);
 
             OnSelectionChangeInternal(false);
@@ -338,6 +341,96 @@ namespace UnityEditor
         internal void OnSelectionUpdated()
         {
             state?.OnSelectionUpdated();
+        }
+
+        internal bool WouldChangeSelection(UnityObject candidate)
+        {
+            if (m_LockTracker.isLocked || (state != null && state.linkedWithSequencer))
+                return false;
+
+            foreach (var responder in s_Responders)
+            {
+                if (WouldResponderChangeSelection(responder, candidate))
+                    return true;
+            }
+            return false;
+        }
+
+        bool WouldResponderChangeSelection(IAnimationWindowResponder responder, UnityEngine.Object candidateObject)
+        {
+            if (!responder.OnSelectionChange(this, candidateObject, out var probe))
+                return false;
+            if (probe == selection)
+                return false;
+            if (probe != null)
+                probe.Dispose();
+            return true;
+        }
+
+        // Set scene active go to be the same as the one selected from hierarchy
+        void SyncSceneSelection(int[] selectedNodeIDs)
+        {
+            if (state == null || state.filterBySelection)
+                return;
+
+            var selection = state.selection;
+            if (selection == null || !selection.canSyncSceneSelection)
+                return;
+
+            GameObject rootGameObject = selection.rootGameObject;
+            if (rootGameObject == null)
+                return;
+
+            var selectedGameObjectIDs = new List<EntityId>(selectedNodeIDs.Length);
+            foreach (var selectedNodeID in selectedNodeIDs)
+            {
+                // Skip nodes without associated curves.
+                if (selectedNodeID == 0)
+                    continue;
+
+                AnimationWindowHierarchyNode node = state.hierarchyData.FindItem(selectedNodeID) as AnimationWindowHierarchyNode;
+
+                if (node == null)
+                    continue;
+
+                if (node is AnimationWindowHierarchyMasterNode)
+                    continue;
+
+                Transform t = rootGameObject.transform.Find(node.path);
+
+                // In the case of nested animation component, we don't want to sync the scene selection (case 569506)
+                // When selection changes, animation window will always pick nearest animator component in terms of hierarchy depth
+                // Automatically syncinc scene selection in nested scenarios would cause unintuitive clip & animation change for animation window so we check for it and deny sync if necessary
+                if (selection.IsCompatibleWith(t))
+                {
+                    EntityId entity;
+                    if (node.curves.Length > 0)
+                    {
+                        AnimationWindowCurve firstCurve = node.curves[0];
+                        // Query the animation system for the associate EntityId
+                        // For custom IAnimationBinding (e.g., UIToolkit), this will return the appropriate selection object
+                        // For standard animations, returns the GameObject's EntityId
+                        entity = AnimationUtility.GetAssociatedEntityId(t.gameObject, firstCurve.binding);
+
+                        // Case 569506 protection extended to non-Animator routing: skip when the
+                        // entity routes to a different SelectionItem (e.g. nested VE with its own UIAnimationClip).
+                        var entityObj = EditorUtility.EntityIdToObject(entity);
+                        if (entityObj != null && entityObj != t.gameObject && WouldChangeSelection(entityObj))
+                            continue;
+                    }
+                    else
+                    {
+                        entity = t.gameObject.GetEntityId();
+                    }
+
+                    selectedGameObjectIDs.Add(entity);
+                }
+            }
+
+            if (selectedGameObjectIDs.Count > 0)
+                Selection.entityIds = selectedGameObjectIDs.ToArray();
+            else
+                Selection.activeGameObject = rootGameObject;
         }
 
         void OnFocus()

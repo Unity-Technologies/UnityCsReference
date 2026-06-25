@@ -66,8 +66,7 @@ namespace UnityEditor.Scripting
 
         internal static void Cleanup()
         {
-            var isWindows = Application.platform == RuntimePlatform.WindowsEditor;
-            if (isWindows)
+            if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 // Use CreateProcessW as opposed to C# Process class to run
                 // the script so that we could disable handle inheritance
@@ -82,14 +81,17 @@ namespace UnityEditor.Scripting
             }
             else
             {
-                // Fire-and-forget: Don't wait for exit to avoid blocking the editor
-                using var _ = System.Diagnostics.Process.Start(
-                    new System.Diagnostics.ProcessStartInfo(NetCoreProgram.DotNetMuxerPath.ToString())
-                    {
-                        Arguments = "build-server shutdown",
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    });
+                var muxerPath = NetCoreProgram.DotNetMuxerPath.ToString();
+                System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    using var process = System.Diagnostics.Process.Start(
+                        new System.Diagnostics.ProcessStartInfo(muxerPath)
+                        {
+                            Arguments = "build-server shutdown",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        });
+                });
             }
         }
     }

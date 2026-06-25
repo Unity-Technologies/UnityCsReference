@@ -782,6 +782,7 @@ namespace UnityEditor.Experimental.GraphView
             var searchPanel = rootVisualElement.Q<VisualElement>("SearchPanel");
             var context = Search.SearchService.CreateContext(m_SearchProvider);
             context.useExplicitProvidersAsNormalProviders = true;
+            context.options |= SearchFlags.QueryString;
             var searchViewState = new SearchViewState(context);
             searchViewState.flags = SearchViewFlags.None;
             searchViewState.queryBuilderEnabled = true;

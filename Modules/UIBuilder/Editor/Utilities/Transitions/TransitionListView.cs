@@ -40,6 +40,7 @@ namespace Unity.UI.Builder
         const string k_UssLightSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/TransitionsListViewLight.uss";
 
         const string k_BaseClass = "unity-transition-list-view";
+        const string k_BuilderClass = k_BaseClass + "--builder";
         const string k_ContentClass = k_BaseClass + "__content";
         const string k_ItemClass = k_BaseClass + "__item";
         const string k_FirstItemClass = k_ItemClass + "--first";
@@ -73,6 +74,7 @@ namespace Unity.UI.Builder
                 styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssLightSkinPath));
 
             AddToClassList(k_BaseClass);
+            AddToClassList(k_BuilderClass);
 
             var content = new VisualElement();
             contentContainer = content;

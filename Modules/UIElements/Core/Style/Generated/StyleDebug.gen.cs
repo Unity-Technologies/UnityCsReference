@@ -32,6 +32,13 @@ namespace UnityEngine.UIElements
                     return computedStyle.animationPlayState;
                 case StylePropertyId.AspectRatio:
                     return computedStyle.aspectRatio;
+                case StylePropertyId.BackdropFilter:
+                {
+                    var result = new List<FilterFunction>();
+                    computedStyle.rareData.Read().backdropFilter.CopyTo(ref result);
+                    return result;
+                }
+
                 case StylePropertyId.BackgroundColor:
                     return computedStyle.backgroundColor;
                 case StylePropertyId.BackgroundImage:
@@ -249,6 +256,8 @@ namespace UnityEngine.UIElements
                     return typeof(AnimationPlayState);
                 case StylePropertyId.AspectRatio:
                     return typeof(Ratio);
+                case StylePropertyId.BackdropFilter:
+                    return typeof(List<FilterFunction>);
                 case StylePropertyId.BackgroundColor:
                     return typeof(Color);
                 case StylePropertyId.BackgroundImage:
@@ -465,6 +474,8 @@ namespace UnityEngine.UIElements
                     return style.animationPlayState;
                 case StylePropertyId.AspectRatio:
                     return style.aspectRatio;
+                case StylePropertyId.BackdropFilter:
+                    return style.backdropFilter;
                 case StylePropertyId.BackgroundColor:
                     return style.backgroundColor;
                 case StylePropertyId.BackgroundImage:
@@ -661,6 +672,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AspectRatio:
                     style.aspectRatio = (StyleRatio)value;
+                    break;
+                case StylePropertyId.BackdropFilter:
+                    style.backdropFilter = (StyleList<FilterFunction>)value;
                     break;
                 case StylePropertyId.BackgroundColor:
                     style.backgroundColor = (StyleColor)value;
@@ -941,6 +955,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AspectRatio:
                     style.aspectRatio = keyword;
+                    break;
+                case StylePropertyId.BackdropFilter:
+                    style.backdropFilter = keyword;
                     break;
                 case StylePropertyId.BackgroundColor:
                     style.backgroundColor = keyword;
@@ -1230,6 +1247,11 @@ namespace UnityEngine.UIElements
                     return new()
                     {
                         StyleKeyword.Auto
+                    };
+                case StylePropertyId.BackdropFilter:
+                    return new()
+                    {
+                        StyleKeyword.None
                     };
                 case StylePropertyId.BackgroundColor:
                     return new()
@@ -1615,6 +1637,8 @@ namespace UnityEngine.UIElements
                     return (StyleEnum<AnimationPlayState>)(AnimationPlayState)value;
                 case StylePropertyId.AspectRatio:
                     return (StyleRatio)(Ratio)value;
+                case StylePropertyId.BackdropFilter:
+                    return (StyleList<FilterFunction>)(List<FilterFunction>)value;
                 case StylePropertyId.BackgroundColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.BackgroundImage:
@@ -1807,6 +1831,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleEnum<AnimationPlayState>);
                 case StylePropertyId.AspectRatio:
                     return typeof(StyleRatio);
+                case StylePropertyId.BackdropFilter:
+                    return typeof(StyleList<FilterFunction>);
                 case StylePropertyId.BackgroundColor:
                     return typeof(StyleColor);
                 case StylePropertyId.BackgroundImage:
@@ -2261,6 +2287,8 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BackgroundPositionY:
                     return true;
                 case StylePropertyId.BackgroundRepeat:
+                    return true;
+                case StylePropertyId.Cursor:
                     return true;
                 case StylePropertyId.FlexDirection:
                     return true;

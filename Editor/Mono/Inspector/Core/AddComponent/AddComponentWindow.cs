@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -26,6 +27,7 @@ namespace UnityEditor.AddComponent
         private DateTime m_ComponentOpenTime;
         private const string kComponentSearch = "ComponentSearchString";
         private const int kMaxWindowHeight = 395 - 80;
+        [NoAutoStaticsCleanup] // dropdown UI state intentionally persisted across reloads
         private static AdvancedDropdownState s_State = new AdvancedDropdownState();
 
         protected override bool setInitialSelectionPosition { get; } = false;

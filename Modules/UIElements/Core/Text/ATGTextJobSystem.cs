@@ -30,7 +30,6 @@ internal class ATGTextJobSystem
         public List<NativeSlice<ushort>> indices = new();
         public List<GlyphRenderMode> renderModes = new();
         public List<List<List<int>>> textElementIndicesByMesh = new();
-        public List<bool> hasMultipleColorsByMesh = new();
         // Key: FontAsset ID
         // Value: Set of missing glyphs (glyphID) for that font asset.
         public Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset = new();
@@ -49,7 +48,6 @@ internal class ATGTextJobSystem
             vertices.Clear();
             indices.Clear();
             renderModes.Clear();
-            hasMultipleColorsByMesh.Clear();
 
             foreach (var listOfAtlases in textElementIndicesByMesh)
             {
@@ -112,13 +110,11 @@ internal class ATGTextJobSystem
     {
         textElement.uitkTextHandle.EnsureIsReadyForJobs();
 
-        // Pre-load font assets from font tags before jobs
-        if (textElement.enableRichText)
+        // Password and placeholders do not support rich text
+        if (textElement.enableRichText && !textElement.edition.isPassword && !textElement.showPlaceholderText && textElement.textBuffer.length > 0)
         {
             var textSettings = TextUtilities.GetTextSettingsFrom(textElement);
-            RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, textSettings);
-            RichTextTagParser.PreloadSpriteAssetsFromTags(textElement.renderedTextString, textSettings);
-            RichTextTagParser.PreloadGradientAssetsFromTags(textElement.renderedTextString, textSettings);
+            NativeRichTextAssetRegistry.PreloadAssetsFromTags(textElement.textBuffer, textSettings);
         }
 
         return true;
@@ -180,6 +176,7 @@ internal class ATGTextJobSystem
             {
                 managedJobDataHandle = handle
             };
+
             var jobHandle = job.ScheduleParallelByRef(m_PrepareShapingDataList.Count, 1, default);
             jobHandle.Complete();
             handle.Free();
@@ -229,8 +226,8 @@ internal class ATGTextJobSystem
                 // No missing glyphs means we do not need to return to main thread before converting to UIR
                 if (!managedJobData.hasMissingGlyphs)
                 {
-                    managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh);
-                    ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
+                    managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh);
+                    ConvertMeshInfoToUIRVertex(managedJobData.textInfo, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
                 }
 
             }
@@ -249,8 +246,8 @@ internal class ATGTextJobSystem
 
             if (managedJobData.hasMissingGlyphs)
             {
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh);
-                ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
+                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh);
+                ConvertMeshInfoToUIRVertex(managedJobData.textInfo, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
             }
         }
     }
@@ -395,10 +392,19 @@ internal class ATGTextJobSystem
         hasPendingTextWork = false;
     }
 
-    static void ConvertMeshInfoToUIRVertex(Span<ATGMeshInfo> meshInfos, TempMeshAllocator alloc, TextElement visualElement, List<List<List<int>>> textElementIndicesByMesh, List<bool> hasMultipleColorsByMesh, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
+    static void ConvertMeshInfoToUIRVertex(NativeTextInfo textInfo, TempMeshAllocator alloc, TextElement visualElement, List<List<List<int>>> textElementIndicesByMesh, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
     {
         float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 
+        // If multiple colors are required (e.g., color tags or gradient tags are used), then ignore the
+        // dynamic-color hint since we cannot store multiple colors for a given text element.
+        bool hasMultipleColors = textInfo.hasMultipleColors;
+        if (hasMultipleColors)
+            visualElement.renderData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
+        else
+            visualElement.renderData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
+
+        Span<ATGMeshInfo> meshInfos = textInfo.meshInfos;
         for (int i = 0; i < meshInfos.Length; i++)
         {
             int atlasCount = 0;
@@ -423,14 +429,6 @@ internal class ATGTextJobSystem
 
             //Debug.Assert((meshInfo.textElementInfos.Length & 0b11) == 0); // Quads only
             int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
-
-            // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
-            // since we cannot store multiple colors for a given text element.
-            bool hasMultipleColors = hasMultipleColorsByMesh[i];
-            if (hasMultipleColors)
-                visualElement.renderData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
-            else
-                visualElement.renderData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
 
             for (int j = 0; j < atlasCount; ++j)
             {

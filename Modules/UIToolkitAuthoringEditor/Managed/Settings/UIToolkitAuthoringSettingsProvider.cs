@@ -12,31 +12,44 @@ namespace Unity.UIToolkit.Editor;
 [UsedImplicitly]
 internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderExtension
 {
-    private const string k_EnableHierarchyIntegrationText = "Enable Hierarchy Integration";
-    private const string k_EnableUIStagesText = "Enable UI Stages";
-    private const string k_DisplayOptionsText = "Display Options";
+    private const string k_SettingsPath = "Project/UI Toolkit";
+
+    private const string k_EnableUIInSceneAuthoring = "Enable in Scene UI Authoring";
+    private const string k_HierarchyDisplayOptionsText = "Hierarchy Display Options";
     private const string k_DisplayTypenameOptionsText = "Always Display Typename";
     private const string k_DisplayUssClassOptionsText = "Display USS classes";
+    private const string k_UIDocumentCreationOptionsText = "UI Document Creation Options";
+    private const string k_SelectionOptionsText = "Selection Options";
     private const string k_NewVisualTreeAssetLocationText = "New UI Document Location";
-    private const string k_NewVisualTreeAssetLocationTooltip =
-        "Where to place the new UXML when an Add Element action needs to create one. " +
-        "Ask for location: prompt with a save dialog. Use current folder: place it in the active Project window folder without prompting.";
-    private const string k_AutoOpenWindowsText = "Auto-Open Windows";
+    private const string k_AutoOpenWindowsText = "Auto-Open Windows Options";
     private const string k_AutoOpenUIViewportWindowText = "UI Viewport";
     private const string k_AutoOpenStyleSheetsWindowText = "Style Sheets";
     private const string k_RectangleSelectionModeText = "Rectangle Selection Mode";
 
+    private const string k_VisualTreeAsset = "UIToolkitAuthoring/Settings/UIToolkitAuthoringSettings.uxml";
+
+    VisualElement UIAuthoringSection;
+
     int IUIToolkitSettingsProviderExtension.order => 100;
+
+    internal static void OpenSettings()
+    {
+        SettingsService.OpenProjectSettings(k_SettingsPath);
+    }
 
     bool IUIToolkitSettingsProviderExtension.HasSearchInterestHandler(string searchContext)
     {
-        if (k_EnableHierarchyIntegrationText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+        if (k_EnableUIInSceneAuthoring.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
-        if (k_DisplayOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+        if (k_HierarchyDisplayOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_DisplayTypenameOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_DisplayUssClassOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+            return true;
+        if (k_UIDocumentCreationOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+            return true;
+        if (k_SelectionOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_NewVisualTreeAssetLocationText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
@@ -53,49 +66,37 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
 
     void IUIToolkitSettingsProviderExtension.OnActivate(string searchContext, VisualElement rootElement)
     {
-        var header = new Label("UI Authoring");
-        header.AddToClassList("uitoolkit-settings-header");
-        header.style.paddingTop = 20;
-        rootElement.Add(header);
+        BuildSettings(rootElement);
+    }
 
-        var hierarchyIntegration = new Toggle()
+    internal void BuildSettings(VisualElement rootElement)
+    {
+        var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
+        vta.CloneTree(rootElement);
+
+        var newHierarchyHelpBox = rootElement.Q<HelpBox>("EnableHv2HelpBox");
+        newHierarchyHelpBox.onButtonClicked += () =>
         {
-            text = k_EnableHierarchyIntegrationText,
-            value = UIToolkitAuthoringSettings.EnableHierarchyIntegration
+            EditorSettings.useLegacyHierarchy = false;
+            UpdateNewHierarchyHelpBox();
         };
 
-        hierarchyIntegration.RegisterValueChangedCallback(evt =>
+        var enableInSceneAuthoring = rootElement.Q<Toggle>("uitoolkit-authoring-settings__enable-scene-authoring");
+        enableInSceneAuthoring.value = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring;
+        enableInSceneAuthoring.RegisterValueChangedCallback(evt =>
         {
-            UIToolkitAuthoringSettings.EnableHierarchyIntegration = evt.newValue;
+            UIToolkitAuthoringSettings.EnableInSceneUIAuthoring = evt.newValue;
+            UpdateNewHierarchyHelpBox();
         });
+        UpdateNewHierarchyHelpBox();
 
-        rootElement.Add(hierarchyIntegration);
+        UIAuthoringSection = rootElement.Q("uitoolkit-authoring-settings__settings-container");
 
-        var uiStagesIntegration = new Toggle()
-        {
-            text = k_EnableUIStagesText,
-            value = UIToolkitAuthoringSettings.EnableUIStages
-        };
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += CheckUIAuthoringOptions;
+        CheckUIAuthoringOptions(UIToolkitAuthoringSettings.EnableInSceneUIAuthoring);
 
-        uiStagesIntegration.RegisterValueChangedCallback(evt =>
-        {
-            UIToolkitAuthoringSettings.EnableUIStages = evt.newValue;
-        });
-
-        if (Unsupported.IsSourceBuild())
-            rootElement.Add(uiStagesIntegration);
-
-        var displayOptions = new Label(k_DisplayOptionsText);
-        displayOptions.style.paddingTop = 20;
-        displayOptions.AddToClassList("uitoolkit-settings-advanced-header");
-        rootElement.Add(displayOptions);
-
-        var displayTypenameOptions = new Toggle()
-        {
-            label = k_DisplayTypenameOptionsText,
-            value = UIToolkitAuthoringSettings.DisplayOptions.HasFlag(UIHierarchyDisplayOptions.Typename)
-        };
-
+        var displayTypenameOptions = rootElement.Q<Toggle>("uitoolkit-authoring-settings__always-display-typename");
+        displayTypenameOptions.value = UIToolkitAuthoringSettings.DisplayOptions.HasFlag(UIHierarchyDisplayOptions.Typename);
         displayTypenameOptions.RegisterValueChangedCallback(evt =>
         {
             if (evt.newValue)
@@ -104,15 +105,8 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
                 UIToolkitAuthoringSettings.DisplayOptions &= ~UIHierarchyDisplayOptions.Typename;
         });
 
-        rootElement.Add(displayTypenameOptions);
-        displayTypenameOptions.AddToClassList(Toggle.alignedFieldUssClassName);
-
-        var displayUssClassesOptions = new Toggle()
-        {
-            label = k_DisplayUssClassOptionsText,
-            value = UIToolkitAuthoringSettings.DisplayOptions.HasFlag(UIHierarchyDisplayOptions.UssClasses)
-        };
-
+        var displayUssClassesOptions = rootElement.Q<Toggle>("uitoolkit-authoring-settings__display-uss-classes");
+        displayUssClassesOptions.value = UIToolkitAuthoringSettings.DisplayOptions.HasFlag(UIHierarchyDisplayOptions.UssClasses);
         displayUssClassesOptions.RegisterValueChangedCallback(evt =>
         {
             if (evt.newValue)
@@ -121,63 +115,49 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
                 UIToolkitAuthoringSettings.DisplayOptions &= ~UIHierarchyDisplayOptions.UssClasses;
         });
 
-        rootElement.Add(displayUssClassesOptions);
-        displayUssClassesOptions.AddToClassList(Toggle.alignedFieldUssClassName);
-
-        var newVtaLocation = new EnumField(k_NewVisualTreeAssetLocationText, UIToolkitAuthoringSettings.NewVisualTreeAssetLocation)
-        {
-            tooltip = k_NewVisualTreeAssetLocationTooltip,
-        };
+        var newVtaLocation = rootElement.Q<EnumField>("uitoolkit-authoring-settings__new-document-location");
+        newVtaLocation.Init(UIToolkitAuthoringSettings.NewVisualTreeAssetLocation);
         newVtaLocation.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.NewVisualTreeAssetLocation = (NewVisualTreeAssetLocation)evt.newValue;
         });
-        rootElement.Add(newVtaLocation);
-        newVtaLocation.AddToClassList(EnumField.alignedFieldUssClassName);
 
-        var autoOpenHeader = new Label(k_AutoOpenWindowsText);
-        autoOpenHeader.style.paddingTop = 20;
-        autoOpenHeader.AddToClassList("uitoolkit-settings-advanced-header");
-        rootElement.Add(autoOpenHeader);
-
-        var autoOpenUIViewport = new EnumField(k_AutoOpenUIViewportWindowText, UIToolkitAuthoringSettings.AutoOpenUIViewportWindow)
-        {
-            style = { marginRight = 8 }
-        };
-        autoOpenUIViewport.AddToClassList(EnumField.alignedFieldUssClassName);
+        var autoOpenUIViewport = rootElement.Q<EnumField>("uitoolkit-authoring-settings__auto-open-window--viewport");
+        autoOpenUIViewport.Init(UIToolkitAuthoringSettings.AutoOpenUIViewportWindow);
         autoOpenUIViewport.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.AutoOpenUIViewportWindow = (AutoOpenMode)evt.newValue;
         });
-        if (Unsupported.IsSourceBuild())
-            rootElement.Add(autoOpenUIViewport);
 
-        var autoOpenStyleSheets = new EnumField(k_AutoOpenStyleSheetsWindowText, UIToolkitAuthoringSettings.AutoOpenStyleSheetsWindow)
-        {
-            style = { marginRight = 8 }
-        };
-        autoOpenStyleSheets.AddToClassList(EnumField.alignedFieldUssClassName);
+        var autoOpenStyleSheets = rootElement.Q<EnumField>("uitoolkit-authoring-settings__auto-open-window--style-sheet");
+        autoOpenStyleSheets.Init(UIToolkitAuthoringSettings.AutoOpenStyleSheetsWindow);
         autoOpenStyleSheets.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.AutoOpenStyleSheetsWindow = (AutoOpenMode)evt.newValue;
         });
-        if (Unsupported.IsSourceBuild())
-            rootElement.Add(autoOpenStyleSheets);
 
-        var rectangleSelectionMode = new EnumField(UIToolkitAuthoringSettings.RectangleSelectionMode)
-        {
-            label = k_RectangleSelectionModeText,
-        };
-        rectangleSelectionMode.style.paddingTop = 20;
+        var rectangleSelectionMode = rootElement.Q<EnumField>("uitoolkit-authoring-settings__rectangle-selection-mode");
+        rectangleSelectionMode.Init(UIToolkitAuthoringSettings.RectangleSelectionMode);
         rectangleSelectionMode.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.RectangleSelectionMode = (RectangleSelectionMode)evt.newValue;
         });
-        rootElement.Add(rectangleSelectionMode);
-        rectangleSelectionMode.AddToClassList(EnumField.alignedFieldUssClassName);
+
+        void UpdateNewHierarchyHelpBox()
+        {
+            var show = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
+                       && EditorSettings.useLegacyHierarchy;
+            newHierarchyHelpBox.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
     }
 
     void IUIToolkitSettingsProviderExtension.OnDeactivate()
     {
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= CheckUIAuthoringOptions;
+    }
+
+    void CheckUIAuthoringOptions(bool enabled)
+    {
+        UIAuthoringSection.SetEnabled(enabled);
     }
 }

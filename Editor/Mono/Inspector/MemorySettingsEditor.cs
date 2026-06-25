@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditorInternal;
+using UnityEngine.Analytics;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using UnityEditor.Callbacks;
@@ -92,6 +94,7 @@ namespace UnityEditor
         }
 
         const string kWarningDialogSessionKey = "MemorySettingsWarning";
+        const string kMainAllocatorMimallocEnabledPropertyName = "m_MainAllocatorMimallocEnabled";
 
         SerializedProperty m_PlatformMemorySettingsProperty;
         SerializedProperty m_EditorMemorySettingsProperty;
@@ -199,6 +202,31 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.EndFadeGroup();
             EditorGUILayout.EndVertical();
+        }
+
+        bool GetEffectiveMimallocEnabled(SerializedProperty settings)
+        {
+            var mimallocProperty = settings.FindPropertyRelative(kMainAllocatorMimallocEnabledPropertyName);
+            var defaultValueProperty = m_DefaultMemorySettingsProperty.FindPropertyRelative(kMainAllocatorMimallocEnabledPropertyName);
+            var resolvedValue = mimallocProperty.intValue < 0 ? defaultValueProperty.intValue : mimallocProperty.intValue;
+
+            return resolvedValue != 0;
+        }
+
+        static bool UsesDefaultMimallocSetting(SerializedProperty settings)
+        {
+            return settings.FindPropertyRelative(kMainAllocatorMimallocEnabledPropertyName).intValue < 0;
+        }
+
+        void ApplyChangesAndSendMimallocAnalytics(SerializedProperty currentSettings, bool previousMimallocEnabled, string buildTarget)
+        {
+            serializedObject.ApplyModifiedProperties();
+
+            var mimallocEnabled = GetEffectiveMimallocEnabled(currentSettings);
+            if (previousMimallocEnabled == mimallocEnabled)
+                return;
+
+            MemorySettingsAnalytics.SendMimallocSettingChanged(mimallocEnabled, UsesDefaultMimallocSetting(currentSettings), m_EditorSelected ? "editor" : "player", buildTarget);
         }
 
         enum SizeEnum
@@ -452,6 +480,9 @@ namespace UnityEditor
                 MemorySettingsUtils.InitializeDefaultsForPlatform((int)m_ValidPlatforms[m_SelectedPlatform].defaultTarget);
             }
 
+            var previousMimallocEnabled = GetEffectiveMimallocEnabled(currentSettings);
+            var buildTarget = m_EditorSelected ? "Editor" : m_ValidPlatforms[m_SelectedPlatform].defaultTarget.ToString();
+
             if (BeginGroup(0, Content.kMainAllocatorsTitle))
             {
                 if (BeginGroup(1, Content.kMainAllocatorTitle))
@@ -465,7 +496,7 @@ namespace UnityEditor
                         OptionalVariableField(currentSettings, "m_ThreadAllocatorBlockSize", Content.kThreadAllocatorBlockSize);
                     }
 
-                    OptionalBooleanField(currentSettings, "m_MainAllocatorMimallocEnabled", Content.kMainAllocatorMimallocEnabled);
+                    OptionalBooleanField(currentSettings, kMainAllocatorMimallocEnabledPropertyName, Content.kMainAllocatorMimallocEnabled);
                 }
                 EndGroup();
                 if (BeginGroup(2, Content.kGfxAllocatorTitle))
@@ -533,14 +564,14 @@ namespace UnityEditor
             {
                 if (EditorGUI.EndChangeCheck())
                 {
-                    serializedObject.ApplyModifiedProperties();
+                    ApplyChangesAndSendMimallocAnalytics(currentSettings, previousMimallocEnabled, buildTarget);
                     MemorySettingsUtils.WriteEditorMemorySettings();
                 }
             }
             else
             {
                 EditorGUILayout.EndPlatformGrouping();
-                serializedObject.ApplyModifiedProperties();
+                ApplyChangesAndSendMimallocAnalytics(currentSettings, previousMimallocEnabled, buildTarget);
             }
 
             EditorGUILayout.EndVertical();
@@ -554,6 +585,95 @@ namespace UnityEditor
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             s_SettingsProvider = provider;
             return provider;
+        }
+    }
+
+    internal interface IMemorySettingsAnalyticsService
+    {
+        AnalyticsResult SendAnalytic(IAnalytic analytic);
+    }
+
+    internal class MemorySettingsEditorAnalyticsService : IMemorySettingsAnalyticsService
+    {
+        AnalyticsResult IMemorySettingsAnalyticsService.SendAnalytic(IAnalytic analytic)
+        {
+            return EditorAnalytics.SendAnalytic(analytic);
+        }
+    }
+
+    internal static class MemorySettingsAnalytics
+    {
+        const string k_BuildTargetEditor = "Editor";
+        const string k_EventName = "mimallocSettingChanged";
+        const int k_MaxEventsPerHour = 100;
+        const string k_VendorKey = "unity.memory";
+        static Action<bool, bool, string, string> s_TestEventCallback;
+
+        [Serializable]
+        internal struct MimallocSettingChangedData : IAnalytic.IData
+        {
+            public bool enabled;
+            public bool uses_default;
+            public string scope;
+            public string build_target;
+        }
+
+        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey, version: 1, maxEventsPerHour: k_MaxEventsPerHour)]
+        internal class MimallocSettingChangedAnalytic : IAnalytic
+        {
+            readonly MimallocSettingChangedData m_Data;
+
+            public MimallocSettingChangedAnalytic(MimallocSettingChangedData data)
+            {
+                m_Data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                data = m_Data;
+                error = null;
+                return true;
+            }
+        }
+
+        static IMemorySettingsAnalyticsService s_AnalyticsService;
+
+        static MemorySettingsAnalytics()
+        {
+            if (!InternalEditorUtility.inBatchMode && EditorAnalytics.enabled)
+                SetAnalyticsService(new MemorySettingsEditorAnalyticsService());
+        }
+
+        public static IMemorySettingsAnalyticsService SetAnalyticsService(IMemorySettingsAnalyticsService service)
+        {
+            var oldService = s_AnalyticsService;
+            s_AnalyticsService = service;
+            return oldService;
+        }
+
+        internal static Action<bool, bool, string, string> SetTestEventCallback(Action<bool, bool, string, string> callback)
+        {
+            var oldCallback = s_TestEventCallback;
+            s_TestEventCallback = callback;
+            return oldCallback;
+        }
+
+        public static void SendMimallocSettingChanged(bool enabled, bool usesDefault, string scope, string buildTarget)
+        {
+            var resolvedBuildTarget = string.IsNullOrEmpty(buildTarget) ? k_BuildTargetEditor : buildTarget;
+
+            s_TestEventCallback?.Invoke(enabled, usesDefault, scope, resolvedBuildTarget);
+
+            if (s_AnalyticsService == null)
+                return;
+
+            s_AnalyticsService.SendAnalytic(new MimallocSettingChangedAnalytic(new MimallocSettingChangedData
+            {
+                enabled = enabled,
+                uses_default = usesDefault,
+                scope = scope,
+                build_target = resolvedBuildTarget,
+            }));
         }
     }
 }

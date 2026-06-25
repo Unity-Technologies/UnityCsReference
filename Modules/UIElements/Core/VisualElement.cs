@@ -248,7 +248,6 @@ namespace UnityEngine.UIElements
         internal static readonly UniqueStyleString disabledUssClassNameUnique = new(disabledUssClassName);
 
         string m_Name;
-        int m_NameId = -1; // Cached UniqueStyleString.id for m_Name (-1 when m_Name is null/empty)
         StyleClassList m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
 
@@ -469,6 +468,14 @@ namespace UnityEngine.UIElements
                 }
 
                 return false;
+            }
+        }
+        internal bool hasBackdropFilter
+        {
+            get
+            {
+                var computedBackdropFilter = computedStyle.backdropFilter;
+                return computedBackdropFilter.Length > 0;
             }
         }
 
@@ -1248,21 +1255,24 @@ namespace UnityEngine.UIElements
             set => transformFlags = value ? transformFlags | VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass : transformFlags & ~VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass;
         }
 
-        // which pseudo states would change the current VE styles if added
-        internal PseudoStates triggerPseudoMask;
-        // which pseudo states would change the current VE styles if removed
-        internal PseudoStates dependencyPseudoMask;
-
-        private PseudoStates m_PseudoStates;
-
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal PseudoStates pseudoStates
         {
-            get { return m_PseudoStates; }
+            get
+            {
+                if ((m_Flags & VisualElementFlags.Released) != 0)
+                    throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+                return layoutNode.SelectorData.pseudoStates;
+            }
             set
             {
-                PseudoStates diff = m_PseudoStates ^ value;
-                m_PseudoStates = value; // Set the new value before IncrementVersion so we can react to it.
+                if ((m_Flags & VisualElementFlags.Released) != 0)
+                    throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+                ref var selectorData = ref layoutNode.SelectorData;
+                PseudoStates diff = selectorData.pseudoStates ^ value;
+                selectorData.pseudoStates = value;
 
                 if ((int)diff > 0)
                 {
@@ -1273,8 +1283,8 @@ namespace UnityEngine.UIElements
                         var added = diff & value;
                         var removed = diff ^ added;
 
-                        if ((triggerPseudoMask & added) != 0
-                            || (dependencyPseudoMask & removed) != 0)
+                        if ((selectorData.triggerPseudoMask & added) != 0
+                            || (selectorData.dependencyPseudoMask & removed) != 0)
                         {
                             IncrementVersion(VersionChangeType.StyleSheet);
                         }
@@ -1458,7 +1468,7 @@ namespace UnityEngine.UIElements
                 if (m_Name == value)
                     return;
                 m_Name = value;
-                SetNameId(string.IsNullOrEmpty(value) ? -1 : new UniqueStyleString(value).id);
+                SetNameId(string.IsNullOrEmpty(value) ? UniqueStyleString.Empty.id : new UniqueStyleString(value).id);
             }
         }
 
@@ -1469,7 +1479,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.HierarchyModule")]
         internal void SetName(UniqueStyleString uniqueName)
         {
-            if (m_NameId == uniqueName.id)
+            if (nameId == uniqueName.id)
                 return;
             m_Name = uniqueName.value;
             SetNameId(uniqueName.id);
@@ -1477,7 +1487,9 @@ namespace UnityEngine.UIElements
 
         private void SetNameId(int nameId)
         {
-            m_NameId = nameId;
+            if ((m_Flags & VisualElementFlags.Released) != 0)
+                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+            layoutNode.SelectorData.nameId = nameId;
             IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Name);
             NotifyPropertyChanged(nameProperty);
         }
@@ -1757,9 +1769,9 @@ namespace UnityEngine.UIElements
         // Cached UniqueStyleString.id for typeName (shared across all instances of this type)
         internal int typeNameId => typeData.typeNameId;
 
-        // Cached UniqueStyleString.id for name (instance-specific)
-        // Returns -1 if name is null/empty, otherwise a valid id >= 0
-        internal int nameId => m_NameId;
+        // Cached UniqueStyleString.id for the element name (instance-specific). Equals
+        // UniqueStyleString.Empty.id when name is null/empty; otherwise a valid interned id.
+        internal int nameId => layoutNode.SelectorData.nameId;
 
         LayoutNode m_LayoutNode;
 
@@ -1843,6 +1855,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Backdrop-filter elements require special handling on transform changes since their UV mapping
+        // depends on world transform. This count tracks descendants with backdrop-filter so we can
+        // efficiently determine when to trigger hierarchical regeneration.
+        internal int backdropFilterDescendantCount = 0;
+
+        internal void ChangeBackdropFilterDescendantCount(int delta)
+        {
+            VisualElement ve = this;
+
+            while (ve != null)
+            {
+                ve.backdropFilterDescendantCount += delta;
+                ve = ve.hierarchy.parent;
+            }
+        }
+
         /// <summary>
         ///  Initializes and returns an instance of VisualElement.
         /// </summary>
@@ -1859,7 +1887,7 @@ namespace UnityEngine.UIElements
 
             focusable = false;
 
-            name = string.Empty;
+            m_Name = string.Empty;
 
             m_LayoutNode = LayoutManager.SharedManager.CreateNode();
             unsafe
@@ -1885,6 +1913,15 @@ namespace UnityEngine.UIElements
                                               defaultEventInterests.DefaultActionCategories;
 
             UpdateEventInterestSelfCategories();
+
+            // nameId / pseudoStates / logicalParent all match VisualElementSelectorData.Default
+            // at construction and are written through by their setters/mutators as they change.
+            // typeNameId has no mutation path so seed it here. classIds defaults to null in the
+            // component but m_ClassList = StyleClassList.Empty already points to a valid (empty)
+            // NativeArray — seed it through the helper so the in-sync assertion holds even when
+            // nothing ever mutates the list.
+            layoutNode.SelectorData.typeNameId = typeNameId;
+            UpdateClassSelectorData();
         }
 
         // For unit tests
@@ -1912,13 +1949,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
+
         /// <summary>
         /// Indicates if the element has released its reusable resources, in which case it can not be modified or added again.
         /// </summary>
         /// <remarks>
         /// This returns true if <see cref="ReleaseResources"/> has been called on this element.
         /// </remarks>
-        public bool resourcesReleased => (flags & VisualElementFlags.Released) != 0;
+        public bool resourcesReleased => (m_Flags & VisualElementFlags.Released) != 0;
 
         /// <summary>
         /// Releases reusable resources associated with this element and makes the element unusable.
@@ -1948,7 +1987,7 @@ namespace UnityEngine.UIElements
             {
                 throw new InvalidOperationException("Cannot release resources while the VisualElement has children");
             }
-            if (resourcesReleased)
+            if ((m_Flags & VisualElementFlags.Released) != 0)
             {
                 throw new InvalidOperationException("Cannot release resources more than once");
             }
@@ -2902,19 +2941,31 @@ namespace UnityEngine.UIElements
             if (m_ClassList.Count > 0)
             {
                 m_ClassList.Clear();
+                UpdateClassSelectorData();
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
+        }
+
+        // Mirrors the class-list pointer / count into the VisualElementSelectorData component so
+        // the native selector matcher sees the latest set of classes. Called from every class-list
+        // mutator. Pointers are stable thanks to StyleClassList's NativeArray storage.
+        private void UpdateClassSelectorData()
+        {
+            if ((m_Flags & VisualElementFlags.Released) != 0)
+                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+            ref var selectorData = ref layoutNode.SelectorData;
+            selectorData.classIdStart = m_ClassList.GetClassIdStartOffset();
+            selectorData.classCount = m_ClassList.Count;
         }
 
         /// <summary>
         /// Adds a class to the class list of the element in order to assign styles from USS. Note the class name is case-sensitive.
         /// </summary>
         /// <param name="className">The name of the class to add to the list.</param>
+        /// <remarks>This method has no effect if class name is null or empty.</remarks>
         public void AddToClassList(string className)
         {
-            if (string.IsNullOrEmpty(className))
-                return;
-
             AddToClassList(new UniqueStyleString(className));
         }
 
@@ -2922,11 +2973,15 @@ namespace UnityEngine.UIElements
         /// Adds a class to the class list of the element in order to assign styles from USS. Note the class name is case-sensitive.
         /// </summary>
         /// <param name="className">The name of the class to add to the list.</param>
+        /// <remarks>This method has no effect if class name is null or empty.</remarks>
         public void AddToClassList(UniqueStyleString className)
         {
             m_ClassList.Add(className, out var added);
             if (added)
+            {
+                UpdateClassSelectorData();
                 IncrementVersion(VersionChangeType.StyleSheet);
+            }
         }
 
         /// <summary>
@@ -2934,22 +2989,12 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="className">The name of the class to add to the list.</param>
         /// <param name="className2">The name of a second class to add to the list.</param>
+        /// <remarks>
+        /// This method ignores class names that are null or empty.
+        /// This method has no effect if all provided class names are null or empty.
+        /// </remarks>
         public void AddToClassList(string className, string className2)
         {
-            if (string.IsNullOrEmpty(className))
-            {
-#pragma warning disable RS0030
-                AddToClassList(className2);
-#pragma warning restore RS0030
-                return;
-            }
-
-            if (string.IsNullOrEmpty(className2))
-            {
-                AddToClassList(new UniqueStyleString(className));
-                return;
-            }
-
             AddToClassList(new UniqueStyleString(className), new UniqueStyleString(className2));
         }
 
@@ -2958,30 +3003,17 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="className">The name of the class to add to the list.</param>
         /// <param name="className2">The name of a second class to add to the list.</param>
+        /// <remarks>
+        /// This method ignores class names that are null or empty.
+        /// This method has no effect if all provided class names are null or empty.
+        /// </remarks>
         public void AddToClassList(UniqueStyleString className, UniqueStyleString className2)
         {
             m_ClassList.Add(className, className2, out var added);
             if (added)
-                IncrementVersion(VersionChangeType.StyleSheet);
-        }
-
-        /// <summary>
-        /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
-        /// </summary>
-        /// <param name="classNames">The names of the classes to add to the list.</param>
-        public void AddToClassList(params string[] classNames)
-        {
-            var count = classNames.Length;
-            var nonEmptyCount = 0;
-            unsafe
             {
-                var tmp = stackalloc UniqueStyleString[count];
-                for (var i = 0; i < count; i++)
-                {
-                    if (!string.IsNullOrEmpty(classNames[i]))
-                        tmp[nonEmptyCount++] = new UniqueStyleString(classNames[i]);
-                }
-                AddToClassList(new ReadOnlySpan<UniqueStyleString>(tmp, nonEmptyCount));
+                UpdateClassSelectorData();
+                IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
 
@@ -2989,6 +3021,29 @@ namespace UnityEngine.UIElements
         /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
         /// </summary>
         /// <param name="classNames">The names of the classes to add to the list.</param>
+        /// <remarks>
+        /// This method ignores class names that are null or empty.
+        /// This method has no effect if all provided class names are null or empty.
+        /// </remarks>
+        public void AddToClassList(params string[] classNames)
+        {
+            var count = classNames.Length;
+            Span<UniqueStyleString> tmp = stackalloc UniqueStyleString[count];
+            for (var i = 0; i < count; i++)
+            {
+                tmp[i] = new UniqueStyleString(classNames[i]);
+            }
+            AddToClassList(tmp);
+        }
+
+        /// <summary>
+        /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
+        /// </summary>
+        /// <param name="classNames">The names of the classes to add to the list.</param>
+        /// <remarks>
+        /// This method ignores class names that are null or empty.
+        /// This method has no effect if all provided class names are null or empty.
+        /// </remarks>
         public void AddToClassList(params UniqueStyleString[] classNames)
         {
             AddToClassList(new ReadOnlySpan<UniqueStyleString>(classNames));
@@ -2998,20 +3053,28 @@ namespace UnityEngine.UIElements
         /// Adds multiple classes to the class list of the element in order to assign styles from USS. Note the class names are case-sensitive.
         /// </summary>
         /// <param name="classNames">The names of the classes to add to the list.</param>
+        /// <remarks>
+        /// This method ignores class names that are null or empty.
+        /// This method has no effect if all provided class names are null or empty.
+        /// </remarks>
         public void AddToClassList(ReadOnlySpan<UniqueStyleString> classNames)
         {
             m_ClassList.AddRange(classNames, out var added);
             if (added)
+            {
+                UpdateClassSelectorData();
                 IncrementVersion(VersionChangeType.StyleSheet);
+            }
         }
 
         /// <summary>
         /// Removes a class from the class list of the element.
         /// </summary>
         /// <param name="className">The name of the class to remove to the list.</param>
+        /// <remarks>This method has no effect if class name is null or empty.</remarks>
         public void RemoveFromClassList(string className)
         {
-            if (!string.IsNullOrEmpty(className) && UniqueStyleString.TryGet(className, out var ss))
+            if (UniqueStyleString.TryGet(className, out var ss))
                 RemoveFromClassList(ss);
         }
 
@@ -3019,11 +3082,15 @@ namespace UnityEngine.UIElements
         /// Removes a class from the class list of the element.
         /// </summary>
         /// <param name="className">The name of the class to remove to the list.</param>
+        /// <remarks>This method has no effect if class name is null or empty.</remarks>
         public void RemoveFromClassList(UniqueStyleString className)
         {
             m_ClassList.Remove(className, out var removed);
             if (removed)
+            {
+                UpdateClassSelectorData();
                 IncrementVersion(VersionChangeType.StyleSheet);
+            }
         }
 
         /// <summary>
@@ -3032,11 +3099,12 @@ namespace UnityEngine.UIElements
         /// <param name="className">The class name to add or remove from the class list.</param>
         /// <remarks>
         /// Checks for the given class name in the element class list. If the class name is found, it is removed from the class list. If the class name is not found, the class name is added to the class list.
+        ///
+        /// This method has no effect if class name is null or empty.
         /// </remarks>
         public void ToggleInClassList(string className)
         {
-            if (!string.IsNullOrEmpty(className))
-                ToggleInClassList(new UniqueStyleString(className));
+            ToggleInClassList(new UniqueStyleString(className));
         }
 
         /// <summary>
@@ -3045,10 +3113,13 @@ namespace UnityEngine.UIElements
         /// <param name="className">The class name to add or remove from the class list.</param>
         /// <remarks>
         /// Checks for the given class name in the element class list. If the class name is found, it is removed from the class list. If the class name is not found, the class name is added to the class list.
+        ///
+        /// This method has no effect if class name is null or empty.
         /// </remarks>
         public void ToggleInClassList(UniqueStyleString className)
         {
             m_ClassList.Toggle(className);
+            UpdateClassSelectorData();
             IncrementVersion(VersionChangeType.StyleSheet);
         }
 
@@ -3059,11 +3130,12 @@ namespace UnityEngine.UIElements
         /// <param name="enable">A boolean flag that adds or removes the class name from the class list. If true, EnableInClassList adds the class name to the class list. If false, EnableInClassList removes the class name from the class list.</param>
         /// <remarks>
         /// If enable is true, EnableInClassList adds the class name to the class list. If enable is false, EnableInClassList removes the class name from the class list.
+        ///
+        /// This method has no effect if class name is null or empty.
         /// </remarks>
         public void EnableInClassList(string className, bool enable)
         {
-            if (!string.IsNullOrEmpty(className))
-                EnableInClassList(new UniqueStyleString(className), enable);
+            EnableInClassList(new UniqueStyleString(className), enable);
         }
 
         /// <summary>
@@ -3073,12 +3145,17 @@ namespace UnityEngine.UIElements
         /// <param name="enable">A boolean flag that adds or removes the class name from the class list. If true, EnableInClassList adds the class name to the class list. If false, EnableInClassList removes the class name from the class list.</param>
         /// <remarks>
         /// If enable is true, EnableInClassList adds the class name to the class list. If enable is false, EnableInClassList removes the class name from the class list.
+        ///
+        /// This method has no effect if class name is null or empty.
         /// </remarks>
         public void EnableInClassList(UniqueStyleString className, bool enable)
         {
             m_ClassList.Enable(className, enable, out var changed);
             if (changed)
+            {
+                UpdateClassSelectorData();
                 IncrementVersion(VersionChangeType.StyleSheet);
+            }
         }
 
         /// <summary>
@@ -3086,9 +3163,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="cls">The name of the class for the search query.</param>
         /// <returns>Returns true if the class is part of the list. Otherwise, returns false.</returns>
+        /// <remarks>This method always returns false if class name is null or empty.</remarks>
         public bool ClassListContains(string cls)
         {
-            return !string.IsNullOrEmpty(cls) && UniqueStyleString.TryGet(cls, out var className) &&
+            return UniqueStyleString.TryGet(cls, out var className) &&
                    ClassListContains(className);
         }
 
@@ -3097,6 +3175,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="cls">The name of the class for the search query.</param>
         /// <returns>Returns true if the class is part of the list. Otherwise, returns false.</returns>
+        /// <remarks>This method always returns false if class name is null or empty.</remarks>
         public bool ClassListContains(UniqueStyleString cls)
         {
             return m_ClassList.Contains(cls);

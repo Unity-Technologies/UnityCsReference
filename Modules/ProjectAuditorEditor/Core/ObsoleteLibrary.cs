@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using Unity.ProjectAuditor.Editor.UI.Framework;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -32,8 +33,11 @@ namespace Unity.ProjectAuditor.Editor.Core
 
 #pragma warning restore CS0649
 
+        [NoAutoStaticsCleanup] // Lazy cache populated from disk; code reload does not invalidate these
         static Dictionary<string, ReportItem> s_LibraryDictionary;
+        [NoAutoStaticsCleanup] // Lazy cache populated from disk; code reload does not invalidate these
         static List<ReportItem> s_LibraryList;
+        [NoAutoStaticsCleanup] // Lazy cache populated from disk; code reload does not invalidate these
         static string[] s_UnityVersions;
 
         public static Dictionary<string, ReportItem> LibraryDictionary
@@ -72,7 +76,12 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         static void ReadFromDisk()
         {
-            var json = File.ReadAllText(Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.json"));
+            var path = Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.gen.json");
+
+            // TEMP: support both paths while we migrate to new name
+            string filename = File.Exists(path) ? path : Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.json");
+
+            var json = File.ReadAllText(filename);
             var obsoleteApi = JsonUtility.FromJson<SerializedApiCollection>(json).items;
             var uniqueVersions = new HashSet<string>();
 

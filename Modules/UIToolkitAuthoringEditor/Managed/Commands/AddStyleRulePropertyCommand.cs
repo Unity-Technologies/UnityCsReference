@@ -42,7 +42,7 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
     public VariablesInspector.VariableType VariableType { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.Styling;
+    public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
 
     protected override void Init()
     {

@@ -470,7 +470,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -609,6 +609,23 @@ namespace UnityEngine.UIElements
         }
 
         private float m_Scale = 1;
+
+        // Tracks the number of elements with backdrop-filter in this panel.
+        // Used by render pipelines to decide whether to use the unsafe overlay-UI pass.
+        private int m_BackdropFilterElementCount;
+
+        internal bool hasBackdropFilterElements => m_BackdropFilterElementCount > 0;
+
+        internal void IncrementBackdropFilterCount()
+        {
+            m_BackdropFilterElementCount++;
+        }
+
+        internal void DecrementBackdropFilterCount()
+        {
+            m_BackdropFilterElementCount--;
+            Debug.Assert(m_BackdropFilterElementCount >= 0, "Backdrop filter count went negative");
+        }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float scale
@@ -1789,7 +1806,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule")]
     internal abstract class BaseRuntimePanel : Panel
     {
         private GameObject m_SelectableGameObject;

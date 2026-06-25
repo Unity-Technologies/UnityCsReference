@@ -29,16 +29,16 @@ namespace Unity.Profiling.Editor.UI
 
             var task = Task.Run(() =>
             {
-                var cpuGpuDurationsNs = GetCpuGpuDurationsNsForFrame(dataService, frameIndex);
-
                 // Check for cancellation.
                 cancellationToken.ThrowIfCancellationRequested();
+
+                var cpuGpuDurationsNs = GetCpuGpuDurationsNsForFrame(dataService, frameIndex);
 
                 return new FrameBottlenecksModel(
                     frameIndex,
                     cpuGpuDurationsNs.Item1,
                     cpuGpuDurationsNs.Item2);
-            });
+            }, cancellationToken);
 
             return await task;
         }

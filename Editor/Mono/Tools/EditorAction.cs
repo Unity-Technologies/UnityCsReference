@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEditor.EditorTools;
 
 namespace UnityEditor.Actions
@@ -26,10 +25,10 @@ namespace UnityEditor.Actions
         {
             return Start(action, typeof(SceneView));
         }
-        
-        internal static T Start<T>(Type toolOwner) where T : EditorAction, new() => Start(new T(), toolOwner);
 
-        internal static T Start<T>(T action, Type toolOwner) where T : EditorAction
+        internal static T Start<T>(Type toolOwnerType) where T : EditorAction, new() => Start(new T(), toolOwnerType);
+
+        internal static T Start<T>(T action, Type toolOwnerType) where T : EditorAction
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -37,14 +36,14 @@ namespace UnityEditor.Actions
             if (action.m_IsFinished)
                 return action;
 
-            EditorToolManager.SetActiveOverride(new EditorActionTool(action, toolOwner), toolOwner);
-            
+            EditorToolManager.SetActiveOverride(new EditorActionTool(action, toolOwnerType), toolOwnerType);
+
             return action;
         }
 
         public virtual void OnSceneGUI(SceneView sceneView) {}
-        
-        internal virtual void OnToolOwnerGUI(EditorToolWindowBase toolOwnerWindow) {}
+
+        internal virtual void OnEditorToolWindowGUI(EditorWindow editorToolWindow) {}
 
         public void Finish(EditorActionResult result)
         {

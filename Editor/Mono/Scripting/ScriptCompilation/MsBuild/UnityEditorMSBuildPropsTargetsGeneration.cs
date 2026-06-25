@@ -96,8 +96,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateSystemSearchPaths(buildTarget);
         UpdateRoslynAnalyzersProps();
 
-        var optimization = CompilationPipeline.codeOptimization;
-        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, buildTarget.ToString(), GetCurrentDotNETRuntimeId(), optimization == CodeOptimization.Release);
+        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath);
+        PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release);
     }
 
     private static void UpdateRoslynAnalyzersProps()
@@ -122,9 +122,6 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
         PropsGenerator.Instance.UpdateEssentialPropsOnly(
             EditorApplication.applicationScriptingPath,
-            buildTarget.ToString(),
-            GetCurrentDotNETRuntimeId(),
-            optimization == CodeOptimization.Release,
             editorVersion);
     }
 
@@ -145,11 +142,11 @@ class UnityEditorMSBuildPropsTargetsGeneration
         var editorApiCompatibility =
             PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings
                 .GetEditorAssembliesCompatibilityLevel());
-        var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(
-            editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility);
+        var editorOnlyCompatibleDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+            editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
 
-        var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(
-            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility);
+        var playerAssembliesDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
 
         // Get search paths
         var searchPaths = BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget);
@@ -163,7 +160,9 @@ class UnityEditorMSBuildPropsTargetsGeneration
             cache.PlayerPluginPaths,
             cache.AllPlugins,
             searchPaths,
-            cache.RoslynAnalyzerPaths);
+            cache.RoslynAnalyzerPaths,
+            buildTarget.ToString(),
+            CompilationPipeline.codeOptimization == CodeOptimization.Release);
     }
 
     private static string GetCurrentDotNETRuntimeId()
@@ -331,12 +330,24 @@ class UnityEditorMSBuildPropsTargetsGeneration
         var editorApiCompatibility =
             PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings
                 .GetEditorAssembliesCompatibilityLevel());
-        var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(
-            editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility);
+        var editorOnlyCompatibleDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+            editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
 
-        var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(
-            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility);
+        var playerAssembliesDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
         PropsGenerator.Instance.UpdateDefinesProps(editorOnlyCompatibleDefines, playerAssembliesDefines);
+    }
+
+    // Mirrors EditorBuildRules.GetScriptAssemblies, which appends the C# language-version
+    // defines to every assembly. The legacy pipeline adds these per-assembly; MSBU emits them
+    // into the shared DefineConstants props so all generated projects compile with them.
+    private static string[] AppendCSharpVersionDefines(string[] defines)
+    {
+        var versionDefines = EditorBuildRules.s_CSharpVersionDefines;
+        var result = new string[defines.Length + versionDefines.Length];
+        Array.Copy(defines, result, defines.Length);
+        Array.Copy(versionDefines, 0, result, defines.Length, versionDefines.Length);
+        return result;
     }
 
     private static EditorScriptCompilationOptions MapMSBuildCompilationOptions(

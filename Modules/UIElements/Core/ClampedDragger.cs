@@ -6,8 +6,7 @@ using System;
 
 namespace UnityEngine.UIElements
 {
-    internal class ClampedDragger<T> : Clickable
-        where T : IComparable<T>
+    internal class ClampedDragger : Clickable
     {
         [Flags]
         public enum DragDirection
@@ -23,19 +22,15 @@ namespace UnityEngine.UIElements
 
         public DragDirection dragDirection { get; set; }
 
-        BaseSlider<T> slider { get; set; }
-
         public Vector2 startMousePosition { get; private set; }
 
         public Vector2 delta => (lastMousePosition - startMousePosition);
 
-        public ClampedDragger(BaseSlider<T> slider, System.Action clickHandler, System.Action dragHandler)
+        public ClampedDragger(System.Action clickHandler, System.Action dragHandler)
             :
             base(clickHandler, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait)
         {
             dragDirection = DragDirection.None;
-
-            this.slider = slider;
 
             dragging += dragHandler;
         }

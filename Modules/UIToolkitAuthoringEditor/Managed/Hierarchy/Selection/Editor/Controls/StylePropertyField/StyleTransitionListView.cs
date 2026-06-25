@@ -13,8 +13,17 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
+/// <summary>
+/// Allows <see cref="StylePropertyBinding"/> to route per-property affordance elements on composite
+/// fields that own multiple sub-properties (e.g. transition lists).
+/// </summary>
+internal interface IPropertyMappedAffordanceField
+{
+    void GetAffordanceElements(StylePropertyId propertyId, List<FieldAffordanceElement> elements);
+}
+
 [UxmlElement]
-internal partial class StyleTransitionListView : VisualElement
+internal partial class StyleTransitionListView : VisualElement, IPropertyMappedAffordanceField
 {
     [Flags]
     public enum TransitionChangeType
@@ -64,6 +73,11 @@ internal partial class StyleTransitionListView : VisualElement
         EnumField m_TimingFunctionField;
         TimeValueField m_DelayField;
 
+        FieldAffordanceElement m_PropertyAffordance;
+        FieldAffordanceElement m_DurationAffordance;
+        FieldAffordanceElement m_TimingFunctionAffordance;
+        FieldAffordanceElement m_DelayAffordance;
+
         OverrideBarManipulator m_FoldoutOverride;
         OverrideBarManipulator m_PropertyOverride;
         OverrideBarManipulator m_DurationOverride;
@@ -78,6 +92,10 @@ internal partial class StyleTransitionListView : VisualElement
         public TimeValueField durationField => m_DurationField;
         public EnumField timingFunctionField => m_TimingFunctionField;
         public TimeValueField delayField => m_DelayField;
+        public FieldAffordanceElement propertyAffordance => m_PropertyAffordance;
+        public FieldAffordanceElement durationAffordance => m_DurationAffordance;
+        public FieldAffordanceElement timingFunctionAffordance => m_TimingFunctionAffordance;
+        public FieldAffordanceElement delayAffordance => m_DelayAffordance;
 
         public void SetTransitionData(TransitionData data, TransitionChangeType overrides)
         {
@@ -101,37 +119,56 @@ internal partial class StyleTransitionListView : VisualElement
             m_PropertyField.categoryContent = AnimatableProperties;
             m_PropertyField.AddToClassList(propertyUssClassName);
             m_PropertyField.AddToClassList(CategoryDropdownField.alignedFieldUssClassName);
-            Add(m_PropertyField);
+            m_PropertyAffordance = new FieldAffordanceElement();
+            m_PropertyField.hierarchy.Insert(0, m_PropertyAffordance);
             m_PropertyOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_PropertyField };
             m_PropertyField.RegisterCallback<ChangeEvent<string>, FoldoutTransitionField>(OnPropertyChanged, this);
             m_PropertyField.tooltip = "<b>USS property: transition-property</b>\nProperties to which a transition effect should be applied.";
+            AddFieldContextMenu(m_PropertyField, m_PropertyAffordance);
+            Add(m_PropertyField);
 
             m_DurationField = new TimeValueField("Duration");
             m_DurationField.AddToClassList(durationUssClassName);
             m_DurationField.AddToClassList(TimeValueField.alignedFieldUssClassName);
-            Add(m_DurationField);
+            m_DurationAffordance = new FieldAffordanceElement();
+            m_DurationField.hierarchy.Insert(0, m_DurationAffordance);
             m_DurationOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_DurationField };
             m_DurationField.RegisterCallback<ChangeEvent<TimeValue>, FoldoutTransitionField>(OnDurationChanged, this);
             m_DurationField.tooltip = "<b>USS property: transition-duration</b>\nTime a transition animation should take to complete.";
+            AddFieldContextMenu(m_DurationField, m_DurationAffordance);
+            Add(m_DurationField);
 
             m_TimingFunctionField = new EnumField("Easing", EasingMode.Ease);
             m_TimingFunctionField.AddToClassList(timingFunctionUssClassName);
             m_TimingFunctionField.AddToClassList(EnumField.alignedFieldUssClassName);
-            Add(m_TimingFunctionField);
+            m_TimingFunctionAffordance = new FieldAffordanceElement();
+            m_TimingFunctionField.hierarchy.Insert(0, m_TimingFunctionAffordance);
             m_TimingFunctionOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_TimingFunctionField };
             m_TimingFunctionField.RegisterCallback<ChangeEvent<Enum>, FoldoutTransitionField>(OnTimingFunctionChanged, this);
             m_TimingFunctionField.tooltip = "<b>USS property: transition-timing-function</b>\nDetermines how intermediate values are calculated for properties modified by a transition effect.";
+            AddFieldContextMenu(m_TimingFunctionField, m_TimingFunctionAffordance);
+            Add(m_TimingFunctionField);
 
             m_DelayField = new TimeValueField("Delay");
             m_DelayField.AddToClassList(delayUssClassName);
             m_DelayField.AddToClassList(TimeValueField.alignedFieldUssClassName);
-            Add(m_DelayField);
+            m_DelayAffordance = new FieldAffordanceElement();
+            m_DelayField.hierarchy.Insert(0, m_DelayAffordance);
             m_DelayOverride = new OverrideBarManipulator { target = listView, OverrideContainer = m_DelayField };
             m_DelayField.RegisterCallback<ChangeEvent<TimeValue>, FoldoutTransitionField>(OnDelayChanged, this);
             m_DelayField.tooltip = "<b>USS property: transition-delay</b>\nDuration to wait before starting a property's transition effect when its value changes.";
+            AddFieldContextMenu(m_DelayField, m_DelayAffordance);
+            Add(m_DelayField);
 
             // Needed to support search by "Easing" rather than "Timing function"
             AddTrackedProperty("Easing");
+        }
+
+        static void AddFieldContextMenu(VisualElement field, FieldAffordanceElement affordance)
+        {
+            var manipulator = new ContextualMenuManipulator(evt => affordance.OnContextualMenuPopulate(evt));
+            manipulator.acceptClicksIfDisabled = true;
+            field.AddManipulator(manipulator);
         }
 
         static void OnChanged<T>(ChangeEvent<T> evt, FoldoutTransitionField field, TransitionChangeType changeType, TransitionData data)
@@ -142,7 +179,7 @@ internal partial class StyleTransitionListView : VisualElement
             nestedEvt.changeType = changeType;
             nestedEvt.index = field.index;
             nestedEvt.transition = data;
-            field.SetTransitionData(data, field.type & changeType);
+            field.SetTransitionData(data, field.type | changeType);
             field.SendEvent(nestedEvt);
             evt.StopPropagation();
         }
@@ -219,13 +256,14 @@ internal partial class StyleTransitionListView : VisualElement
     }
 
     public const string IgnoredProperty = "ignored";
+    public const string AllProperty = "all";
     public static readonly BindingId transitionPropertyProperty = nameof(transitionProperty);
     public static readonly BindingId transitionDurationProperty = nameof(transitionDuration);
     public static readonly BindingId transitionTimingFunctionProperty = nameof(transitionTimingFunction);
     public static readonly BindingId transitionDelayProperty = nameof(transitionDelay);
 
     internal static readonly string ussClassName = "unity-transition-list-view";
-    internal static  string addTransitionButtonUssClassName = ussClassName + "__add-transition-button";
+    internal static readonly string addTransitionButtonUssClassName = ussClassName + "__add-transition-button";
     internal static readonly string propertyOverriddenUssClassName = ussClassName + "__transition-property--overridden";
     internal static readonly string durationOverriddenUssClassName = ussClassName + "__transition-duration--overridden";
     internal static readonly string timingFunctionOverriddenUssClassName = ussClassName + "__transition-timing-function--overridden";
@@ -237,6 +275,8 @@ internal partial class StyleTransitionListView : VisualElement
     const string TransitionDelayName = "transition-delay";
 
     private static readonly CategoryDropdownContent AnimatableProperties = GenerateTransitionPropertiesContent();
+
+    const string k_TransitionListViewName = "transition-list-view";
 
     const string k_UssPath = "UIToolkitAuthoring/Inspector/Controls/TransitionsListView.uss";
     const string k_UssDarkSkinPath = "UIToolkitAuthoring/Inspector/Controls/TransitionsListViewDark.uss";
@@ -322,9 +362,9 @@ internal partial class StyleTransitionListView : VisualElement
 
         m_ListView = new ListView
         {
+            name = k_TransitionListViewName,
             virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
             itemsSource = m_Data,
-            showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
             makeItem = CreateTransitionFoldout,
             bindItem = BindTransitionFoldout,
             unbindItem = UnbindTransitionFoldout,
@@ -340,6 +380,28 @@ internal partial class StyleTransitionListView : VisualElement
     }
 
     TransitionChangeType m_Overrides;
+    bool m_AffordanceUpdatePending;
+
+    // Foldout affordances: populated/cleared by BindTransitionFoldout/UnbindTransitionFoldout.
+    // StylePropertyBinding loops through these to call UpdateFieldAffordanceData and SetupContextMenu.
+    readonly HashSet<FieldAffordanceElement> m_PropertyAffordances = new();
+    readonly HashSet<FieldAffordanceElement> m_DurationAffordances = new();
+    readonly HashSet<FieldAffordanceElement> m_TimingFunctionAffordances = new();
+    readonly HashSet<FieldAffordanceElement> m_DelayAffordances = new();
+
+    public void GetAffordanceElements(StylePropertyId propertyId, List<FieldAffordanceElement> elements)
+    {
+        var source = propertyId switch
+        {
+            StylePropertyId.TransitionProperty => m_PropertyAffordances,
+            StylePropertyId.TransitionDuration => m_DurationAffordances,
+            StylePropertyId.TransitionTimingFunction => m_TimingFunctionAffordances,
+            StylePropertyId.TransitionDelay => m_DelayAffordances,
+            _ => null
+        };
+        if (source != null)
+            elements.AddRange(source);
+    }
 
     internal TransitionChangeType overrides
     {
@@ -386,6 +448,8 @@ internal partial class StyleTransitionListView : VisualElement
 
     void Set<T>(List<T> list, int index, T value, TransitionChangeType property, BindingId bindingId)
     {
+        m_ListView.allowRemove = true;
+
         var isOverridden = IsSet(overrides, property);
         if (!isOverridden || index >= list.Count)
             Transfer(property);
@@ -454,6 +518,8 @@ internal partial class StyleTransitionListView : VisualElement
 
         if ((evt.changeType | TransitionChangeType.Delay) == TransitionChangeType.Delay)
             Set(m_TransitionDelay, index, evt.transition.delay, TransitionChangeType.Delay, transitionDelayProperty);
+
+        Refresh();
     }
 
     void OnTransitionAddedClicked(BaseListView listView)
@@ -461,8 +527,10 @@ internal partial class StyleTransitionListView : VisualElement
         OnTransitionAdded();
     }
 
-    void OnTransitionAdded()
+    internal void OnTransitionAdded()
     {
+        m_ListView.allowRemove = true;
+
         var changeType = overrides;
         if (changeType == TransitionChangeType.None)
             changeType = TransitionChangeType.All;
@@ -511,7 +579,7 @@ internal partial class StyleTransitionListView : VisualElement
 
         // If nothing was selected, remove the last item.
         if (selection.Count == 0)
-            selection.Add(selection.Count - 1);
+            selection.Add(m_Data.Count - 1);
 
         for (var i = selection.Count - 1; i >= 0; --i)
         {
@@ -520,8 +588,20 @@ internal partial class StyleTransitionListView : VisualElement
                 m_Data.RemoveAt(selection[i]);
         }
 
-        Transfer(overrides);
-        Notify(overrides);
+        listView.ClearSelection();
+
+        var changeType = overrides != TransitionChangeType.None ? overrides : TransitionChangeType.All;
+
+        // Never fully remove all transitions - fall back to a single "all" transition
+        if (m_Data.Count == 0)
+        {
+            m_Data.Add(new TransitionData(new StylePropertyName(AllProperty), TimeValue.Seconds(0), new EasingFunction(EasingMode.Ease), TimeValue.Seconds(0)));
+            m_ListView.allowRemove = false;
+            changeType = TransitionChangeType.All;
+        }
+
+        Transfer(changeType);
+        Notify(changeType);
         Refresh();
     }
 
@@ -533,7 +613,34 @@ internal partial class StyleTransitionListView : VisualElement
             field.SetTransitionData(m_Data[index], overrides);
             field.EnableInClassList("last-item", index == m_Data.Count - 1);
 
+            m_PropertyAffordances.Add(field.propertyAffordance);
+            m_DurationAffordances.Add(field.durationAffordance);
+            m_TimingFunctionAffordances.Add(field.timingFunctionAffordance);
+            m_DelayAffordances.Add(field.delayAffordance);
+
+            ScheduleAffordanceBindingUpdate();
         }
+    }
+
+    // StylePropertyBinding.Update runs before BindTransitionFoldout populates the affordance sets,
+    // so the affordance context menus are never set up.
+    // Schedule a deferred MarkDirty so the bindings re-run with populated affordances.
+    void ScheduleAffordanceBindingUpdate()
+    {
+        if (m_AffordanceUpdatePending)
+            return;
+
+        m_AffordanceUpdatePending = true;
+        schedule.Execute(MarkAffordanceBindingsDirty);
+    }
+
+    void MarkAffordanceBindingsDirty()
+    {
+        m_AffordanceUpdatePending = false;
+        GetBinding(transitionPropertyProperty)?.MarkDirty();
+        GetBinding(transitionDurationProperty)?.MarkDirty();
+        GetBinding(transitionTimingFunctionProperty)?.MarkDirty();
+        GetBinding(transitionDelayProperty)?.MarkDirty();
     }
 
     static CategoryDropdownContent GenerateTransitionPropertiesContent()
@@ -566,6 +673,7 @@ internal partial class StyleTransitionListView : VisualElement
         }
 
         content.AppendSeparator();
+        content.AppendValue(new CategoryDropdownContent.ValueItem { value = "all", displayName = "all" });
         content.AppendValue(new CategoryDropdownContent.ValueItem { value = "none", displayName = "none" });
         content.AppendValue(new CategoryDropdownContent.ValueItem { value = "initial", displayName = "initial" });
         content.AppendValue(new CategoryDropdownContent.ValueItem { value = "ignored", displayName = "ignored" });
@@ -579,6 +687,13 @@ internal partial class StyleTransitionListView : VisualElement
         {
             field.index = -1;
             field.SetTransitionData(default, TransitionChangeType.None);
+
+            m_PropertyAffordances.Remove(field.propertyAffordance);
+            m_DurationAffordances.Remove(field.durationAffordance);
+            m_TimingFunctionAffordances.Remove(field.timingFunctionAffordance);
+            m_DelayAffordances.Remove(field.delayAffordance);
+
+            m_AffordanceUpdatePending = false;
         }
     }
 
@@ -589,7 +704,8 @@ internal partial class StyleTransitionListView : VisualElement
         var count = GetMaxCount();
         for (var i = 0; i < count; ++i)
         {
-            var property = m_TransitionProperty?.Count > i ? m_TransitionProperty[i] : new StylePropertyName(IgnoredProperty);
+            var property = m_TransitionProperty?.Count > i && m_TransitionProperty[i].id != StylePropertyId.Unknown
+                ? m_TransitionProperty[i] : new StylePropertyName(IgnoredProperty);
 
             TimeValue duration;
             if (null == m_TransitionDuration || m_TransitionDuration.Count == 0)
@@ -674,7 +790,9 @@ internal partial class StyleTransitionListView : VisualElement
             m_TrackedProviders[propertyName] = providerSet = new HashSet<ITrackablePropertyProvider>();
 
         providerSet.Add(provider);
-        switch (propertyName)
+        if (!StylePropertyUtil.cSharpNameToUssName.TryGetValue(propertyName, out var ussName))
+            ussName = propertyName;
+        switch (ussName)
         {
             case TransitionPropertyName:
                 overrides |= TransitionChangeType.Property;
@@ -702,7 +820,9 @@ internal partial class StyleTransitionListView : VisualElement
         if (providerSet.Count == 0)
         {
             m_TrackedProviders.Remove(propertyName);
-            switch (propertyName)
+            if (!StylePropertyUtil.cSharpNameToUssName.TryGetValue(propertyName, out var ussName))
+                ussName = propertyName;
+            switch (ussName)
             {
                 case TransitionPropertyName:
                     overrides &= ~TransitionChangeType.Property;

@@ -24,6 +24,8 @@ using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Profile;
 using Unity.Collections;
+using System.Collections.Immutable;
+using Unity.Scripting.LifecycleManagement;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -233,7 +235,6 @@ namespace UnityEditor
             public static readonly GUIContent autoGraphicsAPIForLinux = EditorGUIUtility.TrTextContent("Auto Graphics API for Linux");
 
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
-            public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Calculate mesh skinning and blend shapes on the GPU via shaders");
@@ -336,7 +337,7 @@ namespace UnityEditor
             }
         }
 
-        private static MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
+        private static readonly MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
 
         internal static void SyncEditors(BuildTarget target)
         {
@@ -466,8 +467,7 @@ namespace UnityEditor
 
         SerializedProperty m_EnableLoadStoreDebugMode;
 
-        // OpenGL ES 3.1+
-        SerializedProperty m_RequireES31;
+        // OpenGL ES 3.1+ - m_RequireES31 removed. Android minspec raised to 3.1 (GDRIV-4724)
         SerializedProperty m_RequireES31AEP;
         SerializedProperty m_RequireES32;
 
@@ -551,6 +551,7 @@ namespace UnityEditor
         List<AnimBool> m_SectionAnimators = new List<AnimBool>(kNumberGUISections);
         readonly AnimBool m_ShowDefaultIsNativeResolution = new AnimBool();
         readonly AnimBool m_ShowResolution = new AnimBool();
+        [NoAutoStaticsCleanup]
         private static Texture2D s_WarningIcon;
 
         // Preset check
@@ -558,6 +559,7 @@ namespace UnityEditor
         bool hasPresetWindowClosed = false;
 
         // True when user has modified auto graphics API setting in the current session
+        [AutoStaticsCleanupOnCodeReload] // session flag: persisting true would incorrectly trigger the restart prompt after reload
         private static bool isAutoGraphicsAPITouched = false;
 
         /// <summary>
@@ -606,7 +608,8 @@ namespace UnityEditor
             return property;
         }
 
-        private static List<PlayerSettingsEditor> s_activeEditors = new List<PlayerSettingsEditor>();
+        [AutoStaticsCleanupOnCodeReload] // list of active Editor instances; must clear on code reload
+        private static readonly List<PlayerSettingsEditor> s_activeEditors = new();
         void OnEnable()
         {
             s_activeEditors.Add(this);
@@ -735,7 +738,6 @@ namespace UnityEditor
             m_EnableFrameTimingStats = FindPropertyAssert("enableFrameTimingStats");
             m_EnableOpenGLProfilerGPURecorders = FindPropertyAssert("enableOpenGLProfilerGPURecorders");
 
-            m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
@@ -1487,11 +1489,7 @@ namespace UnityEditor
         // Checks if the GraphicsDeviceType is experimental
         static private bool IsGraphicsDeviceTypeExperimental(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
         {
-            switch (graphicsDeviceType)
-            {
-                case GraphicsDeviceType.WebGPU: return true;
-                default: return false;
-            }
+            return false;
         }
 
         // Converts a GraphicsDeviceType to a string, along with visual modifiers for given target platform
@@ -1815,7 +1813,6 @@ namespace UnityEditor
             if (!hasMinES3)
                 return;
 
-            EditorGUILayout.PropertyField(m_RequireES31, SettingsContent.require31);
             EditorGUILayout.PropertyField(m_RequireES31AEP, SettingsContent.requireAEP);
             EditorGUILayout.PropertyField(m_RequireES32, SettingsContent.require32);
         }
@@ -2080,7 +2077,8 @@ namespace UnityEditor
         //
         // This information might be useful for users that use the color gamut APIs,
         // we could expose it somehow
-        private static Dictionary<BuildTargetGroup, List<ColorGamut>> s_SupportedColorGamuts =
+        [NoAutoStaticsCleanup] // static platform capability table — content never changes
+        private static readonly ImmutableDictionary<BuildTargetGroup, List<ColorGamut>> s_SupportedColorGamuts =
             new Dictionary<BuildTargetGroup, List<ColorGamut>>
         {
             { BuildTargetGroup.Standalone, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
@@ -2088,7 +2086,7 @@ namespace UnityEditor
             { BuildTargetGroup.tvOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
             { BuildTargetGroup.VisionOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
             { BuildTargetGroup.Android, new List<ColorGamut> {ColorGamut.sRGB, ColorGamut.DisplayP3 } }
-        };
+        }.ToImmutableDictionary();
 
         private static bool IsColorGamutSupportedOnTargetGroup(BuildTargetGroup targetGroup, ColorGamut gamut)
         {
@@ -3090,6 +3088,7 @@ namespace UnityEditor
             return !supportedAPI;
         }
 
+        [AutoStaticsCleanupOnCodeReload] // lazy cache keyed on IBuildTarget; interface may be implemented by user code
         private static readonly Dictionary<IBuildTarget, GUIContent> virtualTexturingUnsupportedAPIContents = new();
 
         void ShowWarningIfVirtualTexturingUnsupportedByAPI(IBuildTarget buildTarget, bool checkEditor)
@@ -4234,8 +4233,8 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
-        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static readonly ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static readonly ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Minimal, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
         // stripping levels vary based on scripting backend
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
         {
@@ -4249,21 +4248,17 @@ namespace UnityEditor
             }
         }
 
-        static Il2CppCompilerConfiguration[] m_Il2cppCompilerConfigurations;
+        static readonly Il2CppCompilerConfiguration[] m_Il2cppCompilerConfigurations = new Il2CppCompilerConfiguration[]
+        {
+            Il2CppCompilerConfiguration.Debug,
+            Il2CppCompilerConfiguration.Release,
+            Il2CppCompilerConfiguration.Master,
+        };
+        [NoAutoStaticsCleanup] // lazy-built GUIContent names; rebuilt on next GUI call if null
         static GUIContent[] m_Il2cppCompilerConfigurationNames;
 
         private Il2CppCompilerConfiguration[] GetIl2CppCompilerConfigurations()
         {
-            if (m_Il2cppCompilerConfigurations == null)
-            {
-                m_Il2cppCompilerConfigurations = new Il2CppCompilerConfiguration[]
-                {
-                    Il2CppCompilerConfiguration.Debug,
-                    Il2CppCompilerConfiguration.Release,
-                    Il2CppCompilerConfiguration.Master,
-                };
-            }
-
             return m_Il2cppCompilerConfigurations;
         }
 
@@ -4281,14 +4276,12 @@ namespace UnityEditor
             return m_Il2cppCompilerConfigurationNames;
         }
 
-        static Il2CppStacktraceInformation[] m_Il2cppStacktraceOptions;
+        static readonly Il2CppStacktraceInformation[] m_Il2cppStacktraceOptions = (Il2CppStacktraceInformation[])Enum.GetValues(typeof(Il2CppStacktraceInformation));
+        [NoAutoStaticsCleanup] // lazy-built GUIContent names; rebuilt on next GUI call if null
         static GUIContent[] m_Il2cppStacktraceOptionNames;
 
         private Il2CppStacktraceInformation[] GetIl2CppStacktraceOptions()
         {
-            if (m_Il2cppStacktraceOptions == null)
-                m_Il2cppStacktraceOptions = (Il2CppStacktraceInformation[])Enum.GetValues(typeof(Il2CppStacktraceInformation));
-
             return m_Il2cppStacktraceOptions;
         }
 
@@ -4377,8 +4370,11 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
+        [NoAutoStaticsCleanup] // lazy-built GUIContent cache; rebuilt on next GUI call if null
         private static Dictionary<ApiCompatibilityLevel, GUIContent> m_NiceApiCompatibilityLevelNames;
+        [NoAutoStaticsCleanup] // lazy-built GUIContent cache; rebuilt on next GUI call if null
         private static Dictionary<EditorAssembliesCompatibilityLevel, GUIContent> m_NiceEditorAssembliesCompatibilityLevelNames;
+        [NoAutoStaticsCleanup] // lazy-built GUIContent cache; rebuilt on next GUI call if null
         private static Dictionary<ManagedStrippingLevel, GUIContent> m_NiceManagedStrippingLevelNames;
 
         private static GUIContent[] GetGUIContentsForValues<T>(Dictionary<T, GUIContent> contents, T[] values)

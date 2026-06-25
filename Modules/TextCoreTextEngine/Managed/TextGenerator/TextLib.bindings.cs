@@ -80,28 +80,11 @@ namespace UnityEngine.TextCore.Text
         }
 
         // The rasterization of glyph was extracted to its own method to ensure it is called on the main thread.
-        public void ProcessMeshInfos(NativeTextInfo textInfo, NativeTextGenerationSettings settings, ref List<List<List<int>>> textElementIndicesByMesh, ref List<bool> hasMultipleColorsByMesh, bool uvsAreGenerated)
+        public void ProcessMeshInfos(NativeTextInfo textInfo, NativeTextGenerationSettings settings, ref List<List<List<int>>> textElementIndicesByMesh, bool uvsAreGenerated)
         {
             Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
 
             int meshInfoIndex = 0;
-            bool trackColors = hasMultipleColorsByMesh != null;
-
-            // Per-vertex gradient tints only come from rich-text gradient tags. A single span carrying one is
-            // enough to commit the whole text to hasMultipleColors so UIR keeps the per-vertex tints (rather than
-            // doing per-glyph corner-variance checks on every text generation).
-            bool anyGradientSpan = false;
-            if (trackColors && settings.textSpans != null)
-            {
-                for (int s = 0; s < settings.textSpans.Length; s++)
-                {
-                    if (settings.textSpans[s].gradientAsset != IntPtr.Zero)
-                    {
-                        anyGradientSpan = true;
-                        break;
-                    }
-                }
-            }
 
             foreach (ref var meshInfo in meshInfosSpan)
             {
@@ -150,9 +133,6 @@ namespace UnityEngine.TextCore.Text
 
                 var padding = settings.vertexPadding / 64.0f;
 
-                bool hasMultipleColors = anyGradientSpan;
-                Color? previousColor = null;
-
                 Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
 
                 for (int i = 0; i < textElementInfosSpan.Length; i++)
@@ -175,16 +155,6 @@ namespace UnityEngine.TextCore.Text
                         glyph = ((FontAsset)textAsset).GetGlyphInCache((uint)glyphID);
                         if (glyph == null)
                             continue;
-                    }
-
-                    if (trackColors && !hasMultipleColors)
-                    {
-                        var currentColor = textElementInfo.topLeft.color;
-                        if (previousColor.HasValue && previousColor.Value != currentColor)
-                        {
-                            hasMultipleColors = true;
-                        }
-                        previousColor = currentColor;
                     }
 
                     var glyphRect = glyph.glyphRect;
@@ -234,8 +204,6 @@ namespace UnityEngine.TextCore.Text
 
                 }
 
-                if (trackColors)
-                    hasMultipleColorsByMesh.Add(hasMultipleColors);
                 meshInfoIndex++;
             }
         }

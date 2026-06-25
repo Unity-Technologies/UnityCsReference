@@ -42,6 +42,23 @@ namespace UnityEngine.UIElements.HierarchyV2
         public int indexInBatch;
     }
 
+    /// <summary>Per-tick reflow state a strategy reports via <see cref="CollectionViewAnimationContext.onAnimationProgress"/>.</summary>
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+    internal struct AnimationReflowState
+    {
+        /// <summary>The batch being animated.</summary>
+        public ItemAnimationInfo batch;
+
+        /// <summary>Settled pixel height of the batch (<c>count * itemHeight</c>).</summary>
+        public float fullBatchHeight;
+
+        /// <summary>Current animated height of the clip, in <c>[0, animatedTotalHeight]</c>.</summary>
+        public float clipHeight;
+
+        /// <summary>Peak animated height. May be viewport-capped below <see cref="fullBatchHeight"/>.</summary>
+        public float animatedTotalHeight;
+    }
+
     /// <summary>
     /// Bag of resources provided to an <see cref="ICollectionViewAnimation"/> on assignment. Lets
     /// strategies grow new dependencies without breaking the interface signature.
@@ -73,6 +90,12 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <summary>Returns the current viewport item count. Strategies cap animation extents to
         /// this so the visible portion of the clip animates across the full duration on large batches.</summary>
         public Func<int> getVisibleViewportCount;
+
+        /// <summary>Reports per-tick animation progress so the virtualizer can reflow below-items and the clip live.</summary>
+        public Action<AnimationReflowState> onAnimationProgress;
+
+        /// <summary>Registers (non-null) or clears (null) the active clip container and its region.</summary>
+        public Action<VisualElement, ItemAnimationInfo> setActiveClipContainer;
     }
 
     /// <summary>

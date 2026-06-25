@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEditor.Profiling;
@@ -232,6 +233,7 @@ namespace UnityEditorInternal
             public Color outOfRangeColor => EditorGUIUtility.isProSkin ? m_OutOfRangeColorDark : m_OutOfRangeColorLight;
         }
 
+        [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
         static Styles ms_Styles;
 
         static Styles styles
@@ -339,9 +341,12 @@ namespace UnityEditorInternal
 
         struct RawSampleIterationInfo { public int partOfThePath; public int lastSampleIndexInScope; }
 
+        [NoAutoStaticsCleanup] // Fixed-size per-frame scratch cache; never holds cross-frame references, safe to persist
         static RawSampleIterationInfo[] s_SkippedScopesCache = new RawSampleIterationInfo[1024];
+        [NoAutoStaticsCleanup] // Fixed-size per-frame scratch cache; never holds cross-frame references, safe to persist
         static int[] s_LastSampleInScopeOfThePathCache = new int[1024];
 
+        [NoAutoStaticsCleanup] // Fixed-size path cache; .Clear() called before each use, safe to persist
         static List<int> s_SampleIndexPathCache = new List<int>(1024);
         [MethodImpl(256 /*MethodImplOptions.AggressiveInlining*/)]
         static List<int> GetCachedSampleIndexPath(int requiredCapacity)
@@ -1866,7 +1871,9 @@ namespace UnityEditorInternal
             }
         }
 
+        [NoAutoStaticsCleanup] // Frame boundary cache; cleared before each use, safe to persist
         static readonly List<int> s_CachedSamplesStartedInPreviousFrame = new List<int>();
+        [NoAutoStaticsCleanup] // Frame boundary cache; cleared before each use, safe to persist
         static readonly List<int> s_CachedSamplesContinuedInNextFrame = new List<int>();
 
         internal static void CalculateTotalAsyncDuration(int selectedSampleIndex, int frameIndex, int selectedThreadIndex, out string selectedThreadName, out ulong totalAsyncDurationNs, out int totalAsyncFramesCount)

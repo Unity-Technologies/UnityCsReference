@@ -353,6 +353,19 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 (scrollView, _, propertyField, _) => OpenFoldoutsThenScroll(propertyField, scrollView));
         }
 
+        public static void OpenAndScrollToElement(string elementName)
+        {
+            if (string.IsNullOrEmpty(elementName))
+                throw new ArgumentException(nameof(elementName), $"The {nameof(elementName)} argument can't be null or empty.");
+
+            OpenAndScrollTo<VisualElement, VisualElement>(
+                root => TryFindElementAndTabByName(elementName, root, out var tabbedView, out var tabButton, out var element)
+                    ? (true, tabbedView, tabButton, element)
+                    : (false, null, null, null),
+                () => $"Couldn't find an element with name {elementName} in the settings container.",
+                (scrollView, _, element, _) => OpenFoldoutsThenScroll(element, scrollView));
+        }
+
         public static void OpenAndScrollTo(Type renderPipelineGraphicsSettingsType)
         {
             OpenAndScrollTo<PropertyField>(renderPipelineGraphicsSettingsType);
@@ -482,6 +495,20 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 
             if (tabbedView != null)
                 tabButton = propertyField.GetFirstAncestorOfType<TabButton>();
+            return true;
+        }
+
+        static bool TryFindElementAndTabByName(string elementName, VisualElement root, out TabbedView tabbedView, out TabButton tabButton, out VisualElement element)
+        {
+            tabbedView = root.Q<TabbedView>();
+            tabButton = null;
+
+            element = root.Q<VisualElement>(elementName);
+            if (element == null)
+                return false;
+
+            if (tabbedView != null)
+                tabButton = element.GetFirstAncestorOfType<TabButton>();
             return true;
         }
 

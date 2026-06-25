@@ -163,7 +163,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     headerContent = new GUIContent(property.Name, layout.Properties[i].LongName),
                     width = width,
                     minWidth = minWidth,
-                    autoResize = true
+                    autoResize = true,
+                    allowToggleVisibility = (i > 0) && !property.IsHidden // Can't hide the first column (we must have at least one visible column)
                 };
             }
 
@@ -230,7 +231,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 if (property.IsHidden)
                 {
                     header.GetColumn(columnIndex).width = 0;
-                    header.GetColumn(columnIndex).allowToggleVisibility = false;
                     continue;
                 }
 
@@ -272,8 +272,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                                     cellString = int.TryParse(intAsString, out var intValue) ? intAsString : "";
                                     break;
                                 case PropertyFormat.Percentage:
-                                    cellString =
-                                        Formatting.FormatPercentage(issue.GetCustomPropertyFloat(customPropertyIndex), 1);
+                                    cellString = Formatting.FormatPercentage(issue.GetCustomPropertyFloat(customPropertyIndex), 1);
+                                    break;
+                                case PropertyFormat.Float:
+                                    cellString = Formatting.FormatFloat(issue.GetCustomPropertyFloat(customPropertyIndex), property.DecimalPlaces);
                                     break;
                                 default:
                                     cellString = issue.GetProperty(propertyType);
@@ -944,7 +946,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 
                     if (result)
-                        Application.OpenURL(docsUrl);
+                        Application.OpenURL(Utility.GetVersionedDocsUrl(docsUrl));
                 }
             }
 
@@ -1067,6 +1069,35 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             public static readonly GUIContent SearchJumpButton = EditorGUIUtility.TrIconContent("SearchJump Icon", "Open in Search");
         }
+
+        protected static void ApplyQuickFixes(IReadOnlyList<ReportItem> issues, AnalysisParams analysisParams)
+        {
+            var showProgress = issues.Count > 1;
+            try
+            {
+                using (new AssetDatabase.AssetEditingScope())
+                {
+                    for (var i = 0; i < issues.Count; i++)
+                    {
+                        if (showProgress)
+                        {
+                            EditorUtility.DisplayProgressBar(SharedContents.QuickFix.text,
+                                $"Applying fix {i + 1} of {issues.Count}…",
+                                (float)i / issues.Count);
+                        }
+
+                        var issue = issues[i];
+                        issue.Id.GetDescriptor().Fix(issue, analysisParams);
+                    }
+                }
+            }
+            finally
+            {
+                if (showProgress)
+                    EditorUtility.ClearProgressBar();
+            }
+        }
+
         protected static class SharedContents
         {
             public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");

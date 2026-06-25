@@ -18,6 +18,7 @@ namespace UnityEditor.Build.Profile
         readonly Toggle m_ShouldInstallToggle;
         readonly Label m_DisplayName;
         readonly Label m_RequiredIndicator;
+        readonly Label m_DeprecatedIndicator;
         readonly Label m_InstalledIndicator;
         readonly Label m_Description;
         readonly Label m_Publisher;
@@ -44,6 +45,8 @@ namespace UnityEditor.Build.Profile
             m_DisplayName = this.Q<Label>("package-list-label-name");
             m_RequiredIndicator = this.Q<Label>("package-list-label-required");
             m_RequiredIndicator.text = TrText.required;
+            m_DeprecatedIndicator = this.Q<Label>("package-list-label-deprecated");
+            m_DeprecatedIndicator.text = TrText.deprecated;
             m_InstalledIndicator = this.Q<Label>("package-list-label-installed");
             m_InstalledIndicator.tooltip = TrText.packageInstalled;
             m_Description = this.Q<Label>("package-list-description");
@@ -67,6 +70,8 @@ namespace UnityEditor.Build.Profile
                     ShowPackageInfoPlaceholders();
                     SetInstalledIndicator(false);
                     SetRequiredIndicator(false);
+                    SetDeprecatedIndicator(false);
+                    m_DeprecatedIndicator.tooltip = string.Empty;
                     m_ShouldInstallToggle.SetEnabled(false);
 
                     if (!entry.hasThumbnail)
@@ -83,6 +88,8 @@ namespace UnityEditor.Build.Profile
                     m_DisplayName.text = string.IsNullOrEmpty(entry.displayName) ? entry.qualifiedName : entry.displayName;
                     SetInstalledIndicator(entry.isInstalled);
                     SetRequiredIndicator(entry.required);
+                    SetDeprecatedIndicator(entry.deprecated);
+                    m_DeprecatedIndicator.tooltip = entry.deprecationTooltip;
                     m_ShouldInstallToggle.SetValueWithoutNotify(entry.shouldInstalled || entry.isInstalled);
                     m_ShouldInstallToggle.SetEnabled(!entry.required && !entry.isInstalled);
                     m_Description.text = entry.description;
@@ -156,6 +163,17 @@ namespace UnityEditor.Build.Profile
                 m_RequiredIndicator.Show();
             else
                 m_RequiredIndicator.Hide();
+        }
+
+        void SetDeprecatedIndicator(bool active)
+        {
+            if (active)
+                m_DeprecatedIndicator.Show();
+            else
+            {
+                m_DeprecatedIndicator.Hide();
+                m_DeprecatedIndicator.tooltip = string.Empty;
+            }
         }
 
         public static PlatformPackageEntry[] CreateItemSource(PlatformPackageList packageList)

@@ -66,7 +66,9 @@ namespace UnityEditor.UIElements.Inspector
             // Show the PanelRenderer migration warning when inspecting a UIDocument,
             // but only if there isn't a PanelRenderer component on the same GameObject.
             bool shouldShowMigrationWarning = (parentObjectType == typeof(UIDocument));
-            bool shouldEnableConversionButton = (target as Component).GetComponent<PanelRenderer>() == null;
+
+            // Show the conversion button if the inspected component is a UIDocument without a PanelRenderer, and it's not a preset preview (temporary GameObject created by PresetEditor)
+            bool shouldEnableConversionButton = !Presets.Preset.IsEditorTargetAPreset(target) && (target as Component).GetComponent<PanelRenderer>() == null;
 
             var migrationContainer = m_RootVisualElement.MandatoryQ<VisualElement>("migration-warning-container");
             if (!shouldShowMigrationWarning)

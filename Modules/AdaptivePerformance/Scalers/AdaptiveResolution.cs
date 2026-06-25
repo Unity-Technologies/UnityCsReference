@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Rendering;
 
 namespace UnityEngine.AdaptivePerformance
@@ -12,6 +13,7 @@ namespace UnityEngine.AdaptivePerformance
     /// </summary>
     public class AdaptiveResolution : AdaptivePerformanceScaler
     {
+        [NoAutoStaticsCleanup] // instance counter maintained via Start/OnDestroy lifecycle
         static int instanceCount = 0;
 
         /// <summary>

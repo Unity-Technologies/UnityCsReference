@@ -75,11 +75,8 @@ namespace UnityEditor.Build.Profile
             var enumModeGroup = content.MandatoryQ<VisualElement>($"{id}ModesGroup");
             var enumModeProperty = serializedObject.FindProperty($"m_{id}Stripping");
 
-            static bool IsModesGroupVisible(StrippingModes mode) => mode == StrippingModes.Custom;
-            UIElementsEditorUtility.SetVisibility(enumModeGroup, IsModesGroupVisible((StrippingModes)enumModeProperty.intValue));
-            var lightmapModesUpdate = UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
-                mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, IsModesGroupVisible(mode)));
-            lightmapModesUpdate?.Invoke();
+            UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
+                mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, mode == StrippingModes.Custom));
 
             content.MandatoryQ<Button>($"Import{id}FromCurrentScene").clicked += buttonCallback;
         }

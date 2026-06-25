@@ -5,7 +5,7 @@
 namespace UnityEngine.UIElements
 {
     [EventCategory(EventCategory.Keyboard)]
-    internal class IMEEvent : EventBase<IMEEvent>
+    internal class IMEEvent : EventBase<IMEEvent>, IProfilerIgnoredEvent
     {
         public string compositionString { get; protected set; }
 

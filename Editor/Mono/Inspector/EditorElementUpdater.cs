@@ -88,31 +88,52 @@ namespace UnityEditor
         /// Invokes <see cref="IEditorElement.CreateInspectorElement"/> followed by a layout until the given <paramref name="viewport"/> is filled.
         /// </summary>
         /// <param name="viewport">The viewport to build elements for.</param>
-        /// <param name="contentContainer"></param>
+        /// <param name="contentContainer">The content container to build elements into.</param>
         public void CreateInspectorElementsForViewport(ScrollView viewport, VisualElement contentContainer)
         {
             if (m_Index >= m_EditorElements.Count)
                 return;
 
+            // Filling the viewport is the same operation as keeping the current scroll offset reachable: build until
+            // the content extends a viewport height past it. Building can disturb the scroller, so restore it after.
             var scroll = viewport.verticalScroller.value;
+            CreateInspectorElementsToReachScrollOffset(viewport, contentContainer, scroll);
+            viewport.verticalScroller.value = scroll;
+        }
 
+        /// <summary>
+        /// Invokes <see cref="IEditorElement.CreateInspectorElement"/> followed by a layout until the built content extends a
+        /// viewport height past <paramref name="targetOffset"/>, i.e. until <paramref name="targetOffset"/> can be applied to
+        /// the vertical scroller without being clamped.
+        /// </summary>
+        /// <remarks>
+        /// Only the editors needed to make the offset reachable are built up front; the rest are left to the time-sliced
+        /// update loop. This avoids the main-thread stall of synchronously building every editor while still letting the
+        /// scroll offset be restored without clamping to 0. Used both to fill the viewport on the first build (offset =
+        /// current scroll) and to restore a saved scroll offset on a rebuild.
+        /// </remarks>
+        /// <param name="viewport">The viewport being filled.</param>
+        /// <param name="contentContainer">The content container to build elements into.</param>
+        /// <param name="targetOffset">The vertical scroll offset that must remain reachable.</param>
+        public void CreateInspectorElementsToReachScrollOffset(ScrollView viewport, VisualElement contentContainer, float targetOffset)
+        {
             while (m_Index < m_EditorElements.Count)
             {
                 var element = m_EditorElements[m_Index++];
 
                 element.CreateInspectorElement();
 
-                // If this element contributes to the layout, re-compute it immediately to determine how much of the viewport is occupied.
-                if (null != element.editor && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target)&& contentContainer.childCount>0)
+                // If this element contributes to the layout, re-compute it immediately to measure how tall the content is.
+                if (element.editor != null && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target) && contentContainer.childCount > 0)
                 {
                     Panel?.UpdateWithoutRepaint();
 
-                    if (contentContainer.ElementAt(contentContainer.childCount - 1).layout.yMax - scroll > viewport.layout.height)
+                    // Stop once the built content extends past the target offset plus the viewport: the scroller's high
+                    // value then covers the offset, so re-applying it won't clamp. Remaining editors only add height.
+                    if (contentContainer.ElementAt(contentContainer.childCount - 1).layout.yMax - targetOffset > viewport.layout.height)
                         break;
                 }
             }
-
-            viewport.verticalScroller.value = scroll;
         }
 
         /// <summary>
@@ -140,7 +161,7 @@ namespace UnityEditor
                     break;
 
                 // If this element contributes to the layout, re-compute it immediately to determine how much of the viewport is occupied.
-                if (null != element.editor && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target))
+                if (element.editor != null && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target))
                     Panel?.UpdateWithoutRepaint();
             }
         }

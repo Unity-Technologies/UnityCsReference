@@ -120,7 +120,9 @@ internal readonly record struct VisualTreeAssetEditingContext
         if (context.SubDocumentPath != null && context.SubDocumentPath.Length > 0)
         {
             path = new TemplateAsset[context.SubDocumentPath.Length];
-            var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
+            var vta = string.IsNullOrEmpty(rootPath)
+                ? context.RootVisualTreeAsset
+                : AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
             for (var i = 0; i < context.SubDocumentPath.Length; ++i)
             {
                 var templateId = context.SubDocumentPath[i].id;
@@ -137,7 +139,9 @@ internal readonly record struct VisualTreeAssetEditingContext
         }
 
         return new VisualTreeAssetEditingContext(
-            AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath),
+            string.IsNullOrEmpty(rootPath)
+                ? context.RootVisualTreeAsset
+                : AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath),
             path,
             context.SubDocumentOptions,
             context.PanelSettings

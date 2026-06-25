@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -206,10 +205,18 @@ namespace Unity.UI.Builder
 
         protected bool TryParseValue(string val, out float value)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
-#pragma warning restore UA2001
-            return float.TryParse(num, NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out value);
+            if (val == null)
+            {
+                value = 0;
+                return false;
+            }
+
+            var span = val.AsSpan();
+            var end = 0;
+            while (end < span.Length && (char.IsDigit(span[end]) || span[end] == '.' || span[end] == '-'))
+                end++;
+
+            return float.TryParse(span.Slice(0, end), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out value);
         }
 
         protected override bool SetInnerValueFromValue(string val)
@@ -229,12 +236,16 @@ namespace Unity.UI.Builder
 
         protected override bool SetOptionFromValue(string val)
         {
+            if (val == null)
+                return false;
+
             if (base.SetOptionFromValue(val))
                 return true;
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var unit = new string(val.Where((c) => !Char.IsDigit(c) && c != '.' && c != '-').ToArray());
-#pragma warning restore UA2001
+            var unitStart = 0;
+            while (unitStart < val.Length && (char.IsDigit(val[unitStart]) || val[unitStart] == '.' || val[unitStart] == '-'))
+                unitStart++;
+            var unit = val.Substring(unitStart);
             if (string.IsNullOrEmpty(unit) || !m_Units.Contains(unit))
                 return false;
 

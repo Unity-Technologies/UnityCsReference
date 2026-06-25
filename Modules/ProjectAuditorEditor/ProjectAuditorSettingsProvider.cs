@@ -3,14 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor
 {
     // Register a SettingsProvider using IMGUI for the drawing framework:
-    static class ProjectAuditorSettingsIMGUIRegister
+    static partial class ProjectAuditorSettingsIMGUIRegister
     {
+        [AutoStaticsCleanupOnCodeReload]
         private static BuildTargetGroup s_LastBuildTargetGroup = BuildTargetGroup.Unknown;
 
         [SettingsProvider]

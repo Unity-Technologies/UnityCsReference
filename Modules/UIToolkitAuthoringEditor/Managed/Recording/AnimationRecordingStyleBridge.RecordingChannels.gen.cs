@@ -28,6 +28,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.EnumInt;
                 case StylePropertyId.AspectRatio:
                     return StylePropertyRecordingChannel.Ratio1;
+                case StylePropertyId.BackdropFilter:
+                    return StylePropertyRecordingChannel.Filter;
                 case StylePropertyId.BackgroundColor:
                     return StylePropertyRecordingChannel.Color4;
                 case StylePropertyId.BackgroundImage:
@@ -68,6 +70,8 @@ namespace Unity.UIToolkit.Editor
                     return StylePropertyRecordingChannel.Length1;
                 case StylePropertyId.Color:
                     return StylePropertyRecordingChannel.Color4;
+                case StylePropertyId.Cursor:
+                    return StylePropertyRecordingChannel.Cursor3;
                 case StylePropertyId.Filter:
                     return StylePropertyRecordingChannel.Filter;
                 case StylePropertyId.FlexBasis:

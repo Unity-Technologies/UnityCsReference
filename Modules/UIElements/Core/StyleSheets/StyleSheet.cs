@@ -321,7 +321,7 @@ namespace UnityEngine.UIElements
             RequestRebuild();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void RequestRebuild(RebuildOptions options = RebuildOptions.None)
         {
             m_RequiresRebuild = true;
@@ -531,7 +531,7 @@ namespace UnityEngine.UIElements
             if (handle.valueType == StyleValueType.Enum)
             {
                 var colorName = ReadEnum(handle);
-                StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var value);
+                StyleSheetColor.TryGetColor(colorName, out var value);
                 return value;
             }
 
@@ -544,7 +544,7 @@ namespace UnityEngine.UIElements
                 return true;
 
             if (TryCheckAccess(strings, StyleValueType.Enum, handle, out var colorName))
-                return StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out value);
+                return StyleSheetColor.TryGetColor(colorName, out value);
 
             value = default;
             return false;
@@ -1125,7 +1125,7 @@ namespace UnityEngine.UIElements
                 WriteFloat(ref handle, value.value);
         }
 
-        private void MarkAsChanged()
+        internal void MarkAsChanged()
         {
             // Set the contentHash to 0 if the style sheet is empty
             if (rules == null || rules.Length == 0)

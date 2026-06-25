@@ -108,6 +108,7 @@ namespace UnityEngine.UIElements
         InitialStyle,
         LayoutManager,
         SelectorAccelerationCache,
+        StyleClassList,
         Count
     }
 

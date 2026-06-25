@@ -9,11 +9,13 @@
 // </auto-generated>
 
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Profiling
 {
     internal static partial class MarkersInformationProvider
     {
+        [NoAutoStaticsCleanup] // constant lookup table generated from package docs; no user code references
         private static readonly Dictionary<string, string> k_GeneratedMarkersInfo =
             new Dictionary<string, string>
         {

@@ -100,6 +100,25 @@ namespace UnityEngine.UIElements.UIR
 
         public BasicNode<GraphicEntry> graphicEntries;
 
+        // Texture ID for backdrop-filter effect (persistent handle, texture bound during render).
+        // Validity doubles as the lifecycle oracle: see hasBackdropFilterAllocated.
+        public TextureId backdropFilterTextureId;
+
+        // Temporary RenderTexture for backdrop-filter (created during render, released next frame)
+        public RenderTexture backdropFilterTemporaryTexture;
+
+        // UV corners for backdrop-filter texture mapping (accounts for rotation)
+        // Order: bottom-left, top-left, top-right, bottom-right
+        public Vector2 backdropFilterUVBottomLeft;
+        public Vector2 backdropFilterUVTopLeft;
+        public Vector2 backdropFilterUVTopRight;
+        public Vector2 backdropFilterUVBottomRight;
+
+        // True when backdrop-filter resources are currently allocated for this render data
+        // (TextureId reserved, panel and descendant counters incremented).
+        // Synchronized against owner.hasBackdropFilter by RenderEvents.SyncBackdropFilterState.
+        public bool hasBackdropFilterAllocated => backdropFilterTextureId.IsValid();
+
         public RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
         public static bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
         public static bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
@@ -108,6 +127,8 @@ namespace UnityEngine.UIElements.UIR
         public bool pendingRepaint;
         // This is set whenever a hierarchical repaint was needed when HierarchyDisplayed == false.
         public bool pendingHierarchicalRepaint;
+
+        public List<MeshModifierRegistration> m_EffectiveModifiers;
 
         public void Init()
         {
@@ -156,8 +177,15 @@ namespace UnityEngine.UIElements.UIR
             compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
             backgroundAlpha = 0.0f;
             graphicEntries = null;
+            backdropFilterTextureId = TextureId.invalid;
+            backdropFilterTemporaryTexture = null;
+            backdropFilterUVBottomLeft = Vector2.zero;
+            backdropFilterUVTopLeft = Vector2.zero;
+            backdropFilterUVTopRight = Vector2.zero;
+            backdropFilterUVBottomRight = Vector2.zero;
             pendingRepaint = false;
             pendingHierarchicalRepaint = false;
+            m_EffectiveModifiers = null;
             clippingRect = Rect.zero;
             clippingRectMinusGroup = Rect.zero;
             clippingRectIsInfinite = false;
@@ -183,6 +211,7 @@ namespace UnityEngine.UIElements.UIR
             headMesh = null;
             tailMesh = null;
             graphicEntries = null;
+            m_EffectiveModifiers = null;
         }
 
         public bool isGroupTransform

@@ -29,47 +29,47 @@ namespace UnityEditor.AdaptivePerformance.Editor
         const string k_IndexerPerformanceActionDelay = "m_PerformanceActionDelay";
         const string k_ScalerProfileList = "m_scalerProfileList";
 
-        static GUIContent s_LoggingLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Logging"), L10n.Tr("Only active in development mode."));
-        static GUIContent s_AutomaticPerformanceModeEnabledLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Auto Performance Mode"), L10n.Tr("Auto Performance Mode controls performance by changing CPU and GPU levels."));
-        static GUIContent s_AutomaticGameModeEnabledLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Auto Game Mode"), L10n.Tr("Auto Game Mode controls performance by changing target FPS based on device GameMode settings."));
-        static GUIContent s_EnableBoostOnStartupLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Boost mode on startup"), L10n.Tr("Enables the CPU and GPU boost mode before engine startup to decrease startup time."));
-        static GUIContent s_StatsLoggingFrequencyInFramesLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Logging Frequency"), L10n.Tr("Changes the logging frequency."));
-        static GUIContent s_IndexerActiveLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Active"), L10n.Tr("Is indexer enabled."));
-        static GUIContent s_IndexerThermalActionDelayLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Thermal Action Delay"), L10n.Tr("Delay after any scaler is applied or unapplied because of thermal state."));
-        static GUIContent s_IndexerPerformanceActionDelayLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Performance Action Delay"), L10n.Tr("Delay after any scaler is applied or unapplied because of performance state."));
+        static readonly GUIContent s_LoggingLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Logging"), L10n.Tr("Only active in development mode."));
+        static readonly GUIContent s_AutomaticPerformanceModeEnabledLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Auto Performance Mode"), L10n.Tr("Auto Performance Mode controls performance by changing CPU and GPU levels."));
+        static readonly GUIContent s_AutomaticGameModeEnabledLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Auto Game Mode"), L10n.Tr("Auto Game Mode controls performance by changing target FPS based on device GameMode settings."));
+        static readonly GUIContent s_EnableBoostOnStartupLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Boost mode on startup"), L10n.Tr("Enables the CPU and GPU boost mode before engine startup to decrease startup time."));
+        static readonly GUIContent s_StatsLoggingFrequencyInFramesLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Logging Frequency"), L10n.Tr("Changes the logging frequency."));
+        static readonly GUIContent s_IndexerActiveLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Active"), L10n.Tr("Is indexer enabled."));
+        static readonly GUIContent s_IndexerThermalActionDelayLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Thermal Action Delay"), L10n.Tr("Delay after any scaler is applied or unapplied because of thermal state."));
+        static readonly GUIContent s_IndexerPerformanceActionDelayLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Performance Action Delay"), L10n.Tr("Delay after any scaler is applied or unapplied because of performance state."));
 
-        static GUIContent s_ScalerScale = EditorGUIUtility.TrTextContent(L10n.Tr("Scale"), L10n.Tr("Scale to control the quality impact for the scaler. No quality change when 1, improved quality when >1, and lowered quality when <1"));
-        static GUIContent s_ScalerVisualImpact = EditorGUIUtility.TrTextContent(L10n.Tr("Visual Impact"), L10n.Tr("Visual impact the scaler has on the application. The higher the more impact the scaler has on the visuals."));
-        static GUIContent s_ScalerTarget = EditorGUIUtility.TrTextContent(L10n.Tr("Target"), L10n.Tr("Target for the scaler of the application bottleneck. The target selected has the most impact on the quality control of this scaler. Can only be overriden via API."));
-        static GUIContent s_ScalerMaxLevel = EditorGUIUtility.TrTextContent(L10n.Tr("Max Level"), L10n.Tr("Maximum level for the scaler. This is tied to the implementation of the scaler to divide the levels into concrete steps."));
-        static GUIContent s_ScalerMinBound = EditorGUIUtility.TrTextContent(L10n.Tr("Min Scale"), L10n.Tr("Minimum value for the scale boundary."));
-        static GUIContent s_ScalerMaxBound = EditorGUIUtility.TrTextContent(L10n.Tr("Max Scale"), L10n.Tr("Maximum value for the scale boundary."));
+        static readonly GUIContent s_ScalerScale = EditorGUIUtility.TrTextContent(L10n.Tr("Scale"), L10n.Tr("Scale to control the quality impact for the scaler. No quality change when 1, improved quality when >1, and lowered quality when <1"));
+        static readonly GUIContent s_ScalerVisualImpact = EditorGUIUtility.TrTextContent(L10n.Tr("Visual Impact"), L10n.Tr("Visual impact the scaler has on the application. The higher the more impact the scaler has on the visuals."));
+        static readonly GUIContent s_ScalerTarget = EditorGUIUtility.TrTextContent(L10n.Tr("Target"), L10n.Tr("Target for the scaler of the application bottleneck. The target selected has the most impact on the quality control of this scaler. Can only be overriden via API."));
+        static readonly GUIContent s_ScalerMaxLevel = EditorGUIUtility.TrTextContent(L10n.Tr("Max Level"), L10n.Tr("Maximum level for the scaler. This is tied to the implementation of the scaler to divide the levels into concrete steps."));
+        static readonly GUIContent s_ScalerMinBound = EditorGUIUtility.TrTextContent(L10n.Tr("Min Scale"), L10n.Tr("Minimum value for the scale boundary."));
+        static readonly GUIContent s_ScalerMaxBound = EditorGUIUtility.TrTextContent(L10n.Tr("Max Scale"), L10n.Tr("Maximum value for the scale boundary."));
 
-        static GUIContent s_AdaptiveFramerate = EditorGUIUtility.TrTextContent(L10n.Tr("Framerate"), L10n.Tr("Adaptive Framerate enables you to automatically control the application's framerate by the defined minimum and maximum framerate. It uses Application.targetFramerate to control the framerate for your application."));
-        static GUIContent s_AdaptiveResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Resolution"), L10n.Tr("Adaptive Resolution enables you to automatically control the screen resolution of the application by the defined scale. It uses Dynamic Resolution (Vulkan only) and uses Resolution Scale of the Universal Render Pipeline as fallback if the project uses Universal Render Pipeline."));
-        static GUIContent s_AdaptiveLOD = EditorGUIUtility.TrTextContent(L10n.Tr("LOD"), L10n.Tr("Adaptive LOD changes the LOD bias based on the thermal and performance load."));
-        static GUIContent s_AdaptiveLut = EditorGUIUtility.TrTextContent(L10n.Tr("LUT"), L10n.Tr("Requires Universal Render Pipeline. Adaptive LUT changes the LUT Bias of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveMSAA = EditorGUIUtility.TrTextContent(L10n.Tr("MSAA"), L10n.Tr("Requires Universal Render Pipeline. Adaptive MSAA changes the Anti Aliasing Quality Bias of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveShadowCascade = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Cascade"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Cascade changes the Main Light Shadow Cascades Count Bias of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveShadowDistance = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Distance"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Distance changes the Max Shadow Distance Multiplier of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveShadowmapResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Shadowmap Resolution"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadowmap Resolution changes the  Main Light Shadowmap Resolution Multiplier of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveShadowQuality = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Quality"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Quality changes the Shadow Quality Bias of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveSorting = EditorGUIUtility.TrTextContent(L10n.Tr("Sorting"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Sorting skips the front-to-back sorting of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveTransparency = EditorGUIUtility.TrTextContent(L10n.Tr("Transparency"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Transparency skips transparent objects render pass."));
-        static GUIContent s_AdaptiveViewDistance = EditorGUIUtility.TrTextContent(L10n.Tr("View Distance"), L10n.Tr("Adaptive View Distance changes the view distance of the main camera. Requires the MainCamera tag on the Camera you want to assign."));
-        static GUIContent s_AdaptivePhysics = EditorGUIUtility.TrTextContent(L10n.Tr("Physics"), L10n.Tr("Adaptive Physics changes the Time.fixedDeltaTime based on the thermal and performance load."));
-        static GUIContent s_AdaptiveDecals = EditorGUIUtility.TrTextContent(L10n.Tr("Decals"), L10n.Tr("Adaptive Decal changes the maximum draw distance for all decals of the Universal Render Pipeline based on the thermal and performance load."));
-        static GUIContent s_AdaptiveLayerCulling = EditorGUIUtility.TrTextContent(L10n.Tr("Layer Culling"), L10n.Tr("Adaptive Layer Culling changes the maximum draw distance for each layer based on the thermal and performance load. It scales the value provided by camera.layerCullDistances."));
+        static readonly GUIContent s_AdaptiveFramerate = EditorGUIUtility.TrTextContent(L10n.Tr("Framerate"), L10n.Tr("Adaptive Framerate enables you to automatically control the application's framerate by the defined minimum and maximum framerate. It uses Application.targetFramerate to control the framerate for your application."));
+        static readonly GUIContent s_AdaptiveResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Resolution"), L10n.Tr("Adaptive Resolution enables you to automatically control the screen resolution of the application by the defined scale. It uses Dynamic Resolution (Vulkan only) and uses Resolution Scale of the Universal Render Pipeline as fallback if the project uses Universal Render Pipeline."));
+        static readonly GUIContent s_AdaptiveLOD = EditorGUIUtility.TrTextContent(L10n.Tr("LOD"), L10n.Tr("Adaptive LOD changes the LOD bias based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveLut = EditorGUIUtility.TrTextContent(L10n.Tr("LUT"), L10n.Tr("Requires Universal Render Pipeline. Adaptive LUT changes the LUT Bias of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveMSAA = EditorGUIUtility.TrTextContent(L10n.Tr("MSAA"), L10n.Tr("Requires Universal Render Pipeline. Adaptive MSAA changes the Anti Aliasing Quality Bias of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveShadowCascade = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Cascade"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Cascade changes the Main Light Shadow Cascades Count Bias of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveShadowDistance = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Distance"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Distance changes the Max Shadow Distance Multiplier of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveShadowmapResolution = EditorGUIUtility.TrTextContent(L10n.Tr("Shadowmap Resolution"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadowmap Resolution changes the  Main Light Shadowmap Resolution Multiplier of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveShadowQuality = EditorGUIUtility.TrTextContent(L10n.Tr("Shadow Quality"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Shadow Quality changes the Shadow Quality Bias of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveSorting = EditorGUIUtility.TrTextContent(L10n.Tr("Sorting"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Sorting skips the front-to-back sorting of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveTransparency = EditorGUIUtility.TrTextContent(L10n.Tr("Transparency"), L10n.Tr("Requires Universal Render Pipeline. Adaptive Transparency skips transparent objects render pass."));
+        static readonly GUIContent s_AdaptiveViewDistance = EditorGUIUtility.TrTextContent(L10n.Tr("View Distance"), L10n.Tr("Adaptive View Distance changes the view distance of the main camera. Requires the MainCamera tag on the Camera you want to assign."));
+        static readonly GUIContent s_AdaptivePhysics = EditorGUIUtility.TrTextContent(L10n.Tr("Physics"), L10n.Tr("Adaptive Physics changes the Time.fixedDeltaTime based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveDecals = EditorGUIUtility.TrTextContent(L10n.Tr("Decals"), L10n.Tr("Adaptive Decal changes the maximum draw distance for all decals of the Universal Render Pipeline based on the thermal and performance load."));
+        static readonly GUIContent s_AdaptiveLayerCulling = EditorGUIUtility.TrTextContent(L10n.Tr("Layer Culling"), L10n.Tr("Adaptive Layer Culling changes the maximum draw distance for each layer based on the thermal and performance load. It scales the value provided by camera.layerCullDistances."));
 
-        static string s_FramerateWarningVSync = L10n.Tr("Adaptive Framerate is only supported without VSync. Set VSync Count to \"Don't Sync\" in Quality settings.");
-        static string s_FramerateWarningGameMode = L10n.Tr("Adaptive Framerate is only supported when \"Auto Game Mode\" is turned off.");
-        static string s_WarningPopup = L10n.Tr("Warning");
-        static string s_WarningPopupMessage = L10n.Tr("Adaptive Performance requires at least one profile to work properly");
-        static string s_WarningPopupOption = L10n.Tr("Ok");
-        static string s_AdaptiveFramerateMenu = L10n.Tr("Adaptive Framerate");
-        static string s_WarningPlaymodePopup = L10n.Tr("Adaptive Performance settings cannot be changed when the Editor is in Play mode.");
-        static string s_WarningIndexer = L10n.Tr("You have to enable Adaptive Performance Indexer to use Scaler.");
-        static string s_WarningLegacyPackage = L10n.Tr(" Please consider update the legacy provider settings editor to support build profile UI properly. ");
+        static readonly string s_FramerateWarningVSync = L10n.Tr("Adaptive Framerate is only supported without VSync. Set VSync Count to \"Don't Sync\" in Quality settings.");
+        static readonly string s_FramerateWarningGameMode = L10n.Tr("Adaptive Framerate is only supported when \"Auto Game Mode\" is turned off.");
+        static readonly string s_WarningPopup = L10n.Tr("Warning");
+        static readonly string s_WarningPopupMessage = L10n.Tr("Adaptive Performance requires at least one profile to work properly");
+        static readonly string s_WarningPopupOption = L10n.Tr("Ok");
+        static readonly string s_AdaptiveFramerateMenu = L10n.Tr("Adaptive Framerate");
+        static readonly string s_WarningPlaymodePopup = L10n.Tr("Adaptive Performance settings cannot be changed when the Editor is in Play mode.");
+        static readonly string s_WarningIndexer = L10n.Tr("You have to enable Adaptive Performance Indexer to use Scaler.");
+        static readonly string s_WarningLegacyPackage = L10n.Tr(" Please consider update the legacy provider settings editor to support build profile UI properly. ");
 
         SerializedProperty m_LoggingProperty;
         SerializedProperty m_AutoPerformanceModeEnabledProperty;
@@ -125,11 +125,11 @@ namespace UnityEditor.AdaptivePerformance.Editor
         /// </summary>
         protected virtual bool IsThermalActionDelayAvailable { get; private set; } = true;
 
-        static GUIContent k_ShowRuntimeSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Runtime Settings"));
-        static GUIContent k_ShowDevelopmentSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Development Settings"));
-        static GUIContent k_ShowIndexerSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Indexer Settings"));
-        static GUIContent k_ShowScalerSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Scaler Settings"));
-        static GUIContent k_ShowScalerProfiles = EditorGUIUtility.TrTextContent(L10n.Tr("Scaler Profiles"));
+        static readonly GUIContent k_ShowRuntimeSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Runtime Settings"));
+        static readonly GUIContent k_ShowDevelopmentSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Development Settings"));
+        static readonly GUIContent k_ShowIndexerSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Indexer Settings"));
+        static readonly GUIContent k_ShowScalerSettings = EditorGUIUtility.TrTextContent(L10n.Tr("Scaler Settings"));
+        static readonly GUIContent k_ShowScalerProfiles = EditorGUIUtility.TrTextContent(L10n.Tr("Scaler Profiles"));
 
         struct ScalerSettingInformation
         {
@@ -142,8 +142,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
             public Dictionary<string, ScalerSettingInformation> scalerSettingsInfos = new Dictionary<string, ScalerSettingInformation>();
         }
 
-        static int k_NumberOfScalerProperties = 5;
-        static int k_TickboxPosition = 227;
+        const int k_NumberOfScalerProperties = 5;
+        const int k_TickboxPosition = 227;
 
         Dictionary<string, ScalerProfileSettingInformation> m_ScalerProfiles = new Dictionary<string, ScalerProfileSettingInformation>();
 

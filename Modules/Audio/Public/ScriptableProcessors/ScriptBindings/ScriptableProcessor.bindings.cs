@@ -751,6 +751,12 @@ namespace UnityEngine.Audio
             return SendMessageToProcessorInternal(header, control, message);
         }
 
+        public static unsafe ProcessorHeader* GetProcessorHeaderFromHandle(ControlHeader* control, DualThreadHandle handle)
+        {
+            return (ProcessorHeader*)GetProcessorHeaderFromHandleInternal(control, handle);
+        }
+        [NativeMethod(Name = "audio::GetProcessorHeaderFromHandle", IsFreeFunction = true)]
+        static extern unsafe /*ProcessorHeader*/ void* GetProcessorHeaderFromHandleInternal(/*ControlHeader*/ void* control, DualThreadHandle handle);
         [NativeMethod(Name = "audio::SendMessageToProcessor", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe ProcessorInstance.Response SendMessageToProcessorInternal(/*ProcessorHeader* */ void* header, /*ControlHeader* */ void* control, /* Message* */ void* message);
 
@@ -791,14 +797,6 @@ namespace UnityEngine.Audio
 
     static class ProcessorExtensions
     {
-        internal static unsafe T* CAllocChunk<T>()
-            where T : unmanaged
-        {
-            var chunk = (T*)UnsafeUtility.MallocTracked(sizeof(T), UnsafeUtility.AlignOf<T>(), Allocator.Persistent, 3);
-            *chunk = default;
-            return chunk;
-        }
-
         public static unsafe void DispatchGenericControl<TControl, TRealtime>(ref TControl control, ref TRealtime realtime, in ProcessorHeader header, void* additionalPtr, ControlFunction function)
             where TControl : unmanaged, ProcessorInstance.IControl<TRealtime>
             where TRealtime : unmanaged, ProcessorInstance.IRealtime
@@ -809,10 +807,8 @@ namespace UnityEngine.Audio
                 {
                     var args = (DisposeArguments*)additionalPtr;
                     control.Dispose(new(args->ControlContext), ref realtime);
-
-                    fixed (ProcessorHeader* pHeader = &header)
-                        UnsafeUtility.FreeTracked(pHeader, Allocator.Persistent);
-
+                    // No header free here: the header lives inside the bridge's native-owned slab, which
+                    // the DTM frees with UNITY_FREE once this dispatch returns up through the destructor.
                     break;
                 }
                 case ControlFunction.Update:

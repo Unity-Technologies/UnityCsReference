@@ -16,7 +16,7 @@ namespace UnityEngine
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Utilities/Hash128.h")]
+    [NativeHeader("Modules/NativeKernel/Include/NativeKernel/Utilities/Hash128.h")]
     [NativeHeader("Runtime/Export/Hashing/Hash128.bindings.h")]
     public unsafe struct Hash128 : IComparable, IComparable<Hash128>, IEquatable<Hash128>
     {

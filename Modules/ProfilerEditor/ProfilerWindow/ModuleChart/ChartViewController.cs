@@ -40,6 +40,7 @@ namespace Unity.Profiling.Editor
         Label m_HeaderLabel;
         Image m_HeaderIcon;
         Image m_WarningIcon;
+        Image m_PinIndicatorIcon;
         ListView m_Legend;
         VisualElement m_Chart;
         VisualElement m_FrameSelection;
@@ -63,7 +64,7 @@ namespace Unity.Profiling.Editor
             m_CurrentFrame = -1;
         }
 
-        public void Clear()
+        public virtual void Clear()
         {
             m_CurrentFrame = -1;
         }
@@ -93,7 +94,7 @@ namespace Unity.Profiling.Editor
             UpdateSelection();
         }
 
-        public void SetActiveState(bool active)
+        public virtual void SetActiveState(bool active)
         {
             UIUtility.SetElementDisplay(View, active);
 
@@ -145,6 +146,27 @@ namespace Unity.Profiling.Editor
             m_WarningIcon = View.Q<Image>(k_UxmlIdentifier_Warning);
             m_Legend = View.Q<ListView>(k_UxmlIdentifier_Legend);
             MakeLegend();
+
+            m_Header.AddManipulator(new ContextualMenuManipulator(BuildContextMenu));
+
+            m_PinIndicatorIcon = new Image
+            {
+                image = EditorGUIUtility.LoadIcon("SceneTemplate/pin"),
+                scaleMode = ScaleMode.ScaleToFit,
+                tooltip = "Pinned to top. Right-click to unpin.",
+                style =
+                {
+                    width = 12,
+                    height = 12,
+                    flexShrink = 0,
+                    marginLeft = 4,
+                    marginRight = 2
+                }
+            };
+            // After header icon (index 1), before header label (index 2). Clamp against
+            // childCount so a future UXML edit that prunes a header child can't trip a throw.
+            m_Header.Insert(Mathf.Min(2, m_Header.childCount), m_PinIndicatorIcon);
+            UpdatePinIndicator();
 
             // Chart graph
             m_Chart = View.Q(k_UxmlIdentifier_Chart_Mesh);
@@ -220,9 +242,36 @@ namespace Unity.Profiling.Editor
             m_SelectedMarkerOverlay?.Clear();
         }
 
+        void BuildContextMenu(ContextualMenuPopulateEvent evt)
+        {
+            if (m_Module.pinned)
+            {
+                evt.menu.AppendAction(L10n.Tr("Unpin from Top"),
+                    _ => m_Module.pinned = false,
+                    DropdownMenuAction.AlwaysEnabled);
+            }
+            else
+            {
+                var atLimit = m_Module.ProfilerWindow.GetPinnedModuleCount() >= ProfilerWindow.k_MaximumPinnedModules;
+                evt.menu.AppendAction(L10n.Tr("Pin to Top"),
+                    _ => m_Module.pinned = true,
+                    atLimit ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+            }
+        }
+
+        void UpdatePinIndicator()
+        {
+            UIUtility.SetElementDisplay(m_PinIndicatorIcon, m_Module.pinned);
+        }
+
+        public void NotifyPinnedStateChanged()
+        {
+            UpdatePinIndicator();
+        }
+
         void MakeLegend()
         {
-            m_Header.tooltip = m_Model.Tooltip;
+            m_Header.tooltip = m_Model.Tooltip + "\n\nRight-click to pin/unpin this module.";
 
             m_HeaderLabel.text = m_Model.Header;
             m_HeaderLabel.tooltip = m_Model.Header;

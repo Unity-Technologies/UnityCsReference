@@ -277,7 +277,8 @@ namespace UnityEditor.Search
         static bool TryReadStyleDimension(VisualElement element, string propertyName, out float value, float defaultValue = 0.0f)
         {
             value = defaultValue;
-            if (element != null && element.computedStyle.customProperties.TryGetValue((UniqueStyleString)propertyName, out var customProp))
+            if (element != null && UniqueStyleString.TryGet(propertyName, out var propertyNameUnique) &&
+                element.computedStyle.customProperties.TryGetValue(propertyNameUnique, out var customProp))
             {
                 if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
                 {

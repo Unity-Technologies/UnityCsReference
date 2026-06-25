@@ -375,6 +375,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         style.translate = new StyleTranslate(Offset);
         m_DocumentRoot.style.translate = -Offset;
         m_HighlightOverlay.ZoomScale = ZoomScale;
+        m_DocumentRoot.ZoomScale = ZoomScale;
 
         if (panel == null)
             return;

@@ -11,15 +11,10 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 internal sealed partial class VisualTreeAssetInspector : VisualElement
 {
-    public readonly static string AssetNotEditableMessageWhenUIStagesEnabled = L10n.Tr("UI elements are not yet editable in this view. To edit, open in context with UI Staging Mode or open the asset in the UI Builder.");
-    public readonly static string AssetNotEditableMessageWhenUIStagesDisabled = L10n.Tr("UI elements are not yet editable in this view. To edit, open the asset in the UI Builder.");
-    public static string AssetNotEditableMessage => UIToolkitAuthoringSettings.EnableUIStages ? AssetNotEditableMessageWhenUIStagesEnabled : AssetNotEditableMessageWhenUIStagesDisabled;
-
     public static readonly BindingId VisualTreeAssetProperty = nameof(VisualTreeAsset);
 
     public const string UssClass = "unity-visual-tree-asset-inspector";
     public const string HeaderUssClass = UssClass + "__header";
-    public const string AssetNotEditableHelpBoxUssClass = UssClass + "__not-editable-help-box";
     public const string AssetActionsViewUssClass = UssClass + "__asset-actions-view";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualTreeAssetInspector.uxml";

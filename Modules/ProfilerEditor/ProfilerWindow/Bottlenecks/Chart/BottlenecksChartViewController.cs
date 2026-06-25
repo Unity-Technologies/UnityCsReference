@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Accessibility;
 using UnityEditor.UIElements;
@@ -20,6 +21,7 @@ namespace Unity.Profiling.Editor.UI
         const string k_UssClass_Dark = "bottlenecks-chart-view__dark";
         const string k_UssClass_Light = "bottlenecks-chart-view__light";
 
+        [NoAutoStaticsCleanup] // constant FPS option list, no user code references
         internal static readonly IReadOnlyList<int> k_FPSValues = new[] { 30, 60, 72, 90, 120 };
 
         // Model.
@@ -62,6 +64,8 @@ namespace Unity.Profiling.Editor.UI
         }
 
         public IResponder Responder { get; }
+
+        internal BottlenecksChartViewModel Model => m_Model;
 
         public void ReloadData()
         {

@@ -12,9 +12,9 @@ namespace Unity.U2D.Physics.Editor
     [InitializeOnLoad]
     static internal class PhysicsCore2DMenuItems
     {
-        internal const string k_CreatePhysicsCoreSettings2DMenuPath = "Assets/Create/2D/PhysicsCore Settings 2D";
+        internal const string k_CreatePhysicsCoreSettings2DMenuPath = "Assets/Create/2D/Physics (Core)/PhysicsCore Settings 2D";
         static internal Action<EntityId, UnityEditor.ProjectWindowCallback.AssetCreationEndAction, string, Texture2D, string> StartNewAssetNameEditingDelegate = ProjectWindowUtil.StartNameEditingIfProjectWindowExists;
-        const int k_PhysicsCoreSettings2DAssetMenuPriority = 14;
+        const int k_PhysicsCoreSettings2DAssetMenuPriority = 70;
 
         static PhysicsCore2DMenuItems()
         {

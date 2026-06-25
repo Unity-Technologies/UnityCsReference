@@ -38,7 +38,7 @@ namespace Unity.UIToolkit.Editor
 
         protected override ColorField CreateValueField()
         {
-            return new ColorField();
+            return new ColorField() { setAlphaIfTransparentWhenPicked = true };
         }
 
         protected override StyleColor CreateStyleValue(Color v)

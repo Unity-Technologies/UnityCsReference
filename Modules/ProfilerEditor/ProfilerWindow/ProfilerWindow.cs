@@ -25,13 +25,14 @@ using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 using Debug = UnityEngine.Debug;
 using ViewController = Unity.Profiling.Editor.UI.ViewController;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Profiler", icon = "UnityEditor.ProfilerWindow")]
-    public sealed class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder, BottlenecksChartViewController.IResponder
+    public sealed partial class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder, BottlenecksChartViewController.IResponder
     {
         internal static class Styles
         {
@@ -66,6 +67,7 @@ namespace UnityEditor
             public static readonly GUIContent profilerRecordOff = EditorGUIUtility.TrIconContent("Record Off", "Record profiling information (F9)");
             public static readonly GUIContent profilerRecordOn = EditorGUIUtility.TrIconContent("Record On", "Record profiling information (F9)");
 
+            [NoAutoStaticsCleanup] // Fixed content, safe to persist
             public static SVC<Color> borderColor =
                 new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
             public static readonly GUIContent showHideCaptures = EditorGUIUtility.TrIconContent("LeftPanel", "Show/Hide Captures List");
@@ -98,6 +100,7 @@ namespace UnityEditor
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         static List<ProfilerWindow> s_ProfilerWindows = new List<ProfilerWindow>();
 
         const string k_UxmlResourceName = "ProfilerWindow.uxml";
@@ -105,6 +108,7 @@ namespace UnityEditor
         const string k_UssClass_Light = "profiler-view--light";
         const string k_UxmlIdentifier_ToolbarViewContainer = "profiler-view__toolbar-view-container";
         const string k_UxmlIdentifier_BottlenecksViewContainer = "profiler-view__bottlenecks-view-container";
+        const string k_UxmlIdentifier_PinnedModulesContainer = "profiler-view__pinned-modules-container";
         const string k_UxmlIdentifier_CapturesListViewContainer = "profiler-view__captures-list-view-container";
         const string k_UxmlIdentifier_CaptureRenameWarning = "profiler-view__capture-rename-warning";
         const string k_UxmlIdentifier_SplitView = "profiler-view__split-view";
@@ -117,6 +121,7 @@ namespace UnityEditor
         internal const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
         const string k_FrameSelectionRangeStartKey = "ProfilerWindow.FrameSelectionRangeStart";
+        internal const int k_MaximumPinnedModules = 4;
         const string k_FrameSelectionRangeEndKey = "ProfilerWindow.FrameSelectionRangeEnd";
         const string k_CurrentLoadedCaptureFileKey = "ProfilerWindow.CurrentLoadedCaptureFile";
         const int k_NoFrameSelectionSession = -99;
@@ -192,13 +197,16 @@ namespace UnityEditor
 
         // UI references.
         IMGUIContainer m_ToolbarIMGUIContainer;
-        VisualElement m_ChartsContainer;
+        internal VisualElement m_ChartsContainer;
         VisualElement m_BottlenecksViewContainer;
+        internal VisualElement m_PinnedModulesContainer;
         VisualElement m_DetailsViewContainer;
         MatchWidthLock m_Charts2BottlenecksWidthLock;
+        MatchWidthLock m_Charts2PinnedModulesWidthLock;
 
         BottlenecksChartViewController m_BottlenecksChartViewController;
         ViewController m_BottlenecksDetailsViewController;
+        ScreenshotIndexCatalogue m_ScreenshotIndexCatalogue;
 
         internal VisualElement DetailsViewContainer => m_DetailsViewContainer;
 
@@ -464,6 +472,15 @@ namespace UnityEditor
                 module.OnEnable();
             }
 
+            // OnEnable loaded pinned state from prefs; reconcile views into the right container
+            // and refresh pin indicators in case the persisted state differs from where the
+            // initial CreateGUI placement put them.
+            foreach (var module in m_AllModules)
+            {
+                module.ChartViewController?.NotifyPinnedStateChanged();
+                PlaceChartViewInContainer(module);
+            }
+
             // Select the last selected module this session. If there wasn't one, default to the Highlights view.
             var moduleIndexToSelect = SessionState.GetInt(k_SelectedModuleIndexPreferenceKey, k_NoModuleSelected);
             if (moduleIndexToSelect != k_NoModuleSelected)
@@ -508,6 +525,8 @@ namespace UnityEditor
                 }
             }
 
+            m_ScreenshotIndexCatalogue?.Dispose();
+            m_ScreenshotIndexCatalogue = null;
             m_BottlenecksChartViewController.Dispose();
             m_BottlenecksChartViewController = null;
             m_CapturesListViewController.Dispose();
@@ -702,15 +721,26 @@ namespace UnityEditor
             ShowCapturesList(EditorPrefs.GetBool(k_CapturesSplitViewToggleIsVisibleStatePreferenceKey, true));
 
             m_ChartsContainer = rootVisualElement.Q(k_UxmlIdentifier_ChartsViewContainer);
+            m_PinnedModulesContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_PinnedModulesContainer);
+
+            // OnEnable hasn't been called on modules yet — read prefs directly so the initial
+            // parent matches the eventual pinned+active state and avoids a re-parent on first
+            // OnEnable. PlaceChartViewInContainer in the post-OnEnable pass reconciles anything
+            // that drifts (e.g. defaults that don't match prefs).
             for (int i = 0; i < m_AllModules.Count; ++i)
             {
                 var module = m_AllModules[i];
                 var chartView = module.CreateChartView();
-                m_ChartsContainer.Add(chartView);
+                var targetParent = (module.GetPinnedStateForWindow() && module.GetActiveStateForWindow())
+                    ? m_PinnedModulesContainer : m_ChartsContainer;
+                targetParent.Add(chartView);
             }
 
             m_Charts2BottlenecksWidthLock = new MatchWidthLock(m_BottlenecksViewContainer);
             m_Charts2BottlenecksWidthLock.SetSource(m_ChartsContainer);
+
+            m_Charts2PinnedModulesWidthLock = new MatchWidthLock(m_PinnedModulesContainer);
+            m_Charts2PinnedModulesWidthLock.SetSource(m_ChartsContainer);
 
             MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UxmlIdentifier_SplitView);
             // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
@@ -729,6 +759,85 @@ namespace UnityEditor
         {
             foreach (var module in m_AllModules)
                 module.ChartViewController.View.BringToFront();
+        }
+
+        internal void OnModulePinnedStateChanged(ProfilerModule module)
+        {
+            // Pinned state persists for inactive modules but doesn't move them. When they
+            // become active, PlaceChartViewInContainer (via ApplyActiveState) moves them then.
+            if (!module.active)
+                return;
+
+            // m_Pinned is already set by the time we get here, so the count includes this module.
+            if (module.pinned && GetPinnedModuleCount() > k_MaximumPinnedModules)
+            {
+                // Revert and notify; SetPinnedStateWithoutCallback avoids re-entering this method.
+                module.SetPinnedStateWithoutCallback(false);
+                EditorUtility.DisplayDialog(
+                    "Pinning limit",
+                    $"You can pin a maximum of {k_MaximumPinnedModules} modules. Unpin another module first.",
+                    "OK");
+                return;
+            }
+
+            PlaceChartViewInContainer(module);
+            module.ChartViewController.NotifyPinnedStateChanged();
+        }
+
+        // Places the module's chart view in the pinned container if pinned+active, otherwise in
+        // the standard charts container. Reorders siblings in whichever container we land in.
+        internal void PlaceChartViewInContainer(ProfilerModule module)
+        {
+            var chartView = module.ChartViewController?.View;
+            if (chartView == null)
+                return;
+
+            bool intoPinned = module.pinned && module.active;
+
+            // Enforce the pinned-modules limit on every path that reaches here. The user-initiated
+            // toggle path (OnModulePinnedStateChanged) already guarded with a dialog; the init-restore
+            // and ApplyActiveState paths reach this without that guard, so silently demote rather than
+            // popping a dialog mid-init.
+            if (intoPinned && GetPinnedModuleCount() > k_MaximumPinnedModules)
+            {
+                module.SetPinnedStateWithoutCallback(false);
+                module.ChartViewController?.NotifyPinnedStateChanged();
+                intoPinned = false;
+            }
+
+            var targetParent = intoPinned ? m_PinnedModulesContainer : m_ChartsContainer;
+            if (chartView.parent != targetParent)
+            {
+                chartView.RemoveFromHierarchy();
+                targetParent.Add(chartView);
+            }
+
+            if (intoPinned)
+                UpdatePinnedModulesOrder();
+            else
+                UpdateVisualTreeModulesOrder();
+        }
+
+        internal int GetPinnedModuleCount()
+        {
+            int count = 0;
+            foreach (var module in m_AllModules)
+            {
+                if (module.pinned && module.active)
+                    count++;
+            }
+            return count;
+        }
+
+        // m_AllModules is sorted by orderIndex at init, so we can walk it directly to preserve
+        // that ordering when re-stacking pinned siblings via BringToFront.
+        internal void UpdatePinnedModulesOrder()
+        {
+            foreach (var module in m_AllModules)
+            {
+                if (module.pinned && module.active)
+                    module.ChartViewController.View.BringToFront();
+            }
         }
 
         void SubscribeToGlobalEvents()
@@ -1700,6 +1809,20 @@ namespace UnityEditor
             return (m_BottlenecksDetailsViewController != null);
         }
 
+        internal BottlenecksChartViewController GetBottlenecksChartViewController()
+        {
+            return m_BottlenecksChartViewController;
+        }
+
+        internal ScreenshotIndexCatalogue GetScreenshotIndexCatalogue()
+        {
+            // Lazy: only the Screenshots module consumes this, and instantiation does a native scan
+            // we don't want to pay for windows that never open the module.
+            if (m_ScreenshotIndexCatalogue == null && m_IsInitialized)
+                m_ScreenshotIndexCatalogue = new ScreenshotIndexCatalogue(this);
+            return m_ScreenshotIndexCatalogue;
+        }
+
         void ProfilerModulesDropdownWindow.IResponder.OnConfigureModules()
         {
             ModuleEditorWindow moduleEditorWindow;
@@ -1794,6 +1917,7 @@ namespace UnityEditor
 
             SortModuleCollectionInPlace(ref m_AllModules);
             UpdateVisualTreeModulesOrder();
+            UpdatePinnedModulesOrder();
             PersistDynamicModulesToEditorPrefs();
             UpdateModules();
             Repaint();

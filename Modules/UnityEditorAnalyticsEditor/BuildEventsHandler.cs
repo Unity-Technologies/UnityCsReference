@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -12,7 +13,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class BuildEventsHandlerPostProcess : IPostprocessBuildWithReport
+    internal partial class BuildEventsHandlerPostProcess : IPostprocessBuildWithReport
     {
         [Serializable]
         internal struct SceneViewInfo
@@ -28,8 +29,11 @@ namespace UnityEditor
             public string[] package_ids;
         }
 
+        [AutoStaticsCleanupOnCodeReload] // build-gate flag: persisting true after reload would permanently skip the event
         private static bool s_EventSent = false;
+        [AutoStaticsCleanupOnCodeReload] // build-time accumulator: must reset so the post-build event reflects the new build
         private static int s_NumOfSceneViews = 0;
+        [AutoStaticsCleanupOnCodeReload] // build-time accumulator: must reset so the post-build event reflects the new build
         private static int s_NumOf2dSceneViews = 0;
 
         public int callbackOrder {get { return 0; }}

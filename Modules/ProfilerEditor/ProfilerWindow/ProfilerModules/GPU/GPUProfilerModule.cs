@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEngine;
@@ -38,6 +39,7 @@ namespace UnityEditorInternal.Profiling
         static readonly string k_PerformanceWarningMessage = L10n.Tr("Collecting GPU Profiler data disables graphics jobs, causes overhead and reduces the accuracy of the CPU Module. Close this module if you don't need this data.\n\n" +
             "HDRP and URP Renderers are currently not supported: the profiler won't show most GPU markers if these renderers are enabled.");
 
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly Dictionary<GpuProfilingStatisticsAvailabilityStates, string> s_StatisticsAvailabilityStateReason
             = new Dictionary<GpuProfilingStatisticsAvailabilityStates, string>()
             {

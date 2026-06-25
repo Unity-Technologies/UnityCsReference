@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -17,6 +18,7 @@ namespace UnityEditor
             public GUIContent speed = EditorGUIUtility.TrTextContent("Multiplier", "Controls the initial lifetime of particles based on the speed of the emitter.");
             public GUIContent speedRange = EditorGUIUtility.TrTextContent("Speed Range", "Maps the speed to a value along the curve, when using one of the curve modes.");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         public LifetimeByEmitterSpeedModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

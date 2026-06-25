@@ -217,14 +217,14 @@ namespace Unity.UI.Builder
                     continue;
                 if (vea is not VisualElementAsset visualElementAsset)
                     continue;
-                if (visualElementAsset.classes.Contains(className))
+                if (visualElementAsset.ContainsStyleClass(className))
                     foundList.Add(visualElementAsset);
             }
             foreach (var vea in list)
             {
                 if (vea is not TemplateAsset templateAsset)
                     continue;
-                if (templateAsset.classes.Contains(className))
+                if (templateAsset.ContainsStyleClass(className))
                     foundList.Add(templateAsset);
             }
             return foundList;
@@ -380,11 +380,7 @@ namespace Unity.UI.Builder
 
         public static void AssignClassListFromAssetToElement(this VisualTreeAsset vta, VisualElementAsset asset, VisualElement element)
         {
-            if (asset.classes != null)
-            {
-                for (int i = 0; i < asset.classes.Length; i++)
-                    element.AddToClassList(asset.classes[i]);
-            }
+            asset.AssignClassListToElement(element);
         }
 
         public static void AssignStyleSheetFromAssetToElement(this VisualTreeAsset vta, VisualElementAsset asset, VisualElement element)

@@ -300,6 +300,8 @@ namespace UnityEngine.UIElements.UIR
                 DepthFirstProcessChanges(m_RootRenderTree);
                 m_BlockDirtyRegistration = false;
 
+                m_VisualChangesProcessor.PruneChainCache();
+
                 meshGenerationNodeManager.ResetAll();
                 tempMeshAllocator.Clear();
                 meshWriteDataPool.ReturnAll();
@@ -348,6 +350,7 @@ namespace UnityEngine.UIElements.UIR
                     vectorImageManager?.atlas,
                     shaderInfoAllocator,
                     null,
+                    Vector2.zero,
                     panel.scaledPixelsPerPoint,
                     true,
                     textureSlotCount,
@@ -396,6 +399,7 @@ namespace UnityEngine.UIElements.UIR
 
             bool shouldResetRT = false;
             RenderTexture oldRT = null;
+            Camera oldCam = null;
             bool prevInvertCulling = GL.invertCulling;
             if (prevInvertCulling)
                 GL.invertCulling = false;
@@ -414,20 +418,13 @@ namespace UnityEngine.UIElements.UIR
             {
                 Debug.Assert(nestedTreeRT != null);
                 oldRT = RenderTexture.active;
+                oldCam = Camera.current;
                 Camera.SetupCurrent(null);
                 RenderTexture.active = nestedTreeRT;
                 shouldResetRT = true;
+                scissor = bounds;
 
-                // Filters are rendered in an unscaled render target, so we force the pixelsPerPoint to 1.
-                pixelsPerPoint = 1.0f;
-
-                var viewport = UIRUtility.CastToRect(nestedTreeViewport);
-
-                // Flip the scissor rectangle to match the UI Toolkit coordinate system
-                scissor = viewport;
-                scissor.y = scissor.height - scissor.yMax;
-
-                GL.Viewport(viewport);
+                GL.Viewport(UIRUtility.CastToRect(nestedTreeViewport));
             }
 
             var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, -0.001f, 1.001f);
@@ -442,6 +439,7 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager?.atlas,
                 shaderInfoAllocator,
                 scissor,
+                new Vector2(bounds.xMin, bounds.yMin),
                 pixelsPerPoint,
                 false,
                 textureSlotCount,
@@ -456,7 +454,10 @@ namespace UnityEngine.UIElements.UIR
                 GL.invertCulling = true;
 
             if (shouldResetRT)
+            {
                 RenderTexture.active = oldRT;
+                Camera.SetupCurrent(oldCam);
+            }
 
             if (immediateException != null)
             {

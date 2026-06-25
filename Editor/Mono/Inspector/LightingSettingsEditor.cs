@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEngine.Rendering;
 using UnityEngine;
 using UnityEngineInternal;
@@ -133,18 +134,20 @@ namespace UnityEditor
         {
             public static readonly float buttonWidth = 200;
 
+#pragma warning disable 618 // ProgressiveCPU is deprecated but still selectable in the UI.
             static readonly int[] k_BakeBackendValues =
             {
                 (int)LightingSettings.Lightmapper.ProgressiveCPU,
                 (int)LightingSettings.Lightmapper.ProgressiveGPU
             };
+#pragma warning restore 618
             static readonly int[] k_BakeBackendValuesWithUnityComputeGPU =
                 k_BakeBackendValues.ConcatValue((int)LightingSettings.Lightmapper.UnityComputeGPU);
             public static int[] bakeBackendValues => (UnityEditor.Rendering.EditorGraphicsSettings.defaultLightBaker == UnityEditor.Rendering.LightBaker.UnityComputeLightBaker) ? k_BakeBackendValuesWithUnityComputeGPU : k_BakeBackendValues;
 
             public static readonly GUIContent[] k_BakeBackendStrings =
             {
-                EditorGUIUtility.TrTextContent("Progressive CPU"),
+                EditorGUIUtility.TrTextContent("Progressive CPU (Deprecated)"),
                 EditorGUIUtility.TrTextContent("Progressive GPU")
             };
             static readonly GUIContent[] k_BakeBackendStringsWithUnityComputeGPU =
@@ -254,6 +257,14 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
+            public static readonly GUIContent progressiveCpuDeprecationWarning = EditorGUIUtility.TrTextContent("Progressive CPU will be removed in a future release. Please use the Unity Compute Light Baker instead.");
+            public static readonly GUIContent openGraphicsSettings = EditorGUIUtility.TrTextContent("Open", "Open the Graphics Settings and select the Default Light Baker.");
+            static GUIStyle s_DeprecationHelpBoxLabel;
+            // wordWrappedLabel with a small vertical offset so the first line of text visually aligns with the icon.
+            public static GUIStyle deprecationHelpBoxLabel => s_DeprecationHelpBoxLabel ??= new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                contentOffset = new Vector2(0, -3)
+            };
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -1124,6 +1135,40 @@ namespace UnityEditor
             {
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
                 EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);
+            }
+
+#pragma warning disable 618 // ProgressiveCPU is deprecated; comparison drives the deprecation HelpBox.
+            if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
+                DrawProgressiveCpuDeprecationHelpBox();
+#pragma warning restore 618
+        }
+
+        static void DrawProgressiveCpuDeprecationHelpBox()
+        {
+            const float kButtonHeight = 20f;
+            const float kButtonWidth = 60f;
+            const float kIconSize = 16f;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                int oldIndent = EditorGUI.indentLevel;
+                EditorGUI.indentLevel = 0;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(EditorGUIUtility.IconContent("console.warnicon.sml"), GUIStyle.none,
+                        GUILayout.Width(kIconSize), GUILayout.Height(kIconSize));
+                    EditorGUILayout.LabelField(Styles.progressiveCpuDeprecationWarning.text, Styles.deprecationHelpBoxLabel);
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button(Styles.openGraphicsSettings, GUILayout.Width(kButtonWidth), GUILayout.Height(kButtonHeight)))
+                        GraphicsSettingsInspectorUtility.OpenAndScrollToElement("DefaultLightBaker");
+                }
+                EditorGUI.indentLevel = oldIndent;
+                GUILayout.Space(3);
             }
         }
 

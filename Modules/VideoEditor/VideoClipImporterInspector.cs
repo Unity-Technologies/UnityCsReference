@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.AnimatedValues;
 using UnityEditor.Build;
 using UnityEditor.AssetImporters;
@@ -222,6 +223,7 @@ namespace UnityEditor
             public bool Equals(BuildPlatform a, BuildPlatform z) => a.targetGroup == z.targetGroup;
             public int GetHashCode(BuildPlatform platform) => (int)platform.targetGroup;
         }
+        [NoAutoStaticsCleanup] // stateless comparer with no mutable state
         static readonly BuildPlatformGroupComparer s_BuildPlatformGroupComparer = new BuildPlatformGroupComparer();
 
         // Don't add duplicate platform groups even if there are multiple platforms in the group

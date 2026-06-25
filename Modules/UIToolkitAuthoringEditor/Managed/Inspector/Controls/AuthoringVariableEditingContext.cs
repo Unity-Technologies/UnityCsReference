@@ -31,14 +31,14 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
             if (m_Inspector.Target.Rule != null)
                 return m_Inspector.Target.Rule;
 
-            var vea = m_Inspector.Target.Element.visualElementAsset;
-            var vta = m_Inspector.Target.Element.visualTreeAssetSource;
+            var vea = CurrentVisualElement.visualElementAsset;
+            var vta = CurrentVisualElement.visualTreeAssetSource;
             return vta != null && vea != null ? vta.GetInlineStyleRule(vea) : null;
         }
     }
 
     public StyleSheet CurrentStyleSheet => m_Inspector.Target.Sheet ??
-        m_Inspector.Target.Element.visualTreeAssetSource?.inlineSheet;
+        CurrentVisualElement.visualTreeAssetSource?.inlineSheet;
 
     public bool EditorExtensionMode => false;
     public bool IsSelectorElement => m_Inspector.Target.Type == StyleDiff.ContextType.StyleSheet;
@@ -52,8 +52,8 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
         var rule = CurrentRule;
         if (rule == null)
         {
-            var vea = m_Inspector.Target.Element.visualElementAsset;
-            var vta = m_Inspector.Target.Element.visualTreeAssetSource;
+            var vea = CurrentVisualElement.visualElementAsset;
+            var vta = CurrentVisualElement.visualTreeAssetSource;
             if (vta == null || vea == null)
                 return;
             rule = vta.GetOrCreateInlineStyleRule(vea);
@@ -61,11 +61,6 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
 
         StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id);
         SetVariableCommand.Execute(CommandSources.Inspector, CurrentStyleSheet, rule, id, variableName);
-
-        // Update selector element
-        var element = CurrentVisualElement;
-        element?.UpdateInlineRule(CurrentStyleSheet, rule, element.variableContext);
-        element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     public void UnsetVariable(BindableElement field, string styleName)
@@ -75,11 +70,6 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
 
         StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(styleName, out var id);
         RemoveVariableCommand.Execute(CommandSources.Inspector, CurrentStyleSheet, CurrentRule, id);
-
-        // Update selector element
-        var element = CurrentVisualElement;
-        element?.UpdateInlineRule(CurrentStyleSheet, CurrentRule, element.variableContext);
-        element?.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
     }
 
     public void RefreshUI()
@@ -95,9 +85,6 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
         var property = CurrentRule?.FindLastProperty(styleName);
         if (property == null)
             return null;
-
-        if (index == 0 && property.TryGetVariableReference(CurrentStyleSheet, out var variableName))
-            return variableName;
 
         return GetVariableNameAtIndex(property, CurrentStyleSheet, index);
     }

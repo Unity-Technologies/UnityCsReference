@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
@@ -94,6 +95,7 @@ namespace UnityEditor.IMGUI.Controls
             m_Children.Add(child);
         }
 
+        [NoAutoStaticsCleanup] // singleton sentinel used for separator identity check, safe to persist
         static readonly AdvancedDropdownItem k_SeparatorItem = new SeparatorDropdownItem();
 
         public AdvancedDropdownItem(string name)
@@ -138,6 +140,12 @@ namespace UnityEditor.IMGUI.Controls
         internal bool IsHelpBox(AdvancedDropdownItem item)
         {
             return item is HelpBoxDropdownItem;
+        }
+
+        // Separators and help boxes are decorative: they can't be hovered, selected, or clicked.
+        internal bool IsSelectable()
+        {
+            return !IsSeparator() && !IsHelpBox(this);
         }
 
         public override string ToString()

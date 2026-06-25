@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using System;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -77,7 +78,8 @@ namespace UnityEditor
         VertexStreamsStats m_VertexStreamsStats;
         VertexStreamsStats m_TrailVertexStreamsStats;
 
-        static PrefColor s_PivotColor = new PrefColor("Particle System/Pivot", 0.0f, 1.0f, 0.0f, 1.0f);
+        static readonly PrefColor s_PivotColor = new PrefColor("Particle System/Pivot", 0.0f, 1.0f, 0.0f, 1.0f);
+        [NoAutoStaticsCleanup] // editor UI state flag
         static bool s_VisualizePivot = false;
 
         // Keep in sync with ParticleSystemRenderMode in ParticleSystemRenderer.h
@@ -236,6 +238,7 @@ namespace UnityEditor
                 vertexStreamsMenuContent = Array.ConvertAll(vertexStreamsMenu, x => new GUIContent(x));
             }
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         public RendererModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

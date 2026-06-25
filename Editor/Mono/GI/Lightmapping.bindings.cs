@@ -278,8 +278,10 @@ namespace UnityEditor
         public static extern bool isRunning {[FreeFunction("IsRunningLightmapping")] get; }
 
         [System.Obsolete("OnStartedFunction.started is obsolete, please use bakeStarted instead. ", false)]
+        [AutoStaticsCleanupOnCodeReload]
         public static event OnStartedFunction started;
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action bakeStarted;
 
         private static void OpenNestedSubScenes()
@@ -323,6 +325,7 @@ namespace UnityEditor
 #pragma warning restore 0618
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action startedRendering;
 
         [RequiredByNativeCode]
@@ -332,6 +335,7 @@ namespace UnityEditor
                 startedRendering();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action lightingDataUpdated;
 
         [RequiredByNativeCode]
@@ -341,6 +345,7 @@ namespace UnityEditor
                 lightingDataUpdated();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action lightingDataCleared;
 
         [RequiredByNativeCode]
@@ -350,6 +355,7 @@ namespace UnityEditor
                 lightingDataCleared();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action lightingDataAssetCleared;
 
         [RequiredByNativeCode]
@@ -359,6 +365,7 @@ namespace UnityEditor
                 lightingDataAssetCleared();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action wroteLightingDataAsset;
 
         [RequiredByNativeCode]
@@ -370,6 +377,7 @@ namespace UnityEditor
 
         // This event is fired when BakeInput has been populated, but before passing it to Bake().
         // Do not store and access BakeInput beyond the call-back.
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<BakeInput, LightmapRequests, LightProbeRequests, InputExtraction.SourceMap> createdBakeInput;
 
         [RequiredByNativeCode]
@@ -386,8 +394,10 @@ namespace UnityEditor
         }
 
         [System.Obsolete("OnCompletedFunction.completed is obsolete, please use event bakeCompleted instead. ", false)]
+        [AutoStaticsCleanupOnCodeReload]
         public static OnCompletedFunction completed;
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action bakeCompleted;
 
         [RequiredByNativeCode]
@@ -402,6 +412,7 @@ namespace UnityEditor
 #pragma warning restore 0618
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action bakeCancelled;
 
         [RequiredByNativeCode]
@@ -411,6 +422,7 @@ namespace UnityEditor
                 bakeCancelled();
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<string> bakeAnalytics;
 
         [RequiredByNativeCode]
@@ -729,8 +741,10 @@ namespace UnityEditor
         delegate void VirtualOffsetBakeUpdateDelegate(ref float progress, ref bool done);
 
         [RequiredByNativeCode]
+        [AutoStaticsCleanupOnCodeReload]
         static VirtualOffsetBakeInitializeDataDelegate s_VirtualOffsetBakeInitializeDataDelegate;
         [RequiredByNativeCode]
+        [AutoStaticsCleanupOnCodeReload]
         static VirtualOffsetBakeUpdateDelegate s_VirtualOffsetBakeUpdateDelegate;
 
         static class VirtualOffsetBake
@@ -795,12 +809,14 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        [NoAutoStaticsCleanup]
         private static readonly AdditionalBakeDelegate s_DefaultAdditionalBakeDelegate = (ref float progress, ref bool done) =>
         {
             progress = 100.0f;
             done = true;
         };
         [RequiredByNativeCode]
+        [AutoStaticsCleanupOnCodeReload]
         private static AdditionalBakeDelegate s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate;
 
         [RequiredByNativeCode]

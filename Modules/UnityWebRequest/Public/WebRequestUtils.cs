@@ -131,14 +131,14 @@ namespace UnityEngine
             }
         }
 
-        private static byte[] dDash = DefaultEncoding.GetBytes("--");
-        private static byte[] crlf = DefaultEncoding.GetBytes("\r\n");
-        private static byte[] contentTypeHeader = DefaultEncoding.GetBytes("Content-Type: ");
-        private static byte[] dispositionHeader = DefaultEncoding.GetBytes("Content-disposition: form-data; name=\"");
-        private static byte[] endQuote = DefaultEncoding.GetBytes("\"");
-        private static byte[] fileNameField = DefaultEncoding.GetBytes("; filename=\"");
-        private static byte[] ampersand = DefaultEncoding.GetBytes("&");
-        private static byte[] equal = DefaultEncoding.GetBytes("=");
+        private static readonly byte[] dDash = DefaultEncoding.GetBytes("--");
+        private static readonly byte[] crlf = DefaultEncoding.GetBytes("\r\n");
+        private static readonly byte[] contentTypeHeader = DefaultEncoding.GetBytes("Content-Type: ");
+        private static readonly byte[] dispositionHeader = DefaultEncoding.GetBytes("Content-disposition: form-data; name=\"");
+        private static readonly byte[] endQuote = DefaultEncoding.GetBytes("\"");
+        private static readonly byte[] fileNameField = DefaultEncoding.GetBytes("; filename=\"");
+        private static readonly byte[] ampersand = DefaultEncoding.GetBytes("&");
+        private static readonly byte[] equal = DefaultEncoding.GetBytes("=");
 
         // (RO) The raw data to pass as the POST request body when sending the form.
         public byte[] data
@@ -228,15 +228,15 @@ namespace UnityEngine
     [VisibleToOtherModules("UnityEngine.UnityWebRequestWWWModule")]
     internal class WWWTranscoder
     {
-        private static byte[] ucHexChars = WWWForm.DefaultEncoding.GetBytes("0123456789ABCDEF");
-        private static byte[] lcHexChars = WWWForm.DefaultEncoding.GetBytes("0123456789abcdef");
-        private static byte urlEscapeChar = (byte)'%';
-        private static byte[] urlSpace = new byte[] { (byte)'+' };
-        private static byte[] dataSpace = WWWForm.DefaultEncoding.GetBytes("%20");
-        private static byte[] urlForbidden = WWWForm.DefaultEncoding.GetBytes("@&;:<>=?\"'/\\!#%+$,{}|^[]`");
-        private static byte qpEscapeChar = (byte)'=';
-        private static byte[] qpSpace = new byte[] {  (byte)'_' };
-        private static byte[] qpForbidden = WWWForm.DefaultEncoding.GetBytes("&;=?\"'%+_");
+        private static readonly byte[] ucHexChars = WWWForm.DefaultEncoding.GetBytes("0123456789ABCDEF");
+        private static readonly byte[] lcHexChars = WWWForm.DefaultEncoding.GetBytes("0123456789abcdef");
+        private static readonly byte urlEscapeChar = (byte)'%';
+        private static readonly byte[] urlSpace = new byte[] { (byte)'+' };
+        private static readonly byte[] dataSpace = WWWForm.DefaultEncoding.GetBytes("%20");
+        private static readonly byte[] urlForbidden = WWWForm.DefaultEncoding.GetBytes("@&;:<>=?\"'/\\!#%+$,{}|^[]`");
+        private static readonly byte qpEscapeChar = (byte)'=';
+        private static readonly byte[] qpSpace = new byte[] {  (byte)'_' };
+        private static readonly byte[] qpForbidden = WWWForm.DefaultEncoding.GetBytes("&;=?\"'%+_");
 
         private static byte Hex2Byte(byte[] b, int offset)
         {
@@ -484,7 +484,7 @@ namespace UnityEngineInternal
 {
     static class WebRequestUtils
     {
-        private static Regex domainRegex = new Regex("^\\s*\\w+(?:\\.\\w+)+(\\/.*)?$");
+        private static readonly Regex domainRegex = new Regex("^\\s*\\w+(?:\\.\\w+)+(\\/.*)?$");
 
         [RequiredByNativeCode]
         internal static string RedirectTo(string baseUri, string redirectUri)

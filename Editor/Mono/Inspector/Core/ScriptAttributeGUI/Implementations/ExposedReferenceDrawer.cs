@@ -12,11 +12,11 @@ using Object = UnityEngine.Object;
 
 abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 {
-    private static float kDriveWidgetWidth = 18.0f;
-    private static GUIStyle kDropDownStyle = null;
-    private static Color kMissingOverrideColor = new Color(1.0f, 0.11f, 0.11f, 1.0f);
-    protected static string kSetExposedPropertyMsg = "Set Exposed Property";
-    protected static string kClearExposedPropertyMsg = "Clear Exposed Property";
+    private static readonly float kDriveWidgetWidth = 18.0f;
+    private static readonly GUIStyle kDropDownStyle = "ShurikenDropdown";
+    private static readonly Color kMissingOverrideColor = new Color(1.0f, 0.11f, 0.11f, 1.0f);
+    protected static readonly string kSetExposedPropertyMsg = "Set Exposed Property";
+    protected static readonly string kClearExposedPropertyMsg = "Clear Exposed Property";
     internal  const string kVisualElementName = "ExposedReference";
 
     internal readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
@@ -44,8 +44,6 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
     public BaseExposedPropertyDrawer()
     {
-        if (kDropDownStyle == null)
-            kDropDownStyle = "ShurikenDropdown";
     }
 
     static internal ExposedPropertyMode GetExposedPropertyMode(string propertyName)

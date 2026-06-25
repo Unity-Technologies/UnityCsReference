@@ -94,7 +94,7 @@ namespace Unity.ProjectAuditor.Editor
     [Serializable]
     public sealed class Report
     {
-        internal const string k_CurrentVersion = "1.2";
+        internal const string k_CurrentVersion = "1.3";
         internal const string k_SaveFileHeader = "PROJECT_AUDITOR_REPORT";
 
         [SerializeField]
@@ -153,7 +153,7 @@ namespace Unity.ProjectAuditor.Editor
         [SerializeField]
         List<ReportItem> m_Issues = new List<ReportItem>();
 
-        static Mutex s_Mutex = new Mutex();
+        static readonly Mutex s_Mutex = new Mutex();
 
         internal ReportItem[] Insights
         {

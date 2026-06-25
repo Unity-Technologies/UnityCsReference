@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.AdaptivePerformance
 {
-    internal static class AdaptivePerformanceInitializer
+    internal static partial class AdaptivePerformanceInitializer
     {
+        [AutoStaticsCleanup]
         static AdaptivePerformanceManagerSpawner s_Spawner;
 
         [RequiredByNativeCode(optional: false)]

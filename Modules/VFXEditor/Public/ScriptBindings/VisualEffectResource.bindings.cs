@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.VFX;
+using Unity.Scripting.LifecycleManagement;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.VFX
@@ -305,7 +306,7 @@ namespace UnityEditor.VFX
     [NativeHeader("Modules/VFXEditor/Public/ScriptBindings/VisualEffectResourceBindings.h")]
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectResource.h")]
     [NativeHeader("VFXScriptingClasses.h")]
-    internal class VisualEffectResource : UnityObject
+    internal partial class VisualEffectResource : UnityObject
     {
         public VisualEffectResource()
         {
@@ -563,6 +564,8 @@ namespace UnityEditor.VFX
             return null;
         }
 
+        // Re-registered only on code reload (VFXGraphPreprocessor static ctor).
+        [AutoStaticsCleanupOnCodeReload]
         internal static Func<GUID[], string[], bool, GUID[]> onFilterImportDependencies;
 
         [UsedByNativeCode]
@@ -584,6 +587,7 @@ namespace UnityEditor.VFX
 
         // Use actual delegate declaration instead of Func to be able to have out parameter
         internal delegate bool EarlyGetAuthoringCompileDataFunc(GUID id, AssetImportContext ctx, out VisualEffectAssetDesc outDesc);
+        [AutoStaticsCleanupOnCodeReload]
         internal static EarlyGetAuthoringCompileDataFunc onEarlyGetAuthoringCompileData;
 
         [UsedByNativeCode]
@@ -597,6 +601,7 @@ namespace UnityEditor.VFX
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static Func<VisualEffectResource, AssetImportContext, VisualEffectAssetDesc> onCompileResource;
     }
 }

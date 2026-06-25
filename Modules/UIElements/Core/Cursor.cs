@@ -47,6 +47,10 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int defaultCursorId { get => m_DefaultCursorId; set => m_DefaultCursorId = value; }
 
+        // Direct EntityId access to the cursor texture for the animation binder, which moves
+        // PPtr channels as EntityIds and avoids resolving the texture object round-trip.
+        internal EntityId textureId { get => m_Texture; set => m_Texture = value; }
+
         public override bool Equals(object obj)
         {
             return obj is Cursor && Equals((Cursor)obj);

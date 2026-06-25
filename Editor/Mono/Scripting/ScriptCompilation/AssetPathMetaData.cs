@@ -13,8 +13,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(GenerateProxy = true)]
-    [NativeHeader("Runtime/Scripting/ScriptingManagedProxySupport.h")]
-    [NativeHeader("Runtime/ScriptingBackend/ScriptingNativeTypes.h")]
+    [NativeHeader("Scripting/ScriptingManagedProxySupport.h")]
+    [NativeHeader("Scripting/ScriptingBackend/ScriptingNativeTypes.h")]
     [DebuggerDisplay("{DirectoryPath}")]
     class AssetPathMetaData
     {

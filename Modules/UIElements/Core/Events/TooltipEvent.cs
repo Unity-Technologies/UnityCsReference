@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// This event can be used instead of <see cref="VisualElement.tooltip"/> to compute tooltips only when they are about to be displayed.
     /// </remarks>
     [EventCategory(EventCategory.Tooltip)]
-    public class TooltipEvent : EventBase<TooltipEvent>
+    public class TooltipEvent : EventBase<TooltipEvent>, IProfilerIgnoredEvent
     {
         static TooltipEvent()
         {

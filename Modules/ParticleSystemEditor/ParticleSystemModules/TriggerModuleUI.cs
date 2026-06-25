@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -20,6 +21,7 @@ namespace UnityEditor
         SerializedProperty m_ColliderQueryMode;
         SerializedProperty m_RadiusScale;
 
+        [NoAutoStaticsCleanup] // editor UI state flag
         static bool s_VisualizeBounds = false;
 
         class Texts
@@ -48,6 +50,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("All")
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         ReorderableList m_PrimitivesList;

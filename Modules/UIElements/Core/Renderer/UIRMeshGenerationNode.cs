@@ -75,6 +75,48 @@ namespace UnityEngine.UIElements
             m_UnsafeNode.DrawMesh(ref mesh, texture, textureOptions);
         }
 
+        /// <summary>
+        /// Records a draw command and tags it with a user-defined identifier surfaced on
+        /// <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, int userData)
+        {
+            DrawMesh(vertices, indices, texture, TextureOptions.None, userData);
+        }
+
+        /// <summary>
+        /// Records a draw command and tags it with a user-defined identifier surfaced on
+        /// <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            m_UnsafeNode.DrawMesh(vertices, indices, texture, textureOptions, userData);
+        }
+
+        /// <summary>
+        /// Records a draw command with a <see cref="UIMesh"/> bundle and tags it with a user-defined identifier
+        /// surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(ref UIMesh mesh, Texture texture, int userData)
+        {
+            DrawMesh(ref mesh, texture, TextureOptions.None, userData);
+        }
+
+        /// <summary>
+        /// Records a draw command with a <see cref="UIMesh"/> bundle and tags it with a user-defined identifier
+        /// surfaced on <c>DrawData.userData</c> in mesh modifiers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(ref UIMesh mesh, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            m_UnsafeNode.DrawMesh(ref mesh, texture, textureOptions, userData);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Entry GetParentEntry() => m_UnsafeNode.GetParentEntry();
     }
@@ -93,21 +135,33 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None, DrawPhase phase = DrawPhase.Content)
         {
-            GetManaged().DrawMesh(vertices, indices, texture, textureOptions);
+            GetManaged().DrawMesh(vertices, indices, texture, textureOptions, phase);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawMesh(ref UIMesh mesh, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions, int userData)
         {
-            GetManaged().DrawMesh(ref mesh, texture, textureOptions);
+            GetManaged().DrawMesh(vertices, indices, texture, textureOptions, userData);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void DrawGradientsInternal(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)
+        public void DrawMesh(ref UIMesh mesh, Texture texture = null, TextureOptions textureOptions = TextureOptions.None, DrawPhase phase = DrawPhase.Content)
         {
-            GetManaged().DrawGradients(vertices, indices, gradientsOwner);
+            GetManaged().DrawMesh(ref mesh, texture, textureOptions, phase);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DrawMesh(ref UIMesh mesh, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            GetManaged().DrawMesh(ref mesh, texture, textureOptions, userData);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void DrawGradientsInternal(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner, DrawPhase phase = DrawPhase.Content, int userData = 0)
+        {
+            GetManaged().DrawGradients(vertices, indices, gradientsOwner, phase, userData);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -181,28 +235,44 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Entry GetParentEntry() => m_ParentEntry;
 
-        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None, DrawPhase phase = DrawPhase.Content)
         {
             if (vertices.Length == 0 || indices.Length == 0)
                 return;
 
-            m_EntryRecorder.DrawMesh(m_ParentEntry, vertices, indices, texture, textureOptions);
+            m_EntryRecorder.DrawMesh(m_ParentEntry, vertices, indices, texture, textureOptions, phase);
         }
 
-        public void DrawMesh(ref UIMesh mesh, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            if (vertices.Length == 0 || indices.Length == 0)
+                return;
+
+            m_EntryRecorder.DrawMesh(m_ParentEntry, vertices, indices, texture, textureOptions, DrawPhase.Content, userData);
+        }
+
+        public void DrawMesh(ref UIMesh mesh, Texture texture = null, TextureOptions textureOptions = TextureOptions.None, DrawPhase phase = DrawPhase.Content)
         {
             if (mesh.vertices.Length == 0 || mesh.indices.Length == 0)
                 return;
 
-            m_EntryRecorder.DrawMesh(m_ParentEntry, ref mesh, texture, textureOptions);
+            m_EntryRecorder.DrawMesh(m_ParentEntry, ref mesh, texture, textureOptions, false, phase);
         }
 
-        public void DrawGradients(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)
+        public void DrawMesh(ref UIMesh mesh, Texture texture, TextureOptions textureOptions, int userData)
+        {
+            if (mesh.vertices.Length == 0 || mesh.indices.Length == 0)
+                return;
+
+            m_EntryRecorder.DrawMesh(m_ParentEntry, ref mesh, texture, textureOptions, false, DrawPhase.Content, userData);
+        }
+
+        public void DrawGradients(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
             if (vertices.Length == 0 || indices.Length == 0 || gradientsOwner == null)
                 return;
 
-            m_EntryRecorder.DrawGradients(m_ParentEntry, vertices, indices, gradientsOwner);
+            m_EntryRecorder.DrawGradients(m_ParentEntry, vertices, indices, gradientsOwner, phase, userData);
         }
 
         #region Dispose Pattern

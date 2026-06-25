@@ -168,7 +168,7 @@ namespace UnityEditor
             }
             else
             {
-                if (obj is Component || obj is MonoScript)
+                if (InternalEditorUtility.IsUnityAssembly(obj.GetType()) && (obj is Component || obj is MonoScript))
                 {
                     return "MonoBehaviour";
                 }
@@ -218,17 +218,20 @@ namespace UnityEditor
                 return FindHelpNamed(url);
             }
 
-            var topicForObject = HelpFileNameForObject(obj);
-            if (HasNamedHelp(topicForObject))
+            if (InternalEditorUtility.IsUnityAssembly(obj.GetType()))
             {
-                return FindHelpNamed(topicForObject);
-            }
-
-            if (defaultToMonoBehaviour)
-            {
-                if (obj is Component || obj is MonoScript)
+                var topicForObject = HelpFileNameForObject(obj);
+                if (HasNamedHelp(topicForObject))
                 {
-                    return FindHelpNamed(k_MonoScriptReference);
+                    return FindHelpNamed(topicForObject);
+                }
+
+                if (defaultToMonoBehaviour)
+                {
+                    if (obj is Component || obj is MonoScript)
+                    {
+                        return FindHelpNamed(k_MonoScriptReference);
+                    }
                 }
             }
 

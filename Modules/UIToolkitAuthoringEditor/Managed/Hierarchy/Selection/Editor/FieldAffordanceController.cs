@@ -11,7 +11,7 @@ namespace Unity.UIToolkit.Editor;
 
 internal static class FieldAffordanceController
 {
-    public static void UpdateFieldAffordanceData<TInline, TComputedValue>(in FieldAffordanceData fieldAffordanceData, VisualElement element, StyleDiff.ContextType contextType, StylePropertyData<TInline, TComputedValue> value)
+    public static void UpdateFieldAffordanceData<TInline, TComputedValue>(in FieldAffordanceData fieldAffordanceData, VisualElement element, StyleDiff.ContextType contextType, StylePropertyData<TInline, TComputedValue> value, StyleSheet owningSheet = null)
     {
         fieldAffordanceData.Reset();
         fieldAffordanceData.type = FieldAffordanceDataType.USSProperty;
@@ -45,20 +45,13 @@ internal static class FieldAffordanceController
         else if (value.uxmlValue.requireVariableResolve)
         {
             fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.USSVariable;
-            StyleSheet styleSheet = null;
-            if (contextType == StyleDiff.ContextType.StyleSheet && element.styleSheets.count > 0)
-            {
-                styleSheet = element.styleSheetList[0];
-            }
-            else if (contextType == StyleDiff.ContextType.VisualElement && element.visualTreeAssetSource != null)
-            {
-                // Even if the variable was defined in a stylesheet, if it requires resolution when selecting a visual element,
-                // it means the style is set in the inline sheet, and we use the inline sheet to get the variable reference,
-                // but we set the variable sheet to the selector stylesheet.
-                styleSheet = element.visualTreeAssetSource.inlineSheet;
-            }
 
-            if (styleSheet != null && value.uxmlValue.inlineProperty.TryGetVariableReference(styleSheet, out var variableName))
+            if (contextType == StyleDiff.ContextType.VisualElement && element.visualTreeAssetSource == null)
+                return;
+
+            // If a variable needs resolution when selecting a visual element, the style comes from the inline sheet.
+            // We use the inline sheet to resolve the variable reference, but keep the variable sheet as the selector stylesheet.
+            if (owningSheet != null && value.uxmlValue.inlineProperty.TryGetVariableReference(owningSheet, out var variableName))
             {
                 var varInfo = StyleVariableUtility.FindVariable(element, variableName, false);
                 if (varInfo.IsValid())
@@ -105,7 +98,7 @@ internal static class FieldAffordanceController
                 return true;
         }
 
-        // Panel-wide animation: 
+        // Panel-wide animation:
         var panelRoot = element.GetFirstAncestorOfType<IPanelComponentRootElement>();
         var panelComponent = panelRoot?.panelComponent;
         var panelGo = panelComponent?.gameObject;
@@ -138,7 +131,7 @@ internal static class FieldAffordanceController
         if (!animated && !candidate && !runtimeBound)
             return false;
 
-        // (Recording > Candidate > Animated). 
+        // (Recording > Candidate > Animated).
         // unkeyed edit during record only registers on the candidate driver,
         // so IsPropertyAnimated is false until the edit becomes a key.
         if (AnimationMode.InAnimationRecording())

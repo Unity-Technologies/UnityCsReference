@@ -6,34 +6,10 @@ using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal interface IPrefixLabel
-    {
-        string label { get; }
-        Label labelElement { get; }
-    }
-
-    internal interface IDelayedField
-    {
-        bool isDelayed { get; }
-    }
-
-    /// <summary>
-    /// Interface for all editable elements.
-    /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal interface IEditableElement
-    {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal Action editingStarted { get; set; }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal Action editingEnded { get; set; }
-    }
-
     /// <summary>
     /// <para>Abstract base class for controls.</para>
     /// <para>A BaseField is a base class for field elements like <see cref="TextField"/> and <see cref="IntegerField"/>.
@@ -47,112 +23,55 @@ namespace UnityEngine.UIElements
     /// UI Toolkit fields are aligned with them for consistency and compatibility.</para>
     /// </summary>
     [UxmlElement]
-    public abstract partial class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel, IEditableElement
+    public abstract partial class BaseField<TValueType> : AbstractBaseField, INotifyValueChanged<TValueType>
     {
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal static readonly BindingId valueProperty = nameof(value);
-        internal static readonly BindingId labelProperty = nameof(label);
-        internal static readonly BindingId showMixedValueProperty = nameof(showMixedValue);
+        // Static fields aren't inherited through generic type arguments, so these `new` forwarders
+        // keep BaseField<int>.ussClassName working. Canonical values live on AbstractBaseField.
 
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
-        public static readonly string ussClassName = "unity-base-field";
-        internal static readonly UniqueStyleString ussClassNameUnique = new(ussClassName);
+        public new static readonly string ussClassName = AbstractBaseField.ussClassName;
 
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
-        public static readonly string labelUssClassName = ussClassName + "__label";
-        internal static readonly UniqueStyleString labelUssClassNameUnique = new(labelUssClassName);
+        public new static readonly string labelUssClassName = AbstractBaseField.labelUssClassName;
 
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
-        public static readonly string inputUssClassName = ussClassName + "__input";
-        internal static readonly UniqueStyleString inputUssClassNameUnique = new(inputUssClassName);
+        public new static readonly string inputUssClassName = AbstractBaseField.inputUssClassName;
 
         /// <summary>
         /// USS class name of elements of this type, when there is no label.
         /// </summary>
-        public static readonly string noLabelVariantUssClassName = ussClassName + "--no-label";
-        internal static readonly UniqueStyleString noLabelVariantUssClassNameUnique = new(noLabelVariantUssClassName);
+        public new static readonly string noLabelVariantUssClassName = AbstractBaseField.noLabelVariantUssClassName;
 
         /// <summary>
         /// USS class name of labels in elements of this type, when there is a dragger attached on them.
         /// </summary>
-        public static readonly string labelDraggerVariantUssClassName = labelUssClassName + "--with-dragger";
-        internal static readonly UniqueStyleString labelDraggerVariantUssClassNameUnique = new(labelDraggerVariantUssClassName);
+        public new static readonly string labelDraggerVariantUssClassName = AbstractBaseField.labelDraggerVariantUssClassName;
 
         /// <summary>
         /// USS class name of elements that show mixed values
         /// </summary>
-        public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value";
-        internal static readonly UniqueStyleString mixedValueLabelUssClassNameUnique = new(mixedValueLabelUssClassName);
+        public new static readonly string mixedValueLabelUssClassName = AbstractBaseField.mixedValueLabelUssClassName;
 
         /// <summary>
         /// USS class name of elements that are aligned in a inspector element
         /// </summary>
-        public static readonly string alignedFieldUssClassName = ussClassName + "__aligned";
-        internal static readonly UniqueStyleString alignedFieldUssClassNameUnique = new(alignedFieldUssClassName);
+        public new static readonly string alignedFieldUssClassName = AbstractBaseField.alignedFieldUssClassName;
 
-        private static readonly string inspectorFieldUssClassName = ussClassName + "__inspector-field";
-        internal static readonly UniqueStyleString inspectorFieldUssClassNameUnique = new(inspectorFieldUssClassName);
+        // Binary-compat forwarders for the protected members that also moved to AbstractBaseField:
+        // an assembly compiled against the old layout references e.g. BaseField<int>::mixedValueString,
+        // which would MissingFieldException without these (same rationale as the USS forwarders above).
+        protected internal new static readonly string mixedValueString = AbstractBaseField.mixedValueString;
 
-        private static readonly UniqueStyleString inspectorElementUssClassNameUnique = new("unity-inspector-element");
-        private static readonly UniqueStyleString inspectorMainContainerUssClassNameUnique = new("unity-inspector-main-container");
+        protected internal new static readonly PropertyName serializedPropertyCopyName = AbstractBaseField.serializedPropertyCopyName;
 
-        protected internal static readonly string mixedValueString = "\u2014";
-
-        protected internal static readonly PropertyName serializedPropertyCopyName = "SerializedPropertyCopyName";
-
-        static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
-        static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
-        static CustomStyleProperty<float> s_LabelBaseMinWidthProperty = new CustomStyleProperty<float>("--unity-property-field-label-base-min-width");
-
-        private float m_LabelWidthRatio;
-        private float m_LabelExtraPadding;
-        private float m_LabelBaseMinWidth;
-
-        private VisualElement m_VisualInput;
-
-        // Event triggered when an expression is evaluated for a numeric field
-        internal Action<ExpressionEvaluator.Expression> expressionEvaluated;
-
-        // Sent whenever we overwrite the value from view data.
-        internal event Action viewDataRestored;
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal VisualElement visualInput
-        {
-            get { return m_VisualInput; }
-            set
-            {
-                // Get rid of the older value...
-                if (m_VisualInput != null)
-                {
-                    if (m_VisualInput.parent == this)
-                    {
-                        m_VisualInput.RemoveFromHierarchy();
-                    }
-
-                    m_VisualInput = null;
-                }
-
-                // Handle the new value...
-                if (value != null)
-                {
-                    m_VisualInput = value;
-                }
-                else
-                {
-                    m_VisualInput = new VisualElement() { pickingMode = PickingMode.Ignore };
-                }
-                m_VisualInput.focusable = true;
-                m_VisualInput.AddToClassList(inputUssClassNameUnique);
-                Add(m_VisualInput);
-            }
-        }
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static readonly BindingId valueProperty = nameof(value);
 
         [SerializeField, DontCreateProperty]
         TValueType m_Value;
@@ -166,13 +85,48 @@ namespace UnityEngine.UIElements
             set { m_Value = value; }
         }
 
-        internal event Func<TValueType, TValueType> onValidateValue;
+        /// <summary>
+        /// Represents a method that validates or adjusts a field's value before committing it.
+        /// </summary>
+        /// <remarks> Use this delegate to modify or validate a value before committing it.
+        /// For example, you can clamp, sanitize, or replace the input value to match specific constraints.
+        /// </remarks>
+        /// <param name="value">The value this method modifies.</param>
+        /// <returns>The final value after applying the modifications.</returns>
+        public delegate TValueType ValidateValueHandler(TValueType value);
 
-        // This has been introduced as part of the fix for UUM-62652.
-        // Enable some fields to specify how ValueChanged events should be dispatched (queued or immediate). It is mainly used by delayed text fields
-        // to immediately notify on value change as soon as the focus is lost, which was required to fix UUM-62652.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal DispatchMode dispatchMode { get; set; } = DispatchMode.Default;
+        /// <summary>
+        /// An event raised to validate or adjust the field's value before committing it.
+        /// </summary>
+        /// <remarks>
+        /// <para>Use this event to modify or validate a value before committing it.
+        /// For example, you can clamp, sanitize, or replace the input value to match specific constraints.
+        /// To reject an input value, return a fallback such as the current <see cref="value"/>.</para>
+        /// <para>Registered callbacks run whenever the field's value changes, either through the
+        /// <see cref="value"/> setter or <see cref="SetValueWithoutNotify"/>. The value returned by each
+        /// callback replaces the incoming value and is then stored. If the change occurs from the
+        /// <see cref="value"/> setter, it reports the stored value as <see cref="ChangeEvent{T}.newValue"/>.
+        /// If the change occurs from <see cref="SetValueWithoutNotify"/>, it doesn't report a <see cref="ChangeEvent{T}"/>.</para>
+        /// <para>If you register more than one callback, they compose in their registration order. Each callback
+        /// receives the previous callback's result, and the final result is stored and reported.</para>
+        /// <para>To assign a value while bypassing these callbacks, wrap the assignment in
+        /// <see cref="IgnoreValidation"/>.</para>
+        /// </remarks>
+        /// <example>
+        /// The following example clamps a field's value to a maximum before returning it:
+        /// <code source="../../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/BaseField_onValidateValue.cs"/>
+        /// </example>
+        public event ValidateValueHandler onValidateValue
+        {
+            add
+            {
+                if (value != null)
+                    (m_OnValidateValue ??= new List<ValidateValueHandler>()).Add(value);
+            }
+            remove => m_OnValidateValue?.Remove(value);
+        }
+
+        internal List<ValidateValueHandler> m_OnValidateValue;
 
         /// <summary>
         /// The value associated with the field.
@@ -207,49 +161,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        /// <summary>
-        /// This is the <see cref="Label"/> object that appears beside the input for the field.
-        /// </summary>
-        public Label labelElement { get; private set; }
-
-        /// <summary>
-        /// The string representing the label that will appear beside the field.
-        /// If the string is empty, the label element is removed from the hierarchy.
-        /// If the string is not empty, the label element is added to the hierarchy.
-        /// </summary>
-        [CreateProperty]
-        [MultilineTextField]
-        [UxmlAttribute]
-        public string label
-        {
-            get
-            {
-                return labelElement.text;
-            }
-            set
-            {
-                if (labelElement.text != value)
-                {
-                    labelElement.text = value;
-                    if (string.IsNullOrEmpty(labelElement.text))
-                    {
-                        AddToClassList(noLabelVariantUssClassNameUnique);
-                        labelElement.RemoveFromHierarchy();
-                    }
-                    else
-                    {
-                        if (!Contains(labelElement))
-                        {
-                            hierarchy.Insert(0, labelElement);
-                            RemoveFromClassList(noLabelVariantUssClassNameUnique);
-                        }
-                    }
-
-                    NotifyPropertyChanged(labelProperty);
-                }
-            }
-        }
-
         // Used for UXML as UxmlAttribute can not be used on virtual properties.
         [UxmlAttribute("value"), UxmlAttributeBindingPath(nameof(value)), UxmlInternalField]
         internal TValueType valueUXML
@@ -258,285 +169,47 @@ namespace UnityEngine.UIElements
             set => SetValueWithoutNotify(value);
         }
 
-        bool m_ShowMixedValue;
-
-        /// <summary>
-        /// When set to true, gives the field the appearance of editing multiple different values.
-        /// </summary>
-        [CreateProperty]
-        public bool showMixedValue
-        {
-            get => m_ShowMixedValue;
-            set
-            {
-                if (value == m_ShowMixedValue) return;
-
-                if (value && !canSwitchToMixedValue)
-                {
-                    return;
-                }
-
-                m_ShowMixedValue = value;
-
-                // Once value has been set, update the field's appearance
-                UpdateMixedValueContent();
-
-                NotifyPropertyChanged(showMixedValueProperty);
-            }
-        }
-
-        private protected virtual bool canSwitchToMixedValue => true;
-
-        Label m_MixedValueLabel;
-        /// <summary>
-        /// Read-only label used to give the appearance of editing multiple different values.
-        /// </summary>
-        protected Label mixedValueLabel
-        {
-            get
-            {
-                if (m_MixedValueLabel == null)
-                {
-                    m_MixedValueLabel = new Label(mixedValueString) { focusable = true, tabIndex = -1 };
-                    m_MixedValueLabel.AddToClassList(labelUssClassNameUnique);
-                    m_MixedValueLabel.AddToClassList(mixedValueLabelUssClassNameUnique);
-                }
-
-                return m_MixedValueLabel;
-            }
-        }
-
         bool m_SkipValidation;
-        private VisualElement m_CachedContextWidthElement;
-        private VisualElement m_CachedInspectorElement;
 
-        Action IEditableElement.editingStarted { get; set; }
-        Action IEditableElement.editingEnded { get; set; }
+        // Sent whenever we overwrite the value from view data.
+        internal event Action viewDataRestored;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal BaseField(string label)
+        internal BaseField(string label) : base(label)
         {
-            isCompositeRoot = true;
-            focusable = true;
-            tabIndex = 0;
-            excludeFromFocusRing = true;
-            delegatesFocus = true;
-
-            AddToClassList(ussClassNameUnique);
-
-            labelElement = new Label() { focusable = true, tabIndex = -1 };
-            labelElement.AddToClassList(labelUssClassNameUnique);
-            if (label != null)
-            {
-                this.label = label;
-            }
-            else
-            {
-                AddToClassList(noLabelVariantUssClassNameUnique);
-            }
-
-            Callbacks.OnAttachToPanel.Register(this);
-            Callbacks.OnDetachFromPanel.Register(this);
-
-            m_VisualInput = null;
         }
 
         /// <summary>
-        /// Initializes and returns an instance of <see cref="BaseField"/>.
+        /// Initializes and returns an instance of <see cref="BaseField{TValueType}"/>.
         /// </summary>
         /// <param name="label">The text to use as a label.</param>
         /// <param name="visualInput">The visual element to use as the input for the field.</param>
         protected BaseField(string label, VisualElement visualInput)
-            : this(label)
+            : base(label, visualInput)
         {
-            this.visualInput = visualInput;
         }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual bool EqualsCurrentValue(TValueType v) => EqualityComparer<TValueType>.Default.Equals(m_Value, v);
 
-        private void OnAttachToPanel(AttachToPanelEvent e)
-        {
-            // indicates the start and end of the field value being edited
-            RegisterEditingCallbacks();
-
-            if (e.destinationPanel == null)
-            {
-                return;
-            }
-
-            if (e.destinationPanel.contextType == ContextType.Player)
-            {
-                return;
-            }
-
-            m_CachedInspectorElement = null;
-            m_CachedContextWidthElement = null;
-
-            var currentElement = parent;
-            while (currentElement != null)
-            {
-                if (currentElement.ClassListContains(inspectorElementUssClassNameUnique))
-                {
-                    m_CachedInspectorElement = currentElement;
-                }
-
-                if (currentElement.ClassListContains(inspectorMainContainerUssClassNameUnique))
-                {
-                    m_CachedContextWidthElement = currentElement;
-                    break;
-                }
-
-                currentElement = currentElement.parent;
-            }
-
-            if (m_CachedInspectorElement == null)
-            {
-                RemoveFromClassList(inspectorFieldUssClassNameUnique);
-                return;
-            }
-
-            // These default values are based of IMGUI
-            m_LabelWidthRatio = 0.45f;
-
-            // Those values are 40 and 120 in IMGUI, but they already take in account the fields margin. We readjust them
-            // because the uitk margin is being taken in account later.
-            m_LabelExtraPadding = 37.0f;
-            m_LabelBaseMinWidth = 123.0f;
-
-            Callbacks.OnCustomStyleResolved.Register(this);
-            Callbacks.OnInspectorFieldGeometryChanged.Register(this);
-            AddToClassList(inspectorFieldUssClassNameUnique);
-        }
-
-        private void OnDetachFromPanel(DetachFromPanelEvent e)
-        {
-            Callbacks.OnInspectorFieldGeometryChanged.Unregister(this);
-            Callbacks.OnCustomStyleResolved.Unregister(this);
-
-            UnregisterEditingCallbacks();
-
-            onValidateValue = null;
-        }
-
-        internal virtual void RegisterEditingCallbacks()
-        {
-            Callbacks.OnFocusInStartEditing.Register(this);
-            Callbacks.OnFocusOutEndEditing.Register(this);
-        }
-
-        internal virtual void UnregisterEditingCallbacks()
-        {
-            Callbacks.OnFocusOutEndEditing.Unregister(this);
-            Callbacks.OnFocusInStartEditing.Unregister(this);
-        }
-
-        internal void StartEditing(EventBase e)
-        {
-            ((IEditableElement)this).editingStarted?.Invoke();
-        }
-
-        internal void EndEditing(EventBase e)
-        {
-            ((IEditableElement)this).editingEnded?.Invoke();
-        }
-
-        private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
-        {
-            if (evt.customStyle.TryGetValue(s_LabelWidthRatioProperty, out var labelWidthRatio))
-            {
-                m_LabelWidthRatio = labelWidthRatio;
-            }
-
-            if (evt.customStyle.TryGetValue(s_LabelExtraPaddingProperty, out var labelExtraPadding))
-            {
-                m_LabelExtraPadding = labelExtraPadding;
-            }
-
-            if (evt.customStyle.TryGetValue(s_LabelBaseMinWidthProperty, out var labelBaseMinWidth))
-            {
-                m_LabelBaseMinWidth = labelBaseMinWidth;
-            }
-
-            AlignLabel();
-        }
-
-        private void OnInspectorFieldGeometryChanged(GeometryChangedEvent e)
-        {
-            AlignLabel();
-        }
-
-        private void AlignLabel()
-        {
-            if (!ClassListContains(alignedFieldUssClassNameUnique) || m_CachedInspectorElement == null)
-            {
-                return;
-            }
-
-            // Not all visual input controls have the same padding so we can't base our total padding on
-            // that information.  Instead we add a flat value to totalPadding to best match the hard coded
-            // calculation in IMGUI
-            var totalPadding = m_LabelExtraPadding;
-            var spacing = worldBound.x - m_CachedInspectorElement.worldBound.x - m_CachedInspectorElement.resolvedStyle.paddingLeft;
-
-            totalPadding += spacing;
-            totalPadding += resolvedStyle.paddingLeft;
-
-            var minWidth = m_LabelBaseMinWidth - spacing - resolvedStyle.paddingLeft;
-            var contextWidthElement = m_CachedContextWidthElement ?? m_CachedInspectorElement;
-
-            labelElement.style.minWidth = Mathf.Max(minWidth, 0);
-
-            // Formula to follow IMGUI label width settings
-            var newWidth = Mathf.Ceil(contextWidthElement.resolvedStyle.width * m_LabelWidthRatio) - totalPadding;
-            if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
-            {
-                labelElement.style.width = Mathf.Max(0f, newWidth);
-            }
-        }
-
-        private Rect ComputeTooltipRect()
-        {
-            if (!string.IsNullOrEmpty(label))
-            {
-                return string.IsNullOrEmpty(labelElement.tooltip) ? labelElement.worldBound : worldBound;
-            }
-            return worldBound;
-        }
-
         internal TValueType ValidatedValue(TValueType value)
         {
-            if (onValidateValue != null)
+            var validators = m_OnValidateValue;
+            if (validators == null || validators.Count == 0)
+                return value;
+
+            if (validators.Count == 1)
+                return validators[0](value);
+
+            // Snapshot so a validator that unsubscribes itself mid-iteration can't skip the next one.
+            using (ListPool<ValidateValueHandler>.Get(out var snapshot))
             {
-                return onValidateValue.Invoke(value);
+                snapshot.AddRange(validators);
+                for (var i = 0; i < snapshot.Count; i++)
+                    value = snapshot[i](value);
             }
 
             return value;
-        }
-
-        [EventInterest(typeof(TooltipEvent))]
-        protected override void HandleEventBubbleUp(EventBase evt)
-        {
-            if (evt is not TooltipEvent tooltipEvent)
-            {
-                base.HandleEventBubbleUp(evt);
-                return;
-            }
-
-            // Hide the field's tooltip if the label does not have a tooltip and the mouse is not over the label.
-            if ((tooltipEvent.elementTarget == labelElement)
-                || (!string.IsNullOrEmpty(labelElement?.tooltip)) || (string.IsNullOrEmpty(label)))
-                tooltipEvent.rect = ComputeTooltipRect();
-            else
-                tooltipEvent.StopImmediatePropagation();
-        }
-
-        /// <summary>
-        /// Update the field's visual content depending on showMixedValue.
-        /// </summary>
-        protected virtual void UpdateMixedValueContent()
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -563,20 +236,58 @@ namespace UnityEngine.UIElements
                 UpdateMixedValueContent();
         }
 
+        /// <summary>
+        /// Disables <see cref="onValidateValue"/> until the returned scope is disposed.
+        /// </summary>
+        /// <remarks>
+        /// Scope this method with a <see langword="using"/> statement and use it with the
+        /// <see cref="value"/> setter or <see cref="SetValueWithoutNotify"/> to assign a value that bypasses validation.
+        /// Only <see cref="value"/> results in a <see cref="ChangeEvent{T}"/>.
+        /// The scope can be nested safely.
+        /// </remarks>
+        /// <example>
+        /// The following example sets a value that skips the field's validation:
+        /// <code source="../../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/BaseField_IgnoreValidation.cs"/>
+        /// </example>
+        /// <returns>A scope that re-enables validation when disposed.</returns>
+        public IgnoreValidationScope IgnoreValidation() => new IgnoreValidationScope(this);
+
+        /// <summary>
+        /// A scope, returned by <see cref="IgnoreValidation"/>, that disables <see cref="onValidateValue"/> until it is disposed.
+        /// </summary>
+        public readonly struct IgnoreValidationScope : IDisposable
+        {
+            readonly BaseField<TValueType> m_Field;
+            readonly bool m_PreviousSkipValidation;
+
+            internal IgnoreValidationScope(BaseField<TValueType> field)
+            {
+                m_Field = field;
+                m_PreviousSkipValidation = field.m_SkipValidation;
+                field.m_SkipValidation = true;
+            }
+
+            /// <summary>
+            /// Re-enables validation.
+            /// </summary>
+            public void Dispose()
+            {
+                if (m_Field != null)
+                    m_Field.m_SkipValidation = m_PreviousSkipValidation;
+            }
+        }
+
         internal void SetValueWithoutValidation(TValueType newValue)
         {
-            m_SkipValidation = true;
-
-            value = newValue;
-
-            m_SkipValidation = false;
+            using (IgnoreValidation())
+                value = newValue;
         }
 
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
 
-            if (m_VisualInput != null)
+            if (visualInput != null)
             {
                 var key = GetFullHierarchicalViewDataKey();
                 var oldValue = m_Value;
@@ -593,22 +304,6 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
-        }
-
-        private static class Callbacks
-        {
-            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnAttachToPanel =
-                EventCallback.Create<AttachToPanelEvent, BaseField<TValueType>>(static (e, self) => self.OnAttachToPanel(e));
-            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnDetachFromPanel =
-                EventCallback.Create<DetachFromPanelEvent, BaseField<TValueType>>(static (e, self) => self.OnDetachFromPanel(e));
-            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnCustomStyleResolved =
-                EventCallback.Create<CustomStyleResolvedEvent, BaseField<TValueType>>(static (e, self) => self.OnCustomStyleResolved(e));
-            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnInspectorFieldGeometryChanged =
-                EventCallback.Create<GeometryChangedEvent, BaseField<TValueType>>(static (e, self) => self.OnInspectorFieldGeometryChanged(e));
-            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnFocusInStartEditing =
-                EventCallback.Create<FocusInEvent, BaseField<TValueType>>(static (e, self) => self.StartEditing(e));
-            public static readonly EventCallbackDefinition<BaseField<TValueType>> OnFocusOutEndEditing =
-                EventCallback.Create<FocusOutEvent, BaseField<TValueType>>(static (e, self) => self.EndEditing(e));
         }
     }
 }

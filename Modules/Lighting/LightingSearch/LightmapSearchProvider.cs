@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using Unity.Scripting.LifecycleManagement;
 using System.Collections.Generic;
 using UnityEditor.Experimental;
 using UnityEditor.Search;
@@ -21,7 +22,7 @@ namespace UnityEditor.Lighting.LightingSearch
         public Texture2D lightmapColor;
     }
 
-    class LightmapSearchProvider : SearchProvider
+    partial class LightmapSearchProvider : SearchProvider
     {
         internal const string ProviderId = "lightmaps";
         internal const string FilterId = "lm:";
@@ -31,6 +32,7 @@ namespace UnityEditor.Lighting.LightingSearch
         const string k_LightingSearchUSSPath = "StyleSheets/LightingSearch.uss";
 
         const float k_ItemHeight = 110f;
+        [AutoStaticsCleanupOnCodeReload]
         static StyleSheet s_CachedLightmapTextureStyleSheet;
 
         static class QuerySelectors

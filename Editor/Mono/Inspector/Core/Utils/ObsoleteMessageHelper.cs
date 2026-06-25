@@ -6,13 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    static class ObsoleteMessageHelper
+    static partial class ObsoleteMessageHelper
     {
+        [NoAutoStaticsCleanup] // compiled from a fixed literal pattern with no runtime-state dependency; safe to persist across reload
         static Regex s_VersionTagRegex;
 
         // Matches version tags in the format #tagName(MAJOR.MINOR) where tagName is any latin letters.
@@ -50,6 +52,7 @@ namespace UnityEditor
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload] // lazy cache of obsolete type messages, must reset on reload
         private static Dictionary<Type, ObsoleteMessageContainer> s_ObsoleteTypeMessages;
 
         private static Type ResolveReplacementType(string typeName)

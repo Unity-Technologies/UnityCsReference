@@ -118,7 +118,6 @@ namespace Unity.Collections.LowLevel.Unsafe
             return TypeFlagsCache<T>.flags == 0;  // not managed, not a container
         }
 
-
         [VisibleToOtherModules("UnityEngine.ImageConversionModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Span<byte> GetByteSpanFromArray(System.Array array, int arraySize, int elementSize)

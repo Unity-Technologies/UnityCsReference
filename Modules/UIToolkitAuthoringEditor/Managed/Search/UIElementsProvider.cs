@@ -54,24 +54,7 @@ namespace Unity.UIToolkit.Editor
         const string k_MenuPath = "Window/UI Toolkit/UI Library";
         const string k_WindowTitle = "UI Library";
 
-        [InitializeOnLoadMethod]
-        static void Initialize()
-        {
-            UIToolkitAuthoringSettings.UIStagesChanged += OnUIStagesChanged;
-            EditorApplication.delayCall += () => OnUIStagesChanged(UIToolkitAuthoringSettings.EnableUIStages);
-        }
-
-        static void OnUIStagesChanged(bool enabled)
-        {
-            if (enabled)
-            {
-                Menu.AddMenuItem(k_MenuPath, "", false, k_MenuPriority, OpenUIElementsPicker, null);
-                return;
-            }
-
-            Menu.RemoveMenuItem(k_MenuPath);
-        }
-
+        [MenuItem(k_MenuPath, false, 3010, secondaryPriority = 5)]
         internal static void OpenUIElementsPicker()
         {
             var providers = new List<SearchProvider>

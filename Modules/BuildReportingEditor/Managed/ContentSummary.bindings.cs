@@ -136,19 +136,6 @@ namespace UnityEditor.Build.Reporting
         }
 
         /// <summary>
-        /// Size, in bytes, of all files at the output destination that remain unaltered and are reused
-        /// in the current build.
-        /// </summary>
-        /// <remarks>
-        /// This size reflects the total after files have been compressed. This value is only populated
-        /// for ContentDirectory builds; it is zero for Player and AssetBundle builds.
-        /// </remarks>
-        internal ulong sizeReusedContentInOutputDirectory
-        {
-            get => GetSizeReusedContentInOutputDirectory();
-        }
-
-        /// <summary>
         /// Total size, in bytes, of the header sections across all serialized files in the build output.
         /// </summary>
         /// <remarks>
@@ -248,7 +235,6 @@ namespace UnityEditor.Build.Reporting
 
         private extern ulong GetSerializedFileSize();
         private extern ulong GetReusedSerializedFileSize();
-        private extern ulong GetSizeReusedContentInOutputDirectory();
         private extern ulong GetHeaderSize();
         private extern ulong GetResourceDataSize();
         private extern int GetSerializedFileCount();

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -190,6 +191,7 @@ namespace UnityEditor
             Internal_ClearTargetSettings(new NamedBuildTarget(platform));
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static event Action<string> analyticsSent;
 
         [RequiredByNativeCode]

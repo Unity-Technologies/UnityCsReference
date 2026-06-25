@@ -16,7 +16,13 @@ namespace UnityEditor.EditorTools
         void OnDrawHandles();
     }
 
-    public abstract class EditorTool : ScriptableObject, IEditor
+    interface IHasToolOwner
+    {
+        Type toolOwnerType { get; }
+        void SetToolOwner(Type ownerType);
+    }
+
+    public abstract class EditorTool : ScriptableObject, IEditor, IHasToolOwner
     {
         bool m_Active;
 
@@ -31,6 +37,21 @@ namespace UnityEditor.EditorTools
         [HideInInspector]
         [SerializeField]
         bool m_Hidden;
+
+        [HideInInspector]
+        [SerializeField]
+        string m_ToolOwnerTypeName;
+
+        Type m_ToolOwnerType;
+
+        Type IHasToolOwner.toolOwnerType
+        {
+            get
+            {
+                m_ToolOwnerType = EditorToolUtility.ResolveToolOwnerType(m_ToolOwnerType, m_ToolOwnerTypeName);
+                return m_ToolOwnerType;
+            }
+        }
 
         public IEnumerable<UnityObject> targets
         {
@@ -63,15 +84,15 @@ namespace UnityEditor.EditorTools
         }
 
         public bool isHidden => m_Hidden;
-        
+
         internal static event Action<EditorTool> stateChanged;
 
-        internal void Activate(Type toolOwnerType)
+        internal void Activate()
         {
             if(m_Active
                 // Prevent to reenable the tool if this is not the active one anymore
                 // Can happen when entering playmode due to the delayCall in EditorToolManager.OnEnable
-                || this != EditorToolManager.GetActiveTool(toolOwnerType))
+                || this != EditorToolManager.GetActiveTool(((IHasToolOwner)this).toolOwnerType))
                 return;
 
             OnActivated();
@@ -99,7 +120,7 @@ namespace UnityEditor.EditorTools
         {
             return true;
         }
-        
+
         public void SetHidden(bool hidden)
         {
             m_Hidden = hidden;
@@ -114,6 +135,12 @@ namespace UnityEditor.EditorTools
         void IEditor.SetTargets(UnityObject[] value)
         {
             m_Targets = value;
+        }
+
+        void IHasToolOwner.SetToolOwner(Type ownerType)
+        {
+            m_ToolOwnerType = ownerType;
+            m_ToolOwnerTypeName = ownerType?.AssemblyQualifiedName;
         }
     }
 }

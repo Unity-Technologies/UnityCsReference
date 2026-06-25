@@ -119,6 +119,16 @@ namespace Unity.U2D.Physics
         public bool fastCollisionsAllowed { readonly get => m_FastCollisionsAllowed; set => m_FastCollisionsAllowed = value; }
 
         /// <summary>
+        /// Controls contact recycling for this body. Enabled by default.
+        /// Contact recycling reuses contact manifolds when bodies move only slightly, improving performance.
+        /// Disabling it can avoid ghost collisions, at the cost of higher simulation time.
+        /// Both bodies in a contact must have recycling enabled for that contact to be recycled.
+        ///
+        /// See <see cref="PhysicsBody.contactRecyclingAllowed"/>.
+        /// </summary>
+        public bool contactRecyclingAllowed { readonly get => m_ContactRecyclingAllowed; set => m_ContactRecyclingAllowed = value; }
+
+        /// <summary>
         /// Set this flag to false if this body should never fall asleep.
         /// </summary>
         public bool sleepingAllowed { readonly get => m_SleepingAllowed; set => m_SleepingAllowed = value; }
@@ -156,6 +166,7 @@ namespace Unity.U2D.Physics
         [SerializeField] [Range(0.0f, 1.0f)] float m_CollisionThreshold;
         [SerializeField] bool m_FastCollisionsAllowed;
         [SerializeField] bool m_FastRotationAllowed;
+        [SerializeField] bool m_ContactRecyclingAllowed;
         [SerializeField] bool m_SleepingAllowed;
         [SerializeField] bool m_Awake;
         [SerializeField] bool m_Enabled;

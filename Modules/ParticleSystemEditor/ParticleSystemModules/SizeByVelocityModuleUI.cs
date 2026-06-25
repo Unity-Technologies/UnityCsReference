@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -18,6 +19,7 @@ namespace UnityEditor
             public GUIContent y = new GUIContent("Y");
             public GUIContent z = new GUIContent("Z");
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         SerializedMinMaxCurve m_X;

@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignSelf = new(StylePropertyId.AlignSelf);
         private StylePropertyData<StyleEnum<AnimationPlayState>, AnimationPlayState> m_AnimationPlayState = new(StylePropertyId.AnimationPlayState);
         private StylePropertyData<StyleRatio, Ratio> m_AspectRatio = new(StylePropertyId.AspectRatio);
+        private StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> m_BackdropFilter = new(StylePropertyId.BackdropFilter);
         private StylePropertyData<StyleColor, Color> m_BackgroundColor = new(StylePropertyId.BackgroundColor);
         private StylePropertyData<StyleBackground, Background> m_BackgroundImage = new(StylePropertyId.BackgroundImage);
         private StylePropertyData<StyleBackgroundPosition, BackgroundPosition> m_BackgroundPositionX = new(StylePropertyId.BackgroundPositionX);
@@ -135,6 +136,9 @@ namespace UnityEngine.UIElements
 
         [CreateProperty]
         public StylePropertyData<StyleRatio, Ratio> aspectRatio => m_AspectRatio;
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> backdropFilter => m_BackdropFilter;
 
         [CreateProperty]
         public StylePropertyData<StyleColor, Color> backgroundColor => m_BackgroundColor;
@@ -571,6 +575,13 @@ namespace UnityEngine.UIElements
             notify |= ApplyContext(ref m_AspectRatio, in context);
             if (notify)
                 Notify(nameof(aspectRatio));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_BackdropFilter, element.style.backdropFilter);
+            notify |= SetComputedValue(ref m_BackdropFilter, element.computedStyle.backdropFilter);
+            notify |= ApplyContext(ref m_BackdropFilter, in context);
+            if (notify)
+                Notify(nameof(backdropFilter));
 
             notify = false;
             notify |= SetInlineValue(ref m_BackgroundColor, element.style.backgroundColor);

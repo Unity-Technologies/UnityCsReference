@@ -51,10 +51,10 @@ namespace Unity.ProjectAuditor.Editor.Utils
         {
             var timeMs = timeSpan.TotalMilliseconds;
             if (timeMs < 1000)
-                return timeMs.ToString("F1") + " ms";
+                return timeMs.ToString("F1", CultureInfo.InvariantCulture) + " ms";
             if (timeMs < 60000)
-                return timeSpan.TotalSeconds.ToString("F2") + " s";
-            return timeSpan.TotalMinutes.ToString("F2") + " min";
+                return timeSpan.TotalSeconds.ToString("F2", CultureInfo.InvariantCulture) + " s";
+            return timeSpan.TotalMinutes.ToString("F2", CultureInfo.InvariantCulture) + " min";
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
         /// <returns>A string representation of the input value as a frequency in Hz or kHz.</returns>
         public static string FormatHz(int frequency)
         {
-            return (frequency < 1000) ? $"{frequency} Hz" : $"{((float)frequency / 1000.0f):G0} kHz";
+            return (frequency < 1000) ? $"{frequency} Hz" : $"{((float)frequency / 1000.0f).ToString("G", CultureInfo.InvariantCulture)} kHz";
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
         /// <returns>A string representation of the input value as a duration in seconds.</returns>
         public static string FormatLengthInSeconds(float length)
         {
-            return length.ToString("F3") + " s";
+            return length.ToString("F3", CultureInfo.InvariantCulture) + " s";
         }
 
         /// <summary>
@@ -118,7 +118,17 @@ namespace Unity.ProjectAuditor.Editor.Utils
         /// <returns>A string representation of the input value as a framerate.</returns>
         public static string FormatFramerate(float framerate)
         {
-            return framerate + " fps";
+            return framerate.ToString(CultureInfo.InvariantCulture) + " fps";
+        }
+
+        public static string FormatFloat(float val, int decimalPlaces)
+        {
+            if (float.IsNaN(val)) return "-";
+
+            if (decimalPlaces <= 0)
+                decimalPlaces = 1;
+
+            return val.ToString($"F{decimalPlaces}", CultureInfo.InvariantCulture);
         }
 
         static readonly string k_StringSeparator = ", ";

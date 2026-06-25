@@ -337,7 +337,7 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
         columnContainer.Add(m_ScrollableColumnsClipArea);
         m_ScrollableColumnsClipArea.Add(m_ScrollableColumnsContainer);
 
-        // Ensure that the resize handlers are on top of the columns.
+        // Ensure that the frozen columns' resize handles are on top of the columns.
         resizeHandleContainer = new VisualElement()
         {
             pickingMode = PickingMode.Ignore
@@ -351,7 +351,8 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
             pickingMode = PickingMode.Ignore
         };
         m_ScrollableColumnsResize.AddToClassList(scrollableColumnsResizeHandlerContainerUssClassName);
-        resizeHandleContainer.Add(m_ScrollableColumnsResize);
+        m_ScrollableColumnsResize.StretchToParentSize();
+        m_ScrollableColumnsClipArea.Add(m_ScrollableColumnsResize);
 
         columnLayout = new ColumnLayout(columns);
         columnLayout.layoutRequested += ScheduleDoLayout;
@@ -758,7 +759,9 @@ internal class CollectionViewMultiColumnCollectionHeader : VisualElement, IDispo
     /// <param name="mover"></param>
     void OnMoveManipulatorActivated(CollectionViewColumnMover mover)
     {
-        resizeHandleContainer.style.display = mover.active ? DisplayStyle.None : DisplayStyle.Flex;
+        var display = mover.active ? DisplayStyle.None : DisplayStyle.Flex;
+        resizeHandleContainer.style.display = display;
+        m_ScrollableColumnsResize.style.display = display;
 
         // When mover deactivates, refresh all resize handle positions
         if (!mover.active)

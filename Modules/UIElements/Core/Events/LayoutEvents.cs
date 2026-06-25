@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// This event does not trickle down or bubble up. It cannot be cancelled.
     /// </remarks>
     [EventCategory(EventCategory.Geometry)]
-    public class GeometryChangedEvent : EventBase<GeometryChangedEvent>
+    public class GeometryChangedEvent : EventBase<GeometryChangedEvent>, IProfilerIgnoredEvent
     {
         static GeometryChangedEvent()
         {

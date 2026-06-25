@@ -41,7 +41,7 @@ internal sealed class ResetStyleRulePropertyValueCommand : Command<ResetStyleRul
     public VariablesInspector.VariableType Type { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.Styling;
+    public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
 
     protected override void Init()
     {

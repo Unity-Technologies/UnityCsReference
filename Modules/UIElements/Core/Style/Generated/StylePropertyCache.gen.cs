@@ -44,6 +44,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "auto | <ratio>"
             },
                         {
+                "backdrop-filter",
+                "none | <filter-function>+"
+            },
+                        {
                 "background-color",
                 "<color>"
             },

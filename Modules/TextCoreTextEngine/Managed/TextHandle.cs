@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Bindings;
-using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -683,16 +682,11 @@ namespace UnityEngine.TextCore.Text
             return textInfo.textElementInfo.Length;
         }
 
-
-        // int LinkID: The identifier for the link.
-        // TagType: Specifies the type of tag (either Hyperlink or Link).
-        // string Attribute: For Hyperlink, this is the 'href' attribute; for Link, it's the associated attribute.
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal List<(int, TagType, string)> m_Links;//Not clearing links would result in a leak of strings and enum, but no class, so no consideration for clearing the list at the moment
-        internal protected List<(int, TagType, string)> Links => m_Links ??= new();
+        internal RichTextLinkInfo[] m_Links;
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal int m_HoveredTag = -1;
+        internal int m_HoveredTag = (int)HoveredTag.None;
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal virtual UnityEngine.TextAsset GetICUAsset() { return null; }
@@ -745,20 +739,20 @@ namespace UnityEngine.TextCore.Text
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal (int, TagType, string) ATGFindIntersectingLink(Vector2 point)
+        internal RichTextLinkInfo ATGFindIntersectingLink(Vector2 point)
         {
-            //This should probably be public, but it would require exposing TagType
             Debug.Assert(useAdvancedText);
+
             if (textGenerationInfo == IntPtr.Zero)
             {
                 Debug.LogError("TextGenerationInfo pointer is null.");
-                return (-1, TagType.Unknown, null);
+                return new RichTextLinkInfo { id = -1 };
             }
 
             int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
 
-            if (id == -1)
-                return (-1, TagType.Unknown, null);
+            if (m_Links == null || id < 0 || id >= m_Links.Length)
+                return new RichTextLinkInfo { id = -1 };
 
             return m_Links[id];
         }

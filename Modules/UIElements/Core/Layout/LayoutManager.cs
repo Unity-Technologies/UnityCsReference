@@ -22,6 +22,7 @@ enum LayoutNodeDataType
     Cache = 2,
     ComputedStyle = 3,
     Transform = 4,
+    SelectorData = 5,
 }
 
 enum LayoutConfigDataType
@@ -273,6 +274,7 @@ internal class LayoutManager : IDisposable
             UnmanagedComponentType.Create<LayoutCacheData>(),
             UnmanagedComponentType.Create<ComputedStyle>(),
             UnmanagedComponentType.Create<VisualElementTransformData>(),
+            UnmanagedComponentType.Create<VisualElementSelectorData>(),
         };
 
         ReadOnlySpan<MemoryLabel> nodeComponentLabels = stackalloc MemoryLabel[]
@@ -282,12 +284,14 @@ internal class LayoutManager : IDisposable
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutCacheData)}>"),
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(ComputedStyle)}>"),
             new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(VisualElementTransformData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(VisualElementSelectorData)}>"),
         };
 
         var layoutNodeData = LayoutNodeData.Default;
         var layoutComputedData = LayoutComputedData.Default;
         var layoutCacheData = LayoutCacheData.Default;
         var visualElementTransformData = VisualElementTransformData.Default;
+        var visualElementSelectorData = VisualElementSelectorData.Default;
 
         byte** nodeComponentData = stackalloc byte*[]
         {
@@ -295,7 +299,8 @@ internal class LayoutManager : IDisposable
             (byte*)&layoutComputedData,
             (byte*)&layoutCacheData,
             (byte*)&initialStyle,
-            (byte*)&visualElementTransformData
+            (byte*)&visualElementTransformData,
+            (byte*)&visualElementSelectorData
         };
 
         m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, nodeComponentData,

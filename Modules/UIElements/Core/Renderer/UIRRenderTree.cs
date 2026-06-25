@@ -386,6 +386,8 @@ namespace UnityEngine.UIElements.UIR
                 m_RenderTreeManager.visualChangesProcessor.ScheduleMeshGenerationJobs();
                 m_RenderTreeManager.meshGenerationDeferrer.ProcessDeferredWork(m_RenderTreeManager.visualChangesProcessor.meshGenerationContext);
 
+                m_RenderTreeManager.visualChangesProcessor.RunMeshModifiers();
+
                 // TODO: Consider postponing this work for later, after each subtrees have been processed.
                 // This will help with parallelism.
                 m_RenderTreeManager.visualChangesProcessor.ConvertEntriesToCommands(ref stats);

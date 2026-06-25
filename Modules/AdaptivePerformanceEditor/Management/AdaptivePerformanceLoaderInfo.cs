@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.AdaptivePerformance;
 
 namespace UnityEditor.AdaptivePerformance.Editor
@@ -37,7 +37,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return other != null && Equals(loaderType, other.loaderType) && Equals(instance, other.instance);
         }
 
-        static string[] s_LoaderblockList = { "DummyLoader", "SampleLoader", "AdaptivePerformanceLoaderHelper" };
+        static readonly string[] s_LoaderblockList = { "DummyLoader", "SampleLoader", "AdaptivePerformanceLoaderHelper" };
 
         internal static void GetAllKnownLoaderInfos(List<AdaptivePerformanceLoaderInfo> newInfos)
         {

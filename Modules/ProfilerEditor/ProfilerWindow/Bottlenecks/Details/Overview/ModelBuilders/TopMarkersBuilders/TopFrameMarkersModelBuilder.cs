@@ -25,10 +25,7 @@ namespace Unity.Profiling.Editor.UI
 
         public async Task<Result> BuildAsync(CancellationToken cancellationToken)
         {
-            return await Task.Run(() =>
-            {
-                return TopMarkersInFrameByExclusiveTimeAndGCAllocation(cancellationToken);
-            });
+            return await Task.Run(() => TopMarkersInFrameByExclusiveTimeAndGCAllocation(cancellationToken), cancellationToken);
         }
 
         Result TopMarkersInFrameByExclusiveTimeAndGCAllocation(CancellationToken cancellationToken)

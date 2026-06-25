@@ -17,13 +17,14 @@ namespace Unity.Hierarchy
         readonly DragAndDropData m_DragAndDropData;
 
         /// <summary>
-        /// Gets the parent <see cref="HierarchyNode"/> that accepts the new nodes from the drag and drop operation. This is either the parent of the <see cref="Target"/>, or the <see cref="Target"/> itself if <see cref="DropPosition"/> is <see cref="DragAndDropPosition.OverItem"/>.
+        /// Gets the parent <see cref="HierarchyNode"/> that accepts the new nodes from the drag and drop operation.
         /// </summary>
         public HierarchyNode Parent { get; }
 
         /// <summary>
-        /// Gets the target <see cref="HierarchyNode"/> under the cursor.
+        /// Gets the target <see cref="HierarchyNode"/> located at <see cref="InsertAtIndex"/>.
         /// </summary>
+        /// <remarks>This does not take into account any selection or horizontal dragging that might change the actual dropping location.</remarks>
         public HierarchyNode Target { get; }
 
         /// <summary>
@@ -74,7 +75,7 @@ namespace Unity.Hierarchy
             return m_DragAndDropData.GetGenericData(key);
         }
 
-        internal HierarchyViewDragAndDropHandlingData(in HierarchyNode parent, in HierarchyNode target, int insertAtIndex, int childIndex, DragAndDropPosition dropPosition, DragAndDropData dragAndDropData, HierarchyView view, EventModifiers eventModifiers)
+        internal HierarchyViewDragAndDropHandlingData(HierarchyNode parent, HierarchyNode target, int insertAtIndex, int childIndex, DragAndDropPosition dropPosition, DragAndDropData dragAndDropData, HierarchyView view, EventModifiers eventModifiers)
         {
             Parent = parent;
             Target = target;

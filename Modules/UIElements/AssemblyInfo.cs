@@ -56,9 +56,12 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEngine.UI")] // com.unity.ugui
 [assembly: InternalsVisibleTo("UnityEngine.HierarchyModule")] // Unity.Hierarchy module, for HierarchyView control
+[assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")] // Hierarchy performance tests
 [assembly: InternalsVisibleTo("UnityEngine.VectorGraphicsModule")] // VectorImage
 [assembly: InternalsVisibleTo("Unity.Modules.VectorGraphics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")] // com.unity.shadergraph
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Runtime")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
 
 // XR integration
 [assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit")]
@@ -83,7 +86,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.HierarchyModule")] // Unity.HierarchyEditor module, for HierarchyWindow
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")] // Hierarchy tests
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")] // Hierarchy performance tests
-[assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")] // Hierarchy performance tests
 [assembly: InternalsVisibleTo("UnityEditor.VectorGraphicsModule")] // VectorImage
 
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")] // com.unity.2d.sprite: VisualElement.styleSheetList, FocusController.IsFocused

@@ -104,6 +104,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleList<FilterFunction> IStyle.backdropFilter
+        {
+            get
+            {
+                return GetStyleList<FilterFunction>(StylePropertyId.BackdropFilter);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.BackdropFilter, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleColor IStyle.backgroundColor
         {
             get

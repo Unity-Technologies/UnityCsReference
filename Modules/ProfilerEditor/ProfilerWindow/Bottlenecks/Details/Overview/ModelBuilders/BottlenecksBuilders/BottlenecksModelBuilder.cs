@@ -17,7 +17,7 @@ namespace Unity.Profiling.Editor.UI
             using (var mainThreadData = dataService.GetRawFrameDataView(frameIndex, k_MainThreadIndex))
             {
                 if (mainThreadData.valid == false)
-                    throw new ArgumentException("Invalid Profiler data.");
+                    return default;
 
                 const string k_MainThreadActiveTimeCounterName = "CPU Main Thread Active Time";
                 var cpuMainThreadActiveDurationNs = GetCounterValueAsUInt64(

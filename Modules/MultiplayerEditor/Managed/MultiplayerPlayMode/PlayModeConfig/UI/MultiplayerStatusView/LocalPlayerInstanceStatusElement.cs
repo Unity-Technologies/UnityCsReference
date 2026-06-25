@@ -4,9 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.PlayMode.Editor;
 using UnityEditor;
+using UnityEditor.Build.Profile;
 using UnityEditor.Multiplayer.Internal;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -26,6 +29,7 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
 
     private Label m_ConnectedLabel;
     private FreeRunningStatusElement m_FreeRunningElement;
+    private ReuseBuildElement m_ReuseBuildElement;
 
     internal Label LogInfoText;
     internal Label LogWarningText;
@@ -38,8 +42,12 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
     internal TextField RunDevice;
     internal Label RunDeviceName;
 
-    internal LocalPlayerInstanceStatusElement(Instance instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings)
+    private Instance m_Instance;
+
+    internal LocalPlayerInstanceStatusElement(Instance instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings, SerializedProperty userSettingsProperty)
     {
+        m_Instance = instance;
+
         RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
@@ -153,7 +161,7 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
             instanceRunModeContainer,
             statusRunmodeContainer,
             freeRunButtonContainer);
-        freeRunButtonContainer.style.marginTop = -6;
+        freeRunButtonContainer.style.marginTop = 5;
 
         statusContainer.Add(statusFocusBtnContainer);
         statusContainer.Add(statusRunDeviceContainer);
@@ -172,18 +180,30 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
         parentContainer.AddToClassList(k_InstanceViewClass);
 
         Add(parentContainer);
+
+        // Add reuse build element
+        m_ReuseBuildElement = new ReuseBuildElement(instance, settings.BuildProfile, userSettingsProperty);
+        m_ReuseBuildElement.BindElements(this);
+
         Add(freeRunButtonContainer);
     }
 
     private void OnAttachToPanel(AttachToPanelEvent evt)
     {
         ScenarioRunner.StatusChanged += UpdateInstanceStatus;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
+        m_ReuseBuildElement?.OnAttachToPanel();
+
         RefreshStatusUI();
     }
 
     private void OnDetachFromPanel(DetachFromPanelEvent evt)
     {
         ScenarioRunner.StatusChanged -= UpdateInstanceStatus;
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
+        m_ReuseBuildElement?.OnDetachFromPanel();
     }
 
     void UpdateInstanceStatus(ScenarioStatusData scenarioStatus)
@@ -205,5 +225,11 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
     internal void RefreshStatusUI()
     {
         CleanUpStatus();
+        m_ReuseBuildElement?.UpdateButtonStates();
+    }
+
+    private void OnPlayModeStateChanged(PlayModeStateChange stateChange)
+    {
+        m_ReuseBuildElement?.UpdateButtonStates();
     }
 }

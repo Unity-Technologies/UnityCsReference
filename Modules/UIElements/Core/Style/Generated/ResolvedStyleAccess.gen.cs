@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
         public Align alignSelf => ve.computedStyle.alignSelf;
         public AnimationPlayState animationPlayState => ve.computedStyle.animationPlayState;
         public Ratio aspectRatio => ve.computedStyle.aspectRatio;
+        public IEnumerable<FilterFunction> backdropFilter => ve.computedStyle.rareData.Read().backdropFilter.ToManaged();
         public Color backgroundColor => ve.computedStyle.backgroundColor;
         public Background backgroundImage => Background.From(ve.computedStyle.backgroundImage);
         public BackgroundPosition backgroundPositionX => ve.computedStyle.backgroundPositionX;
@@ -116,6 +117,8 @@ namespace UnityEngine.UIElements
         AnimationPlayState IResolvedStyle.animationPlayState => resolvedStyle.animationPlayState;
 
         Ratio IResolvedStyle.aspectRatio => resolvedStyle.aspectRatio;
+
+        IEnumerable<FilterFunction> IResolvedStyle.backdropFilter => resolvedStyle.backdropFilter;
 
         Color IResolvedStyle.backgroundColor => resolvedStyle.backgroundColor;
 

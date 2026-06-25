@@ -68,8 +68,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             public static unsafe void* GetOrCreateSharedStaticInternal(long getHashCode64, long getSubHashCode64, uint sizeOf, uint alignment)
             {
                 CheckSizeOf(sizeOf);
-                var hash128 = new Hash128((ulong)getHashCode64, (ulong)getSubHashCode64);
-                var result = BurstCompilerService.GetOrCreateSharedMemory(ref hash128, sizeOf, alignment == 0 ? 4 : alignment);
+                var result = BurstCompilerService.GetOrCreateSharedMemory(getHashCode64, getSubHashCode64, sizeOf, alignment == 0 ? 4 : alignment);
                 CheckResult(result);
                 return result;
             }

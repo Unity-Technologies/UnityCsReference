@@ -78,6 +78,15 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         m_HeaderContent.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
     }
 
+    internal static VisualElementEditingStage GoToStage(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle, bool setAsFirstItemAfterMainStage = false)
+    {
+        var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
+        stage.SeparatorStyle = separatorStyle;
+        stage.SetContext(context);
+        StageUtility.GoToStage(stage, setAsFirstItemAfterMainStage);
+        return stage;
+    }
+
     public VisualElementEditingStage()
     {
         m_HeaderContent = new GUIContent();
@@ -191,6 +200,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     protected internal override bool OnOpenStage()
     {
         m_PanelElement.PanelSettings = Context.PanelSettings;
+        ReloadAssets();
         RequestRefresh();
         return true;
     }
@@ -582,6 +592,10 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             PanelElement.FrameUpdate();
             m_FrameUpdateRequested = false;
         }
+    }
 
+    internal override string GetErrorMessage()
+    {
+        return "The UI document being edited is no longer valid.\n\nReturning to the main stage.";
     }
 }

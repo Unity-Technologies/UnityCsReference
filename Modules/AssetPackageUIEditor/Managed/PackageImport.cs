@@ -68,7 +68,7 @@ namespace UnityEditor
 
         [NativeHeader("Modules/AssetPackageEditor/AssetPackage.bindings.h")]
         [FreeFunction("Marshalling::GetAssetPackageInfo")]
-        private static extern AssetPackageInfo GetAssetPackageInfo(IntPtr nativeAssetPackageInfo);
+        internal static extern AssetPackageInfo GetAssetPackageInfo(IntPtr nativeAssetPackageInfo);
 
         // Invoked from menu
         [UsedByNativeCode]

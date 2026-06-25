@@ -28,7 +28,9 @@ namespace Unity.Hierarchy
         static readonly UniqueStyleString k_HierarchyItemRightContainer = new("hierarchy-item__right-container");
         static readonly UniqueStyleString k_HierarchyItemRightArrowButton = new("hierarchy-item__right-arrow-button");
         static readonly UniqueStyleString k_HierarchyItemToggleHidden = new("hierarchy-item__toggle--hidden");
-        internal const int k_IndentWidth = 14; // internal for tests
+
+        internal const float k_IndentWidth = 14f;
+        internal const float k_OverrideBarWidth = 4f;
 
         // These members are set in Bind, and reset in Unbind
         HierarchyNode m_Node;
@@ -45,6 +47,7 @@ namespace Unity.Hierarchy
         // Users can add their VE to this container, they will appear on the right beside the name,
         // with style left aligned.
         readonly VisualElement m_LeftCustomContainer;
+
         // Users can add their VE to this container, they will appear on the right side of the main column,
         // with style right aligned.
         readonly VisualElement m_RightCustomContainer;
@@ -143,6 +146,9 @@ namespace Unity.Hierarchy
         public HierarchyView View => m_View;
 
         internal bool Bound => m_Node != HierarchyNode.Null || m_View != null;
+        internal float IndentWidth => m_LeftContainer?.style.translate.value.x.value ?? 0f;
+        internal float IndentOffset => ToggleWidth + k_OverrideBarWidth;
+        internal float ToggleWidth => m_Toggle?.layout.width ?? 0f;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAL0015:Auto cleaned up symbol assigned by constructor", Justification = "This is a visual element that is recreated on code reload")]
         internal HierarchyViewItem()
@@ -165,7 +171,7 @@ namespace Unity.Hierarchy
             m_Toggle = new Toggle();
             m_Toggle.AddToClassList(k_UnityTreeViewItemToggle);
             m_Toggle.AddToClassList(Foldout.toggleUssClassNameUnique);
-            m_Toggle.Q(className: (string)k_UnityToggleCheckmark).style.marginTop = 0;
+            m_Toggle.Q(className: k_UnityToggleCheckmark.value).style.marginTop = 0;
             m_Toggle.focusable = false;
 
             m_Icon = new VisualElement();
@@ -214,11 +220,8 @@ namespace Unity.Hierarchy
 
             // Setup styling
             var viewModel = m_View.ViewModel;
-            var root = viewModel.GetRoot();
-            var depth = viewModel.GetDepth(in m_Node);
-            var relativeDepth = root == m_View.Source.Root ? depth : depth - viewModel.GetDepth(root) - 1;
             var noFilter = !m_View.Filtering;
-            var indentWidth = noFilter ? relativeDepth * k_IndentWidth : 0;
+            var indentWidth = CalculateIndentWidth();
             var oldValue = m_LeftContainer.style.translate.value;
             m_LeftContainer.style.translate = new Translate(m_LeftContainer.CeilToPanelPixelSize(indentWidth), oldValue.y, oldValue.z);
 
@@ -314,6 +317,22 @@ namespace Unity.Hierarchy
                 return;
 
             m_Name.BeginRename();
+        }
+
+        internal float CalculateIndentWidth()
+        {
+            if (m_View.Filtering)
+                return 0f;
+
+            var viewModel = m_View.ViewModel;
+            var depth = viewModel.GetDepth(in m_Node);
+
+            // Apply relative depth if view model uses a custom root
+            var viewModelRoot = viewModel.GetRoot();
+            if (viewModelRoot != m_View.Source.Root)
+                depth -= viewModel.GetDepth(viewModelRoot) + 1;
+
+            return k_IndentWidth * depth;
         }
 
         void OnBeginRename()

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.AdaptivePerformance.Editor.Metadata;
 using UnityEditor.PackageManager;
 using UnityEngine;
@@ -13,7 +14,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
-    class AdaptivePerformanceSettingsManager : SettingsProvider
+    partial class AdaptivePerformanceSettingsManager : SettingsProvider
     {
         const string k_WarningPlaymodePopup = "Adaptive Performance settings cannot be changed while the Editor is in Play mode.";
 
@@ -26,9 +27,11 @@ namespace UnityEditor.AdaptivePerformance.Editor
             public static readonly GUIContent k_FrameTimingExplanatoryText = new GUIContent(L10n.Tr("Please enable Frame Timing Stats in the Player Settings. Adaptive Performance requires precise frame time information."));
         }
 
-        internal static string s_SettingsRootTitle = $"Project/{AdaptivePerformanceConstants.kAdaptivePerformanceProviderManagement}";
+        internal static readonly string s_SettingsRootTitle = $"Project/{AdaptivePerformanceConstants.kAdaptivePerformanceProviderManagement}";
+        [AutoStaticsCleanup]
         static AdaptivePerformanceSettingsManager s_SettingsManager = null;
 
+        [NoAutoStaticsCleanup] // UI state flag, refreshed from settings on each OnGUI call
         static bool s_EnableAdaptivePerformance = false;
 
         internal static AdaptivePerformanceSettingsManager Instance => s_SettingsManager;

@@ -265,6 +265,14 @@ namespace Unity.U2D.Physics
         /// </summary>
         public PhysicsWorld.DrawColors drawColors { readonly get => m_DrawColors; set => m_DrawColors = value; }
 
+        /// <summary>
+        /// The expected world capacities used to presize internal allocations when the <see cref="PhysicsWorld"/> is created.
+        /// All counts default to zero, in which case the engine uses its own minimum defaults.
+        /// Presizing avoids reallocations during the first simulation steps for worlds with a known object count.
+        /// See <see cref="PhysicsWorld.capacity"/>.
+        /// </summary>
+        public PhysicsWorld.WorldCapacity capacity { readonly get => m_Capacity; set => m_Capacity = value; }
+
         #region Internal
 
         [SerializeField] Vector2 m_Gravity;
@@ -301,6 +309,7 @@ namespace Unity.U2D.Physics
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawNormalScale;
         [SerializeField] [FormerlySerializedAs("m_DrawImpulseScale")] [Range(0.0001f, 10f)] float m_DrawForceScale;
         [SerializeField] PhysicsWorld.DrawColors m_DrawColors;
+        [SerializeField] PhysicsWorld.WorldCapacity m_Capacity;
 
         #endregion
     }

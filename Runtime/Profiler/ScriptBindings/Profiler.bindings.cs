@@ -40,7 +40,7 @@ namespace UnityEngine.Profiling
     [NativeHeader("NativeKernel/Profiler/MemoryProfiler.h")]
     [NativeHeader("Runtime/Profiler/Profiler.h")]
     [NativeHeader("Runtime/Profiler/ScriptBindings/Profiler.bindings.h")]
-    [NativeHeader("Runtime/ScriptingBackend/ScriptingApi.h")]
+    [NativeHeader("Scripting/ScriptingBackend/ScriptingApi.h")]
     [NativeHeader("NativeKernel/Utilities/MemoryUtilities.h")]
     public sealed class Profiler
     {

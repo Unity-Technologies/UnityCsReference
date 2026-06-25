@@ -18,6 +18,7 @@ using System.IO;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Pool;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 [assembly: InternalsVisibleTo("UnityEditor.Shader.Tests")]
 namespace UnityEditor
@@ -31,16 +32,16 @@ namespace UnityEditor
             public static readonly GUIContent reflectionProbePickerIcon = EditorGUIUtility.TrIconContent("ReflectionProbeSelector");
             public static readonly GUIContent lightmapEmissiveLabelRealtimeGISupport = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime uses Realtime Global Illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
             public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime won't light up other objects since Realtime Global Illumination is not supported.");
-            public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
-            public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
-            public static string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
+            public static readonly GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
+            public static readonly int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
+            public static readonly string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
 
-            public static string builtInDeprecated = L10n.Tr("Built-in (Deprecated)/");
-            public static string notSupported = L10n.Tr("\"Not supported/\"");
-            public static string failedToCompile = L10n.Tr("Failed to compile/");
+            public static readonly string builtInDeprecated = L10n.Tr("Built-in (Deprecated)/");
+            public static readonly string notSupported = L10n.Tr("\"Not supported/\"");
+            public static readonly string failedToCompile = L10n.Tr("Failed to compile/");
 
-            public static string infoBuiltInBuiltinDeprecated = L10n.Tr("Some built-in shaders are deprecated.\nMigrate your project to the Universal Render Pipeline instead.");
-            public static string warningUsingSRPBuiltinDeprecated = L10n.Tr("A Scriptable Render Pipeline is active. Built-in shaders are deprecated.");
+            public static readonly string infoBuiltInBuiltinDeprecated = L10n.Tr("Some built-in shaders are deprecated.\nMigrate your project to the Universal Render Pipeline instead.");
+            public static readonly string warningUsingSRPBuiltinDeprecated = L10n.Tr("A Scriptable Render Pipeline is active. Built-in shaders are deprecated.");
 
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
@@ -59,7 +60,7 @@ namespace UnityEditor
                 (int)UnityEngine.Rendering.RenderQueue.AlphaTest,
                 (int)UnityEngine.Rendering.RenderQueue.Transparent,
             };
-            public static GUIContent[] customQueueNames =
+            public static readonly GUIContent[] customQueueNames =
             {
                 queueNames[0],
                 queueNames[1],
@@ -67,7 +68,7 @@ namespace UnityEditor
                 queueNames[3],
                 EditorGUIUtility.TextContent(""), // This name will be overriden during runtime
             };
-            public static int[] customQueueValues =
+            public static readonly int[] customQueueValues =
             {
                 queueValues[0],
                 queueValues[1],
@@ -97,11 +98,12 @@ namespace UnityEditor
             public const float kSpaceForFoldoutArrow = 10f;
         }
 
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);
         private int m_VariantCountCache = -1, m_HasMixedParentCache = -1;
         private bool m_CheckSetup;
 
-        private static int s_ControlHash = "EditorTextField".GetHashCode();
+        private static readonly int s_ControlHash = "EditorTextField".GetHashCode();
         const float kSpacingUnderTexture = 6f;
         const float kMiniWarningMessageHeight = 27f;
 
@@ -226,9 +228,11 @@ namespace UnityEditor
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static Stack<AnimatedCheckData> s_AnimatedCheckStack = new Stack<AnimatedCheckData>();
 
         internal delegate void MaterialPropertyCallbackFunction(GenericMenu menu, MaterialProperty property, Renderer[] renderers);
+        [AutoStaticsCleanupOnCodeReload]
         internal static MaterialPropertyCallbackFunction contextualPropertyMenu;
 
         internal class ReflectionProbePicker : PopupWindowContent
@@ -531,7 +535,7 @@ namespace UnityEditor
             return clicked;
         }
 
-        internal static class ShaderDropdownDataBuilder
+        internal static partial class ShaderDropdownDataBuilder
         {
             internal enum Category
             {
@@ -559,6 +563,7 @@ namespace UnityEditor
                 }
             }
 
+            [AutoStaticsCleanupOnCodeReload]
             private static readonly Dictionary<string, bool> s_IsBuiltInDeprecatedByName = new();
 
             [InitializeOnLoadMethod]
@@ -582,6 +587,7 @@ namespace UnityEditor
 
             // White list of shaders that are still included in the built-in RP and should not be considered deprecated
             // as they continue working in URP and HDRP
+            [NoAutoStaticsCleanup] // fixed compile-time whitelist, never mutated
             private static readonly List<string> s_WhiteListBuiltInShaders = new List<string>()
             {
                 "GUI/Text Shader",
@@ -912,9 +918,9 @@ namespace UnityEditor
 
                 private static class Styles
                 {
-                    internal static GUIStyle lineStyleFaint = new GUIStyle("DD ItemStyle");
-                    internal static GUIStyle checkMark = "DD ItemCheckmark";
-                    public static GUIContent checkMarkContent = new GUIContent("✔");
+                    internal static readonly GUIStyle lineStyleFaint = new GUIStyle("DD ItemStyle");
+                    internal static readonly GUIStyle checkMark = "DD ItemCheckmark";
+                    public static readonly GUIContent checkMarkContent = new GUIContent("✔");
 
                     static Styles()
                     {
@@ -2665,7 +2671,9 @@ namespace UnityEditor
             return null;
         }
 
+        [NoAutoStaticsCleanup] // preview mesh array allocated once, null slots populated lazily; safe to persist
         private static readonly Mesh[] s_Meshes = {null, null, null, null, null };
+        [AutoStaticsCleanupOnCodeReload]
         private static Mesh s_PlaneMesh;
         private static readonly GUIContent[] s_MeshIcons = { null, null, null, null, null };
         private static readonly GUIContent[] s_LightIcons = { null, null };
@@ -3045,6 +3053,7 @@ namespace UnityEditor
             previewRenderUtility.EndAndDrawPreview(r);
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static PreviewRenderUtility s_PreviewRenderUtility;
         private static PreviewRenderUtility GetPreviewRendererUtility()
         {
@@ -3065,6 +3074,7 @@ namespace UnityEditor
             s_PreviewRenderUtility = null;
         }
 
+        [NoAutoStaticsCleanup] // editor instance counter; tracks open editors, safe to persist across reload
         private static int s_NumberOfEditors = 0;
 
         public virtual void OnEnable()
@@ -3223,8 +3233,11 @@ namespace UnityEditor
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         static Renderer s_previousDraggedUponRenderer;
+        [AutoStaticsCleanupOnCodeReload]
         static Material[] s_previousMaterialValue;
+        [AutoStaticsCleanupOnCodeReload]
         static bool s_previousAlreadyHadPrefabModification;
         internal static void HandleRenderer(Renderer r, int materialIndex, Material dragMaterial, EventType eventType, bool alt)
         {
@@ -3283,8 +3296,11 @@ namespace UnityEditor
             }
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         static Terrain s_previousDraggedUponTerrain;
+        [AutoStaticsCleanupOnCodeReload]
         static Material s_previousTerrainMaterialTemplate;
+        [AutoStaticsCleanupOnCodeReload]
         static bool s_previousTerrainAlreadyHadPrefabModification;
         private void HandleTerrain(Terrain terrain, Material material, EventType type, bool alt)
         {
@@ -3442,7 +3458,9 @@ namespace UnityEditor
 
         // We need to access renderer data in the GenericMenu callback, which is called from a static function
         // So we backup these variables during header rendering in case context menu is openned
+        [AutoStaticsCleanupOnCodeReload]
         static Renderer[] renderersForContextMenu = null;
+        [AutoStaticsCleanupOnCodeReload]
         static Material materialForContextMenu = null;
 
         internal override Rect DrawHeaderHelpAndSettingsGUI(Rect r)

@@ -259,6 +259,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.EditorBake.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightProbes.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.UVUnwrap.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.ColorSpace.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingInspectorMeshRenderer.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Prefabs.Tests.Editor")]
@@ -266,6 +269,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderCompilation.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderUtil.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.Rendering.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ShaderCompilationEditor.ShaderCacheConsistency.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 

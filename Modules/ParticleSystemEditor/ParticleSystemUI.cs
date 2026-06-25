@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 // The ParticleSystemUI displays and manages the modules of a particle system.
 
@@ -17,6 +18,7 @@ namespace UnityEditor
         public ParticleSystem[] m_ParticleSystems;
         public SerializedObject m_ParticleSystemSerializedObject;
         public SerializedObject m_RendererSerializedObject;
+        [NoAutoStaticsCleanup] // cached string array
         private static string[] s_ModuleNames;
         private string m_SupportsCullingText;
         private string m_SupportsCullingTextLabel; // Cached version including bullet points
@@ -25,13 +27,14 @@ namespace UnityEditor
         private int m_CachedMeshDirtyCount;
         private int m_CachedMaterialDirtyCount;
 
-        private static PrefColor s_BoundsColor = new PrefColor("Particle System/Bounds", 1.0f, 235.0f / 255.0f, 4.0f / 255.0f, 1.0f);
+        private static readonly PrefColor s_BoundsColor = new PrefColor("Particle System/Bounds", 1.0f, 235.0f / 255.0f, 4.0f / 255.0f, 1.0f);
 
         protected class Texts
         {
             public GUIContent addModules = EditorGUIUtility.TrTextContent("", "Show/Hide Modules");
             public string bulletPoint = "\u2022 ";
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         public bool multiEdit { get { return (m_ParticleSystems != null) && (m_ParticleSystems.Length > 1); } }

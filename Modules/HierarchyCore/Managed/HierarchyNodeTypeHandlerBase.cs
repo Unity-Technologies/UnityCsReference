@@ -21,7 +21,7 @@ namespace Unity.Hierarchy
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyNodeTypeHandlerBaseBindings.h")]
     [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
-    public abstract class HierarchyNodeTypeHandlerBase
+    public abstract partial class HierarchyNodeTypeHandlerBase
     {
         internal static class BindingsMarshaller
         {
@@ -214,6 +214,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
+        /// Sets whether nodes of this type should always be visible during search when descendants match.
+        /// </summary>
+        [NativeMethod]
+        protected extern void SetSearchAlwaysVisible(bool value);
+
+        /// <summary>
         /// Called when the hierarchy update begins.
         /// </summary>
         protected virtual void UpdateBegin()
@@ -246,6 +252,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Returns the UID serialization info for this handler.
         /// A <see cref="HierarchyUIDInfo.Size"/> of 0 means this handler does not support UID serialization and its nodes will be skipped.
+        /// UID serialization is used in Hierarchy view state serialization and Undo/Redo operations.
         /// </summary>
         /// <param name="info">The UID info containing the format version and per-node byte size.</param>
         protected virtual void GetUIDInfo(out HierarchyUIDInfo info) { info = default; }
@@ -266,6 +273,16 @@ namespace Unity.Hierarchy
         /// <param name="uids">Packed UID bytes, <c>info.Size</c> bytes per node, as written by <see cref="WriteUIDs"/>.</param>
         /// <param name="outNodes">Resolved nodes, one per entry; leave as <see cref="HierarchyNode.Null"/> when a node cannot be found.</param>
         protected virtual void ReadUIDs(in HierarchyUIDInfo info, ReadOnlySpan<byte> uids, Span<HierarchyNode> outNodes) { }
+
+        /// <summary>
+        /// Determines whether this hierarchy node type handler supports undo/redo operations. When doing certain operations
+        /// that modify the hierarchy, for example reordering nodes with mixed-types, the hierarchy needs to know if the involved node type handlers
+        /// support undo/redo in order to determine whether to create an undo operation for the changes specific to the hierarchy.
+        /// Return <see langword="true"/> if this node type handler has underlying data that supports undo/redo.
+        /// Return <see langword="false"/> if this node type handler has underlying data that does not support undo/redo.
+        /// </summary>
+        /// <returns><see langword="true"/> if undo/redo is supported, otherwise <see langword="false"/></returns>
+        protected virtual bool UndoRedoSupported() => false;
 
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -400,6 +417,9 @@ namespace Unity.Hierarchy
                 in info,
                 new ReadOnlySpan<byte>((void*)uids, count * info.Size),
                 new Span<HierarchyNode>((void*)outNodes, count));
+
+        [RequiredByNativeCode]
+        static bool InvokeUndoRedoSupported(IntPtr handlePtr) => FromIntPtr(handlePtr).UndoRedoSupported();
         #endregion
 
         #region Marked as obsolete error in 6.6

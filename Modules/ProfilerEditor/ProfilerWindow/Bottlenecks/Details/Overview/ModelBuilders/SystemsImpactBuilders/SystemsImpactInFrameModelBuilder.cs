@@ -32,12 +32,21 @@ namespace Unity.Profiling.Editor.UI
 
             var task = Task.Run(() =>
             {
+                // Check for cancellation.
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var systemImpacts = new SystemImpact[systemsCount];
 
                 const int k_MainThreadIndex = 0;
                 using var mainThreadData = dataService.GetRawFrameDataView(frameIndex, k_MainThreadIndex);
+                if (!mainThreadData.valid)
+                    return default;
+
                 for (var i = 0; i < systemsCount; ++i)
                 {
+                    // Check for cancellation.
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var legacyStatisticName = k_CpuLegacyStatisticNames[i];
                     var legacyStatisticValue = GetLegacyStatisticValueAsFloat(mainThreadData, legacyStatisticName);
                     systemImpacts[i] = new SystemImpact(
@@ -47,11 +56,8 @@ namespace Unity.Profiling.Editor.UI
                         Convert.ToUInt64(legacyStatisticValue));
                 }
 
-                // Check for cancellation.
-                cancellationToken.ThrowIfCancellationRequested();
-
                 return BuildModelFromSystemImpacts(new Range(frameIndex, frameIndex), systemImpacts);
-            });
+            }, cancellationToken);
 
             return await task;
         }

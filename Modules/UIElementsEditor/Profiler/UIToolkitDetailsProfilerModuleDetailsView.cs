@@ -43,6 +43,7 @@ namespace UnityEditor.UIElements
             public uint hierarchyVersionChanges;
             public uint repaintVersionChanges;
             public int visualElementCount;
+            public int eventCount;
 
             // Batch-only
             public uint immediateDraws;
@@ -74,6 +75,9 @@ namespace UnityEditor.UIElements
         // RentBatchList / ReleaseBatchLists) so scrubbing doesn't churn one List per panel either.
         readonly Dictionary<EntityId, List<UIToolkitBatchMetricsInfo>> m_BatchesByPanel = new();
         readonly Stack<List<UIToolkitBatchMetricsInfo>> m_BatchListPool = new();
+        // Reused across frames in BuildRoots (CollectEventCountsByPanel clears it first) so scrubbing
+        // the timeline doesn't allocate a fresh Dictionary per refresh — mirrors the sibling view's field.
+        readonly Dictionary<EntityId, int> m_PanelEventCounts = new();
         MultiColumnTreeViewWithTotal m_TreeView;
         Label m_EmptyOverlay;
         IVisualElementScheduledItem m_RebuildScheduled;
@@ -128,6 +132,8 @@ namespace UnityEditor.UIElements
                 tooltip: L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently.")));
             columns.Add(MakeIntColumn("veCount", L10n.Tr("VE Count"), r => r.visualElementCount, panelOnly: true,
                 tooltip: L10n.Tr("Total number of VisualElements in this panel's hierarchy.")));
+            columns.Add(MakeIntColumn("events", L10n.Tr("Events"), r => r.eventCount, panelOnly: true,
+                tooltip: L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.")));
 
             m_TreeView = new MultiColumnTreeViewWithTotal(columns)
             {
@@ -650,6 +656,10 @@ namespace UnityEditor.UIElements
             // LoadFrameMetadata). The view borrows them when stamping batch rows and joins
             // names for the Owner column.
 
+            // Tally PANEL_EVENTS by panel (shared with the other details view) so each panel row gets
+            // its dispatched-event count.
+            UIToolkitProfilerToolbarHelpers.CollectEventCountsByPanel(rawFrameData, m_PanelEventCounts);
+
             int nextId = 1;
             var panelTag = ProfilerUIToolkit.kProfilerUIToolkitMetadataTagPanelMetrics;
             var panelChunkCount = rawFrameData.GetFrameMetaDataCount(guid, panelTag);
@@ -706,6 +716,7 @@ namespace UnityEditor.UIElements
                         }
                     }
 
+                    m_PanelEventCounts.TryGetValue(p.panelEntityId, out var eventCount);
                     var panelRow = new TreeRowData
                     {
                         isBatch = false,
@@ -720,6 +731,7 @@ namespace UnityEditor.UIElements
                         hierarchyVersionChanges = p.hierarchyVersionChanges,
                         repaintVersionChanges = p.repaintVersionChanges,
                         visualElementCount = p.visualElementCount,
+                        eventCount = eventCount,
                     };
                     m_RootItems.Add(new TreeViewItemData<TreeRowData>(nextId++, panelRow, children));
                 }
@@ -748,7 +760,7 @@ namespace UnityEditor.UIElements
 
             ulong batches = 0, drawCalls = 0, vertices = 0, indices = 0, immediateDraws = 0, drawRanges = 0;
             ulong hierarchyChanges = 0, repaintChanges = 0;
-            long veCount = 0;
+            long veCount = 0, eventCount = 0;
             for (var i = 0; i < m_RootItems.Count; i++)
             {
                 var p = m_RootItems[i].data;
@@ -761,6 +773,7 @@ namespace UnityEditor.UIElements
                 hierarchyChanges += p.hierarchyVersionChanges;
                 repaintChanges += p.repaintVersionChanges;
                 veCount += p.visualElementCount;
+                eventCount += p.eventCount;
             }
 
             m_TreeView.SetTotalCell("name", L10n.Tr("Total"));
@@ -776,6 +789,7 @@ namespace UnityEditor.UIElements
             m_TreeView.SetTotalCell("hierarchyChanges", hierarchyChanges.ToString("N0"));
             m_TreeView.SetTotalCell("repaintChanges", repaintChanges.ToString("N0"));
             m_TreeView.SetTotalCell("veCount", veCount.ToString("N0"));
+            m_TreeView.SetTotalCell("events", eventCount.ToString("N0"));
         }
 
         // Profiler frame changes can arrive during layout (IMGUI toolbar etc.). Defer rebuilds to

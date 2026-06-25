@@ -10,7 +10,10 @@ using UnityEngine.UIElements.Layout;
 namespace UnityEngine.UIElements;
 
 [NativeHeader("Modules/UIElements/Core/Layout/Native/LayoutModel.h")]
-[StructLayout(LayoutKind.Sequential)]
+// Size is set manually to ensure alignment on 8 bytes
+// Tests are protecting us against drift from the native version
+// TODO generate the LayoutData group like other style data groups
+[StructLayout(LayoutKind.Sequential, Size = 224)]
 struct LayoutData : IStyleDataGroup<LayoutData>
 {
     public static LayoutData Default = new()

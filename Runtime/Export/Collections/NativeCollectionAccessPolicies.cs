@@ -94,11 +94,6 @@ namespace Unity.Collections.LowLevel.Unsafe
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute
-    {}
-
-    [RequiredByNativeCode]
-    [AttributeUsage(AttributeTargets.Field)]
     public sealed class NativeDisableContainerSafetyRestrictionAttribute : Attribute
     {}
 

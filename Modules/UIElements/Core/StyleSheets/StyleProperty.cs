@@ -48,7 +48,6 @@ namespace UnityEngine.UIElements
 
                 return StylePropertyUtil.stylePropertyIdToPropertyName[id];
             }
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             internal set => CacheId(value);
         }
 
@@ -147,6 +146,13 @@ namespace UnityEngine.UIElements
         public void ClearValue()
         {
             m_Values = Array.Empty<StyleValueHandle>();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal void SetName(StyleSheet styleSheet, string value)
+        {
+            name = value;
+            styleSheet.MarkAsChanged();
         }
 
         /// <summary>

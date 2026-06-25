@@ -58,6 +58,5 @@ namespace UnityEngine.Serialization
         {
             return GetManagedReferenceIdsForObjectInternal(obj);
         }
-
     };
 }

@@ -100,9 +100,17 @@ namespace UnityEditor.Build.Analysis
         }
 
         /// <summary>
-        /// Format a count, capping at 999+
+        /// Format a count with thousands separators (e.g. 12,480).
         /// </summary>
         public static string FormatCount(int count)
+        {
+            return count.ToString("N0");
+        }
+
+        /// <summary>
+        /// Format a count, capping at 999+. Intended for compact count badges.
+        /// </summary>
+        public static string FormatCappedCount(int count)
         {
             return count > 999 ? "999+" : count.ToString();
         }

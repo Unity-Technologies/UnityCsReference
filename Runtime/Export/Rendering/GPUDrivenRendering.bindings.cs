@@ -366,6 +366,7 @@ namespace UnityEngine.Rendering
             var sceneCullingMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ulong>(nativeData->sceneCullingMask, nativeData->rendererCount, Allocator.Invalid);
             var material = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData->material, nativeData->materialCount, Allocator.Invalid);
             var invalidRenderer = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData->invalidRenderer, nativeData->invalidRendererCount, Allocator.Invalid);
+            var invalidRendererReason = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(nativeData->invalidRendererReason, nativeData->invalidRendererCount, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref renderer, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref localBounds, AtomicSafetyHandle.Create());
@@ -385,6 +386,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref sceneCullingMask, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref material, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidRenderer, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidRendererReason, AtomicSafetyHandle.Create());
             GPUDrivenMeshRendererData data = new GPUDrivenMeshRendererData
             {
                 renderer = renderer,
@@ -405,6 +407,7 @@ namespace UnityEngine.Rendering
                 sceneCullingMask = sceneCullingMask,
                 material = material,
                 invalidRenderer = invalidRenderer,
+                invalidRendererReason = invalidRendererReason,
             };
 
             try
@@ -434,6 +437,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(sceneCullingMask));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(material));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidRenderer));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidRendererReason));
         }
 
         [RequiredByNativeCode(GenerateProxy = true)]
@@ -569,6 +573,7 @@ namespace UnityEngine.Rendering
 
         public EntityId* invalidRenderer;
         public int invalidRendererCount;
+        public byte* invalidRendererReason; // parallel to invalidRenderer, cast to GRDExclusionReason
     }
 
     [UsedByNativeCode]
@@ -710,6 +715,12 @@ namespace UnityEngine.Rendering
         /// Invalid or disabled Renderers IDs.
         /// </summary>
         public NativeArray<EntityId> invalidRenderer;
+
+        /// <summary>
+        /// Exclusion reason for each invalid renderer (parallel to invalidRenderer).
+        /// Cast to GRDExclusionReason at the consumer side.
+        /// </summary>
+        public NativeArray<byte> invalidRendererReason;
     }
 
     internal struct GPUDrivenLODGroupData

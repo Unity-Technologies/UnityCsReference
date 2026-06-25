@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 
 
@@ -89,9 +90,11 @@ namespace UnityEngine.Windows.Speech
     static partial class PhraseRecognitionSystem
     {
         public delegate void ErrorDelegate(SpeechError errorCode);
+        [AutoStaticsCleanupOnCodeReload]
         public static event ErrorDelegate OnError;
 
         public delegate void StatusDelegate(SpeechSystemStatus status);
+        [AutoStaticsCleanupOnCodeReload]
         public static event StatusDelegate OnStatusChanged;
 
         [RequiredByNativeCode]

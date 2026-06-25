@@ -493,6 +493,8 @@ namespace UnityEngine.UIElements
             // If the scale or rotate value of the style are not default, a change in the size will affect the resulting
             // translation part of the local transform. Only when the transformOrigin is at (0, 0) we do not need to
             // update the transform.
+            // Similarly, a percentage-based translate is resolved against the element's own size, so a size change
+            // changes the resolved translate and the transform must be invalidated.
             if ((changeType & (VersionChangeType.Size | VersionChangeType.Transform)) == VersionChangeType.Size)
             {
                 if (!ve.hasDefaultRotationAndScale)
@@ -503,6 +505,12 @@ namespace UnityEngine.UIElements
                     {
                         changeType |= VersionChangeType.Transform;
                     }
+                }
+
+                var translate = ve.computedStyle.translate;
+                if (translate.x.unit == LengthUnit.Percent || translate.y.unit == LengthUnit.Percent)
+                {
+                    changeType |= VersionChangeType.Transform;
                 }
             }
 

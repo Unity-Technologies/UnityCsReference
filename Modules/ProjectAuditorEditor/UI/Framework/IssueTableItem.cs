@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using UnityEngine;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
@@ -14,6 +15,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public int NumVisibleChildren;
         public int NumIgnoredChildren;
+
+        // Cached severity/areas aggregations for group rows, set during tree construction.
+        public bool GroupSeverityMixed;
+        public Severity GroupSeverity;
+        public bool GroupAreasMixed;
+        public string GroupAreas;
 
         public virtual string DisplayName
         {

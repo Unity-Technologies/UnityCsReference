@@ -16,8 +16,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
         private string m_NewProfileName = "New Scaler Profile";
         private bool m_NeedsFocus = true;
         private List<string> existingProfileNames = new List<string>();
-        static string s_WarningPopup = L10n.Tr("Warning");
-        static string s_WarningPopupOption = L10n.Tr("Ok");
+        static readonly string s_WarningPopup = L10n.Tr("Warning");
+        static readonly string s_WarningPopupOption = L10n.Tr("Ok");
         const int k_maxChars = 256;
         static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Scaler profile name is too long (maximum {0} characters)"), k_maxChars);
 

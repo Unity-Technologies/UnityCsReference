@@ -17,6 +17,8 @@ namespace UnityEngine.UIElements.UIR
         NativeArray<JobHandle> m_Jobs;
         int m_JobCount;
 
+        public int count => m_JobCount;
+
         public JobMerger(int capacity)
         {
             Debug.Assert(capacity > 1);

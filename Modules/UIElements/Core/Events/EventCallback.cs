@@ -35,11 +35,21 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A static class that allows creation of <see cref="EventArg{TArg}"/>.
+    /// Base class for all instances of <see cref="EventArg{TArg}"/>.
     /// </summary>
-    public static class EventArg
+    /// <remarks>
+    /// Use the <see cref="Create{TArg}()"/> factory method to create instances and
+    /// <see cref="EventArg{TArg}.Register"/>, <see cref="EventArg{TArg}.Unregister"/> to assign argument values
+    /// to individual elements for all callbacks that use this argument identifier in their definition.
+    /// </remarks>
+    /// <seealso cref="EventArg{TArg}"/>
+    /// <seealso cref="EventCallbackDefinition"/>
+    public abstract class EventArg
     {
         private static int s_NextId = 2;
+
+        internal readonly int m_Id;
+        internal EventArg(int id) { m_Id = id; }
 
         /// <summary>
         /// Creates a <see cref="EventArg{TArg}"/> containing a unique identifier.
@@ -48,7 +58,7 @@ namespace UnityEngine.UIElements
         /// <returns>A valid <see cref="EventArg{TArg}"/> instance.</returns>
         public static EventArg<TArg> Create<TArg>()
         {
-            return new(s_NextId++);
+            return new EventArgImpl<TArg>(s_NextId++);
         }
     }
 
@@ -56,14 +66,16 @@ namespace UnityEngine.UIElements
     /// A reusable identifier for an event callback argument of type @@TArg@@.
     /// </summary>
     /// <typeparam name="TArg">The type of the callback argument for which this identifier can be used.</typeparam>
+    /// <remarks>
+    /// Use the <see cref="EventArg.Create{TArg}()"/> factory method to create instances of this class and
+    /// <see cref="Register"/>, <see cref="Unregister"/> to assign argument values
+    /// to individual elements for all callbacks that use this argument identifier in their definition.
+    /// </remarks>
+    /// <seealso cref="EventArg"/>
     /// <seealso cref="EventCallback.Create{TEvent, TArg}(EventCallback{TEvent, TArg}, EventArg{TArg}, CallbackOptions)"/>
-    public readonly struct EventArg<TArg>
+    public abstract class EventArg<TArg> : EventArg
     {
-        internal static readonly string k_Error =
-            $"EventArg<{typeof(TArg).Name}>: invalid argument identifier. Identifier must be the result of a call to EventArg.Create<TArg>.";
-
-        internal readonly int m_Id;
-        internal EventArg(int id) { m_Id = id; }
+        internal EventArg(int id) : base(id) { }
 
         /// <summary>
         /// Sets a value for the provided element for this argument identifier. That value can then be retrieved by
@@ -79,7 +91,6 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Register(VisualElement element, in TArg value)
         {
-            Debug.Assert(m_Id != 0, k_Error);
             (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterArg(m_Id, in value);
         }
 
@@ -96,14 +107,23 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Unregister(VisualElement element)
         {
-            Debug.Assert(m_Id != 0, k_Error);
             return element.m_CallbackRegistry?.UnregisterArg(m_Id) ?? false;
         }
     }
 
-    internal struct EventSelfArg<TElement> where TElement : VisualElement
+    internal sealed class EventArgImpl<TArg> : EventArg<TArg>
     {
-        public static readonly EventArg<TElement> Self = new(EventArgId.Self);
+        public EventArgImpl(int id) : base(id) { }
+    }
+
+    internal static class EventSelfArg<TElement> where TElement : VisualElement
+    {
+        /// <summary>
+        /// Use this instead of EventArgId.Self directly to force static initialization of the class and allow it to be
+        /// created with reflection (see <see cref="VisualElement.TypeData.selfEventInvoker"/> initialization).
+        /// </summary>
+        public static int Id => EventArgId.Self;
+
         private static EventSelfArgValue<TElement> s_SelfInvoker;
         public static EventSelfArgValue<TElement> GetSelfInvoker() => s_SelfInvoker ??= new();
     }
@@ -278,7 +298,7 @@ namespace UnityEngine.UIElements
         public static EventCallbackInternal Create<TEvent, TElement>(EventCallback<TEvent, TElement> userCallback,
             CallbackOptionsInternal callbackOptions = CallbackOptionsInternal.Default)
             where TEvent : EventBase<TEvent>, new() where TElement : VisualElement =>
-            Create<TEvent>(userCallback, EventSelfArg<TElement>.Self.m_Id, callbackOptions);
+            Create<TEvent>(userCallback, EventSelfArg<TElement>.Id, callbackOptions);
 
         /// <summary>
         /// Creates an event callback instance that will call the given @@userCallback@@ delegate when registered on
@@ -404,7 +424,7 @@ namespace UnityEngine.UIElements
         public static EventCallbackDefinition<TElement> Create<TEvent, TElement>(
             EventCallback<TEvent, TElement> userCallback, CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEvent : EventBase<TEvent>, new() where TElement : VisualElement =>
-            Create<TEvent, TElement>(userCallback, EventSelfArg<TElement>.Self.m_Id,
+            Create<TEvent, TElement>(userCallback, EventSelfArg<TElement>.Id,
                 (CallbackOptionsInternal)callbackOptions);
 
         /// <summary>
@@ -427,7 +447,6 @@ namespace UnityEngine.UIElements
             EventArg<TArg> arg, CallbackOptions callbackOptions = CallbackOptions.Default)
             where TEvent : EventBase<TEvent>, new()
         {
-            Debug.Assert(arg.m_Id != 0, "EventCallback.Create: arg.m_Id != 0. EventArg values for this method must be the result of a call to EventArg.Create<TArg>.");
             return Create<TEvent>(userCallback, arg.m_Id, (CallbackOptionsInternal)callbackOptions);
         }
 
@@ -936,7 +955,7 @@ namespace UnityEngine.UIElements
         {
             element.AddListenersAndCategories<TEventType>(callback, (CallbackOptionsInternal)callbackOptions);
             (element.m_CallbackRegistry ??= EventCallbackRegistry.GetPooled()).RegisterCallback(callback, element,
-                EventSelfArg<TElement>.Self.m_Id, (CallbackOptionsInternal)callbackOptions);
+                EventSelfArg<TElement>.Id, (CallbackOptionsInternal)callbackOptions);
         }
     }
 }

@@ -3,13 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     internal class ParticleSystemClipboard
     {
+        [NoAutoStaticsCleanup] // clipboard curve data
         static AnimationCurve m_AnimationCurve1;
+        [NoAutoStaticsCleanup] // clipboard curve data
         static AnimationCurve m_AnimationCurve2;
+        [NoAutoStaticsCleanup] // clipboard curve data
         static float m_AnimationCurveScalar;
 
         public static bool HasSingleAnimationCurve()

@@ -16,7 +16,7 @@ namespace UnityEditor
      // - UIServiceEditor/SceneView/SceneViewToolbarElements.cs
      // - UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
      
-    [Overlay(typeof(ISupportsToolsOverlays), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools, defaultDockZone = DockZone.LeftColumn, defaultDockPosition = DockPosition.Top, defaultLayout = Layout.VerticalToolbar, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
+    [Overlay(typeof(ISupportsEditorTools), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools, defaultDockZone = DockZone.LeftColumn, defaultDockPosition = DockPosition.Top, defaultLayout = Layout.VerticalToolbar, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/ToolsToggle.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {

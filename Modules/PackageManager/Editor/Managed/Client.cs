@@ -221,6 +221,27 @@ namespace UnityEditor.PackageManager
             return new PackRequest(operationId, status);
         }
 
+        internal static SignRequest Sign(string packageFolder, string ownerOrgId)
+        {
+            if (string.IsNullOrWhiteSpace(packageFolder))
+                throw new ArgumentException("Package folder cannot be null, empty or whitespace", nameof(packageFolder));
+
+            if (string.IsNullOrWhiteSpace(ownerOrgId))
+                throw new ArgumentException("Owner organization ID cannot be null, empty or whitespace", nameof(ownerOrgId));
+
+            if (!UnityEditor.Connect.UnityConnect.instance.loggedIn)
+                throw new InvalidOperationException("You must be signed in to your Unity account to sign a package.");
+
+            return SendSignRequest(packageFolder, ownerOrgId);
+        }
+
+        private static SignRequest SendSignRequest(string packageFolder, string ownerOrgId)
+        {
+            long operationId;
+            var status = Sign(out operationId, packageFolder, ownerOrgId);
+            return new SignRequest(operationId, status);
+        }
+
         internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryId, UpdateScopedRegistryOptions options, bool dryRun = false)
         {
             if (string.IsNullOrWhiteSpace(registryId))

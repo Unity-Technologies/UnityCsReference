@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -35,9 +34,5 @@ namespace Unity.UIToolkit.Editor
                 as IPanelComponentRootElement;
             return rootElement?.panelComponent as PanelRenderer;
         }
-
-        // AnimationClip::SetEditorPPtrCurve rejects bindings whose type is not a Component;
-        // float/discrete only require Object, hence UIAnimationClip works there but not for PPtr.
-        internal static readonly Type PerElementPPtrDiscriminatorType = typeof(PanelRenderer);
     }
 }

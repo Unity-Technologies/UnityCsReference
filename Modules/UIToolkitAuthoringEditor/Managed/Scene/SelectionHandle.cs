@@ -41,6 +41,7 @@ sealed class SelectionHandle : VisualElement
 
     public SelectionHandle()
     {
+        pickingMode = PickingMode.Ignore;
         AddToClassList(UssClass);
         var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
         if (vta)

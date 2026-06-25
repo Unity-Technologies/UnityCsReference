@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -32,6 +33,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Color")
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         public CustomDataModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

@@ -12,12 +12,7 @@ class UIColorsPreferences(IEnumerable<string> keywords = null)
     : SettingsProvider("Preferences/Colors/UI Authoring", SettingsScope.User, keywords)
 {
     [SettingsProvider]
-    internal static SettingsProvider CreateUIColorsPreferences()
-    {
-        return Unsupported.IsSourceBuild()
-            ? new UIColorsPreferences()
-            : null;
-    }
+    internal static SettingsProvider CreateUIColorsPreferences() => new UIColorsPreferences();
 
     StyleSheet m_PreviewStyleSheet;
     SyntaxHighlightConfiguration m_UssSyntaxHighlightConfiguration;

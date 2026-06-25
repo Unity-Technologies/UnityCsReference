@@ -52,7 +52,7 @@ namespace Unity.UI.Builder
                 CurrentVisualElement, CurrentRule, property.name, EditorExtensionMode))
             {
                 var displayIndex = index;
-                displayIndex = AdjustDisplayIndexForFilter(displayIndex, manipulator);
+                displayIndex = AdjustDisplayIndexForFilters(displayIndex, manipulator);
                 displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
 
                 if (displayIndex >= 0 && displayIndex < manipulator.GetValuesCount() && manipulator.IsVariableAtIndex(displayIndex))
@@ -80,7 +80,7 @@ namespace Unity.UI.Builder
                     m_Inspector.document.fileSettings.editorExtensionMode))
                 {
                     var displayIndex = index;
-                    displayIndex = AdjustDisplayIndexForFilter(displayIndex, manipulator);
+                    displayIndex = AdjustDisplayIndexForFilters(displayIndex, manipulator);
                     displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
 
                     if (displayIndex >= 0 && displayIndex < manipulator.GetValuesCount() && manipulator.IsVariableAtIndex(displayIndex))
@@ -91,10 +91,10 @@ namespace Unity.UI.Builder
             return null;
         }
 
-        static int AdjustDisplayIndexForFilter(int index, StylePropertyManipulator manipulator)
+        static int AdjustDisplayIndexForFilters(int index, StylePropertyManipulator manipulator)
         {
             if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(manipulator.propertyName, out var id) &&
-                id == StylePropertyId.Filter)
+                (id == StylePropertyId.Filter || id == StylePropertyId.BackdropFilter))
                 return -1;
 
             return index;

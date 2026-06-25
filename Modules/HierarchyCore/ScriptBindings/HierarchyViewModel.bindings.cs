@@ -838,6 +838,12 @@ namespace Unity.Hierarchy
         [NativeMethod(IsThreadSafe = true)]
         internal extern void SetState(ReadOnlySpan<byte> bytes);
 
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal void SetParentOfSelection(in HierarchyNode parentNode) => SelectionSetParent(in parentNode);
+
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal void SetParentOfSelection(in HierarchyNode parentNode, int index) => SelectionSetParentAt(in parentNode, index);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyViewModel FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyViewModel)GCHandle.FromIntPtr(handlePtr).Target : null;
 
@@ -930,6 +936,12 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyViewModelBindings::GetIndicesWithoutFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetIndicesWithoutFlagsSpan(HierarchyNodeFlags flags, Span<int> outIndices);
+
+        [FreeFunction("HierarchyViewModelBindings::SelectionSetParent", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void SelectionSetParent(in HierarchyNode parentNode);
+
+        [FreeFunction("HierarchyViewModelBindings::SelectionSetParentAt", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void SelectionSetParentAt(in HierarchyNode parentNode, int index);
 
         #region Called from native
         [RequiredByNativeCode]

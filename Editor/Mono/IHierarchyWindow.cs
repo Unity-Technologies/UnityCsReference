@@ -23,7 +23,7 @@ namespace UnityEditor
 
         static IHierarchyWindow GetLastInteractedHierarchyWindow()
         {
-            if (HierarchyPreferences.UseNewHierarchy)
+            if (!EditorSettings.useLegacyHierarchy)
             {
                 var windows = Resources.FindObjectsOfTypeAll(HierarchyPreferences.HierarchyV2WindowType);
                 if (windows == null || windows.Length == 0 || windows[0] is not IHierarchyWindow wnd)
@@ -38,7 +38,7 @@ namespace UnityEditor
         {
             windows.Clear();
 
-            if (HierarchyPreferences.UseNewHierarchy)
+            if (!EditorSettings.useLegacyHierarchy)
             {
                 var objs = Resources.FindObjectsOfTypeAll(HierarchyPreferences.HierarchyV2WindowType);
                 if (objs == null || objs.Length == 0)

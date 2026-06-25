@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace Unity.Profiling.Editor.UI
@@ -12,11 +13,13 @@ namespace Unity.Profiling.Editor.UI
         const int k_NumberOfDataSeries = 2;
         const int k_FrameTimingManagerFixedDelay = 4;
 
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly ProfilerCounterDescriptor[] k_CpuCounterDescriptors =
         {
             new("CPU Main Thread Active Time", ProfilerCategory.Scripts),
             new("CPU Render Thread Active Time", ProfilerCategory.Scripts),
         };
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly ProfilerCounterDescriptor k_GpuFrameDurationCounterDescriptor = new("GPU Frame Time", ProfilerCategory.Render);
 
         readonly IProfilerCaptureDataService m_DataService;

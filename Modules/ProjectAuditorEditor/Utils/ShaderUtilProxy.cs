@@ -5,27 +5,39 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace Unity.ProjectAuditor.Editor.Utils
 {
-    internal static class ShaderUtilProxy
+    internal static partial class ShaderUtilProxy
     {
 #pragma warning disable 0414
+        [AutoStaticsCleanupOnCodeReload]
         static Type s_TypeShaderUtil;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodGetAvailableShaderCompilerPlatforms;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodGetShaderVariantCount;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodGetShaderGlobalKeywords;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodGetShaderLocalKeywords;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodGetShaderActiveSubshaderIndex;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodGetSRPBatcherCompatibilityCode;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodHasInstancing;
+        [AutoStaticsCleanupOnCodeReload]
         static MethodInfo s_MethodHasSurfaceShaders;
 #pragma warning restore 0414
 
+        [AutoStaticsCleanupOnCodeReload]
         static string[] s_ShaderPlatformNames;
+        [AutoStaticsCleanupOnCodeReload]
         static Material s_SRPCompatibilityCheckMaterial;
 
         static void Init()

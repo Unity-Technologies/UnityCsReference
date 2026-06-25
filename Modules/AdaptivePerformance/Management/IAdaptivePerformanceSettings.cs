@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using Unity.Scripting.LifecycleManagement;
 //using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -555,6 +556,7 @@ namespace UnityEngine.AdaptivePerformance
             }
         }
 
+        [NoAutoStaticsCleanup] // fixed compile-time list of built-in scaler types, never changes
         internal static readonly List<Type> k_DefaultScalerNames = new List<Type>
         {
             typeof(UnityEngine.AdaptivePerformance.AdaptiveFramerate),

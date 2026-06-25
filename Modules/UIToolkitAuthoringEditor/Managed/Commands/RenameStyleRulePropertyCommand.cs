@@ -31,7 +31,7 @@ internal sealed class RenameStyleRulePropertyCommand : Command<RenameStyleRulePr
     public string NewName { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.StylingContext;
+    public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Variables;
 
     protected override void Init()
     {
@@ -50,7 +50,7 @@ internal sealed class RenameStyleRulePropertyCommand : Command<RenameStyleRulePr
 
     public override CommandExecutionStatus Execute()
     {
-        Property.name = NewName;
+        Property.SetName(StyleSheet, NewName);
         return CommandExecutionStatus.Success;
     }
 }

@@ -11,6 +11,7 @@ using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Scripting.LifecycleManagement;
 
 // The ParticleEffectUI displays one or more ParticleSystemUIs.
 
@@ -23,9 +24,10 @@ namespace UnityEditor
         Editor customEditor { get; }
     }
 
-    internal class ParticleEffectUI
+    internal partial class ParticleEffectUI
     {
         public ParticleEffectUIOwner m_Owner;               // Can be InspectorWindow or ParticleSystemWindow
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.ResetToDefaultValue)] // stale UI instance must be dropped on reload
         static ParticleEffectUI s_EffectUi;
         public ParticleSystemUI[] m_Emitters;               // Contains UI for all ParticleSystem children of the root ParticleSystem for this effect
         bool m_EmittersActiveInHierarchy;
@@ -33,9 +35,13 @@ namespace UnityEditor
         ParticleSystemCurveEditor m_ParticleSystemCurveEditor; // The curve editor used by ParticleSystem modules
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
         TimeHelper m_TimeHelper = new TimeHelper();
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.ResetToDefaultValue)] // drop the reference (not Clear() the particles) on reload
         public static ParticleSystem m_MainPlaybackSystem;
+        [NoAutoStaticsCleanup] // editor preview toggle; UI state
         public static bool m_ShowBounds = false;
+        [NoAutoStaticsCleanup] // editor preview toggle; UI state
         public static bool m_ShowOnlySelected = false;
+        [NoAutoStaticsCleanup] // editor layout toggle; UI state
         public static bool m_VerticalLayout;
         const string k_SimulationStateId = "SimulationState";
         enum PlayState { Stopped = 0, Playing = 1, Paused = 2 }
@@ -72,6 +78,7 @@ namespace UnityEditor
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
         internal static Texts texts
         {
@@ -88,15 +95,25 @@ namespace UnityEditor
             return new Event { type = EventType.ExecuteCommand, commandName = "ParticleSystem/" + commandName };
         }
 
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_PlayEvent = CreateCommandEvent("Play");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_StopEvent = CreateCommandEvent("Stop");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_RestartEvent = CreateCommandEvent("Restart");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ResimulationEvent = CreateCommandEvent("Resimulation");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ShowBoundsEvent = CreateCommandEvent("ShowBounds");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ShowOnlySelectedEvent = CreateCommandEvent("ShowOnlySelected");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ForwardBeginEvent = CreateCommandEvent("ForwardBegin");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ForwardEndEvent = CreateCommandEvent("ForwardEnd");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ReverseBeginEvent = CreateCommandEvent("ReverseBegin");
+        [NoAutoStaticsCleanup] // cached command event; infrastructure
         static Event s_ReverseEndEvent = CreateCommandEvent("ReverseEnd");
 
         static void DispatchShortcutEvent(Event evt)

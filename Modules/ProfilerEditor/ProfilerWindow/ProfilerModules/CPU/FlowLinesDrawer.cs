@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace UnityEditorInternal.Profiling
     {
         const int k_EarlyNextEventArrowHorizontalPadding = 8;
 
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly System.Comparison<FlowEventData> k_FlowEventStartTimeComparer = (FlowEventData x, FlowEventData y) =>
         {
             var xPos = x.rect.xMin;
@@ -31,6 +33,7 @@ namespace UnityEditorInternal.Profiling
             return xPos.CompareTo(yPos);
         };
 
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly System.Comparison<FlowEventData> k_FlowEventCompletionTimeComparer = (FlowEventData x, FlowEventData y) =>
         {
             var xPos = x.rect.xMax;

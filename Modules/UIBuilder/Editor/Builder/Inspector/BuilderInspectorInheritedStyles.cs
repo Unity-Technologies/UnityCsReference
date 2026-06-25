@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.UIElements;
 using System.Text;
 using UnityEditor;
@@ -36,6 +37,7 @@ namespace Unity.UI.Builder
         TextField m_AddClassField;
         Button m_AddClassButton;
         Button m_CreateClassButton;
+        ClassCompleter m_ClassCompleter;
         StringBuilder m_TooltipBuilder = new();
 
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
@@ -62,6 +64,13 @@ namespace Unity.UI.Builder
 
             m_AddClassButton.clickable.clicked += AddStyleClass;
             m_CreateClassButton.clickable.clicked += ExtractLocalStylesToNewClass;
+
+            m_ClassCompleter = new ClassCompleter(m_AddClassField)
+            {
+                DataSourceCallback = GetClassCompleterDataSource,
+                GetMatchingElementCount = CountMatchingElements,
+            };
+            m_ClassCompleter.ItemChosen += OnClassCompleterItemChosen;
         }
 
         public void Enable()
@@ -94,6 +103,39 @@ namespace Unity.UI.Builder
             evt.StopPropagation();
 
             m_AddClassField.Focus();
+        }
+
+        IEnumerable<ClassCompleterInfo> GetClassCompleterDataSource()
+        {
+            yield return new ClassCompleterInfo();
+
+            var builderWindow = m_PaneWindow as Builder;
+            if (builderWindow == null)
+                yield break;
+
+            foreach (var item in BuilderSharedStyles.GetAllUnappliedClasses(builderWindow.documentRootElement, currentVisualElement))
+                yield return item;
+        }
+
+        void OnClassCompleterItemChosen(int index)
+        {
+            var results = m_ClassCompleter.Results;
+            if (results == null || index < 0 || index >= results.Count)
+                return;
+
+            if (results[index].IsValidStyleSheetInfo())
+                return;
+
+            AddStyleClass();
+        }
+
+        int CountMatchingElements(string selectorString)
+        {
+            var builderWindow = m_PaneWindow as Builder;
+            if (builderWindow == null)
+                return 0;
+
+            return BuilderSharedStyles.GetMatchingElementsForSelector(builderWindow.documentRootElement, selectorString).Count;
         }
 
         bool VerifyNewClassNameIsValid(string className)
@@ -257,7 +299,7 @@ namespace Unity.UI.Builder
         bool IsClassInUXMLDoc(string className)
         {
             var vea = currentVisualElement?.GetVisualElementAsset();
-            return vea?.classes?.Contains(className) ?? false;
+            return vea?.ContainsStyleClass(className) ?? false;
         }
 
         void RefreshClassListContainer()

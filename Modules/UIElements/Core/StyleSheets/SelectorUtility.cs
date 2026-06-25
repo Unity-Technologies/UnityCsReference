@@ -75,6 +75,12 @@ namespace UnityEngine.UIElements
                 previousRelationship = StyleSelectorRelationship.Descendent;
             }
 
+            if (simpleSelectors.Count == 0)
+            {
+                error = $"Selector '{complexSelectorStr}' is invalid: no simple selector was found.";
+                return false;
+            }
+
             selectors = simpleSelectors.ToArray();
             specificity = fullSpecificity;
             error = null;

@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.AdaptivePerformance.Editor.Metadata
 {
-    internal class AdaptivePerformanceKnownPackages
+    internal partial class AdaptivePerformanceKnownPackages
     {
         class KnownLoaderMetadata : IAdaptivePerformanceLoaderMetadata
         {
@@ -36,6 +36,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             public bool PopulateNewSettingsInstance(ScriptableObject obj) { return true; }
         }
 
+        [AutoStaticsCleanup]
         private static Lazy<List<IAdaptivePerformancePackage>> s_KnownPackages = new Lazy<List<IAdaptivePerformancePackage>>(InitKnownPackages);
 
         internal static List<IAdaptivePerformancePackage> Packages => s_KnownPackages.Value;

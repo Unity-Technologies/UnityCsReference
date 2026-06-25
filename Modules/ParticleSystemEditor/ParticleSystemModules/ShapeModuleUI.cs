@@ -9,10 +9,11 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    class ShapeModuleUI : ModuleUI
+    partial class ShapeModuleUI : ModuleUI
     {
         struct MultiModeParameter
         {
@@ -102,20 +103,31 @@ namespace UnityEditor
         SerializedProperty m_TextureUVChannel;
 
         // internal
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Material s_Material;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Material s_TextureMaterial;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Material s_SphereTextureMaterial;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Mesh s_CircleMesh;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Mesh s_QuadMesh;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Mesh s_SphereMesh;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Mesh s_HemisphereMesh;
         private static readonly Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one);
+        [AutoStaticsCleanupOnCodeReload] // editor infrastructure; no user refs
         private static ArcHandle s_ArcHandle = new ArcHandle();
+        [AutoStaticsCleanupOnCodeReload] // bounds handle created once; stateless between uses
         private static BoxBoundsHandle s_BoxBoundsHandle = new BoxBoundsHandle();
+        [AutoStaticsCleanupOnCodeReload] // bounds handle created once; stateless between uses
         private static SphereBoundsHandle s_SphereBoundsHandle = new SphereBoundsHandle();
-        private static PrefColor s_GizmoColor = new PrefColor("Particle System/Shape Module Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
-        private static Color s_ShapeGizmoThicknessTint = new Color(0.7f, 0.7f, 0.7f, 1.0f);
+        private static readonly PrefColor s_GizmoColor = new PrefColor("Particle System/Shape Module Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
+        private static readonly Color s_ShapeGizmoThicknessTint = new Color(0.7f, 0.7f, 0.7f, 1.0f);
 
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static Mesh s_SpriteMesh;
 
         private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Donut, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Sprite, ParticleSystemShapeType.SpriteRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge, ParticleSystemShapeType.Rectangle };
@@ -316,6 +328,7 @@ namespace UnityEditor
             };
         }
 
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         class MultiModeTexts
@@ -334,19 +347,19 @@ namespace UnityEditor
             public GUIContent speed;
         }
 
-        static MultiModeTexts s_RadiusTexts = new MultiModeTexts(
+        static readonly MultiModeTexts s_RadiusTexts = new MultiModeTexts(
             /*_value:*/ "Radius|New particles are spawned along the radius.",
             /*_mode:*/ "Mode|Control how particles are spawned along the radius.",
             /*_spread:*/ "Spread|Spawn particles only at specific positions along the radius (0 to disable).",
             /*_speed:*/ "Speed|Control the speed that the emission position moves along the radius.");
 
-        static MultiModeTexts s_ArcTexts = new MultiModeTexts(
+        static readonly MultiModeTexts s_ArcTexts = new MultiModeTexts(
             /*_value:*/ "Arc|New particles are spawned around the arc.",
             /*_mode:*/ "Mode|Control how particles are spawned around the arc.",
             /*_spread:*/ "Spread|Spawn particles only at specific angles around the arc (0 to disable).",
             /*_speed:*/ "Speed|Control the speed that the emission position moves around the arc.");
 
-        static MultiModeTexts s_MeshTexts = new MultiModeTexts(
+        static readonly MultiModeTexts s_MeshTexts = new MultiModeTexts(
             /*_value:*/ null,
             /*_mode:*/ "Mode|Control how particles are spawned across the mesh.",
             /*_spread:*/ "Spread|Spawn particles only at specific positions across the mesh (0 to disable).",

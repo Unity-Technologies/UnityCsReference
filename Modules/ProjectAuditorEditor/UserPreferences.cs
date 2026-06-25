@@ -4,9 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.ProjectAuditor.Editor.Utils;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
-using Unity.ProjectAuditor.Editor.Utils;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -25,27 +26,40 @@ namespace Unity.ProjectAuditor.Editor
         All = ~None
     }
 
-    internal static class UserPreferences
+    internal static partial class UserPreferences
     {
         public static string Path => k_PreferencesKey;
-        static readonly string k_PreferencesKey = "Preferences/Analysis/Project Auditor";
+        const string k_PreferencesKey = "Preferences/Analysis/Project Auditor";
 
-        static readonly string k_EditorPrefsPrefix = "ProjectAuditor";
+        const string k_EditorPrefsPrefix = "ProjectAuditor";
 
         private class Styles
         {
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent ProjectAreaSelection = EditorGUIUtility.TrTextContent("Project Areas", "Select project areas to analyze.");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent Analysis = EditorGUIUtility.TrTextContent("Analysis");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent PlatformSelection = EditorGUIUtility.TrTextContent("Platform", "Select the target platform.");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent CodeAnalysisFlagsSelection = EditorGUIUtility.TrTextContent("Code Analysis Areas", "Select which code Project Auditor analyzes.");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent CodeOwnersSelection = EditorGUIUtility.TrTextContent("Code Owners", "Select whose code Project Auditor analyzes.");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent UseRoslynAnalyzers = EditorGUIUtility.TrTextContent("Use Roslyn Analyzers");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent LogTimingsInfo = EditorGUIUtility.TrTextContent("Log timing information");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent Build = EditorGUIUtility.TrTextContent("Build");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent AfterBuild = EditorGUIUtility.TrTextContent("Log number of issues after Build", "Enabling this option will mean that after running a build, Project Auditor will analyze the project and output the total number of issues found to the console.");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent FailBuild = EditorGUIUtility.TrTextContent("Log issues as Errors", "Enable this option to output the issues to the Console as Errors (rather than Info).");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent Report = EditorGUIUtility.TrTextContent("Report");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent PrettifyJSONOutput = EditorGUIUtility.TrTextContent("Prettify saved .projectauditor files");
+            [NoAutoStaticsCleanup] // GUIContent Styles field; fixed content, safe to persist across reloads
             public static readonly GUIContent UseBuildSettings = EditorGUIUtility.TrTextContent("Use Build Settings");
         }
 
@@ -55,9 +69,12 @@ namespace Unity.ProjectAuditor.Editor
         const bool k_FailBuildOnIssuesDefault = false;
         const bool k_PrettifyJSONOutputDefault = false;
 
+        [AutoStaticsCleanupOnCodeReload]
         internal static string LoadSavePath = string.Empty;
 
+        [AutoStaticsCleanupOnCodeReload]
         static BuildTarget[] s_SupportedBuildTargets;
+        [AutoStaticsCleanupOnCodeReload]
         static GUIContent[] s_PlatformContents;
 
         public abstract class Pref<T> where T : unmanaged
@@ -111,23 +128,28 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// If enabled, ProjectAuditor will re-run the BuildReport analysis every time the project is built.
         /// </summary>
+        [NoAutoStaticsCleanup] // Pref: persists editor preference value across code reload
         public static BoolPref AnalyzeAfterBuild = new BoolPref(nameof(AnalyzeAfterBuild), k_AnalyzeAfterBuildDefault);
 
         /// <summary>
         /// If enabled, ProjectAuditor will use Roslyn Analyzer DLLs that are present in the project
         /// </summary>
+        [NoAutoStaticsCleanup]
         public static BoolPref UseRoslynAnalyzers = new BoolPref(nameof(UseRoslynAnalyzers), k_UseRoslynAnalyzersDefault);
 
         /// <summary>
         /// If enabled, any issue reported by ProjectAuditor will cause the build to fail.
         /// </summary>
+        [NoAutoStaticsCleanup]
         public static BoolPref FailBuildOnIssues = new BoolPref(nameof(FailBuildOnIssues), k_FailBuildOnIssuesDefault);
 
         /// <summary>
         /// If enabled, JSON is saved with whitespace and newlines, for easier reading.
         /// </summary>
+        [NoAutoStaticsCleanup]
         public static BoolPref PrettifyJsonOutput = new BoolPref(nameof(PrettifyJsonOutput), k_PrettifyJSONOutputDefault);
 
+        [NoAutoStaticsCleanup]
         public static BoolPref LogTimingsInfo = new BoolPref(nameof(LogTimingsInfo), k_LogTimingsInfoDefault);
 
         static readonly ProjectAreaFlags k_ProjectAreasToAnalyzeDefault = ProjectAreaFlags.All;
@@ -140,15 +162,20 @@ namespace Unity.ProjectAuditor.Editor
         // I think it would be simpler here to just have a list of Modules with checkboxes. But that probably won't
         // play nicely with the current tab navigation and incremental report handling, so it's not worth doing unless
         // we definitely want to go this way with analysis configuration...
+        [NoAutoStaticsCleanup]
         public static EnumPref<ProjectAreaFlags> ProjectAreasToAnalyze = new EnumPref<ProjectAreaFlags>(nameof(ProjectAreasToAnalyze), k_ProjectAreasToAnalyzeDefault);
 
+        [NoAutoStaticsCleanup]
         public static EnumPref<BuildTarget> AnalysisTargetPlatform = new EnumPref<BuildTarget>(nameof(AnalysisTargetPlatform), k_AnalysisTargetPlatformDefault);
 
+        [NoAutoStaticsCleanup]
         public static EnumPref<CodeAnalysisFlags> CodeAnalysisFlags = new EnumPref<CodeAnalysisFlags>(nameof(CodeAnalysisFlags), k_CodeAnalysisFlagsDefault);
 
+        [NoAutoStaticsCleanup]
         public static EnumPref<CodeOwnerFlags> CodeOwnerFlags = new EnumPref<CodeOwnerFlags>(nameof(CodeOwnerFlags), k_CodeOwnerFlagsDefault);
 
-        static UserPreferences()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             var buildTargets = Enum.GetValues(typeof(BuildTarget));
 

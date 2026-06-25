@@ -149,7 +149,7 @@ namespace Unity.UIToolkit.Editor
 
         protected override ColorField CreateHeaderInputElement()
         {
-            return new ColorField();
+            return new ColorField() {  setAlphaIfTransparentWhenPicked = true };
         }
 
         public override void UpdateFromChildFields()

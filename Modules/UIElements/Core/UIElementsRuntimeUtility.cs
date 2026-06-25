@@ -33,6 +33,22 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.SetUpdateCallback(UpdatePanels);
         }
 
+        /// <summary>
+        /// Returns true if any screen-space overlay panel has elements with backdrop-filter enabled.
+        /// Render pipelines query this to decide whether the overlay-UI pass needs the unsafe variant
+        /// (so UIToolkit can sample the bound color target for backdrop-filter capture).
+        /// </summary>
+        public static bool AnyOverlayPanelHasBackdropFilter()
+        {
+            foreach (var panel in GetSortedScreenOverlayPlayerPanels())
+            {
+                if (panel.hasBackdropFilterElements)
+                    return true;
+            }
+
+            return false;
+        }
+
         public delegate BaseRuntimePanel CreateRuntimePanelDelegate(ScriptableObject ownerObject);
         public delegate Panel CreateAuthoringPanelDelegate(ScriptableObject ownerObject);
 

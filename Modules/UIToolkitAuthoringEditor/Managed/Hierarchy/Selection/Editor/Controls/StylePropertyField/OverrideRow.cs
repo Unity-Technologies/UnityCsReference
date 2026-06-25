@@ -224,11 +224,12 @@ namespace Unity.UIToolkit.Editor
             EnableInClassList(GetIsOverriddenClassName(), isOverridden);
         }
 
-        protected virtual void OnTrackedPropertySourceChanged(ITrackablePropertyProvider provider, string propertyName, bool hasVariable, bool hasBinding)
+        protected virtual void OnTrackedPropertySourceChanged(ITrackablePropertyProvider provider, string propertyName, bool hasVariable, bool hasBinding, bool isAnimationDriven)
         {
             EnableInClassList(StylePropertyBinding.k_VariableFieldUssClassName, hasVariable);
             EnableInClassList(StylePropertyBinding.k_BoundFieldUssClassName, hasBinding);
             EnableInClassList(UxmlAttributeFieldDecorator.s_BoundFieldUssClassName, hasBinding);
+            EnableInClassList(StylePropertyBinding.k_AnimationDrivenFieldUssClassName, isAnimationDriven);
         }
 
         internal void UpdateTrackedProperties(IReadOnlyList<string> propertyNames)

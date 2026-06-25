@@ -5,12 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
-    internal class ViewDescriptor
+    internal partial class ViewDescriptor
     {
         public Type Type;
         public IssueCategory Category;
@@ -34,7 +35,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public Action<Descriptor> OnOpenManual;
         public int AnalyticsEventId;
 
-        static readonly Dictionary<int, ViewDescriptor> s_ViewDescriptorsRegistry = new Dictionary<int, ViewDescriptor>();
+        [AutoStaticsCleanupOnCodeReload]
+        static Dictionary<int, ViewDescriptor> s_ViewDescriptorsRegistry = new Dictionary<int, ViewDescriptor>();
 
         /// <summary>
         /// Register a view via ViewDescriptor

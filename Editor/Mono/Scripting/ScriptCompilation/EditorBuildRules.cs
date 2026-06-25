@@ -91,7 +91,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static Dictionary<string, TargetAssembly> predefinedTargetAssemblies { get; private set; }
 
-        private static readonly string[] s_CSharpVersionDefines =
+        internal static readonly string[] s_CSharpVersionDefines =
         {
             "CSHARP_7_OR_LATER", // Incremental Compiler adds this.
             "CSHARP_7_3_OR_NEWER",

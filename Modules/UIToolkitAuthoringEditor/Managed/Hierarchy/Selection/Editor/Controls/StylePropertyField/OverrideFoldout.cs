@@ -6,6 +6,7 @@ using System;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -33,9 +34,9 @@ namespace Unity.UIToolkit.Editor
 
         protected internal override string GetIsOverriddenClassName() => isOverriddenUssClassName;
 
-        protected override void OnTrackedPropertySourceChanged(ITrackablePropertyProvider provider, string propertyName, bool hasVariable, bool hasBinding)
+        protected override void OnTrackedPropertySourceChanged(ITrackablePropertyProvider provider, string propertyName, bool hasVariable, bool hasBinding, bool isAnimationDriven)
         {
-            // Foldouts are category containers — variable/binding styling applies only to leaf property rows.
+            // Foldouts are category containers - variable/binding styling applies only to leaf property rows.
         }
 
         [UxmlAttribute]
@@ -101,6 +102,10 @@ namespace Unity.UIToolkit.Editor
             m_Header.hierarchy.Add(m_Toggle);
 
             m_Toggle.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
+
+            var contextMenuManipulator = new ContextualMenuManipulator(BuildContextualMenu);
+            contextMenuManipulator.acceptClicksIfDisabled = true;
+            m_Header.AddManipulator(contextMenuManipulator);
 
             m_Container = new VisualElement()
             {
@@ -173,5 +178,76 @@ namespace Unity.UIToolkit.Editor
 
             return false;
         }
+
+        void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            var authoringContext = GetHierarchicalDataSourceContext().dataSource as StyleInspectorElement.AuthoringContext;
+            if (authoringContext == null)
+                return;
+
+            var styleDiff = authoringContext.StyleDiff;
+
+            var unsetStatus = ClassListContains(isOverriddenUssClassName) && !authoringContext.IsReadOnly
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled;
+            var unsetAllStatus = !authoringContext.IsReadOnly
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled;
+            evt.menu.AppendAction(StylePropertyBinding.k_UnsetText, _ => UnsetTrackedProperties(styleDiff), unsetStatus);
+            evt.menu.AppendAction(StylePropertyBinding.k_UnsetAllText, _ => UnsetAllProperties(styleDiff), unsetAllStatus);
+        }
+
+        void UnsetTrackedProperties(StyleDiff styleDiff)
+        {
+            if (trackedProperties == null || trackedProperties.Count == 0)
+                return;
+
+            using (UICommandQueue.BeginGroup(StylePropertyBinding.k_UnsetText))
+            {
+                switch (styleDiff.currentContextType)
+                {
+                    case StyleDiff.ContextType.StyleSheet:
+                    {
+                        foreach (var propertyName in trackedProperties)
+                        {
+                            var id = StylePropertyBinding.GetPropertyId(propertyName);
+                            if (id != StylePropertyId.Unknown)
+
+                                UnsetStyleSheetPropertyCommand.Execute(CommandSources.Inspector,
+                                    styleDiff.currentStyleSheet, styleDiff.currentRule, id);
+                        }
+
+                        break;
+                    }
+                    case StyleDiff.ContextType.VisualElement:
+                    {
+                        foreach (var propertyName in trackedProperties)
+                        {
+                            var id = StylePropertyBinding.GetPropertyId(propertyName);
+                            if (id != StylePropertyId.Unknown)
+                                UnsetInlineStylePropertyCommand.Execute(CommandSources.Inspector,
+                                    styleDiff.currentTarget, id);
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        static void UnsetAllProperties(StyleDiff styleDiff)
+        {
+            switch (styleDiff.currentContextType)
+            {
+                case StyleDiff.ContextType.VisualElement:
+                    UnsetAllInlineStylePropertiesCommand.Execute(CommandSources.Inspector, styleDiff.currentTarget);
+                    break;
+                case StyleDiff.ContextType.StyleSheet:
+                    UnsetAllStyleSheetPropertiesCommand.Execute(CommandSources.Inspector, styleDiff.currentStyleSheet,
+                        styleDiff.currentRule);
+                    break;
+            }
+        }
+
     }
 }

@@ -8,17 +8,19 @@ using System;
 using System.Reflection;
 using UnityEngine.Pool;
 using UnityEngine.Analytics;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
 {
-    public class DebuggerEventListHandler
+    public partial class DebuggerEventListHandler
     {
         public List<string> items = new List<string>();
         // items is written to from a worker thread but read from a main thread, so lock for all accesses for thread safety
         private readonly object itemsLock = new object();
+        [AutoStaticsCleanupOnCodeReload] // singleton holds a List<string> buffer and lock; must recreate on reload
         internal static DebuggerEventListHandler handler = new DebuggerEventListHandler();
-
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered analytic-sent handlers (internal window)
         static public event Action<Analytic> analyticSent; // Used only by the internal window
 
        // static DebuggerEventListHandler m_Instance = null;

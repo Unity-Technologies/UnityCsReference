@@ -30,7 +30,7 @@ namespace Unity.UIToolkit.Editor
             public EntityId objectValue;
         }
 
-        [NonSerialized] VisualElementAnimationSelectionItem m_Selection;
+        [NonSerialized] UIToolkitAnimationSelectionItemBase m_Selection;
 
         [SerializeField] float m_Time;
         [SerializeField] int m_Frame;
@@ -42,8 +42,17 @@ namespace Unity.UIToolkit.Editor
         [NonSerialized] List<SnapshotEntry> m_PrePreviewSnapshot;
         [NonSerialized] bool m_PostprocessSubscribed;
         [NonSerialized] bool m_BinderHookSubscribed;
+        // Canonical binder resolved once per ResampleAnimation pass; read by OnBinderEditorPostSample
+        // so it doesn't re-resolve (a full panel walk for a rule) on every sampled element.
+        [NonSerialized] UIAnimationBinder m_SampleCanonicalBinder;
+        // Cached fan-out delegate + its per-pass state, so ResampleAnimation doesn't allocate a
+        // capturing closure every frame while scrubbing / playing.
+        [NonSerialized] Action<VisualElement, UIAnimationBinder> m_SampleTargetAction;
+        [NonSerialized] UIAnimationClip m_SampleUiClip;
+        [NonSerialized] UIAnimationClip m_SampleCandidateClip;
+        [NonSerialized] float m_SampleTime;
 
-        internal VisualElementAnimationWindowController(VisualElementAnimationSelectionItem selection)
+        internal VisualElementAnimationWindowController(UIToolkitAnimationSelectionItemBase selection)
         {
             m_Selection = selection;
         }
@@ -194,20 +203,21 @@ namespace Unity.UIToolkit.Editor
                 return;
 
             var uiClip = m_Selection?.uiAnimationClip;
-            var clipOwner = m_Selection?.clipOwner;
-            var binder = m_Selection?.GetOrCreateElementBinder();
+            var canonicalBinder = m_Selection?.GetCanonicalBinder();
             var driver = GetOrCreateDriver();
 
             // Capture pre-preview values before entering animation mode so StopPreview can
             // restore them; native RevertAnimatedProperties only walks Component targets.
-            CapturePrePreviewSnapshot(uiClip, binder);
+            CapturePrePreviewSnapshot(uiClip, canonicalBinder);
 
             AnimationMode.StartAnimationMode(driver);
 
-            if (uiClip != null && clipOwner != null && binder != null)
-                PerElementAnimationContext.SetActive(uiClip, clipOwner, binder, driver);
+            // The target owns its inspector recording-context (per-element vs per-rule).
+            if (uiClip != null)
+                m_Selection.ActivateRecordingContext(uiClip, driver);
 
-            clipOwner?.SetUIAnimationClipPreviewing(true);
+            // Flag every driven element previewing so its style resolution yields to the clip.
+            m_Selection?.ForEachPreviewTarget(static (element, _) => element?.SetUIAnimationClipPreviewing(true));
 
             SubscribeBinderHook();
             SubscribeUndoPostprocess();
@@ -240,7 +250,7 @@ namespace Unity.UIToolkit.Editor
             if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
                 AnimationPropertyContextualMenu.Instance.SetResponder(null);
 
-            m_Selection?.clipOwner?.SetUIAnimationClipPreviewing(false);
+            m_Selection?.ForEachPreviewTarget(static (element, _) => element?.SetUIAnimationClipPreviewing(false));
 
             // Restore snapshot before StopAnimationMode / UnregisterProperties so the inspector
             // tint sees the original values while registrations are still active.
@@ -251,12 +261,10 @@ namespace Unity.UIToolkit.Editor
             if (m_Driver != null)
                 DrivenPropertyManager.UnregisterProperties(m_Driver);
 
-            // Covers curves added/removed mid-preview that the snapshot misses.
-            var stopBinder = m_Selection?.GetOrCreateElementBinder();
-            if (stopBinder != null)
-                stopBinder.IncrementBoundElementsStyleVersion();
+            // Covers curves added/removed mid-preview that the snapshot misses; re-resolve every element.
+            m_Selection?.ForEachPreviewTarget(static (_, binder) => binder?.IncrementBoundElementsStyleVersion());
 
-            PerElementAnimationContext.ClearActive(m_Selection?.uiAnimationClip);
+            m_Selection?.DeactivateRecordingContext(m_Selection.uiAnimationClip);
 
             AnimationMode.StopAnimationMode(GetOrCreateDriver());
         }
@@ -269,10 +277,10 @@ namespace Unity.UIToolkit.Editor
             DestroyCandidateClip();
             m_PrePreviewSnapshot = null;
             // Defensive: in case of race conditions
-            m_Selection?.clipOwner?.SetUIAnimationClipPreviewing(false);
+            m_Selection?.ForEachPreviewTarget(static (element, _) => element?.SetUIAnimationClipPreviewing(false));
             if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
                 AnimationPropertyContextualMenu.Instance.SetResponder(null);
-            PerElementAnimationContext.ClearActive(m_Selection?.uiAnimationClip);
+            m_Selection?.DeactivateRecordingContext(m_Selection.uiAnimationClip);
         }
 
         // Capability, not state - mirrors AnimationWindowControl.canRecord. Must NOT include
@@ -317,25 +325,49 @@ namespace Unity.UIToolkit.Editor
             if (uiClip == null)
                 return;
 
-            var binder = m_Selection.GetOrCreateElementBinder();
-            if (binder == null)
-                return;
-
             AnimationMode.BeginSampling();
             Undo.FlushUndoRecordObjects();
 
-            // SampleClipForEditor fires editorPostSample, where we re-assert
-            // DrivenPropertyManager registrations (see OnBinderEditorPostSample).
-            binder.SampleClipForEditor(uiClip, m_Time);
-
-            // Re-apply candidate keys on top of the previewed pose, mirroring
+            // Stash the per-pass state in fields so the fan-out delegate stays cached (no per-frame
+            // closure). Candidate keys re-apply on top of the previewed pose, mirroring
             // AnimationWindowControl.ResampleAnimation's m_CandidateClip handling.
-            if (m_CandidateClip != null && AnimationUtility.GetCurveBindings(m_CandidateClip).Length > 0)
-                binder.SampleClipForEditor(WrapAsUIAnimationClip(m_CandidateClip), 0f);
+            m_SampleUiClip = uiClip;
+            m_SampleCandidateClip = m_CandidateClip != null && AnimationUtility.GetCurveBindings(m_CandidateClip).Length > 0
+                ? WrapAsUIAnimationClip(m_CandidateClip)
+                : null;
+            m_SampleTime = m_Time;
 
-            AnimationMode.EndSampling();
+            // Resolve the canonical binder once for this pass; OnBinderEditorPostSample reads the
+            // cached value instead of re-walking the panel for every sampled element.
+            m_SampleCanonicalBinder = m_Selection.GetCanonicalBinder();
+
+            try
+            {
+                // Apply the clip to every element the selection is previewing.
+                m_Selection.ForEachPreviewTarget(m_SampleTargetAction ??= SamplePreviewTarget);
+            }
+            finally
+            {
+                // Always end sampling and clear the per-pass fields, even if a sample throws.
+                AnimationMode.EndSampling();
+                m_SampleCanonicalBinder = null;
+                m_SampleUiClip = null;
+                m_SampleCandidateClip = null;
+            }
 
             SceneView.RepaintAll();
+        }
+
+        // Per-target sampling step for ResampleAnimation. Reads the pass state from fields so the
+        // delegate can be cached. SampleClipForEditor fires editorPostSample, where we re-assert
+        // DrivenPropertyManager registrations (see OnBinderEditorPostSample).
+        void SamplePreviewTarget(VisualElement _, UIAnimationBinder binder)
+        {
+            if (binder == null)
+                return;
+            binder.SampleClipForEditor(m_SampleUiClip, m_SampleTime);
+            if (m_SampleCandidateClip != null)
+                binder.SampleClipForEditor(m_SampleCandidateClip, 0f);
         }
 
         // Lazy wrapper so the candidate AnimationClip can flow through the
@@ -495,7 +527,7 @@ namespace Unity.UIToolkit.Editor
             if (m_Selection == null)
                 return false;
 
-            var binder = m_Selection.GetOrCreateElementBinder();
+            var binder = m_Selection.GetCanonicalBinder();
             if (binder == null)
                 return false;
             return binder.TryReadCurrentBoundValue(binding.propertyName, out kind, out floatValue, out intValue, out objectValue);
@@ -521,10 +553,13 @@ namespace Unity.UIToolkit.Editor
         {
             if (m_Selection == null)
                 return;
-            if (!ReferenceEquals(binder, m_Selection.GetOrCreateElementBinder()))
-                return;
             // Skip ephemeral candidate-clip samples (WrapAsUIAnimationClip wrapper).
             if (!ReferenceEquals(clip, m_Selection.uiAnimationClip))
+                return;
+            // Re-assert once per sample via the canonical binder (cached for this pass by
+            // ResampleAnimation); the registration is per-clip, so fanning it across every matched
+            // binder would be redundant.
+            if (!ReferenceEquals(binder, m_SampleCanonicalBinder))
                 return;
 
             var driver = m_Driver;
@@ -654,7 +689,7 @@ namespace Unity.UIToolkit.Editor
 
                 if (hasChannelKind && channelKind == UIAnimationBinder.AnimationChannelKind.PPtr)
                 {
-                    var binding = EditorCurveBinding.PPtrCurve(string.Empty, VisualElementAnimationClipUtility.PerElementPPtrDiscriminatorType, prop.propertyPath);
+                    var binding = EditorCurveBinding.PPtrCurve(string.Empty, typeof(UIAnimationClip), prop.propertyPath);
                     var objectValue = prop.objectReference;
 
                     if (isRecording)
@@ -757,7 +792,7 @@ namespace Unity.UIToolkit.Editor
                 return;
             }
 
-            var binder = m_Selection.GetOrCreateElementBinder();
+            var binder = m_Selection.GetCanonicalBinder();
             if (binder == null)
             {
                 m_PrePreviewSnapshot = null;

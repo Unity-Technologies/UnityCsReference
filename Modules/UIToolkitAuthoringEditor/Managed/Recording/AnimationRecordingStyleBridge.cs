@@ -400,6 +400,37 @@ namespace Unity.UIToolkit.Editor
             return true;
         }
 
+        // Rule-level recording: an edit to a selected USS rule is captured into the rule's
+        // UIAnimationClip instead of the StyleSheet. Curves use an empty element path - the clip
+        // is sampled at each matched element's root - and the same propertyName scheme as a
+        // per-element clip. The controller's PostprocessModifications hook claims the modifications
+        // (target == its active clip), writes the curve / candidate, and re-samples every match.
+        internal static bool TryRecordStyleRulePropertyChange<T>(StyleRule rule, StylePropertyId stylePropertyId, in T currentValue)
+        {
+            if (StyleDebug.IsShorthandProperty(stylePropertyId))
+                return false;
+            if (rule == null || !AnimationMode.InAnimationRecording())
+                return false;
+            if (!typeof(T).IsValueType && ReferenceEquals(currentValue, null))
+                return false;
+
+            if (!StyleRuleAnimationContext.TryResolveForRule(rule, out var uiClip))
+                return false;
+            if (!TryGetBindingPropertyName(stylePropertyId, out var propName))
+                return false;
+
+            // No element to read a previous value from; previous == current is fine since the
+            // recorded keyframe uses the current value (the previous only seeds the Undo record).
+            var channel = GetRecordingChannelKind(stylePropertyId);
+            bool typed = channel != StylePropertyRecordingChannel.Unsupported;
+            if (!TryBuildPerElementModifications(uiClip, string.Empty, stylePropertyId, propName, in currentValue, in currentValue, typed, out var modifications)
+                || modifications == null || modifications.Length == 0)
+                return false;
+
+            Undo.InvokePostprocessModifications(modifications);
+            return true;
+        }
+
         static bool TryRecordStylePropertyChangeTyped<T>(VisualElement element, StylePropertyId stylePropertyId, bool hasPreviousValue, in T previousValue, in T currentValue)
         {
             if (!TryResolvePreviousForRecording(element, stylePropertyId, hasPreviousValue, in previousValue, in currentValue, out T resolvedPrevious))

@@ -7,10 +7,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
-    internal class AnalysisCoroutine
+    internal partial class AnalysisCoroutine
     {
         struct YieldProcessor
         {
@@ -99,8 +100,11 @@ namespace Unity.ProjectAuditor.Editor.Core
         Action<long> m_ElapsedTimeDelegate; // Returns how long each invocation of the coroutine took
 
         const int kParallelCoroutineCount = 2; // Not really parallel, just number we allow to run at the same time (if you change it, consider changing kDuration too to balance overall fps)
+        [AutoStaticsCleanupOnCodeReload] // Active coroutine processing stack; must be reset on code reload to avoid stale state
         static Stack<IEnumerator> kIEnumeratorProcessingStack = new Stack<IEnumerator>(32);
+        [AutoStaticsCleanupOnCodeReload] // Active EditorApplication callbacks in-flight; must be reset on code reload
         static List<EditorApplication.CallbackFunction> kIEnumeratorProcessingInProgress = new List<EditorApplication.CallbackFunction>(kParallelCoroutineCount);
+        [AutoStaticsCleanupOnCodeReload] // Queued EditorApplication callbacks; must be reset on code reload to avoid stale callbacks
         static Queue<EditorApplication.CallbackFunction> kIEnumeratorProcessingQueue = new Queue<EditorApplication.CallbackFunction>(32);
 
         internal AnalysisCoroutine(IEnumerator routine, object owner, Action<long> elapsedTimeDelegate, bool async = true)

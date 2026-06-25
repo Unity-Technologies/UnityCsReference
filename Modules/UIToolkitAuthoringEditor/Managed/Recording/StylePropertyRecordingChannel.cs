@@ -33,5 +33,8 @@ namespace Unity.UIToolkit.Editor
         Object1,
         // 7-channel TextShadow: .color.r/.g/.b/.a, .offset.x/.y, .blurRadius (all Float).
         TextShadow7,
+        // 3-channel Cursor: .image (PPtr Texture2D) + .hotspot.x / .hotspot.y (Float). The
+        // built-in cursor id is editor-only and not animated; the sampler preserves it.
+        Cursor3,
     }
 }

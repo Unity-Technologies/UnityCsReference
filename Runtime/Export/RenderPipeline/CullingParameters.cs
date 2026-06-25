@@ -287,6 +287,9 @@ namespace UnityEngine.Rendering
         internal fixed byte m_CullingPlanes[k_MaximumCullingPlaneCount * Plane.size];
         int m_CullingPlaneCount;
 
+        int m_SplitPlaneCount;
+        internal fixed byte m_SplitPlanes[k_MaximumCullingPlaneCount * Plane.size];
+
         uint m_CullingMask;
         ulong m_SceneMask;
         ulong m_ViewID;
@@ -348,8 +351,19 @@ namespace UnityEngine.Rendering
             set
             {
                 if (value < 0 || value > k_MaximumCullingPlaneCount)
-                    throw new ArgumentOutOfRangeException($"{nameof(value)} was {value}, but must be at least 0 and less than {k_MaximumCullingPlaneCount}");
+                    throw new ArgumentOutOfRangeException($"{nameof(value)} was {value}, but must be at least 0 and less than or equal to {k_MaximumCullingPlaneCount}");
                 m_CullingPlaneCount = value;
+            }
+        }
+
+        public int splitPlaneCount
+        {
+            get { return m_SplitPlaneCount; }
+            set
+            {
+                if (value < 0 || value > k_MaximumCullingPlaneCount)
+                    throw new ArgumentOutOfRangeException($"{nameof(value)} was {value}, but must be at least 0 and less than or equal to {k_MaximumCullingPlaneCount}");
+                m_SplitPlaneCount = value;
             }
         }
 
@@ -478,6 +492,27 @@ namespace UnityEngine.Rendering
             }
         }
 
+        public Plane GetSplitCullingPlane(int index)
+        {
+            if (index < 0 || index >= splitPlaneCount)
+                throw new ArgumentOutOfRangeException($"{nameof(index)} was {index}, but must be at least 0 and less than {splitPlaneCount}");
+            fixed (byte* ptr = m_SplitPlanes)
+            {
+                var planes = (Plane*)ptr;
+                return planes[index];
+            }
+        }
+        public void SetSplitCullingPlane(int index, Plane plane)
+        {
+            if (index < 0 || index >= splitPlaneCount)
+                throw new ArgumentOutOfRangeException($"{nameof(index)} was {index}, but must be at least 0 and less than {splitPlaneCount}");
+            fixed (byte* ptr = m_SplitPlanes)
+            {
+                var planes = (Plane*)ptr;
+                planes[index] = plane;
+            }
+        }
+
         public Plane GetCullingPlane(int index)
         {
             if (index < 0 || index >= cullingPlaneCount)
@@ -514,8 +549,15 @@ namespace UnityEngine.Rendering
                     return false;
             }
 
+            for (var i = 0; i < splitPlaneCount; i++)
+            {
+                if (!GetSplitCullingPlane(i).Equals(other.GetSplitCullingPlane(i)))
+                    return false;
+            }
+
             return m_LODParameters.Equals(other.m_LODParameters)
                 && m_CullingPlaneCount == other.m_CullingPlaneCount
+                && m_SplitPlaneCount == other.m_SplitPlaneCount
                 && m_CullingMask == other.m_CullingMask
                 && m_SceneMask == other.m_SceneMask
                 && m_ViewID == other.m_ViewID
@@ -548,6 +590,7 @@ namespace UnityEngine.Rendering
             {
                 var hashCode = m_LODParameters.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_CullingPlaneCount;
+                hashCode = (hashCode * 397) ^ m_SplitPlaneCount;
                 hashCode = (hashCode * 397) ^ (int)m_CullingMask;
                 hashCode = (hashCode * 397) ^ m_SceneMask.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_ViewID.GetHashCode();
@@ -580,6 +623,20 @@ namespace UnityEngine.Rendering
         {
             return !left.Equals(right);
         }
+    }
+
+    // Defines the mask used by DrawingSettings to filter RenderNodes based on how they are
+    // classified after split culling. Objects inside the culling (wide) frustum are marked
+    // DrawCullingOnly by default; objects also inside the split (foveal) planes are promoted
+    // to DrawSplitOnly or DrawAll if they straddle the boundary.
+    // Keep in sync with CullingParameters.h CullingSplitMask
+    [Flags]
+    public enum CullingSplitMask : byte
+    {
+        DrawNone        = 0,                              // Exclude all RenderNodes.
+        DrawCullingOnly = 1,                              // Include only objects inside the culling planes, excluding those inside the split planes.
+        DrawSplitOnly   = 2,                              // Include only objects inside the split planes.
+        DrawAll         = DrawCullingOnly | DrawSplitOnly, // Include all RenderNodes regardless of region.
     }
 
     [StructLayout(LayoutKind.Sequential)]

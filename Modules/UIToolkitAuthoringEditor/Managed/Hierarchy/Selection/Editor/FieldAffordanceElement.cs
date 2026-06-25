@@ -69,7 +69,6 @@ namespace Unity.UIToolkit.Editor
         /// </summary>
         public static readonly string s_IconElementUSSClassName = s_UssClassName + "__icon";
 
-
         internal event Action<FieldAffordanceData> onContextChanged;
 
         /// <summary>
@@ -180,13 +179,14 @@ namespace Unity.UIToolkit.Editor
             EnableInClassList(InspectorLocalStyleUnresolvedBindingClassName, sourceType is FieldAffordanceSourceInfoType.UnhandledBinding or FieldAffordanceSourceInfoType.UnresolvedBinding);
             EnableInClassList(InspectorLocalStyleVariableClassName, sourceType == FieldAffordanceSourceInfoType.USSVariable);
             EnableInClassList(InspectorLocalStyleUnresolvedVariableClassName, sourceType == FieldAffordanceSourceInfoType.USSVariable && fieldAffordanceData.variableSheet == null);
-            EnableInClassList(InspectorLocalStyleSelectorClassName, sourceType is FieldAffordanceSourceInfoType.LocalUSSSelector or FieldAffordanceSourceInfoType.MatchingUSSSelector);
+            EnableInClassList(InspectorLocalStyleSelectorElementClassName, sourceType is FieldAffordanceSourceInfoType.LocalUSSSelector or FieldAffordanceSourceInfoType.MatchingUSSSelector);
+            EnableInClassList(InspectorLocalStyleSelectorClassName, sourceType is FieldAffordanceSourceInfoType.MatchingUSSSelector);
             EnableInClassList(InspectorLocalStyleInheritedClassName, sourceType == FieldAffordanceSourceInfoType.Inherited);
             EnableInClassList(InspectorLocalStyleAnimationDrivenClassName, sourceType.IsAnimationDriven());
             EnableInClassList(InspectorLocalStyleAnimationAnimatedClassName, sourceType == FieldAffordanceSourceInfoType.AnimationAnimated);
             EnableInClassList(InspectorLocalStyleAnimationRecordingClassName, sourceType == FieldAffordanceSourceInfoType.AnimationRecording);
             EnableInClassList(InspectorLocalStyleAnimationCandidateClassName, sourceType == FieldAffordanceSourceInfoType.AnimationCandidate);
-            EnableInClassList(InspectorLocalStyleDefaultStatusClassName, sourceType is FieldAffordanceSourceInfoType.Default or FieldAffordanceSourceInfoType.Inline);
+            EnableInClassList(InspectorLocalStyleDefaultStatusClassName, sourceType is FieldAffordanceSourceInfoType.Default or FieldAffordanceSourceInfoType.Inline or FieldAffordanceSourceInfoType.LocalUSSSelector);
         }
 
         internal string BuildTooltip()

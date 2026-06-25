@@ -904,7 +904,10 @@ namespace UnityEditor
                     const string kUDSTempFolder = "Temp/UDS";
                     Directory.CreateDirectory(kUDSTempFolder);
                     var tempPath = Path.Combine(kUDSTempFolder, Path.GetFileName(entry.libraryPath));
-                    FileUtil.CopyFileOrDirectory(entry.libraryPath, tempPath);
+
+                    if (!File.Exists(tempPath))
+                        FileUtil.CopyFileOrDirectory(entry.libraryPath, tempPath);
+
                     EditorUtility.RevealInFinder(tempPath);
                 }
                 else

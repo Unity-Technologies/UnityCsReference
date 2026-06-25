@@ -24,9 +24,9 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static string missingScriptMessage = L10n.Tr("The associated script can not be loaded: {}\n\nThis could be because the script has a compile error or because the script was deleted.\nFix any compile errors if present or assign a valid script.");
-            public static string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded: {}\n\nYou must resolve missing scripts on prefabs on the prefab asset itself through the prefab view. Open the source prefab asset for this prefab instance to continue.");
-            public static string missingSerializeReferenceInstanceMessage = L10n.Tr("This object contains SerializeReference types which are missing.\nFor more information see SerializationUtility.HasManagedReferencesWithMissingTypes.");
+            public static readonly string missingScriptMessage = L10n.Tr("The associated script can not be loaded: {}\n\nThis could be because the script has a compile error or because the script was deleted.\nFix any compile errors if present or assign a valid script.");
+            public static readonly string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded: {}\n\nYou must resolve missing scripts on prefabs on the prefab asset itself through the prefab view. Open the source prefab asset for this prefab instance to continue.");
+            public static readonly string missingSerializeReferenceInstanceMessage = L10n.Tr("This object contains SerializeReference types which are missing.\nFor more information see SerializationUtility.HasManagedReferencesWithMissingTypes.");
         }
 
         internal static string GetMissingSerializeRefererenceMessageContainer()

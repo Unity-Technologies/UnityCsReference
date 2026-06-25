@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.ComponentModel;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.AdaptivePerformance
 {
@@ -197,8 +198,9 @@ namespace UnityEngine.AdaptivePerformance
     /// }
     /// ]]></code>
     /// </example>
-    public static class Holder
+    public static partial class Holder
     {
+        [AutoStaticsCleanup]
         static IAdaptivePerformance m_Instance;
 
         /// <summary>
@@ -371,6 +373,7 @@ namespace UnityEngine.AdaptivePerformance
         /// }
         /// </code>
         /// </example>
+        [AutoStaticsCleanup]
         public static event LifecycleEventHandler LifecycleEventHandler;
     }
 

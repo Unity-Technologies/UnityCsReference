@@ -688,10 +688,18 @@ namespace UnityEditor
                 if (m_Modification != null && m_Source != null && m_Instance != null)
                     root.AddToClassList(Styles.dualViewClass);
 
-                root.Add(CreateHeader());
+                var header = CreateHeader();
+                root.Add(header);
 
                 if (m_Modification != null)
-                    root.Add(CreateComparisonView());
+                {
+                    var comparisonView = CreateComparisonView();
+                    root.Add(comparisonView);
+
+                    // Header is outside the ScrollView, so compensate for the scrollbar width to keep splits aligned. (UUM-125064)
+                    comparisonView.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
+                        header.style.paddingRight = Mathf.Max(0f, comparisonView.layout.width - evt.newRect.width));
+                }
 
                 return root;
             }
@@ -735,7 +743,7 @@ namespace UnityEditor
                 return container;
             }
 
-            VisualElement CreateComparisonView()
+            ScrollView CreateComparisonView()
             {
                 var comparisonView = new ScrollView
                 {

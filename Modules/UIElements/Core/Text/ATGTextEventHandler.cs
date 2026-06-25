@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
@@ -83,17 +84,17 @@ namespace UnityEngine.UIElements
         {
             EnsureTextGenerationInfoIsValid();
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var(id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
-            if (link == null || type!= TextCore.RichTextTagParser.TagType.Hyperlink)
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            if (info.value == null || !info.isHyperlink)
                 return;
 
             Dictionary<string, string> hyperLinkData;
 
-            if (Uri.IsWellFormedUriString(link, UriKind.Absolute))
+            if (Uri.IsWellFormedUriString(info.value, UriKind.Absolute))
             {
-                Application.OpenURL(link);
+                Application.OpenURL(info.value);
             }
-            else if (IsComplexHyperLink(link, out hyperLinkData))
+            else if (IsComplexHyperLink(info.value, out hyperLinkData))
             {
                 onComplexHyperlinkClicked?.Invoke(hyperLinkData);
             }
@@ -136,10 +137,10 @@ namespace UnityEngine.UIElements
         {
             EnsureTextGenerationInfoIsValid();
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
 
             var cursorManager = (m_TextElement.panel as BaseVisualElementPanel)?.cursorManager;
-            if (link != null && type == TextCore.RichTextTagParser.TagType.Hyperlink)
+            if (info.value != null && info.isHyperlink)
             {
                 if (!isOverridingCursor)
                 {
@@ -147,7 +148,7 @@ namespace UnityEngine.UIElements
                     // defaultCursorId maps to the UnityEditor.MouseCursor enum where 4 is the link cursor.
                     cursorManager?.SetCursor(new Cursor { defaultCursorId = 4 });
 
-                    m_TextElement.uitkTextHandle.m_HoveredTag = id;
+                    m_TextElement.uitkTextHandle.m_HoveredTag = info.id;
                     m_TextElement.MarkDirtyText();
                 }
 
@@ -172,7 +173,7 @@ namespace UnityEngine.UIElements
         {
             if (m_TextElement.uitkTextHandle.m_HoveredTag >= 0)
             {
-                m_TextElement.uitkTextHandle.m_HoveredTag = -1;
+                m_TextElement.uitkTextHandle.m_HoveredTag = (int)HoveredTag.None;
                 m_TextElement.MarkDirtyText();
             }
         }
@@ -182,11 +183,11 @@ namespace UnityEngine.UIElements
             EnsureTextGenerationInfoIsValid();
             var pos = pde.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
-            if (link == null || type != TextCore.RichTextTagParser.TagType.Link)
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            if (info.value == null || info.isHyperlink)
                 return;
 
-            using (var e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+            using (var e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
             {
                 e.elementTarget = m_TextElement;
                 m_TextElement.SendEvent(e);
@@ -197,11 +198,11 @@ namespace UnityEngine.UIElements
         {
             EnsureTextGenerationInfoIsValid();
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
-            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
-            if (link == null || type != TextCore.RichTextTagParser.TagType.Link)
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            if (info.value == null || info.isHyperlink)
                 return;
 
-            using (var e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+            using (var e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
             {
                 e.elementTarget = m_TextElement;
                 m_TextElement.SendEvent(e);
@@ -216,15 +217,15 @@ namespace UnityEngine.UIElements
             EnsureTextGenerationInfoIsValid();
             var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
             // Convert UITK pos to ATG pos
-            var (id, type, link) = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
+            var info = m_TextElement.uitkTextHandle.ATGFindIntersectingLink(pos);
 
-            if (link != null && type == TextCore.RichTextTagParser.TagType.Link)
+            if (info.value != null && !info.isHyperlink)
             {
                 // PointerOver
                 if (currentLinkIDHash == -1)
                 {
                     currentLinkIDHash = 0; // Placeholder for link.hashCode
-                    using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+                    using (var e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
                     {
                         e.elementTarget = m_TextElement;
                         m_TextElement.SendEvent(e);
@@ -236,7 +237,7 @@ namespace UnityEngine.UIElements
                 // PointerMove
                 if (currentLinkIDHash == 0) // Placeholder for link.hashCode
                 {
-                    using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link, "test" /* TODO we have no way of gettting the hilighted text*/ ))
+                    using (var e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, info.value, "test" /* TODO we have no way of gettting the hilighted text*/ ))
                     {
                         e.elementTarget = m_TextElement;
                         m_TextElement.SendEvent(e);

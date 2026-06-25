@@ -14,14 +14,20 @@ static class VisualElementUtility
 {
     const string k_SelectionObjectPropertyKey = "unity-selection-object";
 
-    public static void SetSelectionObject(this VisualElement element, VisualElementSelection selectionObject)
+    public static void SetSelectionObject(this VisualElement element, UISelectionObject selectionObject)
     {
         element.SetProperty(k_SelectionObjectPropertyKey, selectionObject);
     }
 
-    public static VisualElementSelection GetSelectionObject(this VisualElement element)
+    public static T GetSelectionObject<T>(this VisualElement element)
+        where T : UISelectionObject
     {
-        return element.GetProperty(k_SelectionObjectPropertyKey) as VisualElementSelection;
+        return element.GetProperty(k_SelectionObjectPropertyKey) as T;
+    }
+
+    public static UISelectionObject GetSelectionObject(this VisualElement element)
+    {
+        return element.GetProperty(k_SelectionObjectPropertyKey) as UISelectionObject;
     }
 
     public static void ClearSelectionObject(this VisualElement element)

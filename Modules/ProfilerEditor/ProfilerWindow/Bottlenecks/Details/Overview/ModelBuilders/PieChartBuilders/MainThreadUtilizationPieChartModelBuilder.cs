@@ -58,16 +58,15 @@ namespace Unity.Profiling.Editor.UI
 
         public async Task<PieChartModel> BuildAsync(CancellationToken cancellationToken)
         {
-            var task = Task.Run(BuildMainThreadUtilizationPieChartModel);
-            await task;
-
+            var result = await Task.Run(() => BuildMainThreadUtilizationPieChartModel(cancellationToken), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-
-            return await task;
+            return result;
         }
 
-        PieChartModel BuildMainThreadUtilizationPieChartModel()
+        PieChartModel BuildMainThreadUtilizationPieChartModel(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var dataService = m_DataService;
             var frameIndex = m_FrameIndex;
 
@@ -78,7 +77,7 @@ namespace Unity.Profiling.Editor.UI
             using (var mainThreadData = dataService.GetRawFrameDataView(frameIndex, k_MainThreadIndex))
             {
                 if (mainThreadData.valid == false)
-                    throw new ArgumentException("Invalid Profiler data.");
+                    return default;
 
                 cpuMainThreadDurationNs = mainThreadData.frameTimeNs;
 

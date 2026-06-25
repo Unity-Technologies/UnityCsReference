@@ -396,6 +396,9 @@ namespace UnityEditor
                         break;
                 }
 
+                if (internal_SelectedStandaloneTarget == value)
+                    return;
+
                 internal_SelectedStandaloneTarget = value;
             }
         }
@@ -849,6 +852,8 @@ namespace UnityEditor
                     buildTarget.TextureSubtargetPlatformProperties.GetSubtargetFromPlatformSettings(profile.platformBuildProfile);
                 if (subtarget != -1) activeSubtarget = subtarget;
             }
+
+            buildTargetFromGuid = BuildProfileModuleUtil.GetActiveBuildTargetForProfileSwitch(profile, buildTargetFromGuid);
 
             return SwitchActiveBuildTargetAndSubTargetGuid(profile.platformGuid, buildTargetFromGuid, activeSubtarget);
         }

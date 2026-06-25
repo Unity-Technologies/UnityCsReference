@@ -1,6 +1,6 @@
-using UnityEngine.Scripting;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using PreserveAttribute = Unity.Private.Scripting.PreserveAttribute;
 
 [assembly: InternalsVisibleTo("UnityEditor.BurstModule")]
 namespace Unity.Scripting.LifecycleManagement

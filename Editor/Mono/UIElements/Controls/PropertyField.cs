@@ -1030,6 +1030,12 @@ namespace UnityEditor.UIElements
             return buttonGroup;
         }
 
+        // Named (not lambda) so -= matches on re-subscribe: the field is reused across rebinds and onValidateValue persists.
+        static uint ClampToUShort(uint v) => Math.Min(v, ushort.MaxValue);
+        static uint ClampToByte(uint v) => Math.Min(v, byte.MaxValue);
+        static int ClampToShort(int v) => Mathf.Clamp(v, short.MinValue, short.MaxValue);
+        static int ClampToSByte(int v) => Mathf.Clamp(v, sbyte.MinValue, sbyte.MaxValue);
+
         private VisualElement CreateOrUpdateFieldFromProperty(SerializedProperty property, object originalField = null)
         {
             var propertyType = property.propertyType;
@@ -1060,17 +1066,17 @@ namespace UnityEditor.UIElements
 
                         if (uintField != null)
                         {
+                            // Remove both first: the field can be reused for another integer subtype, so drop any stale clamp.
+                            uintField.onValidateValue -= ClampToUShort;
+                            uintField.onValidateValue -= ClampToByte;
                             switch (property.type)
                             {
                                 case "ushort":
-                                    uintField.onValidateValue += v => Math.Min(v, ushort.MaxValue);
+                                    uintField.onValidateValue += ClampToUShort;
                                     break;
                                 case "byte":
-                                    uintField.onValidateValue += v => Math.Min(v, byte.MaxValue);
+                                    uintField.onValidateValue += ClampToByte;
                                     break;
-                                default:
-                                    break;
-
                             }
                             
                         }
@@ -1086,15 +1092,15 @@ namespace UnityEditor.UIElements
                         // If the field was recycled from an ArraySize property
                         intField.isDelayed = false;
 
+                        intField.onValidateValue -= ClampToShort;
+                        intField.onValidateValue -= ClampToSByte;
                         switch (property.type)
                             {
                                 case "short":
-                                    intField.onValidateValue += v => Mathf.Clamp(v, short.MinValue, short.MaxValue);
+                                    intField.onValidateValue += ClampToShort;
                                     break;
                                 case "sbyte":
-                                    intField.onValidateValue += v => Mathf.Clamp(v, sbyte.MinValue, sbyte.MaxValue);
-                                    break;
-                                default:
+                                    intField.onValidateValue += ClampToSByte;
                                     break;
                             }          
                     }

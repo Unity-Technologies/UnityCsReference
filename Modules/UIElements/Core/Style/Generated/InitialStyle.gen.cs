@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().alignSelf = Align.Auto;
             s_InitialStyle.rareData.Write().animationPlayState = AnimationPlayState.Running;
             s_InitialStyle.layoutData.Write().aspectRatio = StyleKeyword.Auto.ToStyleRatio();
+            s_InitialStyle.rareData.Write().backdropFilter.CopyFrom(new ReadOnlySpan<UnmanagedFilterFunction>());
             s_InitialStyle.visualData.Write().backgroundColor = Color.clear;
             s_InitialStyle.visualData.Write().backgroundImage = default;
             s_InitialStyle.visualData.Write().backgroundPositionX = BackgroundPosition.Initial();
@@ -134,6 +135,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Align alignSelf => s_InitialStyle.layoutData.Read().alignSelf;
         public static AnimationPlayState animationPlayState => s_InitialStyle.rareData.Read().animationPlayState;
         public static Ratio aspectRatio => s_InitialStyle.layoutData.Read().aspectRatio;
+        public static ReadOnlySpan<UnmanagedFilterFunction> backdropFilter => s_InitialStyle.rareData.Read().backdropFilter;
         public static Color backgroundColor => s_InitialStyle.visualData.Read().backgroundColor;
         public static EntityId backgroundImage => s_InitialStyle.visualData.Read().backgroundImage;
         public static BackgroundPosition backgroundPositionX => s_InitialStyle.visualData.Read().backgroundPositionX;

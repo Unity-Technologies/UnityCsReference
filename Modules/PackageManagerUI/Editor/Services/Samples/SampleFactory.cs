@@ -107,7 +107,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var samples = sampleInfoCollection.SelectToNewArray(sample =>
             {
-                var resolvedSamplePath = IOUtils.PathsCombine(packageInfo.resolvedPath, sample.path);
+                var resolvedSamplePath = string.IsNullOrEmpty(sample.path)
+                    ? string.Empty
+                    : IOUtils.PathsCombine(packageInfo.resolvedPath, sample.path);
                 var sanitizedPackageDisplayName = IOUtils.SanitizeFileName(packageInfo.displayName);
                 var sanitizedSampleDisplayName = IOUtils.SanitizeFileName(sample.displayName);
                 var importPath = IOUtils.PathsCombine(
@@ -118,9 +120,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     sanitizedSampleDisplayName
                 );
                 var isImported = m_IOProxy.DirectoryExists(importPath);
-                var sizeInBytes = m_IOProxy.DirectorySizeInBytes(resolvedSamplePath);
+                var sizeInBytes = !string.IsNullOrEmpty(resolvedSamplePath) && m_IOProxy.DirectoryExists(resolvedSamplePath)
+                    ? m_IOProxy.DirectorySizeInBytes(resolvedSamplePath)
+                    : 0;
                 var previousImportPaths = GetPreviousImportPaths(sanitizedPackageDisplayName, sanitizedSampleDisplayName);
-                var assetPackagePath = FindAssetPackagePath(resolvedSamplePath);
+                var assetPackagePath = string.IsNullOrEmpty(resolvedSamplePath) ? null : FindAssetPackagePath(resolvedSamplePath);
                 return new Sample(sample, sampleInfoCollection.packageUniqueId, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths, assetPackagePath, package);
             });
             return new SampleCollection(sampleInfoCollection.packageUniqueId, samples);

@@ -535,9 +535,9 @@ internal partial class VisualTreeAssetExporter
         WriteAttributeValue(ref ctx, value);
     }
 
-    protected void WriteClasses(ref ExportContext ctx, string[] ussClasses)
+    protected void WriteClasses(ref ExportContext ctx, IReadOnlyList<string> ussClasses)
     {
-        if (ussClasses is { Length: > 0 })
+        if (ussClasses is { Count: > 0 })
         {
             WriteSpace(ref ctx);
             WriteAttribute(ref ctx, "class", string.Join(" ", ussClasses));

@@ -5,11 +5,13 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 internal class ParticleSystemCurveEditor
 {
     private List<CurveData> m_AddedCurves;
     private CurveEditor m_CurveEditor;
+    [NoAutoStaticsCleanup] // shared curve editor config
     static CurveEditorSettings m_CurveEditorSettings = new CurveEditorSettings();
     private Color[] m_Colors;
     private List<Color> m_AvailableColors;
@@ -31,6 +33,7 @@ internal class ParticleSystemCurveEditor
         public GUIContent curveLibraryPopup = EditorGUIUtility.TrTextContent("", "Open curve library");
         public GUIContent presetTooltip = new GUIContent();
     }
+    [NoAutoStaticsCleanup] // lazy-initialized UI styles cache
     internal static Styles s_Styles;
 
 
@@ -46,6 +49,7 @@ internal class ParticleSystemCurveEditor
         public CurveWrapper.SetAxisScalarsCallback m_SetAxisScalarsCallback;
         public int m_MaxId, m_MinId;
         public bool m_Visible;
+        [NoAutoStaticsCleanup] // editor state; no user refs
         private static int s_IdCounter;
 
         // Region if min and max is valid, Curve if min is null

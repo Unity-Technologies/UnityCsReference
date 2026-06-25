@@ -96,6 +96,22 @@ namespace UnityEngine
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_CalcMinMaxWidth", HasExplicitThis = true)]
         private extern Vector2 Internal_CalcMinMaxWidth(GUIContent content);
 
+        // Re-link the native peer's back-reference to its wrapper after the
+        // unmanaged byte transfer overwrites it. GUIDebugger relies on it.
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_EnsureCachedScriptingObject", IsThreadSafe = true)]
+        private static extern void Internal_EnsureCachedScriptingObject([UnityMarshalAs(NativeType.ScriptingObjectPtr)] GUIStyle self);
+
+        private static void ManagedSerializationPostDispatchHook(object wrapper, IntPtr nativePtr)
+        {
+            var style = (GUIStyle)wrapper;
+            Internal_EnsureCachedScriptingObject(style);
+            style.InternalOnAfterDeserialize();
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe IntPtr GetGUIStylePostDispatchHookFunctionPointer()
+            => (IntPtr)(delegate*<object, IntPtr, void>)&ManagedSerializationPostDispatchHook;
+
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawPrefixLabel", HasExplicitThis = true)]
         private extern void Internal_DrawPrefixLabel(Rect position, GUIContent content, int controlID, bool on);
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawContent", HasExplicitThis = true)]

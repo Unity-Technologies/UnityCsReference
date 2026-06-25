@@ -94,6 +94,14 @@ namespace UnityEngine.UIElements.HierarchyV2
         // Extra items bound below the viewport during animation; cleared by the strategy.
         int m_ExtraBindCount;
 
+        VisualElement m_AnimationClipContainer;
+        ItemAnimationInfo? m_AnimationRegion;
+        float m_AnimationFullBatchHeight;
+        float m_AnimationClipHeight;
+        float m_AnimationBaseMax;
+        float m_AnimationPostCollapseMax;
+        readonly List<int> m_AnimatedVisibleIndices = new();
+
         /// <summary>
         /// True when <paramref name="index"/> is the currently-pinned sticky row (its data
         /// position is scrolled past the top of the viewport).
@@ -136,12 +144,230 @@ namespace UnityEngine.UIElements.HierarchyV2
                     clearBindWindow = ClearAnimationBindWindow,
                     onAnimationCompleted = RaiseAnimationCompleted,
                     getVisibleViewportCount = () => visibleViewportCount,
+                    onAnimationProgress = OnAnimationProgress,
+                    setActiveClipContainer = SetActiveAnimationClip,
                 };
                 m_Animation.Initialize(in context);
             }
         }
 
         void RaiseAnimationCompleted() => animationCompleted?.Invoke();
+
+        // Registers (non-null clip) or clears (null) the active animation region the virtualizer reflows.
+        void SetActiveAnimationClip(VisualElement clip, ItemAnimationInfo info)
+        {
+            if (clip == null)
+            {
+                if (m_AnimationRegion is { } region)
+                {
+                    // We need to settle to final positions before the deferred refresh
+                    PositionBelowItems(region, 0f);
+
+                    // Re-attach the batch nodes detached below so the post-animation refresh recycles them.
+                    for (var i = 0; i < region.count; i++)
+                    {
+                        var item = GetRecycledItemForIndex(region.firstIndex + i);
+                        if (item != null && item.node.List == null)
+                            m_DisplayedList.AddLast(item.node);
+                    }
+                }
+                m_AnimationClipContainer = null;
+                m_AnimationRegion = null;
+                return;
+            }
+
+            m_AnimationClipContainer = clip;
+            m_AnimationRegion = info;
+            m_AnimationFullBatchHeight = info.count * info.itemHeight;
+            var itemsCount = itemsSource?.Count ?? 0;
+            m_AnimationBaseMax = Mathf.Max(0f, itemsCount * info.itemHeight - m_LastHeight);
+            m_AnimationPostCollapseMax = Mathf.Max(0f, (itemsCount - info.count) * info.itemHeight - m_LastHeight);
+
+            // Detach the (now clip-owned) batch nodes so the live bind doesn't sweep them into the FreeList.
+            for (var i = 0; i < info.count; i++)
+            {
+                var item = GetRecycledItemForIndex(info.firstIndex + i);
+                item?.node.List?.Remove(item.node);
+            }
+        }
+
+        internal void OnAnimationProgress(AnimationReflowState state)
+        {
+            m_AnimationRegion = state.batch;
+            m_AnimationFullBatchHeight = state.fullBatchHeight;
+            m_AnimationClipHeight = state.clipHeight;
+
+            var scrollBefore = m_ScrollValue;
+
+            if (!state.batch.isAppearing)
+            {
+                LockstepCollapseScrollRange(state);
+            }
+            else
+            {
+                SetScrollingParameters(m_ScrollValue, m_AnimationBaseMax);
+                var animTotal = state.animatedTotalHeight;
+                var revealProgress = animTotal > 0 ? Mathf.Clamp01(state.clipHeight / animTotal) : 1f;
+                SetThumbSize(Mathf.Lerp(m_AnimationPostCollapseMax, m_AnimationBaseMax, revealProgress));
+            }
+
+            if (!m_VerticalScroller.Approximately(scrollBefore, m_ScrollValue))
+                BindVisibleItemsAnimated();
+            else
+                ReflowAnimatedLayout();
+        }
+
+        void LockstepCollapseScrollRange(AnimationReflowState state)
+        {
+            var animTotal = state.animatedTotalHeight;
+            var progress = animTotal > 0 ? Mathf.Clamp01(1f - state.clipHeight / animTotal) : 1f;
+            var liveMax = Mathf.Lerp(m_AnimationBaseMax, m_AnimationPostCollapseMax, progress);
+            SetScrollingParameters(m_ScrollValue, liveMax);
+            SetThumbSize(liveMax);
+        }
+
+        void SetThumbSize(float liveScrollRange)
+        {
+            var liveContent = liveScrollRange + m_LastHeight;
+            if (liveContent <= 0f || fixedItemHeight <= 0f)
+                return;
+
+            var visibleHeight = Mathf.Ceil((m_LastHeight - m_StickyHeight) / fixedItemHeight) * fixedItemHeight;
+            m_VerticalScroller.factor = Mathf.Clamp01(visibleHeight / liveContent);
+        }
+
+        void ReflowAnimatedLayout()
+        {
+            if (m_AnimationRegion is not { } region)
+                return;
+
+            PositionClip(region);
+            PositionBelowItems(region, m_AnimationFullBatchHeight - m_AnimationClipHeight);
+        }
+
+        void PositionClip(in ItemAnimationInfo region)
+        {
+            if (m_AnimationClipContainer == null)
+                return;
+
+            // Anchor parent-relative (matches the strategy) so sticky/fractional scroll is handled.
+            var parent = GetRecycledItemForIndex(region.firstIndex - 1);
+            var clipTop = parent != null
+                ? parent.verticalOffset + region.itemHeight
+                : region.firstIndex * region.itemHeight - (float)m_ScrollValue;
+            m_AnimationClipContainer.style.translate = new Translate(0, clipTop, 0);
+        }
+
+        // Below-items shift up by the still-open gap so they stay flush with the clip's bottom edge.
+        void PositionBelowItems(in ItemAnimationInfo region, float gap)
+        {
+            var itemHeight = region.itemHeight;
+            var scroll = (float)m_ScrollValue;
+            var firstBelow = region.firstIndex + region.count;
+            for (var i = 0; ; i++)
+            {
+                var index = firstBelow + i;
+                var item = GetRecycledItemForIndex(index);
+                if (item == null)
+                    break;
+                item.verticalOffset = index * itemHeight - scroll - gap;
+            }
+        }
+
+        void BindVisibleItemsAnimated(bool forceBindItem = false)
+        {
+            if (m_AnimationRegion is not { } region || itemsSource == null)
+                return;
+
+            var itemHeight = fixedItemHeight;
+            var scroll = (float)m_ScrollValue;
+            var gap = m_AnimationFullBatchHeight - m_AnimationClipHeight;
+            var firstIndex = region.firstIndex;
+            var firstBelow = firstIndex + region.count;
+            var height = m_LastHeight;
+
+            m_FirstVisibleItemIndex = (int)(scroll / itemHeight);
+
+            // Sticky-row policy mirrors BindVisibleItems.
+            var animatedStickyRow = -1;
+            if (stickyRowController != null)
+            {
+                var currentStickyItem = stickyRowController.GetPreviousStickyIndex(m_FirstVisibleItemIndex);
+                var nextItemIsSticky = stickyRowController.IsSticky(m_FirstVisibleItemIndex + 1);
+                var stickyIsScrolledUnder = currentStickyItem != -1 && scroll > currentStickyItem * itemHeight;
+
+                if (stickyIsScrolledUnder && !nextItemIsSticky)
+                    BindStickyRow(currentStickyItem, forceBindItem);
+                else if (stickyIsScrolledUnder)
+                {
+                    UnbindStickyRow();
+                    animatedStickyRow = currentStickyItem;
+                    m_FirstVisibleItemIndex++;
+                }
+                else
+                    UnbindStickyRow();
+
+                UpdateStickyRowWidth();
+            }
+
+            // Visible non-batch indices, jumping over the clip-owned batch.
+            m_AnimatedVisibleIndices.Clear();
+            var remaining = (int)Mathf.Ceil(height / itemHeight) + 3 + m_ExtraBindCount;
+            var index = m_FirstVisibleItemIndex;
+            while (remaining > 0 && index >= 0 && index < itemsSource.Count)
+            {
+                if (index >= firstIndex && index < firstBelow)
+                {
+                    index = firstBelow;
+                    continue;
+                }
+                m_AnimatedVisibleIndices.Add(index);
+                index++;
+                remaining--;
+            }
+
+            // Keep survivors in the displayed list, free the rest.
+            (m_DisplayedList, m_RefreshList) = (m_RefreshList, m_DisplayedList);
+            foreach (var visibleIndex in m_AnimatedVisibleIndices)
+            {
+                if (m_IndexToItemDictionary.TryGetValue(visibleIndex, out var value)
+                    && ReferenceEquals(value.node.List, m_RefreshList))
+                    value.node.List.Remove(value.node);
+            }
+            while (m_RefreshList.Count > 0)
+            {
+                var item = m_RefreshList.First;
+                m_RefreshList.RemoveFirst();
+                m_FreeList.AddLast(item);
+            }
+
+            if (animatedStickyRow != -1 && (animatedStickyRow < firstIndex || animatedStickyRow >= firstBelow))
+            {
+                AddElementFromIndex(animatedStickyRow);
+                if (m_IndexToItemDictionary.TryGetValue(animatedStickyRow, out var row))
+                {
+                    row.SetSticky(false, true);
+                    row.verticalOffset = -(float)(m_ScrollValue % itemHeight);
+                }
+            }
+
+            foreach (var visibleIndex in m_AnimatedVisibleIndices)
+            {
+                AddElementFromIndex(visibleIndex, forceBindItem);
+                if (m_IndexToItemDictionary.TryGetValue(visibleIndex, out var item))
+                {
+                    var baseOffset = visibleIndex * itemHeight - scroll;
+                    item.verticalOffset = visibleIndex < firstIndex ? baseOffset : baseOffset - gap;
+                }
+            }
+
+            UpdateContainerOffset();
+
+            foreach (var item in m_FreeList)
+                item.element.style.display = DisplayStyle.None;
+
+            PositionClip(region);
+        }
 
         /// <summary>
         /// Enum for current pointer processing state.
@@ -257,6 +483,11 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (MultiColumnLayout != null)
                 {
                     Insert(0, MultiColumnLayout.CreateMultiColumnHeader());
+
+                    MultiColumnLayout.CreateFrozenColumnBackgrounds();
+                    m_ContainerClip.Insert(m_ContainerClip.IndexOf(m_Container), MultiColumnLayout.frozenLeftBackground);
+                    m_ContainerClip.Insert(m_ContainerClip.IndexOf(m_Container), MultiColumnLayout.frozenRightBackground);
+
                     scrollView.applyOffset = (offset) =>
                     {
                         m_Container.style.translate = new Vector3(0, -offset.y, 0);
@@ -464,6 +695,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_VerticalScroller.RegisterValueChangedCallback(OnVerticalScrollingChangeEvent);
             m_HorizontalScroller = m_ScrollView.horizontalScroller;
             m_HorizontalScroller.RegisterValueChangedCallback(OnHorizontalScrollerChangeEvent);
+            m_ScrollView.RegisterCallback<WheelEvent>(_ => SkipActiveAnimationForUserScroll());
+            m_VerticalScroller.RegisterCallback<PointerDownEvent>(_ => SkipActiveAnimationForUserScroll());
 
             m_ContainerClip.Add(m_Container);
             m_StickyRowContainer = new VisualElement
@@ -542,6 +775,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_DelayedScrolledVerticalValue = m_VerticalScroller.value;
             ScheduleScroll();
             evt.StopImmediatePropagation();
+        }
+
+        void SkipActiveAnimationForUserScroll()
+        {
+            if (m_Animation is { isAnimating: true })
+                m_Animation.SkipAnimation();
         }
 
         void OnHorizontalScrollerChangeEvent(ChangeEvent<double> evt)
@@ -993,7 +1232,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             };
 
             if (m_BackgroundFill.parent != m_ContainerClip)
-                m_ContainerClip.Add(m_BackgroundFill);
+                m_ContainerClip.Insert(0, m_BackgroundFill);
 
             m_BackgroundFill.style.top = contentBottom;
             m_BackgroundFill.style.height = fillHeight;
@@ -1148,6 +1387,9 @@ namespace UnityEngine.UIElements.HierarchyV2
             {
                 maxWidth = MultiColumnLayout.header.maxScrollableWidth;
                 containerWidth = MultiColumnLayout.header.scrollableWidth;
+
+                // Offset horizontal scroller to align with scrollable content area only
+                UpdateHorizontalScrollerFrozenMargins();
             }
             else
             {
@@ -1162,6 +1404,13 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_HorizontalScroller.highValue = Mathf.Max(0, maxWidth - containerWidth);
             m_HorizontalScroller.scrollSize = k_DefaultScrollSize * containerWidth;
             m_HorizontalScroller.factor = maxWidth > UIRUtility.k_Epsilon ? containerWidth / maxWidth : 1f;
+        }
+
+        void UpdateHorizontalScrollerFrozenMargins()
+        {
+            MultiColumnLayout.GetFrozenColumnWidths(out var frozenLeftWidth, out var frozenRightWidth);
+            m_HorizontalScroller.style.marginLeft = frozenLeftWidth;
+            m_HorizontalScroller.style.marginRight = frozenRightWidth;
         }
 
         void BindStickyRow(int index, bool forceRebind = false)
@@ -1324,6 +1573,12 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void AddElementFromIndex(int index, bool forceBindItem = false)
         {
+            // The animating batch lives in the clip; never route it through the normal item container.
+            if (m_AnimationRegion is { } animRegion
+                && index >= animRegion.firstIndex
+                && index < animRegion.firstIndex + animRegion.count)
+                return;
+
             if (m_IndexToItemDictionary.TryGetValue(index, out var itemWrapper))
             {
                 // We already have this somewhere therefore we remove it from the Free/RefreshLists
@@ -1388,6 +1643,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         internal void UpdateScrollingRangeAfterLayout()
         {
             UpdateHorizontalScrollRange();
+
+            if (m_AnimationRegion != null)
+                return;
 
             var item = m_DisplayedList.Last;
             if (item == null)
@@ -1501,6 +1759,13 @@ namespace UnityEngine.UIElements.HierarchyV2
                 if (item.index == index)
                     return item.element;
             }
+
+            if (m_AnimationRegion is { } region
+                && index >= region.firstIndex
+                && index < region.firstIndex + region.count
+                && m_IndexToItemDictionary.TryGetValue(index, out var animatedItem))
+                return animatedItem.element;
+
             return null;
         }
 

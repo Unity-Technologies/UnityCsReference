@@ -16,7 +16,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
     class BuiltinRenderPipelineAnalyzer : SettingsModuleAnalyzer
     {
-        static readonly GraphicsTier[] k_GraphicsTiers = { GraphicsTier.Tier1, GraphicsTier.Tier2, GraphicsTier.Tier3};
+        static readonly GraphicsTier[] k_GraphicsTiers = { GraphicsTier.Tier1, GraphicsTier.Tier2, GraphicsTier.Tier3 };
 
         internal const string PAS0022 = nameof(PAS0022);
         internal const string PAS0023 = nameof(PAS0023);

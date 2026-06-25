@@ -57,6 +57,12 @@ static class PlayModeButtons
 
     static void OnStateChanged(PlayModeScenarioState _) => RefreshToolbar();
 
+    internal static void ScheduleRefresh()
+    {
+        EditorApplication.delayCall -= RefreshToolbar;
+        EditorApplication.delayCall += RefreshToolbar;
+    }
+
     [PlaybarDefaultButtons]
     internal static IEnumerable<MainToolbarElement> CreateDefaultButtons(string elementId)
     {

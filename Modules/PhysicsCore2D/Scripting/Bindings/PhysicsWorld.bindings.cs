@@ -126,6 +126,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetProfile(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
         [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();
+        [NativeMethod(Name = "PhysicsWorld::GetMaxCapacity", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCapacity PhysicsWorld_GetMaxCapacity(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetWorldCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetWorldCount();
         [NativeMethod(Name = "PhysicsWorld::GetWorlds", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetWorlds(Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodies", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodies(PhysicsWorld world, Allocator allocator);

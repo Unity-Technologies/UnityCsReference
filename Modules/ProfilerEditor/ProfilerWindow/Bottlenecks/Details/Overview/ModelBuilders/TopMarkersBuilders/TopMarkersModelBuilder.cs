@@ -252,7 +252,8 @@ namespace Unity.Profiling.Editor.UI
             return BuildTopMarkersModelsFromCollections(
                 dataService,
                 topMarkersByExclusiveTimeCollection,
-                topMarkersByGCAllocationCollection);
+                topMarkersByGCAllocationCollection,
+                cancellationToken);
         }
 
         // Iterates over all provided combined markers, adding them if necessary to the
@@ -292,7 +293,8 @@ namespace Unity.Profiling.Editor.UI
         protected Result BuildTopMarkersModelsFromCollections(
             IProfilerCaptureDataService dataService,
             TopMarkersCollection topMarkersByExclusiveTimeCollection,
-            TopMarkersCollection topMarkersByGCAllocationCollection)
+            TopMarkersCollection topMarkersByGCAllocationCollection,
+            CancellationToken cancellationToken)
         {
             // Resolve the highest X markers that were discovered to sorted arrays.
             var topMarkersByExclusiveTime = topMarkersByExclusiveTimeCollection.ToSortedArray();
@@ -301,8 +303,8 @@ namespace Unity.Profiling.Editor.UI
             // Resolve marker names for only the highest X markers. This is an
             // expensive operation, so it is only done once we have the final
             // list of top markers for the frame.
-            ResolveAllMarkerNamesInCollection(topMarkersByExclusiveTime, dataService);
-            ResolveAllMarkerNamesInCollection(topMarkersByGCAllocation, dataService);
+            ResolveAllMarkerNamesInCollection(topMarkersByExclusiveTime, dataService, cancellationToken);
+            ResolveAllMarkerNamesInCollection(topMarkersByGCAllocation, dataService, cancellationToken);
 
             return new Result()
             {
@@ -313,10 +315,13 @@ namespace Unity.Profiling.Editor.UI
 
         void ResolveAllMarkerNamesInCollection(
             Marker[] markers,
-            IProfilerCaptureDataService dataService)
+            IProfilerCaptureDataService dataService,
+            CancellationToken cancellationToken)
         {
             for (var i = 0U; i < markers.Length; ++i)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 ref var marker = ref markers[i];
 
                 var markerId = marker.MarkerId;
@@ -327,7 +332,7 @@ namespace Unity.Profiling.Editor.UI
                 using (var threadData = dataService.GetRawFrameDataView(frameIndex, threadIndex))
                 {
                     if (threadData.valid == false)
-                        throw new InvalidOperationException();
+                        continue;
 
                     // Fetch names from native memory.
                     marker.Name = threadData.GetMarkerName(markerId);

@@ -46,7 +46,7 @@ namespace UnityEngine.Bindings
             _allocArrayCallbackPtr = allocArrayCallbackPtr;
         }
 
-        [AOTInternal.MonoPInvokeCallback(typeof(ArrayHandleOnStack.CreateArrayDelegate))]
+        [AOT.MonoPInvokeCallback(typeof(ArrayHandleOnStack.CreateArrayDelegate))]
         public static unsafe void* AllocArrayManagedCallback (void* targetRef, int size)
         {
             var retArray = new TT[size];

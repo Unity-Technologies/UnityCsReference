@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using Unity.Profiling.Editor;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -22,8 +23,8 @@ namespace UnityEditorInternal.Profiling
         protected static class BaseStyles
         {
             public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available. Select a frame from the charts above to see its details here.");
-            public static GUIContent disabledSearchText = EditorGUIUtility.TrTextContent("Showing search results are disabled while recording with deep profiling.\nStop recording to view search results.");
-            public static GUIContent cpuGPUTime = EditorGUIUtility.TrTextContent("CPU:{0}ms   GPU:{1}ms");
+            public static readonly GUIContent disabledSearchText = EditorGUIUtility.TrTextContent("Showing search results are disabled while recording with deep profiling.\nStop recording to view search results.");
+            public static readonly GUIContent cpuGPUTime = EditorGUIUtility.TrTextContent("CPU:{0}ms   GPU:{1}ms");
 
             public static readonly GUIStyle header = "OL title";
             public static readonly GUIStyle label = "OL label";
@@ -101,6 +102,7 @@ namespace UnityEditorInternal.Profiling
         }
 
         [NonSerialized]
+        [NoAutoStaticsCleanup] // false is the safe default; a stale true just triggers one extra regeneration
         internal static bool callStackNeedsRegeneration = false;
 
         [NonSerialized]
@@ -528,6 +530,7 @@ namespace UnityEditorInternal.Profiling
             }
 
             [NonSerialized]
+            [NoAutoStaticsCleanup] // auto cleanup would probably leak the GCHandle. OnDisable should be called anyway.
             static GCHandle m_PinnedInstance;
 
             [SerializeField]

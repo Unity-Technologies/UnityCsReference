@@ -41,8 +41,11 @@ namespace UnityEditor.UIElements
         internal static readonly string prefabOverrideBarUssClassName = "unity-binding__prefab-override-bar";
         internal static readonly string prefabOverrideBarNotApplicableUssClassName = "unity-binding__prefab-override-bar-not-applicable";
         internal static readonly UniqueStyleString drivenUssClassName = new("unity-binding--driven");
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString animationAnimatedUssClassName = new("unity-binding--animation-animated");
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString animationRecordedUssClassName = new("unity-binding--animation-recorded");
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString animationCandidateUssClassName = new("unity-binding--animation-candidate");
         internal static readonly UniqueStyleString livePropertyUssClassName = new("unity-binding--live-property");
         internal static readonly string livePropertyBarName = "unity-binding-live-property-bar";

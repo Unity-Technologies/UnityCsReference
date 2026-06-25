@@ -164,8 +164,6 @@ namespace UnityEditor.Search.Providers
 
         private const string k_NoResultsLimitToggle = "noResultsLimit";
 
-        static readonly TimeSpan k_MaxKillSearchWaitTime = TimeSpan.FromSeconds(5);
-
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
         {
@@ -665,32 +663,48 @@ namespace UnityEditor.Search.Providers
 
             var query = searchQuery.ToLowerInvariant();
             var index = db.index;
+
+            // Register as an active reader so the database cannot free the native index out from under our
+            // background search. Returns null if the index is already being disposed, in which case there is
+            // nothing safe to search. The disposal token fires when the database is torn down for any reason
+            // (domain reload, OnDisable, Reload, Import, ...) so the worker stops promptly; the worker releases
+            // the lease, which unblocks the disposing thread.
+            var readLease = index.TryAcquireReadAccess(out var disposalToken);
+            if (readLease == null)
+                yield break;
+
             index.fetchDefaultFiler = PopulateDefaultFilters;
             var resultsLimit = GetResultLimit(query);
 
-            var indexerInThreadCancellationTokenSource = new CancellationTokenSource();
-            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken, indexerInThreadCancellationTokenSource.Token);
+            var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken, disposalToken);
             var results = new System.Collections.Concurrent.ConcurrentBag<SearchResult>();
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
-                // Search index
-                foreach (var r in index.Search(query, context, provider, patternMatchLimit: resultsLimit))
+                try
                 {
+                    // Avoid searching if it is already cancelled.
                     if (linkedTokenSource.IsCancellationRequested)
-                        break;
-                    results.Add(r);
+                        return;
+
+                    // Search index
+                    foreach (var r in index.Search(query, context, provider, patternMatchLimit: resultsLimit))
+                    {
+                        if (linkedTokenSource.IsCancellationRequested)
+                            break;
+                        results.Add(r);
+                    }
+                }
+                finally
+                {
+                    // Release on the worker thread. The disposing thread blocks on this lease, so its release
+                    // must never depend on the enumerator below being pumped, otherwise disposal would deadlock.
+                    readLease.Dispose();
+                    linkedTokenSource.Dispose();
                 }
             }, linkedTokenSource.Token);
 
-            // Listen to AssemblyReload events to cancel the search if the assembly is reloaded
-            using var indexInThreadScope = new SearchIndexer.IndexerThreadScope(() =>
-            {
-                indexerInThreadCancellationTokenSource.Cancel();
-                searchTask.Wait(k_MaxKillSearchWaitTime);
-            });
-
             var rejectPackageResult = IsRejectPackageResult(db, context);
-            while (results.Count > 0 || !searchTask.IsCompleted || results.Count > 0)
+            while (!searchTask.IsCompleted || !results.IsEmpty)
             {
                 while (results.TryTake(out var e))
                     yield return CreateItem(context, provider, db, e, rejectPackageResult);

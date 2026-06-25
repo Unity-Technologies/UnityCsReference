@@ -41,6 +41,19 @@ namespace Unity.U2D.Physics
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorld.drawCapacity is deprecated. Draw capacity is now automatically managed.", false)]
         public readonly int drawCapacity { get => 0; set { } }
+
+        public partial struct WorldProfile
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.WorldProfile.prepareStages is deprecated, please use PhysicsWorld.WorldProfile.solverSetup instead. (UnityUpgradable) -> solverSetup", false)]
+            public float prepareStages { readonly get => solverSetup; set => solverSetup = value; }
+
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.WorldProfile.solveConstraints is deprecated, please use PhysicsWorld.WorldProfile.constraints instead. (UnityUpgradable) -> constraints", false)]
+            public float solveConstraints { readonly get => constraints; set => constraints = value; }
+        }
     }
 
     public partial struct PhysicsWorldDefinition

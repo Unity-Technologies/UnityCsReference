@@ -180,7 +180,7 @@ namespace UnityEditor.Overlays
                 {
                     // Do not add overlay to the current window if the overlay targets tool owner windows but
                     // the given windowType is not a valid/registered tool owner.
-                    if (overlays[i].editorWindowType == typeof(ISupportsToolsOverlays) &&
+                    if (overlays[i].editorWindowType == typeof(ISupportsEditorTools) &&
                         !EditorToolUtility.IsRegisteredToolOwner(windowType))
                         continue;
                     

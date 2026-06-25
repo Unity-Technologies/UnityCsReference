@@ -213,6 +213,7 @@ namespace UnityEditor.UIElements.Debugger
         internal DebuggerContext debuggerContext => m_DebuggerContext;
 
         [MenuItem(k_WindowPath, false, 3010, false, secondaryPriority = 3)]
+        [MenuItem("Window/Analysis/UI Toolkit Debugger", false, 12)]
         private static void OpenUIElementsDebugger()
         {
             if (CommandService.Exists(OpenWindowCommand))

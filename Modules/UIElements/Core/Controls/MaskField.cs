@@ -22,8 +22,6 @@ namespace UnityEngine.UIElements
         internal abstract TChoice MaskToValue(int newMask);
         internal abstract int ValueToMask(TChoice value);
 
-        static readonly int s_NothingIndex = 0;
-        static readonly int s_EverythingIndex = 1;
         static readonly int s_TotalIndex = 2;
 
         static readonly string s_MixedLabel = L10nUtility.GetTranslation("Mixed...");
@@ -172,53 +170,10 @@ namespace UnityEngine.UIElements
 
         void ComputeFullChoiceMask()
         {
-            // Compute the full mask for all the items... it is not necessarily ~0 (which is all bits set to 1)
-            if (m_UserChoices.Count == 0)
-            {
-                m_FullChoiceMask = 0;
-            }
-            else
-            {
-                if ((m_UserChoicesMasks != null) && (m_UserChoicesMasks.Count == m_UserChoices.Count))
-                {
-                    if (m_UserChoices.Count >= (sizeof(int) * 8))
-                    {
-                        m_FullChoiceMask = ~0;
-                    }
-                    else
-                    {
-                        m_FullChoiceMask = 0;
-                        foreach (int itemMask in m_UserChoicesMasks)
-                        {
-                            if (itemMask == ~0)
-                            {
-                                continue;
-                            }
-
-                            m_FullChoiceMask |= itemMask;
-                        }
-                    }
-                }
-                else
-                {
-                    if (m_UserChoices.Count >= (sizeof(int) * 8))
-                    {
-                        m_FullChoiceMask = ~0;
-                    }
-                    else
-                    {
-                        m_FullChoiceMask = (1 << m_UserChoices.Count) - 1;
-                    }
-                }
-            }
+            m_FullChoiceMask = MaskFieldUtilities.ComputeFullChoiceMask(m_UserChoices, m_UserChoicesMasks);
         }
 
-        // Trick to get the number of selected values...
-        // A power of 2 number means only 1 selected...
-        internal bool IsPowerOf2(int itemIndex)
-        {
-            return ((itemIndex & (itemIndex - 1)) == 0);
-        }
+        internal bool IsPowerOf2(int itemIndex) => MaskFieldUtilities.IsPowerOf2(itemIndex);
 
         internal override string GetValueToDisplay()
         {
@@ -232,75 +187,7 @@ namespace UnityEngine.UIElements
 
         internal string GetDisplayedValue(int itemIndex)
         {
-            var newValueToShowUser = "";
-
-            switch (itemIndex)
-            {
-                case 0:
-                    newValueToShowUser = m_Choices[s_NothingIndex];
-                    break;
-
-                case ~0:
-                    newValueToShowUser = m_Choices[s_EverythingIndex];
-                    break;
-
-                default:
-                    // Show up the right selected value
-                    if (IsPowerOf2(itemIndex))
-                    {
-                        var indexOfValue = 0;
-                        if (m_UserChoicesMasks != null)
-                        {
-                            // Find the actual index of the selected choice...
-                            foreach (int itemMask in m_UserChoicesMasks)
-                            {
-                                if (itemMask != ~0 && ((itemMask & itemIndex) == itemIndex))
-                                {
-                                    indexOfValue = m_UserChoicesMasks.IndexOf(itemMask);
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            while ((1 << indexOfValue) != itemIndex)
-                            {
-                                indexOfValue++;
-                            }
-                        }
-
-                        // To get past the Nothing + Everything choices...
-                        indexOfValue += s_TotalIndex;
-                        if (indexOfValue < m_Choices.Count)
-                        {
-                            newValueToShowUser = m_Choices[indexOfValue];
-                        }
-                    }
-                    else
-                    {
-                        if (m_UserChoicesMasks != null)
-                        {
-                            // Check if there's a name defined for this value
-                            for (int i = 0; i < m_UserChoicesMasks.Count; i++)
-                            {
-                                var itemMask = m_UserChoicesMasks[i];
-                                if (itemMask == itemIndex)
-                                {
-                                    var index = i + s_TotalIndex;
-                                    newValueToShowUser = m_Choices[index];
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (string.IsNullOrEmpty(newValueToShowUser))
-                        {
-                            newValueToShowUser = GetMixedString();
-                        }
-                    }
-                    break;
-            }
-            return newValueToShowUser;
+            return MaskFieldUtilities.GetDisplayedValue(itemIndex, m_Choices, m_UserChoicesMasks, s_TotalIndex, GetMixedString);
         }
 
         string GetMixedString()
@@ -325,10 +212,10 @@ namespace UnityEngine.UIElements
             }
 
             var mixedString = sb.ToString();
-            var minSize = textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
 
-            // If text doesn't fit, we use "Mixed..."
-            if (float.IsNaN(textElement.resolvedStyle.width) || minSize.x > textElement.resolvedStyle.width)
+            // Off-panel elements must not be measured; fall back to the compact label until laid out.
+            if (textElement.panel == null || float.IsNaN(textElement.resolvedStyle.width)
+                || textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).x > textElement.resolvedStyle.width)
             {
                 mixedString = s_MixedLabel;
             }
@@ -401,21 +288,7 @@ namespace UnityEngine.UIElements
         // This is returning ~0 if all the values are selected...
         private protected virtual int UpdateMaskIfEverything(int currentMask)
         {
-            var newMask = currentMask;
-            // If the mask is full, put back the Everything flag.
-            if (m_FullChoiceMask != 0)
-            {
-                if ((currentMask & m_FullChoiceMask) == m_FullChoiceMask)
-                {
-                    newMask = ~0;
-                }
-                else
-                {
-                    newMask &= m_FullChoiceMask;
-                }
-            }
-
-            return newMask;
+            return MaskFieldUtilities.UpdateMaskIfEverything(currentMask, m_FullChoiceMask);
         }
 
         internal void ChangeValueFromMenu(string menuItem)
@@ -457,40 +330,9 @@ namespace UnityEngine.UIElements
             UpdateMenuItems();
         }
 
-        // Returns the mask to be used for the item...
         int GetMaskValueOfItem(string item)
         {
-            int maskValue;
-            var indexOfItem = m_Choices.IndexOf(item);
-            switch (indexOfItem)
-            {
-                case 0: // Nothing
-                    maskValue = 0;
-                    break;
-                case 1: // Everything
-                    maskValue = ~0;
-                    break;
-                default: // All others
-                    if (indexOfItem > 0)
-                    {
-                        if ((m_UserChoicesMasks != null) && (m_UserChoicesMasks.Count == m_UserChoices.Count))
-                        {
-                            maskValue = m_UserChoicesMasks[(indexOfItem - s_TotalIndex)];
-                        }
-                        else
-                        {
-                            maskValue = 1 << (indexOfItem - s_TotalIndex);
-                        }
-                    }
-                    else
-                    {
-                        // If less than 0, it means the item was not found...
-                        maskValue = 0;
-                    }
-
-                    break;
-            }
-            return maskValue;
+            return MaskFieldUtilities.GetMaskValueOfItem(item, m_Choices, m_UserChoices, m_UserChoicesMasks, s_TotalIndex);
         }
     }
 

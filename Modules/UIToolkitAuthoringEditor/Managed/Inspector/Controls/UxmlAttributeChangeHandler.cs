@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -105,9 +104,13 @@ class UxmlAttributeChangeHandler
                             // Convert the value to an enum if needed as enums are stored as ints in the serialized data but we want to set them as enums on the attribute description.
                             value = Enum.ToObject(syncPathResults.attributeDescription.type, value);
                         }
-                        else if (syncPathResults.attributeDescription.isList && value is not IList && syncPathResults.attributeDescription is not UxmlSerializedUxmlObjectAttributeDescription)
+                        // If we are editing a sub-field of a composite value (like Rect.x) or an element of a list,
+                        // the attribute description will be for the full value, not the sub-value we are editing.
+                        // In those cases, we need to get the full value from the serialized data to properly validate it against the attribute description's type.
+                        else if (syncPathResults.attributeDescription is not UxmlSerializedUxmlObjectAttributeDescription
+                                 && syncPathResults.attributeDescription.type == syncPathResults.attributeDescription.serializedField.FieldType
+                                 && !syncPathResults.attributeDescription.type.IsInstanceOfType(value))
                         {
-                            // For list elements, property.boxedValue is just the edited item, but we need the full list.
                             value = syncPathResults.attributeDescription.GetSerializedValue(serializedData);
                         }
                     }

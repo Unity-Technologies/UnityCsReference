@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -23,9 +24,11 @@ namespace UnityEngine.WSA
 
     [NativeHeader("PlatformDependent/MetroPlayer/Bindings/WSAApplication.bindings.h")]
     [StaticAccessor("WSAApplicationBindings", StaticAccessorType.DoubleColon)]
-    public sealed class Application
+    public sealed partial class Application
     {
+        [AutoStaticsCleanupOnCodeReload]
         public static event WindowSizeChanged windowSizeChanged;
+        [AutoStaticsCleanupOnCodeReload]
         public static event WindowActivated windowActivated;
 
         public static string arguments

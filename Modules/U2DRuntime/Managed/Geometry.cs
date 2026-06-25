@@ -31,6 +31,8 @@ namespace UnityEngine.U2D.Runtime
             public int      smoothenIterations;
         }
 
+        // TODO: The module needs to depend on the Burst module for this to work.
+        //Unity.Burst.BurstCompile]
         [RequiredByNativeCode]
         internal static int Generate(ref GenerateParams _params)
         {

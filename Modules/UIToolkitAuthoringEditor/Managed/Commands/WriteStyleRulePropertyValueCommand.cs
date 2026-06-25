@@ -44,7 +44,7 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
     public T Value { get; private set; }
 
     public override string UndoName => CommandUndoName;
-    public override CommandCategory Category => CommandCategory.Styling;
+    public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
 
     protected override void Init()
     {

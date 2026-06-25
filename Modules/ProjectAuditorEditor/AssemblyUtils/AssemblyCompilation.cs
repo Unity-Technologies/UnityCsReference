@@ -268,6 +268,25 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         void PrepareAssemblyBuilders(IReadOnlyCollection<Assembly> assemblies, IProgress progress, AsyncProgressState progressState)
         {
             m_AssemblyCompilationTasks = new Dictionary<string, AssemblyCompilationTask>();
+
+            // Turn on the AutoStaticsCleanup analyzer
+            string globalConfigPath = string.Empty;
+            if (UserPreferences.UseRoslynAnalyzers)
+            {
+                globalConfigPath = Path.Combine(m_OutputFolder, "Default.globalconfig");
+                File.WriteAllText(globalConfigPath,
+                    "is_global = true\n" +
+                    "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
+                    // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
+                    // default Error severity, so that referenced assemblies still compile and dependent
+                    // assemblies don't cascade into CS0006 (missing metadata) failures.
+                    "dotnet_diagnostic.UAL0010.severity = warning\n" +
+                    "dotnet_diagnostic.UAL0011.severity = warning\n" +
+                    "dotnet_diagnostic.UAL0012.severity = warning\n" +
+                    "dotnet_diagnostic.UAL0013.severity = warning\n" +
+                    "dotnet_diagnostic.UAL0014.severity = warning");
+            }
+
             // first pass: create all compilation tasks
             foreach (var assembly in assemblies)
             {
@@ -285,7 +304,8 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
                     ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel,
                     CodeOptimization = CodeOptimization == CodeOptimization.Release ? UnityEditor.Compilation.CodeOptimization.Release : UnityEditor.Compilation.CodeOptimization.Debug, // assembly.compilerOptions.CodeOptimization,
-                    RoslynAnalyzerDllPaths = RoslynAnalyzers ?? Array.Empty<string>()
+                    RoslynAnalyzerDllPaths = RoslynAnalyzers ?? Array.Empty<string>(),
+                    AnalyzerConfigPath = globalConfigPath
                 };
 
                 // add asmdef-specific defines

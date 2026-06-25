@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
@@ -36,7 +37,8 @@ namespace Unity.Hierarchy.Editor
         static readonly UniqueStyleString k_GameObjectDisabledUssClass = new("unity-disabled");
         static readonly UniqueStyleString k_GameObjectDefaultParentUssClass = new("hierarchy-item__gameobject-default-parent");
 
-        static HashSet<string> k_SpecialTypes = new HashSet<string>(new [] { "prefab" });
+        [NoAutoStaticsCleanup] // constant lookup set for search filter special-case names
+        static readonly HashSet<string> k_SpecialTypes = new HashSet<string>(new [] { "prefab" });
 
         internal new static class BindingsMarshaller
         {
@@ -44,6 +46,7 @@ namespace Unity.Hierarchy.Editor
         }
 
         HierarchyNodeType m_NodeType;
+        HierarchyNodeType m_SubSceneNodeType;
         ParsedQuery<GameObject> m_ParsedQuery;
         SearchMonitorView m_SearchMonitorView;
         Transform m_CustomParentForNewGameObjects;
@@ -127,6 +130,14 @@ namespace Unity.Hierarchy.Editor
                 m_NodeType = new HierarchyNodeType(GetStaticNodeType());
 
             return m_NodeType;
+        }
+
+        HierarchyNodeType GetSubSceneNodeType()
+        {
+            if (m_SubSceneNodeType == HierarchyNodeType.Null)
+                m_SubSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
+
+            return m_SubSceneNodeType;
         }
 
         protected override void OnBindItem(HierarchyViewItem item)
@@ -302,9 +313,10 @@ namespace Unity.Hierarchy.Editor
         {
             var gameObjectNodeType = GetNodeType();
             var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
             var parentNodeType = view.ViewModel.GetNodeType(in parent);
-            return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType || parentNodeType == subSceneNodeType;
+            // SubScene drops are excluded: they need scene loading checks and are handled
+            // by the external drop path (DropOnHierarchyWindow) via OnAcceptDrop.
+            return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType;
         }
 
         bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
@@ -315,7 +327,7 @@ namespace Unity.Hierarchy.Editor
             return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
         }
 
-        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
+        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => CanStartDrag(nodes);
 
         string IHierarchyEditorNodeTypeHandler.GetDragTitle(HierarchyView view, in HierarchyNode node)
         {
@@ -325,27 +337,103 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
         {
-            var nodeSpan = data.Nodes;
-            for (var i = 0; i < nodeSpan.Length; ++i)
+            // DropOnHierarchyWindow processes DragAndDrop.objectReferences in OnStartDrag order,
+            // not in the Hierarchy's selection order. For multi-item drops this can
+            // place dragged GameObjects/SubScenes in the wrong relative order under their new parent.
+            // To work around this, we push the dragged nodes' GameObjects/SubScenes into DragAndDrop.objectReferences
+            // in the correct order here, so DropOnHierarchyWindow gets them right.
+            var gameObjectNodeType = GetNodeType();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneAuthoringHandler>();
+            var subSceneHandler = Hierarchy.GetOrCreateNodeTypeHandler<HierarchySubSceneAuthoringHandler>();
+            foreach (ref readonly var node in data.View.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
             {
-                var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || data.View.ViewModel.GetNodeTypeHandler(in node) != this)
+                if (node == HierarchyNode.Null)
                     continue;
-                var go = GetGameObject(in node);
-                if (go == null)
+
+                EntityId nodeEntityId = EntityId.None;
+                var nodeType = data.View.ViewModel.GetNodeType(in node);
+                if (nodeType == gameObjectNodeType)
+                    nodeEntityId = GetEntityId(in node);
+                else if (nodeType == subSceneNodeType)
+                    nodeEntityId = subSceneHandler.GetEntityId(in node);
+
+                if (nodeEntityId == EntityId.None)
                     continue;
-                data.EntityIds.Add(go.GetEntityId());
+
+                data.EntityIds.Add(nodeEntityId);
             }
         }
 
-        DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data)
         {
-            return DoHandleDrop(data, false);
+            // Only handle in stages where GameObjects exist.
+            if (StageNavigationManager.instance.currentStage is not (MainStage or PrefabStage))
+                return DragVisualMode.None;
+
+            var parent = data.Parent;
+            var view = data.View;
+            var viewModel = data.View.ViewModel;
+
+            // In PrefabStage, reject drops that would place objects as siblings of the prefab root.
+            if (StageNavigationManager.instance.currentStage is PrefabStage prefabStage)
+            {
+                var prefabRootNode = GetOrCreateNode(prefabStage.prefabContentsRoot);
+                if (data.DropPosition == DragAndDropPosition.OutsideItems && parent != prefabRootNode)
+                    parent = prefabRootNode;
+
+                var prefabRootDepth = viewModel.GetDepth(in prefabRootNode);
+                var parentDepth = viewModel.GetDepth(in parent);
+                if (parent != prefabRootNode && parentDepth <= prefabRootDepth)
+                    return DragVisualMode.Rejected;
+            }
+
+            if (parent == HierarchyNode.Null)
+                return DragVisualMode.None;
+
+            ResolveSiblingTarget(data, skipSelected: true, out var target, out var flags);
+
+            if (view.Filtering)
+                flags |= HierarchyDropFlags.SearchActive;
+
+            var targetNodeType = viewModel.GetNodeType(in target);
+            var entityId = GetDropTargetEntityId(in target, in targetNodeType, flags);
+            if (entityId == EntityId.None)
+                return DragVisualMode.None;
+
+            var visualMode = DragAndDrop.DropOnHierarchyWindow(entityId, flags, null, perform: false);
+            return DragAndDropHelpers.ConvertDragAndDropVisualModeToDragVisualMode(visualMode);
         }
 
-        DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data)
+        void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
         {
-            return DoHandleDrop(data, true);
+            var parent = data.Parent;
+            if (parent == HierarchyNode.Null)
+                return;
+
+            var view = data.View;
+            var viewModel = view.ViewModel;
+
+            ResolveSiblingTarget(data, skipSelected: true, out var target, out var flags);
+
+            if (view.Filtering)
+                flags |= HierarchyDropFlags.SearchActive;
+
+            var targetNodeType = viewModel.GetNodeType(in target);
+            var entityId = GetDropTargetEntityId(in target, in targetNodeType, flags);
+            if (entityId == EntityId.None)
+                return;
+
+            DragAndDrop.DropOnHierarchyWindow(entityId, flags, null, perform: true);
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data)
+        {
+            return DoHandleDrop(in data, false);
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data)
+        {
+            return DoHandleDrop(in data, true);
         }
         #endregion
 
@@ -710,42 +798,19 @@ namespace Unity.Hierarchy.Editor
                 return DragAndDropHelpers.ConvertDragAndDropVisualModeToDragVisualMode(visualMode);
             }
 
-            var parent = data.Parent;
-            var target = data.Target;
             var view = data.View;
-            var parentIndex = parent == HierarchyNode.Null ? -1 : view.ViewModel.IndexOf(in parent);
-            var targetIndex = target == HierarchyNode.Null ? -1 : view.ViewModel.IndexOf(in target);
-            option = DragAndDropHelpers.GetDefaultDropFlags(view, in parent, dropPosition, searchActive, data.InsertAtIndex, parentIndex, targetIndex);
 
-            var currentTarget = target;
-            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
+            // Root-level drops aren't supported. This happens when scenes are collapsed, or when a
+            // horizontal drag pushes the parent out to the root.
+            if (data.Parent == HierarchyNode.Null || data.Parent == view.Source.Root)
+                return DragVisualMode.Rejected;
+
+            var isInternalReorder = data.Source == view.ListView;
+            ResolveSiblingTarget(data, skipSelected: isInternalReorder, out var target, out var positionFlags);
+            option = (searchActive ? HierarchyDropFlags.SearchActive : HierarchyDropFlags.None) | positionFlags;
+
             var targetNodeType = view.ViewModel.GetNodeType(in target);
-
-            // When dropping above a scene, we need to update the target and options for the drop handler to work properly.
-            if (target != HierarchyNode.Null && option.HasFlag(HierarchyDropFlags.DropAbove) && targetNodeType == sceneNodeType)
-            {
-                --targetIndex;
-                currentTarget = targetIndex >= 0 ? view.ViewModel[targetIndex] : HierarchyNode.Null;
-                targetNodeType = currentTarget == HierarchyNode.Null ? HierarchyNodeType.Null : view.ViewModel.GetNodeType(in currentTarget);
-
-                option &= ~HierarchyDropFlags.DropAbove;
-
-                if (targetNodeType == sceneNodeType)
-                    option |= HierarchyDropFlags.DropUpon;
-                else
-                    option |= HierarchyDropFlags.DropBetween;
-            }
-
-            // When dropping as first child, we need to update the target and options for the drop handler to work properly.
-            if (target != HierarchyNode.Null && option.HasFlag(HierarchyDropFlags.DropAfterParent) && !option.HasFlag(HierarchyDropFlags.DropAbove))
-            {
-                option |= HierarchyDropFlags.DropAbove;
-                ++targetIndex;
-                currentTarget = targetIndex >= 0 ? view.ViewModel[targetIndex] : HierarchyNode.Null;
-                targetNodeType = currentTarget == HierarchyNode.Null ? HierarchyNodeType.Null : view.ViewModel.GetNodeType(in currentTarget);
-            }
-
-            var entityId = GetDropTargetEntityId(in currentTarget, in targetNodeType, option);
+            var entityId = GetDropTargetEntityId(in target, in targetNodeType, option);
             if (entityId == EntityId.None)
                 return DragVisualMode.None;
 
@@ -761,48 +826,10 @@ namespace Unity.Hierarchy.Editor
                 }
             }
 
+            if (perform && data.Parent != HierarchyNode.Null)
+                SetPendingExternalDrop(data.Parent, data.ChildIndex);
+
             visualMode = DragAndDrop.DropOnHierarchyWindow(entityId, option, null, perform);
-
-            if (perform && visualMode != DragAndDropVisualMode.Rejected && visualMode != DragAndDropVisualMode.None)
-            {
-                // This is specifically to handle the case where we drag and drop existing game objects around. In that case,
-                // we can't rely on the selectionChanged event to trigger the framing, because selection doesn't change.
-                // We also can't rely on the generic framing done after the drop, because it queues an action to be done after all Hierarchy
-                // update during the next HierarchyWindow.Update, which happens BEFORE SceneTracker.FlushDirty so the Hierarchy is not dirty
-                // and we only process the extra actions, which frames the nodes at the old position, not the new one.
-                // Note: this code is not clean, and definitely not the best solution. This is because the HierarchyGameObjectHandler is depending
-                // on the SceneTracker to get notified that something happened. If we had GlobalCallbacks for everything, commands would have already been
-                // queued on the Hierarchy and this would not be an issue.
-                void OnDropNewGameObjectsSelectionChange()
-                {
-                    // Selection changed happened because new game objects were added,
-                    // so FlushDirty triggered before the next Editor update. In that case, no need
-                    // to do extra framing since changing the selection will frame the nodes.
-                    EditorApplication.update -= OnDropExistingGameObjects;
-                    Selection.selectionChanged -= OnDropNewGameObjectsSelectionChange;
-                }
-                void OnDropExistingGameObjects()
-                {
-                    // Editor update happened and there was no selection change, execute the framing.
-                    Selection.selectionChanged -= OnDropNewGameObjectsSelectionChange;
-                    EditorApplication.update -= OnDropExistingGameObjects;
-
-                    if (view?.ViewModel == null)
-                        return;
-
-                    foreach (ref readonly var node in view.ViewModel.EnumerateNodesWithFlags(HierarchyNodeFlags.Selected))
-                    {
-                        if (node == HierarchyNode.Null)
-                            continue;
-
-                        view.Frame(in node);
-                        break;
-                    }
-                }
-
-                Selection.selectionChanged += OnDropNewGameObjectsSelectionChange;
-                EditorApplication.update += OnDropExistingGameObjects;
-            }
 
             return DragAndDropHelpers.ConvertDragAndDropVisualModeToDragVisualMode(visualMode);
         }
@@ -964,6 +991,67 @@ namespace Unity.Hierarchy.Editor
             return DragVisualMode.None;
         }
 
+        // Resolves the framing sibling (or parent fallback) for an insertion point described by
+        // data. For BetweenItems, walks data.Parent's children — skipping selected nodes when
+        // skipSelected is set, and skipping non-droppable types (anything other than GameObject or
+        // SubScene) — to pick the sibling around data.ChildIndex.
+        void ResolveSiblingTarget(in HierarchyViewDragAndDropHandlingData data, bool skipSelected, out HierarchyNode target, out HierarchyDropFlags flags)
+        {
+            if (data.DropPosition == DragAndDropPosition.OverItem)
+            {
+                target = data.Target;
+                flags = HierarchyDropFlags.DropUpon;
+                return;
+            }
+
+            var parent = data.Parent;
+            var childIndex = data.ChildIndex;
+            var viewModel = data.View.ViewModel;
+
+            var goNodeType = GetNodeType();
+            var subSceneNodeType = GetSubSceneNodeType();
+
+            var siblingAbove = HierarchyNode.Null;
+            var siblingBelow = HierarchyNode.Null;
+
+            var currentIndex = 0;
+            foreach (var child in data.View.Source.EnumerateChildren(in parent))
+            {
+                var childType = viewModel.GetNodeType(in child);
+                var isValidTarget = childType == goNodeType || childType == subSceneNodeType;
+
+                if (isValidTarget && !(skipSelected && viewModel.HasFlags(in child, HierarchyNodeFlags.Selected)))
+                {
+                    if (currentIndex < childIndex)
+                        siblingAbove = child;
+                    else if (siblingBelow == HierarchyNode.Null)
+                    {
+                        // Once we've crossed childIndex and found a valid below-sibling, siblingAbove
+                        // can no longer change — no need to walk the rest of the children.
+                        siblingBelow = child;
+                        break;
+                    }
+                }
+                currentIndex++;
+            }
+
+            if (siblingAbove != HierarchyNode.Null)
+            {
+                target = siblingAbove;
+                flags = HierarchyDropFlags.DropBetween;
+            }
+            else if (siblingBelow != HierarchyNode.Null)
+            {
+                target = siblingBelow;
+                flags = HierarchyDropFlags.DropAbove;
+            }
+            else
+            {
+                target = parent;
+                flags = HierarchyDropFlags.DropUpon;
+            }
+        }
+
         [NativeMethod(IsThreadSafe = true)]
         internal static extern GameObject GetGameObjectFromEntityId(EntityId entityId);
 
@@ -972,6 +1060,12 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchyGameObjectHandlerBindings::GetOrCreateNodeFromEntityId", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNode GetOrCreateNodeFromEntityId(EntityId entityId);
+
+        [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true)]
+        extern void SetPendingExternalDrop(HierarchyNode parentNode, int dropIndex);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        extern bool CanStartDrag(ReadOnlySpan<HierarchyNode> nodes);
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

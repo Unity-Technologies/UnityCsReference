@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
-using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine
 {
@@ -41,7 +40,6 @@ namespace UnityEngine
             dimensions = textHandle.preferredSize;
         }
 
-        private static List<(int, TagType, string)> m_TempLinks = new();
         internal static void ConvertGUIStyleToNativeTextGenerationSettings(ref NativeTextGenerationSettings nativeSettings, GUIStyle style, Color textColor, Rect rect, IntPtr textBufferPtr, int textBufferLength)
         {
             nativeSettings.textBufferPtr = textBufferPtr;
@@ -139,29 +137,19 @@ namespace UnityEngine
             nativeSettings.disableAdvancedFontFeatures = true;
 
             nativeSettings.richTextEnabled = style.richText;
-            // We do not parse settings here for IMGUI because it's too expensive to do if we intend on just looking in the cache. Do it right before the generation instead.
-            // PreProcessString
+            nativeSettings.hoveredTag = HoveredTag.UnderlineAllLinks;
+            nativeSettings.pixelsPerPointFixed64 = (int)Math.Round(GUIUtility.pixelsPerPoint * 64.0f);
         }
 
-        private void ParseRichText(ref NativeTextGenerationSettings nativeSettings)
+        private void SyncLinksFromNative()
         {
-            if (!nativeSettings.richTextEnabled)
+            if (textGenerationInfo == IntPtr.Zero)
             {
-                nativeSettings.textSpans = null;
+                m_Links = null;
                 return;
             }
 
-            string text = s_IMGUICurrentText;
-            if (RichTextTagParser.MayNeedParsing(text))
-            {
-                TextSettings textSettings = s_EditorTextSettings;
-
-                CreateTextGenerationSettingsArray(ref nativeSettings, ref text, m_TempLinks, GUIUtility.pixelsPerPoint, textSettings, k_UnderlineAllLinksFlag);
-                m_IMGUITextBuffer.CopyFrom(text);
-                nativeSettings.SetTextBuffer(m_IMGUITextBuffer.buffer, m_IMGUITextBuffer.length);
-            }
-            else
-                nativeSettings.textSpans = null;
+            m_Links = NativeRichTextParser.GetAllLinks(textGenerationInfo);
         }
 
         const int k_MinPadding = 6;
@@ -278,7 +266,6 @@ namespace UnityEngine
 
         static List<List<List<int>>> s_TextElementIndicesByMesh = new();
         static Dictionary<EntityId, HashSet<uint>> s_MissingGlyphsPerFontAsset = new();
-        static List<bool> s_HasMultipleColors = null;
         internal void ComputeMeshInfos(ref MeshInfoBindings[] meshInfos)
         {
             foreach (var listOfAtlases in s_TextElementIndicesByMesh)
@@ -295,7 +282,7 @@ namespace UnityEngine
             {
                 PopulateGlyphs(s_MissingGlyphsPerFontAsset);
             }
-            textLib.ProcessMeshInfos(nativeTextInfo, nativeSettingsIMGUI, ref s_TextElementIndicesByMesh, ref s_HasMultipleColors, false);
+            textLib.ProcessMeshInfos(nativeTextInfo, nativeSettingsIMGUI, ref s_TextElementIndicesByMesh, false);
 
             // Count total number of atlases across all mesh infos
             int totalAtlasCount = 0;
@@ -424,10 +411,9 @@ namespace UnityEngine
         {
             m_IMGUITextBuffer.CopyFrom(s_IMGUICurrentText);
             nativeSettingsIMGUI.SetTextBuffer(m_IMGUITextBuffer.buffer, m_IMGUITextBuffer.length);
-            ParseRichText(ref nativeSettingsIMGUI);
-            m_Links = m_TempLinks;
             FontAsset.CreateHbFaceIfNeeded();
             nativeTextInfo = textLib.GenerateText(nativeSettingsIMGUI, textGenerationInfo, ref isCached);
+            SyncLinksFromNative();
             pixelPreferedSize = new Vector2(nativeTextInfo.totalWidth / 64.0f, nativeTextInfo.totalHeight / 64.0f);
             m_IsElided = nativeTextInfo.isElided;
         }
@@ -448,13 +434,13 @@ namespace UnityEngine
         private bool HasClickedOnLinkATG(Vector2 mousePosition, out string linkData)
         {
             linkData = "";
-            var (id, type, link) = ATGFindIntersectingLink(mousePosition);
-            if (type == TagType.Unknown)
+            var info = ATGFindIntersectingLink(mousePosition);
+            if (info.id == -1)
                 return false;
 
-            if ((type == TagType.Link || type == TagType.Hyperlink) && link != null && link.Length > 0)
+            if (info.value != null && info.value.Length > 0)
             {
-                linkData = new string(link);
+                linkData = new string(info.value);
                 return true;
             }
             return false;
@@ -463,15 +449,15 @@ namespace UnityEngine
         private bool HasClickedOnHREFATG(Vector2 mousePosition, out string href)
         {
             href = "";
-            var (id, type, link) = ATGFindIntersectingLink(mousePosition);
-            if (type == TagType.Unknown)
+            var info = ATGFindIntersectingLink(mousePosition);
+            if (info.id == -1)
                 return false;
 
-            if (type == TagType.Hyperlink)
+            if (info.isHyperlink)
             {
-                if (link != null && link.Length > 0)
+                if (info.value != null && info.value.Length > 0)
                 {
-                    href = link;
+                    href = info.value;
                     if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
                     {
                         return true;

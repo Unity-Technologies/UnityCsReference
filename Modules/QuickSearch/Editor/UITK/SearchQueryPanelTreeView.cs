@@ -219,6 +219,8 @@ namespace UnityEditor.Search
 
             m_TreeView = CreateSearchQueryTreeView();
             Add(m_TreeView);
+
+            UpdateQueriesFilterState(false, false);
         }
 
         public static TreeViewItemData<SearchQueryNodeData> CreateItemData(int itemId, SearchQueryNodeData data, List<TreeViewItemData<SearchQueryNodeData>> children = null)
@@ -266,8 +268,6 @@ namespace UnityEditor.Search
             }
 
             RebuildTreeViewFromAllSources();
-
-            UpdateQueriesFilterState(false, false);
 
             UpdateExpandedState();
             SetActiveQuery(viewState.activeQuery);

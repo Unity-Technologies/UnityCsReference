@@ -8,12 +8,14 @@ using UnityEngine;
 namespace Unity.GraphToolkit.Editor.GraphVisualization;
 
 /// <summary>
-/// A reference to a port in a graph attached to a visualization context.
+/// Identifies a port inside a visualization <see cref="Context"/> so visualization changes can be applied to it.
 /// </summary>
 /// <remarks>
-/// You can get a <see cref="PortReference"/> from a <see cref="Context"/> using the <see cref="Context.GetPortReference"/> method, providing the unique identifier of the port.
-/// Once you have a <see cref="PortReference"/>, you can use its methods to set, retrieve, or clear the port preview for that specific port in the graph canvas.
+/// Obtain a <see cref="PortReference"/> from <see cref="Context.GetPortReference"/>, providing the unique identifier of the port.
+/// The reference is only meaningful for the <see cref="Context"/> that produced it.
+/// You can use its methods to set, retrieve, or clear the port preview for that specific port in the graph canvas.
 /// Port preview is a visualization feature that displays a label next to a port in the graph canvas. This label provides additional information about the port's value or state.
+/// Two <see cref="PortReference"/> values are equal when they share the same <see cref="PortID"/> and refer to the same <see cref="Context"/> instance.
 /// </remarks>
 /// <example>
 /// <code>
@@ -29,12 +31,12 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 public readonly struct PortReference : IEquatable<PortReference>
 {
     /// <summary>
-    /// Unique identifier of the port this reference points to.
+    /// Unique identifier of the port the reference points to.
     /// </summary>
     public Hash128 PortID { get; }
 
     /// <summary>
-    /// Visualization context that produced this reference.
+    /// Visualization context that produced the current port reference.
     /// </summary>
     public Context Context { get; }
 
@@ -110,9 +112,9 @@ public readonly struct PortReference : IEquatable<PortReference>
     }
 
     /// <summary>
-    /// Indicates whether this <see cref="PortReference"/> is equal to another <see cref="PortReference"/>.
+    /// Indicates whether the current <see cref="PortReference"/> is equal to another <see cref="PortReference"/>.
     /// </summary>
-    /// <param name="other">The other <see cref="PortReference"/> to compare with this instance.</param>
+    /// <param name="other">The other <see cref="PortReference"/> to compare with the current instance.</param>
     /// <returns>Returns true when both references share the same <see cref="PortID"/> and refer to the same <see cref="Context"/> instance. Otherwise, returns false.</returns>
     public bool Equals(PortReference other)
     {
@@ -120,26 +122,26 @@ public readonly struct PortReference : IEquatable<PortReference>
     }
 
     /// <summary>
-    /// Indicates whether this <see cref="PortReference"/> is equal to another object.
+    /// Indicates whether the current <see cref="PortReference"/> is equal to another object.
     /// </summary>
-    /// <param name="obj">The object to compare with this <see cref="PortReference"/>.</param>
-    /// <returns>Returns true when <paramref name="obj"/> is a <see cref="PortReference"/> equal to this instance. Otherwise, returns false.</returns>
+    /// <param name="obj">The object to compare with the current <see cref="PortReference"/>.</param>
+    /// <returns>Returns true when <paramref name="obj"/> is a <see cref="PortReference"/> equal to the current instance. Otherwise, returns false.</returns>
     public override bool Equals(object obj)
     {
         return obj is PortReference other && Equals(other);
     }
 
     /// <summary>
-    /// Returns a hash code for this <see cref="PortReference"/>.
+    /// Returns a hash code for the current <see cref="PortReference"/>.
     /// </summary>
-    /// <returns>A hash code derived from the <see cref="PortID"/> and <see cref="Context"/> of this reference.</returns>
+    /// <returns>A hash code derived from the <see cref="PortID"/> and <see cref="Context"/> of the current reference.</returns>
     public override int GetHashCode()
     {
         return HashCode.Combine(PortID, Context);
     }
 
     /// <summary>
-    /// Indicates whether two <see cref="PortReference"/> values are equal.
+    /// Compares two <see cref="PortReference"/> values for equality.
     /// </summary>
     /// <param name="left">The first <see cref="PortReference"/> to compare.</param>
     /// <param name="right">The second <see cref="PortReference"/> to compare.</param>
@@ -147,7 +149,7 @@ public readonly struct PortReference : IEquatable<PortReference>
     public static bool operator ==(PortReference left, PortReference right) => left.Equals(right);
 
     /// <summary>
-    /// Indicates whether two <see cref="PortReference"/> values are not equal.
+    /// Compares two <see cref="PortReference"/> values for inequality.
     /// </summary>
     /// <param name="left">The first <see cref="PortReference"/> to compare.</param>
     /// <param name="right">The second <see cref="PortReference"/> to compare.</param>

@@ -91,9 +91,9 @@ namespace UnityEditor
     [Serializable]
     internal class AssetLoadingProfilerView : LoadingProfilerViewBase
     {
-        static ProfilerMarker s_PullData = new ProfilerMarker("AssetLoadingProfiler.PullData");
-        static ProfilerMarker s_GetMarkerIDs = new ProfilerMarker("AssetLoadingProfiler.GetMarkerIDs");
-        static ProfilerMarker s_AddNewMarker = new ProfilerMarker("AssetLoadingProfiler.AddNewMarkerToList");
+        static readonly ProfilerMarker s_PullData = new ProfilerMarker("AssetLoadingProfiler.PullData");
+        static readonly ProfilerMarker s_GetMarkerIDs = new ProfilerMarker("AssetLoadingProfiler.GetMarkerIDs");
+        static readonly ProfilerMarker s_AddNewMarker = new ProfilerMarker("AssetLoadingProfiler.AddNewMarkerToList");
 
         private AssetCaptureData m_CaptureData;
 

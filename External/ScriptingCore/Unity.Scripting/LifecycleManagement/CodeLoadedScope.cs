@@ -1,5 +1,5 @@
 using System.Runtime.CompilerServices;
-using UnityEngine.Scripting;
+using PreserveAttribute = Unity.Private.Scripting.PreserveAttribute;
 
 [assembly: InternalsVisibleTo("Unity.ScriptingTests.CodeLoadedGeneration")]
 [assembly: InternalsVisibleTo("DomainReload-editor")]

@@ -37,7 +37,7 @@ namespace Unity.Multiplayer.PlayMode
     {
         static CurrentPlayerApi s_CurrentPlayerApi;
 
-        private static void EnsureInitialized()
+        internal static void EnsureInitialized()
         {
             if (s_CurrentPlayerApi != null)
                 return;
@@ -50,6 +50,12 @@ namespace Unity.Multiplayer.PlayMode
             var editorApiType = Type.GetType("Unity.Multiplayer.PlayMode.Editor.CurrentPlayerEditor, UnityEditor.MultiplayerModule");
             Assert.IsNotNull(editorApiType, "CurrentPlayerEditor API type not found");
             s_CurrentPlayerApi = (CurrentPlayerApi)Activator.CreateInstance(editorApiType);
+        }
+
+        internal static CurrentPlayerApi ApiInstance
+        {
+            get => s_CurrentPlayerApi;
+            set => s_CurrentPlayerApi = value;
         }
 
         /// <summary>

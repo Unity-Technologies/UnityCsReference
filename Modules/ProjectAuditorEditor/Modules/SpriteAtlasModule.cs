@@ -29,7 +29,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
     class SpriteModule : ModuleWithAnalyzers<SpriteAtlasModuleAnalyzer>
     {
-        static readonly string k_Unavailable = "Unavailable";
+        const string k_Unavailable = "Unavailable";
 
         static readonly IssueLayout k_SpriteAtlasLayout = new IssueLayout
         {

@@ -1700,7 +1700,13 @@ namespace UnityEngine.UIElements
         private void DoSelect(Vector2 localPosition, int mouseButton, int clickCount, bool actionKey, bool shiftKey)
         {
             var clickedIndex = virtualizationController.GetIndexFromPosition(localPosition);
-            var effectiveClickCount = (m_Selection.indexCount > 0 && m_Selection.FirstIndex() != clickedIndex) ? 1 : (clickCount > 2) ? 2 : clickCount;
+            // A modifier (toggle/range) click is never a double-click; ignore the accumulated platform clickCount here (UUM-143665).
+            var isMultiSelectModifier = selectionType == SelectionType.Multiple && (actionKey || shiftKey);
+            var effectiveClickCount = 1;
+            if (!isMultiSelectModifier && (m_Selection.indexCount == 0 || m_Selection.FirstIndex() == clickedIndex))
+            {
+                effectiveClickCount = clickCount > 2 ? 2 : clickCount;
+            }
             if (clickedIndex > viewController.itemsSource.Count - 1)
                 return;
 

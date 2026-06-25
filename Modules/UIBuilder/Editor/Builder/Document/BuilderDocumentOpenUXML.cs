@@ -298,6 +298,8 @@ namespace Unity.UI.Builder
 
         bool m_IsLoadQueued;
 
+        public bool isLoadQueued { get => m_IsLoadQueued; internal set => m_IsLoadQueued = value; }
+
         //
         // Initialize / Construct / Enable / Clear
         //
@@ -739,7 +741,10 @@ namespace Unity.UI.Builder
 
             m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             m_VisualTreeAsset = visualTreeAsset;
-            m_VisualTreeAssetRef = visualTreeAsset;
+
+            // LazyLoadReference rejects non-persistent targets; such as an unsaved/in-memory document. (UUM-142891)
+            m_VisualTreeAssetRef = EditorUtility.IsPersistent(visualTreeAsset) ? visualTreeAsset : null;
+
             m_ContentHash = m_VisualTreeAsset.contentHash;
 
             PostLoadDocumentStyleSheetCleanup();

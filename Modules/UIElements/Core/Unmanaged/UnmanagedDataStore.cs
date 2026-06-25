@@ -32,129 +32,8 @@ struct UnmanagedComponentType
 /// not handle any sort of type index mapping. Each component is identified by it's array index specified at creation time.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-unsafe partial struct UnmanagedDataStore : IDisposable
+unsafe struct UnmanagedDataStore : IDisposable
 {
-    const int k_ChunkSize = 32 * 1024; // 32 kb
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct Chunk
-    {
-        [NativeDisableUnsafePtrRestriction] public byte* Buffer;
-    }
-
-    /// <summary>
-    /// The <see cref="ComponentDataStore"/> stores a contiguous array of one specific component where the <see cref="UnmanagedDataHandle.Index"/> maps to the data for that node.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct ComponentDataStore : IDisposable
-    {
-        /// <summary>
-        /// The label to use for the chunk storage.
-        /// </summary>
-        public readonly MemoryLabel MemoryLabel;
-
-        /// <summary>
-        /// The size of the component.
-        /// </summary>
-        public int Size;
-
-        /// <summary>
-        /// The alignment of the component.
-        /// </summary>
-        public int Align;
-
-        /// <summary>
-        /// The number of elements per chunk.
-        /// </summary>
-        public int ComponentCountPerChunk;
-
-        /// <summary>
-        /// The number of allocated chunks.
-        /// </summary>
-        public int ChunkCount;
-
-        /// <summary>
-        /// The component data ptr.
-        /// </summary>
-        [NativeDisableUnsafePtrRestriction] Chunk* m_Chunks;
-
-        /// <summary>
-        /// The component data ptr.
-        /// </summary>
-        [NativeDisableUnsafePtrRestriction] public byte* InitialData;
-
-        public ComponentDataStore(int size, int align, MemoryLabel allocLabel, byte* initialData)
-        {
-            Size = size;
-            Align = align;
-            ComponentCountPerChunk = k_ChunkSize / size;
-            ChunkCount = 0;
-            MemoryLabel = allocLabel;
-            m_Chunks = null;
-            InitialData = (byte*)UnsafeUtility.Malloc(size, align, MemoryLabel);
-            UnsafeUtility.MemCpy(InitialData, initialData, size);
-        }
-
-        public void Dispose()
-        {
-            if (m_Chunks != null)
-            {
-                for (var i = 0; i < ChunkCount; i++)
-                    UnsafeUtility.Free(m_Chunks[i].Buffer, MemoryLabel);
-
-                UnsafeUtility.Free(m_Chunks, MemoryLabel);
-                ChunkCount = 0;
-                m_Chunks = null;
-            }
-
-            UnsafeUtility.Free(InitialData, MemoryLabel);
-            InitialData = null;
-        }
-
-        public byte* GetComponentDataPtr(int index)
-        {
-            var chunkIndex = index / ComponentCountPerChunk;
-            var indexInChunk = index % ComponentCountPerChunk;
-
-            return m_Chunks[chunkIndex].Buffer + indexInChunk * Size;
-        }
-
-        public void ResizeCapacity(int capacity)
-        {
-            var newChunkCount = capacity / ComponentCountPerChunk + 1;
-
-            if (newChunkCount > ChunkCount)
-            {
-                // Grow the chunk ptr array.
-                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
-
-                // Allocate new chunks.
-                for (var i = ChunkCount; i < newChunkCount; i++)
-                {
-                    m_Chunks[i] = new Chunk
-                    {
-                        Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, Align, MemoryLabel)
-                    };
-
-                    UnsafeUtility.MemCpyReplicate(m_Chunks[i].Buffer, InitialData, Size, ComponentCountPerChunk);
-                }
-            }
-            else if (newChunkCount < ChunkCount)
-            {
-                // Free up allocated chunks.
-                for (var i = ChunkCount - 1; i >= newChunkCount; i--)
-                {
-                    UnsafeUtility.Free(m_Chunks[i].Buffer, MemoryLabel);
-                }
-
-                // Shrink down the chunk ptr array.
-                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
-            }
-
-            ChunkCount = newChunkCount;
-        }
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     struct Data
     {
@@ -335,5 +214,131 @@ unsafe partial struct UnmanagedDataStore : IDisposable
         Assert.IsTrue(toPtr != null);
 
         return toPtr;
+    }
+}
+
+/// <summary>
+/// The <see cref="ComponentDataStore"/> stores a contiguous array of one specific component where the <see cref="UnmanagedDataHandle.Index"/> maps to the data for that node.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct ComponentDataStore : IDisposable
+{
+    const int k_ChunkSize = 32 * 1024; // 32 kb
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct Chunk
+    {
+        [NativeDisableUnsafePtrRestriction] public byte* Buffer;
+    }
+
+    /// <summary>
+    /// The label to use for the chunk storage.
+    /// </summary>
+    public readonly MemoryLabel MemoryLabel;
+
+    /// <summary>
+    /// The size of the component.
+    /// </summary>
+    public int Size;
+
+    /// <summary>
+    /// The alignment of the component.
+    /// </summary>
+    public int Align;
+
+    /// <summary>
+    /// The number of elements per chunk.
+    /// </summary>
+    public int ComponentCountPerChunk;
+
+    /// <summary>
+    /// The number of allocated chunks.
+    /// </summary>
+    public int ChunkCount;
+
+    /// <summary>
+    /// The component data ptr.
+    /// </summary>
+    [NativeDisableUnsafePtrRestriction] Chunk* m_Chunks;
+
+    /// <summary>
+    /// The component data ptr.
+    /// </summary>
+    [NativeDisableUnsafePtrRestriction] public byte* InitialData;
+
+    /// <summary>
+    /// The current capacity, considering <see cref="ChunkCount"/> and <see cref="ComponentCountPerChunk"/>.
+    /// </summary>
+    public int Capacity => ComponentCountPerChunk * ChunkCount;
+
+    public ComponentDataStore(int size, int align, MemoryLabel allocLabel, byte* initialData)
+    {
+        Size = size;
+        Align = align;
+        ComponentCountPerChunk = k_ChunkSize / size;
+        ChunkCount = 0;
+        MemoryLabel = allocLabel;
+        m_Chunks = null;
+        InitialData = (byte*)UnsafeUtility.Malloc(size, align, MemoryLabel);
+        UnsafeUtility.MemCpy(InitialData, initialData, size);
+    }
+
+    public void Dispose()
+    {
+        if (m_Chunks != null)
+        {
+            for (var i = 0; i < ChunkCount; i++)
+                UnsafeUtility.Free(m_Chunks[i].Buffer, MemoryLabel);
+
+            UnsafeUtility.Free(m_Chunks, MemoryLabel);
+            ChunkCount = 0;
+            m_Chunks = null;
+        }
+
+        UnsafeUtility.Free(InitialData, MemoryLabel);
+        InitialData = null;
+    }
+
+    public byte* GetComponentDataPtr(int index)
+    {
+        var chunkIndex = index / ComponentCountPerChunk;
+        var indexInChunk = index % ComponentCountPerChunk;
+
+        return m_Chunks[chunkIndex].Buffer + indexInChunk * Size;
+    }
+
+    public void ResizeCapacity(int capacity)
+    {
+        var newChunkCount = capacity / ComponentCountPerChunk + 1;
+
+        if (newChunkCount > ChunkCount)
+        {
+            // Grow the chunk ptr array.
+            m_Chunks = (Chunk*)UnsafeUtility.Realloc(m_Chunks, newChunkCount * UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
+
+            // Allocate new chunks.
+            for (var i = ChunkCount; i < newChunkCount; i++)
+            {
+                m_Chunks[i] = new Chunk
+                {
+                    Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, Align, MemoryLabel)
+                };
+
+                UnsafeUtility.MemCpyReplicate(m_Chunks[i].Buffer, InitialData, Size, ComponentCountPerChunk);
+            }
+        }
+        else if (newChunkCount < ChunkCount)
+        {
+            // Free up allocated chunks.
+            for (var i = ChunkCount - 1; i >= newChunkCount; i--)
+            {
+                UnsafeUtility.Free(m_Chunks[i].Buffer, MemoryLabel);
+            }
+
+            // Shrink down the chunk ptr array.
+            m_Chunks = (Chunk*)UnsafeUtility.Realloc(m_Chunks, newChunkCount * UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), MemoryLabel);
+        }
+
+        ChunkCount = newChunkCount;
     }
 }

@@ -480,7 +480,7 @@ namespace UnityEngine.UIElements
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Length startValue)
             {
-                if (startValue == Length.Auto())
+                if (startValue == Length.Auto() || startValue == Length.None())
                     startValue.unit = LengthUnit.Pixel;
 
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue.value);

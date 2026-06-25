@@ -630,8 +630,13 @@ namespace UnityEditor
 
                 GUIContent srcContent = EditorGUIUtility.TempContent(SrcName);
 
-                // draw src Loop
-                int srcLoopCount = srcLoop ? (1 + (int)((transStop - srcRect.xMin) / (srcRect.xMax - srcRect.xMin))) : 1;
+                // Draw src Loop
+                // Calculations are using time values to avoid imprecision when scaling pixel values.
+                float rightThumbTimeOffset = m_TimeArea.PixelToTime(m_RightThumbOffset, r) - m_TimeArea.PixelToTime(r.x, r);
+                int srcLoopCount = srcLoop
+                    ? (1 + (int)((TransitionStopTime + rightThumbTimeOffset - SrcStartTime)
+                                 / (SrcStopTime - SrcStartTime)))
+                    : 1;
                 Rect loopRect = srcRect;
                 if (srcRect.width < 10) // if smaller than 10 pixel, group
                 {
@@ -672,7 +677,14 @@ namespace UnityEditor
 
 
                 GUIContent dstContent = EditorGUIUtility.TempContent(DstName);
-                int dstLoopCount = dstLoop  ? (1 + (int)((transStop - dstRect.xMin) / (dstRect.xMax - dstRect.xMin))) : 1;
+
+                // Draw dst Loop
+                // Calculations are using time values to avoid imprecision when scaling pixel values.
+                float dstTimeOffset = m_TimeArea.PixelToTime(m_DstDragOffset, r) - m_TimeArea.PixelToTime(r.x, r);
+                int dstLoopCount = dstLoop
+                    ? (1 + (int)((TransitionStopTime + rightThumbTimeOffset - DstStartTime - dstTimeOffset)
+                                 / (DstStopTime - DstStartTime)))
+                    : 1;
                 loopRect = dstRect;
                 if (dstRect.width < 10) // if smaller than 10 pixel, group
                 {

@@ -1157,7 +1157,7 @@ namespace Unity.UI.Builder
             var item = new TreeViewItem(id, parent);
             items.Add(item);
 
-            var childItems = GetTreeItemsFromVisualTree(parent, usedIds, ref nextId);
+            var childItems = GetTreeItemsFromVisualTree(parent, usedIds, ref nextId, templatePathHash: 0);
             if (childItems == null)
                 return items;
 
@@ -1166,7 +1166,7 @@ namespace Unity.UI.Builder
             return items;
         }
 
-        IList<TreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, HashSet<int> usedIds, ref int nextId)
+        IList<TreeViewItem> GetTreeItemsFromVisualTree(VisualElement parent, HashSet<int> usedIds, ref int nextId, int templatePathHash = 0)
         {
             List<TreeViewItem> items = null;
 
@@ -1188,7 +1188,7 @@ namespace Unity.UI.Builder
                 var linkedAsset = element.GetVisualElementAsset();
                 if (linkedAsset != null)
                 {
-                    id = linkedAsset.id;
+                    id = templatePathHash != 0 ? HashCode.Combine(templatePathHash, linkedAsset.id) : linkedAsset.id;
                 }
                 else
                 {
@@ -1216,11 +1216,23 @@ namespace Unity.UI.Builder
                     }
                 }
 
+                if (usedIds.Contains(id))
+                {
+                    while (usedIds.Contains(nextId))
+                        nextId++;
+                    id = nextId;
+                    nextId++;
+                }
+
                 usedIds.Add(id);
                 var item = new TreeViewItem(id, element);
                 items.Add(item);
 
-                var childItems = GetTreeItemsFromVisualTree(element, usedIds, ref nextId);
+                var childTemplatePathHash = element is TemplateContainer && linkedAsset != null
+                    ? HashCode.Combine(templatePathHash, linkedAsset.id)
+                    : templatePathHash;
+
+                var childItems = GetTreeItemsFromVisualTree(element, usedIds, ref nextId, childTemplatePathHash);
                 if (childItems == null)
                     continue;
 

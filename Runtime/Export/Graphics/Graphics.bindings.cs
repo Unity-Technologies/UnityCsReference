@@ -394,6 +394,19 @@ namespace UnityEngine
             get { return GetMSAASamples(); }
         }
 
+        [NativeName("GetCurrentBackbufferMSAASamples")]
+        extern private static int GetCurrentBackbufferMSAASamplesInternal();
+
+        // MSAA sample count the backbuffer is ready to use this frame.
+        // Use this (not msaaSamples) when setting up render passes that
+        // target the backbuffer, so intermediate MSAA attachments match.
+        // May temporarily return 1 after an MSAA count change while the
+        // backend applies it.
+        public static int currentBackbufferMSAASamples
+        {
+            get { return GetCurrentBackbufferMSAASamplesInternal(); }
+        }
+
         public static Vector2Int mainWindowPosition
         {
             get
@@ -494,6 +507,11 @@ namespace UnityEngine
         public static int msaaSamples
         {
             get { return ShimManager.screenShim.msaaSamples; }
+        }
+
+        public static int currentBackbufferMSAASamples
+        {
+            get { return ShimManager.screenShim.currentBackbufferMSAASamples; }
         }
 
         public static bool fullScreen
@@ -1164,9 +1182,10 @@ namespace UnityEngine
         
         internal Tetrahedron[] tetrahedra { get; set; }
     }
-    
+
     // Stores light probes for the scene.
     [StructLayout(LayoutKind.Sequential)]
+    [UnityEngine.Scripting.RequiresEngineModule("Tetgen")]
     [NativeHeader("Runtime/Export/Graphics/Graphics.bindings.h")]
     public sealed partial class LightProbes : Object
     {
@@ -1184,24 +1203,21 @@ namespace UnityEngine
         extern static void Internal_Create([Writable] LightProbes self);
 
         public static event Action lightProbesUpdated;
-        [RequiredByNativeCode]
-        private static void Internal_CallLightProbesUpdatedFunction()
+        internal static void Internal_CallLightProbesUpdatedFunction()
         {
             if (lightProbesUpdated != null)
                 lightProbesUpdated();
         }
 
         public static event Action tetrahedralizationCompleted;
-        [RequiredByNativeCode]
-        private static void Internal_CallTetrahedralizationCompletedFunction()
+        internal static void Internal_CallTetrahedralizationCompletedFunction()
         {
             if (tetrahedralizationCompleted != null)
                 tetrahedralizationCompleted();
         }
 
         public static event Action needsRetetrahedralization;
-        [RequiredByNativeCode]
-        private static void Internal_CallNeedsRetetrahedralizationFunction()
+        internal static void Internal_CallNeedsRetetrahedralizationFunction()
         {
             if (needsRetetrahedralization != null)
                 needsRetetrahedralization();
@@ -1377,6 +1393,28 @@ namespace UnityEngine
         [FreeFunction]
         [NativeName("GetLightProbeCount")]
         internal static extern int GetCount();
+    }
+
+    [NativeHeader("Runtime/Export/Graphics/Graphics.bindings.h")]
+    static class LightProbesNative
+    {
+        [RequiredByNativeCode]
+        public static void Internal_CallLightProbesUpdatedFunction()
+        {
+            LightProbes.Internal_CallLightProbesUpdatedFunction();
+        }
+
+        [RequiredByNativeCode]
+        public static void Internal_CallTetrahedralizationCompletedFunction()
+        {
+            LightProbes.Internal_CallTetrahedralizationCompletedFunction();
+        }
+
+        [RequiredByNativeCode]
+        public static void Internal_CallNeedsRetetrahedralizationFunction()
+        {
+            LightProbes.Internal_CallNeedsRetetrahedralizationFunction();
+        }
     }
 }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -123,6 +124,7 @@ namespace Unity.Profiling.Editor.UI
                 EditorApplication.update -= MoveNext;
         }
 
+        [NoAutoStaticsCleanup] // scratch buffer cleared between uses, no persistent user state
         static Stack<IEnumerator> kIEnumeratorProcessingStack = new Stack<IEnumerator>(32);
         private bool ProcessIEnumeratorRecursive(IEnumerator enumerator)
         {

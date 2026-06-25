@@ -179,15 +179,10 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
         }
     }
 
-    DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data)
-    {
-        return HandleDrop(in data, performDrop: false);
-    }
-
-    DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data)
-    {
-        return HandleDrop(in data, performDrop: true);
-    }
+    DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+    void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data) { }
+    DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
+    DragVisualMode IHierarchyEditorNodeTypeHandler.OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
 
     DragVisualMode HandleDrop(in HierarchyViewDragAndDropHandlingData data, bool performDrop)
     {
@@ -477,10 +472,16 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
         if (string.CompareOrdinal(currentName, name) == 0)
             return true;
 
-        var selectorStrings = name.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        var selectorStrings = StyleSheetExtensions.SplitSelectors(name);
+        if (selectorStrings.Length == 0)
+        {
+            CommandList.SetDirty();
+            return false;
+        }
+
         foreach (var selectorString in selectorStrings)
         {
-            if (StyleSheetExtensions.ValidateSelector(selectorString, out var error))
+            if (StyleSheetExtensions.ValidateStyleRule(selectorString, out var error))
                 continue;
 
             Debug.LogError( $"Invalid selector string '{selectorString}': {error}.");

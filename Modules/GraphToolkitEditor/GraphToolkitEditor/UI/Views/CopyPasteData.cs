@@ -521,7 +521,7 @@ namespace Unity.GraphToolkit.Editor
                 selectionStateUpdater?.SelectElements(createdGroups, true);
             }
 
-            if (copyPasteData.m_VariableDeclarations.Count > 0)
+            if (copyPasteData.m_VariableDeclarations is { Count: > 0 })
             {
                 var variableDeclarationModels = copyPasteData.m_VariableDeclarations;
                 var duplicatedModels = new List<VariableDeclarationModelBase>();
@@ -554,7 +554,7 @@ namespace Unity.GraphToolkit.Editor
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
-            if (copyPasteData.m_ImplicitVariableDeclarations.Count > 0)
+            if (copyPasteData.m_ImplicitVariableDeclarations is { Count: > 0 })
             {
                 var variableDeclarationModels =
                     #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -590,170 +590,198 @@ namespace Unity.GraphToolkit.Editor
             List<WirePortalModel> existingPortalNodes = graphModel.NodeModels.OfType<WirePortalModel>().ToList();
 #pragma warning restore UA2001
 
-            foreach (var originalModel in copyPasteData.m_Nodes)
+            if (copyPasteData.m_Nodes != null)
             {
-                if (!graphModel.CanPasteNode(originalModel))
-                    continue;
-                if (originalModel.NeedsContainer())
-                    continue;
-                if (!graphModel.AllowPortalCreation && originalModel is WirePortalModel)
-                    continue;
-                if (!graphModel.AllowSubgraphCreation && originalModel is SubgraphNodeModel)
-                    continue;
-
-                VariableDeclarationModelBase declarationModel = null;
-                var variableNode = originalModel as VariableNodeModel;
-                if (variableNode != null)
+                foreach (var originalModel in copyPasteData.m_Nodes)
                 {
-                    if (variableNode.VariableDeclarationModel is ExternalVariableDeclarationModelBase nodeVariableDeclarationModel)
+                    if (!graphModel.CanPasteNode(originalModel))
+                        continue;
+                    if (originalModel.NeedsContainer())
+                        continue;
+                    if (!graphModel.AllowPortalCreation && originalModel is WirePortalModel)
+                        continue;
+                    if (!graphModel.AllowSubgraphCreation && originalModel is SubgraphNodeModel)
+                        continue;
+
+                    VariableDeclarationModelBase declarationModel = null;
+                    var variableNode = originalModel as VariableNodeModel;
+                    if (variableNode != null)
                     {
-                        foreach (var variableDeclaration in graphModel.VariableDeclarations)
+                        if (variableNode.VariableDeclarationModel is ExternalVariableDeclarationModelBase
+                            nodeVariableDeclarationModel)
                         {
-                            if (variableDeclaration is ExternalVariableDeclarationModelBase candidate && candidate.RefersToSameVariableAs(nodeVariableDeclarationModel))
+                            foreach (var variableDeclaration in graphModel.VariableDeclarations)
                             {
-                                declarationModel = variableDeclaration;
-                                break;
+                                if (variableDeclaration is ExternalVariableDeclarationModelBase candidate &&
+                                    candidate.RefersToSameVariableAs(nodeVariableDeclarationModel))
+                                {
+                                    declarationModel = variableDeclaration;
+                                    break;
+                                }
                             }
+
+                            if (declarationModel == null)
+                                continue;
                         }
+                        else
+                        {
+                            if (!declarationMapping.TryGetValue(variableNode.VariableDeclarationModel.Guid.ToString(),
+                                    out declarationModel))
+                                continue;
+                            if (!graphModel.CanCreateVariableNode(variableNode.VariableDeclarationModel, graphModel))
+                                continue;
+                        }
+                    }
 
-                        if (declarationModel == null)
-                            continue;
-                    }
-                    else
+                    var pastedNode = graphModel.DuplicateNode(originalModel, delta);
+
+                    if (pastedNode is WirePortalModel portalNodeModel)
                     {
-                        if (!declarationMapping.TryGetValue(variableNode.VariableDeclarationModel.Guid.ToString(), out declarationModel))
-                            continue;
-                        if (!graphModel.CanCreateVariableNode(variableNode.VariableDeclarationModel, graphModel))
-                            continue;
+                        if (portalDeclarations.TryGetValue(portalNodeModel.DeclarationModel.Guid,
+                                out var newDeclaration))
+                        {
+                            portalNodeModel.SetDeclarationModel(newDeclaration);
+                        }
+                        // If the node can not have another portal with the same direction and declaration ( is a data input ) and there is already
+                        // one portal node with the same direction and the same Declaration.
+                        else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() &&
+                                 graphModel.NodeModels.Exists(t => t is WirePortalModel tWirePortalModel &&
+                                                                   tWirePortalModel != pastedNode &&
+                                                                   tWirePortalModel.DeclarationModel.Guid ==
+                                                                   portalNodeModel.DeclarationModel.Guid &&
+                                                                   tWirePortalModel is ISingleOutputPortNodeModel ==
+                                                                   portalNodeModel is ISingleOutputPortNodeModel)
+
+                                 // Or if there is in the pasted node, a node with the opposite direction that share the same declaration
+                                 ||
+                                 (
+                                     copyPasteData.m_Nodes.Exists(t => t is WirePortalModel tWirePortalModel &&
+                                                                       tWirePortalModel.DeclarationModel.Guid ==
+                                                                       portalNodeModel.DeclarationModel.Guid &&
+                                                                       tWirePortalModel is ISingleOutputPortNodeModel !=
+                                                                       portalNodeModel is ISingleOutputPortNodeModel)
+                                 )
+                                )
+                        {
+                            var declaration = graphModel.DuplicatePortal(portalNodeModel.DeclarationModel);
+                            declaration.Title = copyStr + portalNodeModel.Title;
+
+                            portalDeclarations[portalNodeModel.DeclarationModel.Guid] = declaration;
+                            portalNodeModel.SetDeclarationModel(declaration);
+
+                            (declaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                        }
+                        else
+                        {
+                            portalModels.Add(portalNodeModel);
+                        }
                     }
+
+                    if (variableNode != null)
+                    {
+                        ((VariableNodeModel)pastedNode).SetVariableDeclarationModel(declarationModel);
+                    }
+
+                    selectionStateUpdater?.SelectElement(pastedNode, true);
+                    RecurseAddMapping(elementMapping, originalModel, pastedNode);
+
+                    (pastedNode as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
-
-                var pastedNode = graphModel.DuplicateNode(originalModel, delta);
-
-                if (pastedNode is WirePortalModel portalNodeModel)
-                {
-                    if (portalDeclarations.TryGetValue(portalNodeModel.DeclarationModel.Guid, out var newDeclaration))
-                    {
-                        portalNodeModel.SetDeclarationModel(newDeclaration);
-                    }
-                    // If the node can not have another portal with the same direction and declaration ( is a data input ) and there is already
-                    // one portal node with the same direction and the same Declaration.
-                    else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() &&
-                             graphModel.NodeModels.Exists(t => t is WirePortalModel tWirePortalModel &&
-                                 tWirePortalModel != pastedNode &&
-                                 tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
-                                 tWirePortalModel is ISingleOutputPortNodeModel == portalNodeModel is ISingleOutputPortNodeModel)
-
-                             // Or if there is in the pasted node, a node with the opposite direction that share the same declaration
-                             ||
-                             (
-                                 copyPasteData.m_Nodes.Exists(t => t is WirePortalModel tWirePortalModel &&
-                                     tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
-                                     tWirePortalModel is ISingleOutputPortNodeModel != portalNodeModel is ISingleOutputPortNodeModel)
-                             )
-                    )
-                    {
-                        var declaration = graphModel.DuplicatePortal(portalNodeModel.DeclarationModel);
-                        declaration.Title = copyStr + portalNodeModel.Title;
-
-                        portalDeclarations[portalNodeModel.DeclarationModel.Guid] = declaration;
-                        portalNodeModel.SetDeclarationModel(declaration);
-
-                        (declaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
-                    }
-                    else
-                    {
-                        portalModels.Add(portalNodeModel);
-                    }
-                }
-
-                if (variableNode != null)
-                {
-                    ((VariableNodeModel)pastedNode).SetVariableDeclarationModel(declarationModel);
-                }
-
-                selectionStateUpdater?.SelectElement(pastedNode, true);
-                RecurseAddMapping(elementMapping, originalModel, pastedNode);
-
-                (pastedNode as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
 
-            foreach (var portal in portalModels)
+            if (portalModels != null)
             {
-                // The exit was duplicated as well as the entry, link them.
-                if (portalDeclarations.TryGetValue(portal.DeclarationModel.Guid, out var newDeclaration))
+                foreach (var portal in portalModels)
                 {
-                    portal.SetDeclarationModel(newDeclaration);
-                }
-                else
-                {
-                    // If the exit match an entry still in the graph.
-                    #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var existingEntry = existingPortalNodes.FirstOrDefault(t => t.DeclarationModel.Guid == portal.DeclarationModel.Guid);
-#pragma warning restore UA2001
-                    if (existingEntry != null)
-                        portal.SetDeclarationModel(existingEntry.DeclarationModel);
-                    else // we have an orphan exit. Create a unique declarationModel for it.
+                    // The exit was duplicated as well as the entry, link them.
+                    if (portalDeclarations.TryGetValue(portal.DeclarationModel.Guid, out var newDeclaration))
                     {
-                        var declarationModel = portal.DeclarationModel;
-                        portal.SetDeclarationModel(graphModel.DuplicatePortal(portal.DeclarationModel));
-                        portalDeclarations[declarationModel.Guid] = portal.DeclarationModel;
+                        portal.SetDeclarationModel(newDeclaration);
+                    }
+                    else
+                    {
+                        // If the exit match an entry still in the graph.
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                        var existingEntry = existingPortalNodes.FirstOrDefault(t =>
+                            t.DeclarationModel.Guid == portal.DeclarationModel.Guid);
+#pragma warning restore UA2001
+                        if (existingEntry != null)
+                            portal.SetDeclarationModel(existingEntry.DeclarationModel);
+                        else // we have an orphan exit. Create a unique declarationModel for it.
+                        {
+                            var declarationModel = portal.DeclarationModel;
+                            portal.SetDeclarationModel(graphModel.DuplicatePortal(portal.DeclarationModel));
+                            portalDeclarations[declarationModel.Guid] = portal.DeclarationModel;
 
-                        (portal.DeclarationModel as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                            (portal.DeclarationModel as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                        }
                     }
                 }
             }
 
             // Avoid using sourceWire.FromPort and sourceWire.ToPort since the wire does not have sufficient context
             // to resolve the PortModel from the PortReference (the wire is not in a GraphModel).
-            foreach (var wire in copyPasteData.m_Wires)
+            if (copyPasteData.m_Wires != null)
             {
-                graphModel.TryGetModelFromGuid(wire.ToNodeGuid, out var originalToNode);
-                graphModel.TryGetModelFromGuid(wire.FromNodeGuid, out var originalFromNode);
-                if (!graphModel.AllowPortalCreation && (originalToNode is WirePortalModel || originalFromNode is WirePortalModel))
-                    continue;
-                if (!graphModel.AllowSubgraphCreation && (originalToNode is SubgraphNodeModel || originalFromNode is SubgraphNodeModel))
-                    continue;
-
-                elementMapping.TryGetValue(wire.ToNodeGuid, out var newInput);
-                elementMapping.TryGetValue(wire.FromNodeGuid, out var newOutput);
-
-                var copiedWire = graphModel.DuplicateWire(wire, newInput, newOutput);
-                if (copiedWire != null)
+                foreach (var wire in copyPasteData.m_Wires)
                 {
-                    selectionStateUpdater?.SelectElement(copiedWire, true);
+                    graphModel.TryGetModelFromGuid(wire.ToNodeGuid, out var originalToNode);
+                    graphModel.TryGetModelFromGuid(wire.FromNodeGuid, out var originalFromNode);
+                    if (!graphModel.AllowPortalCreation &&
+                        (originalToNode is WirePortalModel || originalFromNode is WirePortalModel))
+                        continue;
+                    if (!graphModel.AllowSubgraphCreation &&
+                        (originalToNode is SubgraphNodeModel || originalFromNode is SubgraphNodeModel))
+                        continue;
 
-                    // ReSharper disable once SuspiciousTypeConversion.Global
-                    (copiedWire as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                    elementMapping.TryGetValue(wire.ToNodeGuid, out var newInput);
+                    elementMapping.TryGetValue(wire.FromNodeGuid, out var newOutput);
+
+                    var copiedWire = graphModel.DuplicateWire(wire, newInput, newOutput);
+                    if (copiedWire != null)
+                    {
+                        selectionStateUpdater?.SelectElement(copiedWire, true);
+
+                        // ReSharper disable once SuspiciousTypeConversion.Global
+                        (copiedWire as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                    }
                 }
             }
 
-            foreach (var stickyNote in copyPasteData.m_StickyNotes)
+            if (copyPasteData.m_StickyNotes != null)
             {
-                var newPosition = new Rect(stickyNote.PositionAndSize.position + delta, stickyNote.PositionAndSize.size);
-                var pastedStickyNote = graphModel.CreateStickyNote(newPosition);
-                pastedStickyNote.Title = stickyNote.Title;
-                pastedStickyNote.Contents = stickyNote.Contents;
-                pastedStickyNote.Theme = stickyNote.Theme;
-                pastedStickyNote.TextSize = stickyNote.TextSize;
-                selectionStateUpdater?.SelectElement(pastedStickyNote, true);
+                foreach (var stickyNote in copyPasteData.m_StickyNotes)
+                {
+                    var newPosition = new Rect(stickyNote.PositionAndSize.position + delta,
+                        stickyNote.PositionAndSize.size);
+                    var pastedStickyNote = graphModel.CreateStickyNote(newPosition);
+                    pastedStickyNote.Title = stickyNote.Title;
+                    pastedStickyNote.Contents = stickyNote.Contents;
+                    pastedStickyNote.Theme = stickyNote.Theme;
+                    pastedStickyNote.TextSize = stickyNote.TextSize;
+                    selectionStateUpdater?.SelectElement(pastedStickyNote, true);
 
-                // ReSharper disable once SuspiciousTypeConversion.Global
-                (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                    // ReSharper disable once SuspiciousTypeConversion.Global
+                    (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                }
             }
 
             // Keep placemats relative order
-            foreach (var placemat in copyPasteData.m_Placemats)
+            if (copyPasteData.m_Placemats != null)
             {
-                var newPosition = new Rect(placemat.PositionAndSize.position + delta, placemat.PositionAndSize.size);
-                var newTitle = copyStr + placemat.Title;
-                var pastedPlacemat = graphModel.CreatePlacemat(newPosition);
-                PlacematModel.CopyPlacematParameters(placemat, pastedPlacemat);
-                pastedPlacemat.Title = newTitle;
-                selectionStateUpdater?.SelectElement(pastedPlacemat, true);
+                foreach (var placemat in copyPasteData.m_Placemats)
+                {
+                    var newPosition = new Rect(placemat.PositionAndSize.position + delta,
+                        placemat.PositionAndSize.size);
+                    var newTitle = copyStr + placemat.Title;
+                    var pastedPlacemat = graphModel.CreatePlacemat(newPosition);
+                    PlacematModel.CopyPlacematParameters(placemat, pastedPlacemat);
+                    pastedPlacemat.Title = newTitle;
+                    selectionStateUpdater?.SelectElement(pastedPlacemat, true);
 
-                // ReSharper disable once SuspiciousTypeConversion.Global
-                (pastedPlacemat as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                    // ReSharper disable once SuspiciousTypeConversion.Global
+                    (pastedPlacemat as ICopyPasteCallbackReceiver)?.OnAfterPaste();
+                }
             }
 
             return elementMapping;
@@ -765,6 +793,21 @@ namespace Unity.GraphToolkit.Editor
         public void RemoveWires()
         {
             m_Wires.Clear();
+        }
+
+        internal class TestAccess
+        {
+            public readonly CopyPasteData CopyPasteData;
+
+            public TestAccess(CopyPasteData copyPasteData)
+            {
+                CopyPasteData = copyPasteData;
+            }
+
+            public void SetNodes(List<AbstractNodeModel> nodes)
+            {
+                CopyPasteData.m_Nodes = nodes;
+            }
         }
     }
 }

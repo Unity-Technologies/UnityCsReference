@@ -51,6 +51,19 @@ internal sealed class StyleInspectorAnimationRecordingContext
             AnimationRecordingStyleBridge.GetRecordableStylePropertyIds(panelRoot.panelComponent.gameObject));
     }
 
+    // Arms recording for a selected USS rule, but only while the Animation Window drives this rule's
+    // clip. A rule applies at each matched element's root, so it reuses the per-element recordable set.
+    internal static StyleInspectorAnimationRecordingContext TryCreateForRule(StyleRule rule)
+    {
+        if (rule == null || !AnimationMode.InAnimationRecording())
+            return null;
+
+        if (!StyleRuleAnimationContext.TryResolveForRule(rule, out _))
+            return null;
+
+        return new StyleInspectorAnimationRecordingContext(GetPerElementRecordableSet());
+    }
+
     static bool TryCreatePerElementContext(VisualElement element, out StyleInspectorAnimationRecordingContext context)
     {
         context = null;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -223,7 +224,7 @@ namespace Unity.UIToolkit.Editor
             get => m_VariableSheet;
             set
             {
-                if (m_VariableSheet != value)
+                if (!EqualityComparer<StyleSheet>.Default.Equals(m_VariableSheet, value))
                 {
                     m_VariableSheet = value;
                     Notify();

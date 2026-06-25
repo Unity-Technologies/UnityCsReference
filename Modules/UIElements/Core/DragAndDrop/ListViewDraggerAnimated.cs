@@ -32,13 +32,20 @@ namespace UnityEngine.UIElements
             if (!enabled)
                 return base.StartDrag(pointerPosition, modifiers);
 
-            targetView.ClearSelection();
-
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem == null)
             {
                 return new StartDragArgs(string.Empty, DragVisualMode.Rejected, modifiers);
             }
+
+            // Validate before mutating: a rejected drag (e.g. reorderable is false) must not create the
+            // ghost placeholder or pull the row out of layout, or it would be left invisible (UUM-135762).
+            var startDragArgs = dragAndDropController.SetupDragAndDrop(new[] { recycledItem.index }, true);
+            startDragArgs.modifiers = modifiers;
+            if (startDragArgs.visualMode is DragVisualMode.Rejected)
+                return startDragArgs;
+
+            targetView.ClearSelection();
 
             if (targetView.selectionType != SelectionType.None)
             {
@@ -77,9 +84,6 @@ namespace UnityEngine.UIElements
                 if (targetView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight)
                     m_OffsetItem.rootElement.style.height = targetView.fixedItemHeight + m_SelectionHeight;
             }
-
-            var startDragArgs = dragAndDropController.SetupDragAndDrop(new[] { m_Item.index }, true);
-            startDragArgs.modifiers = modifiers;
 
             return startDragArgs;
         }
@@ -185,6 +189,27 @@ namespace UnityEngine.UIElements
             if (m_Item == null)
                 return;
 
+            var droppedItem = m_Item;
+            var dropIndex = m_CurrentIndex;
+
+            RestoreDraggedItem(dropIndex);
+
+            var dragPosition = new DragPosition
+            {
+                recycledItem = droppedItem,
+                insertAtIndex = dropIndex,
+                dropPosition = DragAndDropPosition.BetweenItems
+            };
+
+            var args = MakeDragAndDropArgs(dragPosition, modifiers);
+            dragAndDropController.OnDrop(args);
+            dragAndDrop.AcceptDrag();
+        }
+
+        // Pairs with StartDrag: restores the row's layout and releases the ghost placeholder. Must run
+        // for every started drag, including rejected/cancelled ones, or the row stays invisible (UUM-135762).
+        void RestoreDraggedItem(int dropIndex)
+        {
             // Stop dragging first, to allow the list to refresh properly dragged items.
             isDragging = false;
             m_Item.rootElement.style.translate = StyleKeyword.Initial;
@@ -194,7 +219,7 @@ namespace UnityEngine.UIElements
             m_Item.rootElement.style.height = m_HeightBackup;
             m_Item.rootElement.style.width = m_WidthBackup;
 
-            targetView.virtualizationController.EndDrag(m_CurrentIndex);
+            targetView.virtualizationController.EndDrag(dropIndex);
 
             if (m_OffsetItem != null)
             {
@@ -206,24 +231,16 @@ namespace UnityEngine.UIElements
                     m_OffsetItem.rootElement.style.height = targetView.ResolveItemHeight();
             }
 
-            var dragPosition = new DragPosition
-            {
-                recycledItem = m_Item,
-                insertAtIndex = m_CurrentIndex,
-                dropPosition = DragAndDropPosition.BetweenItems
-            };
-
-            var args = MakeDragAndDropArgs(dragPosition, modifiers);
-            dragAndDropController.OnDrop(args);
-            dragAndDrop.AcceptDrag();
-
             m_Item = null;
             m_OffsetItem = null;
         }
 
         protected override void ClearDragAndDropUI(bool dragCancelled)
         {
-            // Nothing to clear.
+            // A drag that started but never dropped must still release the ghost; OnDrop nulls m_Item, so a
+            // normal drop won't re-enter here. Snap back to the start index since no reorder took place.
+            if (dragCancelled && m_Item != null)
+                RestoreDraggedItem(m_DragStartIndex);
         }
 
         protected override bool TryGetDragPosition(Vector2 pointerPosition, ref DragPosition dragPosition)

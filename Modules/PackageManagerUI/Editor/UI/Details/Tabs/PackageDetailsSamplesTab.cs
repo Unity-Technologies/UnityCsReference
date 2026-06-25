@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -101,8 +100,52 @@ namespace UnityEditor.PackageManager.UI.Internal
                 ? m_PackageDatabase.GetSamples(version.package.uniqueId)
                 : Array.Empty<Sample>();
 
-            UIUtils.SetElementDisplay(samplesErrorInfoBox, m_Version.HasTag(PackageTag.InDevelopment) && m_Samples?.Exists(sample => string.IsNullOrEmpty(sample.displayName)) == true);
+            RefreshSamplesHelpBox();
             RefreshSampleList();
+        }
+
+        private void RefreshSamplesHelpBox()
+        {
+            samplesHelpBoxContainer.Clear();
+            if (m_Version.HasTag(PackageTag.Custom) || m_Version.HasTag(PackageTag.Local))
+            {
+                foreach (var sample in m_Samples ?? Array.Empty<Sample>())
+                {
+                    if (string.IsNullOrEmpty(sample.displayName))
+                    {
+                        var message = string.Format(L10n.Tr("Missing required property 'displayName' for sample at {0}. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                            sample.resolvedPath);
+                        CreateAndAddErrorBox(message);
+                    }
+                    if (string.IsNullOrEmpty(sample.resolvedPath))
+                    {
+                        var message = string.Format(L10n.Tr("Missing required property 'path' for sample '{0}'. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                            sample.displayName);
+                        CreateAndAddErrorBox(message);
+                    }
+                    else if (!m_IOProxy.DirectoryExists(sample.resolvedPath))
+                    {
+                        var message = string.IsNullOrEmpty(sample.displayName)
+                            ? string.Format(L10n.Tr("The folder specified as the 'path' for the sample at '{0}' doesn't exist. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                                sample.resolvedPath)
+                            : string.Format(L10n.Tr("The folder specified as the 'path' for the sample '{0}' doesn't exist. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                            sample.displayName);
+                        CreateAndAddErrorBox(message);
+                    }
+                }
+            }
+            UIUtils.SetElementDisplay(samplesHelpBoxContainer, samplesHelpBoxContainer.childCount > 0);
+        }
+
+        private void CreateAndAddErrorBox(string message)
+        {
+            var helpBox = new ExtendedHelpBox(m_Application)
+            {
+                text = message,
+                tooltip = message,
+                messageType = HelpBoxMessageType.Error
+            };
+            samplesHelpBoxContainer.Add(helpBox);
         }
 
         private void RefreshSampleList()
@@ -168,7 +211,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly VisualElementCache m_Cache;
         private VisualElement samplesContainer => m_Cache.Get<VisualElement>("samplesContainer");
-        private HelpBox samplesErrorInfoBox => m_Cache.Get<HelpBox>("samplesErrorInfoBox");
+        private VisualElement samplesHelpBoxContainer => m_Cache.Get<VisualElement>("samplesHelpBoxContainer");
         private VisualElement viewMoreSamplesContainer => m_Cache.Get<VisualElement>("viewMoreSamplesContainer");
         private Label viewMoreSamplesTitleLabel => m_Cache.Get<Label>("viewMoreSamplesTitleLabel");
         private Label viewMoreSamplesDescriptionLabel => m_Cache.Get<Label>("viewMoreSamplesDescriptionLabel");

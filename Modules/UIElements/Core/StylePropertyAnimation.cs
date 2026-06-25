@@ -31,6 +31,8 @@ namespace UnityEngine.UIElements
         bool Start(StylePropertyId id, BackgroundSize from, BackgroundSize to, int durationMs, int delayMs, Func<float, float> easingCurve);
         bool Start(StylePropertyId id, List<FilterFunction> from, List<FilterFunction> to, int durationMs, int delayMs, Func<float, float> easingCurve);
         bool Start(StylePropertyId id, MaterialDefinition from, MaterialDefinition to, int durationMs, int delayMs, Func<float, float> easingCurve);
+        // Cursor can't be smoothly interpolated (Texture2D reference); transitions step discretely.
+        bool Start(StylePropertyId id, Cursor from, Cursor to, int durationMs, int delayMs, Func<float, float> easingCurve);
 
         bool HasRunningAnimation(StylePropertyId id);
         void UpdateAnimation(StylePropertyId id);
@@ -151,6 +153,11 @@ namespace UnityEngine.UIElements
         }
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, MaterialDefinition from, MaterialDefinition to, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
+        }
+
+        bool IStylePropertyAnimations.Start(StylePropertyId id, Cursor from, Cursor to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
         }

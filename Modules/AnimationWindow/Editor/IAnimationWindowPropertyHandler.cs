@@ -18,6 +18,11 @@ namespace UnityEditorInternal
         // Returns the group name (prefix before the channel suffix), or null if not handled.
         string GetPropertyGroupName(string propertyName);
 
+        // Returns false when this curve has no owning component to name so the Animation Window omits
+        // the component-name prefix from its hierarchy row.
+        // Return true to keep the default behaviour of prefixing with the owning component's type name.
+        bool ShouldPrefixWithTypeName(Type animatableObjectType, string propertyName);
+
         // --- Value field rendering (called inside BeginChangeCheck/EndChangeCheck) ---
         // Renders a custom value control for the given curve.
         // animatableObjectType is the node's component type; handlers should

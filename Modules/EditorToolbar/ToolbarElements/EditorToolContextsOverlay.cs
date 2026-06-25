@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [Overlay(typeof(ISupportsToolsOverlays), k_Id, k_OverlayName,
+    [Overlay(typeof(ISupportsEditorTools), k_Id, k_OverlayName,
         priority = (int)OverlayPriority.ToolContexts,
         group = OverlayAttribute.unityGroup,
         defaultDisplay = false,

@@ -37,20 +37,19 @@ namespace Unity.GraphToolkit.Editor
         const float k_WireTurnRadius = k_WireTurnDiameter * 0.5f;
         const float k_MinWireWidth = 1.75f;
         const float k_MinOpacity = 0.6f;
-        const float k_MinTransparency = 0.5f;
-        const float k_Offset = 0.2f;
+        const float k_Offset = 0.1f;
         const float k_DashLength = 10f;
-        const float k_GapLength = 5f;
+        const float k_GapLength = 7f;
 
         protected WireView m_Wire;
 
         float m_Zoom = 1.0f;
 
-        float m_SegmentOffset = -0.25f;
+        float m_SegmentOffset = -0.3f;
         float m_AnimationSpeed;
         bool m_Animating;
 
-        bool m_IsDashed;
+        bool? m_IsDashed;
 
         /// <summary>
         /// The control points of the wire expressed in the parent <see cref="WireView"/> coordinates.
@@ -166,14 +165,14 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public bool IsDashed
         {
-            get => m_IsDashed;
+            get => m_IsDashed ?? false;
             set
             {
-                if (m_IsDashed != value)
-                {
-                    m_IsDashed = value;
-                    MarkDirtyRepaint();
-                }
+                if (m_IsDashed == value)
+                    return;
+
+                m_IsDashed = value;
+                MarkDirtyRepaint();
             }
         }
 
@@ -244,6 +243,17 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Resets the dashed state override.
+        /// </summary>
+        public void ResetIsDashed()
+        {
+            if (m_IsDashed is null)
+                return;
+            m_IsDashed = null;
+            MarkDirtyRepaint();
+        }
+
+        /// <summary>
         /// Sets the color of the wire.
         /// </summary>
         /// <param name="inputColor">The color of the wire at the input port.</param>
@@ -298,8 +308,8 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             m_SegmentOffset += deltaTime * m_AnimationSpeed;
-            if (m_SegmentOffset > 1.25f)
-                m_SegmentOffset = -0.25f;
+            if (m_SegmentOffset > 1.3f)
+                m_SegmentOffset = -0.3f;
         }
 
         /// <inheritdoc />
@@ -464,10 +474,24 @@ namespace Unity.GraphToolkit.Editor
 
             var painter2D = mgc.painter2D;
 
-            if (m_IsDashed)
-                painter2D.SetDashPattern(k_DashLength, k_GapLength);
+            if (m_IsDashed != null)
+            {
+                if (IsDashed)
+                    painter2D.SetDashPattern(k_DashLength, k_GapLength);
+            }
+            else
+            {
+                if (m_Wire.WireModel.IsDashed)
+                    painter2D.SetDashPattern(k_DashLength, k_GapLength);
+            }
 
-            float width = m_WidthOverridden ? LineWidth : StyleLineWidth;
+
+            float width = StyleLineWidth;
+            if (m_WidthOverridden)
+                width = LineWidth;
+            else if (m_Wire.WireModel.WidthOverride != 0)
+                width = m_Wire.WireModel.WidthOverride;
+
             float alpha = 1.0f;
 
             if (width * Zoom < k_MinWireWidth)
@@ -478,19 +502,22 @@ namespace Unity.GraphToolkit.Editor
                 width = k_MinWireWidth / Zoom;
             }
 
-            alpha *= m_OpacityMultiplier;
+            var opacityMultiplier = m_OpacityMultiplier != 1f
+                ? m_OpacityMultiplier
+                : m_Wire.WireModel.Opacity;
+            alpha *= opacityMultiplier;
 
             m_ColorKeys[0] = new GradientColorKey(outColor, 0);
             m_ColorKeys[1] = new GradientColorKey(inColor, 1);
 
             if (m_Animating)
             {
-                float minTransparency = k_MinTransparency * alpha;
+                float minTransparency = k_MinOpacity * alpha;
                 m_AnimAlphaKeys[0] = new GradientAlphaKey(minTransparency, 0.0f);
-                m_AnimAlphaKeys[1] = new GradientAlphaKey(minTransparency, m_SegmentOffset - k_Offset - 0.0000001f);
+                m_AnimAlphaKeys[1] = new GradientAlphaKey(minTransparency, m_SegmentOffset - k_Offset * 2);
                 m_AnimAlphaKeys[2] = new GradientAlphaKey(alpha, m_SegmentOffset - k_Offset);
                 m_AnimAlphaKeys[3] = new GradientAlphaKey(alpha, m_SegmentOffset + k_Offset);
-                m_AnimAlphaKeys[4] = new GradientAlphaKey(minTransparency, m_SegmentOffset + k_Offset + 0.0000001f);
+                m_AnimAlphaKeys[4] = new GradientAlphaKey(minTransparency, m_SegmentOffset + k_Offset * 2);
                 m_AnimAlphaKeys[5] = new GradientAlphaKey(minTransparency, 1.0f);
 
                 k_Gradient.SetKeys(m_ColorKeys, m_AnimAlphaKeys);

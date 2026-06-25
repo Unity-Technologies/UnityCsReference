@@ -13,19 +13,21 @@ using UnityEngine.UIElements.HierarchyV2;
 namespace Unity.Hierarchy
 {
     [VisibleToOtherModules]
-    sealed class HierarchyViewColumnNavigate : Column
+    sealed partial class HierarchyViewColumnNavigate : Column
     {
         internal const string k_HierarchyNavigateColumnName = "HierarchyViewColumn Navigate";
         static readonly UniqueStyleString k_HierarchyItemRightArrowButton = new("hierarchy-item__right-arrow-button");
         static readonly UniqueStyleString k_HierarchyColumnContextMenuClassName = new("hierarchy-column__context-menu");
+        static readonly UniqueStyleString k_HierarchyColumnContextMenuIconClassName = new("hierarchy-column__context-menu-icon");
 
-        static readonly Length k_ColumnWidth = new(16f, LengthUnit.Pixel);
+        static readonly Length k_ColumnWidth = new(18f, LengthUnit.Pixel);
 
         readonly HierarchyView m_View;
         readonly UnityEngine.Pool.ObjectPool<Button> m_ButtonPool;
         VisualElement m_KebabMenuButton;
 
         // Delegate that editor module can populate to provide editor-style menu
+        [AutoStaticsCleanupOnCodeReload]
         public static Action<VisualElement, MultiColumnLayoutConfiguration> ShowColumnMenuCallback { get; set; }
 
         public HierarchyViewColumnNavigate(HierarchyView view)
@@ -65,17 +67,14 @@ namespace Unity.Hierarchy
 
         VisualElement MakeHeader()
         {
-            m_KebabMenuButton = new VisualElement
-            {
-                tooltip = "Column visibility",
-                style =
-                {
-                    width = k_ColumnWidth,
-                    flexGrow = 1
-                }
-            };
+            m_KebabMenuButton = new VisualElement { tooltip = "Column visibility" };
             m_KebabMenuButton.AddToClassList(k_HierarchyColumnContextMenuClassName);
             m_KebabMenuButton.RegisterCallback<PointerUpEvent>(evt => ShowColumnVisibilityMenu());
+
+            var kebabMenuIcon = new VisualElement();
+            kebabMenuIcon.AddToClassList(k_HierarchyColumnContextMenuIconClassName);
+            kebabMenuIcon.pickingMode = PickingMode.Ignore;
+            m_KebabMenuButton.Add(kebabMenuIcon);
 
             return m_KebabMenuButton;
         }

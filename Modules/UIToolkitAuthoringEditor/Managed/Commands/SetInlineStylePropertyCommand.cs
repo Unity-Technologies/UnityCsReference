@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -18,7 +19,8 @@ internal sealed class SetInlineStylePropertyCommand<T> : Command<SetInlineStyleP
         VisualElement element,
         StylePropertyId stylePropertyId,
         Action<StyleProperty, StyleSheet, T> valueSetter,
-        T value)
+        T value,
+        bool frameUpdate = true)
     {
         var cmd = GetPooled();
         cmd.Source = source;

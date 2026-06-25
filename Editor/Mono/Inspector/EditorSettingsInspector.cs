@@ -126,6 +126,9 @@ namespace UnityEditor
             };
             public static readonly GUIContent numberingHierarchyScheme = EditorGUIUtility.TrTextContent("Game Object Naming");
             public static readonly GUIContent numberingHierarchyDigits = EditorGUIUtility.TrTextContent("Game Object Digits");
+
+            public static readonly GUIContent hierarchy = EditorGUIUtility.TrTextContent("Hierarchy");
+            public static readonly GUIContent useLegacyHierarchy = EditorGUIUtility.TrTextContent("Use Legacy Hierarchy", "Use the legacy Hierarchy window.");
             public static readonly GUIContent numberingProjectSpace = EditorGUIUtility.TrTextContent("Space Before Number in Asset Names");
 
             public static GUIContent referencedClipsExactNaming = EditorGUIUtility.TrTextContent("Exactly Match Referenced Clip Names", "Controls how referenced clips are matched with models that are animated in Legacy mode. If turned on, the model name and the referenced clip names must exactly match. If turned off, only the start of the model name needs to match the referenced clip name. Also controls the behavior of the \"Update referenced clips\" button for models that are animated in Humanoid mode. See the documentation for EditorSettings.referencedClipsExactNaming for more details.");
@@ -563,6 +566,7 @@ namespace UnityEditor
             DoShadersSettings();
             DoEnterPlayModeSettings();
             DoNumberingSchemeSettings();
+            DoHierarchySettings();
             DoEnterInspectorSettings();
             DoBuildProfileSettings();
 
@@ -957,6 +961,18 @@ namespace UnityEditor
         }
 
         EditorSettings.NamingScheme m_PrevGoNamingScheme;
+        private void DoHierarchySettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.hierarchy, EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            bool useLegacyHierarchy = EditorSettings.useLegacyHierarchy;
+            useLegacyHierarchy = EditorGUILayout.Toggle(Content.useLegacyHierarchy, useLegacyHierarchy);
+            if (EditorGUI.EndChangeCheck())
+                EditorSettings.useLegacyHierarchy = useLegacyHierarchy;
+        }
+
         int m_PrevGoNamingDigits = -1;
         string m_GoNamingHelpText;
         static string GetNewName(string name, List<string> names)

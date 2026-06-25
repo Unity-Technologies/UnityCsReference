@@ -34,7 +34,7 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Mono/AssemblyFullName.h")]
+    [NativeHeader("Scripting/Mono/AssemblyFullName.h")]
     [RequiredByNativeCode]
     struct AssemblyVersion
     {
@@ -111,7 +111,7 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Mono/AssemblyFullName.h")]
+    [NativeHeader("Scripting/Mono/AssemblyFullName.h")]
     [RequiredByNativeCode]
     struct AssemblyFullName
     {

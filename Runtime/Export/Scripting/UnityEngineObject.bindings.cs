@@ -169,6 +169,14 @@ namespace UnityEngine
             return this != EntityId.None;
         }
 
+        // Bit layout matches native EntityId (see Modules/NativeKernel/Include/NativeKernel/BaseClasses/EntityID.h):
+        //   [Version:24 | TypeId:12 | Index:28]
+        //   Index:   bits  0–27 (mask 0x0FFFFFFF)
+        //   TypeId:  bits 28–39
+        //   Version: bits 40–63
+        internal uint Index   => (uint)(m_rawData & 0x0FFFFFFFUL);
+        internal uint Version => (uint)((m_rawData >> 40) & 0xFFFFFFUL);
+
 
         [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", true)]
         public bool Equals(int other) => throw new NotImplementedException();
@@ -359,6 +367,11 @@ namespace UnityEngine
 
         [RequiredByNativeCode]
         internal void SetUnityRuntimeErrorString(string errorString) { m_UnityRuntimeErrorString = errorString; }
+
+        // UUM-143556: lets the native game-release writer read back the marker the reference
+        // deserializer stamps on a type-mismatched reference, so it can drop it (write fileID 0).
+        [RequiredByNativeCode]
+        internal string GetUnityRuntimeErrorString() { return m_UnityRuntimeErrorString; }
 
         [RequiredByNativeCode]
         internal void BindNativeObject(System.IntPtr cachedPtr, EntityId v)
@@ -576,7 +589,6 @@ namespace UnityEngine
 
             return obj;
         }
-
 
         // Clones the object /original/ and returns the clone.
         [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]

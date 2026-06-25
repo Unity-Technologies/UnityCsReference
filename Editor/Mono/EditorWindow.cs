@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Linq;
 using System;
 using System.Collections.Generic;
+using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine.Scripting;
@@ -93,6 +94,12 @@ namespace UnityEditor
 
         [NonSerialized]
         bool m_OverlaysInitialized;
+
+        [NonSerialized]
+        bool m_EditorToolsInitialized;
+
+        [NonSerialized]
+        VisualElement m_EditorToolsIMGUIContainer;
 
         private bool m_EnableViewDataPersistence;
 
@@ -1336,6 +1343,59 @@ namespace UnityEditor
             }
         }
 
+        void InitializeEditorTools()
+        {
+            if (this is SceneView)
+                return;
+
+            if (this is ISupportsEditorTools && !m_EditorToolsInitialized)
+            {
+                m_EditorToolsIMGUIContainer = EditorToolUtility.CreateEditorToolsIMGUIContainer(this, OnEditorToolsContainerGUI);
+                rootVisualElement.Add(m_EditorToolsIMGUIContainer);
+                m_EditorToolsInitialized = true;
+            }
+        }
+
+        void OnEditorToolsContainerGUI()
+        {
+            var toolsWindow = (ISupportsEditorTools)this;
+            var handlesCamera = toolsWindow.handlesCamera;
+            if (handlesCamera == null)
+                return;
+
+            var worldBound = m_EditorToolsIMGUIContainer.worldBound;
+            if (worldBound.width <= 0 || worldBound.height <= 0)
+                return;
+
+            var prevPixelRect = handlesCamera.pixelRect;
+            var prevHandlesCamera = Handles.currentCamera;
+            try
+            {
+                var worldBoundInPixels = EditorGUIUtility.PointsToPixels(worldBound);
+                // Adjust pixelRect during Repaint if needed so the handles visual syncs
+                // with their logical position (they get offset when overlays are docked as toolbars).
+                if (Event.current.type == EventType.Repaint)
+                {
+                    handlesCamera.pixelRect = new Rect(worldBoundInPixels.x, Screen.height - worldBoundInPixels.yMax,
+                                                     worldBoundInPixels.width, worldBoundInPixels.height);
+                }
+                else
+                {
+                    handlesCamera.pixelRect = new Rect(0, 0, worldBoundInPixels.width, worldBoundInPixels.height);
+                }
+
+                Handles.SetCamera(handlesCamera);
+
+                EditorToolManager.OnToolGUI(this);
+            }
+            finally
+            {
+                if (handlesCamera != null)
+                    handlesCamera.pixelRect = prevPixelRect;
+                Handles.currentCamera = prevHandlesCamera;
+            }
+        }
+
         void __internalAwake()
         {
             hideFlags = HideFlags.DontSave; // Can't be HideAndDontSave, as that would make scriptable wizard GUI be disabled
@@ -1352,6 +1412,7 @@ namespace UnityEditor
         {
             activeEditorWindows.Add(this);
             InitializeOverlayCanvas();
+            InitializeEditorTools();
         }
 
         void OnDisableINTERNAL()

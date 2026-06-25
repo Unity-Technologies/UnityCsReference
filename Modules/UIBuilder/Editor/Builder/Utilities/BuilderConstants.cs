@@ -221,7 +221,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorEditorExtensionAuthoringActivated = "You can now use Editor-only controls in this document.";
         public static readonly string VariableNotSupportedInInlineStyleMessage = "Setting variables in inline style is not yet supported.";
         public static readonly string VariableDescriptionsCouldNotBeLoadedMessage = "Could not load the variable descriptions file.";
-        public static readonly string NoNameElementAttributes = "A name is required in order to edit attributes.";
+        public static readonly string NoNameElementAttributes = "A name is required in order to override attributes.";
         public static readonly string TransitionWillNotBeVisibleBecauseOfDuration = "In order to be visible, at least one transition on this element should have a duration greater than 0.";
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string FileNotFoundMessage = "File not found";

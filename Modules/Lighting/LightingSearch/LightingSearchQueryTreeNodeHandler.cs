@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
 using UnityEditor.Search;
 using UnityEngine;
@@ -68,6 +69,7 @@ namespace UnityEditor.Lighting.LightingSearch
         static readonly Texture2D s_VolumeIcon = EditorGUIUtility.LoadIcon("Volume Icon");
 
         // Files read from Editor Resources will always be made lowercase, so we match using lowercase keys
+        [NoAutoStaticsCleanup] // static lookup table; icon references are stable across code reload
         static readonly Dictionary<string, Texture2D> s_IconMapping = new()
         {
             { "adaptive probe volumes", s_AdaptiveProbeVolumeIcon },

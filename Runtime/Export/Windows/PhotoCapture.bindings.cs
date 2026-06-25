@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -27,6 +28,7 @@ namespace UnityEngine.Windows.WebCam
     {
         internal IntPtr m_NativePtr;
 
+        [NoAutoStaticsCleanup] // lazy-loaded resolution cache; no user refs
         private static Resolution[] s_SupportedResolutions;
         static readonly long HR_SUCCESS = 0x00000000;
 

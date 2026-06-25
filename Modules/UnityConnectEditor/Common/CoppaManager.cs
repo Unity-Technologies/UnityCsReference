@@ -41,6 +41,7 @@ namespace UnityEditor.Connect
         const string k_CoppaLearnLinkBtnName = "CoppaLearnLinkBtn";
 
         VisualElement m_CoppaContainer;
+        PopupField<string> m_CoppaField;
 
         public ChangeCallback changeCallback { private get; set; }
         public ExceptionCallback exceptionCallback { private get; set; }
@@ -68,7 +69,7 @@ namespace UnityEditor.Connect
             var coppaTemplate = EditorGUIUtility.Load(k_CoppaTemplatePath) as VisualTreeAsset;
             rootVisualElement.Add(coppaTemplate.CloneTree().contentContainer);
             m_CoppaContainer = rootVisualElement.Q(coppaContainerName);
-            var coppaField = BuildPopupField(m_CoppaContainer, k_CoppaFieldName);
+            m_CoppaField = BuildPopupField(m_CoppaContainer, k_CoppaFieldName);
 
             //Setup dashboard link
             var learnMoreClickable = new Clickable(() =>
@@ -78,22 +79,61 @@ namespace UnityEditor.Connect
             m_CoppaContainer.Q(k_CoppaLearnLinkBtnName).AddManipulator(learnMoreClickable);
 
             var originalCoppaValue = UnityConnect.instance.GetProjectInfo().COPPA;
-            var coppaChoicesList = new List<String>() { L10n.Tr(k_No), L10n.Tr(k_Yes) };
-            if (originalCoppaValue == COPPACompliance.COPPAUndefined.ToCoppaCompliance())
-            {
-                coppaChoicesList.Insert(0, L10n.Tr(k_Undefined));
-            }
-            coppaField.choices = coppaChoicesList;
-            SetCoppaFieldValue(originalCoppaValue, coppaField);
+            RefreshCoppaChoices(originalCoppaValue);
+            SetCoppaFieldValue(originalCoppaValue, m_CoppaField);
 
-            coppaField.RegisterValueChangedCallback(evt =>
+            m_CoppaField.RegisterValueChangedCallback(evt =>
             {
                 if (evt.newValue == GetFieldValueForCompliancy(UnityConnect.instance.GetProjectInfo().COPPA.ToCOPPACompliance()))
                 {
                     return;
                 }
-                ApplyCoppaChange(coppaField);
+                ApplyCoppaChange(m_CoppaField);
             });
+
+            UnityConnect.instance.ProjectStateChanged += OnProjectStateChanged;
+            UnityConnect.instance.ProjectRefreshed += OnProjectStateChanged;
+            m_CoppaContainer.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                UnityConnect.instance.ProjectStateChanged -= OnProjectStateChanged;
+                UnityConnect.instance.ProjectRefreshed -= OnProjectStateChanged;
+            });
+        }
+
+        void OnProjectStateChanged(ProjectInfo projectInfo)
+        {
+            if (m_CoppaField == null || m_CoppaContainer?.panel == null)
+            {
+                return;
+            }
+
+            var coppaValue = projectInfo.COPPA;
+            // Refresh choices first, then assert the value. Replacing PopupField.choices
+            // preserves the selected index rather than the value, so a shrinking list
+            // (e.g. [Please select, No, Yes] -> [No, Yes]) can silently flip the displayed
+            // value to a different choice. Setting the value after the choices update
+            // guarantees the field lands on the intended value within the same callback.
+            RefreshCoppaChoices(coppaValue);
+            if (coppaValue != COPPACompliance.COPPAUndefined.ToCoppaCompliance()
+                && m_CoppaField.value != GetFieldValueForCompliancy(coppaValue.ToCOPPACompliance()))
+            {
+                SetCoppaFieldValue(coppaValue, m_CoppaField);
+            }
+        }
+
+        void RefreshCoppaChoices(CoppaCompliance coppaValue)
+        {
+            var coppaChoicesList = new List<String>() { L10n.Tr(k_No), L10n.Tr(k_Yes) };
+            if (coppaValue == COPPACompliance.COPPAUndefined.ToCoppaCompliance())
+            {
+                coppaChoicesList.Insert(0, L10n.Tr(k_Undefined));
+            }
+
+            if (m_CoppaField.choices == null
+                || m_CoppaField.choices.Count != coppaChoicesList.Count)
+            {
+                m_CoppaField.choices = coppaChoicesList;
+            }
         }
 
         void ApplyCoppaChange(PopupField<string> coppaField)

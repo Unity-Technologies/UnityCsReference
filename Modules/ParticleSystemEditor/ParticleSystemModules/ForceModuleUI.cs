@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -25,6 +26,7 @@ namespace UnityEditor
             public GUIContent space = EditorGUIUtility.TrTextContent("Space", "Specifies if the force values are in local space (rotated with the transform) or world space.");
             public string[] spaces = {"Local", "World"};
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
 
         public ForceModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

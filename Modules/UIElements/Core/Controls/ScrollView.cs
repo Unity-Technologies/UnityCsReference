@@ -445,12 +445,32 @@ namespace UnityEngine.UIElements
 
         internal float scrollableWidth
         {
-            get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
+            get
+            {
+                var width = contentContainer.boundingBox.width;
+                if (width > contentContainer.layout.width)
+                {
+                    var padding = contentContainer.resolvedStyle.paddingRight;
+                    if (!float.IsNaN(padding))
+                        width += padding;
+                }
+                return width - contentViewport.layout.width;
+            }
         }
 
         internal float scrollableHeight
         {
-            get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
+            get
+            {
+                var height = contentContainer.boundingBox.height;
+                if (height > contentContainer.layout.height)
+                {
+                    var padding = contentContainer.resolvedStyle.paddingBottom;
+                    if (!float.IsNaN(padding))
+                        height += padding;
+                }
+                return height - contentViewport.layout.height;
+            }
         }
 
         // For inertia: how quickly the scrollView stops from moving after PointerUp.
@@ -1554,7 +1574,17 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse || !m_TouchPointerMoveAllowed)
                 return;
 
-            // UUM-135860: don't allow multiple pointers to drive the scrolling behavior at once
+            // UUM-138133: A native dropdown menu can consume the pointer-up, so the ScrollView never receives a
+            // PointerUp/PointerCancel/PointerCaptureOut to disarm drag-scrolling. If the pointer driving the drag is
+            // no longer pressed, the drag is over: disarm and bail. Gated to the dragging pointer so a secondary
+            // hovering pointer (pressedButtons == 0) can't cancel an ongoing drag (see UUM-135860 below).
+            if (m_TouchDraggingPointerId != PointerId.invalidPointerId && m_TouchDraggingPointerId == evt.pointerId && evt.pressedButtons == 0)
+            {
+                ReleaseScrolling(evt.pointerId, evt.target);
+                return;
+            }
+
+            // UUM-135860: Don't allow multiple pointers to drive the scrolling behavior at once.
             if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 
@@ -1865,7 +1895,10 @@ namespace UnityEngine.UIElements
             var updateContentViewTransform = false;
             var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
-            var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
+            // Keep the vertical wheel for a vertically-scrollable ancestor instead of diverting it to horizontal scrolling (StopScrolling opts out).
+            var remapVerticalWheelToHorizontal = canUseHorizontalScroll && !canUseVerticalScroll &&
+                (nestedInteractionKind == NestedInteractionKind.StopScrolling || !CanAncestorScrollVertically());
+            var horizontalScrollDelta = remapVerticalWheelToHorizontal && Mathf.Abs(evt.delta.y) > Mathf.Abs(evt.delta.x) ? evt.delta.y : evt.delta.x;
 
             if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline)
             {
@@ -1907,6 +1940,17 @@ namespace UnityEngine.UIElements
                 UpdateElasticBehaviour();
                 UpdateContentViewTransform();
             }
+        }
+
+        bool CanAncestorScrollVertically()
+        {
+            for (var p = parent; p != null; p = p.parent)
+            {
+                if (p is ScrollView { mode: not ScrollViewMode.Horizontal, scrollableHeight: > 0 })
+                    return true;
+            }
+
+            return false;
         }
 
         void OnNavigationMove(NavigationMoveEvent evt)

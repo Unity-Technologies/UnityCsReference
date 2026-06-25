@@ -6,7 +6,7 @@ namespace Unity.Profiling.Editor.UI
 {
     readonly struct FrameGCAllocationsModel
     {
-        public static FrameGCAllocationsModel Empty = default;
+        public static readonly FrameGCAllocationsModel Empty = default;
 
         public FrameGCAllocationsModel(int frameIndex, ulong totalCount, long totalSize)
         {

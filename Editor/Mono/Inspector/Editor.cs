@@ -14,6 +14,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using Component = UnityEngine.Component;
 using UnityObject = UnityEngine.Object;
 
@@ -410,7 +411,7 @@ namespace UnityEditor
                 ? editorWindow.dataModeController.dataMode
                 : DataMode.Disabled;
 
-        internal static float kLineHeight = EditorGUI.kSingleLineHeight;
+        internal static readonly float kLineHeight = EditorGUI.kSingleLineHeight;
 
         [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal bool hideInspector = false;
@@ -420,8 +421,10 @@ namespace UnityEditor
         internal const float k_HeaderHeight = 21f;
 
         internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
+        [AutoStaticsCleanupOnCodeReload] // delegate field holding editor icon callbacks
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
 
+        [NoAutoStaticsCleanup] // enabled/disabled within a frame (Dispose pattern), safe to persist
         internal static bool m_AllowMultiObjectAccess = true;
 
         bool m_HasUnsavedChanges = false;
@@ -937,6 +940,7 @@ namespace UnityEditor
             return false;
         }
 
+        [AutoStaticsCleanupOnCodeReload] // event holds user-registered header GUI callbacks
         public static event Action<Editor> finishedDefaultHeaderGUI = null;
 
         // This is the method that should be called from externally e.g. myEditor.DrawHeader ();

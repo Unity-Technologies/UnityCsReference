@@ -632,11 +632,9 @@ namespace UnityEngine.UIElements
         {
             base.SetValueWithoutNotify(newValue);
 
-            // Preemptively set back the placeholder state if we're about to set to an empty string.
-            if (textInputBase.textElement.needsPlaceholderIfTextIsEmpty && string.IsNullOrEmpty(ValueToString(newValue)))
-            {
-                visualInput.AddToClassList(placeholderUssClassNameUnique);
-            }
+            // Set preemptively: derived classes refresh the displayed text after this returns.
+            var showPlaceholder = textInputBase.textElement.needsPlaceholderIfTextIsEmpty && string.IsNullOrEmpty(ValueToString(newValue));
+            visualInput.EnableInClassList(placeholderUssClassNameUnique, showPlaceholder);
         }
 
         /// <summary>
@@ -1029,128 +1027,23 @@ namespace UnityEngine.UIElements
             bool m_ScrollViewWasClamped;
             internal void UpdateScrollOffset(bool isBackspace, bool widthChanged)
             {
-                var selection = textSelection;
-                if (selection.cursorIndex < 0 || (selection.cursorIndex <= 0 && selection.selectIndex <= 0 && scrollOffset == Vector2.zero))
-                    return;
-
-                if (scrollView != null)
-                {
-                    scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width, isBackspace, widthChanged);
-                    scrollView.scrollOffset = scrollOffset;
-
-                    m_ScrollViewWasClamped = scrollOffset.x > scrollView.scrollOffset.x || scrollOffset.y > scrollView.scrollOffset.y;
-                }
-                else
-                {
-                    var t = textElement.resolvedStyle.translate;
-
-                    scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width, isBackspace, widthChanged);
-
-                    t.y = -Mathf.Min(scrollOffset.y, Math.Abs(textElement.contentRect.height - contentRect.height));
-                    t.x = -scrollOffset.x;
-
-                    if (!t.Equals(textElement.resolvedStyle.translate))
-                        textElement.style.translate = t;
-                }
+                TextInputUtilities.UpdateScrollOffset(this, textElement, scrollView, ref scrollOffset,
+                    ref m_ScrollViewWasClamped, ref lastCursorPos, isBackspace, widthChanged);
             }
 
             Vector2 lastCursorPos = Vector2.zero;
-            Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth, bool isBackspace, bool widthChanged)
-            {
-                // Scroll to the beginning when focus is lost (UUM-73005)
-                if (!textElement.hasFocus)
-                    return Vector2.zero;
-
-                var cursorPos = textSelection.cursorPosition;
-                var cursorWidth = textSelection.cursorWidth;
-
-                var newXOffset = xOffset;
-                var newYOffset = yOffset;
-
-                const int leftScrollOffsetPadding = 5;
-                const float epsilon = 0.05f;
-
-                // Related to: UUM-2057
-                // To uncomment once TXT-301 is fixed.
-                // if (isBackspace && xOffset > 0.0f)
-                // {
-                //     newXOffset = xOffset + cursorPos.x - lastCursorPos.x;
-                // }
-
-                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon || m_ScrollViewWasClamped || widthChanged)
-                {
-                    // Update scrollOffset when cursor moves right or when the offset is not needed anymore.
-                    if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth
-                        || xOffset > 0 && widthChanged)
-                    {
-                        var roundedValue = Mathf.Ceil(cursorPos.x + cursorWidth - contentViewportWidth);
-                        newXOffset = Mathf.Max(roundedValue, 0);
-                    }
-                    // Update scrollOffset when cursor moves left.
-                    else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
-                    {
-                        newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
-                    }
-                }
-
-                if (textEdition.multiline && (Math.Abs(lastCursorPos.y - cursorPos.y) > epsilon || m_ScrollViewWasClamped))
-                {
-                    // Update scrollOffset when cursor moves down.
-                    if (cursorPos.y > contentRect.height + yOffset)
-                        newYOffset = cursorPos.y - contentRect.height;
-                    // Update scrollOffset when cursor moves up.
-                    else if (cursorPos.y < textSelection.lineHeightAtCursorPosition + yOffset + epsilon)
-                        newYOffset = cursorPos.y - textSelection.lineHeightAtCursorPosition;
-                }
-
-                lastCursorPos = cursorPos;
-
-                if (Math.Abs(xOffset - newXOffset) > epsilon || Math.Abs(yOffset - newYOffset) > epsilon)
-                {
-                    return new Vector2(newXOffset, newYOffset);
-                }
-
-                return scrollView != null ? scrollView.scrollOffset : scrollOffset;
-            }
 
             internal void SetScrollViewMode()
             {
-                if (scrollView == null)
-                    return;
-
-                textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassNameUnique);
-                textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassNameUnique);
-                textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassNameUnique);
-
-                if (textEdition.multiline && (computedStyle.whiteSpace == WhiteSpace.Normal || computedStyle.whiteSpace == WhiteSpace.PreWrap))
-                {
-                    textElement.AddToClassList(verticalVariantInnerTextElementUssClassNameUnique);
-                    scrollView.mode = ScrollViewMode.Vertical;
-                }
-                else if (textEdition.multiline)
-                {
-                    textElement.AddToClassList(verticalHorizontalVariantInnerTextElementUssClassNameUnique);
-                    scrollView.mode = ScrollViewMode.VerticalAndHorizontal;
-                }
-                else
-                {
-                    textElement.AddToClassList(horizontalVariantInnerTextElementUssClassNameUnique);
-                    scrollView.mode = ScrollViewMode.Horizontal;
-                }
+                TextInputUtilities.SetScrollViewMode(this, textElement, scrollView,
+                    verticalVariantInnerTextElementUssClassNameUnique,
+                    verticalHorizontalVariantInnerTextElementUssClassNameUnique,
+                    horizontalVariantInnerTextElementUssClassNameUnique);
             }
 
             void SetMultilineContainerStyle()
             {
-                if (multilineContainer != null)
-                {
-                    if (computedStyle.whiteSpace == WhiteSpace.Normal || computedStyle.whiteSpace == WhiteSpace.PreWrap)
-                    {
-                        style.overflow = Overflow.Hidden;
-                        multilineContainer.style.alignSelf = Align.Auto;
-                    }
-                    else
-                        style.overflow = (Overflow)OverflowInternal.Scroll;
-                }
+                TextInputUtilities.SetMultilineContainerStyle(this, multilineContainer);
             }
 
             void RemoveSingleLineComponents()

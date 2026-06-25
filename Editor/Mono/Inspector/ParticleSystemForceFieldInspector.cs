@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -24,16 +25,22 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class ParticleSystemForceFieldInspector : Editor
     {
+        [NoAutoStaticsCleanup] // bounds handle created once; stateless between uses
         private static readonly SphereBoundsHandle s_SphereBoundsHandle = new SphereBoundsHandle();
+        [NoAutoStaticsCleanup] // bounds handle created once; stateless between uses
         private static readonly UniformBoxBoundsHandle s_BoxBoundsHandle = new UniformBoxBoundsHandle();
 
-        private static PrefColor s_GizmoColor = new PrefColor("Particle System/Force Field Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
+        private static readonly PrefColor s_GizmoColor = new PrefColor("Particle System/Force Field Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
         private static readonly Color s_GizmoFocusTint = new Color(0.7f, 0.7f, 0.7f, 1.0f);
 
-        private static PropertyInfo s_StartRangeProperty = typeof(ParticleSystemForceField).GetProperty("startRange");
-        private static PropertyInfo s_EndRangeProperty = typeof(ParticleSystemForceField).GetProperty("endRange");
-        private static PropertyInfo s_GravityFocusProperty = typeof(ParticleSystemForceField).GetProperty("gravityFocus");
-        private static PropertyInfo s_LengthProperty = typeof(ParticleSystemForceField).GetProperty("length");
+        [NoAutoStaticsCleanup] // reflection cache for immutable type metadata
+        private static readonly PropertyInfo s_StartRangeProperty = typeof(ParticleSystemForceField).GetProperty("startRange");
+        [NoAutoStaticsCleanup] // reflection cache for immutable type metadata
+        private static readonly PropertyInfo s_EndRangeProperty = typeof(ParticleSystemForceField).GetProperty("endRange");
+        [NoAutoStaticsCleanup] // reflection cache for immutable type metadata
+        private static readonly PropertyInfo s_GravityFocusProperty = typeof(ParticleSystemForceField).GetProperty("gravityFocus");
+        [NoAutoStaticsCleanup] // reflection cache for immutable type metadata
+        private static readonly PropertyInfo s_LengthProperty = typeof(ParticleSystemForceField).GetProperty("length");
 
         private static readonly string s_UndoString = L10n.Tr("Modify {0}");
 
@@ -68,26 +75,26 @@ namespace UnityEditor
 
         private class Styles
         {
-            public static GUIContent shape = EditorGUIUtility.TrTextContent("Shape", "The bounding shape that forces are applied inside.");
-            public static GUIContent startRange = EditorGUIUtility.TrTextContent("Start Range", "The inner extent of the bounding shape.");
-            public static GUIContent endRange = EditorGUIUtility.TrTextContent("End Range", "The outer extent of the bounding shape.");
-            public static GUIContent length = EditorGUIUtility.TrTextContent("Length", "The length of the cylinder.");
-            public static GUIContent directionX = EditorGUIUtility.TrTextContent("X", "The force to apply along the X axis.");
-            public static GUIContent directionY = EditorGUIUtility.TrTextContent("Y", "The force to apply along the Y axis.");
-            public static GUIContent directionZ = EditorGUIUtility.TrTextContent("Z", "The force to apply along the Z axis.");
-            public static GUIContent gravity = EditorGUIUtility.TrTextContent("Strength", "The strength of the gravity effect.");
-            public static GUIContent gravityFocus = EditorGUIUtility.TrTextContent("Focus", "Choose a band within the volume that particles will be attracted towards.");
-            public static GUIContent rotationSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed at which particles are propelled around the vortex.");
-            public static GUIContent rotationAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vortex motion.");
-            public static GUIContent rotationRandomness = EditorGUIUtility.TrTextContent("Randomness", "Propel particles around random axes of the shape.");
-            public static GUIContent drag = EditorGUIUtility.TrTextContent("Strength", "The strength of the drag effect.");
-            public static GUIContent multiplyDragByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Size", "Adjust the drag based on the size of the particles.");
-            public static GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TrTextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.");
-            public static GUIContent vectorField = EditorGUIUtility.TrTextContent("Volume Texture", "The texture used for the vector field.");
-            public static GUIContent vectorFieldSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed multiplier applied to particles traveling through the vector field.");
-            public static GUIContent vectorFieldAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vector field motion.");
+            public static readonly GUIContent shape = EditorGUIUtility.TrTextContent("Shape", "The bounding shape that forces are applied inside.");
+            public static readonly GUIContent startRange = EditorGUIUtility.TrTextContent("Start Range", "The inner extent of the bounding shape.");
+            public static readonly GUIContent endRange = EditorGUIUtility.TrTextContent("End Range", "The outer extent of the bounding shape.");
+            public static readonly GUIContent length = EditorGUIUtility.TrTextContent("Length", "The length of the cylinder.");
+            public static readonly GUIContent directionX = EditorGUIUtility.TrTextContent("X", "The force to apply along the X axis.");
+            public static readonly GUIContent directionY = EditorGUIUtility.TrTextContent("Y", "The force to apply along the Y axis.");
+            public static readonly GUIContent directionZ = EditorGUIUtility.TrTextContent("Z", "The force to apply along the Z axis.");
+            public static readonly GUIContent gravity = EditorGUIUtility.TrTextContent("Strength", "The strength of the gravity effect.");
+            public static readonly GUIContent gravityFocus = EditorGUIUtility.TrTextContent("Focus", "Choose a band within the volume that particles will be attracted towards.");
+            public static readonly GUIContent rotationSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed at which particles are propelled around the vortex.");
+            public static readonly GUIContent rotationAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vortex motion.");
+            public static readonly GUIContent rotationRandomness = EditorGUIUtility.TrTextContent("Randomness", "Propel particles around random axes of the shape.");
+            public static readonly GUIContent drag = EditorGUIUtility.TrTextContent("Strength", "The strength of the drag effect.");
+            public static readonly GUIContent multiplyDragByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Size", "Adjust the drag based on the size of the particles.");
+            public static readonly GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TrTextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.");
+            public static readonly GUIContent vectorField = EditorGUIUtility.TrTextContent("Volume Texture", "The texture used for the vector field.");
+            public static readonly GUIContent vectorFieldSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed multiplier applied to particles traveling through the vector field.");
+            public static readonly GUIContent vectorFieldAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vector field motion.");
 
-            public static GUIContent[] shapeOptions =
+            public static readonly GUIContent[] shapeOptions =
             {
                 EditorGUIUtility.TrTextContent("Sphere"),
                 EditorGUIUtility.TrTextContent("Hemisphere"),
@@ -95,12 +102,12 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Box")
             };
 
-            public static GUIContent shapeHeading = EditorGUIUtility.TrTextContent("Shape");
-            public static GUIContent directionHeading = EditorGUIUtility.TrTextContent("Direction");
-            public static GUIContent gravityHeading = EditorGUIUtility.TrTextContent("Gravity");
-            public static GUIContent rotationHeading = EditorGUIUtility.TrTextContent("Rotation");
-            public static GUIContent dragHeading = EditorGUIUtility.TrTextContent("Drag");
-            public static GUIContent vectorFieldHeading = EditorGUIUtility.TrTextContent("Vector Field");
+            public static readonly GUIContent shapeHeading = EditorGUIUtility.TrTextContent("Shape");
+            public static readonly GUIContent directionHeading = EditorGUIUtility.TrTextContent("Direction");
+            public static readonly GUIContent gravityHeading = EditorGUIUtility.TrTextContent("Gravity");
+            public static readonly GUIContent rotationHeading = EditorGUIUtility.TrTextContent("Rotation");
+            public static readonly GUIContent dragHeading = EditorGUIUtility.TrTextContent("Drag");
+            public static readonly GUIContent vectorFieldHeading = EditorGUIUtility.TrTextContent("Vector Field");
         }
 
         void OnEnable()

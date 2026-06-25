@@ -52,6 +52,17 @@ namespace UnityEngine.Scripting
         public bool Optional { get; set; }
         public bool GenerateProxy { get; set; }
     }
+
+    // Marks a module to be included if the attached type or method is used.
+    // This is for niche cases where dependencies can be reasoned about.
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
+    [VisibleToOtherModules]
+    internal class RequiresEngineModuleAttribute : Attribute
+    {
+        public RequiresEngineModuleAttribute(string nativeModuleName)
+        {
+        }
+    }
 }
 
 namespace UnityEngine

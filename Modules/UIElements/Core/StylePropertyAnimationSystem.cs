@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, Color startValue, Color endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransitionEnum(VisualElement owner, StylePropertyId prop, int startValue, int endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, EntityId startValue, EntityId endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, UnityEngine.UIElements.Cursor startValue, UnityEngine.UIElements.Cursor endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Scale startValue, Scale endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -1064,6 +1065,33 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Cursor (Texture2D + hotspot) has no meaningful interpolation, so it steps at 50% like
+        // the other discrete object values.
+        class ValuesCursor : ValuesDiscrete<UnityEngine.UIElements.Cursor>
+        {
+            // Compare by the texture EntityId rather than the resolved Texture2D reference (which
+            // Cursor.Equals does), avoiding an object lookup per comparison.
+            public override Func<UnityEngine.UIElements.Cursor, UnityEngine.UIElements.Cursor, bool> SameFunc { get; } = IsSame;
+            private static bool IsSame(UnityEngine.UIElements.Cursor a, UnityEngine.UIElements.Cursor b) =>
+                a.textureId == b.textureId && a.hotspot == b.hotspot && a.defaultCursorId == b.defaultCursorId;
+
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+        }
+
         class ValuesTextShadow : Values<TextShadow>
         {
             public override Func<TextShadow, TextShadow, bool> SameFunc { get; } = IsSame;
@@ -1686,6 +1714,7 @@ namespace UnityEngine.UIElements
         private ValuesColor m_Colors;
         private ValuesEnum m_Enums;
         private ValuesEntityId m_EntityIds;
+        private ValuesCursor m_Cursors;
         private ValuesTextShadow m_TextShadows;
         private ValuesScale m_Scale;
         private ValuesRotate m_Rotate;
@@ -1792,6 +1821,11 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, EntityId startValue, EntityId endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_EntityIds));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, UnityEngine.UIElements.Cursor startValue, UnityEngine.UIElements.Cursor endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Cursors));
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TextShadow startValue, TextShadow endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)

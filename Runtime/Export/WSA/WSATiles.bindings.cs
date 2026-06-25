@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -178,6 +179,7 @@ namespace UnityEngine.WSA
     public sealed class Tile
     {
         private string m_TileId;
+        [NoAutoStaticsCleanup] // singleton; lazy-initialized main tile
         private static Tile s_MainTile;
 
         private Tile(string tileId)

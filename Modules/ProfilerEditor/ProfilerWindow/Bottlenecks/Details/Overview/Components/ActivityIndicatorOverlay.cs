@@ -68,10 +68,7 @@ namespace Unity.Profiling.Editor.UI
             m_IsAnimating = true;
             RemoveFromClassList(k_UssClass_Hidden);
             UIUtility.SetElementDisplay(this, true);
-            m_ActivityIndicator.schedule.Execute(Animate).Every(k_AnimationIntervalMS).Until(() =>
-            {
-                return m_IsAnimating == false;
-            });
+            m_ActivityIndicator.schedule.Execute(Animate).Every(k_AnimationIntervalMS).Until(() => !m_IsAnimating);
         }
 
         public void Hide()

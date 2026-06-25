@@ -28,7 +28,7 @@ namespace UnityEditor.EditorTools
         }
     }
 
-    public abstract class EditorToolContext : ScriptableObject, IEditor
+    public abstract class EditorToolContext : ScriptableObject, IEditor, IHasToolOwner
     {
         bool m_Active;
 
@@ -57,26 +57,22 @@ namespace UnityEditor.EditorTools
         string m_ContextOwnerTypeName;
 
         Type m_ContextOwnerType;
-        Type contextOwnerType
+
+        Type IHasToolOwner.toolOwnerType
         {
             get
             {
-                if (m_ContextOwnerType == null && !String.IsNullOrEmpty(m_ContextOwnerTypeName))
-                    m_ContextOwnerType = Type.GetType(m_ContextOwnerTypeName);
-                
-                if (m_ContextOwnerType == null)
-                    m_ContextOwnerType = typeof(SceneView);
-
+                m_ContextOwnerType = EditorToolUtility.ResolveToolOwnerType(m_ContextOwnerType, m_ContextOwnerTypeName);
                 return m_ContextOwnerType;
             }
         }
-        
+
         internal void Activate()
         {
             if(m_Active
             // Prevent to reenable the context if this is not the active one anymore
             // Can happen when entering playmode due to the delayCall in EditorToolManager.OnEnable
-                || this != EditorToolManager.GetActiveToolContext(contextOwnerType))
+                || this != EditorToolManager.GetActiveToolContext(((IHasToolOwner)this).toolOwnerType))
                 return;
 
             OnActivated();
@@ -102,7 +98,11 @@ namespace UnityEditor.EditorTools
 
         void IEditor.SetTargets(UnityObject[] value) => m_Targets = value;
 
-        internal void SetContextOwner(Type contextOwnerType) => m_ContextOwnerTypeName = contextOwnerType.AssemblyQualifiedName;
+        void IHasToolOwner.SetToolOwner(Type ownerType)
+        {
+            m_ContextOwnerType = ownerType;
+            m_ContextOwnerTypeName = ownerType?.AssemblyQualifiedName;
+        }
 
         public virtual void OnToolGUI(EditorWindow window) {}
 
@@ -114,14 +114,15 @@ namespace UnityEditor.EditorTools
                     return typeof(NoneTool);
 
                 case Tool.View:
-                    var toolOwnerIsNullOrSceneView = contextOwnerType == null || contextOwnerType == typeof(SceneView);
+                    var ownerType = ((IHasToolOwner)this).toolOwnerType;
+                    var toolOwnerIsNullOrSceneView = (ownerType == null || ownerType == typeof(SceneView));
                     // Do not allow overriding ViewTool if context owner is SceneView
-                    if (toolOwnerIsNullOrSceneView) 
+                    if (toolOwnerIsNullOrSceneView)
                         return typeof(ViewModeTool);
-                 
+
                     // Try resolving for custom owner
                     return DoResolveTool(tool);
-                
+
                 case Tool.Custom:
                     return null;
 
@@ -129,7 +130,7 @@ namespace UnityEditor.EditorTools
                     return DoResolveTool(tool);
             }
         }
-        
+
         Type DoResolveTool(Tool tool)
         {
             var resolved = GetEditorToolType(tool);
@@ -150,7 +151,8 @@ namespace UnityEditor.EditorTools
             switch (tool)
             {
                 case Tool.View:
-                    if (contextOwnerType == null || contextOwnerType == typeof(SceneView))
+                    var ownerType = ((IHasToolOwner)this).toolOwnerType;
+                    if (ownerType == null || ownerType == typeof(SceneView))
                         throw new ArgumentException(k_ExceptionMsg);
                     return typeof(ViewModeTool);
                 case Tool.Move:

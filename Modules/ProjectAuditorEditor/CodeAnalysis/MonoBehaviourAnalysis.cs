@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.CodeAnalysis
 {
@@ -15,6 +16,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         static readonly int k_MonoBehaviourHashCode = "UnityEngine.MonoBehaviour".GetHashCode();
         static readonly int k_ILPostProcessorHashCode = "Unity.CompilationPipeline.Common.ILPostProcessing.ILPostProcessor".GetHashCode();
 
+        [NoAutoStaticsCleanup] // Constant lookup table of MonoBehaviour event names; safe to persist
         static readonly HashSet<string> k_EventNames = new HashSet<string>(
         [
             "Awake", "Start", "OnEnable", "OnDisable",
@@ -26,6 +28,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             "OnBeforeTransformParentChanged","OnTransformParentChanged","OnTransformChildrenChanged"
         ]);
 
+        [NoAutoStaticsCleanup] // Constant lookup table of MonoBehaviour update method names; safe to persist
         static readonly HashSet<string> k_UpdateMethodNames = new HashSet<string>(
         [
             "Update", "LateUpdate", "FixedUpdate", "OnAnimatorIK", "OnAnimatorMove", "OnWillRenderObject", "OnRenderObject",

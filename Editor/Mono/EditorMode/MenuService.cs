@@ -16,18 +16,21 @@ using JSONObject = System.Collections.IDictionary;
 using static UnityEditor.ModeService;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.ShortcutManagement;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    static class MenuService
+    static partial class MenuService
     {
         private const string k_WindowMenuName = "Window";
         private const string k_HelpMenuName = "Help";
 
         // Contains the final ordered menus that can come either from the .mode file or from attributes
-        private static readonly Dictionary<string, MenuItemsTree<MenuItemOrderingNative>> s_MenusFromModeFile = new Dictionary<string, MenuItemsTree<MenuItemOrderingNative>>();
+        [AutoStaticsCleanupOnCodeReload]
+        private static Dictionary<string, MenuItemsTree<MenuItemOrderingNative>> s_MenusFromModeFile = new Dictionary<string, MenuItemsTree<MenuItemOrderingNative>>();
         // Contains menu from attributes for modes other than default
         // Used to add menu items from attributes when iterating through the .mode menus
+        [AutoStaticsCleanupOnCodeReload]
         private static Dictionary<string, MenuItemsTree<MenuItemScriptCommand>> s_MenuItemsPerMode = null;
         // Contains menu from attributes for the default mode
         // The default mode menus are in a separate dictionary for performance reasons, in that case we don't need the costly MenuItemsTree structure because it won't be used when iterating through the .mode menus
@@ -46,6 +49,7 @@ namespace UnityEditor
             public string menuPath;
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static Dictionary<string, GroupingMenuItemScriptCommand> s_MenuItemsDefaultMode = null;
 
         [UsedImplicitly, RequiredByNativeCode]

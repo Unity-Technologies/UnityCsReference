@@ -44,6 +44,31 @@ namespace UnityEditor
                 return null;
         }
 
+        // Maps all rotation euler interpolation variants to their m_LocalRotation equivalent
+        // so that node IDs stay stable when the interpolation mode changes.
+        private static readonly Dictionary<string, string> s_PropertyNameForHashing = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "localEulerAnglesRaw",      "m_LocalRotation"   },
+            { "localEulerAnglesRaw.x",    "m_LocalRotation.x" },
+            { "localEulerAnglesRaw.y",    "m_LocalRotation.y" },
+            { "localEulerAnglesRaw.z",    "m_LocalRotation.z" },
+            { "localEulerAnglesBaked",    "m_LocalRotation"   },
+            { "localEulerAnglesBaked.x",  "m_LocalRotation.x" },
+            { "localEulerAnglesBaked.y",  "m_LocalRotation.y" },
+            { "localEulerAnglesBaked.z",  "m_LocalRotation.z" },
+            { "localEulerAngles",         "m_LocalRotation"   },
+            { "localEulerAngles.x",       "m_LocalRotation.x" },
+            { "localEulerAngles.y",       "m_LocalRotation.y" },
+            { "localEulerAngles.z",       "m_LocalRotation.z" },
+        };
+
+        internal static string GetPropertyNameForHashing(System.Type type, string propertyName)
+        {
+            if (type != typeof(UnityEngine.Transform) || !propertyName.StartsWith("localEuler"))
+                return propertyName;
+            return s_PropertyNameForHashing.TryGetValue(propertyName, out string canonical) ? canonical : propertyName;
+        }
+
         static List<EditorCurveBinding> s_BindingsCache;
         const string s_PropertyWithSuffixRegex = @"(?<suffix>\.[xyz])$";
         internal static EditorCurveBinding[] ConvertRotationPropertiesToInterpolationType(ReadOnlySpan<EditorCurveBinding> selection, Mode newInterpolationMode)

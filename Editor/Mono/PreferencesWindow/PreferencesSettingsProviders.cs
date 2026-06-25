@@ -12,6 +12,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using Unity.CodeEditor;
 using Unity.Collections;
+using UnityEngine.Analytics;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
@@ -73,9 +74,7 @@ namespace UnityEditor
             public static readonly GUIContent editorTextGeneration = EditorGUIUtility.TrTextContent("Editor Text Generator Type");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme","Choose between light and dark themes for the Editor.\nThe Editor theme cannot be changed while in Play mode.");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
-            public static readonly GUIContent useNewHierarchy = EditorGUIUtility.TrTextContent("Use new Hierarchy window");
             public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
-            public static readonly GUIContent newHierarchyHeader = EditorGUIUtility.TrTextContent("New Hierarchy");
             public static readonly GUIContent renameNewObjects = EditorGUIUtility.TrTextContent("Rename new objects");
             public static readonly GUIContent defaultPrefabMode = EditorGUIUtility.TrTextContent("Default Prefab Mode", "This mode will be used when opening Prefab Mode from a Prefab instance in the Hierarchy.");
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting", "If enabled then you can choose between Transform sorting and Alphabetical sorting in the Hierarchy.");
@@ -115,6 +114,8 @@ namespace UnityEditor
                 + "\n* Debug: high-level debugging messages."
                 + "\n* Silly: detailed debugging messages.");
             public static readonly GUIContent logging = EditorGUIUtility.TrTextContent("Logging");
+            public static readonly GUIContent enableLoggingFramework = EditorGUIUtility.TrTextContent("Enable logging framework", "Enable the new logging framework (introduced in Unity 6.6) for high-performance logging with enhanced customisation options. Requires Editor restart to take effect.");
+            public static readonly GUIContent enableJSONLogging = EditorGUIUtility.TrTextContent("Enable JSON logging", "Output JSON logs to Editor.jsonl in addition to the standard Editor.log. Requires the logging framework to be enabled. Requires Editor restart to take effect.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent useGlobalEditorLog = EditorGUIUtility.TrTextContent("Use Global Editor Log", "If enabled, all Unity projects use the same global Editor log file located at the default path for the operating system. If disabled, each project uses its own separate Editor log located in the project folder. Changes to this setting require an Editor restart to take effect.");
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
@@ -146,6 +147,7 @@ By default, Windows will combine these under a single taskbar item.");
         class ColorsProperties
         {
             public static readonly GUIContent userDefaults = EditorGUIUtility.TrTextContent("Use Defaults");
+            public static readonly string lazyLoadingInfo = L10n.Tr("Some colors may not be available until you open their associated tool or window at least once.");
         }
 
         class GICacheProperties
@@ -212,6 +214,8 @@ By default, Windows will combine these under a single taskbar item.");
         private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
         private bool m_EnableExtendedLogging;
         private SavedBool m_UseGlobalEditorLog = new SavedBool("UseGlobalEditorLog", false);
+        private bool m_EnableLoggingFramework;
+        private bool m_EnableJSONLogging;
         private readonly string kContentScalePrefKey = "CustomEditorUIScale";
         private readonly string kWindowsTaskbarPrefKey = "WindowsTaskbarBehavior";
 
@@ -270,6 +274,7 @@ By default, Windows will combine these under a single taskbar item.");
         private const int kRecentAppsCount = 10;
 
         SortedDictionary<string, List<KeyValuePair<string, PrefColor>>> s_CachedColors = null;
+        Dictionary<string, bool> s_ColorCategoryFoldouts = new Dictionary<string, bool>();
 
         private List<GUIContent> m_SystemFonts = new List<GUIContent>();
         private const int k_browseButtonWidth = 80;
@@ -689,14 +694,12 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUI.indentLevel++;
             HierarchyPreferences.DefaultPrefabModeFromHierarchy = (PrefabStage.Mode)EditorGUILayout.EnumPopup(GeneralProperties.defaultPrefabMode, HierarchyPreferences.DefaultPrefabModeFromHierarchy);
             HierarchyPreferences.RenameNewObjects.value = EditorGUILayout.Toggle(GeneralProperties.renameNewObjects, HierarchyPreferences.RenameNewObjects);
-            EditorGUI.BeginDisabled(HierarchyPreferences.UseNewHierarchy);
+            EditorGUI.BeginDisabled(!EditorSettings.useLegacyHierarchy);
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
             m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(GeneralProperties.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
             EditorGUI.EndDisabled();
 
-            GUILayout.Label(GeneralProperties.newHierarchyHeader);
-            HierarchyPreferences.UseNewHierarchy.value = EditorGUILayout.Toggle(GeneralProperties.useNewHierarchy, HierarchyPreferences.UseNewHierarchy);
-            EditorGUI.BeginDisabled(!HierarchyPreferences.UseNewHierarchy);
+            EditorGUI.BeginDisabled(EditorSettings.useLegacyHierarchy);
             EditorGUI.BeginChangeCheck();
             var alternatingRows = EditorGUILayout.Toggle(GeneralProperties.alternatingRowBackground, HierarchyPreferences.AlternatingRowBackground);
             var useQueryBuilder = EditorGUILayout.Toggle(GeneralProperties.queryBuilder, HierarchyPreferences.UseQueryBuilder);
@@ -816,8 +819,26 @@ By default, Windows will combine these under a single taskbar item.");
             GUILayout.Space(10);
             EditorGUI.indentLevel++;
             GUILayout.Label(GeneralProperties.logging, EditorStyles.boldLabel);
+
+            var prevLoggingFramework = m_EnableLoggingFramework;
+            var prevJsonLogging = m_EnableJSONLogging;
+
+            m_EnableLoggingFramework = EditorGUILayout.Toggle(GeneralProperties.enableLoggingFramework, m_EnableLoggingFramework);
+
+            using (new EditorGUI.DisabledScope(!m_EnableLoggingFramework))
+            {
+                m_EnableJSONLogging = EditorGUILayout.Toggle(GeneralProperties.enableJSONLogging, m_EnableJSONLogging);
+            }
+
+            LoggingSettingsAnalytics.SendChangedLoggingPreferences(prevLoggingFramework, m_EnableLoggingFramework, prevJsonLogging, m_EnableJSONLogging);
+
             m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
-            m_UseGlobalEditorLog.value = EditorGUILayout.Toggle(GeneralProperties.useGlobalEditorLog, m_UseGlobalEditorLog.value);
+
+            using (new EditorGUI.DisabledScope(m_EnableLoggingFramework))
+            {
+                m_UseGlobalEditorLog.value = EditorGUILayout.Toggle(GeneralProperties.useGlobalEditorLog, m_UseGlobalEditorLog.value);
+            }
+
             EditorGUI.indentLevel--;
         }
 
@@ -918,13 +939,15 @@ By default, Windows will combine these under a single taskbar item.");
 
         private void ShowColors(string searchContext)
         {
+            EditorGUILayout.HelpBox(ColorsProperties.lazyLoadingInfo, MessageType.Info);
+            EditorGUILayout.Space();
+
             if (s_CachedColors == null)
             {
                 s_CachedColors = OrderPrefs(PrefSettings.Prefs<PrefColor>());
             }
 
             var changedColor = false;
-            PrefColor ccolor = null;
 
             // some pref colors are very long, and changing them would mean invalidating any user-defined colors.
             // as a compromise, we'll clip the label with an ellipses and show the full text in a tooltip.
@@ -933,21 +956,28 @@ By default, Windows will combine these under a single taskbar item.");
 
             foreach (KeyValuePair<string, List<KeyValuePair<string, PrefColor>>> category in s_CachedColors)
             {
-                GUILayout.Label(category.Key, EditorStyles.boldLabel);
-                foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
+                // Default to collapsed (false) if not yet in dictionary
+                s_ColorCategoryFoldouts.TryGetValue(category.Key, out bool expanded);
+                expanded = EditorGUILayout.Foldout(expanded, category.Key, true);
+                s_ColorCategoryFoldouts[category.Key] = expanded;
+
+                if (expanded)
                 {
-                    var displayName = ObjectNames.NicifyVariableName(kvp.Key);
-                    EditorGUI.BeginChangeCheck();
-                    Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(displayName, $"Custom overlay color for windows of {displayName} type"), kvp.Value.Color);
-                    if (EditorGUI.EndChangeCheck())
+                    EditorGUI.indentLevel++;
+                    foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
                     {
-                        ccolor = kvp.Value;
-                        ccolor.Color = c;
-                        changedColor = true;
+                        var displayName = ObjectNames.NicifyVariableName(kvp.Key);
+                        EditorGUI.BeginChangeCheck();
+                        Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(displayName, $"Custom overlay color for windows of {displayName} type"), kvp.Value.Color);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            kvp.Value.Color = c;
+                            PrefSettings.Set(kvp.Value.Name, kvp.Value);
+                            changedColor = true;
+                        }
                     }
+                    EditorGUI.indentLevel--;
                 }
-                if (ccolor != null)
-                    PrefSettings.Set(ccolor.Name, ccolor);
             }
             EditorStyles.label.clipping = clipping;
 
@@ -1291,7 +1321,7 @@ By default, Windows will combine these under a single taskbar item.");
             EditorTextSettings.SetEditorTextGeneratorType(m_EditorTextGeneratorType);
             EditorApplication.RequestRepaintAllTexts(VersionChangeType.Repaint);
 
-            EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
+            HierarchyPreferences.AllowAlphaNumericHierarchy.value = m_AllowAlphaNumericHierarchy;
 
             EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
             GOCreationCommands.s_PlacementMode = m_CreatePlacementMode;
@@ -1314,6 +1344,8 @@ By default, Windows will combine these under a single taskbar item.");
             EditorPrefs.SetBool("EnableConstrainProportionsTransformScale", m_EnableConstrainProportionsScalingForNewObjects);
             EditorPrefs.SetBool("UseInspectorExpandedState", AnnotationUtility.useInspectorExpandedState);
             EditorPrefs.SetBool("EnableExtendedLogging", m_EnableExtendedLogging);
+            EditorPrefs.SetBool("EnableLoggingFramework", m_EnableLoggingFramework);
+            EditorPrefs.SetBool("EnableJSONLogging", m_EnableJSONLogging);
         }
 
         private int CurrentEditorScalingValue
@@ -1388,7 +1420,7 @@ By default, Windows will combine these under a single taskbar item.");
             m_EditorTextGeneratorType = (TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorTypeV2", (int)TextGeneratorType.Advanced);
             EditorTextSettings.SetCurrentEditorSharpness(m_EditorTextSharpness);
 
-            m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
+            m_AllowAlphaNumericHierarchy = HierarchyPreferences.AllowAlphaNumericHierarchy;
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
 
             m_CreatePlacementMode = GOCreationCommands.s_PlacementMode;
@@ -1428,6 +1460,8 @@ By default, Windows will combine these under a single taskbar item.");
 
             m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
             m_EnableExtendedLogging = EditorPrefs.GetBool("EnableExtendedLogging", false);
+            m_EnableLoggingFramework = EditorPrefs.GetBool("EnableLoggingFramework", LoggingSettingsAnalytics.DefaultLoggingFrameworkEnabled);
+            m_EnableJSONLogging = EditorPrefs.GetBool("EnableJSONLogging", false);
         }
 
         internal static void ReloadCustomDiffToolData()
@@ -1599,5 +1633,134 @@ By default, Windows will combine these under a single taskbar item.");
 
         internal static PrefabStage.Mode GetDefaultPrefabModeForHierarchy()
             => HierarchyPreferences.DefaultPrefabModeFromHierarchy;
+    }
+
+    internal interface ILoggingSettingsAnalyticsService
+    {
+        AnalyticsResult SendAnalytic(IAnalytic analytic);
+    }
+
+    internal class LoggingSettingsEditorAnalyticsService : ILoggingSettingsAnalyticsService
+    {
+        AnalyticsResult ILoggingSettingsAnalyticsService.SendAnalytic(IAnalytic analytic)
+        {
+            return EditorAnalytics.SendAnalytic(analytic);
+        }
+    }
+
+    internal static class LoggingSettingsAnalytics
+    {
+        const string k_LoggingSettingEventName = "logging_setting_changed";
+        const string k_LoggingJsonEventName = "logging_json_changed";
+        const int k_MaxEventsPerHour = 100;
+        const string k_VendorKey = "unity.logging";
+        internal const bool DefaultLoggingFrameworkEnabled = true;
+        static Action<string, bool, bool> s_TestEventCallback;
+
+        [Serializable]
+        internal struct LoggingSettingChangedData : IAnalytic.IData
+        {
+            public bool enabled;
+            public bool uses_default;
+        }
+
+        [Serializable]
+        internal struct LoggingJsonChangedData : IAnalytic.IData
+        {
+            public bool enabled;
+        }
+
+        [AnalyticInfo(eventName: k_LoggingSettingEventName, vendorKey: k_VendorKey, version: 1, maxEventsPerHour: k_MaxEventsPerHour)]
+        internal class LoggingSettingChangedAnalytic : IAnalytic
+        {
+            readonly LoggingSettingChangedData m_Data;
+
+            public LoggingSettingChangedAnalytic(LoggingSettingChangedData data)
+            {
+                m_Data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                data = m_Data;
+                error = null;
+                return true;
+            }
+        }
+
+        [AnalyticInfo(eventName: k_LoggingJsonEventName, vendorKey: k_VendorKey, version: 1, maxEventsPerHour: k_MaxEventsPerHour)]
+        internal class LoggingJsonChangedAnalytic : IAnalytic
+        {
+            readonly LoggingJsonChangedData m_Data;
+
+            public LoggingJsonChangedAnalytic(LoggingJsonChangedData data)
+            {
+                m_Data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                data = m_Data;
+                error = null;
+                return true;
+            }
+        }
+
+        static ILoggingSettingsAnalyticsService s_AnalyticsService;
+
+        static LoggingSettingsAnalytics()
+        {
+            if (!InternalEditorUtility.inBatchMode)
+                SetAnalyticsService(new LoggingSettingsEditorAnalyticsService());
+        }
+
+        public static ILoggingSettingsAnalyticsService SetAnalyticsService(ILoggingSettingsAnalyticsService service)
+        {
+            var oldService = s_AnalyticsService;
+            s_AnalyticsService = service;
+            return oldService;
+        }
+
+        internal static Action<string, bool, bool> SetTestEventCallback(Action<string, bool, bool> callback)
+        {
+            var oldCallback = s_TestEventCallback;
+            s_TestEventCallback = callback;
+            return oldCallback;
+        }
+
+        internal static void SendChangedLoggingPreferences(bool prevFramework, bool currFramework, bool prevJson, bool currJson)
+        {
+            if (prevFramework != currFramework)
+                SendLoggingSettingChanged(currFramework, currFramework == DefaultLoggingFrameworkEnabled);
+            if (prevJson != currJson)
+                SendLoggingJsonChanged(currJson);
+        }
+
+        public static void SendLoggingSettingChanged(bool enabled, bool usesDefault)
+        {
+            s_TestEventCallback?.Invoke(k_LoggingSettingEventName, enabled, usesDefault);
+
+            if (s_AnalyticsService == null)
+                return;
+
+            s_AnalyticsService.SendAnalytic(new LoggingSettingChangedAnalytic(new LoggingSettingChangedData
+            {
+                enabled = enabled,
+                uses_default = usesDefault,
+            }));
+        }
+
+        public static void SendLoggingJsonChanged(bool enabled)
+        {
+            s_TestEventCallback?.Invoke(k_LoggingJsonEventName, enabled, false);
+
+            if (s_AnalyticsService == null)
+                return;
+
+            s_AnalyticsService.SendAnalytic(new LoggingJsonChangedAnalytic(new LoggingJsonChangedData
+            {
+                enabled = enabled,
+            }));
+        }
     }
 }

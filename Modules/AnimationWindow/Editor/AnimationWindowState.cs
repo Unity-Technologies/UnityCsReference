@@ -38,6 +38,7 @@ namespace UnityEditorInternal
         [SerializeField] public AnimEditor animEditor; // Reference to owner of this state. Used to trigger repaints.
         [SerializeField] public AnimationWindowHierarchyState hierarchyState = new(); // Persistent state of treeview on the left side of window
         [NonSerialized] public AnimationWindowHierarchyDataSource hierarchyData;
+        [NonSerialized] public Action<int[]> onHierarchySelectionChange;
 
         [SerializeReference] private TimeArea m_TimeArea; // Either curveeditor or dopesheet depending on which is selected
 
@@ -1565,7 +1566,7 @@ namespace UnityEditorInternal
             m_ActiveCurvesCache = null;
 
             if (triggerSceneSelectionSync)
-                SyncSceneSelection(selectedInstanceIDs);
+                onHierarchySelectionChange?.Invoke(selectedInstanceIDs);
         }
 
         public void SelectHierarchyItem(DopeLine dopeline, bool additive)
@@ -1667,65 +1668,6 @@ namespace UnityEditorInternal
             return null;
         }
 
-        // Set scene active go to be the same as the one selected from hierarchy
-        private void SyncSceneSelection(int[] selectedNodeIDs)
-        {
-            if (filterBySelection)
-                return;
-
-            if (!selection.canSyncSceneSelection)
-                return;
-
-            GameObject rootGameObject = selection.rootGameObject;
-            if (rootGameObject == null)
-                return;
-
-            var selectedGameObjectIDs = new List<EntityId>(selectedNodeIDs.Length);
-            foreach (var selectedNodeID in selectedNodeIDs)
-            {
-                // Skip nodes without associated curves.
-                if (selectedNodeID == 0)
-                    continue;
-
-                AnimationWindowHierarchyNode node = hierarchyData.FindItem(selectedNodeID) as AnimationWindowHierarchyNode;
-
-                if (node == null)
-                    continue;
-
-                if (node is AnimationWindowHierarchyMasterNode)
-                    continue;
-
-                Transform t = rootGameObject.transform.Find(node.path);
-
-                // In the case of nested animation component, we don't want to sync the scene selection (case 569506)
-                // When selection changes, animation window will always pick nearest animator component in terms of hierarchy depth
-                // Automatically syncinc scene selection in nested scenarios would cause unintuitive clip & animation change for animation window so we check for it and deny sync if necessary
-                if (selection.IsCompatibleWith(t))
-                {
-                    EntityId entity;
-                    if (node.curves.Length > 0)
-                    {
-                        AnimationWindowCurve firstCurve = node.curves[0];
-                        // Query the animation system for the associate EntityId
-                        // For custom IAnimationBinding (e.g., UIToolkit), this will return the appropriate selection object
-                        // For standard animations, returns the GameObject's EntityId
-                        entity = AnimationUtility.GetAssociatedEntityId(t.gameObject, firstCurve.binding);
-                    }
-                    else
-                    {
-                        entity = t.gameObject.GetEntityId();
-                    }
-
-                    selectedGameObjectIDs.Add(entity);
-                }
-            }
-
-            if (selectedGameObjectIDs.Count > 0)
-                UnityEditor.Selection.entityIds = selectedGameObjectIDs.ToArray();
-            else
-                UnityEditor.Selection.activeGameObject = rootGameObject;
-        }
-
         [Obsolete("Use frameRate property instead.")]
         public float clipFrameRate
         {
@@ -1776,6 +1718,11 @@ namespace UnityEditorInternal
                     }
 
                     selection.clip.frameRate = value;
+
+                    // Preserve the current frame position at the new frame rate
+                    int oldFrame = AnimationKeyTime.Time(currentTime, oldFrameRate).frame;
+                    float newTime = AnimationKeyTime.Frame(oldFrame, value).time;
+                    currentTime = newTime;
                 }
             }
         }

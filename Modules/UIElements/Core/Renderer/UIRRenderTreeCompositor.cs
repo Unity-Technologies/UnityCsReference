@@ -170,25 +170,26 @@ namespace UnityEngine.UIElements.UIR
         void AddChildrenOperations_DepthFirst(DrawOperation parentOperation, RenderTree renderTree)
         {
             VisualElement ve = renderTree.rootRenderData.owner;
-
-            // Extract the filters as List<> to avoid allocations when dealing with IEnumerable<>
             var computedFilter = ve.computedStyle.filter;
 
-            // Add the filters and effects in reversed order since they are applied in a depth-first order
+            // Reverse iteration: outer pass first becomes innermost child in the operation tree.
             for (int i = computedFilter.Length - 1; i >= 0; i--)
             {
-                var filterDef = ((FilterFunction)computedFilter[i]).GetDefinition();
+                var filterFunc = (FilterFunction)computedFilter[i];
+
+                var filterDef = filterFunc.GetDefinition();
+
                 if (filterDef == null || filterDef.passes == null)
                     continue;
 
                 for (int j = filterDef.passes.Length - 1; j >= 0; j--)
                 {
-                    var filterPass = filterDef.passes[j];
-                    if (filterPass.material == null)
+                    var pass = filterDef.passes[j];
+                    if (pass.material == null)
                         continue;
 
                     var operation = m_DrawOperationPool.Get();
-                    operation.Init(ve, filterPass, j, computedFilter[i]);
+                    operation.Init(ve, pass, j, filterFunc);
 
                     parentOperation.AddChild(operation);
                     parentOperation = operation;
@@ -374,7 +375,6 @@ namespace UnityEngine.UIElements.UIR
 
         static Vector4[] s_UVRects = new Vector4[1];
 
-        static readonly int s_MainTexId = Shader.PropertyToID("_MainTex");
         static readonly int s_UnityUIE_UVRectId = Shader.PropertyToID("unity_uie_UVRect");
 
         void ExecuteDrawOperation_PostOrder(DrawOperation op)
@@ -423,81 +423,72 @@ namespace UnityEngine.UIElements.UIR
                     {
                         Debug.Assert(op.firstChild != null, "An effect draw operation must have at least one child operation to render from.");
 
-                        // Set Uniforms: Conversion to visual element coordinates (relative, pixels, points)
-                        var oldRT = RenderTexture.active;
-
                         var dstTex = op.dstAtlasBlock.texture;
-                        RenderTexture.active = dstTex;
-
                         var dstRect = op.dstAtlasBlock.rect;
                         var srcTexEntry = op.firstChild.dstAtlasBlock;
                         var srcUVRect = srcTexEntry.uvRect;
 
-                        var mat = op.FilterPass.material;
+                        bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
+                        bool writesGamma = (QualitySettings.activeColorSpace == ColorSpace.Gamma) || (forceGamma && isLastFilterPass);
 
+                        // Calculate adjusted UV rect with texture offsets
+                        var texOffsets = op.drawSourceTexOffsets;
+                        float texWidth = srcTexEntry.texture.width;
+                        float texHeight = srcTexEntry.texture.height;
+                        var uvRect = new Rect(
+                            srcUVRect.x + texOffsets.x / texWidth,
+                            srcUVRect.y + texOffsets.w / texHeight,
+                            srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
+                            srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
+
+                        // Set up additional properties for compositor (UV rects, etc)
+                        m_Block.Clear();
+                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
+                        m_Block.SetVectorArray(s_UnityUIE_UVRectId, s_UVRects);
+
+                        // Apply legacy effect parameters if no callback provided
+                        if (op.FilterPass.applySettingsCallback == null)
+                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
+
+                        // Compositor-specific keyword handling: enable output linear for last pass when forcing gamma
+                        var mat = op.FilterPass.material;
                         if (forceGamma && isLastFilterPass)
                             mat.EnableKeyword("_UIE_OUTPUT_LINEAR");
                         else
                             mat.DisableKeyword("_UIE_OUTPUT_LINEAR");
 
-                        mat.SetPass(op.FilterPass.passIndex);
-
-                        m_Block.SetTexture(s_MainTexId, srcTexEntry.texture);
-
-                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
-                        m_Block.SetVectorArray(s_UnityUIE_UVRectId, s_UVRects);
-
-                        var drawRect = op.drawSourceBounds;
-                        var texOffsets = op.drawSourceTexOffsets;
-
-                        float texWidth = srcTexEntry.texture.width;
-                        float texHeight = srcTexEntry.texture.height;
-
-                        var uvRect = new Rect(srcUVRect.x + texOffsets.x / texWidth,
-                                              srcUVRect.y + texOffsets.w / texHeight,
-                                              srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
-                                              srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
-
-                        if (!string.IsNullOrEmpty(op.FilterPass.requiredInputTextureName))
-                            BindRequiredInput(op, drawRect, uvRect);
-
-                        bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
-
-                        if (op.FilterPass.applySettingsCallback != null)
-                            op.FilterPass.applySettingsCallback(m_Block, new FilterPassContext
-                            {
-                                filterFunction = op.filter,
-                                filterPassIndex = op.FilterPassIndex,
-                                readsGamma = readsGamma,
-                                writesGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma && isLastFilterPass,
-                                scaledPixelsPerPoint = op.visualElement.scaledPixelsPerPoint,
-                            });
-                        else
-                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
-
-                        Utility.SetPropertyBlock(m_Block);
-
+                        // Set up projection matrix for compositor rendering
                         var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, 0, 1);
                         GL.LoadProjectionMatrix(projection);
                         GL.modelview = Matrix4x4.identity;
 
-                        GL.Viewport(new Rect(dstRect.xMin, dstRect.yMin, dstRect.width, dstRect.height));
-                        GL.Begin(GL.QUADS);
-                        GL.TexCoord2(uvRect.xMin, uvRect.yMin);
-                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
-                        GL.Vertex3(drawRect.xMin, drawRect.yMax, 0.5f); // BL
-                        GL.TexCoord2(uvRect.xMin, uvRect.yMax);
-                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
-                        GL.Vertex3(drawRect.xMin, drawRect.yMin, 0.5f); // TL
-                        GL.TexCoord2(uvRect.xMax, uvRect.yMax);
-                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
-                        GL.Vertex3(drawRect.xMax, drawRect.yMin, 0.5f); // TR
-                        GL.TexCoord2(uvRect.xMax, uvRect.yMin);
-                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
-                        GL.Vertex3(drawRect.xMax, drawRect.yMax, 0.5f); // BR
-                        GL.End();
+                        var drawRect = op.drawSourceBounds;
+                        var viewportRect = new Rect(dstRect.xMin, dstRect.yMin, dstRect.width, dstRect.height);
+                        var drawBounds = new RectInt(drawRect.xMin, drawRect.yMin, drawRect.width, drawRect.height);
 
-                        RenderTexture.active = oldRT;
+                        // Preserve trunk's required-input binding (added after this refactor was authored on the branch).
+                        // Mutates m_Block, which FilterHelper.ApplyFilterPass then uses.
+                        if (!string.IsNullOrEmpty(op.FilterPass.requiredInputTextureName))
+                            BindRequiredInput(op, drawBounds, uvRect);
+
+                        // Use shared filter helper (with custom projection already set).
+                        // The _UIE_OUTPUT_LINEAR keyword set above is deterministic per call
+                        // (both branches assign it explicitly), so no save/restore is needed.
+                        FilterHelper.ApplyFilterPass(
+                            source: srcTexEntry.texture,
+                            target: dstTex,
+                            pass: op.FilterPass,
+                            filterFunc: op.filter,
+                            filterPassIndex: op.FilterPassIndex,
+                            propertyBlock: m_Block,
+                            readsGamma: readsGamma,
+                            writesGamma: writesGamma,
+                            pixelsPerPoint: op.visualElement.scaledPixelsPerPoint,
+                            sourceUVRect: uvRect,
+                            drawBounds: drawBounds,
+                            viewport: viewportRect,
+                            usePixelMatrix: false  // We set up projection matrix ourselves
+                        );
                     }
                     catch
                     {
@@ -564,17 +555,19 @@ namespace UnityEngine.UIElements.UIR
         {
             if (name == k_SourceInputName)
             {
-                // Walk past every operations to get the source
-                var op = currentOp;
-                while (op.firstChild != null)
+                // Walk past every operations to get the source, stopping at the first RenderTree
+                // boundary to avoid crossing into a different nested filter operation.
+                var op = currentOp.firstChild;
+                while (op != null && op.type != DrawOperationType.RenderTree)
                     op = op.firstChild;
                 return op;
             }
             else
             {
-                // Walk down the child chain looking for a pass with matching outputName
+                // Walk down the child chain looking for a pass with matching outputName.
+                // Stop at the RenderTree boundary to avoid crossing into a different nested filter operation.
                 var op = currentOp.firstChild;
-                while (op.firstChild != null)
+                while (op != null && op.type == DrawOperationType.Effect)
                 {
                     if (op.FilterPass.outputTextureName == name)
                         return op;

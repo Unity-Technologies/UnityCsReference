@@ -36,7 +36,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             public string DeviceID;
             public string DeviceName;
+            public bool UseExistingBuild;
         }
+
+        internal static readonly UserSettings DefaultUserSettings = new UserSettings { UseExistingBuild = false };
 
         internal override string GetTypeNameForAnalytics() => "Local";
 
@@ -48,6 +51,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var buildNode = executionGraph.AddNode<BuildPlayerNode>(ExecutionStage.Prepare);
             executionGraph.ConnectConstant(buildNode.BuildPath, buildPath);
             executionGraph.ConnectConstant(buildNode.Profile, Settings.BuildProfile);
+            var userSettings = TryGetUserSettings<UserSettings>(out var settings) ? settings : DefaultUserSettings;
+            executionGraph.ConnectConstant(buildNode.ReuseExistingBuild, userSettings.UseExistingBuild);
 
             if (InternalUtilities.IsAndroidBuildTarget(Settings.BuildProfile))
             {
@@ -61,24 +66,26 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         void SetupExecutionGraphForAdbProcess(ExecutionGraphBuilder executionGraph, BuildPlayerNode buildNode)
         {
+            var userSettings = TryGetUserSettings<UserSettings>(out var settings) ? settings : DefaultUserSettings;
+
             var installAdbNode = executionGraph.AddNode<AdbInstallNode>(ExecutionStage.Deploy);
             executionGraph.Connect(buildNode.ExecutablePath, installAdbNode.ApkPath);
-            executionGraph.ConnectConstant(installAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
+            executionGraph.ConnectConstant(installAdbNode.DeviceName, userSettings.DeviceID);
 
             var packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
             var startAdbNode = executionGraph.AddNode<AdbStartProcessNode>(ExecutionStage.Start);
-            executionGraph.ConnectConstant(startAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
+            executionGraph.ConnectConstant(startAdbNode.DeviceName, userSettings.DeviceID);
             executionGraph.ConnectConstant(startAdbNode.PackageName, packageName);
             executionGraph.ConnectConstant(startAdbNode.ActivityName, AdbUtilities.GetActivityName());
 
             var monitorAdbNode = executionGraph.AddNode<AdbMonitorProcessNode>(ExecutionStage.Run);
             executionGraph.Connect(startAdbNode.ProcessId, monitorAdbNode.ProcessId);
-            executionGraph.ConnectConstant(monitorAdbNode.DeviceName,  GetUserSettings<UserSettings>().DeviceID);
+            executionGraph.ConnectConstant(monitorAdbNode.DeviceName, userSettings.DeviceID);
             executionGraph.ConnectConstant(monitorAdbNode.PackageName, packageName);
 
             var stopAdbNode = executionGraph.AddNode<AdbStopProcessNode>(ExecutionStage.Cleanup);
             executionGraph.ConnectConstant(stopAdbNode.PackageName, packageName);
-            executionGraph.ConnectConstant(stopAdbNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
+            executionGraph.ConnectConstant(stopAdbNode.DeviceName, userSettings.DeviceID);
 
             if (Settings.StreamLogsToMainEditor)
             {
@@ -89,7 +96,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 var logcatNode = executionGraph.AddNode<AdbLogcatNode>(ExecutionStage.Run);
                 executionGraph.ConnectConstant(logcatNode.LogPath, logsFilePath);
-                executionGraph.ConnectConstant(logcatNode.DeviceName, GetUserSettings<UserSettings>().DeviceID);
+                executionGraph.ConnectConstant(logcatNode.DeviceName, userSettings.DeviceID);
                 executionGraph.Connect(startAdbNode.ProcessId, logcatNode.DeviceProcessId);
 
                 var streamLogsNode = executionGraph.AddNode<StreamLogsFromFileNode>(ExecutionStage.Run);
@@ -183,7 +190,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected internal override VisualElement CreateControllerUI(Instance instance)
         {
-            return new LocalPlayerInstanceStatusElement(instance, Settings, GetUserSettings<UserSettings>());
+            var userSettings = GetUserSettings(DefaultUserSettings);
+            var userSettingsProperty = GetUserSettingsSerializedProperty(DefaultUserSettings);
+            return new LocalPlayerInstanceStatusElement(instance, Settings, userSettings, userSettingsProperty);
         }
     }
 }

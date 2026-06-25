@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine.Rendering;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Rendering
 {
@@ -100,6 +101,7 @@ namespace UnityEditor.Rendering
         static class Styles
         {
             public static readonly GUIContent shaderVariantsHeader = new GUIContent("Shader Variants", "Tree view of variants in this collection. Double-click shader asset to open it.");
+            [NoAutoStaticsCleanup] // lazy GUIStyle cache; no embedded Texture2D, re-initialises itself on null check
             static GUIStyle s_GreyMiniLabel;
             public static GUIStyle greyMiniLabel
             {
@@ -116,7 +118,9 @@ namespace UnityEditor.Rendering
                     return s_GreyMiniLabel;
                 }
             }
+            [NoAutoStaticsCleanup] // lazy GUIStyle cache; no embedded Texture2D, re-initialises itself on null check
             static GUIStyle s_VariantBoxStyle;
+            [NoAutoStaticsCleanup] // lazy GUIStyle cache; no embedded Texture2D, re-initialises itself on null check
             static GUIStyle s_GreyFoldoutStyle;
             public static GUIStyle variantBoxStyle
             {

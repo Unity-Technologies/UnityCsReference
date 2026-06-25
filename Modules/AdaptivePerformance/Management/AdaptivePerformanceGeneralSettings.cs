@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -10,10 +11,12 @@ namespace UnityEngine.AdaptivePerformance
     /// <summary>
     /// A `ScriptableObject` that contains global settings applicable to all Adaptive Performance providers.
     /// </summary>
-    public class AdaptivePerformanceGeneralSettings : ScriptableObject
+    public partial class AdaptivePerformanceGeneralSettings : ScriptableObject
     {
         /// <summary>The key used to query to get the current loader settings.</summary>
+        [NoAutoStaticsCleanup] // public API field; readonly would be a source-breaking change
         public static string k_SettingsKey = "com.unity.adaptiveperformance.loader_settings";
+        [AutoStaticsCleanup]
         internal static AdaptivePerformanceGeneralSettings s_RuntimeSettingsInstance = null;
 
         [SerializeField]

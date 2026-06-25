@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor.GraphVisualization;
@@ -13,9 +12,8 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization;
 /// </summary>
 class Store
 {
-    PortPreviewStore m_PortPreviewStore;
-    internal PortPreviewStore PortPreviewStore => m_PortPreviewStore ??= new PortPreviewStore();
-    
+    internal PortPreviewStore PortPreviewStore = new();
+    internal WireVisualStore WireVisualStore = new();
     internal NodeAccentStore NodeAccentStore = new();
 }
 

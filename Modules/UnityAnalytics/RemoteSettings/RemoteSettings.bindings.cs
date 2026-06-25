@@ -10,17 +10,21 @@ using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEngine
 {
     [NativeHeader("Modules/UnityAnalytics/RemoteSettings/RemoteSettings.h")]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
-    public static class RemoteSettings
+    public static partial class RemoteSettings
     {
         public delegate void UpdatedEventHandler();
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered remote-settings updated handlers
         public static event UpdatedEventHandler Updated;
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered pre-fetch handlers
         public static event Action BeforeFetchFromServer;
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered fetch-completed handlers
         public static event Action<bool, bool, int> Completed;
 
         [RequiredByNativeCode]

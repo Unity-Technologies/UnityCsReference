@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Profiling;
 
 namespace Unity.Profiling.Editor
 {
     internal class LegacyProfilerAreaUtility
     {
+        [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly Dictionary<ProfilerArea, string> k_ProfilerAreasToCategoriesMap = new Dictionary<ProfilerArea, string>()
         {
             { ProfilerArea.CPU, ProfilerCategory.Scripts.Name },

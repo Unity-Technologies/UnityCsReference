@@ -12,6 +12,7 @@ using Unity.Collections;
 using Unity.ProjectAuditor.Editor.AssetAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -107,7 +108,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         public string[] Keywords;
     }
 
-    class ShadersModule : ModuleWithAnalyzers<ShaderModuleAnalyzer>
+    partial class ShadersModule : ModuleWithAnalyzers<ShaderModuleAnalyzer>
         , IPreprocessShaders
         , IPreprocessComputeShaders
     {
@@ -232,6 +233,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // k_NoPassNames and k_NoKeywords must be consistent with values assigned in SubProgram::Compile()
         internal static readonly string[] k_NoPassNames = new[] { "unnamed", "<unnamed>"}; // 2019.x uses: <unnamed>, whilst 2020.x uses unnamed
+        [NoAutoStaticsCleanup] // fixed lookup table, safe to persist across reloads
         internal static readonly Dictionary<string, string> k_StageNameMap = new Dictionary<string, string>()
         {
             { "all", "vertex" },       // GLES* / OpenGLCore
@@ -244,8 +246,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
         internal const string k_Unknown = "Unknown";
         internal const string k_ComputeShaderMayHaveBadVariants = "Compute shader may have bad (but unused) variants preventing this from being evaluated.";
 
+        [AutoStaticsCleanupOnCodeReload]
         static Dictionary<Shader, List<ShaderVariantData>> s_ShaderVariantData =
             new Dictionary<Shader, List<ShaderVariantData>>();
+        [AutoStaticsCleanupOnCodeReload]
         static Dictionary<ComputeShader, List<ComputeShaderVariantData>> s_ComputeShaderVariantData =
             new Dictionary<ComputeShader, List<ComputeShaderVariantData>>();
 

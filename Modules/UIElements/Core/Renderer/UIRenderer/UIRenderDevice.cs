@@ -655,6 +655,7 @@ namespace UnityEngine.UIElements.UIR
             Texture gradientSettings,
             ShaderInfoAllocator shaderInfoAllocator,
             Rect? scissor,
+            Vector2 boundsMin,
             float pixelsPerPoint,
             bool isSerializing,
             TextureSlotCount defaultTextureSlotCount,
@@ -702,6 +703,7 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
+            drawParams.boundsMin = boundsMin;
 
             RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
 
@@ -1220,6 +1222,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 case CommandType.Immediate:
                 case CommandType.ImmediateCull:
+                case CommandType.GenerateBackdropFilterTexture:
                     return KickRangesReason.ImmediateCommand;
                 case CommandType.CutRenderChain:
                     return KickRangesReason.RenderChainCut;

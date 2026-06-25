@@ -12,7 +12,7 @@ namespace UnityEditor.AddComponent
     {
         private static class Styles
         {
-            public static GUIStyle itemStyle = "DD LargeItemStyle";
+            public static readonly GUIStyle itemStyle = "DD LargeItemStyle";
 
             const string k_includeNamespaceProSkin = "{0} <color=#808080>({1})</color>";
             const string k_includeNamespace = "{0} <color=#404040>({1})</color>";

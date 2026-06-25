@@ -21,6 +21,12 @@ namespace Unity.ProjectAuditor.Editor.Core
             Num
         }
 
+        enum MeshColliderProperty
+        {
+            Triangles,
+            Num
+        }
+
         internal static readonly IssueLayout k_IssueLayout = new IssueLayout
         {
             Category = IssueCategory.GameObject,
@@ -36,9 +42,20 @@ namespace Unity.ProjectAuditor.Editor.Core
             ]
         };
 
+        static readonly IssueLayout k_MeshColliderLayout = new IssueLayout
+        {
+            Category = IssueCategory.MeshCollider,
+            Properties =
+            [
+                new PropertyDefinition { Type = PropertyType.Description, Format = PropertyFormat.String, Name = "Name", LongName = "MeshCollider GameObject Name", MaxAutoWidth = 500 },
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(MeshColliderProperty.Triangles), Format = PropertyFormat.Integer, Name = "Triangles", LongName = "Triangle Count"},
+                new PropertyDefinition { Type = PropertyType.Path, Name = "Path", MaxAutoWidth = 500, IsDefaultGroup = true }
+            ]
+        };
+
         public override string Name => "Game Objects";
 
-        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => [k_IssueLayout];
+        public override IReadOnlyCollection<IssueLayout> SupportedLayouts => [k_IssueLayout, k_MeshColliderLayout];
 
         public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
@@ -125,6 +142,25 @@ namespace Unity.ProjectAuditor.Editor.Core
                 using (var editingScope = new ViewPrefabContentsScope(assetPath))
                 {
                     var loadedPrefabRoot = editingScope.prefabContentsRoot;
+
+                    List<ReportItem> meshColliderIssues = null;
+                    var meshColliders = loadedPrefabRoot.GetComponentsInChildren<MeshCollider>(true);
+                    for (var i = 0; i < meshColliders.Length; i++)
+                    {
+                        var meshCollider = meshColliders[i];
+                        var sharedMesh = meshCollider.sharedMesh;
+                        var triangleCount = sharedMesh != null ? CalculateTotalTriangleCount(sharedMesh) : 0;
+
+                        meshColliderIssues ??= [];
+                        meshColliderIssues.Add(context
+                            .CreateInsight(IssueCategory.MeshCollider, meshCollider.gameObject.name)
+                            .WithCustomProperties([triangleCount])
+                            .WithLocation(assetPath));
+                    }
+
+                    if (meshColliderIssues is { Count: > 0 })
+                        analysisParams.OnIncomingIssues(meshColliderIssues);
+
                     IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, loadedPrefabRoot, assetPath);
                 }
 
@@ -132,6 +168,17 @@ namespace Unity.ProjectAuditor.Editor.Core
             }
 
             progress?.Clear(progressState);
+        }
+
+        static int CalculateTotalTriangleCount(Mesh mesh)
+        {
+            var totalTriangles = 0;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+            {
+                totalTriangles += (int)(mesh.GetIndexCount(i) / 3);
+            }
+
+            return totalTriangles;
         }
 
         // Traverse a GameObject hierarchy and run the analyzers

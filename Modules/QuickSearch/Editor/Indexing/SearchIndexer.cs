@@ -331,6 +331,10 @@ namespace UnityEditor.Search
         ISearchIndexerStorage m_Storage;
         internal ISearchIndexerStorage storage => m_Storage;
 
+        // Guards the native storage against being freed while external readers (e.g. background search
+        // threads) are still using it. See SearchIndexAccessGuard.
+        readonly SearchIndexAccessGuard m_AccessGuard = new SearchIndexAccessGuard();
+
         static readonly ProfilerMarker k_MapPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(MapProperty)}");
         static readonly ProfilerMarker k_AddWordMarker = new($"{nameof(SearchIndexer)}.{nameof(AddWord)}");
         static readonly ProfilerMarker k_AddExactWordMarker = new($"{nameof(SearchIndexer)}.{nameof(AddExactWord)}");
@@ -382,6 +386,15 @@ namespace UnityEditor.Search
         void Dispose(bool disposing)
         {
 
+            if (disposing)
+            {
+                // Cancel external readers and block until they release their lease so we never free the
+                // native storage out from under a running search. Skipped in the finalizer path
+                // (disposing == false): we must never block the finalizer thread, and any active reader
+                // keeps this indexer reachable, so finalization only runs once no leases remain.
+                m_AccessGuard.CloseAndWait();
+            }
+
             m_Storage.Dispose(disposing);
 
             if (disposing)
@@ -389,6 +402,19 @@ namespace UnityEditor.Search
                 m_IndexerThread = null;
                 m_PatternMatchCount.Clear();
             }
+        }
+
+        /// <summary>
+        /// Registers the caller as an active reader of this index. While any lease is held, <see cref="Dispose()"/>
+        /// blocks (after canceling <paramref name="disposalToken"/>) until every lease is released, guaranteeing
+        /// the native storage stays valid for the duration of the read.
+        /// Returns <c>null</c> if the index is already being disposed, in which case the caller must not use it.
+        /// The lease must be released from the same work that reads the index (e.g. the worker thread), never from
+        /// code pumped on the thread that disposes the index, otherwise disposal would deadlock.
+        /// </summary>
+        internal IDisposable TryAcquireReadAccess(out CancellationToken disposalToken)
+        {
+            return m_AccessGuard.TryAcquire(out disposalToken);
         }
 
         private ParsedQuery<SearchResult, object> BuildQuery(string searchQuery)
@@ -959,14 +985,14 @@ namespace UnityEditor.Search
             {
                 try
                 {
-                    using (new IndexerThreadScope(AbortIndexing))
-                    {
-                        Finish(removedDocuments);
+                    using var lease = TryAcquireReadAccess(out var disposalToken);
+                    if (lease == null)
+                        return;
+                    Finish(removedDocuments);
 
-                        if (threadCompletedCallback != null)
-                        {
-                            Dispatcher.Enqueue(threadCompletedCallback);
-                        }
+                    if (threadCompletedCallback != null)
+                    {
+                        Dispatcher.Enqueue(threadCompletedCallback);
                     }
                 }
                 catch (ThreadAbortException)
@@ -1002,17 +1028,17 @@ namespace UnityEditor.Search
             {
                 try
                 {
-                    using (new IndexerThreadScope(AbortIndexing))
-                    {
-                        Finish(removedDocuments);
+                    using var lease = TryAcquireReadAccess(out var disposalToken);
+                    if (lease == null)
+                        return;
+                    Finish(removedDocuments);
 
-                        if (threadCompletedCallback != null)
-                        {
-                            byte[] bytes = null;
-                            if (saveBytes)
-                                bytes = SaveBytes();
-                            Dispatcher.Enqueue(() => threadCompletedCallback(bytes));
-                        }
+                    if (threadCompletedCallback != null)
+                    {
+                        byte[] bytes = null;
+                        if (saveBytes)
+                            bytes = SaveBytes();
+                        Dispatcher.Enqueue(() => threadCompletedCallback(bytes));
                     }
                 }
                 catch (ThreadAbortException)
@@ -1055,28 +1081,6 @@ namespace UnityEditor.Search
         {
             m_IndexerThread?.Abort();
             m_IndexerThread = null;
-        }
-
-        internal struct IndexerThreadScope : IDisposable
-        {
-            private bool m_Disposed;
-            private readonly AssemblyReloadEvents.AssemblyReloadCallback m_AbortHandler;
-
-            public IndexerThreadScope(AssemblyReloadEvents.AssemblyReloadCallback abortHandler)
-            {
-                m_Disposed = false;
-                m_AbortHandler = abortHandler;
-                AssemblyReloadEvents.beforeAssemblyReload -= abortHandler;
-                AssemblyReloadEvents.beforeAssemblyReload += abortHandler;
-            }
-
-            public void Dispose()
-            {
-                if (m_Disposed)
-                    return;
-                AssemblyReloadEvents.beforeAssemblyReload -= m_AbortHandler;
-                m_Disposed = true;
-            }
         }
     }
 }

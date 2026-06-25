@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
@@ -15,19 +16,22 @@ namespace UnityEditor.AI
     {
         const string k_OpenAgentSettings = "NavMeshAgentInspector-OpenAgentSettings";
 
-        internal static readonly bool isPackageInstalled;
+        [AutoStaticsCleanupOnCodeReload] // lazy cache; reset to null on reload so File.Exists re-runs on next access
+        static bool? s_IsPackageInstalled;
+        internal static bool isPackageInstalled =>
+            s_IsPackageInstalled ??= File.Exists(
+                FileUtil.PathToAbsolutePath("Packages/com.unity.ai.navigation/package.json"));
 
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered event handlers for agent settings navigation
         internal static event Action<int> agentTypeSettingsClicked;
+        [AutoStaticsCleanupOnCodeReload] // holds user-registered event handlers for area settings navigation
         internal static event Action areaSettingsClicked;
 
-        static NavMeshEditorHelpers()
+        // If OpenAgentSettings() prompted the user to install the package, the install triggers a domain reload;
+        // a SessionState flag tells us to reopen the settings once the editor is ready again.
+        [OnCodeLoaded]
+        static void HandlePostInstallOpenAgentSettings()
         {
-            var packagePath = FileUtil.PathToAbsolutePath("Packages/com.unity.ai.navigation/package.json");
-            isPackageInstalled = File.Exists(packagePath);
-
-            // open the agent settings if the package was just installed via the dialog box in OpenAgentSettings()
-            // there will have just been a domain reload, so a session state var is the only way to know the installation occurred from that user action
-            // use a delay call to ensure SessionState API is called on the main thread, regardless of which thread NavMeshEditorHelpers is called on the first time
             EditorApplication.delayCall += () =>
             {
                 if (SessionState.GetBool(k_OpenAgentSettings, false))

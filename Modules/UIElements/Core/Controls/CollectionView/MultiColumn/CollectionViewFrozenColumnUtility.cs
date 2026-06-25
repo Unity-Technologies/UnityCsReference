@@ -48,7 +48,10 @@ internal static class CollectionViewFrozenColumnUtility
             if (freezeState != FreezeState.None &&
                 header.columnDataMap.TryGetValue(col, out var colData))
             {
-                frozenWidth += colData.control.resolvedStyle.width;
+                var w = colData.control.resolvedStyle.width;
+                if (float.IsNaN(w))
+                    continue;
+                frozenWidth += w;
             }
         }
 

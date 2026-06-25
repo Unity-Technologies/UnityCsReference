@@ -37,7 +37,7 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
     [NativeHeader("Editor/Src/SceneView/SceneViewBindings.h")]
     [EditorToolOwner(typeof(GameObjectToolContext))]
-    public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays, ISupportsToolsOverlays
+    public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsEditorTools
     {
         [Serializable]
         public struct CameraMode
@@ -659,7 +659,7 @@ namespace UnityEditor
         }
 
         internal bool usesInteractiveLightBakingData => this.debugDrawModesUseInteractiveLightBakingData && this.currentDrawModeMayUseInteractiveLightBakingData;
-        
+
         [SerializeField]
         // used by Tests/EditModeAndPlayModeTests/SceneView/CameraFlyModeContextTests
         internal AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
@@ -1049,7 +1049,7 @@ namespace UnityEditor
             void Apply();   // Called from copy-past logic (SceneViewCameraWindow)
             internal Type filteringRenderPipelineAssetType { get; }
         }
-        
+
         // Template class is implementing basic functionalities instead of doing all in final class
         [Serializable]
         public abstract class AdditionalSettings<TRenderPipelineAsset, TLinkedComponent> : IAdditionalSettings
@@ -1074,7 +1074,7 @@ namespace UnityEditor
 
         [SerializeReference]
         List<IAdditionalSettings> m_AdditionalSettings = new();
-        
+
         int FindAdditionalSettingsIndexForRenderPipelineType(Type rpType)
         {
             for (int i = m_AdditionalSettings.Count-1; i >= 0; --i)
@@ -1341,6 +1341,8 @@ namespace UnityEditor
         int m_MainViewControlID;
 
         public Camera camera { get { return m_Camera; } }
+
+        Camera ISupportsEditorTools.handlesCamera => m_Camera;
 
         [SerializeField]
         Shader m_ReplacementShader;

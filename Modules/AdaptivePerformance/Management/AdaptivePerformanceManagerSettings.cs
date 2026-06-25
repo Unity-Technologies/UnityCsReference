@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 [assembly: InternalsVisibleTo("Unity.AdaptivePerformance.Tests")]
 [assembly: InternalsVisibleTo("Unity.AdaptivePerformance.Editor.Tests")]
@@ -37,7 +38,7 @@ namespace UnityEngine.AdaptivePerformance
     /// * OnDisable calls <see cref="StopSubsystems"/> internally. Ask the active loader to stop all subsystems.
     /// * OnDestroy calls <see cref="DeinitializeLoader"/> internally. Deinitialize and remove the active loader.
     /// </summary>
-    public sealed class AdaptivePerformanceManagerSettings : ScriptableObject
+    public sealed partial class AdaptivePerformanceManagerSettings : ScriptableObject
     {
         [HideInInspector]
         bool m_InitializationComplete = false;
@@ -99,6 +100,7 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         [HideInInspector]
+        [AutoStaticsCleanup]
         static AdaptivePerformanceLoader s_ActiveLoader = null;
 
         ///<summary>

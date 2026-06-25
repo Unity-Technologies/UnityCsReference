@@ -8,6 +8,7 @@
 using System;
 using Unity.Collections;
 using UnityEngine.Profiling.Experimental;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.Profiling.Memory.Experimental
 {
@@ -34,10 +35,11 @@ namespace UnityEngine.Profiling.Memory.Experimental
     }
 
     [Obsolete("UnityEngine.Profiling.Memory.Experimental.MemoryProfiler has been deprecated use Unity.Profiling.Memory.MemoryProfiler instead (UnityUpgradable) -> Unity.Profiling.Memory.MemoryProfiler", true)]
-    public static class MemoryProfiler
+    public static partial class MemoryProfiler
     {
 #pragma warning disable CS0067 // Yes the event is never used. No warning needed
         [Obsolete("UnityEngine.Profiling.Memory.Experimental.MemoryProfiler.createMetaData has been deprecated use Unity.Profiling.Memory.MemoryProfiler.CreatingMetadata instead (UnityUpgradable) -> Unity.Profiling.Memory.MemoryProfiler.CreatingMetadata", true)]
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action<MetaData>     createMetaData;
 #pragma warning restore CS0067
 

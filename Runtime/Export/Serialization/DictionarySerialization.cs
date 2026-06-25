@@ -308,6 +308,123 @@ namespace UnityEngine
             });
         }
 
+        // Reflection handle for the open-generic empty-dictionary factory. The
+        // dispatcher closes it over (TKey, TValue) at build time when interning the
+        // factory into SerializationCommandObjectTable; see InternDictionaryDefaultAllocateFactory below.
+        private static readonly MethodInfo s_CreateEmptyDictionaryTypedInfo =
+            typeof(DictionarySerialization).GetMethod(nameof(CreateEmptyDictionaryTyped),
+                BindingFlags.NonPublic | BindingFlags.Static);
+
+        // Worker for the default-allocate factory: closed over (TKey, TValue) and
+        // bound to a Func<object> delegate that the managed-block read dispatcher
+        // pulls out of the SerializationCommandObjectTable by integer index.
+        private static object CreateEmptyDictionaryTyped<TKey, TValue>()
+        {
+            return new Dictionary<TKey, TValue>();
+        }
+
+        // Helper for the three Intern* methods below. Closes the open-generic
+        // method over the dict's (TKey, TValue) and interns the resulting
+        // delegate into SerializationCommandObjectTable, returning the int
+        // index. Returns -1 when the type can't be resolved.
+        private static int InternClosedDelegateForDictionaryType(
+            IntPtr dictTypeRaw, MethodInfo openMethod, Type delegateType)
+        {
+            if (dictTypeRaw == IntPtr.Zero)
+                return -1;
+
+            Type dictType = UnityEngine.Serialization.SerializationBackendManagedCommands
+                .UnmarshalSystemType(dictTypeRaw);
+            if (dictType == null || !dictType.IsGenericType)
+                return -1;
+
+            Type[] args = dictType.GetGenericArguments();
+            if (args.Length != 2)
+                return -1;
+
+            MethodInfo closed = openMethod.MakeGenericMethod(args);
+            Delegate del = Delegate.CreateDelegate(delegateType, closed);
+            return SerializationCommandObjectTable.Intern(del);
+        }
+
+        /// <summary>
+        /// Build-time helper: closes <see cref="GetEntriesTyped{TKey,TValue}"/> over the dict's
+        /// generic args, interns the typed delegate into <see cref="SerializationCommandObjectTable"/>,
+        /// and returns the int index. The managed-block dict command stores this index; the write
+        /// dispatcher calls <see cref="InvokeGetEntriesTyped"/> with it to skip per-call
+        /// <c>dict.GetType() + GetGenericArguments() + ConcurrentDictionary</c> lookup.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static int InternGetEntriesTypedDelegate(IntPtr dictTypeRaw)
+        {
+            return InternClosedDelegateForDictionaryType(
+                dictTypeRaw, s_GetEntriesTypedInfo, typeof(GetEntriesTypedDelegate));
+        }
+
+        /// <summary>
+        /// Build-time helper: closes <see cref="SetEntriesTyped{TKey,TValue}"/> over the dict's
+        /// generic args, interns the typed delegate, and returns the int index. The read
+        /// dispatcher calls <see cref="InvokeSetEntriesTyped"/> with it.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static int InternSetEntriesTypedDelegate(IntPtr dictTypeRaw)
+        {
+            return InternClosedDelegateForDictionaryType(
+                dictTypeRaw, s_SetEntriesTypedInfo, typeof(SetEntriesTypedDelegate));
+        }
+
+        /// <summary>
+        /// Execute-time wrapper for the interned <see cref="GetEntriesTyped{TKey,TValue}"/> delegate.
+        /// Falls back to the non-typed entry point (<see cref="GetDictionaryEntriesForSerialization"/>)
+        /// when the index is -1, so a build that couldn't intern (e.g. open generic, type lookup
+        /// failed) still works correctly — just at the cost of the per-call cache lookup the
+        /// non-typed path does.
+        /// </summary>
+        internal static Array InvokeGetEntriesTyped(
+            int idx, EntityId hostingEntityId, object dictionary, IntPtr dictionaryIdentifierTemplate)
+        {
+            if (idx < 0)
+                return GetDictionaryEntriesForSerialization(hostingEntityId, dictionary, dictionaryIdentifierTemplate);
+            var del = (GetEntriesTypedDelegate)SerializationCommandObjectTable.Get(idx);
+            return del(hostingEntityId, dictionary, dictionaryIdentifierTemplate);
+        }
+
+        /// <summary>
+        /// Execute-time wrapper for the interned <see cref="SetEntriesTyped{TKey,TValue}"/> delegate.
+        /// Falls back to <see cref="SetEntriesFromSerializedData"/> on index -1.
+        /// </summary>
+        internal static bool InvokeSetEntriesTyped(
+            int idx, EntityId hostingEntityId, object dictionary, Array entries,
+            string dictionaryIdentifier, out bool hadDuplicates)
+        {
+            if (idx < 0)
+                return SetEntriesFromSerializedData(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates);
+            var del = (SetEntriesTypedDelegate)SerializationCommandObjectTable.Get(idx);
+            return del(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates);
+        }
+
+        /// <summary>
+        /// Build-time helper: closes the <see cref="CreateEmptyDictionaryTyped{TKey,TValue}"/>
+        /// worker over the dict's <c>(TKey, TValue)</c> generic args, interns the resulting
+        /// <c>Func&lt;object&gt;</c> into <see cref="SerializationCommandObjectTable"/>, and
+        /// returns the int index. The managed-block dictionary command stores this index in its
+        /// header; the read dispatcher (<c>ConsumeDictionaryRead</c>) reads it back and invokes
+        /// the interned factory directly when the live dictionary field is null — no reflection,
+        /// no hash lookup, no per-call generic dispatch. Matches the legacy
+        /// <see cref="DictionaryField"/> ctor's default-allocate behavior at
+        /// DictionaryField.cpp:100-102.
+        /// </summary>
+        /// <param name="dictTypeRaw">Raw runtime type pointer for the closed <c>Dictionary&lt;TKey, TValue&gt;</c>
+        /// (i.e. <c>scripting_class_get_type(klass).GetBackendPtr()</c>) — same encoding as the
+        /// <c>elementTypeHandle</c> the dict header stamps for the entry type. Returns -1 when
+        /// the type can't be resolved or isn't a 2-arg generic.</param>
+        [RequiredByNativeCode]
+        internal static int InternDictionaryDefaultAllocateFactory(IntPtr dictTypeRaw)
+        {
+            return InternClosedDelegateForDictionaryType(
+                dictTypeRaw, s_CreateEmptyDictionaryTypedInfo, typeof(Func<object>));
+        }
+
         /// <summary>
         /// Returns the array indices of duplicate keys that could not be merged
         /// into the live dictionary, for the given host and dictionary field path. Used by the Editor (e.g.

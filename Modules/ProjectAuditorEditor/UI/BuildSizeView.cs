@@ -80,7 +80,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 EditorGUI.indentLevel++;
 
-                var width = 200;
+                var width = 220;
                 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
                 var dataSize = m_GroupStats.Sum(g => g.size);
 #pragma warning restore UA2001

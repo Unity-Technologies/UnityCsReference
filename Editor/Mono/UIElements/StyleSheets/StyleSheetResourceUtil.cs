@@ -49,6 +49,7 @@ namespace UnityEditor.UIElements.StyleSheets
             if (type == typeof(Sprite))
             {
                 // Special case for sprites, which are stored as Texture2D sub-assets
+                // Note: the path manipulation causes an allocation on every call
                 var spriteResource = Resources.Load(Path.GetFileNameWithoutExtension(pathName), type);
                 if (spriteResource != null)
                     resource = spriteResource;

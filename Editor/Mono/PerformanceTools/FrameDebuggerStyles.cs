@@ -4,6 +4,7 @@
 
 using UnityEditor;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {
@@ -158,10 +159,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string k_IntFormat = "d";
             internal const string k_NotAvailable = "-";
 
-            internal static string s_DashesString = new string('-', 30);
-            internal static string s_EqualsString = new string('=', 30);
+            internal static readonly string s_DashesString = new string('-', 30);
+            internal static readonly string s_EqualsString = new string('=', 30);
 
             // Cached width for two-column format label (matches k_TwoColumnFormat first column width of 22 chars)
+            [NoAutoStaticsCleanup] // cached measurement of a fixed GUIStyle; style persists across code reload so value remains valid
             private static float s_TwoColumnLabelWidth = -1f;
             internal static float TwoColumnLabelWidth
             {
@@ -315,6 +317,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 }
             }
 
+            [NoAutoStaticsCleanup] // immutable config array; GUIContent entries and string keys are code-reload-safe
             internal static readonly DetailsSectionInfo[] s_DetailsSections = new DetailsSectionInfo[]
             {
                 new DetailsSectionInfo(
@@ -354,6 +357,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 ),
             };
             internal static readonly GUIContent s_NotAvailableText = EditorGUIUtility.TrTextContent(k_NotAvailable);
+            [NoAutoStaticsCleanup] // programmatic Texture2D persists across incremental code reload; lifecycle managed by FrameDebuggerStyles.OnDisable
             internal static Texture2D s_RenderTargetMeshBackgroundTexture = null;
             internal static readonly string[] s_BatchBreakCauses = FrameDebuggerUtility.GetBatchBreakCauseStrings();
         }

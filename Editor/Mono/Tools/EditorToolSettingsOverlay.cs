@@ -14,7 +14,7 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
-    [Overlay(typeof(ISupportsToolsOverlays), "Tool Settings", true, priority = (int)OverlayPriority.ToolSettings, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
+    [Overlay(typeof(ISupportsEditorTools), "Tool Settings", true, priority = (int)OverlayPriority.ToolSettings, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/ToolSettings.png")]
     sealed class EditorToolSettingsOverlay : Overlay, ICreateToolbar, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {

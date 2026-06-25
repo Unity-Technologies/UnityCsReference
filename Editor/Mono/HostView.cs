@@ -387,10 +387,10 @@ namespace UnityEditor
             yield return typeof(SceneView);
             yield return typeof(GameView);
             yield return typeof(InspectorWindow);
-            if (HierarchyPreferences.UseNewHierarchy)
-                yield return HierarchyPreferences.HierarchyV2WindowType;
-            else
+            if (EditorSettings.useLegacyHierarchy)
                 yield return typeof(SceneHierarchyWindow);
+            else
+                yield return HierarchyPreferences.HierarchyV2WindowType;
             yield return typeof(ProjectBrowser);
             yield return typeof(ProfilerWindow);
             if (AnimationWindowCallbacks.AnimationWindowType != null)

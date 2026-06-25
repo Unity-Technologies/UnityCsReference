@@ -608,13 +608,15 @@ namespace UnityEditor
         }
     }
 
-    // Note: MUST match memory layout of TextureImporterPlatformSettings in TextureImporterTypes.h!
+    // Note: fields map by name (see [NativeName]) to TextureImporterPlatformSettings_Marshalling in TextureImporterTypes.h.
     // This means you need to be careful about field sizes (e.g. don't use "bool" since they are different size in C# and C++).
+    // CodegenOptions.Custom is not used here because this type is non-blittable (it has a string field); Custom only
+    // supports blittable types, so the Auto path marshals each field (m_Name as a string) - see SCP-1922.
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [NativeAsStruct]
-    [NativeType(CodegenOptions.Custom, "TextureImporterPlatformSettings_Marshalling")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.bindings.h")]
+    [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]
     public sealed partial class TextureImporterPlatformSettings
     {
         [SerializeField]

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
@@ -31,8 +32,9 @@ namespace UnityEditor
     }
 
     [NativeHeader("Editor/Src/MenuController.h")]
-    public sealed class Menu
+    public sealed partial class Menu
     {
+        [AutoStaticsCleanupOnCodeReload]
         [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static event Action menuChanged;
 

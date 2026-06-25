@@ -14,11 +14,6 @@ namespace UnityEditor.UIElements.Inspector
     {
         protected override Type parentObjectType => typeof(PanelRenderer);
 
-        public override void OnInspectorGUI()
-        {
-            // UUM-137205:  Explicitly prevent the default IMGUI inspector (which would shows the material)
-        }
-
         [DrawGizmo(GizmoType.Selected)]
         static void PanelRendererDrawGizmosSelected(PanelRenderer panelRenderer, GizmoType gizmoType)
         {

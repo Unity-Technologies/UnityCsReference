@@ -6,6 +6,7 @@ using System;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.AnimationWindowBuiltin;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -26,6 +27,7 @@ namespace Unity.UIToolkit.Editor
         protected UIAnimationClip m_UIClip;
         protected AnimationWindowClip m_Clip;
 
+        protected static readonly string k_OnboardingLabelFormat = L10n.Tr("To begin animating {0}, create a UI Animation Clip.");
         protected UIToolkitAnimationSelectionItemBase(AnimationWindow window)
         {
             m_Window = window;
@@ -87,6 +89,8 @@ namespace Unity.UIToolkit.Editor
             if (AssetDatabase.IsMainAsset(uiClip))
             {
                 innerClip.name = uiClip.name;
+                // The inner clip is an implementation detail; hide it from the Project window and Inspector.
+                innerClip.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(innerClip, uiClip);
                 EditorUtility.SetDirty(uiClip);
             }
@@ -170,8 +174,42 @@ namespace Unity.UIToolkit.Editor
         public virtual void Synchronize() { }
         public virtual EditorCurveBinding[] GetAnimatableBindings(GameObject _) => Array.Empty<EditorCurveBinding>();
         public virtual EditorCurveBinding[] GetAnimatableBindings() => Array.Empty<EditorCurveBinding>();
-        public virtual Type GetValueType(EditorCurveBinding _) => null;
+
+        // Per-element clips have no GameObject root, so rows self-describe their kind: discrete int
+        // curves stay int, PPtr rows carry their own type, everything else is a continuous float.
+        public virtual Type GetValueType(EditorCurveBinding binding)
+        {
+            if (binding.isPPtrCurve)
+                return null;
+            if (binding.isDiscreteCurve)
+                return typeof(int);
+            return typeof(float);
+        }
+
+        // Resolves a binder's animatable bindings; all rows share the UIAnimationClip type.
+        protected static EditorCurveBinding[] GetAnimatableBindingsFromBinder(UIAnimationBinder binder)
+        {
+            if (binder == null)
+                return Array.Empty<EditorCurveBinding>();
+
+            binder.UpdateElementNamesIfNeeded();
+            return UIAnimationBinderEditorBindings.GetAllAnimatableProperties(binder, typeof(UIAnimationClip));
+        }
+
         public virtual string onboardingLabel => null;
+
+        // --- Preview / record surface driven by VisualElementAnimationWindowController ---
+        // Element-less selections override these; the inert defaults make a target do nothing.
+
+        // Invokes the action on every (element, binder) pair this target drives (preview fan-out).
+        internal virtual void ForEachPreviewTarget(Action<VisualElement, UIAnimationBinder> action) { }
+
+        // Representative binder for single-target work (snapshot, default reads, post-sample identity).
+        internal virtual UIAnimationBinder GetCanonicalBinder() => null;
+
+        // Registers/clears the inspector recording-context this target routes style edits through.
+        internal virtual void ActivateRecordingContext(UIAnimationClip clip, AnimationModeDriver driver) { }
+        internal virtual void DeactivateRecordingContext(UIAnimationClip clip) { }
 
         public abstract int GetRefreshHash();
         public abstract bool IsCompatibleWith(UnityEngine.Object selectedObject);

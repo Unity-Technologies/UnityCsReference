@@ -92,7 +92,11 @@ namespace Unity.U2D.Physics.Editor
                         content.Add(coreProjectSettingsField);
 
                         // Ensure we read the change immediately.
-                        coreProjectSettingsField.RegisterValueChangedCallback(_ => { PhysicsEditorOnly.ReadProjectSettings(); });
+                        coreProjectSettingsField.RegisterValueChangedCallback(_ =>
+                        {
+                            PhysicsEditorOnly.ReadProjectSettings();
+                            PhysicsCoreSettings2DProvider.RefreshActiveSettingContent();
+                        });
                     }
 
                     // Bind the project settings object.

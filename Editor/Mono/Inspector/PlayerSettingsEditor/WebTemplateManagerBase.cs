@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -16,6 +17,7 @@ namespace UnityEditor
             public GUIStyle thumbnailLabel = "IN ThumbnailSelection";
         }
 
+        [NoAutoStaticsCleanup] // lazy Styles instance; rebuilt on next GUI call if null
         private static Styles s_Styles;
 
         private WebTemplate[] m_Templates = null;

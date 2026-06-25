@@ -20,6 +20,10 @@ namespace UnityEngine.UIElements.HierarchyV2
         const float k_HeightThreshold = 60f;
         const float k_MaxDurationMs = 70f; // Matches the legacy speed (increase for slowdown, decrease for speedup).
 
+        // Batches beyond the viewport get extra time (capped) so a big expand/collapse renders >1 frame.
+        const float k_LargeBatchMsPerExtraPixel = 0.3f;
+        const float k_MaxLargeDurationMs = 180f;
+
         VisualElement m_Owner;
         VisualElement m_ClipParent;
         Func<int, RecycledItem> m_RecycledItemForIndex;
@@ -27,6 +31,8 @@ namespace UnityEngine.UIElements.HierarchyV2
         Action m_ClearBindWindow;
         Action m_OnAnimationCompleted;
         Func<int> m_GetVisibleViewportCount;
+        Action<AnimationReflowState> m_OnAnimationProgress;
+        Action<VisualElement, ItemAnimationInfo> m_SetActiveClipContainer;
 
         VisualElement m_ClipContainer;
         ValueAnimation<StyleValues> m_Animator;
@@ -41,8 +47,6 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         // Tracked as RecycledItems so Cleanup restores positions through the verticalOffset cache.
         readonly List<RecycledItem> m_BatchItems = new();
-
-        readonly List<(RecycledItem item, float originalY)> m_ShiftedItems = new();
 
         float m_ClipOriginY;
         float m_AnimatedTotalHeight;
@@ -62,6 +66,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_ClearBindWindow = context.clearBindWindow;
             m_OnAnimationCompleted = context.onAnimationCompleted;
             m_GetVisibleViewportCount = context.getVisibleViewportCount;
+            m_OnAnimationProgress = context.onAnimationProgress;
+            m_SetActiveClipContainer = context.setActiveClipContainer;
         }
 
         float ComputeAnimatedTotalHeight(int batchItemCount, float itemHeight)
@@ -91,7 +97,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_ClipOriginY = m_BatchItems[0].verticalOffset;
 
             BuildClipContainer(m_AnimatedTotalHeight, info.itemHeight);
-            CollectItemsBelowByIndex(info);
+            m_SetActiveClipContainer?.Invoke(m_ClipContainer, info);
+            ReportProgress(info, m_AnimatedTotalHeight);
 
             m_CurrentBatchInfo = info;
             m_CurrentOnComplete = onComplete;
@@ -120,10 +127,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_AnimatedTotalHeight = ComputeAnimatedTotalHeight(m_BatchItems.Count, info.itemHeight);
 
             BuildClipContainer(0f, info.itemHeight);
-            CollectItemsBelowByIndex(info);
-
-            foreach (var (item, originalY) in m_ShiftedItems)
-                item.verticalOffset = originalY - m_FullBatchHeight;
+            m_SetActiveClipContainer?.Invoke(m_ClipContainer, info);
+            ReportProgress(info, 0f);
 
             m_CurrentBatchInfo = info;
             m_CurrentOnComplete = null; // Appear sets data eagerly.
@@ -155,7 +160,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             // Proportional remaining duration so reversal velocity matches forward velocity.
             var distance = m_AnimatedTotalHeight > 0 ? Mathf.Abs(targetHeight - fromHeight) : 0f;
-            var fullDurationMs = GetDurationMs(m_AnimatedTotalHeight);
+            var fullDurationMs = ComputeDurationMs();
             var remainingMs = m_AnimatedTotalHeight > 0
                 ? Mathf.Max(1f, distance / m_AnimatedTotalHeight * fullDurationMs)
                 : 1f;
@@ -243,13 +248,24 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void StartAnimation(float fromHeight, float toHeight, bool isAppearing)
         {
-            StartAnimator(fromHeight, toHeight, (int)GetDurationMs(m_AnimatedTotalHeight), isAppearing);
+            StartAnimator(fromHeight, toHeight, (int)ComputeDurationMs(), isAppearing);
+        }
+
+        // Legacy duration for the visible clip, plus time scaled by how far the batch exceeds the viewport.
+        float ComputeDurationMs()
+        {
+            var baseDuration = GetDurationMs(m_AnimatedTotalHeight);
+            var excess = Mathf.Max(0f, m_FullBatchHeight - m_AnimatedTotalHeight);
+            return Mathf.Min(baseDuration + excess * k_LargeBatchMsPerExtraPixel, k_MaxLargeDurationMs);
         }
 
         void StartAnimator(float fromHeight, float toHeight, int durationMs, bool isAppearing)
         {
-            m_Animator = m_ClipContainer.experimental.animation
-                .Start(new StyleValues { height = fromHeight }, new StyleValues { height = toHeight }, durationMs);
+            m_Animator = m_ClipContainer.experimental.animation.Start(
+                new StyleValues { height = fromHeight },
+                new StyleValues { height = toHeight },
+                durationMs);
+            m_Animator.Ease(Easing.Linear);
             m_Animator.KeepAlive();
             m_Animator.valueUpdated += OnAnimatorValueUpdated;
             m_Animator.OnCompleted(isAppearing ? OnAppearCompleted : OnDisappearCompleted);
@@ -260,7 +276,19 @@ namespace UnityEngine.UIElements.HierarchyV2
             // We use the interpolated StyleValues; resolvedStyle.height lags a frame and would put below-items behind
             // the clip's actual rendered edge. The VisualElement signature is left in case we want to react to it in the future.
             m_CurrentClipHeight = sv.height;
-            UpdateBelowItemOffsets(sv.height);
+            if (m_CurrentBatchInfo is { } info)
+                ReportProgress(info, sv.height);
+        }
+
+        void ReportProgress(ItemAnimationInfo info, float clipHeight)
+        {
+            m_OnAnimationProgress?.Invoke(new AnimationReflowState
+            {
+                batch = info,
+                fullBatchHeight = m_FullBatchHeight,
+                clipHeight = clipHeight,
+                animatedTotalHeight = m_AnimatedTotalHeight,
+            });
         }
 
         void OnAppearCompleted() => OnAnimationDone(scheduleRefresh: true);
@@ -277,51 +305,13 @@ namespace UnityEngine.UIElements.HierarchyV2
             m_OnAnimationCompleted?.Invoke();
         }
 
-        // Computes originalY arithmetically — resolvedStyle is stale for just-bound items.
-        void CollectItemsBelowByIndex(ItemAnimationInfo info)
-        {
-            m_ShiftedItems.Clear();
-
-            var firstBelow = info.firstIndex + info.count;
-
-            for (var i = 0; ; i++)
-            {
-                var index = firstBelow + i;
-                var item = m_RecycledItemForIndex?.Invoke(index);
-                if (item == null)
-                    break;
-
-                var originalY = m_ClipOriginY + m_FullBatchHeight + i * info.itemHeight;
-                m_ShiftedItems.Add((item, originalY));
-            }
-        }
-
-        // Track clip's bottom edge so below-items stay flush during the animation.
-        void UpdateBelowItemOffsets(float currentClipHeight)
-        {
-            if (m_ClipContainer == null)
-                return;
-
-            if (float.IsNaN(currentClipHeight))
-                currentClipHeight = 0;
-
-            var shift = currentClipHeight - m_FullBatchHeight;
-            foreach (var (item, originalY) in m_ShiftedItems)
-                item.verticalOffset = originalY + shift;
-        }
-
         void Cleanup()
         {
             m_CurrentBatchInfo = null;
             m_CurrentClipHeight = 0f;
 
             m_ClearBindWindow?.Invoke();
-
-            // Write through verticalOffset so the cache stays in sync — the post-cleanup
-            // BindVisibleItems cascade reads from it.
-            foreach (var (item, originalY) in m_ShiftedItems)
-                item.verticalOffset = originalY;
-            m_ShiftedItems.Clear();
+            m_SetActiveClipContainer?.Invoke(null, default); // settles below-items + clears the region
 
             if (m_ClipContainer == null)
             {

@@ -48,6 +48,11 @@ namespace Unity.UIToolkit.Editor
         public FieldAffordanceElement affordanceElement { get; set; }
 
         /// <summary>
+        /// The inner value field's input element, where binding-state tint classes are applied.
+        /// </summary>
+        public VisualElement valueInputElement => m_ValueField?.visualInput;
+
+        /// <summary>
         /// The <see cref="BaseFieldMouseDragger"/> that can be used to change the value of the field.
         /// </summary>
         BaseFieldMouseDragger dragger => m_Dragger;

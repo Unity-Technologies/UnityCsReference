@@ -379,17 +379,13 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Returns the logical wire between an output port and an input port, if such a connection exists.
+        /// Gets the representation of the wire between an output port and an input port in the graph, if such a connection exists.
         /// </summary>
         /// <param name="output">The output port at the start of the connection.</param>
         /// <param name="input">The input port at the end of the connection.</param>
         /// <returns>
         /// A <see cref="Wire"/> when the ports are connected (including through portals); otherwise <c>null</c>.
         /// </returns>
-        /// <remarks>
-        /// When multiple portal-backed paths could match the same port pair, the first match from the graph's
-        /// virtual wire resolution is returned.
-        /// </remarks>
         public Wire GetWire(IPort output, IPort input)
         {
             CheckImplementation();

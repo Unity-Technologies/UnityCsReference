@@ -334,7 +334,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // If this is the selected config, re-load it into ScenarioRunner
             if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config && config == this)
+            {
                 CreateAndLoadScenario(false);
+                PlayModeButtons.ScheduleRefresh();
+            }
         }
 
         void MakeSettingsConsistent()
@@ -497,7 +500,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             var localMobileDevicesSelected = IsConditionMetForAll(
-                instance => instance != null && instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile != null && !string.IsNullOrEmpty(instance.GetUserSettings<LocalPlayerController.UserSettings>(this).DeviceID),
+                instance => instance != null && instance.GetSettings<LocalPlayerController.InstanceSettings>().BuildProfile != null && !string.IsNullOrEmpty(OrchestratedScenarioUserSettings.GetSettings(this, instance, LocalPlayerController.DefaultUserSettings).DeviceID),
                 localMobileInstances);
             if (!localMobileDevicesSelected)
                 reasonForInvalidConfiguration += "\nLocal mobile device instance(s) must have a device selected.";
@@ -506,13 +509,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             bool containsTakenDeviceID = false;
             foreach (var instance in localMobileInstances)
             {
-                if (takenIDs.Contains(instance.GetUserSettings<LocalPlayerController.UserSettings>(this).DeviceID))
+                var deviceID = OrchestratedScenarioUserSettings.GetSettings(this, instance, LocalPlayerController.DefaultUserSettings).DeviceID;
+                if (takenIDs.Contains(deviceID))
                 {
                     reasonForInvalidConfiguration = "Device must be associated with only a single instance.";
                     containsTakenDeviceID = true;
                     break;
                 }
-                takenIDs.Add(instance.GetUserSettings<LocalPlayerController.UserSettings>(this).DeviceID);
+                takenIDs.Add(deviceID);
             }
 
             // Check if local build targets are supported for building

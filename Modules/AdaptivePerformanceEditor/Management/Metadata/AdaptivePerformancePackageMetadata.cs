@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
@@ -113,7 +114,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
     /// Provide access to the metadata store. Currently only usable as a way to assign and remove loaders
     /// to or from an <see cref="AdaptivePerformanceManagerSettings"/> instance.
     /// </summary>
-    public class AdaptivePerformancePackageMetadataStore
+    public partial class AdaptivePerformancePackageMetadataStore
     {
         const string k_WaitingPackmanQuery = "APMGT Waiting Packman Query.";
         const string k_RebuildCache = "APMGT Rebuilding Cache.";
@@ -122,8 +123,10 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
         const string k_UninstallingPackage = "APMGT Uninstalling Adaptive Performance Package.";
         const string k_CachedMDStoreKey = "Adaptive Performance Metadata Store";
 
-        static float k_TimeOutDelta = 30f;
+        const float k_TimeOutDelta = 30f;
+        [AutoStaticsCleanup]
         static bool s_KnowPackageInitialized = false;
+        [AutoStaticsCleanup]
         static bool s_EnableLogging = false;
 
 
@@ -144,6 +147,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             public string[] installablePackages;
         }
 
+        [AutoStaticsCleanup]
         static CachedMDStoreInformation s_CachedMDStoreInformation = new CachedMDStoreInformation()
         {
             hasAlreadyRequestedData = false,
@@ -221,8 +225,11 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             public List<LoaderAssignmentRequest> activeRequests;
         }
 
+        [AutoStaticsCleanup]
         static List<LoaderAssignmentRequest> m_AddRequests = new List<LoaderAssignmentRequest>();
+        [AutoStaticsCleanup]
         static Dictionary<string, IAdaptivePerformancePackage> s_Packages = new Dictionary<string, IAdaptivePerformancePackage>();
+        [AutoStaticsCleanup]
         static SearchRequest s_SearchRequest = null;
 
         const string k_DefaultSessionStateString = "AP_DEFAULT_SESSION_STATE";
@@ -566,7 +573,8 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             }
         }
 
-        static AdaptivePerformancePackageMetadataStore()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
             if (IsEditorInPlayMode())

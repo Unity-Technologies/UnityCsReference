@@ -107,6 +107,7 @@ namespace UnityEngine.UIElements.UIR
                     case EntryType.BeginPanelComponent:
                     case EntryType.EndPanelComponent:
                     case EntryType.DedicatedPlaceholder:
+                    case EntryType.GenerateBackdropFilterTexture:
                         break; // Keep this to differentiate from unhandled cases
                     default:
                         throw new NotImplementedException(); // Keep this juste in case of future entry types

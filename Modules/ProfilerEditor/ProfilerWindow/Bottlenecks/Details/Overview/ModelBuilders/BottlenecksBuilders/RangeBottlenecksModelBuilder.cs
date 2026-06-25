@@ -46,18 +46,18 @@ namespace Unity.Profiling.Editor.UI
                 var gpuDurationsNs = new ulong[frameCount];
                 for (var i = 0; i < frameCount; ++i)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var frameIndex = firstFrameIndex + i;
                     var cpuGpuDurationsNs = GetCpuGpuDurationsNsForFrame(dataService, frameIndex);
                     cpuDurationsNs[i] = Convert.ToUInt64(cpuGpuDurationsNs.Item1);
                     gpuDurationsNs[i] = Convert.ToUInt64(cpuGpuDurationsNs.Item2);
-
-                    cancellationToken.ThrowIfCancellationRequested();
                 }
 
                 return new RangeBottlenecksModel(
                     cpuDurationsNs,
                     gpuDurationsNs);
-            });
+            }, cancellationToken);
 
             return await task;
         }

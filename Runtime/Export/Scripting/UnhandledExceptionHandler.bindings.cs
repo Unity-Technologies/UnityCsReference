@@ -12,7 +12,7 @@ namespace UnityEngine
     internal sealed partial class UnhandledExceptionHandler
     {
         [RequiredByNativeCode]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAC0006:AppDomain usage", Justification = "Domain reload in Mono unregisters it. CoreCLR will need manual unregistering")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAC0006:AppDomain usage", Justification = "Domain reload in Mono unregisters it. CoreCLR does not use this codepath")]
         static void RegisterUECatcher()
         {
             AppDomain.CurrentDomain.UnhandledException += (object sender, UnhandledExceptionEventArgs e) =>

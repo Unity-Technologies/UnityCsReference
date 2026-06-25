@@ -7,12 +7,13 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 
 namespace Unity.ProjectAuditor.Editor
 {
     // Extension methods for ProjectIssues which don't form part of the API: Used in UI, Tests, and HTML/CSV exporters
-    internal static class ProjectIssueExtensions
+    internal static partial class ProjectIssueExtensions
     {
         internal const string k_NotAvailable = "N/A";
 
@@ -20,7 +21,8 @@ namespace Unity.ProjectAuditor.Editor
         static readonly int s_NumAreaEnumValues = Enum.GetNames(typeof(Areas)).Length - 2;
 
         // Map of category+format to custom comparison functions. See usage of AddCustomComparer in eg. AudioClipModule
-        static readonly Dictionary<ulong, Func<ReportItem, ReportItem, int>> s_CustomComparers = new Dictionary<ulong, Func<ReportItem, ReportItem, int>>();
+        [AutoStaticsCleanupOnCodeReload]
+        static Dictionary<ulong, Func<ReportItem, ReportItem, int>> s_CustomComparers = new Dictionary<ulong, Func<ReportItem, ReportItem, int>>();
 
         public static void AddCustomComparer(IssueCategory category, PropertyType format, Func<ReportItem, ReportItem, int> customComparer)
         {
@@ -187,10 +189,20 @@ namespace Unity.ProjectAuditor.Editor
             bool parsedA = long.TryParse(a, out var longA);
             bool parsedB = long.TryParse(b, out var longB);
 
-            if (parsedA && parsedB)
-                return longA < longB ? -1 : longA > longB ? 1 : 0;
-            else
-                return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+            if (parsedA && parsedB) return longA < longB ? -1 : longA > longB ? 1 : 0;
+
+            return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int StringCompareWithDoubleSupport(string a, string b)
+        {
+            bool parsedA = double.TryParse(a, out var doubleA);
+            bool parsedB = double.TryParse(b, out var doubleB);
+
+            if (parsedA && parsedB) return doubleA < doubleB ? -1 : doubleA > doubleB ? 1 : 0;
+
+            return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

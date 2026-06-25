@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
-using static UnityEngine.TextCore.RichTextTagParser;
 
 namespace UnityEngine.UIElements
 {
@@ -17,8 +17,32 @@ namespace UnityEngine.UIElements
         bool uvsAreGenerated = false;
 
         // Buffer for processed text that differs from TextElement.textBuffer
-        // (rich-text-parsed, password-masked, placeholder, etc.).
+        // (password-masked, placeholder, elided)
         NativeTextBuffer m_ProcessedTextBuffer;
+
+        internal unsafe bool TryGetSourceTextPointer(out IntPtr ptr, out int length)
+        {
+            if (m_TextElement.showPlaceholderText
+                || m_TextElement.edition.isPassword
+                || (m_TextElement.isElided && !TextLibraryCanElide()))
+            {
+                ptr = IntPtr.Zero;
+                length = 0;
+                return false;
+            }
+
+            ref var buffer = ref m_TextElement.textBuffer;
+            if (!buffer.isCreated || buffer.length == 0)
+            {
+                ptr = IntPtr.Zero;
+                length = 0;
+                return true;
+            }
+
+            ptr = (IntPtr)NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(buffer.buffer);
+            length = buffer.length;
+            return true;
+        }
 
         void ComputeNativeTextSize(in string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
         {
@@ -55,12 +79,6 @@ namespace UnityEngine.UIElements
             if (!ConvertUssToNativeTextGenerationSettings())
                 return (default, false);
 
-            if (nativeSettings.hasLink)
-            {
-                m_TextElement.uitkTextHandle.CacheTextGenerationInfo();
-                m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
-            }
-
             // This needs to be set for each textElement because we might need to come back on the main thread and reuse the informations after.
             // We clear it as soon as possible to avoid persistent native allocations.
             if (textGenerationInfo == IntPtr.Zero)
@@ -72,6 +90,23 @@ namespace UnityEngine.UIElements
             var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref wasCached);
             if (!wasCached)
                 uvsAreGenerated = false;
+
+            // If there are links, we need to generate the text again and cache it
+            if (m_TextElement.enableRichText)
+            {
+                SyncLinksFromNative();
+
+                if (m_Links is { Length: > 0 } && !IsCachedPermanentATG)
+                {
+                    m_TextElement.uitkTextHandle.CacheTextGenerationInfo();
+                    m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
+                    textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref wasCached);
+                }
+            }
+            else
+            {
+                m_Links = null;
+            }
 
             m_IsElided = textInfo.isElided;
             return (textInfo, true);
@@ -90,9 +125,9 @@ namespace UnityEngine.UIElements
             textLib.ShapeText(nativeSettings, textGenerationInfo);
         }
 
-        public void ProcessMeshInfos(NativeTextInfo textInfo, ref List<List<List<int>>> textElementIndicesByMesh, ref List<bool> hasMultipleColorsByMesh)
+        public void ProcessMeshInfos(NativeTextInfo textInfo, ref List<List<List<int>>> textElementIndicesByMesh)
         {
-            textLib.ProcessMeshInfos(textInfo, nativeSettings, ref textElementIndicesByMesh, ref hasMultipleColorsByMesh, uvsAreGenerated);
+            textLib.ProcessMeshInfos(textInfo, nativeSettings, ref textElementIndicesByMesh, uvsAreGenerated);
             uvsAreGenerated = true;
         }
 
@@ -106,12 +141,15 @@ namespace UnityEngine.UIElements
             bool hasLink = false;
             bool hasHyperlink = false;
 
-            if (m_Links != null) // Using member variable to not allocate if unused
+            var links = m_Links;
+            if (links != null)
             {
-                foreach (var (_, type, _) in Links)
+                for (int i = 0; i < links.Length; i++)
                 {
-                    hasLink = hasLink || type == TagType.Link;
-                    hasHyperlink = hasHyperlink || type == TagType.Hyperlink;
+                    if (links[i].isHyperlink)
+                        hasHyperlink = true;
+                    else
+                        hasLink = true;
 
                     if (hasLink && hasHyperlink)
                         break;
@@ -119,6 +157,9 @@ namespace UnityEngine.UIElements
             }
             return (hasLink, hasHyperlink);
         }
+
+        // Test-only convenience: did the most recent rich-text parse expose an <a> (hyperlink) tag?
+        internal bool hasHyperlinkTag => hasLinkAndHyperlink().Item2;
 
         // Needs to be called on the main thread
         internal void UpdateATGTextEventHandler()
@@ -274,46 +315,38 @@ namespace UnityEngine.UIElements
             nativeSettings.textSettings = textSettings.nativeTextSettings;
             // TODO: We should expose this to user. Possibly disable it by default.
             nativeSettings.disableAdvancedFontFeatures = false;
+            nativeSettings.richTextEnabled = m_TextElement.enableRichText;
+            nativeSettings.hoveredTag = (HoveredTag)m_HoveredTag;
+            nativeSettings.pixelsPerPointFixed64 = (int)Math.Round(GetPixelsPerPoint() * 64.0f);
 
-            bool needsRichTextParsing = false;
-            if (m_TextElement.enableRichText)
-            {
-                if (useDirectBuffer)
-                {
-                    text = m_TextElement.renderedTextString ?? "";
-                    needsRichTextParsing = RichTextTagParser.MayNeedParsing(text);
-                    if (needsRichTextParsing)
-                        useDirectBuffer = false;
-                }
-                else
-                {
-                    needsRichTextParsing = RichTextTagParser.MayNeedParsing(text!);
-                }
-            }
-
-            if (needsRichTextParsing)
-            {
-                // If we're not using richTextTags, we're doing this on the native side to avoid allocations.
-                TextPreprocessor.PreProcessString(ref text!, nativeSettings.preProcessFlags, TextUtilities.GetTextSettingsFrom(m_TextElement));
-                nativeSettings.preProcessFlags = PreProcessFlags.None;
-                //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
-                CreateTextGenerationSettingsArray(ref nativeSettings, ref text, Links, GetPixelsPerPoint(), textSettings, m_HoveredTag);
-                m_ProcessedTextBuffer.CopyFrom(text!);
-                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
-            }
-            else if (useDirectBuffer && m_TextElement.textBuffer.isCreated)
+            if (useDirectBuffer
+                && TryGetSourceTextPointer(out IntPtr srcPtr, out int srcLen)
+                && srcPtr != IntPtr.Zero)
             {
                 nativeSettings.SetTextBuffer(m_TextElement.textBuffer.buffer, m_TextElement.textBuffer.length);
-                nativeSettings.textSpans = null;
-            }
-            else
-            {
-                m_ProcessedTextBuffer.CopyFrom(text ?? "");
-                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
-                nativeSettings.textSpans = null;
+                return true;
             }
 
+            // Fallback for placeholder / password / library-incompatible
+            // elision / explicit textToMeasure: materialize into a managed
+            // string and copy into the processed-text buffer.
+            if (useDirectBuffer)
+                text = m_TextElement.renderedTextString ?? "";
+
+            text ??= string.Empty;
+
+            m_ProcessedTextBuffer.CopyFrom(text);
+            nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
             return true;
+        }
+
+        internal void SyncLinksFromNative()
+        {
+            if (textGenerationInfo == IntPtr.Zero)
+                return;
+
+            var links = NativeRichTextParser.GetAllLinks(textGenerationInfo);
+            m_Links = (links != null && links.Length > 0) ? links : null;
         }
 #nullable restore
 

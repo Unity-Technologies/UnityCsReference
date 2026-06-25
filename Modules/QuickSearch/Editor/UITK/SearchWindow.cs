@@ -139,6 +139,7 @@ namespace UnityEditor.Search
             body.focusable = true;
             body.style.flexGrow = 1.0f;
             body.RegisterCallback<KeyDownEvent>(OnGlobalKeyDownEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
+            body.RegisterCallback<NavigationSubmitEvent>(OnGlobalNavigationSubmitEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
 
             // Create main layout
             if (m_ViewState.flags.HasNone(SearchViewFlags.HideSearchBar))
@@ -237,6 +238,13 @@ namespace UnityEditor.Search
                 if (globalNavigationResult.KeepFocusOnOriginalElement && focusedElement is Focusable focusable)
                     focusable.Focus();
             }
+        }
+
+        private void OnGlobalNavigationSubmitEvent(NavigationSubmitEvent evt)
+        {
+            var result = SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt);
+            if (result.Handled)
+                evt.StopImmediatePropagation();
         }
 
         private bool HandleDefaultPressEnter(Event evt)

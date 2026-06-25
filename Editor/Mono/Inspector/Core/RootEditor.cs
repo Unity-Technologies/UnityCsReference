@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Internal;
 using UnityEngine.Pool;
 using UnityEngine.Scripting;
@@ -41,7 +42,8 @@ namespace UnityEditor
         }
     }
 
-    internal static class RootEditorUtils
+    [AutoStaticsCleanupOnCodeReload]
+    internal static partial class RootEditorUtils
     {
         class RootEditorDesc
         {
@@ -54,9 +56,10 @@ namespace UnityEditor
         }
 
         private static bool s_SuppressRootEditor = false;
-        private static readonly List<RootEditorDesc> kSRootEditor = new List<RootEditorDesc>();
+        private static List<RootEditorDesc> kSRootEditor = new List<RootEditorDesc>();
 
-        static RootEditorUtils()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             Rebuild();
         }

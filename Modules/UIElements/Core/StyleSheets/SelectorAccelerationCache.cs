@@ -20,7 +20,9 @@ enum SelectorAccelerationTableType
     Length = 3 // Used to initialize the array
 }
 
-// Flattened selector part - leaf level
+// Flattened selector part - leaf level.
+// Layout must remain in sync with the C++ mirror in
+// Modules/UIElements/Core/Native/StyleSheets/FlattenedSelectorStructs.h
 struct FlattenedSelectorPart
 {
     public int uniqueStringId;      // UniqueStyleString.id, -1 for wildcards/pseudo
@@ -28,6 +30,8 @@ struct FlattenedSelectorPart
 }
 
 // Flattened selector - middle level. Resolve via SelectorAccelerationCacheEntry.PartsFor.
+// Layout must remain in sync with the C++ mirror in
+// Modules/UIElements/Core/Native/StyleSheets/FlattenedSelectorStructs.h
 struct FlattenedSelector
 {
     public int partsStart;  // index into the owning entry's allParts buffer

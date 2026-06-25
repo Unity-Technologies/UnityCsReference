@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -30,7 +31,9 @@ namespace UnityEditor
         SerializedMinMaxCurve m_SizeAmount;
 
         const int k_PreviewSize = 96;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         static Texture2D s_PreviewTexture;
+        [NoAutoStaticsCleanup] // editor UI state flag
         static bool s_PreviewTextureDirty = true;
 
         GUIStyle previewTextureStyle;
@@ -64,6 +67,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("High (3D)")
             };
         }
+        [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         private static Texts s_Texts;
 
         public NoiseModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)

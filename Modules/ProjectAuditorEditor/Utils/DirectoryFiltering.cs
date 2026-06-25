@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Utils
 {
@@ -364,6 +365,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             };
         }
 
+        [NoAutoStaticsCleanup] // CultureInfo.InvariantCulture helper, safe to persist across reloads
         static readonly TextInfo m_InvariantTextInfo = CultureInfo.InvariantCulture.TextInfo;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

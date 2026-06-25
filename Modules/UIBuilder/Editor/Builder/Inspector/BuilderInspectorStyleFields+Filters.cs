@@ -50,11 +50,12 @@ namespace Unity.UI.Builder
             m_Inspector.UpdateFieldStatus(filterStyleField, prop);
         }
 
-        void ApplyFilterListChange(List<FilterFunction> newFilterList, bool refreshField, VisualElement elementTarget)
+        // Shared helper for both filter and backdrop-filter property changes
+        void ApplyFilterListChangeCore(string styleName, List<FilterFunction> newFilterList, bool refreshField, VisualElement elementTarget)
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
 
             if (newFilterList == null || newFilterList.Count == 0)
             {
@@ -68,13 +69,18 @@ namespace Unity.UI.Builder
             }
 
             s_StyleChangeList.Clear();
-            s_StyleChangeList.Add(FilterConstants.Filter);
+            s_StyleChangeList.Add(styleName);
             NotifyStyleChanges(s_StyleChangeList, refreshField);
 
             if (!refreshField)
             {
                 m_Inspector.UpdateFieldStatus(elementTarget, styleProperty);
             }
+        }
+
+        void ApplyFilterListChange(List<FilterFunction> newFilterList, bool refreshField, VisualElement elementTarget)
+        {
+            ApplyFilterListChangeCore(FilterConstants.Filter, newFilterList, refreshField, elementTarget);
         }
 
         void OnFilterListChanged(FilterListChangedEvent evt, FilterStyleField filterStyleField)

@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Profiling.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -17,6 +18,7 @@ namespace UnityEditorInternal.Profiling
         const int k_DefaultOrderIndex = 12;
         static readonly string k_UIProfilerAvailableOnlyInEditorMode = LocalizationDatabase.GetLocalizedString("Data is only available when profiling Play Mode in the Editor.");
 
+        [NoAutoStaticsCleanup] // WeakReference; target is GC'd on reload, safe to persist
         protected static WeakReference instance;
 #pragma warning disable UAC1010
         // https://jira.unity3d.com/browse/UUM-132549

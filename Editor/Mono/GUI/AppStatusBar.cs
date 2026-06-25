@@ -372,26 +372,57 @@ namespace UnityEditor
             }
             else
             {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var currentItem = progressItems.FirstOrDefault(item => item.priority != (int)Progress.Priority.Idle);
-#pragma warning restore UA2001
-                if (currentItem != null && !String.IsNullOrEmpty(currentItem.description))
-                    m_ProgressStatus.tooltip = currentItem.name + "\r\n" + currentItem.description;
-                m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
-
                 var remainingTimeText = "";
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var runningProgresses = Progress.EnumerateItems().Where(item => item.running);
-#pragma warning restore UA2001
-#pragma warning disable UA2006 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                if (Progress.globalRemainingTime.TotalSeconds > 0 && runningProgresses.Any(item => item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && item.priority != (int)Progress.Priority.Idle) &&
-#pragma warning restore UA2006
-#pragma warning disable UA2008 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    runningProgresses.All(item => !item.indefinite))
-#pragma warning restore UA2008
+
+                var anyShowRemainingTime = false;
+                var allDefinite = true;
+                var topLevelRunningCount = 0;
+                Progress.Item firstTopLevelItem = null;
+
+                foreach (var item in Progress.EnumerateItems())
+                {
+                    if (item.running)
+                    {
+                        if (item.timeDisplayMode == Progress.TimeDisplayMode.ShowRemainingTime && item.priority != (int)Progress.Priority.Idle)
+                        {
+                            anyShowRemainingTime = true;
+                        }
+                        if (item.indefinite)
+                        {
+                            allDefinite = false;
+                        }
+                        if (item.parentId == -1 && item.priority != (int)Progress.Priority.Idle)
+                        {
+                            topLevelRunningCount++;
+                            if (firstTopLevelItem == null)
+                            {
+                                firstTopLevelItem = item;
+                            }
+                        }
+                    }
+                }
+
+                if (Progress.globalRemainingTime.TotalSeconds > 0 && anyShowRemainingTime && allDefinite)
                 {
                     remainingTimeText = $" [{Progress.globalRemainingTime:g}]";
                 }
+
+                Progress.Item currentItem;
+
+                // If we only have a single top-level item, show the label of that item instead of "Multiple tasks"
+                if (topLevelRunningCount <= 1 && firstTopLevelItem != null)
+                {
+                    taskCount = 1;
+                    currentItem = firstTopLevelItem;
+                }
+                else
+                {
+                    currentItem = Array.Find(progressItems, item => item.priority != (int)Progress.Priority.Idle);
+                }
+
+                if (currentItem != null && !string.IsNullOrEmpty(currentItem.description))
+                    m_ProgressStatus.tooltip = currentItem.name + "\r\n" + currentItem.description;
+                m_ProgressPercentageStatus.text = Progress.globalProgress.ToString("P", percentageFormat);
 
                 if (taskCount > 1)
                     m_ProgressStatus.text = $"Multiple tasks ({taskCount}){remainingTimeText}";

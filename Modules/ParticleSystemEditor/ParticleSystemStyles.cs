@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEditor
@@ -38,6 +39,7 @@ namespace UnityEditor
         Texture2D m_WarningIcon;
 
 
+        [NoAutoStaticsCleanup] // lazy-initialized UI styles cache
         private static ParticleSystemStyles s_ParticleSystemStyles;
         public static ParticleSystemStyles Get()
         {

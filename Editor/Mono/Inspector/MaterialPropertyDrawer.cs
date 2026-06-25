@@ -10,10 +10,11 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Scripting;
 using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    internal class MaterialPropertyHandler
+    internal partial class MaterialPropertyHandler
     {
         private MaterialPropertyDrawer m_PropertyDrawer;
         private List<MaterialPropertyDrawer> m_DecoratorDrawers;
@@ -69,6 +70,7 @@ namespace UnityEditor
             return height;
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static Dictionary<string, MaterialPropertyHandler> s_PropertyHandlers = new Dictionary<string, MaterialPropertyHandler>();
 
         private static string GetPropertyString(Shader shader, string name)

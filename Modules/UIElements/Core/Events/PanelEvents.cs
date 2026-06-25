@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
     /// Refer to the [[wiki:UIE-Panel-Events|Panel events]] manual page for more information and examples.
     /// </remarks>
     [EventCategory(EventCategory.ChangePanel)]
-    public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent where T : PanelChangedEventBase<T>, new()
+    public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent, IProfilerIgnoredEvent where T : PanelChangedEventBase<T>, new()
     {
         /// <summary>
         /// In the case of AttachToPanelEvent, the panel to which the event target element was attached. In the case of DetachFromPanelEvent, the panel from which the event target element is detached.

@@ -5,20 +5,23 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.AdaptivePerformance;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
-    internal class AdaptivePerformanceLoaderInfoManager : IAdaptivePerformanceLoaderOrderManager
+    internal partial class AdaptivePerformanceLoaderInfoManager : IAdaptivePerformanceLoaderOrderManager
     {
         // Simple class to give us updates when the asset database changes.
-        internal class AssetCallbacks : AssetPostprocessor
+        internal partial class AssetCallbacks : AssetPostprocessor
         {
+            [AutoStaticsCleanup]
             static bool s_EditorUpdatable = false;
+            [AutoStaticsCleanup]
             internal static System.Action Callback { get; set; }
 
-            static AssetCallbacks()
+            [OnCodeLoaded]
+            static void Initialize()
             {
                 if (!s_EditorUpdatable)
                 {

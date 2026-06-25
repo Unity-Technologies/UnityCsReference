@@ -455,12 +455,23 @@ namespace UnityEditor.UIElements.Bindings
             baseListView.itemsSource = m_DataList;
             baseListView.SetupArraySizeField();
 
+            if (baseListView.arraySizeField != null)
+                baseListView.arraySizeField.onValidateValue += OnValidateArraySize;
+
             var foldoutInput = baseListView.headerFoldout?.toggle?.visualInput;
             if (foldoutInput != null)
             {
                 foldoutInput.RegisterCallback(m_DragUpdatedCallback);
                 foldoutInput.RegisterCallback(m_DragPerformCallback);
             }
+        }
+
+        string OnValidateArraySize(string entered)
+        {
+            var currentSize = m_DataList?.arraySize ?? 0;
+            return EditorGUI.TryConfirmArraySizeChange(currentSize, entered, out var newSize)
+                ? newSize.ToString()
+                : currentSize.ToString();
         }
 
         protected void BindListViewItem(VisualElement ve, int index)
@@ -526,6 +537,9 @@ namespace UnityEditor.UIElements.Bindings
                 Debug.LogError("[UI Toolkit] Internal ListViewBindings error during release. Please report this with Help -> Report a bug...");
                 return;
             }
+
+            if (baseListView.arraySizeField != null)
+                baseListView.arraySizeField.onValidateValue -= OnValidateArraySize;
 
             baseListView.SetProperty(BaseVerticalCollectionView.internalBindingKey, null);
             baseListView.itemsSource = null;

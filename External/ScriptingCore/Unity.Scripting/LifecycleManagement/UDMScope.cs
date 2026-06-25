@@ -1,4 +1,5 @@
 using UnityEngine.Scripting;
+using PreserveAttribute = Unity.Private.Scripting.PreserveAttribute;
 
 namespace Unity.Scripting.LifecycleManagement
 {

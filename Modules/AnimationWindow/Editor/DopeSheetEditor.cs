@@ -1384,7 +1384,7 @@ namespace UnityEditorInternal
             enum SelectionType { Normal, Additive, Subtractive }
             public readonly GUIStyle createRect = "U2D.createRect";
 
-            static int s_RectSelectionID = GUIUtility.GetPermanentControlID();
+            readonly int m_RectSelectionID = GUIUtility.GetPermanentControlID();
 
             public DopeSheetSelectionRect(DopeSheetEditor owner)
             {
@@ -1395,7 +1395,7 @@ namespace UnityEditorInternal
             {
                 Event evt = Event.current;
                 Vector2 mousePos = evt.mousePosition;
-                int id = s_RectSelectionID;
+                int id = m_RectSelectionID;
                 switch (evt.GetTypeForControl(id))
                 {
                     case EventType.MouseDown:

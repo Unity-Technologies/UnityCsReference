@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
@@ -21,13 +20,15 @@ internal enum UIHierarchyDisplayOptions
 internal enum NewVisualTreeAssetLocation
 {
     [InspectorName("Ask for location")] AskForLocation,
-    [InspectorName("Use current folder")] UseCurrentFolder,
+    [InspectorName("Default location")] DefaultLocation,
 }
 
 internal enum AutoOpenMode
 {
     Never,
+    [InspectorName("When entering the UI Stage from the Main Stage")]
     FromMainStage,
+    [InspectorName("When entering the UI Stage from any Stage")]
     Always
 }
 
@@ -41,8 +42,7 @@ internal enum RectangleSelectionMode
 
 internal static class UIToolkitAuthoringSettings
 {
-    private const string k_EnableHierarchyIntegration = "UIAuthoring.EnableHierarchyIntegration";
-    private const string k_EnableUIStages = "UIAuthoring.EnableUIStages";
+    private const string k_EnableInSceneUIAuthoring = "UIAuthoring.EnableHierarchyIntegration";
     private const string k_DisplayOptions = "UIAuthoring.DisplayOptions";
     private const string k_NewVisualTreeAssetLocation = "UIAuthoring.NewVisualTreeAssetLocation";
     private const UIHierarchyDisplayOptions DefaultDisplayOptions = UIHierarchyDisplayOptions.Typename | UIHierarchyDisplayOptions.UssClasses;
@@ -54,10 +54,7 @@ internal static class UIToolkitAuthoringSettings
     private const RectangleSelectionMode DefaultRectangleSelectionMode = RectangleSelectionMode.AnyOverlap;
 
     [NoAutoStaticsCleanup]
-    internal static event Action<bool> HierarchyIntegrationChanged;
-
-    [NoAutoStaticsCleanup]
-    internal static event Action<bool> UIStagesChanged;
+    internal static event Action<bool> EnableInSceneAuthoringChanged;
 
     [NoAutoStaticsCleanup]
     internal static event Action<UIHierarchyDisplayOptions> DisplayOptionsChanged;
@@ -71,39 +68,20 @@ internal static class UIToolkitAuthoringSettings
     [NoAutoStaticsCleanup]
     internal static event Action<RectangleSelectionMode> RectangleSelectionModeChanged;
 
-    [NoAutoStaticsCleanup]
-    public static bool EnableHierarchyIntegration
+    public static bool EnableInSceneUIAuthoring
     {
         get
         {
-            var value = EditorUserSettings.GetConfigValue(k_EnableHierarchyIntegration);
+            var value = EditorUserSettings.GetConfigValue(k_EnableInSceneUIAuthoring);
             return !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
         }
         set
         {
-            var currentValue = EnableHierarchyIntegration;
+            var currentValue = EnableInSceneUIAuthoring;
             if (currentValue == value)
                 return;
-            EditorUserSettings.SetConfigValue(k_EnableHierarchyIntegration, value.ToString());
-            HierarchyIntegrationChanged?.Invoke(value);
-        }
-    }
-
-    [NoAutoStaticsCleanup]
-    public static bool EnableUIStages
-    {
-        get
-        {
-            var value = EditorUserSettings.GetConfigValue(k_EnableUIStages);
-            return !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
-        }
-        set
-        {
-            var currentValue = EnableUIStages;
-            if (currentValue == value)
-                return;
-            EditorUserSettings.SetConfigValue(k_EnableUIStages, value.ToString());
-            UIStagesChanged?.Invoke(value);
+            EditorUserSettings.SetConfigValue(k_EnableInSceneUIAuthoring, value.ToString());
+            EnableInSceneAuthoringChanged?.Invoke(value);
         }
     }
 

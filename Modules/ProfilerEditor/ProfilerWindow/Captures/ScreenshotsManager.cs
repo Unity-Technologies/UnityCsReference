@@ -12,6 +12,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEditorInternal;
+using UnityEditorInternal.Profiling;
 
 namespace Unity.Profiling.Editor.UI
 {
@@ -306,14 +307,6 @@ namespace Unity.Profiling.Editor.UI
             return true;
         }
 
-        static class TextureInfoElem
-        {
-            public const int TextureFormat = 0;
-            public const int Width = 1;
-            public const int Height = 2;
-            public const int TotalElems = 3;
-        }
-
         internal bool WriteOutMostRecentScreenshot(string filePath, int frameIndex)
         {
             if (frameIndex > ProfilerDriver.lastFrameIndex || frameIndex < ProfilerDriver.firstFrameIndex || frameIndex < 0)
@@ -321,17 +314,18 @@ namespace Unity.Profiling.Editor.UI
 
             using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, 0))
             {
-                var texInfo = frameData.GetFrameMetaData<int>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
+                var texInfo = frameData.GetFrameMetaData<ScreenshotTextureInfo>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
                     (int)ProfilingSessionMetaDataEntry.ScreenshotTextureInfo);
 
-                if (texInfo.Length == TextureInfoElem.TotalElems)
+                if (texInfo.Length == 1)
                 {
                     var data = frameData.GetFrameMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid,
                         (int)ProfilingSessionMetaDataEntry.ScreenshotRawTextureData);
 
-                    var format = (TextureFormat)texInfo[TextureInfoElem.TextureFormat];
-                    var width = texInfo[TextureInfoElem.Width];
-                    var height = texInfo[TextureInfoElem.Height];
+                    var info = texInfo[0];
+                    var format = (TextureFormat)info.Format;
+                    var width = info.Width;
+                    var height = info.Height;
 
                     if (data.Length > 1)
                     {

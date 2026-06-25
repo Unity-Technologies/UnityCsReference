@@ -40,7 +40,7 @@ namespace Unity.Profiling.Editor
         // Must be non-serialized to prevent the value being overridden after it is set in the constructor during deserialization.
         [field: NonSerialized] internal ProfilerCounterDescriptor[] ChartCounters { get; private set; }
 
-        protected ProfilerWindow ProfilerWindow { get; private set; }
+        protected internal ProfilerWindow ProfilerWindow { get; private set; }
 
         internal IProfilerPersistentSettingsService SettingsService { get; private set; }
 
@@ -230,12 +230,14 @@ namespace Unity.Profiling.Editor
         internal const ProfilerArea k_InvalidProfilerArea = unchecked((ProfilerArea)Profiler.invalidProfilerArea);
 
         const string k_ProfilerModuleActiveStatePreferenceKeyFormat = "ProfilerModule.{0}.Active";
+        const string k_ProfilerModulePinnedStatePreferenceKeyFormat = "ProfilerModule.{0}.Pinned";
         const string k_ProfilerModuleOrderIndexPreferenceKeyFormat = "ProfilerModule.{0}.OrderIndex";
         const int k_NoFrameIndex = int.MinValue; // We cannot use -1 as the Profiler uses a frame index of -1 to signify 'no data'.
 
         ChartModelBuilder m_ChartModelBuilder;
 
         [NonSerialized] bool m_Active = false;
+        [NonSerialized] bool m_Pinned = false;
         int m_LastUpdatedFrameIndex = k_NoFrameIndex;
 
         internal virtual ProfilerArea area => k_InvalidProfilerArea;
@@ -252,9 +254,34 @@ namespace Unity.Profiling.Editor
                 ApplyActiveState();
                 SaveActiveState();
 
-                if (!active)
+                // Place/close at the setter (not inside ApplyActiveState) so subclasses that
+                // override ApplyActiveState without calling base (e.g. CPUProfilerModule) still
+                // get re-parented when their active state changes.
+                if (active)
+                    ProfilerWindow.PlaceChartViewInContainer(this);
+                else
                     ProfilerWindow.CloseModule(this);
             }
+        }
+
+        internal bool pinned
+        {
+            get => m_Pinned;
+            set
+            {
+                if (value == pinned)
+                    return;
+
+                m_Pinned = value;
+                SavePinnedState();
+                ProfilerWindow.OnModulePinnedStateChanged(this);
+            }
+        }
+
+        internal void SetPinnedStateWithoutCallback(bool value)
+        {
+            m_Pinned = value;
+            SavePinnedState();
         }
 
         internal int orderIndex
@@ -270,6 +297,8 @@ namespace Unity.Profiling.Editor
         internal string WarningMsg { get; private protected set; }
 
         private protected virtual string activeStatePreferenceKey => string.Format(k_ProfilerModuleActiveStatePreferenceKeyFormat, Identifier);
+
+        private protected virtual string pinnedStatePreferenceKey => string.Format(k_ProfilerModulePinnedStatePreferenceKeyFormat, Identifier);
 
         private protected string orderIndexPreferenceKey => string.Format(k_ProfilerModuleOrderIndexPreferenceKeyFormat, Identifier);
 
@@ -287,6 +316,11 @@ namespace Unity.Profiling.Editor
 
         internal virtual void OnEnable()
         {
+            // Read pinned state before active. The active-setter calls PlaceChartViewInContainer,
+            // which keys off m_Pinned; setting active first would place the chart in the wrong
+            // container until CreateGUI's reconcile pass runs.
+            m_Pinned = ReadPinnedState();
+            SavePinnedState();
             active = ReadActiveState();
             SaveActiveState();
             ProfilerWindow.SelectedFrameIndexChanged += SelectedFrameIndexChanged;
@@ -360,12 +394,18 @@ namespace Unity.Profiling.Editor
         {
             DeleteAllPreferences();
             active = ReadActiveState();
+            // Rebuild keeps the existing parent, so without re-syncing m_Pinned here a module
+            // that was pinned before reset stays in the pinned container even though the pref
+            // was just cleared. Going through the setter fires OnModulePinnedStateChanged which
+            // re-parents via PlaceChartViewInContainer.
+            pinned = ReadPinnedState();
             Rebuild();
         }
 
         internal void DeleteAllPreferences()
         {
             DeleteActiveState();
+            DeletePinnedState();
             EditorPrefs.DeleteKey(orderIndexPreferenceKey);
             m_ChartModelBuilder.DeleteSettings();
         }
@@ -394,17 +434,27 @@ namespace Unity.Profiling.Editor
 
         private protected virtual void ApplyActiveState()
         {
-            // Nb! CPU Module overrides this function w/o calling base class
+            // Nb! CPU Module overrides this function w/o calling base class —
+            // re-parenting lives in the `active` property setter, not here, so
+            // overrides that skip the base call still get the placement.
             ProfilerWindow.SetCategoriesInUse(AutoEnabledCategoryNames, active);
             // We need to update as in de-activated state model become out-of-sync
             Update();
-            m_ChartViewController?.SetActiveState(active);
+
+            if (m_ChartViewController == null)
+                return;
+
+            m_ChartViewController.SetActiveState(active);
         }
 
         private protected virtual bool ReadActiveState()
         {
             return EditorPrefs.GetBool(activeStatePreferenceKey, true);
         }
+
+        // Sibling-access forwarder for ProfilerWindow's pre-OnEnable parent-placement pass.
+        // Kept narrow so the virtual itself stays a derived-class-only extension point.
+        internal bool GetActiveStateForWindow() => ReadActiveState();
 
         private protected virtual void SaveActiveState()
         {
@@ -414,6 +464,23 @@ namespace Unity.Profiling.Editor
         private protected virtual void DeleteActiveState()
         {
             EditorPrefs.DeleteKey(activeStatePreferenceKey);
+        }
+
+        private protected virtual bool ReadPinnedState()
+        {
+            return EditorPrefs.GetBool(pinnedStatePreferenceKey, false);
+        }
+
+        internal bool GetPinnedStateForWindow() => ReadPinnedState();
+
+        private protected virtual void SavePinnedState()
+        {
+            EditorPrefs.SetBool(pinnedStatePreferenceKey, pinned);
+        }
+
+        private protected virtual void DeletePinnedState()
+        {
+            EditorPrefs.DeleteKey(pinnedStatePreferenceKey);
         }
 
         private protected void SetName(string name)

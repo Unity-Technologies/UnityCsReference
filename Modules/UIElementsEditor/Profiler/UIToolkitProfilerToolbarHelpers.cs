@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.Profiling;
 using UnityEditor.UIElements.Debugger;
 using UnityEditorInternal;
@@ -163,6 +164,31 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static string GetPanelDisplayName(RawFrameDataView frameData, EntityId entityId)
             => GetPanelDisplayName(frameData, entityId, out _);
+
+        /// <summary>
+        /// Tallies the single per-frame PANEL_EVENTS chunk by panel EntityId into <paramref name="result"/>
+        /// (cleared first). Panels with no events stay absent so callers fall through to 0 via TryGetValue.
+        /// Shared by both UI Toolkit profiler details views.
+        /// </summary>
+        public static void CollectEventCountsByPanel(RawFrameDataView frameData, Dictionary<EntityId, int> result)
+        {
+            result.Clear();
+            var guid = ProfilerUIToolkit.kProfilerMetadataGuid;
+            var tag = ProfilerUIToolkit.kProfilerUIToolkitMetadataTagPanelEvents;
+            var chunkCount = frameData.GetFrameMetaDataCount(guid, tag);
+            for (var ci = 0; ci < chunkCount; ci++)
+            {
+                using (var events = frameData.GetFrameMetaData<UIToolkitPanelEventInfo>(guid, tag, ci))
+                {
+                    for (var i = 0; i < events.Length; i++)
+                    {
+                        var panelId = events[i].panelEntityId;
+                        result.TryGetValue(panelId, out var existing);
+                        result[panelId] = existing + 1;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Same as <see cref="GetPanelDisplayName(RawFrameDataView, EntityId)"/> but also resolves the

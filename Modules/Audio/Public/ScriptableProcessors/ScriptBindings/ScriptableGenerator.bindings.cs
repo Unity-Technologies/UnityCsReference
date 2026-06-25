@@ -714,10 +714,20 @@ namespace UnityEngine.Audio
             }
         }
 
-        internal static unsafe void InitializeGeneratorHandle(GeneratorInstance.GeneratorHeader* header, ControlHeader* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags)
-            => InternalInitializeGeneratorHandle(header, control, nestedConfiguration, flags);
+        internal static unsafe DualThreadHandle InitializeGeneratorHandle<TRealtime, TControl>(
+            ref IGeneratorControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage storage,
+            ControlHeader* control,
+            AudioConfiguration* nestedConfiguration,
+            ProcessorInstance.InitializationFlags flags
+        )
+            where TRealtime : unmanaged, GeneratorInstance.IRealtime
+            where TControl : unmanaged, GeneratorInstance.IControl<TRealtime>
+        {
+            fixed (GeneratorInstance.GeneratorHeader* headerPtr = &storage.HeaderAndProcessor.Header)
+                return InternalInitializeGeneratorHandle(headerPtr, sizeof(IGeneratorControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage), control, nestedConfiguration, flags);
+        }
 
         [NativeMethod(Name = "audio::InitializeGeneratorHandle", IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void InternalInitializeGeneratorHandle(/*Generator.GeneratorHeader* */void* header, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags);
+        static extern unsafe DualThreadHandle InternalInitializeGeneratorHandle(/*Generator.GeneratorHeader* */void* header, int tailSize, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags);
     }
 }

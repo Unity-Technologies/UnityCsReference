@@ -107,178 +107,31 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
-        // Match element against flattened selector (StyleSheet selectors only, no predicates)
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        static bool MatchesSelectorFlat(
-            VisualElement element,
-            in FlattenedSelector flatSelector,
-            ReadOnlySpan<FlattenedSelectorPart> selectorParts,
-            out PseudoStates triggerPseudoMask,
-            out PseudoStates dependencyPseudoMask)
-        {
-            bool match = true;
-
-            for (int i = 0; i < selectorParts.Length && match; i++)
-            {
-                var part = selectorParts[i];
-                switch (part.type)
-                {
-                    case StyleSelectorType.Wildcard:
-                        break;
-                    case StyleSelectorType.Class:
-                    {
-                        var classList = element.GetClassesForIteration();
-                        var classIds = classList.GetClassIds();
-                        match = false;
-                        for (int j = 0; j < classIds.Length; j++)
-                        {
-                            if (classIds[j] == part.uniqueStringId)
-                            {
-                                match = true;
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                    case StyleSelectorType.ID:
-                    {
-                        match = element.nameId == part.uniqueStringId;
-                        break;
-                    }
-                    case StyleSelectorType.Type:
-                    {
-                        match = element.typeNameId == part.uniqueStringId;
-                        break;
-                    }
-                    case StyleSelectorType.PseudoClass:
-                        // Selectors with invalid pseudo states should be rejected
-                        if (flatSelector.pseudoStateMask == StyleSelector.InvalidPseudoStateMask
-                            || flatSelector.negatedPseudoStateMask == StyleSelector.InvalidPseudoStateMask)
-                        {
-                            match = false;
-                        }
-                        break;
-                    case StyleSelectorType.Predicate:
-                        // Predicates should NEVER appear in stylesheet selectors
-                        Debug.LogError("Predicate found in stylesheet selector - this should never happen!");
-                        match = false;
-                        break;
-                    default:
-                        match = false;
-                        break;
-                }
-            }
-
-            int triggerPseudoStateMask = 0;
-            int dependencyPseudoStateMask = 0;
-            bool saveMatch = match;
-
-            if (saveMatch && flatSelector.pseudoStateMask != 0)
-            {
-                match = (flatSelector.pseudoStateMask & (int)element.pseudoStates) == flatSelector.pseudoStateMask;
-
-                if (match)
-                {
-                    dependencyPseudoStateMask = flatSelector.pseudoStateMask;
-                }
-                else
-                {
-                    triggerPseudoStateMask = flatSelector.pseudoStateMask;
-                }
-            }
-
-            if (saveMatch && flatSelector.negatedPseudoStateMask != 0)
-            {
-                match &= (flatSelector.negatedPseudoStateMask & ~(int)element.pseudoStates) == flatSelector.negatedPseudoStateMask;
-
-                if (match)
-                {
-                    triggerPseudoStateMask |= flatSelector.negatedPseudoStateMask;
-                }
-                else
-                {
-                    dependencyPseudoStateMask |= flatSelector.negatedPseudoStateMask;
-                }
-            }
-
-            triggerPseudoMask = (PseudoStates)triggerPseudoStateMask;
-            dependencyPseudoMask = (PseudoStates)dependencyPseudoStateMask;
-            return match;
-        }
-
-        // Match right-to-left using flattened data (StyleSheet selectors only)
-        static bool MatchRightToLeftFlat(
-            VisualElement element,
+        // Match right-to-left using flattened data (StyleSheet selectors only).
+        // Native implementation lives in Modules/UIElements/Core/Native/StyleSheets/NativeSelectorMatcher.cpp
+        // and reads matcher state from the VisualElementSelectorData component (kept in sync by
+        // VisualElement mutators). Pseudo-state trigger/dependency masks are accumulated directly
+        // into the visited components.
+        static unsafe bool MatchRightToLeftFlat(
+            ref VisualElementSelectorData selectorData,
             in SelectorAccelerationCacheEntry cacheEntry,
             ReadOnlySpan<FlattenedSelector> descriptorSelectors,
             bool applyPseudoMasks)
         {
-            var current = element;
-            int nextIndex = descriptorSelectors.Length - 1;
-            VisualElement saved = null;
-            int savedIdx = -1;
-
-            while (nextIndex >= 0)
+            fixed (FlattenedSelector* pSelectors = descriptorSelectors)
+            fixed (VisualElementSelectorData* elementPtr = &selectorData)
             {
-                if (current == null)
-                    break;
-
-                ref readonly var flatSelector = ref descriptorSelectors[nextIndex];
-
-                bool success = MatchesSelectorFlat(current, flatSelector, cacheEntry.PartsFor(flatSelector),
-                    out var triggerPseudoMask, out var dependencyPseudoMask);
-                if (applyPseudoMasks)
-                {
-                    current.triggerPseudoMask |= triggerPseudoMask;
-                    current.dependencyPseudoMask |= dependencyPseudoMask;
-                }
-
-                if (!success)
-                {
-                    // if we have a descendant relationship, keep trying on the parent
-                    // i.e., "div span", div failed on this element, try on the parent
-                    // happens earlier than the backtracking saving below
-                    if (nextIndex < descriptorSelectors.Length - 1 &&
-                        descriptorSelectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
-                    {
-                        current = current.parent;
-                        continue;
-                    }
-
-                    // otherwise, if there's a previous relationship, it's a 'child' one. backtrack from the saved point and try again
-                    // ie.  for "#x > .a .b", #x failed, backtrack to .a on the saved element
-                    if (saved != null)
-                    {
-                        current = saved;
-                        nextIndex = savedIdx;
-                        continue;
-                    }
-
-                    break;
-                }
-
-                // backtracking save
-                // for "a > b c": we're considering the b matcher. c's previous relationship is Descendent
-                // save the current element parent to try to match b again
-                if (nextIndex < descriptorSelectors.Length - 1
-                    && descriptorSelectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
-                {
-                    saved = current.parent;
-                    savedIdx = nextIndex;
-                }
-
-                // from now, the element is a match
-                if (--nextIndex < 0)
-                {
-                    return true;
-                }
-                current = current.parent;
+                return NativeSelectorMatcher.MatchRightToLeftFlat(
+                    elementPtr,
+                    pSelectors,
+                    descriptorSelectors.Length,
+                    cacheEntry.m_AllPartsPtr,
+                    applyPseudoMasks);
             }
-            return false;
         }
 
         // Test range of descriptors in sorted allDescriptors array
-        static void TestSelectorListFlat(
+        static unsafe void TestSelectorListFlat(
             ReadOnlySpan<SelectorRangeDescriptor> descriptors,
             in SelectorAccelerationCacheEntry cacheEntry,
             List<StyleSelectorMatch> matchedSelectors,
@@ -286,6 +139,10 @@ namespace UnityEngine.UIElements.StyleSheets
             int currentStyleSheetIndexInStack)
         {
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
+
+            // Extract selectorData ref once to avoid repeated lookups in hot loop
+            ref var selectorData = ref context.currentElement.layoutNode.SelectorData;
+
 
             for (int i = 0; i < descriptors.Length; i++)
             {
@@ -310,7 +167,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 if (isCandidate || s_VerifyBloomIntegrity)
                 {
                     isMatchRightToLeft = MatchRightToLeftFlat(
-                        context.currentElement,
+                        ref selectorData,
                         in cacheEntry,
                         cacheEntry.SelectorsFor(descriptor),
                         context.applyPseudoMasks);
@@ -430,8 +287,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 var classIds = classList.GetClassIds();
 
                 // Build work items with UniqueStyleString IDs
-                // Size = classIds.Length + 1 (type) + 1 (name, if valid nameId >= 0)
-                int workItemsCount = classIds.Length + 1 + (element.nameId >= 0 ? 1 : 0);
+                // Size = classIds.Length + 1 (type) + 1 (name, if the element has a non-empty name)
+                bool hasName = !UniqueStyleString.IsNullOrEmpty(element.nameId);
+                int workItemsCount = classIds.Length + 1 + (hasName ? 1 : 0);
 
                 // Use stackalloc for small counts, ArrayPool for large counts to prevent stack overflow
                 const int StackAllocThreshold = 64;
@@ -443,8 +301,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 // Use cached typeNameId from VisualElement
                 workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Type, element.typeNameId);
 
-                // Only add to work items if name exists in UniqueStyleString system (nameId >= 0)
-                if (element.nameId >= 0)
+                if (hasName)
                 {
                     workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Name, element.nameId);
                 }
@@ -522,6 +379,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     ArrayPool<SelectorWorkItem>.Shared.Return(rentedArray);
             }
         }
+
     }
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class StyleSelectorHelper : StyleSelectorHelper<NoOpStyleProfiler> { }

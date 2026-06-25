@@ -28,7 +28,14 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     readonly List<VisualElementSelection> m_ElementSelections = new();
     readonly VisualElement m_HandlesContainer;
     readonly SelectionHandleManager m_HandleManager;
+    readonly VisualElement m_ManipulatorsContainer;
+    readonly VisualElementManipulatorOverlayManager m_ManipulatorOverlayManager;
     PanelElement m_PanelElement;
+
+    public float ZoomScale
+    {
+        set => m_ManipulatorOverlayManager.ZoomScale = value;
+    }
 
     VisualElement m_HoveredElement;
     bool m_IsPointerOver;
@@ -96,10 +103,13 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
             {
                 case CanvasEventMode.Pick:
                     m_HandlesContainer.style.display = DisplayStyle.Flex;
+                    m_ManipulatorsContainer.style.display = DisplayStyle.Flex;
                     m_HandleManager.UpdateAllHandles();
+                    m_ManipulatorOverlayManager.UpdateAllOverlays();
                     break;
                 case CanvasEventMode.Forward:
                     m_HandlesContainer.style.display = DisplayStyle.None;
+                    m_ManipulatorsContainer.style.display = DisplayStyle.None;
                     break;
             }
         }
@@ -125,10 +135,16 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     public UICanvasDocumentRoot()
     {
         focusable = true;
-        m_HandlesContainer = new VisualElement();
+
+        m_HandlesContainer = new VisualElement { name = "canvas-handles", pickingMode = PickingMode.Ignore };
         hierarchy.Add(m_HandlesContainer);
         m_HandlesContainer.StretchToParentSize();
+
+        m_ManipulatorsContainer = new VisualElement { name = "canvas-manipulators" };
+        hierarchy.Add(m_ManipulatorsContainer);
+        m_ManipulatorsContainer.StretchToParentSize();
         m_HandleManager = new SelectionHandleManager(m_HandlesContainer);
+        m_ManipulatorOverlayManager = new VisualElementManipulatorOverlayManager(m_ManipulatorsContainer);
     }
 
     protected override void HandleEventTrickleDown(EventBase evt)
@@ -148,9 +164,11 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                 break;
             case DetachFromPanelEvent:
                 Selection.selectionChanged -= OnSelectionChanged;
+                m_ManipulatorOverlayManager.ReleaseAll();
                 break;
             case GeometryChangedEvent:
                 m_HandleManager.UpdateAllHandles();
+                m_ManipulatorOverlayManager.UpdateAllOverlays();
                 break;
             case PointerDownEvent pointerDownEvent when EventMode == CanvasEventMode.Pick:
                 if (m_PanelElement == null)
@@ -300,6 +318,10 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
             if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection selection)
                 AddToSelection(selection);
         }
+
+        // Transform overlay is not supported for multi-selection.
+        if (m_ElementSelections.Count == 1)
+            m_ManipulatorOverlayManager.AcquireOverlay(m_ElementSelections[0]);
     }
 
     void AddToSelection(VisualElementSelection selection)
@@ -315,6 +337,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         var selection = m_ElementSelections[index];
         m_ElementSelections.RemoveAt(index);
         m_HandleManager.ReleaseSelectionHandle(selection);
+        m_ManipulatorOverlayManager.ReleaseOverlay(selection);
     }
 
     void ClearSelection()
@@ -338,11 +361,13 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
 
         panelElement.SubPanel?.RegisterChangeProcessor(this);
         m_HandleManager.UpdateAllHandles();
+        m_ManipulatorOverlayManager.UpdateAllOverlays();
     }
 
     void IVisualElementChangeProcessor.BeginProcessing(BaseVisualElementPanel panelElementPanel)
     {
         m_HandleManager.UpdateAllHandles();
+        m_ManipulatorOverlayManager.UpdateAllOverlays();
     }
 
     void IVisualElementChangeProcessor.ProcessChanges(BaseVisualElementPanel panelElementPanel, AuthoringChanges changes)
@@ -356,10 +381,22 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         else
         {
             PopulateUpdateSet(m_ElementSelections, changes.styleChanged, updateSet);
-
         }
+
+        var firstSelection = true;
+
         foreach (var selection in updateSet)
+        {
             m_HandleManager.UpdateSelectionHandle(selection);
+
+            // Only support single selection for now
+            if (firstSelection)
+            {
+                m_ManipulatorOverlayManager.UpdateOverlay(selection);
+                m_ManipulatorOverlayManager.OnProcessChangeOnTarget(selection);
+            }
+            firstSelection  = false;
+        }
 
         if (m_IsPointerOver && EventMode == CanvasEventMode.Pick)
             UpdateHoveredElement();
@@ -661,7 +698,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         {
             if (element.visualElementAsset == null)
                 return;
-            var selectionObject = element.GetSelectionObject();
+            var selectionObject = element.GetSelectionObject<VisualElementSelection>();
             if (!selectionObject)
                 return;
             if (!RectIncludesElement(canvasRect, element.worldBound, mode))

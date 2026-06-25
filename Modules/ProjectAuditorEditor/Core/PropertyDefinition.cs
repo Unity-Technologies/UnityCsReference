@@ -48,7 +48,8 @@ namespace Unity.ProjectAuditor.Editor.Core
         ULong,
         Bytes,
         Time,
-        Percentage
+        Percentage,
+        Float
     }
 
     internal struct PropertyDefinition
@@ -60,5 +61,6 @@ namespace Unity.ProjectAuditor.Editor.Core
         public int MaxAutoWidth;
         public bool IsDefaultGroup;
         public bool IsHidden;
+        public int DecimalPlaces;
     }
 }

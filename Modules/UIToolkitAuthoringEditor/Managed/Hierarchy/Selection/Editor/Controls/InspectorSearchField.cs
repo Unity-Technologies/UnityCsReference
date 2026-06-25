@@ -18,10 +18,11 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     [Flags]
     enum SearchFilter
     {
-        All      = 1 << 0,
+        All       = 1 << 0,
         Overrides = 1 << 1,
         Variable  = 1 << 2,
-        Binding   = 1 << 3
+        Binding   = 1 << 3,
+        Animation = 1 << 4
     }
 
     public const string UssClass = "unity-inspector-search-field";
@@ -294,6 +295,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         if (m_ActiveFilters.HasFlag(SearchFilter.Overrides) && !row.ClassListContains(row.GetIsOverriddenClassName())) return false;
         if (m_ActiveFilters.HasFlag(SearchFilter.Variable) && !RowHasVariable(row)) return false;
         if (m_ActiveFilters.HasFlag(SearchFilter.Binding) && !RowHasBinding(row)) return false;
+        if (m_ActiveFilters.HasFlag(SearchFilter.Animation) && !RowHasAnimation(row)) return false;
         return true;
     }
 
@@ -303,6 +305,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         if (m_ActiveFilters.HasFlag(SearchFilter.Overrides) && !row.HasMatchingOverriddenProperty(str)) return false;
         if (m_ActiveFilters.HasFlag(SearchFilter.Variable) && !RowHasVariable(row)) return false;
         if (m_ActiveFilters.HasFlag(SearchFilter.Binding) && !RowHasBinding(row)) return false;
+        if (m_ActiveFilters.HasFlag(SearchFilter.Animation) && !RowHasAnimation(row)) return false;
         return true;
     }
 
@@ -315,18 +318,20 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         }
         else
         {
-            filterDescription = (m_ActiveFilters.HasFlag(SearchFilter.Overrides),
-                                 m_ActiveFilters.HasFlag(SearchFilter.Variable),
-                                 m_ActiveFilters.HasFlag(SearchFilter.Binding)) switch
-            {
-                (true,  false, false) => "overrides",
-                (false, true,  false) => "variables",
-                (false, false, true)  => "bindings",
-                (true,  true,  false) => "overrides and variables",
-                (true,  false, true)  => "overrides and bindings",
-                (false, true,  true)  => "variables and bindings",
-                _                     => "overrides, variables, and bindings"
-            };
+          var activeNames = ListPool<string>.Get();
+          if (m_ActiveFilters.HasFlag(SearchFilter.Overrides)) activeNames.Add("overrides");
+          if (m_ActiveFilters.HasFlag(SearchFilter.Variable))  activeNames.Add("variables");
+          if (m_ActiveFilters.HasFlag(SearchFilter.Binding))   activeNames.Add("bindings");
+          if (m_ActiveFilters.HasFlag(SearchFilter.Animation)) activeNames.Add("animations");
+
+          filterDescription = activeNames.Count switch
+          {
+              1 => activeNames[0],
+              2 => $"{activeNames[0]} and {activeNames[1]}",
+              3 => $"{activeNames[0]}, {activeNames[1]}, and {activeNames[2]}",
+              _ => $"{activeNames[0]}, {activeNames[1]}, {activeNames[2]}, and {activeNames[3]}"
+          };
+          ListPool<string>.Release(activeNames);
         }
 
         var displayText = !string.IsNullOrEmpty(searchTerm)
@@ -346,6 +351,9 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     private static bool RowHasBinding(OverrideRow row) => row is not OverrideFoldout &&
         row.ClassListContains(StylePropertyBinding.k_BoundFieldUssClassName) ||
         row.ClassListContains(UxmlAttributeFieldDecorator.s_BoundFieldUssClassName);
+
+    private static bool RowHasAnimation(OverrideRow row) => row is not OverrideFoldout &&
+        row.ClassListContains(StylePropertyBinding.k_AnimationDrivenFieldUssClassName);
 
     private void OnClearFilterClicked()
     {

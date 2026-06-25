@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Unity.Hierarchy;
@@ -54,14 +55,14 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
         UIElementsRuntimeUtility.onCreatePanel += RegisterPanelIfEnabled;
         UIElementsRuntimeUtility.onWillDestroyPanel += UnregisterPanelIfEnabled;
 
-        UIToolkitAuthoringSettings.HierarchyIntegrationChanged += EnableHierarchyIntegration;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += EnableHierarchyIntegration;
     }
 
     protected override void Initialize()
     {
         base.Initialize();
         m_GameObjectHandler = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
-        EnableHierarchyIntegration(UIToolkitAuthoringSettings.EnableHierarchyIntegration);
+        EnableHierarchyIntegration(UIToolkitAuthoringSettings.EnableInSceneUIAuthoring, false);
     }
 
     protected override void Dispose(bool disposing)
@@ -69,7 +70,7 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
         base.Dispose(disposing);
         UIElementsRuntimeUtility.onCreatePanel -= RegisterPanelIfEnabled;
         UIElementsRuntimeUtility.onWillDestroyPanel -= UnregisterPanelIfEnabled;
-        UIToolkitAuthoringSettings.HierarchyIntegrationChanged -= EnableHierarchyIntegration;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= EnableHierarchyIntegration;
     }
 
     protected override NodeCreationType ShouldCreateNode(VisualElement element)
@@ -157,8 +158,6 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
 
         element.GenerateSubDocumentPath(ancestorInstances);
 
-        var rootVisualTreeAsset = ancestorInstances.Count > 0 ? ancestorInstances[0].visualTreeAsset : vtaSource;
-
         if (isPanelComponentRootElement)
         {
             menu.AppendAction(
@@ -170,23 +169,37 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
 
         if (vtaSource != null)
         {
-            menu.AppendAction(
-                "Open in UI Builder",
-                _ =>
-                {
-                    var cmd = new LoadUIDocumentCommand { selectedId = vea?.id ?? -1 };
-                    SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
-                    AssetDatabase.OpenAsset(vtaSource.GetEntityId());
-                    SessionState.EraseString(LoadUIDocumentCommand.CommandId);
-                });
+            // For a TemplateContainer, Open in UI Builder navigates to the template's own file, not the containing document.
+            // The root element must be checked first: it is also a TemplateContainer but has no backing TemplateAsset.
+            VisualTreeAsset openInBuilderVta;
+            int openInBuilderSelectedId;
+            if (isPanelComponentRootElement)
+            {
+                openInBuilderVta = vtaSource;
+                openInBuilderSelectedId = vea?.id ?? -1;
+            }
+            else if (element is TemplateContainer templateContainer)
+            {
+                openInBuilderVta = (templateContainer.visualElementAsset as TemplateAsset)?.ResolveTemplate() ?? templateContainer.templateSource ?? vtaSource;
+                openInBuilderSelectedId = -1;
+            }
+            else
+            {
+                openInBuilderVta = element.visualTreeAssetSource
+                    ? element.visualTreeAssetSource
+                    : element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource ?? vtaSource;
+                openInBuilderSelectedId = vea?.id ?? -1;
+            }
 
-            if (ancestorInstances.Count == 0 && UIToolkitAuthoringSettings.EnableUIStages)
+            StageContextMenuUtility.PopulateOpenActions(menu, element, openInBuilderVta, openInBuilderSelectedId, ancestorInstances);
+
+            if (ancestorInstances.Count == 0)
             {
                 menu.AppendAction(
-                    "Open Instance",
+                    "Open Asset",
                     _ =>
                     {
-                        GoToStage(new VisualTreeAssetEditingContext(
+                        VisualElementEditingStage.GoToStage(new VisualTreeAssetEditingContext(
                             vtaSource,
                             element.GetPanelSettings()
                         ), BreadcrumbBar.SeparatorStyle.Arrow);
@@ -196,82 +209,19 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
 
             var canBeReferenced = VisualElementReferenceTools.TryCreateReference(element, out var pr, out var authoringIdPath, false, true) && authoringIdPath.path.Length > 0;
             menu.AppendAction(
-            "Find References In Scene",
-            a =>
-            {
-                var prId = pr.GetEntityId().GetHashCode();
-                var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
-                var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
-                SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
-            },
-            canBeReferenced ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-        }
-
-        if (vtaSource != null && ancestorInstances.Count > 0)
-        {
-            var ancestorVTAs = new List<VisualTreeAsset>();
-
-            foreach (var ancestorInstance in ancestorInstances)
-            {
-                var asset = ancestorInstance.ResolveTemplate();
-                ancestorVTAs.Add(asset);
-            }
-
-            menu.AppendAction(
-                "Open Instance in UI Builder/in Isolation",
-                _ =>
+                "Find References In Scene",
+                a =>
                 {
-                    var cmd = new LoadUIDocumentCommand
-                    {
-                        subDocumentOptions = SubDocumentOptions.Isolation,
-                        subDocuments = ancestorVTAs
-                    };
-                    SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
-                    AssetDatabase.OpenAsset(vtaSource.GetEntityId());
-                    SessionState.EraseString(LoadUIDocumentCommand.CommandId);
-                });
-            menu.AppendAction(
-                "Open Instance in UI Builder/in Context",
-                _ =>
-                {
-                    var cmd = new LoadUIDocumentCommand
-                    {
-                        selectedId = ancestorInstances[0].id,
-                        subDocumentOptions = SubDocumentOptions.InContext,
-                        subDocuments = ancestorVTAs,
-                        contextInstances = ancestorInstances
-                    };
-                    SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
-                    AssetDatabase.OpenAsset(vtaSource.GetEntityId());
-                    SessionState.EraseString(LoadUIDocumentCommand.CommandId);
-                });
-
-            if (UIToolkitAuthoringSettings.EnableUIStages)
-            {
-                menu.AppendAction(
-                    "Open Instance/in Isolation",
-                    _ => GoToStage(new VisualTreeAssetEditingContext(
-                        rootVisualTreeAsset,
-                        ancestorInstances.ToArray(),
-                        SubDocumentOptions.Isolation,
-                        element.GetPanelSettings()
-                    ), BreadcrumbBar.SeparatorStyle.Line));
-                menu.AppendAction(
-                    "Open Instance/in Context",
-                    _ => GoToStage(new VisualTreeAssetEditingContext(
-                        rootVisualTreeAsset,
-                        ancestorInstances.ToArray(),
-                        SubDocumentOptions.InContext,
-                        element.GetPanelSettings()
-                    ), BreadcrumbBar.SeparatorStyle.Arrow));
-            }
+                    var prId = pr.GetEntityId().GetHashCode();
+                    var pathString = authoringIdPath.PathToCsvString(VisualElementReferenceSceneQueryEngineFilter.PathSeperatorToken);
+                    var filter = $"ref={prId} {VisualElementReferenceSceneQueryEngineFilter.FilterId}=[{pathString}]";
+                    SearchableEditorWindow.SetSearchText(filter, HierarchyType.GameObjects);
+                },
+                canBeReferenced ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
-        if (UIToolkitAuthoringSettings.EnableUIStages)
-        {
-            menu.AppendSeparator();
-            StageContextMenuUtility.PopulateElementOperations(menu);
-        }
+        menu.AppendSeparator();
+        StageContextMenuUtility.PopulateElementOperations(menu);
     }
     protected override bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
     {
@@ -312,27 +262,33 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
 
         return (vtAssets, instances);
     }
+
     private void EnableHierarchyIntegration(bool value)
     {
-        if (value)
-            RegisterExistingRuntimePanels();
+        EnableHierarchyIntegration(value, true);
+    }
+
+    private void EnableHierarchyIntegration(bool enabled, bool ping)
+    {
+        if (enabled)
+            RegisterExistingRuntimePanels(ping);
         else
             UnregisterAllPanels();
     }
 
-    private void RegisterPanelIfEnabled( IRuntimePanel panel)
+    private void RegisterPanelIfEnabled(IRuntimePanel panel)
     {
-        if (UIToolkitAuthoringSettings.EnableHierarchyIntegration)
+        if (UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
             RegisterPanel((Panel)panel);
     }
 
     private void UnregisterPanelIfEnabled(IRuntimePanel panel)
     {
-        if (UIToolkitAuthoringSettings.EnableHierarchyIntegration)
+        if (UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
             UnregisterPanel((Panel)panel);
     }
 
-    private void RegisterExistingRuntimePanels()
+    private void RegisterExistingRuntimePanels(bool pingRoot = false)
     {
         using var listHandle = ListPool<Panel>.Get(out var panels);
         UIElementsUtility.GetAllPanels(panels, ContextType.Player);
@@ -345,8 +301,21 @@ internal sealed partial class HierarchyVisualElementHandler : VisualElementNodeT
                 if (panel.ownerObject is PanelElement.PanelOwner)
                     continue;
                 RegisterPanel(panel);
+
+                if (pingRoot)
+                {
+                    var selectionObject = panel.visualTree.Q<PanelRendererRootElement>()?.GetSelectionObject();
+                    if (selectionObject)
+                    {
+                        var id = selectionObject.GetEntityId();
+                        EditorApplication.delayCall += () => EditorGUIUtility.PingObject(id);
+                        pingRoot = false;
+                    }
+                }
             }
         }
+
+
     }
 
     private static void OnStageWillChange(Stage previousStage, Stage nextStage)

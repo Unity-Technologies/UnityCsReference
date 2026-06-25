@@ -12,6 +12,7 @@ using UnityEngine.Profiling;
 using UnityEngine.Experimental.Rendering;
 
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {
@@ -228,6 +229,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
         }
 
+        [NoAutoStaticsCleanup] // reusable scratch buffer, content discarded after each use via Clear()
         private static StringBuilder s_DetailsBuilder = new StringBuilder(4096);
         private string m_Details;
         internal string details

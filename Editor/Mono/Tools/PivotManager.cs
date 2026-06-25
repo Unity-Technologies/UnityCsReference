@@ -12,6 +12,8 @@ namespace UnityEditor
     public abstract class CustomPivotMode : ScriptableObject
     {
         public abstract Vector3 position { get; }
+        public virtual void OnActivated() {}
+        public virtual void OnWillBeDeactivated() {}
     }
 
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority)]
@@ -60,6 +62,8 @@ namespace UnityEditor
     public abstract class CustomPivotRotation : ScriptableObject
     {
         public abstract Quaternion rotation { get; }
+        public virtual void OnActivated() {}
+        public virtual void OnWillBeDeactivated() {}
     }
 
     [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority)]

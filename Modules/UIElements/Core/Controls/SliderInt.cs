@@ -138,15 +138,15 @@ namespace UnityEngine.UIElements
                 var isDraggingHighToLow = inverted ? isPositionIncreasing : isPositionDecreasing;
                 var isDraggingLowToHigh = inverted ? isPositionDecreasing : isPositionIncreasing;
 
-                if (isDraggingHighToLow && (clampedDragger.dragDirection != ClampedDragger<int>.DragDirection.LowToHigh))
+                if (isDraggingHighToLow && (clampedDragger.dragDirection != ClampedDragger.DragDirection.LowToHigh))
                 {
-                    clampedDragger.dragDirection = ClampedDragger<int>.DragDirection.HighToLow;
+                    clampedDragger.dragDirection = ClampedDragger.DragDirection.HighToLow;
                     // Compute the next value based on the page size.
                     value = value - adjustedPageDirection;
                 }
-                else if (isDraggingLowToHigh && (clampedDragger.dragDirection != ClampedDragger<int>.DragDirection.HighToLow))
+                else if (isDraggingLowToHigh && (clampedDragger.dragDirection != ClampedDragger.DragDirection.HighToLow))
                 {
-                    clampedDragger.dragDirection = ClampedDragger<int>.DragDirection.LowToHigh;
+                    clampedDragger.dragDirection = ClampedDragger.DragDirection.LowToHigh;
                     // Compute the next value based on the page size.
                     value = value + adjustedPageDirection;
                 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 
@@ -12,8 +13,9 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
     /// </summary>
     [System.Serializable]
     [AdaptivePerformanceConfigurationData("Simulator", SimulatorProviderConstants.k_SettingsKey)]
-    public class SimulatorProviderSettings : IAdaptivePerformanceSettings
+    public partial class SimulatorProviderSettings : IAdaptivePerformanceSettings
     {
+        [AutoStaticsCleanup]
         static SimulatorProviderSettings m_Settings = null;
 
         /// <summary>

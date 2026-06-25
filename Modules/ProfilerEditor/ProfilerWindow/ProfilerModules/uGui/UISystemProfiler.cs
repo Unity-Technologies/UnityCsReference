@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEditorInternal.Profiling;
@@ -23,6 +24,7 @@ namespace UnityEditor
         private UISystemProfilerTreeView m_TreeViewControl;
         private UISystemProfilerTreeView.State m_UGUIProfilerTreeViewState;
         private ZoomableArea m_ZoomablePreview;
+        [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
         private static GUIStyle s_PreviewBackground;
         private UISystemPreviewWindow m_DetachedPreview;
 
@@ -352,11 +354,16 @@ namespace UnityEditor
             public static readonly GUIStyle header;
             public static readonly GUIContent noData;
             public static readonly GUIStyle rightHeader;
+            [NoAutoStaticsCleanup] // Fixed content initialized in static constructor, safe to persist
             public static GUIContent[] backgroundOptions;
+            [NoAutoStaticsCleanup] // Fixed content initialized in static constructor, safe to persist
             public static int[] backgroundValues;
+            [NoAutoStaticsCleanup] // Fixed content initialized in static constructor, safe to persist
             public static GUIContent contentDetachRender;
 
+            [NoAutoStaticsCleanup] // Fixed content initialized in static constructor, safe to persist
             public static GUIContent[] rendermodeOptions;
+            [NoAutoStaticsCleanup] // Fixed content initialized in static constructor, safe to persist
             public static int[] rendermodeValues;
             private static readonly Color m_SeparatorColorPro;
             private static readonly Color m_SeparatorColorNonPro;

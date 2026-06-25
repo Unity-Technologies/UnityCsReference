@@ -30,6 +30,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal T GetUserSettings<T>(T defaultValue = default) where T : struct
             => OrchestratedScenarioUserSettings.GetSettings<T>(m_Owner, m_InstanceItem, defaultValue);
 
+        internal bool TryGetUserSettings<T>(out T settings) where T : struct
+        {
+            settings = default;
+            if (m_Owner == null || !AssetDatabase.Contains(m_Owner))
+                return false;
+            settings = GetUserSettings<T>();
+            return true;
+        }
+
         internal void SetUserSettings<T>(T settings) where T : struct
             => OrchestratedScenarioUserSettings.SetSettings(m_Owner, m_InstanceItem, settings);
 

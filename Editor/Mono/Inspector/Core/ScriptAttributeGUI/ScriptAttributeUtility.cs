@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -14,8 +15,10 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    [AutoStaticsCleanupOnCodeReload]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
-    internal class ScriptAttributeUtility
+    [AutoStaticsCleanupOnCodeReload]
+    internal partial class ScriptAttributeUtility
     {
         readonly struct CustomPropertyDrawerContainer
         {
@@ -33,18 +36,21 @@ namespace UnityEditor
 
         // Internal API members
         internal static Stack<PropertyDrawer> s_DrawerStack = new Stack<PropertyDrawer>();
+        [NoAutoStaticsCleanup]
         private static Dictionary<string, List<PropertyAttribute>> s_BuiltinAttributes = null;
         static Dictionary<Type, List<FieldInfo>> s_AutoLoadProperties;
+        [NoAutoStaticsCleanup]
         private static PropertyHandler s_SharedNullHandler = new PropertyHandler();
         private static PropertyHandler s_NextHandler = new PropertyHandler();
 
         private static PropertyHandlerCache s_GlobalCache = new PropertyHandlerCache();
         private static PropertyHandlerCache s_CurrentCache = null;
 
-        static readonly Lazy<Dictionary<Type, CustomPropertyDrawerContainer[]>> k_DrawerTypeForType = new(BuildDrawerTypeForTypeDictionary);
+        static Lazy<Dictionary<Type, CustomPropertyDrawerContainer[]>> k_DrawerTypeForType = new(BuildDrawerTypeForTypeDictionary);
         static readonly Dictionary<Type, Type> k_DrawerStaticTypesCache = new();
         static readonly Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
 
+        [NoAutoStaticsCleanup]
         static readonly Comparer<CustomPropertyDrawerContainer> k_RenderPipelineTypeComparer
             = Comparer<CustomPropertyDrawerContainer>.Create((c1, c2)
                 =>
@@ -572,7 +578,9 @@ namespace UnityEditor
         // Precompiled regexes used by GetFieldInfoFromPropertyPath on cache misses to avoid pattern parsing
         // and string concatenation. The trailing-anchor variant is used for the end-of-path check;
         // the unanchored variant is used to strip all Array.data[x] segments out of the path.
+        [NoAutoStaticsCleanup]
         static readonly Regex k_ArrayDataAtEndRegex = new Regex(@"\.Array\.data\[[0-9]+\]$", RegexOptions.Compiled);
+        [NoAutoStaticsCleanup]
         static readonly Regex k_ArrayDataRegex = new Regex(@"\.Array\.data\[[0-9]+\]", RegexOptions.Compiled);
 
         private static FieldInfo GetFieldInfoFromPropertyPath(Type host, string path, out Type type)

@@ -309,7 +309,15 @@ namespace UnityEditorInternal
             Texture2D tex = sortedTextures[mipLevel];
             if (tex)
             {
-                Blit(tex, iconWithMips, mipLevel);
+                try
+                {
+                    Blit(tex, iconWithMips, mipLevel);
+                }
+                catch(Exception ex)
+                {
+                    Debug.LogException(new Exception("Failed to blit mip level: " + mipLevel + " for texture: " + tex.name, ex));
+                    return false;
+                }
                 return true;
             }
             else

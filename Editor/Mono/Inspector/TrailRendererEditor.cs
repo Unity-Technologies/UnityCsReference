@@ -9,12 +9,13 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(TrailRenderer))]
     [CanEditMultipleObjects]
-    internal class TrailRendererInspector : RendererEditorBase
+    internal partial class TrailRendererInspector : RendererEditorBase
     {
         private class Styles
         {
@@ -60,13 +61,21 @@ namespace UnityEditor
         private const string k_PreviewShape = "TrailPreviewShape";
         private const string k_PreviewShapeSize = "TrailPreviewShapeSize";
 
+        [AutoStaticsCleanupOnCodeReload] // active inspector tracking list
         private static LinkedList<TrailRendererInspector> s_Inspectors = new LinkedList<TrailRendererInspector>();
+        [NoAutoStaticsCleanup] // editor UI state flag
         private static bool s_PreviewIsPlaying;
+        [NoAutoStaticsCleanup] // editor UI state flag
         private static bool s_PreviewIsPaused;
+        [NoAutoStaticsCleanup] // editor state; no user refs
         private static float s_PreviewMovementSpeed;
+        [NoAutoStaticsCleanup] // editor state; no user refs
         private static float s_PreviewTimeScale;
+        [NoAutoStaticsCleanup] // editor UI state flag
         private static bool s_PreviewShowBounds;
+        [NoAutoStaticsCleanup] // editor infrastructure; no user refs
         private static PreviewShape s_PreviewShape;
+        [NoAutoStaticsCleanup] // editor state; no user refs
         private static float s_PreviewShapeSize;
         private Vector3? m_PreviewBackupPosition;
         private bool m_PreviewIsFirstMove;
@@ -108,13 +117,17 @@ namespace UnityEditor
             return new Event { type = EventType.ExecuteCommand, commandName = "TrailRenderer/" + commandName };
         }
 
+        [AutoStaticsCleanupOnCodeReload] // cached command event; infrastructure
         private static Event s_PlayEvent;
+        [AutoStaticsCleanupOnCodeReload] // cached command event; infrastructure
         private static Event s_StopEvent;
+        [AutoStaticsCleanupOnCodeReload] // cached command event; infrastructure
         private static Event s_RestartEvent;
+        [AutoStaticsCleanupOnCodeReload] // cached command event; infrastructure
         private static Event s_ShowBoundsEvent;
 
-        private static PrefColor s_BoundsColor = new PrefColor("Trail Renderer/Bounds", 1.0f, 235.0f / 255.0f, 4.0f / 255.0f, 1.0f);
-        private static PrefColor s_GizmoColor = new PrefColor("Trail Renderer/Shape Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
+        private static readonly PrefColor s_BoundsColor = new PrefColor("Trail Renderer/Bounds", 1.0f, 235.0f / 255.0f, 4.0f / 255.0f, 1.0f);
+        private static readonly PrefColor s_GizmoColor = new PrefColor("Trail Renderer/Shape Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
 
         private static void DispatchShortcutEvent(Event evt)
         {

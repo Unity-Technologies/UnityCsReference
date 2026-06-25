@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -406,14 +407,22 @@ namespace UnityEditor
                 header, even, odd, background, COLORCOUNT
             }
 
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             static Color[] colors = new Color[(int)backgroundColor.COLORCOUNT];
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             static Texture2D[] backgrounds = new Texture2D[(int)backgroundColor.COLORCOUNT];
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             static Color textColor;
 
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             public static GUIStyle headerStyle;
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             public static GUIStyle statStyle;
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             public static GUIStyle backgroundStyle;
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             public static GUIStyle evenStyle;
+            [NoAutoStaticsCleanup] // Lazy-initialized styles; recreated on first draw if null, safe to persist
             public static GUIStyle oddStyle;
             public static readonly GUIStyle scrollStyle = "ProfilerScrollviewBackground";
 

@@ -271,10 +271,10 @@ namespace UnityEngine.UIElements
             static string ResolveLinkID(UITKTextHandle handle, int linkID)
             {
                 var links = handle.m_Links;
-                if (links == null || (uint)linkID >= (uint)links.Count)
+                if (links == null || (uint)linkID >= (uint)links.Length)
                     return null;
-                var (_, type, value) = links[linkID];
-                return type == RichTextTagParser.TagType.Hyperlink ? null : value;
+                var entry = links[linkID];
+                return entry.isHyperlink ? null : entry.value;
             }
 
             /// <summary>

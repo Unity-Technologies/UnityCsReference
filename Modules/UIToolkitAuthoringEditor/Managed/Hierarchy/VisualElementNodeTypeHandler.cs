@@ -207,7 +207,6 @@ internal abstract class VisualElementNodeTypeHandler :
     private ParsedQuery<VisualElement> m_ParsedQuery;
 
     private UIHierarchyDisplayOptions m_DisplayOptions;
-    private bool m_EnableUIStages;
 
     internal List<VisualElementAsset> m_NodesToSelect;
 
@@ -268,8 +267,6 @@ internal abstract class VisualElementNodeTypeHandler :
         m_SelectionHandler = selectionHandler;
         UIToolkitAuthoringSettings.DisplayOptionsChanged += OnDisplayOptionsChanged;
         m_DisplayOptions = UIToolkitAuthoringSettings.DisplayOptions;
-        UIToolkitAuthoringSettings.UIStagesChanged += EnableUIStages;
-        m_EnableUIStages = UIToolkitAuthoringSettings.EnableUIStages;
     }
 
     protected override void Initialize()
@@ -645,9 +642,13 @@ internal abstract class VisualElementNodeTypeHandler :
         data.SetGenericData(DraggedVisualElementKey, list);
     }
 
-    DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
+    DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
 
-    DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
+    void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
+
+    DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
+
+    DragVisualMode IHierarchyEditorNodeTypeHandler.OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
 
     protected virtual DragVisualMode HandleDrop(in HierarchyViewDragAndDropHandlingData data, bool performDrop) => DragVisualMode.None;
     #endregion
@@ -975,7 +976,7 @@ internal abstract class VisualElementNodeTypeHandler :
         var navigationTooltip = $"Open Visual Tree Asset in context.\nPress the {modifierKey} modifier key to open in isolation.";
         var navigateButton = item.NavigateIntoButton;
 
-        if (!m_EnableUIStages || navigateButton == null)
+        if (navigateButton == null)
             return;
 
         navigateButton.style.display = DisplayStyle.Flex;
@@ -1028,10 +1029,7 @@ internal abstract class VisualElementNodeTypeHandler :
 
     internal void GoToStage(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle)
     {
-        var stage = ScriptableObject.CreateInstance<VisualElementEditingStage>();
-        stage.SeparatorStyle = separatorStyle;
-        stage.SetContext(context);
-        StageUtility.GoToStage(stage, false);
+        VisualElementEditingStage.GoToStage(context, separatorStyle);
     }
 
     /// <summary>
@@ -1126,8 +1124,7 @@ internal abstract class VisualElementNodeTypeHandler :
     {
         panel.RegisterChangeProcessor(this);
         m_RegisteredPanels.Add(panel);
-        if (Hierarchy.IsCreated)
-            Rebuild(panel);
+        UnregisterOrphanedElements();
     }
 
     /// <summary>
@@ -1311,8 +1308,11 @@ internal abstract class VisualElementNodeTypeHandler :
     {
         using var _ = ListPool<VisualElement>.Get(out var mappedChildren);
         mappedChildren.AddRange(m_Mappings.MappedElements);
-        foreach(var child in mappedChildren)
-            Clear(child);
+        foreach (var child in mappedChildren)
+        {
+            if (child.resourcesReleased || child.panel == null)
+                Clear(child);
+        }
     }
 
     private void Rebuild(BaseVisualElementPanel panel)
@@ -1620,13 +1620,6 @@ internal abstract class VisualElementNodeTypeHandler :
     private void OnDisplayOptionsChanged(UIHierarchyDisplayOptions options)
     {
         m_DisplayOptions = options;
-        if (Hierarchy.IsCreated)
-            CommandList.SetDirty();
-    }
-
-    private void EnableUIStages(bool value)
-    {
-        m_EnableUIStages = value;
         if (Hierarchy.IsCreated)
             CommandList.SetDirty();
     }

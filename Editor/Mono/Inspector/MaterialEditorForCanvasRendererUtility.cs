@@ -10,22 +10,34 @@ using UnityEngine.Scripting;
 
 using Object = UnityEngine.Object;
 using Component = UnityEngine.Component;
+using Unity.Scripting.LifecycleManagement;
 
 [assembly: InternalsVisibleTo("UnityEditor.Shader.Tests")]
 namespace UnityEditor
 {
-    internal static class MaterialEditorForCanvasRendererUtility
+    internal static partial class MaterialEditorForCanvasRendererUtility
     {
+        // TMPro and UnityEngine.UI are external assemblies not recompiled during user-script code reloads,
+        // so their reflected Type/PropertyInfo references remain valid across reload — no cleanup needed.
+        [NoAutoStaticsCleanup]
         public static readonly Lazy<Type> s_tmpTextType = new(() => Type.GetType("TMPro.TMP_Text, Unity.TextMeshPro"));
+        [NoAutoStaticsCleanup]
         public static readonly Lazy<PropertyInfo> s_tmpTextTypeMaterialProperty = new(() => s_tmpTextType.Value?.GetProperty("fontSharedMaterial"));
+        [NoAutoStaticsCleanup]
         public static readonly Lazy<PropertyInfo> s_tmpTextTypeFontProperty = new(() => s_tmpTextType.Value?.GetProperty("font"));
+        [NoAutoStaticsCleanup]
         public static readonly Lazy<PropertyInfo> s_tmpTextTypeAtlasTextureProperty = new(() => s_tmpTextTypeFontProperty.Value?.PropertyType.GetProperty("atlasTexture"));
 
+        [NoAutoStaticsCleanup]
         public static readonly Lazy<Type> s_graphicType = new(() => Type.GetType("UnityEngine.UI.Graphic, UnityEngine.UI"));
+        [NoAutoStaticsCleanup]
         public static readonly Lazy<PropertyInfo> s_graphicTypeMaterialProperty = new(() => s_graphicType.Value?.GetProperty("material"));
 
+        [AutoStaticsCleanupOnCodeReload]
         public static Component s_previousDraggedUponGraphic;
+        [AutoStaticsCleanupOnCodeReload]
         public static Material s_previousGraphicMaterial;
+        [AutoStaticsCleanupOnCodeReload]
         public static bool s_previousGraphicAlreadyHadPrefabModification;
 
         public static bool IsTMProComponent(Component graphic)

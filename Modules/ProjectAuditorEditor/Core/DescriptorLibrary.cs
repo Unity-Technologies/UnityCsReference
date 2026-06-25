@@ -7,14 +7,17 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
     [Serializable]
-    class DescriptorLibrary : ISerializationCallbackReceiver
+    partial class DescriptorLibrary : ISerializationCallbackReceiver
     {
+        [AutoStaticsCleanupOnCodeReload] // Lazy-initialized descriptor registry; must be reset on code reload so descriptors are re-registered
         static Dictionary<int, Descriptor> s_Descriptors;
 
+        [NoAutoStaticsCleanup] // Lazy-initialized cache of area strings; data is still valid after code reload
         static Dictionary<Areas, string> s_DescriptorAreaStrings;
 
         [SerializeField]
