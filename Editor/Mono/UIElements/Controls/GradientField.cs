@@ -147,7 +147,7 @@ namespace UnityEditor.UIElements
         VisualElement m_GradientTextureImage;
         readonly Background m_DefaultBackground = new Background();
 
-        bool isShowingGradientPicker => GradientPicker.visible && rawValue != null && ReferenceEquals(GradientPicker.gradient, rawValue);
+        internal bool isShowingGradientPicker => GradientPicker.visible && rawValue != null && ReferenceEquals(GradientPicker.gradient, rawValue);
 
         /// <summary>
         /// Constructor.
@@ -243,7 +243,7 @@ namespace UnityEditor.UIElements
                 UpdateGradientTexture();
         }
 
-        void ShowGradientPicker()
+        internal void ShowGradientPicker()
         {
             GradientPicker.Show(rawValue, hdr, colorSpace, OnGradientChanged);
         }
