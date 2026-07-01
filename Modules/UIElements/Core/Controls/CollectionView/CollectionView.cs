@@ -488,14 +488,9 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             try
             {
-                // here we don`t want to react to further value changes in order not to trigger an
-                // infinite loop
-                using (new EventDispatcherGate(panel.dispatcher))
-                {
-                    m_VerticalScroller.highValue = maxScrollRange;
-                    m_VerticalScroller.value = currentScrollOffset;
-                    m_ScrollValue = m_VerticalScroller.value;
-                }
+                m_VerticalScroller.highValue = maxScrollRange;
+                m_VerticalScroller.value = currentScrollOffset;
+                m_ScrollValue = m_VerticalScroller.value;
             }
             finally
             {

@@ -139,7 +139,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     foreach (var player in players)
                     {
                         //filter all launched virtual players
-                        if (player.PlayerState == PlayerState.Launched && player.m_TimeSinceStartingLaunch != DateTime.MinValue)
+                        if (player.PlayerState == PlayerState.Launched && player.Type != PlayerType.Main)
                         {
                             launchedPlayers.Add(player);
                         }

@@ -55,7 +55,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
         /// <param name="isLoop">Indicates a closed chain formed by connecting the first and last vertices specified. This changes how the vertices are interpreted.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>The created ChainSegment geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <returns>The created ChainSegment geometry. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public static NativeArray<ChainSegmentGeometry> CreateSegments(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, bool isLoop, Unity.Collections.Allocator allocator = Unity.Collections.Allocator.Temp) => ChainSegmentGeometry_CreateSegments(vertices, transform, isLoop, allocator).ToNativeArray<ChainSegmentGeometry>();
 
         /// <summary>
@@ -222,6 +222,52 @@ namespace Unity.U2D.Physics
                 segment = segment.Transform(transform),
                 ghost2 = transform.MultiplyPoint3x4(ghost2)
             };
+        }
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void Transform(Span<ChainSegmentGeometry> geometry, PhysicsTransform transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
+        }
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void InverseTransform(Span<ChainSegmentGeometry> geometry, PhysicsTransform transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].InverseTransform(transform);
+        }
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void Transform(Span<ChainSegmentGeometry> geometry, Matrix4x4 transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
+        }
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void InverseTransform(Span<ChainSegmentGeometry> geometry, Matrix4x4 transform)
+        {
+            // No radius, so the inverse is the forward transform by the inverted matrix; invert once.
+            transform = transform.inverse;
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
         }
 
         /// <undoc/>

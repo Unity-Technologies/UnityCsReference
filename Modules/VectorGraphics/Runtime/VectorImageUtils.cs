@@ -497,6 +497,11 @@ namespace Unity.VectorGraphics
             if (gradientFill.Type == GradientFillType.Radial)
             {
                 outFillGradient.gradientType = GradientType.Radial;
+
+                // Center and radius must be set so that SetupGradient (focus - center) / radius
+                // results in RadialFocus unchanged in [-1, 1] space, matching the triangulation path.
+                outFillGradient.center = Vector2.zero;
+                outFillGradient.radius = 1.0f;
                 outFillGradient.focus = gradientFill.RadialFocus;
             }
         }

@@ -86,6 +86,10 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulseToCenter", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulseToCenter(PhysicsBody body, Vector2 impulse, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyAngularImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyAngularImpulse(PhysicsBody body, float impulse, bool wake);
         [NativeMethod(Name = "PhysicsBody::ClearForces", IsThreadSafe = true)] extern internal static void PhysicsBody_ClearForces(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetTotalForce", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTotalForce(PhysicsBody body, Vector2 force);
+        [NativeMethod(Name = "PhysicsBody::GetTotalForce", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetTotalForce(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetTotalTorque", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTotalTorque(PhysicsBody body, float torque);
+        [NativeMethod(Name = "PhysicsBody::GetTotalTorque", IsThreadSafe = true)] extern internal static float PhysicsBody_GetTotalTorque(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::WakeTouching", IsThreadSafe = true)] extern internal static void PhysicsBody_WakeTouching(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetContactEvents(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::SetHitEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetHitEvents(PhysicsBody body, bool flag);

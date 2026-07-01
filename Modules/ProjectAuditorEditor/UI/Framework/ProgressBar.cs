@@ -20,9 +20,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public AsyncProgressState Start(string title, int total)
         {
+            var id = Progress.Start(title, parentId: m_RootProgressId);
+            if (total > 0)
+                Progress.Report(id, 0, total);
+
             return new AsyncProgressState()
             {
-                Id = Progress.Start(title, parentId: m_RootProgressId),
+                Id = id,
                 Current = 0,
                 Total = total
             };
@@ -42,6 +46,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public AsyncProgressState StartRoot(string title, string description, int total)
         {
             m_RootProgressId = Progress.Start(title, description);
+            if (total > 0)
+                Progress.Report(m_RootProgressId, 0, total);
 
             return new AsyncProgressState()
             {

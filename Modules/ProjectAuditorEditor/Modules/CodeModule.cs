@@ -159,6 +159,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         // Match a whole "word", starting with UDR and ending with exactly 4 digits, e.g. UDR1234
         static readonly Regex s_RegEx = new Regex(@"\bUDR\d{4}\b");
+        static readonly Regex s_RegEx2 = new Regex(@"\bUAL\d{4}\b");
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
         {
@@ -237,19 +238,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var roslynAnalyzerAssets = new List<string>(AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath));
 #pragma warning restore UA2001
-
-            // find all roslyn analyzers packaged with Project Auditor
-            if (Directory.Exists(ProjectAuditor.s_RoslynAnalyzersDataPath))
-            {
-                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                var assetPaths = AssetDatabase.FindAssets("", [ProjectAuditor.s_RoslynAnalyzersDataPath]).Select(AssetDatabase.GUIDToAssetPath);
-#pragma warning restore UA2001
-                foreach (var assetPath in assetPaths)
-                {
-                    if (assetPath.EndsWith(".dll"))
-                        roslynAnalyzerAssets.Add(assetPath);
-                }
-            }
 
             // report all roslyn analyzers as PrecompiledAssembly issues
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
@@ -761,14 +749,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var relativePath = AssemblyInfoProvider.ResolveAssetPath(assemblyInfo, message.File);
 
             // stephenm TODO - A more data-driven way to specify which view Roslyn messages should be sent to, depending on their code.
-            if (s_RegEx.IsMatch(message.Code))
+            if (s_RegEx.IsMatch(message.Code) || s_RegEx2.IsMatch(message.Code))
             {
+                if (!RoslynTextLookup.GetDescription(message.Code, out var description, out var recommendation))
+                    description = message.Message;
+
                 var descriptor = new Descriptor(
                     message.Code,
                     message.Message,
                     Areas.IterationTime,
-                    RoslynTextLookup.GetDescription(message.Code),
-                    RoslynTextLookup.GetRecommendation(message.Code));
+                    description,
+                    recommendation);
 
                 DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
 

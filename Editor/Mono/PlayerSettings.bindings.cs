@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Modules;
 using UnityEditor.Build.Profile;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -1965,6 +1966,10 @@ namespace UnityEditor
             // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
             PlayerSettingsEditor.SyncEditors(platform);
         }
+
+        [NativeMethod("GetPlatformAutomaticGraphicsAPIsList")]
+        internal extern GraphicsDeviceType[] GetPlatformAutomaticGraphicsAPIsList(BuildTarget platform);
+
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         private static extern void SetUseDefaultGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, bool automatic);

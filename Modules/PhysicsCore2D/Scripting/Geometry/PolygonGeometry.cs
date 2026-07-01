@@ -74,7 +74,7 @@ namespace Unity.U2D.Physics
         /// <param name="vertices">The vertices to create the polygons from.</param>
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <returns>The created polygon geometry. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public static NativeArray<PolygonGeometry> CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Allocator allocator = Unity.Collections.Allocator.Temp) => CreatePolygons(vertices, transform, vertexScale: Vector2.one, radius: 0.0f, useDelaunay: true, allocator);
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
         /// <param name="vertexScale">The scaling to be applied to the vertices.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <returns>The created polygon geometry. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public static NativeArray<PolygonGeometry> CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Vector2 vertexScale, Allocator allocator = Unity.Collections.Allocator.Temp) => CreatePolygons(vertices, transform, vertexScale, radius: 0.0f, useDelaunay: true, allocator);
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Unity.U2D.Physics
         /// <param name="radius">The radius to apply to all generated polygons. Note that this will likely mean that the same polygon region defined by the vertices will not match.</param>
         /// <param name="useDelaunay">Whether Delaunay tessellation will be used.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <returns>The created polygon geometry. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public static NativeArray<PolygonGeometry> CreatePolygons(ReadOnlySpan<Vector2> vertices, PhysicsTransform transform, Vector2 vertexScale, float radius, bool useDelaunay = true, Allocator allocator = Unity.Collections.Allocator.Temp) => PolygonGeometry_CreatePolygons(vertices, transform, vertexScale, radius, useDelaunay, allocator).ToNativeArray<PolygonGeometry>();
 
         /// <summary>
@@ -416,6 +416,42 @@ namespace Unity.U2D.Physics
         /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
         /// <returns>The inverse-transformed geometry.</returns>
         public readonly PolygonGeometry InverseTransform(Matrix4x4 transform, bool scaleRadius) => PolygonGeometry_InverseTransform_WithMatrix(this, transform, scaleRadius);
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// A transform that degenerates the geometry hull writes an invalid (zero-vertex) polygon in its place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void Transform(Span<PolygonGeometry> geometry, PhysicsTransform transform) => PolygonGeometry_TransformSpan_WithPhysicsTransform(geometry, transform);
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// A transform that degenerates the geometry hull writes an invalid (zero-vertex) polygon in its place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void InverseTransform(Span<PolygonGeometry> geometry, PhysicsTransform transform) => PolygonGeometry_InverseTransformSpan_WithPhysicsTransform(geometry, transform);
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// The maximum absolute value component from the scale will be used to scale each <see cref="PolygonGeometry.radius"/>.
+        /// A transform that degenerates the geometry hull writes an invalid (zero-vertex) polygon in its place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
+        public static void Transform(Span<PolygonGeometry> geometry, Matrix4x4 transform, bool scaleRadius) => PolygonGeometry_TransformSpan_WithMatrix(geometry, transform, scaleRadius);
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// The minimum absolute value component from the inverted scale will be used to scale each <see cref="PolygonGeometry.radius"/>.
+        /// A transform that degenerates the geometry hull writes an invalid (zero-vertex) polygon in its place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
+        public static void InverseTransform(Span<PolygonGeometry> geometry, Matrix4x4 transform, bool scaleRadius) => PolygonGeometry_InverseTransformSpan_WithMatrix(geometry, transform, scaleRadius);
 
         /// <summary>
         /// A simple convex hull.

@@ -163,7 +163,7 @@ namespace Unity.ProjectAuditor.Editor
                 return;
             }
 
-            AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", supportedModules.Length);
+            AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", numModules);
 
             var logTimingsInfo = UserPreferences.LogTimingsInfo;
             var stopwatch = Stopwatch.StartNew();
@@ -327,7 +327,7 @@ namespace Unity.ProjectAuditor.Editor
             return "Unknown";
         }
 
-        void InitModules()
+        internal void InitModules()
         {
             if (ProjectAuditorRulesPackage.IsInstalled == false)
                 return;

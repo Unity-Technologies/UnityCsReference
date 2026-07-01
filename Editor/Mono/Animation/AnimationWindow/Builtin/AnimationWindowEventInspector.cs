@@ -104,16 +104,21 @@ namespace UnityEditor.AnimationWindowBuiltin
                 EditorGUIUtility.labelWidth = 130;
 
                 EditorGUI.showMixedValue = !singleFunctionName;
-                int wasSelected = singleFunctionName ? selected : -1;
+
+                EditorGUI.BeginChangeCheck();
                 selected = EditorGUILayout.Popup("Function: ", selected, methodsFormatted);
-                if (wasSelected != selected && selected != -1 && selected != notSupportedIndex)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    foreach (var evt in data.selectedEvents)
+                    if (selected >= 0 && selected < notSupportedIndex)
                     {
-                        evt.functionName = supportedMethods[selected].Name;
-                        evt.stringParameter = string.Empty;
+                        foreach (var evt in data.selectedEvents)
+                        {
+                            evt.functionName = supportedMethods[selected].Name;
+                            evt.stringParameter = string.Empty;
+                        }
                     }
                 }
+
                 EditorGUI.showMixedValue = false;
 
                 EditorGUI.indentLevel++;

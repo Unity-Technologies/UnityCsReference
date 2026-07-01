@@ -79,6 +79,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         static EditorModesUtility()
         {
+            if (!VirtualProjectsEditor.IsClone)
+                return;
             Initialize(FileSystem.Delegates, ParsingSystem.Delegates);
         }
 
@@ -147,7 +149,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return hasChanged;
         }
 
-        internal static void SwitchLayoutToMode(bool isPlayMode)
+        internal static void SwitchLayoutToMode(bool isPlayMode, bool forceRebuild = false)
         {
             // Grab the mode's flag to switch to.
             var cloneConfiguration = VirtualProjectWorkflow.WorkflowCloneContext.CloneDataFile;
@@ -162,6 +164,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // if the open window has a layout that is the same, avoid the expansive window switch
             if (CurrentWindow != null && viewToSwitchTo.Equals(CurrentMode))
             {
+                EnsureCorrectHierarchyIsInUse(CurrentWindow);
                 ApplyWindowTitle();
                 return;
             }
@@ -178,7 +181,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 // If there's a cache .WlT window for this layout flag config, load it.
                 var cachedWindowDir = Path.Combine(k_LayoutWindowDir, viewToSwitchTo);
                 var cachedLayoutWindowPath = Path.ChangeExtension(cachedWindowDir, k_LayoutWindowExt);
-                if (File.Exists(cachedLayoutWindowPath))
+                if (!forceRebuild && File.Exists(cachedLayoutWindowPath))
                 {
                     CurrentWindow = WindowLayout.LoadWindowLayout(k_WindowId, cachedLayoutWindowPath);
                 }
@@ -196,6 +199,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     MppmLog.Error($"Mode Switcher was unable to open window with flags {layoutFlags}");
                     return;
                 }
+
+                EnsureCorrectHierarchyIsInUse(CurrentWindow);
 
                 ApplyWindowTitle();
                 CurrentMode = viewToSwitchTo;
@@ -244,6 +249,29 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 CurrentWindow = null;
             }
         }
+
+        internal static bool UseNewHierarchyPreference
+        {
+            get => HierarchyPreferences.UseNewHierarchy;
+            set => HierarchyPreferences.UseNewHierarchy.value = value;
+        }
+
+        // Iterates hierarchy windows in the VP container and delegates each to the core
+        // HierarchyPreferences.EnsureCorrectHierarchyIsInUse, which reads the current
+        // preference and swaps if the window type no longer matches.
+        internal static void EnsureCorrectHierarchyIsInUse(ContainerWindowProxy vp)
+        {
+            if (!vp) return;
+            var container = vp.BackingObject;
+            var v2Type = HierarchyPreferences.HierarchyV2WindowType;
+            foreach (var window in Resources.FindObjectsOfTypeAll<EditorWindow>())
+            {
+                if (window?.m_Parent?.window != container) continue;
+                if (window is SceneHierarchyWindow || (v2Type != null && window.GetType() == v2Type))
+                    HierarchyPreferences.EnsureCorrectHierarchyIsInUse(window);
+            }
+        }
+
         private static bool BuildDynamicLayoutFile(LayoutFlags layoutFlags, string proxyPath)
         {
             // Grab our base layout config to build a dynamic file from.

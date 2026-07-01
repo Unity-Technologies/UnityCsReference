@@ -259,129 +259,79 @@ namespace UnityEditor
         }
     }
 
-    internal class SavedInt
+    internal abstract class SavedValue<T> where T : IEquatable<T>
     {
-        int m_Value;
-        string m_Name;
+        protected T m_Value;
+        protected string m_Name;
         bool m_Loaded;
-
-        public SavedInt(string name, int value)
-        {
-            m_Name = name;
-            m_Loaded = false;
-            m_Value = value;
-        }
-
-        private void Load()
-        {
-            if (m_Loaded)
-                return;
-
-            m_Loaded = true;
-            m_Value = EditorPrefs.GetInt(m_Name, m_Value);
-        }
-
-        public int value
-        {
-            get { Load(); return m_Value; }
-            set
-            {
-                Load();
-                if (m_Value == value)
-                    return;
-                m_Value = value;
-                EditorPrefs.SetInt(m_Name, value);
-            }
-        }
-
-        public static implicit operator int(SavedInt s)
-        {
-            return s.value;
-        }
-    }
-
-    internal class SavedFloat
-    {
-        float m_Value;
-        string m_Name;
-        bool m_Loaded;
-
-        public SavedFloat(string name, float value)
-        {
-            m_Name = name;
-            m_Loaded = false;
-            m_Value = value;
-        }
-
-        private void Load()
-        {
-            if (m_Loaded)
-                return;
-
-            m_Loaded = true;
-            m_Value = EditorPrefs.GetFloat(m_Name, m_Value);
-        }
-
-        public float value
-        {
-            get { Load(); return m_Value; }
-            set
-            {
-                Load();
-                if (m_Value == value)
-                    return;
-                m_Value = value;
-                EditorPrefs.SetFloat(m_Name, value);
-            }
-        }
-
-        public static implicit operator float(SavedFloat s)
-        {
-            return s.value;
-        }
-    }
-
-    internal class SavedBool
-    {
-        bool m_Value;
-        string m_Name;
-        bool m_Loaded;
-
-        public SavedBool(string name, bool value)
-        {
-            m_Name = name;
-            m_Loaded = false;
-            m_Value = value;
-        }
 
         public event Action valueChanged;
 
+        protected SavedValue(string name, T defaultValue)
+        {
+            m_Name = name;
+            m_Value = defaultValue;
+        }
+
+        protected abstract T ReadFromPrefs(T defaultValue);
+        protected abstract void WriteToPrefs(T value);
+
         private void Load()
         {
             if (m_Loaded)
                 return;
 
             m_Loaded = true;
-            m_Value = EditorPrefs.GetBool(m_Name, m_Value);
+            m_Value = ReadFromPrefs(m_Value);
         }
 
-        public bool value
+        public T value
         {
             get { Load(); return m_Value; }
             set
             {
                 Load();
-                if (m_Value == value)
+                if (m_Value.Equals(value))
                     return;
                 m_Value = value;
-                EditorPrefs.SetBool(m_Name, value);
+                WriteToPrefs(value);
                 valueChanged?.Invoke();
             }
         }
 
-        public static implicit operator bool(SavedBool s)
+        // Re-reads the pref store and fires valueChanged if the value has changed since last load.
+        // A no-op if the value has never been read (the next access will pick up the current store value).
+        public void Refresh()
         {
-            return s.value;
+            if (!m_Loaded) return;
+            var fresh = ReadFromPrefs(m_Value);
+            if (fresh.Equals(m_Value)) return;
+            m_Value = fresh;
+            valueChanged?.Invoke();
         }
+    }
+
+    internal class SavedInt : SavedValue<int>
+    {
+        public SavedInt(string name, int value) : base(name, value) { }
+        protected override int ReadFromPrefs(int defaultValue) => EditorPrefs.GetInt(m_Name, defaultValue);
+        protected override void WriteToPrefs(int value) => EditorPrefs.SetInt(m_Name, value);
+        public static implicit operator int(SavedInt s) => s.value;
+    }
+
+    internal class SavedFloat : SavedValue<float>
+    {
+        public SavedFloat(string name, float value) : base(name, value) { }
+        protected override float ReadFromPrefs(float defaultValue) => EditorPrefs.GetFloat(m_Name, defaultValue);
+        protected override void WriteToPrefs(float value) => EditorPrefs.SetFloat(m_Name, value);
+        public static implicit operator float(SavedFloat s) => s.value;
+    }
+
+    internal class SavedBool : SavedValue<bool>
+    {
+        public SavedBool(string name, bool value) : base(name, value) { }
+        protected override bool ReadFromPrefs(bool defaultValue) => EditorPrefs.GetBool(m_Name, defaultValue);
+        protected override void WriteToPrefs(bool value) => EditorPrefs.SetBool(m_Name, value);
+        public static implicit operator bool(SavedBool s) => s.value;
     }
 }

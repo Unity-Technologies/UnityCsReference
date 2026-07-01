@@ -506,6 +506,7 @@ namespace UnityEditor.Connect
         static void BindProject(ProjectRequestResponse projectInfo)
         {
             UnityConnect.instance.BindProject(projectInfo.Id, projectInfo.Name, projectInfo.OrganizationLegacyId);
+            UnityConnect.instance.RefreshProject();
             EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.Name });
             NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
         }

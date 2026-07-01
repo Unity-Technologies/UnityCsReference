@@ -94,7 +94,7 @@ namespace Unity.GraphToolkit.Editor
                 elements.AddRange(data.StickyNotes);
                 for (var i = 0; i < elements.Count; i++)
                 {
-                    if (elements[i] is not IMovable)
+                    if (!elements[i].IsMovable())
                         continue;
                     var childView = elements[i].GetView(graphView);
                     if (childView is not null)

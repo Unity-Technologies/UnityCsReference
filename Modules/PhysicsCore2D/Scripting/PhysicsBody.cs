@@ -1145,6 +1145,18 @@ namespace Unity.U2D.Physics
         public readonly void ClearForces() => PhysicsBody_ClearForces(this);
 
         /// <summary>
+        /// The total user force that has been applied to this body since the last simulation step.
+        /// Setting this value overrides any force that was previously requested.
+        /// </summary>
+        public readonly Vector2 totalForce { get => PhysicsBody_GetTotalForce(this); set => PhysicsBody_SetTotalForce(this, value); }
+
+        /// <summary>
+        /// The total users torque that has been applied to this body since the last simulation step.
+        /// Setting this value overrides any torque that was previously requested.
+        /// </summary>
+        public readonly float totalTorque { get => PhysicsBody_GetTotalTorque(this); set => PhysicsBody_SetTotalTorque(this, value); }
+
+        /// <summary>
         /// Wake any bodies that are touching this body via their shapes.
         /// This also works for Static bodies.
         /// </summary>

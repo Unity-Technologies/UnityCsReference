@@ -234,6 +234,52 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void Transform(Span<SegmentGeometry> geometry, PhysicsTransform transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
+        }
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void InverseTransform(Span<SegmentGeometry> geometry, PhysicsTransform transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].InverseTransform(transform);
+        }
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void Transform(Span<SegmentGeometry> geometry, Matrix4x4 transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
+        }
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void InverseTransform(Span<SegmentGeometry> geometry, Matrix4x4 transform)
+        {
+            // No radius, so the inverse is the forward transform by the inverted matrix; invert once.
+            transform = transform.inverse;
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
+        }
+
+        /// <summary>
         /// Scale the geometry along the <see cref="SegmentGeometry.forward"/> and <see cref="SegmentGeometry.backward"/> direction.
         /// </summary>
         /// <param name="scale"></param>

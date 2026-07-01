@@ -33,6 +33,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             mppmContext.ClonedPlayerSystems.ClonedPlayerApplicationEvents.SyncStateRequested += SyncState;
             SyncState(m_ClonedPlayerState);
 
+            vpContext.MessagingService.Receive<EditorPrefsSyncedMessage>(OnEditorPrefsSynced);
+
             if (!EditorApplication.isPlaying)
             {
                 UpdateMultiplayerRoleMask();
@@ -148,6 +150,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
 
             vpContext.MessagingService.Broadcast(new LogMessage(VirtualProjectsEditor.CloneIdentifier, condition, stackTrace, type));
+        }
+
+        static void OnEditorPrefsSynced(EditorPrefsSyncedMessage msg)
+        {
+            EditorPrefs.Sync();
+            HierarchyPreferences.RefreshPreferences();
         }
 
         static void UpdateMultiplayerRoleMask()

@@ -191,7 +191,6 @@ namespace UnityEditor.UIElements
             where T : struct
         {
             BindingsStyleHelpers.RegisterRightClickMenu(field, property);
-            field.TrackPropertyValue(property);
             field.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
 
             field.RegisterValueChangedCallback(e =>
@@ -199,12 +198,19 @@ namespace UnityEditor.UIElements
                 setter.Invoke(e.newValue, property);
             });
 
+            // External-sync path. Must be non-notifying (SetValueWithoutNotify) so that refreshing the
+            // field from the property — e.g. on Reset/Undo via TrackPropertyValue, or manual polling by
+            // consumers like CameraEditor — does not raise the value-changed callback above, which would
+            // re-apply the property and push a new Undo step (wiping the Redo stack). See UUM-139005.
             var updateCallback = () =>
             {
-                field.value = getter.Invoke(property);
+                var newValue = getter.Invoke(property);
+                if (!EqualityComparer<T>.Default.Equals(field.value, newValue))
+                    field.SetValueWithoutNotify(newValue);
                 field.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(field, property));
             };
-            updateCallback?.Invoke();
+            updateCallback.Invoke();
+            field.TrackPropertyValue(property, _ => updateCallback());
             return updateCallback;
         }
 
@@ -216,8 +222,6 @@ namespace UnityEditor.UIElements
 
             foreach (var val in stringValues)
                 dropdown.choices.Add(val.text);
-
-            dropdown.TrackPropertyValue(property);
 
             return BindSerializedProperty(dropdown, property, p =>
                 {
@@ -239,7 +243,6 @@ namespace UnityEditor.UIElements
         internal static Action BindSerializedProperty(DropdownField dropdown, SerializedProperty property, Func<SerializedProperty, int> getter, Action<int, SerializedProperty> setter)
         {
             BindingsStyleHelpers.RegisterRightClickMenu(dropdown, property);
-            dropdown.TrackPropertyValue(property);
             dropdown.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
 
             dropdown.RegisterValueChangedCallback(e =>
@@ -247,12 +250,16 @@ namespace UnityEditor.UIElements
                 setter.Invoke(dropdown.index, property);
             });
 
+            // External-sync path — see the note on the BaseField overload above (UUM-139005).
             var updateCallback = () =>
             {
-                dropdown.index = getter.Invoke(property);
+                var newIndex = getter.Invoke(property);
+                if (dropdown.index != newIndex)
+                    dropdown.SetIndexWithoutNotify(newIndex);
                 dropdown.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(dropdown, property));
             };
-            updateCallback?.Invoke();
+            updateCallback.Invoke();
+            dropdown.TrackPropertyValue(property, _ => updateCallback());
             return updateCallback;
         }
 
@@ -273,24 +280,31 @@ namespace UnityEditor.UIElements
 
                 property.serializedObject.ApplyModifiedProperties();
                 onValueChange?.Invoke((T)e.newValue);
+                enumField.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(enumField, property));
             });
 
+            // External-sync path. Uses SetValueWithoutNotify so refreshing from the property (Reset/Undo
+            // via TrackPropertyValue, or manual polling) doesn't raise the value-changed callback and
+            // re-apply the property — that would push a new Undo step and wipe the Redo stack (UUM-139005).
+            // Because the callback won't fire, onValueChange is invoked here so visibility/grouping side
+            // effects still run. The initialized flag fires onValueChange once for the initial setup, then
+            // only on genuine external changes — user-driven changes already fired it via the callback above.
+            bool initialized = false;
             var updateCallback = () =>
             {
-                foreach (T value in Enum.GetValues(typeof(T)))
+                var propertyValue = boolProperty ? (property.boolValue ? 1 : 0) : property.intValue;
+                var value = (T)Enum.ToObject(typeof(T), propertyValue);
+                if (!initialized || !enumField.value.Equals(value))
                 {
-                    var propertyValue = boolProperty ? (property.boolValue ? 1 : 0) : property.intValue;
-
-                    if (value.ToInt32(null) != propertyValue)
-                        continue;
-
-                    enumField.value = value;
-                    break;
+                    enumField.SetValueWithoutNotify(value);
+                    onValueChange?.Invoke(value);
                 }
 
+                initialized = true;
                 enumField.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(enumField, property));
             };
-            updateCallback?.Invoke();
+            updateCallback.Invoke();
+            enumField.TrackPropertyValue(property, _ => updateCallback());
             return updateCallback;
         }
 

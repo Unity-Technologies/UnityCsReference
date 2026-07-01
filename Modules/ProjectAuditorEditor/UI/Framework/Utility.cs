@@ -7,6 +7,7 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEditor.PackageManager;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.UI.Framework
@@ -532,7 +533,25 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             return url.Contains("docs.unity3d.com", StringComparison.Ordinal);
         }
 
-        internal static int VersionToInt(string version)
+        // Transforms versionless https://docs.unity3d.com/Manual/... and .../ScriptReference/... URLs to
+        // include the current editor version, matching how the rest of the editor constructs help links.
+        public static string GetVersionedDocsUrl(string url)
+        {
+            const string baseUrl = "https://docs.unity3d.com/";
+            if (!url.StartsWith(baseUrl, StringComparison.Ordinal))
+                return url;
+
+            var path = url.Substring(baseUrl.Length);
+
+            // Leave already-versioned URLs ("6000.0/...") and package URLs ("Packages/...") unchanged.
+            if (path.Length > 0 && (char.IsDigit(path[0]) || path.StartsWith("Packages/", StringComparison.Ordinal)))
+                return url;
+
+            var version = InternalEditorUtility.GetUnityVersion();
+            return $"{baseUrl}{version.Major}.{version.Minor}/Documentation/{path}";
+        }
+
+        public static int VersionToInt(string version)
         {
             var parts = version.Split('.');
             return int.Parse(parts[0]) * 100 + int.Parse(parts[1]); // Just any integer that can be used for comparison

@@ -278,6 +278,13 @@ namespace Unity.U2D.Physics
         public static PhysicsFixedJoint Create(PhysicsWorld world, PhysicsFixedJointDefinition definition) => FixedJoint_Create(world, definition);
 
         /// <summary>
+        /// Get or set the joint definition.
+        /// Reading returns the joint's current configuration, including <see cref="bodyA"/> and <see cref="bodyB"/>.
+        /// Writing applies every configurable property in place but does not change the connected bodies, which are fixed when the joint is created.
+        /// </summary>
+        public readonly PhysicsFixedJointDefinition definition { get => FixedJoint_ReadDefinition(this); set => FixedJoint_WriteDefinition(this, value); }
+
+        /// <summary>
         /// Destroy a batch of joints.
         /// Owned joints will produce a warning and will not be destroyed (see <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>).
         /// Any invalid joints will be ignored.

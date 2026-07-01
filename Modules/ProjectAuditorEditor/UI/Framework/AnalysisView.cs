@@ -157,7 +157,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     headerContent = new GUIContent(property.Name, layout.Properties[i].LongName),
                     width = width,
                     minWidth = minWidth,
-                    autoResize = true
+                    autoResize = true,
+                    allowToggleVisibility = (i > 0) && !property.IsHidden // Can't hide the first column (we must have at least one visible column)
                 };
             }
 
@@ -224,7 +225,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 if (property.IsHidden)
                 {
                     header.GetColumn(columnIndex).width = 0;
-                    header.GetColumn(columnIndex).allowToggleVisibility = false;
                     continue;
                 }
 
@@ -912,7 +912,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 
                     if (result)
-                        Application.OpenURL(docsUrl);
+                        Application.OpenURL(Utility.GetVersionedDocsUrl(docsUrl));
                 }
             }
 

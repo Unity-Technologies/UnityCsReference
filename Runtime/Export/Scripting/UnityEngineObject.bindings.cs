@@ -354,6 +354,11 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal void GetInstanceIdFast(out EntityId v) { v = m_EntityId; }
 
+        // UUM-143556: lets the native game-release writer read back the marker the reference
+        // deserializer stamps on a type-mismatched reference, so it can drop it (write fileID 0).
+        [RequiredByNativeCode]
+        internal string GetUnityRuntimeErrorString() { return m_UnityRuntimeErrorString; }
+
         // The name of the object.
         public string name
         {

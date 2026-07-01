@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
@@ -35,15 +34,12 @@ class AIDropdownContent : PopupWindowContent
 
     internal Data data = new()
     {
-        text = "I have read and agree to the <link=terms><color=#7BAEFA>Unity Terms of Service</color></link>." +
-            "\n\nWhen using Unity AI, including third-party models, you are responsible for ensuring your use of Unity AI" +
-            " and any generated assets do not infringe on third-party rights and are appropriate for your use." +
-            "\n\nSee <link=thirdparty><color=#7BAEFA>Unity AI Models and Partners</color></link> for more information.",
+        text = "Add the Unity AI packages to your project. AI Assistant is an in-Editor assistant that helps you" +
+            " write scripts, generate assets, and solve common Unity problems." +
+            "\n\n<link=learnmore><color=#7BAEFA>Learn more.</color></link>",
         links = new()
         {
-            new() {id = "terms", url = "https://unity.com/legal/terms-of-service"},
-            new() {id = "supplemental", url = "https://unity.com/legal/supplemental-privacy-statement-unity"},
-            new() {id = "thirdparty", url = "https://unity.com/legal/unityai-models-partners"}
+            new() {id = "learnmore", url = "https://unity.com/features/ai"}
         },
         noInternet = "You need an internet connection to be able to use the AI features.",
         installingPackages = "Installing packages",
@@ -54,22 +50,22 @@ class AIDropdownContent : PopupWindowContent
             "com.unity.ai.inference"
         },
 
-        installButtonText = "Agree and continue to Unity AI Beta"
+        installButtonText = "Install Unity AI"
     };
 
     Label m_Text;
 
     VisualElement m_NetworkUnreachableView;
     VisualElement m_LoadingView;
-    VisualElement m_AgreementView;
+    VisualElement m_InstallView;
     VisualElement m_CurrentView;
     VisualElement m_MainView;
 
     AddAndRemoveRequest m_Request;
 
-    VisualElement CreateAgreementView()
+    VisualElement CreateInstallView()
     {
-        var agreement = new VisualElement();
+        var install = new VisualElement();
 
         m_Text = new Label(data.text)
         {
@@ -88,7 +84,7 @@ class AIDropdownContent : PopupWindowContent
 
         var button = new Button(OnClicked)
         {
-            name = "accept",
+            name = "install",
             text = data.installButtonText,
             style =
             {
@@ -98,10 +94,10 @@ class AIDropdownContent : PopupWindowContent
             }
         };
 
-        agreement.Add(m_Text);
-        agreement.Add(button);
+        install.Add(m_Text);
+        install.Add(button);
 
-        return agreement;
+        return install;
     }
 
     VisualElement CreateLoadingView()
@@ -193,7 +189,7 @@ class AIDropdownContent : PopupWindowContent
             }
         };
 
-        m_AgreementView = CreateAgreementView();
+        m_InstallView = CreateInstallView();
         m_LoadingView = CreateLoadingView();
         m_NetworkUnreachableView = CreateNetworkUnreachableView();
     }
@@ -209,7 +205,7 @@ class AIDropdownContent : PopupWindowContent
             if (m_Request != null)
                 currentView = m_LoadingView;
             else
-                currentView = m_AgreementView;
+                currentView = m_InstallView;
         }
         else
         {
@@ -242,8 +238,6 @@ class AIDropdownContent : PopupWindowContent
         EditorAIAssistantAnalytics.ReportAIInstallAcceptedEvent();
 
         Debug.Log($"Installing AI Packages.\n{string.Join("\n", data.packages)}");
-
-        AIDropdownConfig.instance.termsAccepted = true;
 
         editorWindow?.Close();
         if (data.packages.Count > 0)

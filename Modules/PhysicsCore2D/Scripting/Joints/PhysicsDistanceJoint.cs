@@ -276,6 +276,13 @@ namespace Unity.U2D.Physics
         public static PhysicsDistanceJoint Create(PhysicsWorld world, PhysicsDistanceJointDefinition definition) => DistanceJoint_Create(world, definition);
 
         /// <summary>
+        /// Get or set the joint definition.
+        /// Reading returns the joint's current configuration, including <see cref="bodyA"/> and <see cref="bodyB"/>.
+        /// Writing applies every configurable property in place but does not change the connected bodies, which are fixed when the joint is created.
+        /// </summary>
+        public readonly PhysicsDistanceJointDefinition definition { get => DistanceJoint_ReadDefinition(this); set => DistanceJoint_WriteDefinition(this, value); }
+
+        /// <summary>
         /// Destroy a batch of joints.
         /// Owned joints will produce a warning and will not be destroyed (see <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>).
         /// Any invalid joints will be ignored.
@@ -313,11 +320,19 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The lower spring force controls how much tension the spring can sustain.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float springLowerForce { get => DistanceJoint_GetSpringLowerForce(this); set => DistanceJoint_SetSpringLowerForce(this, value); }
 
         /// <summary>
         /// The upper spring force controls how much compression the spring can sustain.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float springUpperForce { get => DistanceJoint_GetSpringUpperForce(this); set => DistanceJoint_SetSpringUpperForce(this, value); }
 
         /// <summary>
@@ -349,12 +364,19 @@ namespace Unity.U2D.Physics
         /// Minimum distance limit of this joint.
         /// This will be clamped to a lower stable limit.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float minDistanceLimit { get => DistanceJoint_GetMinDistanceLimit(this); set => DistanceJoint_SetMinDistanceLimit(this, value); }
 
         /// <summary>
         /// Maximum distance limit of this joint.
-        /// Must be greater than or equal to the minimum length.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float maxDistanceLimit { get => DistanceJoint_GetMaxDistanceLimit(this); set => DistanceJoint_SetMaxDistanceLimit(this, value); }
     }
 }

@@ -175,10 +175,20 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         {
             using var settingsScope = new LabelWidthScope();
             using var wideScreenScope = new WideScreenScope(this);
-            if (m_TierSettingsAnimator == null)
-                OnInspectorGUI();
-            else
-                TierSettingsGUI();
+
+            var previousTextClipping = EditorStyles.label.clipping;
+            EditorStyles.label.clipping = TextClipping.Ellipsis;
+            try
+            {
+                if (m_TierSettingsAnimator == null)
+                    OnInspectorGUI();
+                else
+                    TierSettingsGUI();
+            }
+            finally
+            {
+                EditorStyles.label.clipping = previousTextClipping;
+            }
         }
 
         void HandleEditorWindowButton()

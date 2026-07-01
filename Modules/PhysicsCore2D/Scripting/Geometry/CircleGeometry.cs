@@ -101,7 +101,7 @@ namespace Unity.U2D.Physics
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>
         /// <param name="curveStride">The curve stride used when creating curves, in radians. Valid range is [<see cref="PhysicsComposer.MinCurveStride"/>, 1.0].</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
-        /// <returns>The created polygon geometries. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <returns>The created polygon geometry. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
         public readonly NativeArray<PolygonGeometry> ToPolygons(PhysicsTransform transform, float curveStride = PhysicsComposer.DefaultCurveStride, Allocator allocator = Allocator.Temp) => PhysicsComposer.ToPolygons(this, transform, curveStride, allocator);
 
         /// <summary>
@@ -260,6 +260,54 @@ namespace Unity.U2D.Physics
                 center = transform.MultiplyPoint3x4(center),
                 radius = scaleRadius ? PhysicsMath.MinAbsComponent((Vector2)transform.lossyScale) * radius : radius
             };
+        }
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void Transform(Span<CircleGeometry> geometry, PhysicsTransform transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform);
+        }
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        public static void InverseTransform(Span<CircleGeometry> geometry, PhysicsTransform transform)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].InverseTransform(transform);
+        }
+
+        /// <summary>
+        /// Transform a batch of geometry in place.
+        /// The maximum absolute value component from the scale will be used to scale the <see cref="CircleGeometry.radius"/>.
+        /// </summary>
+        /// <param name="geometry">The geometry to transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
+        public static void Transform(Span<CircleGeometry> geometry, Matrix4x4 transform, bool scaleRadius)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].Transform(transform, scaleRadius);
+        }
+
+        /// <summary>
+        /// Inverse-Transform a batch of geometry in place.
+        /// The minimum absolute value component from the inverted scale will be used to scale the <see cref="CircleGeometry.radius"/>.
+        /// </summary>
+        /// <param name="geometry">The geometry to inverse-transform in place.</param>
+        /// <param name="transform">The transform to apply.</param>
+        /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
+        public static void InverseTransform(Span<CircleGeometry> geometry, Matrix4x4 transform, bool scaleRadius)
+        {
+            for (var i = 0; i < geometry.Length; ++i)
+                geometry[i] = geometry[i].InverseTransform(transform, scaleRadius);
         }
 
         /// <undoc/>

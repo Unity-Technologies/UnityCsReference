@@ -90,6 +90,7 @@ namespace UnityEditor
         // Removes all keys and values from the preferences. Use with caution.
         public static extern void DeleteAll();
 
+        [VisibleToOtherModules("MultiplayerEditorModule")]
         internal static extern void Sync();
         internal static extern string[] GetKeys();
     }

@@ -54,6 +54,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 EditorPrefs.DeleteKey(k_OpenGameViewOnPlayCache);
             }
 
+            HierarchyPreferences.AnyPreferenceChanged += () =>
+            {
+                EditorPrefs.Sync();
+                vpContext.MessagingService.Broadcast(new EditorPrefsSyncedMessage());
+            };
+
             EditorMultiplayerManager.activeMultiplayerRoleChanged += () =>
             {
                 // Based on other system actually updating the role, we update the JSON, which is the authority of the role in MPPM

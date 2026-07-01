@@ -595,7 +595,7 @@ namespace UnityEditor.Build.Profile
 
         public static bool IsPlatformAvailableOnHostPlatform(GUID platformGuid, OperatingSystemFamily operatingSystemFamily)
         {
-            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(platformGuid, SystemInfo.operatingSystemFamily);
+            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(platformGuid, operatingSystemFamily);
         }
 
         /// <summary>

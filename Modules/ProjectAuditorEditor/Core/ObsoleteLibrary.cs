@@ -72,7 +72,12 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         static void ReadFromDisk()
         {
-            var json = File.ReadAllText(Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.json"));
+            var path = Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.gen.json");
+
+            // TEMP: support both paths while we migrate to new name
+            string filename = File.Exists(path) ? path : Path.Combine(ProjectAuditor.s_RulesDataPath, "ObsoleteDatabase.json");
+
+            var json = File.ReadAllText(filename);
             var obsoleteApi = JsonUtility.FromJson<SerializedApiCollection>(json).items;
             var uniqueVersions = new HashSet<string>();
 

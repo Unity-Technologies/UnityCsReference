@@ -78,12 +78,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return false;
             }
 
-            var eventName = previousImports.Count == 0 ? "importSample" : "reimportSample";
-            PackageManagerWindowAnalytics.SendEvent(eventName, sample.package?.versions.primary.uniqueId);
-
             var success = sample.Import(Sample.ImportOptions.OverridePreviousImports);
             if (!success)
                 return false;
+
+            var eventName = sample.isImported ? "reimportSample"
+                : sample.previousImportPaths?.Count > 0 ? "updateSample"
+                : "importSample";
+            PackageManagerWindowAnalytics.SendEvent(eventName, sample);
 
             PingSampleInProjectBrowser(sample);
             return true;

@@ -52,13 +52,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 { LayoutFlags.SceneView, "UnityEditor.SceneView" },
                 { LayoutFlags.EntitiesPlayModeToolsWindow, "Unity.NetCode.Editor.MultiplayerPlayModeWindow" },
                 { LayoutFlags.EntitiesHierarchyWindow, "Unity.Entities.Editor.HierarchyWindow"},
-                { LayoutFlags.ProfilerWindow, "UnityEditor.ProfilerWindow"}
+                { LayoutFlags.ProfilerWindow, "UnityEditor.ProfilerWindow"},
             };
 
         private static readonly HashSet<string> k_SupportedAuxiliaryViews =
             new HashSet<string>(new[]
             {
                 "Unity.Multiplayer.PlayMode.Editor.TopView",
+                "Unity.Hierarchy.Editor.HierarchyWindow",
                 "UnityEditor.PopupWindow",
                 "UnityEditor.FrameDebuggerWindow",
                 "UnityEditor.AnnotationWindow",

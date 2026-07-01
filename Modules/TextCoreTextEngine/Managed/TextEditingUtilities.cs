@@ -162,7 +162,10 @@ namespace UnityEngine
             var compositionString = Input.compositionString;
             if (isCompositionActive)
             {
-                return richText ? text.Insert(stringCursorIndex, $"<u>{compositionString}</u>") : text.Insert(stringCursorIndex, compositionString);
+                var previewText = text;
+                // stringCursorIndex can lag behind text after an external value change mid-composition; clamp so Insert stays in range.
+                var insertIndex = Mathf.Clamp(stringCursorIndex, 0, previewText.Length);
+                return richText ? previewText.Insert(insertIndex, $"<u>{compositionString}</u>") : previewText.Insert(insertIndex, compositionString);
             }
             return text;
         }

@@ -8733,6 +8733,9 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\EditorPrefsSyncedMessage.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\EditorPrefsSyncedMessage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs</Link>
     </Compile>
@@ -11681,6 +11684,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\EmptyMethodAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\EmptyMethodAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\EntityIdAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\EntityIdAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\ObsoleteAttributeAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\ObsoleteAttributeAnalyzer.cs</Link>

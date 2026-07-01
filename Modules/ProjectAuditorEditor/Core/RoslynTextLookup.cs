@@ -50,20 +50,21 @@ namespace Unity.ProjectAuditor.Editor.Core
             }
         }
 
-        public static string GetDescription(string id)
+        public static bool GetDescription(string id, out string description, out string recommendation)
         {
             if (m_StringLookup == null)
                 Initialize();
 
-            return m_StringLookup[id].description;
-        }
+            if (m_StringLookup.TryGetValue(id, out var result))
+            {
+                description = result.description;
+                recommendation = result.recommendation;
+                return true;
+            }
 
-        public static string GetRecommendation(string id)
-        {
-            if (m_StringLookup == null)
-                Initialize();
-
-            return m_StringLookup[id].recommendation;
+            description = string.Empty;
+            recommendation = string.Empty;
+            return false;
         }
     }
 }
