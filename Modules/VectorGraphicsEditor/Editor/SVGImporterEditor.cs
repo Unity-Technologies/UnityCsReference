@@ -568,7 +568,7 @@ namespace Unity.VectorGraphics.Editor
             }
             else if (vi != null)
             {
-                previewTex = VectorImageUtils.RenderVectorImageToTexture2D(vi, width, height, 4);
+                previewTex = VectorImageUtils.RenderToTexture2D(vi, width, height, 4);
             }
             return previewTex;
         }

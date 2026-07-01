@@ -65,7 +65,7 @@ namespace Unity.UI.Builder
             {
                 if (vta.inlineSheet == null)
                     Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
-                else
+                else if (root.ruleIndex >= 0 && root.ruleIndex < vta.inlineSheet.rules.Length)
                 {
                     var rule = vta.inlineSheet.rules[root.ruleIndex];
                     ve.UpdateInlineRule(vta.inlineSheet, rule);

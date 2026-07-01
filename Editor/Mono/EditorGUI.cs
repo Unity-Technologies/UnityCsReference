@@ -6126,6 +6126,9 @@ namespace UnityEditor
         // Make an inspector-window-like titlebar.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
+            if (targetObjs[0] == null)
+                return;
+
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
             GUIStyle iconButtonStyle = EditorStyles.iconButton;
             Event evt = Event.current;

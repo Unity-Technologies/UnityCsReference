@@ -423,9 +423,14 @@ namespace UnityEngine.TextCore.Text
                     Debug.Log($"Atlas is full, consider enabling multi-atlas textures in the Font Asset: {name}");
                     break;
                 }
-                else if (!allGlyphsAddedToTexture)
+                else if (!allGlyphsAddedToTexture && m_UsedGlyphRects.Count > 0)
                 {
                     SetupNewAtlasTexture();
+                }
+                else if (!allGlyphsAddedToTexture && m_UsedGlyphRects.Count == 0)
+                {
+                    Debug.Log($"Texture is too small, consider reducing the sampling point size or augmenting the atlas's size in the Font Asset: {name}");
+                    break;
                 }
             }
 

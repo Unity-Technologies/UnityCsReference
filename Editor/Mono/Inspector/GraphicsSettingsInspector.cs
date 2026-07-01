@@ -176,7 +176,18 @@ namespace UnityEditor
             var shaderPreloadToggle = root.MandatoryQ<Toggle>("ShaderPreloadToggle");
             var delayedShaderTimeLimitGroup = root.MandatoryQ<VisualElement>("DelayedShaderTimeLimitGroup");
             var delayedShaderTimeLimit = root.MandatoryQ<IntegerField>("DelayedShaderTimeLimit");
-            shaderPreloadToggle.RegisterValueChangedCallback(evt => {
+
+            void RefreshFromProperty()
+            {
+                var value = delayedShaderTimeLimitProperty.intValue;
+                var enabled = value >= 0;
+                shaderPreloadToggle.SetValueWithoutNotify(enabled);
+                delayedShaderTimeLimit.SetValueWithoutNotify(Mathf.Max(0, value));
+                delayedShaderTimeLimitGroup.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            shaderPreloadToggle.RegisterValueChangedCallback(evt =>
+            {
                 delayedShaderTimeLimitGroup.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
                 var newVal = evt.newValue ? delayedShaderTimeLimit.value : -1;
                 if (delayedShaderTimeLimitProperty.intValue != newVal)
@@ -193,10 +204,11 @@ namespace UnityEditor
                     delayedShaderTimeLimitProperty.serializedObject.ApplyModifiedProperties();
                 }
             });
-            shaderPreloadToggle.SetValueWithoutNotify(delayedShaderTimeLimitProperty.intValue >= 0);
-            delayedShaderTimeLimit.SetValueWithoutNotify(Mathf.Max(0, delayedShaderTimeLimitProperty.intValue));
-            delayedShaderTimeLimitGroup.style.display = delayedShaderTimeLimitProperty.intValue >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            
+
+            RefreshFromProperty();
+            // Re-sync when the property changes externally (e.g. Reset / Undo).
+            shaderPreloadToggle.TrackPropertyValue(delayedShaderTimeLimitProperty, _ => RefreshFromProperty());
+
             var shaderTracking = root.MandatoryQ<HelpBox>("ShaderTrackingInfoBox");
             shaderTracking.schedule.Execute(() =>
                 shaderTracking.text =
@@ -357,7 +369,6 @@ namespace UnityEditor
             var enumMode = content.MandatoryQ<EnumField>($"{id}Modes");
             var enumModeGroup = content.MandatoryQ<VisualElement>($"{id}ModesGroup");
             var enumModeProperty = serializedObject.FindProperty($"m_{id}Stripping");
-            UIElementsEditorUtility.SetVisibility(enumModeGroup, (StrippingModes)enumModeProperty.enumValueFlag == StrippingModes.Custom);
             UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
                 mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, mode == StrippingModes.Custom));
             content.MandatoryQ<Button>($"Import{id}FromCurrentScene").clicked += buttonCallback;

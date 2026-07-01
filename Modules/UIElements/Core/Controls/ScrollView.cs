@@ -1686,7 +1686,17 @@ namespace UnityEngine.UIElements
             if (evt.pointerType == PointerType.mouse || !m_TouchPointerMoveAllowed)
                 return;
 
-            // UUM-135860: don't allow multiple pointers to drive the scrolling behavior at once
+            // UUM-138133: A native dropdown menu can consume the pointer-up, so the ScrollView never receives a
+            // PointerUp/PointerCancel/PointerCaptureOut to disarm drag-scrolling. If the pointer driving the drag is
+            // no longer pressed, the drag is over: disarm and bail. Gated to the dragging pointer so a secondary
+            // hovering pointer (pressedButtons == 0) can't cancel an ongoing drag (see UUM-135860 below).
+            if (m_TouchDraggingPointerId != PointerId.invalidPointerId && m_TouchDraggingPointerId == evt.pointerId && evt.pressedButtons == 0)
+            {
+                ReleaseScrolling(evt.pointerId, evt.target);
+                return;
+            }
+
+            // UUM-135860: Don't allow multiple pointers to drive the scrolling behavior at once.
             if (m_TouchDraggingPointerId != PointerId.invalidPointerId && evt.pointerId != m_TouchDraggingPointerId)
                 return;
 
@@ -1791,12 +1801,22 @@ namespace UnityEngine.UIElements
             m_Velocity = Vector2.zero;
             m_SpringBackVelocity = Vector2.zero;
 
+            UpdateTouchScrollingBounds();
+        }
+
+        void UpdateTouchScrollingBounds()
+        {
+            // UUM-142498: highValue is the scrollable extent and goes negative when the content fits
+            // the viewport.
+            var horizontalHighBound = Mathf.Max(0f, horizontalScroller.highValue);
+            var verticalHighBound = Mathf.Max(0f, verticalScroller.highValue);
+
             m_LowBounds = new Vector2(
-                Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
-                Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
+                Mathf.Min(horizontalScroller.lowValue, horizontalHighBound),
+                Mathf.Min(verticalScroller.lowValue, verticalHighBound));
             m_HighBounds = new Vector2(
-                Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
-                Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+                Mathf.Max(horizontalScroller.lowValue, horizontalHighBound),
+                Mathf.Max(verticalScroller.lowValue, verticalHighBound));
         }
 
 
@@ -2099,12 +2119,7 @@ namespace UnityEngine.UIElements
         {
             if (touchScrollBehavior == TouchScrollBehavior.Elastic)
             {
-                m_LowBounds = new Vector2(
-                    Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
-                    Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
-                m_HighBounds = new Vector2(
-                    Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
-                    Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+                UpdateTouchScrollingBounds();
 
                 ExecuteElasticSpringAnimation();
             }

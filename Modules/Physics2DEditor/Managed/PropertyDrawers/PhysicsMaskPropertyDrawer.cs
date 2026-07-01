@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.LowLevelPhysics2D;
 using UnityEngine.UIElements;
 
@@ -15,6 +16,25 @@ namespace UnityEditor.LowLevelPhysics2D
     [CustomPropertyDrawer(typeof(PhysicsMask))]
     sealed class PhysicsMaskPropertyDrawer : PropertyDrawer
     {
+        // Shared single-line mask field used by the mask drawers: 64-bit layers use LayerMaskField64,
+        // 32-bit layers use the native LayerMaskField. Reads/writes bitMaskProperty.ulongValue.
+        internal static void DrawMaskField(Rect position, GUIContent label, SerializedProperty bitMaskProperty, bool showAsPhysicsMask)
+        {
+            if (showAsPhysicsMask || PhysicsWorld.useFullLayers)
+            {
+                LayerMaskField64.Draw(position, label, bitMaskProperty, showAsPhysicsMask);
+            }
+            else
+            {
+                EditorGUI.BeginChangeCheck();
+                var newMask = EditorGUI.LayerMaskField(position, (uint)bitMaskProperty.ulongValue, label);
+                if (EditorGUI.EndChangeCheck())
+                    bitMaskProperty.ulongValue = newMask;
+            }
+        }
+
+        #region UITK
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
@@ -64,6 +84,27 @@ namespace UnityEditor.LowLevelPhysics2D
                 return root;
             }
         }
+
+        #endregion
+
+        #region IMGUI
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            => EditorGUIUtility.singleLineHeight;
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            label = EditorGUI.BeginProperty(position, label, property);
+
+            var bitMaskProperty = property.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+            var showAsPhysicsMask = ShowAsPhysicsMask<PhysicsMask>(bitMaskProperty);
+
+            DrawMaskField(position, label, bitMaskProperty, showAsPhysicsMask);
+
+            EditorGUI.EndProperty();
+        }
+
+        #endregion
 
         internal static bool ShowAsPhysicsMask<T>(SerializedProperty property)
         {

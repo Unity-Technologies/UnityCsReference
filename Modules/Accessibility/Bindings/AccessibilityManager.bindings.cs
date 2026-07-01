@@ -263,7 +263,8 @@ namespace UnityEngine.Accessibility
             if (instance.m_RefreshNodeFramesRequested)
             {
                 instance.m_RefreshNodeFramesRequested = false;
-                AssistiveSupport.activeHierarchy?.RefreshNodeFrames();
+
+                AssistiveSupport.activeHierarchy?.RefreshNodeFramesWithoutResetting();
             }
         }
 

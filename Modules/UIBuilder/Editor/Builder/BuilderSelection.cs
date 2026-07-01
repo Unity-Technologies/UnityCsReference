@@ -125,6 +125,8 @@ namespace Unity.UI.Builder
             set { m_DocumentRootElement = value; }
         }
 
+        public BuilderDocument document => m_PaneWindow.document;
+
         public bool isEmpty { get { return m_Selection.Count == 0; } }
 
         public BuilderSelection(VisualElement root, BuilderPaneWindow paneWindow)

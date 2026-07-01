@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.LowLevelPhysics2D;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,8 @@ namespace UnityEditor.LowLevelPhysics2D
     [CustomPropertyDrawer(typeof(PhysicsShape.ContactFilter))]
     sealed class ContactFilterPropertyDrawer : PropertyDrawer
     {
+        #region UITK
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
@@ -91,5 +94,58 @@ namespace UnityEditor.LowLevelPhysics2D
                 return root;
             }
         }
+
+        #endregion
+
+        #region IMGUI
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            if (!property.isExpanded)
+                return EditorGUIUtility.singleLineHeight;
+
+            return EditorGUIUtility.singleLineHeight
+                + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * 3;
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            label = EditorGUI.BeginProperty(position, label, property);
+
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask<PhysicsShape.ContactFilter>(property);
+
+            var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);
+
+            if (property.isExpanded)
+            {
+                EditorGUI.indentLevel++;
+
+                var categoriesProperty = property.FindPropertyRelative(nameof(PhysicsShape.ContactFilter.m_Categories));
+                var contactsProperty = property.FindPropertyRelative(nameof(PhysicsShape.ContactFilter.m_Contacts));
+                var groupIndexProperty = property.FindPropertyRelative(nameof(PhysicsShape.ContactFilter.m_GroupIndex));
+
+                var categoriesBitMask = categoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+                var contactsBitMask = contactsProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+
+                float y = foldoutRect.yMax + EditorGUIUtility.standardVerticalSpacing;
+                var lineHeight = EditorGUIUtility.singleLineHeight;
+                var spacing = EditorGUIUtility.standardVerticalSpacing;
+
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(categoriesProperty.displayName), categoriesBitMask, showAsPhysicsMask);
+                y += lineHeight + spacing;
+
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(contactsProperty.displayName), contactsBitMask, showAsPhysicsMask);
+                y += lineHeight + spacing;
+
+                EditorGUI.PropertyField(new Rect(position.x, y, position.width, lineHeight), groupIndexProperty, false);
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUI.EndProperty();
+        }
+
+        #endregion
     }
 }

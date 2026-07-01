@@ -322,7 +322,7 @@ namespace UnityEditor.SceneTemplate
         private void RebuildDependencies(VisualElement root)
         {
             var sceneTemplateAsset = (SceneTemplateAsset)serializedObject.targetObject;
-            sceneTemplateAsset.BindScene(sceneTemplateAsset.templateScene);
+            sceneTemplateAsset.UpdateDependencies();
             serializedObject.Update();
             var dependenciesProperty = serializedObject.FindProperty(SceneTemplateUtils.DependenciesPropertyName);
             m_DependenciesProperty.Clear();

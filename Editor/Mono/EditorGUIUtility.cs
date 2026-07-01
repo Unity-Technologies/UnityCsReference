@@ -28,6 +28,7 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUIUtility : GUIUtility
     {
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static void RegisterResourceForCleanupOnDomainReload(UnityObject obj)
         {
             AppDomain.CurrentDomain.DomainUnload += (object sender, EventArgs e) => { UnityObject.DestroyImmediate(obj); };
@@ -222,6 +223,17 @@ namespace UnityEditor
         public static Rect PixelsToPoints(Rect rect)
         {
             var cachedInvPixelsPerPoint = 1f / pixelsPerPoint;
+            rect.x *= cachedInvPixelsPerPoint;
+            rect.y *= cachedInvPixelsPerPoint;
+            rect.width *= cachedInvPixelsPerPoint;
+            rect.height *= cachedInvPixelsPerPoint;
+            return rect;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Rect PixelsToPoints(Rect rect, float pixelScale)
+        {
+            var cachedInvPixelsPerPoint = 1f / pixelScale; // 4 multiplication and a division is faster than 4 division.
             rect.x *= cachedInvPixelsPerPoint;
             rect.y *= cachedInvPixelsPerPoint;
             rect.width *= cachedInvPixelsPerPoint;

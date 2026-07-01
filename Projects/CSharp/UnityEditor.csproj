@@ -7794,6 +7794,9 @@
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\PrimitiveCollider2DTool.cs">
       <Link>Modules\Physics2DEditor\Managed\Colliders\PrimitiveCollider2DTool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Controls\LayerMaskField64.cs">
+      <Link>Modules\Physics2DEditor\Managed\Controls\LayerMaskField64.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\AreaEffector2DEditor.cs">
       <Link>Modules\Physics2DEditor\Managed\Effectors\AreaEffector2DEditor.cs</Link>
     </Compile>
@@ -11618,6 +11621,9 @@
     </Compile>
     <Compile Include="..\..\Modules\VectorGraphicsEditor\Editor\SVGSpriteData.cs">
       <Link>Modules\VectorGraphicsEditor\Editor\SVGSpriteData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VectorGraphicsEditor\Editor\VectorImageUtils.cs">
+      <Link>Modules\VectorGraphicsEditor\Editor\VectorImageUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VideoEditor\AssemblyInfo.cs">
       <Link>Modules\VideoEditor\AssemblyInfo.cs</Link>

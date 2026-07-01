@@ -33,6 +33,8 @@ namespace UnityEditor
 
         SerializedProperty m_MaterialImportMode;
 
+        SerializedProperty m_SearchTexturesGlobally;
+
         private bool m_CanExtractEmbeddedMaterials = false;
 
         class ExternalObjectCache
@@ -115,6 +117,9 @@ namespace UnityEditor
 
             public static GUIContent SRGBMaterialColor = EditorGUIUtility.TrTextContent("sRGB Albedo Colors", "Albedo colors in gamma space. Disable this for projects using linear color space.");
 
+            public static GUIContent SearchTexturesGlobally = EditorGUIUtility.TrTextContent("Search Textures Globally", "Legacy behavior. When enabled, textures are searched across the entire project if not found near the model. This can produce non-deterministic results when multiple textures share the same name.");
+            public static GUIContent SearchTexturesGloballyWarning = EditorGUIUtility.TrTextContent("Global texture search is legacy behavior and can produce non-deterministic results when multiple textures in the project share the same name.");
+
             public static GUIContent MaterialCreationMode = EditorGUIUtility.TrTextContent("Material Creation Mode", "Select the method used to generate materials during the import process.");
         }
 
@@ -158,6 +163,8 @@ namespace UnityEditor
             m_UseSRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
 
             m_MaterialImportMode = serializedObject.FindProperty("m_MaterialImportMode");
+
+            m_SearchTexturesGlobally = serializedObject.FindProperty("m_SearchTexturesGlobally");
 
             if (m_CacheCurrentTarget != target)
             {
@@ -553,6 +560,10 @@ namespace UnityEditor
                             }
                         }
                     }
+
+                    EditorGUILayout.PropertyField(m_SearchTexturesGlobally, Styles.SearchTexturesGlobally);
+                    if (m_SearchTexturesGlobally.boolValue)
+                        EditorGUILayout.HelpBox(Styles.SearchTexturesGloballyWarning.text, MessageType.Warning);
 
                     if (!m_MaterialLocation.hasMultipleDifferentValues)
                     {

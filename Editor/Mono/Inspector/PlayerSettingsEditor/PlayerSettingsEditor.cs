@@ -535,9 +535,6 @@ namespace UnityEditor
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
 
-        // True when current graphics API mismatches with top of the list one
-        private static bool hasPendingGraphicsAPIChange = false;
-
         // True when user has modified auto graphics API setting in the current session
         private static bool isAutoGraphicsAPITouched = false;
 
@@ -1671,7 +1668,7 @@ namespace UnityEditor
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action, bool skipRemoveCached)
         {
-            hasPendingGraphicsAPIChange = true;
+            isAutoGraphicsAPITouched = true;
             if (action.changeList)
             {
                 m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
@@ -1761,6 +1758,7 @@ namespace UnityEditor
                         "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
                         "Restart Editor", "Not now");
                 }
+
             }
             return doRestart;
         }
@@ -1822,19 +1820,7 @@ namespace UnityEditor
             if (availableDevices == null || availableDevices.Length < 2)
                 return;
 
-            // toggle for automatic API selection
-            EditorGUI.BeginChangeCheck();
-            var automatic = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
-            automatic = EditorGUILayout.Toggle(platformTitleContent ?? GUIContent.none, automatic);
-            if (EditorGUI.EndChangeCheck())
-            {
-                isAutoGraphicsAPITouched = true;
-                Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, automatic);
-                OnTargetObjectChangedDirectly();
-                if (WillEditorUseFirstGraphicsAPI(targetPlatform))
-                    hasPendingGraphicsAPIChange = false;
-            }
+           
 
             string displayTitle = String.Empty;
             if (platformTitleContent != null)
@@ -1872,20 +1858,121 @@ namespace UnityEditor
             var currentDevice = SystemInfo.graphicsDeviceType;
             bool firstAPIDifferent = currentDevice != selectedDevice;
 
-            if (selectedDevice != null && firstAPIDifferent && WillEditorUseFirstGraphicsAPI(targetPlatform) && isAutoGraphicsAPITouched)
+            // toggle for automatic API selection
+            EditorGUI.BeginChangeCheck();
+            var storedAutomatic = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
+            var toggledAutomatic = EditorGUILayout.Toggle(platformTitleContent ?? GUIContent.none, storedAutomatic);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (IsActivePlayerSettingsEditor() && WillEditorUseFirstGraphicsAPI(targetPlatform))
+                {
+                    if (toggledAutomatic)
+                    {
+                        // if automatic graphics API is checked
+                        // then the selected device is the first in the list automatic Graphics API devices for this platform
+                        var platformAutomaticAPIs = m_CurrentTarget.GetPlatformAutomaticGraphicsAPIsList(targetPlatform);
+                        if (platformAutomaticAPIs.Length > 0)
+                        {
+                            selectedDevice = platformAutomaticAPIs[0];
+                        }
+                    }
+
+                    if (currentDevice != selectedDevice)
+                    {
+                        // Initialize the restart action as "Cancel" (has the value of "1" in the dialog) 
+                        var doRestart = 1;
+
+                        // if the first API listed after unchecking the automatic API checkbox is different from the stored value of the flag,
+                        // trigger a restart prompt
+                        // If we have dirty scenes we need to save or discard changes *before* we restart editor.
+                        // Otherwise user will get a dialog later on where they can click cancel and put editor in a bad device state.
+                        var dirtyScenes = new List<Scene>();
+                        for (int i = 0; i < EditorSceneManager.sceneCount; ++i)
+                        {
+                            var scene = EditorSceneManager.GetSceneAt(i);
+                            if (scene.isDirty)
+                                dirtyScenes.Add(scene);
+                        }
+                        if (dirtyScenes.Count != 0)
+                        {
+                            var doSaveScene = EditorUtility.DisplayDialogComplex(
+                                "Changing editor graphics API",
+                                "You've changed the active graphics API. This requires a restart of the Editor.  Do you want to save the Scene when restarting?",
+                                "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+  
+                            if (doSaveScene != 1) // The selected option is "Save and Restart" (0) or "Discard Changes and Restart" (2)
+                            {
+                                // both cases require a restart
+                                doRestart = 0;
+
+                                if (doSaveScene == 0) // Save and Restart was selected
+                                {
+                                    for (int i = 0; i < dirtyScenes.Count; ++i)
+                                    {
+                                        EditorSceneManager.SaveScene(dirtyScenes[i]);
+                                    }
+                                }
+                                else // Discard Changes and Restart was selected
+                                {
+                                    for (int i = 0; i < dirtyScenes.Count; ++i)
+                                        EditorSceneManager.ClearSceneDirtiness(dirtyScenes[i]);
+                                }
+                            }
+                        }
+                        else // no dirty scenes to handle
+                        {
+                            doRestart = EditorUtility.DisplayDialogComplex(
+                                "Changing editor graphics API",
+                                "You've changed the active graphics API. This requires a restart of the Editor.",
+                                "Restart Editor", "Cancel API Change", "Restart Later");
+                        }
+
+                        if (doRestart != 1) // The option selected is "Restart Editor" (0) or "Restart Later" (2)
+                        {
+                            isAutoGraphicsAPITouched = true;
+                            // if restart = 0 (restart now), or 2 (restart later), we update the setting value.
+                            Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                            m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                            
+                            // we need to update the APIs list when we toggle automatic graphics API
+                            var apiList = (List<GraphicsDeviceType>)deviceList.list;
+                            var apis = apiList.ToArray();
+                            m_CurrentTarget.SetGraphicsAPIs_Internal(targetPlatform, apis, firstAPIDifferent);
+
+                            OnTargetObjectChangedDirectly();
+
+                            if (doRestart == 0)  // restart now
+                            {
+                                
+                                EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                                GUIUtility.ExitGUI();
+                            }
+                        }
+                    }
+                    else // if the first API listed after unchecking the automatic API checkbox is not different from the API
+                         // set the value of Default Graphics API (users could still choose DX12 without checking Automatic Graphics API)
+                    {
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                        m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                        OnTargetObjectChangedDirectly();
+                    }
+                }
+                else // if not active build profile and not an editor platform, we don't check for restarts, just store the value
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                    m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                    OnTargetObjectChangedDirectly();
+                }
+            }
+           
+            if (isAutoGraphicsAPITouched && selectedDevice != null && firstAPIDifferent && WillEditorUseFirstGraphicsAPI(targetPlatform) && IsActivePlayerSettingsEditor())
             {
                 string text = $"Auto Graphics API was changed, but requires an Editor restart to take Effect. The Editor will restart using {GraphicsDeviceTypeToString(targetPlatform, (GraphicsDeviceType)selectedDevice)}";
                 EditorGUILayout.HelpBox(text, MessageType.Warning, true);
-                if (!hasPendingGraphicsAPIChange)
-                {
-                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(targetPlatform, true, false);
-                    var apiList = (List<GraphicsDeviceType>)deviceList.list;
-                    var apis = apiList.ToArray();
-                    ApplyChangeGraphicsApiAction(targetPlatform, apis, action, true);
-                }
             }
 
-            EditorGUI.BeginDisabledGroup(automatic);
+            EditorGUI.BeginDisabledGroup(toggledAutomatic);
 
             // graphics API list if not automatic
             // note that editor will use first item, when we're in standalone settings

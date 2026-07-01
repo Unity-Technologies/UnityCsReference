@@ -163,58 +163,6 @@ namespace Unity.VectorGraphics
             outAsset = MakeVectorImageAsset(vertices, indices, outTexAtlas, settings, rect);
         }
 
-        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
-        internal static Texture2D RenderVectorImageToTexture2D(VectorImage vi, int width, int height, int antiAliasing = 1)
-        {
-            if (vi == null)
-                return null;
-
-            if (width <= 0 || height <= 0)
-                return null;
-
-            RenderTexture rt = null;
-            var oldActive = RenderTexture.active;
-
-            var desc = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32, 0) {
-                msaaSamples = antiAliasing,
-                sRGB = QualitySettings.activeColorSpace == ColorSpace.Linear
-            };
-
-            rt = RenderTexture.GetTemporary(desc);
-            RenderTexture.active = rt;
-
-            var tempTheme = ScriptableObject.CreateInstance<ThemeStyleSheet>();
-            var panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
-            panelSettings.themeStyleSheet = tempTheme;
-            panelSettings.clearColor = true;
-            panelSettings.clearDepthStencil = true;
-            panelSettings.targetTexture = rt;
-
-            GL.PushMatrix();
-
-            var panel = panelSettings.panel;
-            var root = panel.visualTree;
-            root.StretchToParentSize();
-            root.style.backgroundImage = new StyleBackground(vi);
-            panel.Repaint(Event.current);
-            panel.Render();
-
-            GL.PopMatrix();
-
-            ScriptableObject.DestroyImmediate(panelSettings);
-            ScriptableObject.DestroyImmediate(tempTheme);
-
-            Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            copy.hideFlags = HideFlags.HideAndDontSave;
-            copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-            copy.Apply();
-
-            RenderTexture.active = oldActive;
-            RenderTexture.ReleaseTemporary(rt);
-
-            return copy;
-        }
-
         private static Texture2D BuildAtlasWithEncodedSettings(GradientSettings[] settings, Texture2D atlas)
         {
             var oldActive = RenderTexture.active;
@@ -549,6 +497,11 @@ namespace Unity.VectorGraphics
             if (gradientFill.Type == GradientFillType.Radial)
             {
                 outFillGradient.gradientType = GradientType.Radial;
+
+                // Center and radius must be set so that SetupGradient (focus - center) / radius
+                // results in RadialFocus unchanged in [-1, 1] space, matching the triangulation path.
+                outFillGradient.center = Vector2.zero;
+                outFillGradient.radius = 1.0f;
                 outFillGradient.focus = gradientFill.RadialFocus;
             }
         }
