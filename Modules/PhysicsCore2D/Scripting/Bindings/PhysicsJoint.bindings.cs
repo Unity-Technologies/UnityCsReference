@@ -53,6 +53,8 @@ namespace Unity.U2D.Physics
 
         // PhysicsDistanceJoint.
         [NativeMethod(Name = "PhysicsDistanceJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsDistanceJointDefinition DistanceJoint_GetDefaultDefinition(bool useSettings);
+        [NativeMethod(Name = "PhysicsDistanceJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void DistanceJoint_WriteDefinition(PhysicsDistanceJoint joint, PhysicsDistanceJointDefinition definition);
+        [NativeMethod(Name = "PhysicsDistanceJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsDistanceJointDefinition DistanceJoint_ReadDefinition(PhysicsDistanceJoint joint);
         [NativeMethod(Name = "PhysicsDistanceJoint::Create", IsThreadSafe = true)] extern internal static PhysicsDistanceJoint DistanceJoint_Create(PhysicsWorld world, PhysicsDistanceJointDefinition definition);
         [NativeMethod(Name = "PhysicsDistanceJoint::SetDistance", IsThreadSafe = true)] extern internal static void DistanceJoint_SetDistance(PhysicsDistanceJoint joint, float distance);
         [NativeMethod(Name = "PhysicsDistanceJoint::GetDistance", IsThreadSafe = true)] extern internal static float DistanceJoint_GetDistance(PhysicsDistanceJoint joint);
@@ -83,6 +85,8 @@ namespace Unity.U2D.Physics
 
         // PhysicsRelativeJoint.
         [NativeMethod(Name = "PhysicsRelativeJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsRelativeJointDefinition RelativeJoint_GetDefaultDefinition(bool useSettings);
+        [NativeMethod(Name = "PhysicsRelativeJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void RelativeJoint_WriteDefinition(PhysicsRelativeJoint joint, PhysicsRelativeJointDefinition definition);
+        [NativeMethod(Name = "PhysicsRelativeJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsRelativeJointDefinition RelativeJoint_ReadDefinition(PhysicsRelativeJoint joint);
         [NativeMethod(Name = "PhysicsRelativeJoint::Create", IsThreadSafe = true)] extern internal static PhysicsRelativeJoint RelativeJoint_Create(PhysicsWorld world, PhysicsRelativeJointDefinition definition);
         [NativeMethod(Name = "PhysicsRelativeJoint::SetLinearVelocity", IsThreadSafe = true)] extern internal static void RelativeJoint_SetLinearVelocity(PhysicsRelativeJoint joint, Vector2 linearVelocity);
         [NativeMethod(Name = "PhysicsRelativeJoint::GetLinearVelocity", IsThreadSafe = true)] extern internal static Vector2 RelativeJoint_GetLinearVelocity(PhysicsRelativeJoint joint);
@@ -107,10 +111,14 @@ namespace Unity.U2D.Physics
 
         // PhysicsIgnoreJoint.
         [NativeMethod(Name = "PhysicsIgnoreJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsIgnoreJointDefinition IgnorePhysicsJoint_GetDefaultDefinition();
+        [NativeMethod(Name = "PhysicsIgnoreJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void IgnorePhysicsJoint_WriteDefinition(PhysicsIgnoreJoint joint, PhysicsIgnoreJointDefinition definition);
+        [NativeMethod(Name = "PhysicsIgnoreJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsIgnoreJointDefinition IgnorePhysicsJoint_ReadDefinition(PhysicsIgnoreJoint joint);
         [NativeMethod(Name = "PhysicsIgnoreJoint::Create", IsThreadSafe = true)] extern internal static PhysicsIgnoreJoint IgnorePhysicsJoint_Create(PhysicsWorld world, PhysicsIgnoreJointDefinition definition);
 
         // PhysicsSliderJoint.
         [NativeMethod(Name = "PhysicsSliderJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsSliderJointDefinition SliderJoint_GetDefaultDefinition(bool useSettings);
+        [NativeMethod(Name = "PhysicsSliderJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void SliderJoint_WriteDefinition(PhysicsSliderJoint joint, PhysicsSliderJointDefinition definition);
+        [NativeMethod(Name = "PhysicsSliderJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsSliderJointDefinition SliderJoint_ReadDefinition(PhysicsSliderJoint joint);
         [NativeMethod(Name = "PhysicsSliderJoint::Create", IsThreadSafe = true)] extern internal static PhysicsSliderJoint SliderJoint_Create(PhysicsWorld world, PhysicsSliderJointDefinition definition);
         [NativeMethod(Name = "PhysicsSliderJoint::SetEnableSpring", IsThreadSafe = true)] extern internal static void SliderJoint_SetEnableSpring(PhysicsSliderJoint joint, bool enableSpring);
         [NativeMethod(Name = "PhysicsSliderJoint::GetEnableSpring", IsThreadSafe = true)] extern internal static bool SliderJoint_GetEnableSpring(PhysicsSliderJoint joint);
@@ -138,6 +146,8 @@ namespace Unity.U2D.Physics
 
         // PhysicsHingeJoint.
         [NativeMethod(Name = "PhysicsHingeJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsHingeJointDefinition HingeJoint_GetDefaultDefinition(bool useSettings);
+        [NativeMethod(Name = "PhysicsHingeJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void HingeJoint_WriteDefinition(PhysicsHingeJoint joint, PhysicsHingeJointDefinition definition);
+        [NativeMethod(Name = "PhysicsHingeJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsHingeJointDefinition HingeJoint_ReadDefinition(PhysicsHingeJoint joint);
         [NativeMethod(Name = "PhysicsHingeJoint::Create", IsThreadSafe = true)] extern internal static PhysicsHingeJoint HingeJoint_Create(PhysicsWorld world, PhysicsHingeJointDefinition definition);
         [NativeMethod(Name = "PhysicsHingeJoint::SetEnableUnpinned", IsThreadSafe = true)] extern internal static void HingeJoint_SetEnableUnpinned(PhysicsHingeJoint joint, bool enableUnpinned);
         [NativeMethod(Name = "PhysicsHingeJoint::GetEnableUnpinned", IsThreadSafe = true)] extern internal static bool HingeJoint_GetEnableUnpinned(PhysicsHingeJoint joint);
@@ -166,6 +176,8 @@ namespace Unity.U2D.Physics
 
         // PhysicsFixedJoint.
         [NativeMethod(Name = "PhysicsFixedJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsFixedJointDefinition FixedJoint_GetDefaultDefinition(bool useSettings);
+        [NativeMethod(Name = "PhysicsFixedJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void FixedJoint_WriteDefinition(PhysicsFixedJoint joint, PhysicsFixedJointDefinition definition);
+        [NativeMethod(Name = "PhysicsFixedJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsFixedJointDefinition FixedJoint_ReadDefinition(PhysicsFixedJoint joint);
         [NativeMethod(Name = "PhysicsFixedJoint::Create", IsThreadSafe = true)] extern internal static PhysicsFixedJoint FixedJoint_Create(PhysicsWorld world, PhysicsFixedJointDefinition definition);
         [NativeMethod(Name = "PhysicsFixedJoint::SetLinearFrequency", IsThreadSafe = true)] extern internal static void FixedJoint_SetLinearFrequency(PhysicsFixedJoint joint, float linearFrequency);
         [NativeMethod(Name = "PhysicsFixedJoint::GetLinearFrequency", IsThreadSafe = true)] extern internal static float FixedJoint_GetLinearFrequency(PhysicsFixedJoint joint);
@@ -178,6 +190,8 @@ namespace Unity.U2D.Physics
 
         // PhysicsWheelJoint.
         [NativeMethod(Name = "PhysicsWheelJoint::GetDefaultDefinition", IsThreadSafe = true)] extern internal static PhysicsWheelJointDefinition WheelJoint_GetDefaultDefinition(bool useSettings);
+        [NativeMethod(Name = "PhysicsWheelJoint::WriteDefinition", IsThreadSafe = true)] extern internal static void WheelJoint_WriteDefinition(PhysicsWheelJoint joint, PhysicsWheelJointDefinition definition);
+        [NativeMethod(Name = "PhysicsWheelJoint::ReadDefinition", IsThreadSafe = true)] extern internal static PhysicsWheelJointDefinition WheelJoint_ReadDefinition(PhysicsWheelJoint joint);
         [NativeMethod(Name = "PhysicsWheelJoint::Create", IsThreadSafe = true)] extern internal static PhysicsWheelJoint WheelJoint_Create(PhysicsWorld world, PhysicsWheelJointDefinition definition);
         [NativeMethod(Name = "PhysicsWheelJoint::SetEnableSpring", IsThreadSafe = true)] extern internal static void WheelJoint_SetEnableSpring(PhysicsWheelJoint joint, bool enableSpring);
         [NativeMethod(Name = "PhysicsWheelJoint::GetEnableSpring", IsThreadSafe = true)] extern internal static bool WheelJoint_GetEnableSpring(PhysicsWheelJoint joint);

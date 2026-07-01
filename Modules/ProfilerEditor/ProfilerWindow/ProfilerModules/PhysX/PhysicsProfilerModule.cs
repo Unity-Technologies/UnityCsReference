@@ -166,7 +166,7 @@ namespace UnityEditorInternal.Profiling
 
         void UpdatePhysicsChart()
         {
-            if (m_CachedShowStatsView == m_ShowStatsView)
+            if (m_CachedShowStatsView == m_ShowStatsView || (Event.current != null && Event.current.type == EventType.Layout))
                 return;
 
             if (m_ShowStatsView == PhysicsProfilerStatsView.Current)

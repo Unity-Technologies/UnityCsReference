@@ -15,7 +15,8 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
         StyleSheet styleSheet,
         StyleRule rule,
         string propertyName,
-        VariablesInspector.VariableType variableType)
+        VariablesInspector.VariableType variableType,
+        VisualTreeAsset visualTreeAsset = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
@@ -23,6 +24,7 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
         cmd.Rule = rule;
         cmd.PropertyName = propertyName;
         cmd.VariableType = variableType;
+        cmd.VisualTreeAsset = visualTreeAsset;
         return cmd;
     }
 
@@ -30,9 +32,10 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
         StyleSheet styleSheet,
         StyleRule rule,
         string propertyName,
-        VariablesInspector.VariableType variableType)
+        VariablesInspector.VariableType variableType,
+        VisualTreeAsset visualTreeAsset = null)
     {
-        using var command = GetPooled(source, styleSheet, rule, propertyName, variableType);
+        using var command = GetPooled(source, styleSheet, rule, propertyName, variableType, visualTreeAsset);
         UICommandQueue.Execute(command);
     }
 
@@ -40,6 +43,7 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
     public StyleRule Rule { get; private set; }
     public string PropertyName { get; private set; }
     public VariablesInspector.VariableType VariableType { get; private set; }
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
@@ -51,6 +55,7 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
         Rule = null;
         PropertyName = null;
         VariableType = default;
+        VisualTreeAsset = null;
     }
 
     public override bool Validate() => StyleSheet != null && Rule != null && PropertyName != null;
@@ -58,6 +63,7 @@ internal sealed class AddStyleRulePropertyCommand : Command<AddStyleRuleProperty
     public override void Prepare(in PrepareContext context)
     {
         context.RecordUndo(StyleSheet);
+        context.RecordUndo(VisualTreeAsset);
     }
 
     public override CommandExecutionStatus Execute()

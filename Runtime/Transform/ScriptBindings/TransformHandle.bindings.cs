@@ -41,6 +41,13 @@ namespace UnityEngine
             return new DirectChildrenEnumerator(this);
         }
 
+        public SubhierarchyEnumerable Subhierarchy => new SubhierarchyEnumerable(this);
+
+        public SubhierarchyEnumerator GetSubhierarchyEnumerator()
+        {
+            return new SubhierarchyEnumerator(this);
+        }
+
         public override int GetHashCode()
         {
             return id.GetHashCode();
@@ -274,6 +281,15 @@ namespace UnityEngine
         }
         [NativeMethod(Name = "Internal_GetChild")]
         private extern void Internal_GetChild(int index, out TransformHandle outChildHandle);
+
+        [NativeMethod(Name = "Internal_GetDeepChildCount")]
+        private extern int Internal_GetDeepChildCount();
+
+        [NativeMethod(Name = "Internal_GetNextDeepChildIndex")]
+        private extern int Internal_GetNextDeepChildIndex(int currentIndex, out TransformHandle nextChildHandle);
+
+        [NativeMethod(Name = "Internal_GetHierarchyVersion")]
+        private extern int Internal_GetHierarchyVersion();
 
 
         public bool HasParent()
@@ -723,6 +739,84 @@ namespace UnityEngine
             public void Reset()
             {
                 this.currentIndex = -1;
+            }
+
+            public void Dispose()
+            { }
+        }
+
+        public struct SubhierarchyEnumerable : IEnumerable<TransformHandle>
+        {
+            private TransformHandle root;
+
+            public SubhierarchyEnumerable(TransformHandle root)
+            {
+                this.root = root;
+            }
+
+            public IEnumerator<TransformHandle> GetEnumerator()
+            {
+                return new SubhierarchyEnumerator(root);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        public struct SubhierarchyEnumerator : IEnumerator<TransformHandle>
+        {
+            private TransformHandle root;
+            private int currentIndex;
+            private int remaining;
+            private int expectedVersion;
+            private TransformHandle current;
+
+            internal SubhierarchyEnumerator(TransformHandle root)
+            {
+                this.root = root;
+                this.currentIndex = -1;
+                this.remaining = -1;
+                this.expectedVersion = 0;
+                this.current = TransformHandle.None;
+            }
+
+            object IEnumerator.Current => Current;
+            public TransformHandle Current => this.current;
+
+            public bool MoveNext()
+            {
+                AssertHandleIsValid(this.root);
+
+                if (this.remaining < 0)
+                {
+                    this.remaining = this.root.Internal_GetDeepChildCount();
+                    this.expectedVersion = this.root.Internal_GetHierarchyVersion();
+                    if (this.remaining == 0)
+                        return false;
+                    this.current = this.root;
+                    this.remaining--;
+                    return true;
+                }
+
+                if (this.remaining == 0)
+                    return false;
+
+                if (this.root.Internal_GetHierarchyVersion() != this.expectedVersion)
+                    throw new InvalidOperationException("TransformHandle hierarchy was modified during Subhierarchy enumeration.");
+
+                this.currentIndex = this.root.Internal_GetNextDeepChildIndex(this.currentIndex, out this.current);
+                this.remaining--;
+                return true;
+            }
+
+            public void Reset()
+            {
+                this.currentIndex = -1;
+                this.remaining = -1;
+                this.expectedVersion = 0;
+                this.current = TransformHandle.None;
             }
 
             public void Dispose()

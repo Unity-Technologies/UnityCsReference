@@ -10,25 +10,27 @@ internal sealed class RemoveStyleRulePropertyCommand : Command<RemoveStyleRulePr
 {
     const string CommandUndoName = "Remove style rule property";
 
-    public static RemoveStyleRulePropertyCommand GetPooled(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty property)
+    public static RemoveStyleRulePropertyCommand GetPooled(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty property, VisualTreeAsset visualTreeAsset = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
         cmd.StyleSheet = styleSheet;
         cmd.Rule = rule;
         cmd.Property = property;
+        cmd.VisualTreeAsset = visualTreeAsset;
         return cmd;
     }
 
-    public static void Execute(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty property)
+    public static void Execute(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty property, VisualTreeAsset visualTreeAsset = null)
     {
-        using var command = GetPooled(source, styleSheet, rule, property);
+        using var command = GetPooled(source, styleSheet, rule, property, visualTreeAsset);
         UICommandQueue.Execute(command);
     }
 
     public StyleSheet StyleSheet { get; private set; }
     public StyleRule Rule { get; private set; }
     public StyleProperty Property { get; private set; }
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Variables;
@@ -39,6 +41,7 @@ internal sealed class RemoveStyleRulePropertyCommand : Command<RemoveStyleRulePr
         StyleSheet = null;
         Rule = null;
         Property = null;
+        VisualTreeAsset = null;
     }
 
     public override bool Validate() => StyleSheet != null && Rule != null && Property != null;
@@ -46,6 +49,7 @@ internal sealed class RemoveStyleRulePropertyCommand : Command<RemoveStyleRulePr
     public override void Prepare(in PrepareContext context)
     {
         context.RecordUndo(StyleSheet);
+        context.RecordUndo(VisualTreeAsset);
     }
 
     public override CommandExecutionStatus Execute()

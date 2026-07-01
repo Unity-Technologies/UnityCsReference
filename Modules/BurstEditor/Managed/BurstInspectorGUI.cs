@@ -46,13 +46,13 @@ namespace Unity.Burst.Editor
 
         private const string FontSizeIndexPref = "BurstInspectorFontSizeIndex";
 
-        private static readonly string[] DisassemblyKindNames =
+        private static readonly GUIContent[] DisassemblyKindContents =
         {
-            "Assembly",
-            ".NET IL",
-            "LLVM IR (Unoptimized)",
-            "LLVM IR (Optimized)",
-            "LLVM IR Optimisation Diagnostics"
+            new GUIContent("Assembly"),
+            new GUIContent(".NET IL"),
+            new GUIContent("LLVM IR (Unoptimized)"),
+            new GUIContent("LLVM IR (Optimized)"),
+            new GUIContent("LLVM IR Optimisation Diagnostics")
         };
 
         internal enum AssemblyOptions
@@ -170,6 +170,10 @@ namespace Unity.Burst.Editor
 
         [NonSerialized]
         internal bool _initialized;
+
+        // Snapshot of _initialized at Layout, so Layout and Repaint take the same OnGUI branch within one frame.
+        [NonSerialized]
+        private bool _initializedAtLayout;
 
         [NonSerialized]
         private bool _requiresRepaint;
@@ -518,7 +522,23 @@ namespace Unity.Burst.Editor
             GUILayout.EndHorizontal();
 
             _oldDisasmKind = _disasmKind;
-            _disasmKind = (DisassemblyKind)GUILayout.Toolbar((int)_disasmKind, DisassemblyKindNames, _toolbarStyleOptions);
+
+            GUILayout.BeginHorizontal();
+            remainingWidth = width;
+            // first button should just be rendered, no need to start a new line.
+            GUIContent firstDisassemblyContent = DisassemblyKindContents[0];
+            remainingWidth -= EditorStyles.toolbarButton.CalcSize(firstDisassemblyContent).x + _scrollbarThickness / 2f;
+            if (GUILayout.Toggle(_disasmKind == DisassemblyKind.Asm, firstDisassemblyContent, EditorStyles.toolbarButton))
+                _disasmKind = DisassemblyKind.Asm;
+
+            for (int i = 1; i < DisassemblyKindContents.Length; i++)
+            {
+                GUIContent content = DisassemblyKindContents[i];
+                FlowToNewLine(ref remainingWidth, width, EditorStyles.toolbarButton.CalcSize(content));
+                if (GUILayout.Toggle((int)_disasmKind == i, content, EditorStyles.toolbarButton))
+                    _disasmKind = (DisassemblyKind)i;
+            }
+            GUILayout.EndHorizontal();
         }
 
         /// <summary>
@@ -857,7 +877,12 @@ namespace Unity.Burst.Editor
 
         public void OnGUI()
         {
-            if (!_initialized)
+            if (Event.current.type == EventType.Layout)
+            {
+                _initializedAtLayout = _initialized;
+            }
+
+            if (!_initializedAtLayout)
             {
                 RenderLoading();
                 return;
@@ -895,8 +920,6 @@ namespace Unity.Burst.Editor
             if (_searchFieldJobs == null) _searchFieldJobs = new SearchField();
 
             if (_textArea == null) _textArea = new LongTextArea();
-
-            GUILayout.BeginHorizontal();
 
             // SplitterGUILayout.BeginHorizontalSplit is internal in Unity but we don't have much choice
             SplitterGUILayout.BeginHorizontalSplit(TreeViewSplitterState);
@@ -989,7 +1012,6 @@ namespace Unity.Burst.Editor
                     // Need to close the splits we opened.
                     GUILayout.EndVertical();
                     SplitterGUILayout.EndHorizontalSplit();
-                    GUILayout.EndHorizontal();
                     return;
                 }
 
@@ -1104,7 +1126,7 @@ namespace Unity.Burst.Editor
                         menu.AddItem(EditorGUIUtility.TrTextContent("Copy Selection"), false, _textArea.DoSelectionCopy);
                         menu.AddItem(EditorGUIUtility.TrTextContent("Copy Color Tags"), _textArea.CopyColorTags, _textArea.ChangeCopyMode);
                         menu.AddItem(EditorGUIUtility.TrTextContent("Select All"), false, _textArea.SelectAll);
-                        menu.AddItem(EditorGUIUtility.TrTextContent($"Find in {DisassemblyKindNames[(int)_disasmKind]}"), _searchBarVisible, EnableDisableSearchBar);
+                        menu.AddItem(EditorGUIUtility.TrTextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}"), _searchBarVisible, EnableDisableSearchBar);
                         menu.ShowAsContext();
 
                         _leftClicked = false;
@@ -1190,8 +1212,6 @@ namespace Unity.Burst.Editor
             GUILayout.EndVertical();
 
             SplitterGUILayout.EndHorizontalSplit();
-
-            GUILayout.EndHorizontal();
         }
 
         public static bool IsBurstError(string disassembly)

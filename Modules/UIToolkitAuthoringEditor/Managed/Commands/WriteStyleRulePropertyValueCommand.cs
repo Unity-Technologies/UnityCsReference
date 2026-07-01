@@ -17,7 +17,8 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
         StyleSheet styleSheet,
         StyleProperty property,
         VariablesInspector.VariableType type,
-        T value)
+        T value,
+        VisualTreeAsset visualTreeAsset = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
@@ -25,6 +26,7 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
         cmd.Property = property;
         cmd.Type = type;
         cmd.Value = value;
+        cmd.VisualTreeAsset = visualTreeAsset;
         return cmd;
     }
 
@@ -32,9 +34,10 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
         StyleSheet styleSheet,
         StyleProperty property,
         VariablesInspector.VariableType type,
-        T value)
+        T value,
+        VisualTreeAsset visualTreeAsset = null)
     {
-        using var command = GetPooled(source, styleSheet, property, type, value);
+        using var command = GetPooled(source, styleSheet, property, type, value, visualTreeAsset);
         UICommandQueue.Execute(command);
     }
 
@@ -42,6 +45,7 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
     public StyleProperty Property { get; private set; }
     public VariablesInspector.VariableType Type { get; private set; }
     public T Value { get; private set; }
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
@@ -53,6 +57,7 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
         Property = null;
         Type = default;
         Value = default;
+        VisualTreeAsset = null;
     }
 
     public override bool Validate() => StyleSheet != null && Property != null;
@@ -60,6 +65,7 @@ internal sealed class WriteStyleRulePropertyValueCommand<T> : Command<WriteStyle
     public override void Prepare(in PrepareContext context)
     {
         context.RecordUndo(StyleSheet);
+        context.RecordUndo(VisualTreeAsset);
     }
 
     public override CommandExecutionStatus Execute()

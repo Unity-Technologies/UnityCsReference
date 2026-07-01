@@ -29,6 +29,12 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             {
                 var typeDefinition = typeReference.Resolve();
 
+                // Resolve() returns null (rather than throwing) when the type's definition
+                // cannot be located, e.g. for forwarded types or types in assemblies outside
+                // the resolver's search path. Treat an unresolvable type as "not inherited".
+                if (typeDefinition == null)
+                    return false;
+
                 if (typeDefinition.FullName.Equals(typeName))
                     return true;
 

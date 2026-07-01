@@ -11,25 +11,27 @@ internal sealed class ReorderStyleRulePropertiesCommand : Command<ReorderStyleRu
 {
     const string CommandUndoName = "Reorder style rule properties";
 
-    public static ReorderStyleRulePropertiesCommand GetPooled(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder)
+    public static ReorderStyleRulePropertiesCommand GetPooled(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder, VisualTreeAsset visualTreeAsset = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
         cmd.StyleSheet = styleSheet;
         cmd.Rule = rule;
         cmd.NewPropertyOrder = newPropertyOrder;
+        cmd.VisualTreeAsset = visualTreeAsset;
         return cmd;
     }
 
-    public static void Execute(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder)
+    public static void Execute(object source, StyleSheet styleSheet, StyleRule rule, StyleProperty[] newPropertyOrder, VisualTreeAsset visualTreeAsset = null)
     {
-        using var command = GetPooled(source, styleSheet, rule, newPropertyOrder);
+        using var command = GetPooled(source, styleSheet, rule, newPropertyOrder, visualTreeAsset);
         UICommandQueue.Execute(command);
     }
 
     public StyleSheet StyleSheet { get; private set; }
     public StyleRule Rule { get; private set; }
     public StyleProperty[] NewPropertyOrder { get; private set; }
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.StylingContext | CommandCategory.Variables;
@@ -40,6 +42,7 @@ internal sealed class ReorderStyleRulePropertiesCommand : Command<ReorderStyleRu
         StyleSheet = null;
         Rule = null;
         NewPropertyOrder = null;
+        VisualTreeAsset = null;
     }
 
     public override bool Validate() => StyleSheet != null && Rule != null && NewPropertyOrder != null;
@@ -47,6 +50,7 @@ internal sealed class ReorderStyleRulePropertiesCommand : Command<ReorderStyleRu
     public override void Prepare(in PrepareContext context)
     {
         context.RecordUndo(StyleSheet);
+        context.RecordUndo(VisualTreeAsset);
     }
 
     public override CommandExecutionStatus Execute()

@@ -12,6 +12,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using Unity.CodeEditor;
 using Unity.Collections;
+using UnityEngine.Analytics;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
@@ -819,12 +820,17 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUI.indentLevel++;
             GUILayout.Label(GeneralProperties.logging, EditorStyles.boldLabel);
 
+            var prevLoggingFramework = m_EnableLoggingFramework;
+            var prevJsonLogging = m_EnableJSONLogging;
+
             m_EnableLoggingFramework = EditorGUILayout.Toggle(GeneralProperties.enableLoggingFramework, m_EnableLoggingFramework);
 
             using (new EditorGUI.DisabledScope(!m_EnableLoggingFramework))
             {
                 m_EnableJSONLogging = EditorGUILayout.Toggle(GeneralProperties.enableJSONLogging, m_EnableJSONLogging);
             }
+
+            LoggingSettingsAnalytics.SendChangedLoggingPreferences(prevLoggingFramework, m_EnableLoggingFramework, prevJsonLogging, m_EnableJSONLogging);
 
             m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
 
@@ -1454,7 +1460,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
             m_EnableExtendedLogging = EditorPrefs.GetBool("EnableExtendedLogging", false);
-            m_EnableLoggingFramework = EditorPrefs.GetBool("EnableLoggingFramework", true);
+            m_EnableLoggingFramework = EditorPrefs.GetBool("EnableLoggingFramework", LoggingSettingsAnalytics.DefaultLoggingFrameworkEnabled);
             m_EnableJSONLogging = EditorPrefs.GetBool("EnableJSONLogging", false);
         }
 
@@ -1627,5 +1633,134 @@ By default, Windows will combine these under a single taskbar item.");
 
         internal static PrefabStage.Mode GetDefaultPrefabModeForHierarchy()
             => HierarchyPreferences.DefaultPrefabModeFromHierarchy;
+    }
+
+    internal interface ILoggingSettingsAnalyticsService
+    {
+        AnalyticsResult SendAnalytic(IAnalytic analytic);
+    }
+
+    internal class LoggingSettingsEditorAnalyticsService : ILoggingSettingsAnalyticsService
+    {
+        AnalyticsResult ILoggingSettingsAnalyticsService.SendAnalytic(IAnalytic analytic)
+        {
+            return EditorAnalytics.SendAnalytic(analytic);
+        }
+    }
+
+    internal static class LoggingSettingsAnalytics
+    {
+        const string k_LoggingSettingEventName = "logging_setting_changed";
+        const string k_LoggingJsonEventName = "logging_json_changed";
+        const int k_MaxEventsPerHour = 100;
+        const string k_VendorKey = "unity.logging";
+        internal const bool DefaultLoggingFrameworkEnabled = true;
+        static Action<string, bool, bool> s_TestEventCallback;
+
+        [Serializable]
+        internal struct LoggingSettingChangedData : IAnalytic.IData
+        {
+            public bool enabled;
+            public bool uses_default;
+        }
+
+        [Serializable]
+        internal struct LoggingJsonChangedData : IAnalytic.IData
+        {
+            public bool enabled;
+        }
+
+        [AnalyticInfo(eventName: k_LoggingSettingEventName, vendorKey: k_VendorKey, version: 1, maxEventsPerHour: k_MaxEventsPerHour)]
+        internal class LoggingSettingChangedAnalytic : IAnalytic
+        {
+            readonly LoggingSettingChangedData m_Data;
+
+            public LoggingSettingChangedAnalytic(LoggingSettingChangedData data)
+            {
+                m_Data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                data = m_Data;
+                error = null;
+                return true;
+            }
+        }
+
+        [AnalyticInfo(eventName: k_LoggingJsonEventName, vendorKey: k_VendorKey, version: 1, maxEventsPerHour: k_MaxEventsPerHour)]
+        internal class LoggingJsonChangedAnalytic : IAnalytic
+        {
+            readonly LoggingJsonChangedData m_Data;
+
+            public LoggingJsonChangedAnalytic(LoggingJsonChangedData data)
+            {
+                m_Data = data;
+            }
+
+            public bool TryGatherData(out IAnalytic.IData data, out Exception error)
+            {
+                data = m_Data;
+                error = null;
+                return true;
+            }
+        }
+
+        static ILoggingSettingsAnalyticsService s_AnalyticsService;
+
+        static LoggingSettingsAnalytics()
+        {
+            if (!InternalEditorUtility.inBatchMode)
+                SetAnalyticsService(new LoggingSettingsEditorAnalyticsService());
+        }
+
+        public static ILoggingSettingsAnalyticsService SetAnalyticsService(ILoggingSettingsAnalyticsService service)
+        {
+            var oldService = s_AnalyticsService;
+            s_AnalyticsService = service;
+            return oldService;
+        }
+
+        internal static Action<string, bool, bool> SetTestEventCallback(Action<string, bool, bool> callback)
+        {
+            var oldCallback = s_TestEventCallback;
+            s_TestEventCallback = callback;
+            return oldCallback;
+        }
+
+        internal static void SendChangedLoggingPreferences(bool prevFramework, bool currFramework, bool prevJson, bool currJson)
+        {
+            if (prevFramework != currFramework)
+                SendLoggingSettingChanged(currFramework, currFramework == DefaultLoggingFrameworkEnabled);
+            if (prevJson != currJson)
+                SendLoggingJsonChanged(currJson);
+        }
+
+        public static void SendLoggingSettingChanged(bool enabled, bool usesDefault)
+        {
+            s_TestEventCallback?.Invoke(k_LoggingSettingEventName, enabled, usesDefault);
+
+            if (s_AnalyticsService == null)
+                return;
+
+            s_AnalyticsService.SendAnalytic(new LoggingSettingChangedAnalytic(new LoggingSettingChangedData
+            {
+                enabled = enabled,
+                uses_default = usesDefault,
+            }));
+        }
+
+        public static void SendLoggingJsonChanged(bool enabled)
+        {
+            s_TestEventCallback?.Invoke(k_LoggingJsonEventName, enabled, false);
+
+            if (s_AnalyticsService == null)
+                return;
+
+            s_AnalyticsService.SendAnalytic(new LoggingJsonChangedAnalytic(new LoggingJsonChangedData
+            {
+                enabled = enabled,
+            }));
+        }
     }
 }

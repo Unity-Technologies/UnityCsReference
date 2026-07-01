@@ -1792,6 +1792,8 @@ namespace Unity.Hierarchy
                 && m_AnimatingExpanding == isExpanded)
                 return;
 
+            var rowHeight = m_CollectionView.fixedItemHeight;
+
             // Opposite-direction click on the same foldout: reverse the animator in place.
             if (m_CollectionView.animation is { isAnimating: true } && m_AnimatingNode.Equals(node))
             {
@@ -1805,7 +1807,7 @@ namespace Unity.Hierarchy
                         {
                             firstIndex = parentIndex + 1,
                             count = visibleChildCount,
-                            itemHeight = k_ItemHeight,
+                            itemHeight = rowHeight,
                             isAppearing = isExpanded,
                         };
 
@@ -1865,7 +1867,7 @@ namespace Unity.Hierarchy
                 {
                     firstIndex = parentIndex + 1,
                     count = visibleChildCount,
-                    itemHeight = k_ItemHeight,
+                    itemHeight = rowHeight,
                     isAppearing = true,
                 };
 
@@ -1901,7 +1903,7 @@ namespace Unity.Hierarchy
                 {
                     firstIndex = parentIndex + 1,
                     count = visibleChildCount,
-                    itemHeight = k_ItemHeight,
+                    itemHeight = rowHeight,
                     isAppearing = false,
                 };
 

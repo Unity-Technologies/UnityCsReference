@@ -301,6 +301,13 @@ namespace Unity.U2D.Physics
         public static PhysicsIgnoreJoint Create(PhysicsWorld world, PhysicsIgnoreJointDefinition definition) => IgnorePhysicsJoint_Create(world, definition);
 
         /// <summary>
+        /// Get or set the joint definition.
+        /// Reading returns the joint's current configuration, including <see cref="bodyA"/> and <see cref="bodyB"/>.
+        /// Writing applies every configurable property in place but does not change the connected bodies, which are fixed when the joint is created.
+        /// </summary>
+        public readonly PhysicsIgnoreJointDefinition definition { get => IgnorePhysicsJoint_ReadDefinition(this); set => IgnorePhysicsJoint_WriteDefinition(this, value); }
+
+        /// <summary>
         /// Destroy a batch of joints.
         /// Owned joints will produce a warning and will not be destroyed (see <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>).
         /// Any invalid joints will be ignored.

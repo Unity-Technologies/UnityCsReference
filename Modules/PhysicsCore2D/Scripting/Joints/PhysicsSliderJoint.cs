@@ -280,6 +280,13 @@ namespace Unity.U2D.Physics
         public static PhysicsSliderJoint Create(PhysicsWorld world, PhysicsSliderJointDefinition definition) => SliderJoint_Create(world, definition);
 
         /// <summary>
+        /// Get or set the joint definition.
+        /// Reading returns the joint's current configuration, including <see cref="bodyA"/> and <see cref="bodyB"/>.
+        /// Writing applies every configurable property in place but does not change the connected bodies, which are fixed when the joint is created.
+        /// </summary>
+        public readonly PhysicsSliderJointDefinition definition { get => SliderJoint_ReadDefinition(this); set => SliderJoint_WriteDefinition(this, value); }
+
+        /// <summary>
         /// Destroy a batch of joints.
         /// Owned joints will produce a warning and will not be destroyed (see <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>).
         /// Any invalid joints will be ignored.
@@ -336,11 +343,19 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get the lower translation limit.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float lowerTranslationLimit { get => SliderJoint_GetLowerTranslationLimit(this); set => SliderJoint_SetLowerTranslationLimit(this, value); }
 
         /// <summary>
         /// Get the upper translation limit.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float upperTranslationLimit { get => SliderJoint_GetUpperTranslationLimit(this); set => SliderJoint_SetUpperTranslationLimit(this, value); }
 
         /// <summary>

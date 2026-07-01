@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -31,69 +32,104 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 var result = ImportSample(sample, options);
-                FinalizeImportOperation();
+                if (result)
+                {
+                    var data = new SampleImportEventData(sample.displayName, sample.packageUniqueId, sample.importPath,
+                        sample.previousImportPaths.Count > 0 ? sample.previousImportPaths[^1] : null);
+                    Sample.RaiseOnBeforeImportFinish([data]);
+                }
                 return result;
             }
-            catch (IOException e)
+            catch (Exception e)
             {
-                Debug.Log(string.Format(L10n.Tr("[Package Manager Window] Cannot import sample {0}: {1}"), sample.displayName, e.Message));
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unexpected error importing sample {0}: {1}"),
+                    sample.displayName, e.Message));
                 return false;
+            }
+            finally
+            {
+                FinalizeImportOperation(options.HasFlag(Sample.ImportOptions.SkipAssetDatabaseRefresh));
             }
         }
 
         public void Import(IReadOnlyCollection<Sample> samples, Sample.ImportOptions options = Sample.ImportOptions.None)
         {
-            foreach (var sample in samples)
-            {
-                try
-                {
-                    ImportSample(sample, options);
-                }
-                catch (IOException e)
-                {
-                    Debug.Log($"[Package Manager Window] Cannot import sample {sample.displayName}: {e.Message}");
-                }
-            }
+            if (samples == null || samples.Count == 0)
+                return;
 
-            FinalizeImportOperation();
+            var importedData = new List<SampleImportEventData>();
+            try
+            {
+                foreach (var sample in samples)
+                {
+                    if (!ImportSample(sample, options))
+                        continue;
+                    importedData.Add(new SampleImportEventData(sample.displayName,
+                        sample.packageUniqueId, sample.importPath,
+                        sample.previousImportPaths.Count > 0 ? sample.previousImportPaths[^1] : null));
+                }
+
+                if (importedData.Count > 0)
+                    Sample.RaiseOnBeforeImportFinish(importedData);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unexpected error importing samples: {0}"),
+                    e.Message));
+            }
+            finally
+            {
+                FinalizeImportOperation(options.HasFlag(Sample.ImportOptions.SkipAssetDatabaseRefresh));
+            }
         }
 
         private bool ImportSample(Sample sample, Sample.ImportOptions options = Sample.ImportOptions.None)
         {
-            var interactive = (options & Sample.ImportOptions.HideImportWindow) == Sample.ImportOptions.None && sample.interactiveImport;
-            if (!string.IsNullOrEmpty(sample.assetPackagePath))
-                m_AssetDatabase.ImportPackage(sample.assetPackagePath, interactive);
-            else
+            try
             {
-                var prevImports = sample.previousImportPaths;
-                if (prevImports.Count > 0 && (options & Sample.ImportOptions.OverridePreviousImports) ==
-                    Sample.ImportOptions.None)
-                    return false;
-                foreach (var v in prevImports)
+                var interactive = (options & Sample.ImportOptions.HideImportWindow) == Sample.ImportOptions.None && sample.interactiveImport;
+                if (!string.IsNullOrEmpty(sample.assetPackagePath))
+                    m_AssetDatabase.ImportPackage(sample.assetPackagePath, interactive);
+                else
                 {
-                    EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, L10n.Tr("Cleaning previous import..."),
-                        0);
-                    m_IOProxy.RemovePathAndMeta(v, true);
+                    var prevImports = sample.previousImportPaths;
+                    if (prevImports.Count > 0 && (options & Sample.ImportOptions.OverridePreviousImports) ==
+                        Sample.ImportOptions.None)
+                        return false;
+                    foreach (var v in prevImports)
+                    {
+                        EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, L10n.Tr("Cleaning previous import..."),
+                            0);
+                        m_IOProxy.RemovePathAndMeta(v, true);
+                    }
+
+                    var sourcePath = sample.resolvedPath;
+                    if (string.IsNullOrEmpty(sourcePath))
+                        return false;
+                    m_IOProxy.DirectoryCopy(sourcePath, sample.importPath, true,
+                        (fileName, progress) =>
+                        {
+                            var name = fileName.Replace(sourcePath + Path.DirectorySeparatorChar, "");
+                            EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, name, progress);
+                        }
+                    );
                 }
 
-                var sourcePath = sample.resolvedPath;
-                if (string.IsNullOrEmpty(sourcePath))
-                    return false;
-                m_IOProxy.DirectoryCopy(sourcePath, sample.importPath, true,
-                    (fileName, progress) =>
-                    {
-                        var name = fileName.Replace(sourcePath + Path.DirectorySeparatorChar, "");
-                        EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, name, progress);
-                    }
-                );
+                return true;
             }
-            return true;
+            catch (IOException e)
+            {
+                Debug.Log(string.Format(L10n.Tr("[Package Manager Window] Cannot import sample {0}: {1}"),
+                    sample.displayName, e.Message));
+                return false;
+            }
         }
 
-        private void FinalizeImportOperation()
+        private void FinalizeImportOperation(bool skipRefreshAssetDatabase)
         {
             EditorUtility.ClearProgressBar();
-            m_AssetDatabase.Refresh();
+            if (!skipRefreshAssetDatabase)
+                m_AssetDatabase.Refresh();
         }
     }
 }

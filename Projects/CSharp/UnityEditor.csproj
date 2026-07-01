@@ -9997,6 +9997,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Samples\SampleFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Samples\SampleFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Samples\SampleImportEventArgs.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Samples\SampleImportEventArgs.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Samples\SampleImporter.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Samples\SampleImporter.cs</Link>
     </Compile>
@@ -17069,6 +17072,6 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_qb4bryd3/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_gtg6l9k1/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

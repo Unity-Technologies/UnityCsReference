@@ -15,7 +15,8 @@ internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyle
         StyleSheet styleSheet,
         StyleRule rule,
         StyleProperty sourceProperty,
-        string newName)
+        string newName,
+        VisualTreeAsset visualTreeAsset = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
@@ -23,6 +24,7 @@ internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyle
         cmd.Rule = rule;
         cmd.SourceProperty = sourceProperty;
         cmd.NewName = newName;
+        cmd.VisualTreeAsset = visualTreeAsset;
         return cmd;
     }
 
@@ -30,9 +32,10 @@ internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyle
         StyleSheet styleSheet,
         StyleRule rule,
         StyleProperty sourceProperty,
-        string newName)
+        string newName,
+        VisualTreeAsset visualTreeAsset = null)
     {
-        using var command = GetPooled(source, styleSheet, rule, sourceProperty, newName);
+        using var command = GetPooled(source, styleSheet, rule, sourceProperty, newName, visualTreeAsset);
         UICommandQueue.Execute(command);
     }
 
@@ -40,6 +43,7 @@ internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyle
     public StyleRule Rule { get; private set; }
     public StyleProperty SourceProperty { get; private set; }
     public string NewName { get; private set; }
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
@@ -51,6 +55,7 @@ internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyle
         Rule = null;
         SourceProperty = null;
         NewName = null;
+        VisualTreeAsset = null;
     }
 
     public override bool Validate() => StyleSheet != null && Rule != null && SourceProperty != null;
@@ -58,6 +63,7 @@ internal sealed class DuplicateStyleRulePropertyCommand : Command<DuplicateStyle
     public override void Prepare(in PrepareContext context)
     {
         context.RecordUndo(StyleSheet);
+        context.RecordUndo(VisualTreeAsset);
     }
 
     public override CommandExecutionStatus Execute()

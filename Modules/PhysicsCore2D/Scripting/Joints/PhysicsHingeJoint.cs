@@ -277,6 +277,13 @@ namespace Unity.U2D.Physics
         public static PhysicsHingeJoint Create(PhysicsWorld world, PhysicsHingeJointDefinition definition) => HingeJoint_Create(world, definition);
 
         /// <summary>
+        /// Get or set the joint definition.
+        /// Reading returns the joint's current configuration, including <see cref="bodyA"/> and <see cref="bodyB"/>.
+        /// Writing applies every configurable property in place but does not change the connected bodies, which are fixed when the joint is created.
+        /// </summary>
+        public readonly PhysicsHingeJointDefinition definition { get => HingeJoint_ReadDefinition(this); set => HingeJoint_WriteDefinition(this, value); }
+
+        /// <summary>
         /// Destroy a batch of joints.
         /// Owned joints will produce a warning and will not be destroyed (see <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>).
         /// Any invalid joints will be ignored.
@@ -344,11 +351,19 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get the lower angle limit, in degrees.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float lowerAngleLimit { get => HingeJoint_GetLowerLimit(this); set => HingeJoint_SetLowerLimit(this, value); }
 
         /// <summary>
         /// Get the upper angle limit, in degrees.
         /// </summary>
+        /// <remarks>
+        /// If the value set here crosses the opposite bound, the two are swapped so the lower bound stays at or below the upper bound; this is silent and never warns.
+        /// When changing both bounds from script, set them together through the joint definition, otherwise the order of the two assignments can leave them swapped.
+        /// </remarks>
         public readonly float upperAngleLimit { get => HingeJoint_GetUpperLimit(this); set => HingeJoint_SetUpperLimit(this, value); }
     }
 }

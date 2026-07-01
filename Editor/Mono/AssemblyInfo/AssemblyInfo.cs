@@ -221,6 +221,7 @@ using UnityEngine;
 [assembly:InternalsVisibleTo("Unity.AI.Navigation.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Scenes")]
+[assembly: InternalsVisibleTo("Unity.Scenes.Editor.Tests")]
 
 
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Tests")]

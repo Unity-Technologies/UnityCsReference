@@ -189,7 +189,7 @@ namespace Unity.ProjectAuditor.Editor
 
             analysisParams.OnCompleted += onCompletedInternal;
 
-            AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", supportedModules.Length);
+            AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", numModules);
 
             var categoriesSet = new HashSet<IssueCategory>(categories);
 

@@ -85,7 +85,8 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_MatchingSelectorsElement.Target = m_Element;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.Target = m_Element;
-                m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule);
+                m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule,
+                    m_Element.visualTreeAssetSource);
             }
             RefreshAttributeOverrideHelpbox();
             MarkSearchDirty();
@@ -213,7 +214,6 @@ internal sealed partial class VisualElementInspector : UIInspector
         m_AttributesInspector.SetAttributeOverrideHelpboxVisible(isUnnamedTemplateElement);
     }
 
-
     void UpdateControlsState()
     {
         // Banner: show a blocking-reason message when recording but element is not fully animatable
@@ -292,7 +292,7 @@ internal sealed partial class VisualElementInspector : UIInspector
         if (m_VariablesSection != null)
         {
             m_VariablesSection.enabledSelf = (EditFlags & VisualElementEditFlags.Styles) == VisualElementEditFlags.Styles;
-            m_VariablesSection.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule);
+            m_VariablesSection.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule, m_Element?.visualTreeAssetSource);
             return;
         }
 
@@ -307,19 +307,24 @@ internal sealed partial class VisualElementInspector : UIInspector
         if (m_VariablesSection != null)
         {
             m_VariablesSection.enabledSelf = (EditFlags & VisualElementEditFlags.Styles) == VisualElementEditFlags.Styles;
-            m_VariablesSection.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule);
+            m_VariablesSection.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule, m_Element?.visualTreeAssetSource);
         }
     }
 
     void OnVariableChange(in CommandContext context)
     {
-        var inlineRule = GetInlineStyleRule();
-        var inlineSheet = m_Element?.visualTreeAssetSource?.inlineSheet;
-        if (m_Element == null || inlineSheet == null || inlineRule == null)
-             return;
+        if (context.Status == CommandExecutionStatus.Success)
+        {
+            var inlineRule = GetInlineStyleRule();
+            var inlineSheet = m_Element?.visualTreeAssetSource?.inlineSheet;
+            if (m_Element == null || inlineSheet == null || inlineRule == null)
+                return;
 
-        m_Element.UpdateInlineRule(inlineSheet, inlineRule);
-        m_Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+            m_Element.UpdateInlineRule(inlineSheet, inlineRule);
+            m_Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+
+            m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule, m_Element.visualTreeAssetSource);
+        }
     }
 
     void InitializeAnimationSectionVisibility()

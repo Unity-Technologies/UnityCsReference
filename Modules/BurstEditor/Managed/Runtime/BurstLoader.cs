@@ -69,21 +69,21 @@ namespace Unity.Burst.Editor
                 BurstCompilerOptions.IsSecondaryUnityProcess = true;
             }
 
-            if (BurstCompilerOptions.ForceDisableBurstCompilation)
-            {
-                if (!BurstCompilerOptions.IsSecondaryUnityProcess)
-                {
-                    UnityEngine.Debug.LogWarning("[com.unity.burst] Burst is disabled entirely from the command line");
-                }
-                return;
-            }
-
             // This can be setup to get more diagnostics
             var debuggingStr = Environment.GetEnvironmentVariable("UNITY_BURST_DEBUG");
             IsDebugging = debuggingStr != null && int.TryParse(debuggingStr, out var debugLevel) && debugLevel > 0;
             if (IsDebugging)
             {
                 UnityEngine.Debug.LogWarning("[com.unity.burst] Extra debugging is turned on.");
+            }
+
+            if (BurstCompilerOptions.ForceDisableBurstCompilation)
+            {
+                if (IsDebugging && !BurstCompilerOptions.IsSecondaryUnityProcess)
+                {
+                    UnityEngine.Debug.LogWarning("[com.unity.burst] Burst is disabled entirely from the command line");
+                }
+                return;
             }
 
             // Try to load the runtime through an environment variable

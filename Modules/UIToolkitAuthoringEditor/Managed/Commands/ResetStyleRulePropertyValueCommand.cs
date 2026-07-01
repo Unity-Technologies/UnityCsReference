@@ -17,28 +17,32 @@ internal sealed class ResetStyleRulePropertyValueCommand : Command<ResetStyleRul
         object source,
         StyleSheet styleSheet,
         StyleProperty property,
-        VariablesInspector.VariableType type)
+        VariablesInspector.VariableType type,
+        VisualTreeAsset visualTreeAsset = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
         cmd.StyleSheet = styleSheet;
         cmd.Property = property;
         cmd.Type = type;
+        cmd.VisualTreeAsset = visualTreeAsset;
         return cmd;
     }
 
     public static void Execute(object source,
         StyleSheet styleSheet,
         StyleProperty property,
-        VariablesInspector.VariableType type)
+        VariablesInspector.VariableType type,
+        VisualTreeAsset visualTreeAsset = null)
     {
-        using var command = GetPooled(source, styleSheet, property, type);
+        using var command = GetPooled(source, styleSheet, property, type, visualTreeAsset);
         UICommandQueue.Execute(command);
     }
 
     public StyleSheet StyleSheet { get; private set; }
     public StyleProperty Property { get; private set; }
     public VariablesInspector.VariableType Type { get; private set; }
+    public VisualTreeAsset VisualTreeAsset { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.Styling | CommandCategory.Variables;
@@ -49,6 +53,7 @@ internal sealed class ResetStyleRulePropertyValueCommand : Command<ResetStyleRul
         StyleSheet = null;
         Property = null;
         Type = default;
+        VisualTreeAsset = null;
     }
 
     public override bool Validate() => StyleSheet != null && Property != null;
@@ -56,6 +61,7 @@ internal sealed class ResetStyleRulePropertyValueCommand : Command<ResetStyleRul
     public override void Prepare(in PrepareContext context)
     {
         context.RecordUndo(StyleSheet);
+        context.RecordUndo(VisualTreeAsset);
     }
 
     public override CommandExecutionStatus Execute()

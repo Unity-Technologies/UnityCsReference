@@ -109,6 +109,7 @@ namespace Unity.UIToolkit.Editor
 
 
         Func<StyleRule> m_GetOrCreateStyleRule;
+        VisualTreeAsset m_VisualTreeAsset;
 
         protected StyleRule styleRule { get; set; }
         protected StyleSheet styleSheet => styleRule?.styleSheet;
@@ -162,6 +163,7 @@ namespace Unity.UIToolkit.Editor
 
         protected virtual void AfterAddVariable()
         {
+            OnStyleSheetModified();
             RefreshVariablesList();
         }
 
@@ -197,10 +199,11 @@ namespace Unity.UIToolkit.Editor
             item.AddManipulator(item.contextualMenuManipulator);
         }
 
-        public void Refresh(StyleRule rule, Func<StyleRule> getOrCreateRule = null)
+        public void Refresh(StyleRule rule, Func<StyleRule> getOrCreateRule = null, VisualTreeAsset visualTreeAsset = null)
         {
             styleRule = rule;
             m_GetOrCreateStyleRule = getOrCreateRule;
+            m_VisualTreeAsset = visualTreeAsset;
             RefreshVariablesList();
         }
 
@@ -291,7 +294,7 @@ namespace Unity.UIToolkit.Editor
             Enum.TryParse<VariableType>(choice, out var type);
             var name = GenerateDefaultName();
 
-            AddStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, name, type);
+            AddStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, name, type, m_VisualTreeAsset);
 
             AfterAddVariable();
         }
@@ -312,7 +315,7 @@ namespace Unity.UIToolkit.Editor
                 var styleProperty = m_VariablesItemsSource[selectedIndex];
                 var newName = GenerateDefaultName(styleProperty.name);
 
-                DuplicateStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, styleProperty, newName);
+                DuplicateStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, styleProperty, newName, m_VisualTreeAsset);
             }
 
             Undo.CollapseUndoOperations(undoGroup);
@@ -330,20 +333,26 @@ namespace Unity.UIToolkit.Editor
                 var prop = m_VariablesItemsSource[index];
                 if (prop != null)
                 {
-                    RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, prop);
+                    RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, prop, m_VisualTreeAsset);
                 }
             }
             else
             {
-                foreach (var selectedIndex in listView.selectedIndicesList)
+                var selectedIndices = new List<int>(listView.selectedIndicesList);
+                selectedIndices.Sort((a, b) => b.CompareTo(a));
+                using (UICommandQueue.BeginGroup("Remove style rule property"))
                 {
-                    if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
-                        continue;
-
-                    var prop = m_VariablesItemsSource[selectedIndex];
-                    if (prop != null)
+                    foreach (var selectedIndex in selectedIndices)
                     {
-                        RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, prop);
+                        if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
+                            continue;
+
+                        var prop = m_VariablesItemsSource[selectedIndex];
+                        if (prop != null)
+                        {
+                            RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule,
+                                prop, m_VisualTreeAsset);
+                        }
                     }
                 }
             }
@@ -368,7 +377,7 @@ namespace Unity.UIToolkit.Editor
                 (m_VariablesItemsSource[index], m_VariablesItemsSource[newIndex]);
 
             var newOrder = m_VariablesItemsSource.ToArray();
-            ReorderStyleRulePropertiesCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, newOrder);
+            ReorderStyleRulePropertiesCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, newOrder, m_VisualTreeAsset);
 
             m_VariablesListView.selectedIndex = newIndex;
 
@@ -392,7 +401,7 @@ namespace Unity.UIToolkit.Editor
             if (item.userData is not StyleProperty styleProperty)
                 return;
 
-            WriteStyleRulePropertyValueCommand<T>.Execute(CommandSources.Inspector, styleSheet, styleProperty, type, evt.newValue);
+            WriteStyleRulePropertyValueCommand<T>.Execute(CommandSources.Inspector, styleSheet, styleProperty, type, evt.newValue, m_VisualTreeAsset);
             OnStyleSheetModified();
         }
 
@@ -419,7 +428,7 @@ namespace Unity.UIToolkit.Editor
             if (!IsValidName(newName))
                 return;
 
-            RenameStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleProperty, newName);
+            RenameStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleProperty, newName, m_VisualTreeAsset);
             OnStyleSheetModified();
         }
 
@@ -442,19 +451,19 @@ namespace Unity.UIToolkit.Editor
                 case StyleValueType.String:
                 {
                     WriteStyleRulePropertyValueCommand<string>.Execute(CommandSources.Inspector, styleSheet, styleProperty,
-                        VariableType.String, newValue);
+                        VariableType.String, newValue, m_VisualTreeAsset);
                     break;
                 }
                 case StyleValueType.Enum:
                 {
                     WriteStyleRulePropertyValueCommand<string>.Execute(CommandSources.Inspector, styleSheet, styleProperty,
-                        VariableType.Enum, newValue);
+                        VariableType.Enum, newValue, m_VisualTreeAsset);
                     break;
                 }
                 case StyleValueType.Keyword:
                 {
                     WriteStyleRulePropertyValueCommand<StyleValueKeyword>.Execute(CommandSources.Inspector, styleSheet, styleProperty,
-                        VariableType.Keyword, Enum.Parse<StyleValueKeyword>(evt.newValue));
+                        VariableType.Keyword, Enum.Parse<StyleValueKeyword>(evt.newValue), m_VisualTreeAsset);
                     break;
                 }
             }
@@ -487,7 +496,7 @@ namespace Unity.UIToolkit.Editor
 
             Enum.TryParse<VariableType>(evt.newValue, out var type);
 
-            ResetStyleRulePropertyValueCommand.Execute(CommandSources.Inspector, styleSheet, styleProperty, type);
+            ResetStyleRulePropertyValueCommand.Execute(CommandSources.Inspector, styleSheet, styleProperty, type, m_VisualTreeAsset);
 
             OnChangeVariableType(item, type);
             OnStyleSheetModified();
@@ -497,7 +506,7 @@ namespace Unity.UIToolkit.Editor
         void OnListReordered(int previousIndex, int newIndex)
         {
             var newOrder = m_VariablesItemsSource.ToArray();
-            ReorderStyleRulePropertiesCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, newOrder);
+            ReorderStyleRulePropertiesCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, newOrder, m_VisualTreeAsset);
             OnStyleSheetModified();
             m_VariablesListView.RefreshItems();
         }

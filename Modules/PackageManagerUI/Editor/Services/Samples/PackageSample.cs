@@ -26,7 +26,9 @@ namespace UnityEditor.PackageManager.UI
             ///<summary>Override previous imports of the sample</summary>
             OverridePreviousImports = 0x1,
             ///<summary>Hide the import window when importing a sample that is an asset package (a .unitypackage file)</summary>
-            HideImportWindow = 0x2
+            HideImportWindow = 0x2,
+            /// <summary>Skip the refresh of the Asset Database</summary>
+            SkipAssetDatabaseRefresh = 0x4
         }
 
         /// <value>
@@ -156,6 +158,63 @@ namespace UnityEditor.PackageManager.UI
             if (packageInfo != null && (packageInfo.version == packageVersion || string.IsNullOrEmpty(packageVersion)))
                 return FindByPackage(packageInfo);
             return Array.Empty<Sample>();
+        }
+
+        /// <summary>
+        /// Raised after files are imported into the project, but before the Asset Database refreshes.
+        /// </summary>
+        /// <remarks>
+        /// Subscribe to this event to react to imported samples — for example, by importing dependent
+        /// samples or packages — before the Asset Database refresh picks up the new files. The event
+        /// fires once per call to <see cref="Import"/> with a list of <see cref="SampleImportEventData"/>
+        /// describing each imported sample, regardless of how many samples were imported in that call.
+        ///
+        /// Subscribers are responsible for unsubscribing when they are no longer needed.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// using System.Collections.Generic;
+        /// using UnityEditor;
+        /// using UnityEditor.PackageManager.UI;
+        /// using UnityEngine;
+        ///
+        /// public static class SampleImportLogger
+        /// {
+        ///     [InitializeOnLoadMethod]
+        ///     static void Subscribe()
+        ///     {
+        ///         Sample.OnBeforeImportFinish += OnSamplesImported;
+        ///     }
+        ///
+        ///     static void OnSamplesImported(IReadOnlyList&lt;SampleImportEventData&gt; events)
+        ///     {
+        ///         foreach (var data in events)
+        ///             Debug.Log($"Imported {data.sampleDisplayName} from {data.packageTechnicalName} to {data.newImportPath}");
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// <seealso cref="SampleImportEventData"/>
+        /// <seealso cref="Import"/>
+        public static event Action<IReadOnlyList<SampleImportEventData>> OnBeforeImportFinish;
+
+        internal static void RaiseOnBeforeImportFinish(IReadOnlyList<SampleImportEventData> eventData)
+        {
+            var handler = OnBeforeImportFinish;
+            if (handler == null)
+                return;
+
+            foreach (var subscriber in handler.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<IReadOnlyList<SampleImportEventData>>)subscriber).Invoke(eventData);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         /// <summary>
