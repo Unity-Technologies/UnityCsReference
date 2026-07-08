@@ -308,7 +308,7 @@ namespace Unity.UIToolkit.Editor
             if (elementType == null)
                 return;
 
-            MenuUtility.AddElementAsSibling(elementType);
+            MenuUtility.AddElementAsSibling(elementType, libItem.libraryType.variantName);
         }
 
         static SearchAction CreateAddChildElementAction(string providerId)
@@ -334,7 +334,7 @@ namespace Unity.UIToolkit.Editor
             if (elementType == null)
                 return;
 
-            MenuUtility.AddElementAsLastChild(elementType);
+            MenuUtility.AddElementAsLastChild(elementType, libItem.libraryType.variantName);
         }
     }
 }

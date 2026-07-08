@@ -105,6 +105,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private DelayedSelectionHandler m_SerializedDelayedSelectionHandler;
         [SerializeField]
+        private PackageProgressTracker m_SerializedPackageProgressTracker;
+        [SerializeField]
         private InProjectPackagesMonitor m_SerializedInProjectPackagesMonitor;
 
         private readonly Dictionary<Type, IService> m_RegisteredServices = new();
@@ -162,6 +164,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var pageManager = Register(new PageManager(settingsProxy, upmRegistryClient, pageFactory));
             var pageRefreshHandler = Register(new PageRefreshHandler(pageManager, applicationProxy, unityConnectProxy, assetDatabaseProxy, packageManagerPrefs, upmClient, upmRegistryClient, assetStoreClient, sampleCache));
             var backgroundFetchHandler = Register(new BackgroundFetchHandler(applicationProxy, unityConnectProxy, upmCache, upmClient, assetStoreClient, assetStoreCache, fetchStatusTracker, pageManager, pageRefreshHandler));
+            var packageProgressTracker = Register(new PackageProgressTracker(upmClient, assetStoreDownloadManager, fetchStatusTracker));
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
             var packageCreator = Register(new PackageCreator(upmClient, upmCache, unityConnectProxy, ioProxy, dateTimeProxy));
@@ -171,7 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(new EditorAnalyticsProxy());
             Register(new PackageManagerWindowProxy());
             Register(new ExtensionManager(packageManagerPrefs));
-            Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy));
+            Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy, packageProgressTracker));
             Register(new SampleFactory(ioProxy, upmCache, sampleCache, packageDatabase));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
             Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator, applicationProxy));
@@ -200,6 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedResourceLoader?.Reset();
             m_SerializedResourceLoader = resourceLoader;
             m_SerializedDelayedSelectionHandler = delayedSelectionHandler;
+            m_SerializedPackageProgressTracker = packageProgressTracker;
             m_SerializedInProjectPackagesMonitor = inProjectPackagesMonitor;
         }
 

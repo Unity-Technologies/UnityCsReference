@@ -187,7 +187,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     }
                 }
 
-                if (ShouldStartWindow && IsVirtualProjectWorkflowInitialized)
+                if (ShouldStartWindow && IsVirtualProjectWorkflowInitialized && MultiplayerPlaymode.Players != null)
                 {
                     ShouldStartWindow = false;
                     Start();

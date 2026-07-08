@@ -513,6 +513,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             return DragVisualMode.None;
 
         var elementType = libraryItem.libraryType.type;
+        var variantName = libraryItem.libraryType.variantName;
         switch (data.DropPosition)
         {
             case DragAndDropPosition.OverItem:
@@ -550,10 +551,10 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 throw new ArgumentOutOfRangeException();
         }
 
-        return DoPerformLibraryItemDrop(in data, elementType);
+        return DoPerformLibraryItemDrop(in data, elementType, variantName);
     }
 
-    DragVisualMode DoPerformLibraryItemDrop(in HierarchyViewDragAndDropHandlingData data, Type elementType)
+    DragVisualMode DoPerformLibraryItemDrop(in HierarchyViewDragAndDropHandlingData data, Type elementType, string variantName)
     {
         var parentElement = m_LocalRoot;
 
@@ -587,7 +588,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             }
         }
 
-        AddElementCommand.Execute(CommandSources.Hierarchy, elementType, m_Stage.EditedVisualTreeAsset, parentAsset, adjustedIndex);
+        AddElementCommand.Execute(CommandSources.Hierarchy, elementType, m_Stage.EditedVisualTreeAsset, parentAsset, adjustedIndex, variantName);
 
         m_Stage.RequestRefresh();
 

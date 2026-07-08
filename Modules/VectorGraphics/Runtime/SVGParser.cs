@@ -1795,7 +1795,7 @@ namespace Unity.VectorGraphics
                 var strokeMiterLimit = styles.Evaluate("stroke-miterlimit", inheritance);
                 stroke.TippedCornerLimit = AttribLengthVal(strokeMiterLimit, node, "stroke-miterlimit", 4.0f, DimType.Length);
                 if (stroke.TippedCornerLimit < 1.0f)
-                    throw node.GetException("'stroke-miterlimit' should be greater or equal to 1");
+                    stroke.TippedCornerLimit = 1.0f;
             } // If stroke is specified
             return stroke;
         }

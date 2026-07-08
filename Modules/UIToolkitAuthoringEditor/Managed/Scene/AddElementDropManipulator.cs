@@ -97,7 +97,7 @@ sealed class AddElementDropManipulator : Manipulator
 
             var placement = ComputePlacement(evt.mousePosition);
 
-            AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index);
+            AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
 
             RequestRefresh?.Invoke();
             evt.StopPropagation();

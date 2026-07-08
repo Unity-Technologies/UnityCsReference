@@ -11,6 +11,8 @@ using Unity.Jobs;
 using UnityEngine.SceneManagement;
 using Unity.Content;
 
+#pragma warning disable CS1574 // XML comment with cref attribute to types in UnityEditor namespace
+
 namespace Unity.Loading
 {
     enum ContentFileReservedID
@@ -44,6 +46,8 @@ namespace Unity.Loading
     }
 
     ///<summary>This struct acts like a handle for accessing a file loaded by <see cref="Unity.Loading.ContentLoadInterface.LoadContentFileAsync(ContentNamespace, string, NativeArray&lt;ContentFile&gt;, JobHandle)" />. You can use it to access the status and results of the load operation.</summary>
+    ///<remarks>This is part of the low-level <see cref="ContentLoadInterface"/> API. It is not used to load content built with
+    ///<see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>. That content is loaded with the <see cref="Loadable{T}"/> API instead.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     unsafe public struct ContentFile
     {
@@ -165,6 +169,9 @@ namespace Unity.Loading
     }
 
     ///<summary>The handle returned from <see cref="Unity.Loading.ContentLoadInterface.LoadSceneAsync(ContentNamespace, string, string, ContentSceneParameters, NativeArray&lt;ContentFile&gt;, JobHandle)" />. You can use this handle to access the status and results of the load operation.</summary>
+    ///<remarks>This is part of the low-level <see cref="ContentLoadInterface"/> API. To load a scene from content built with
+    ///<see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>, use a <see cref="LoadableSceneId"/> with
+    ///<see cref="UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(LoadableSceneId, UnityEngine.SceneManagement.LoadSceneParameters)"/> instead.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     public struct ContentSceneFile
     {
@@ -201,6 +208,10 @@ namespace Unity.Loading
     }
 
     ///<summary>API Interface for loading and unloading Content files.</summary>
+    ///<remarks>This is a low-level API that you do not need when working with content directories. Content built with
+    ///<see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/> is loaded through <see cref="ContentLoadManager"/>,
+    ///<see cref="Loadable{T}"/> and <see cref="UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(LoadableSceneId, UnityEngine.SceneManagement.LoadSceneParameters)"/> instead of this interface.</remarks>
+    ///<seealso cref="ContentLoadManager"/>
     [NativeHeader("Modules/ContentLoad/Public/ContentLoadFrontend.h")]
     [StaticAccessor("GetContentLoadFrontend()", StaticAccessorType.Dot)]
     public static class ContentLoadInterface
@@ -241,6 +252,9 @@ namespace Unity.Loading
         internal extern static bool ContentSceneFile_WaitForCompletion(ContentSceneFile handle, int timeoutMs);
 
         ///<summary>Loads a scene serialized file asynchronously from disk.</summary>
+        ///<remarks>This is a low-level API. To load a scene from content built with
+        ///<see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>, use a <see cref="LoadableSceneId"/> with
+        ///<see cref="UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(LoadableSceneId, UnityEngine.SceneManagement.LoadSceneParameters)"/> instead.</remarks>
         ///<param name="dependencies">List of the ContentFiles that will be referenced by the file being loaded. The ordering must match the ordering returned from the build process.
         ///<see cref="Unity.Loading.ContentFile.GlobalTableDependency" /> can be used to indicate that the PersistentManager should be used to resolve references. This allows references to files such as "unity default resources".</param>
         ///<param name="nameSpace">The ContentNamespace used to filter the results.</param>
@@ -262,7 +276,10 @@ namespace Unity.Loading
 
 
         ///<summary>Loads a serialized file asynchronously from disk.</summary>
-        ///<remarks>The status of the load operation can be accessed using the returned <see cref="Unity.Loading.ContentFile" />. Objects loaded with this function will not be garbage collected; the user is responsible for calling <see cref="Unity.Loading.ContentFile.UnloadAsync" /> to free resources when they are no longer required. The user must call <see cref="Unity.Loading.ContentFile.UnloadAsync" /> even if the load fails.</remarks>
+        ///<remarks>This is a low-level API. To load content built with <see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>,
+        ///use the <see cref="ContentLoadManager"/> and <see cref="Loadable{T}"/> API instead of this method.
+        ///
+        ///The status of the load operation can be accessed using the returned <see cref="Unity.Loading.ContentFile" />. Objects loaded with this method are not garbage collected. To free resources when they are no longer required, call <see cref="Unity.Loading.ContentFile.UnloadAsync" />. You must always call <see cref="Unity.Loading.ContentFile.UnloadAsync" /> even if the load fails.</remarks>
         ///<param name="nameSpace">The <see cref="Unity.Content.ContentNamespace" /> used to filter the results.</param>
         ///<param name="filename">Path of the file on disk.</param>
         ///<param name="dependencies">List of the <see cref="Unity.Loading.ContentFile" />s that will be referenced by the file being loaded. The ordering must match the ordering returned from the build process.

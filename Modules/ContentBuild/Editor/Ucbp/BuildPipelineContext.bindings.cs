@@ -31,7 +31,7 @@ namespace UnityEditor.Build
     ///                For example, if the implementation of <see cref="Build.IProcessSceneWithReport" /> loads an Asset programmatically then <see cref="Build.BuildPipelineContext.DependOnAsset" /> should be called, unless the same Asset is also referenced by the Scene.
     ///                Then, if the Asset is changed and the build run again, Unity will retrigger the callback and save the latest scene state instead of reusing an out-of-date cached result.
     ///
-    ///                Dependency tracking is currently only required when <see cref="EditorBuildSettings.UseParallelAssetBundleBuilding" /> is true, for calls to <see cref="BuildPipeline.BuildAssetBundles" />.  It does not currently apply to <see cref="BuildPipeline.BuildPlayer" />.</remarks>
+    ///                Dependency tracking applies to <see cref="BuildPipeline.BuildContentDirectory" />. It does not apply to <see cref="BuildPipeline.BuildPlayer" /> or <see cref="BuildPipeline.BuildAssetBundles" /> .</remarks>
     ///<seealso cref="AssetDatabase.LoadAssetAtPath" />
     [NativeHeader("Modules/ContentBuild/Editor/Ucbp/BuildPipelineContext.h")]
     [StaticAccessor("BuildPipelineContext", StaticAccessorType.DoubleColon)]

@@ -112,6 +112,24 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [RequiredByNativeCode]
+        static void ClearAllWatchers()
+        {
+            // Called from native subsystem teardown (PhysicsWorldManager2D::DestroyScriptObjects).
+            // Drops the watcher store so it does not span a scripting reload.
+            // Native interest is per-transform and dies with the transform, so there is nothing to unregister here.
+            if (s_TransformWatchers == null)
+                return;
+
+            // Return each pooled callback set to the pool before dropping the dictionary.
+            foreach (var watcher in s_TransformWatchers.Values)
+                HashSetPool<PhysicsCallbacks.ITransformChangedCallback>.Release(watcher);
+
+            s_TransformWatchers.Clear();
+            s_TransformWatchers = null;
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
         static void TransformChangedCallback(PhysicsBuffer physicsBuffer)
         {
             var transformChangeEvents = physicsBuffer.ToNativeArray<PhysicsEvents.TransformChangeEvent>();

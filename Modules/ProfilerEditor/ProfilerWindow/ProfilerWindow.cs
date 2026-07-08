@@ -1799,6 +1799,9 @@ namespace UnityEditor
             SetCategoriesInUse(new [] { ProfilerCategory.Render.Name }, visible);
             m_PersistentSettingsService.IsBottleneckViewVisible = visible;
 
+            if (visible && m_BottlenecksChartViewController != null)
+                m_BottlenecksChartViewController.ReloadData();
+
             // If the bottleneck view was disabled whilst it was selected (determined by its details view controller existing), select another module.
             if (!visible && m_BottlenecksDetailsViewController != null)
                 SelectFirstActiveModule();

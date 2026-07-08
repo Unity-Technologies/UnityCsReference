@@ -19,7 +19,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
 
             m_UpmClient.onPackagesReadyToReevaluate += OnPackagesReadyToReevaluate;
-            m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
             m_UpmClient.onSpecialInstallStart += OnSpecialInstallStart;
             m_UpmClient.onSpecialInstallFinalize += OnSpecialInstallFinalize;
@@ -37,7 +36,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
 
             m_UpmClient.onPackagesReadyToReevaluate -= OnPackagesReadyToReevaluate;
-            m_UpmClient.onPackagesProgressChange -= OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError -= OnPackageOperationError;
             m_UpmClient.onSpecialInstallStart -= OnSpecialInstallStart;
             m_UpmClient.onSpecialInstallFinalize -= OnSpecialInstallFinalize;
@@ -70,28 +68,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             HandleSpecialInstall(packageName, L10n.Tr("Creating a new package"), PackageTag.Custom);
         }
 
-        private void OnPackagesProgressChange(IEnumerable<(string packageIdOrName, PackageProgress progress)> progressUpdates)
-        {
-            var packagesUpdated = new List<IPackage>();
-            foreach (var item in progressUpdates)
-            {
-                var package = m_PackageDatabase.GetPackageByIdOrName(item.packageIdOrName) as Package;
-                if (package == null || package.progress == item.progress)
-                    continue;
-
-                // For special installations, we don't want to modify the progress here because we want to keep the
-                // installing package in the `In Project` this. The special installation package will be replaced
-                // by the actual package in PackageDatabase when we detect uniqueId changes through uniqueIdMapper
-                if (package.versions.primary.HasTag(PackageTag.SpecialInstall))
-                    continue;
-
-                SetProgress(package, item.progress);
-                packagesUpdated.Add(package);
-            }
-            if (packagesUpdated.Count > 0)
-                m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
-        }
-
         private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
         {
             GeneratePackagesAndTriggerChangeEvent(packageNames);
@@ -101,6 +77,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var version = new PlaceholderPackageVersion(packageIdOrName, displayName, tag: PackageTag.UpmFormat | PackageTag.SpecialInstall | additionalTags);
             var placeholderPackage = CreatePackage(packageIdOrName, new PlaceholderVersionList(version));
+            // Special installation is the only case where progress doesn't go through the ProgressTracker. We are only setting the progress to Installing
+            // so the placeholder package would stay in "In Project" page. We also don't clear the progress, instead we wait for the actual non-placeholder
+            // package to be generated to replace the placeholder
             SetProgress(placeholderPackage, PackageProgress.Installing);
             m_PackageDatabase.UpdatePackages(new[] { placeholderPackage });
         }
@@ -168,6 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!primaryVersion.isFullyFetched)
                 m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
             var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage, compliance: packageData.compliance);
+            SetProgress(package, m_PackageProgressTracker.GetProgress(packageName));
             return package;
         }
     }

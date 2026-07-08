@@ -20,18 +20,22 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UnityEngineTypePredicates.cs" />
     <Compile Include="UnitySerializationLogic.cs" />
-    <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
-    <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Pdb.dll" />
-    <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Mdb.dll" />
-    <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.Rocks.dll" />
+    <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
+    <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.Pdb.dll" />
+    <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.Mdb.dll" />
+    <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.Rocks.dll" />
     <ProjectReference Include="../Unity.CecilTools/Unity.CecilTools.gen.csproj" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_gtg6l9k1/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_j7nz6p0w/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
 
         internal bool has3DTransform => has3DTranslation || has3DRotation;
 
-        private bool has3DTranslation => computedStyle.translate.z != 0;
+        internal bool has3DTranslation => computedStyle.translate.z != 0;
         private bool has3DRotation
         {
             get

@@ -31,6 +31,13 @@ namespace Unity.UIToolkit.Editor
                 var typeKey = new LibraryTypeKey(declaringType, key);
                 var typeItem = new LibraryItem(typeKey.name, typeKey, libraryPath);
                 dictionary.Add(typeKey, typeItem);
+
+                foreach (var variantName in ElementConfiguratorRegistry.GetVariantNames(declaringType))
+                {
+                    var variantKey = new LibraryTypeKey(declaringType, key, $"{typeKey.name} ({variantName})", variantName);
+                    var variantItem = new LibraryItem(variantKey.name, variantKey, libraryPath);
+                    dictionary.Add(variantKey, variantItem);
+                }
             }
 
             return dictionary;

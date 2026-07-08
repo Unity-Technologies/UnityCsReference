@@ -216,9 +216,19 @@ namespace Unity.Profiling.Editor
         {
             float timeMax = 0.0f;
             float timeMaxExcludeFirst = 0.0f;
-            // TODO: optimze this. it's not terrible but not cache friendly either and the yValues are the once needed to be accessed more often than the series
-            // This takes up som 1 ms in deep profiling with 300 frames and likely scales badly with more
-            for (int k = 0; k < frameCount; k++)
+            // Guard against case where the frame count setting grows before the buffers are reallocated.
+            var sampleCount = frameCount;
+            foreach (var chartSeries in m_Series)
+                sampleCount = Mathf.Min(sampleCount, chartSeries.yValues.Length);
+
+            // This nested loop looks cache-unfriendly (it strides index k across each series' separate
+            // yValues array), but restructuring it was measured to give no reliable speedup: cost is
+            // dominated by the yValues memory access, which is identical for any iteration order, and
+            // the per-element overhead is negligible next to it. On an M3 Max MBP, this is roughly
+            // 10-65us per call across the min..max frame count. Both a series-outer totals-buffer
+            // variant and an enabled-series-hoisting variant were benchmarked (interleaved A/B) and
+            // came out within noise.
+            for (var k = 0; k < sampleCount; k++)
             {
                 float timeNow = 0.0F;
                 for (int j = 0; j < m_Series.Length; j++)

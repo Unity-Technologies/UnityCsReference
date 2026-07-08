@@ -45,10 +45,8 @@ namespace UnityEngine.UIElements.UIR
         Stack<MaskMesh> m_MaskMeshes = new Stack<MaskMesh>(1);
 
         // Vertex data, lazily computed
-        bool m_VertexDataComputed;
-        Matrix4x4 m_Transform;
-        ushort m_TransformId;
-        ushort m_OpacityId;
+        bool m_RequestedElementId;
+        bool m_ElementIdValid; // false when the id pool is exhausted; the mesh is discarded
         ushort m_TextCoreId;
 
         // Invariant within an alloc
@@ -132,8 +130,8 @@ namespace UnityEngine.UIElements.UIR
             m_ClipRectId = m_ClipRectIdPopped;
 
             // Vertex data, lazily computed
-            m_VertexDataComputed = false;
-            m_Transform = Matrix4x4.identity;
+            m_RequestedElementId = false;
+            m_ElementIdValid = true;
             m_TextCoreId = 0;
 
             m_MaskMeshes.Clear();
@@ -435,14 +433,14 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(m_VertsFilled + entryVertexCount <= m_AllocVertexCount);
                 }
 
-                if (!m_VertexDataComputed)
+                if (!m_RequestedElementId)
                 {
-                    UIRUtility.GetVerticesTransformInfo(m_CurrentRenderData, out m_Transform);
-                    m_CurrentRenderData.verticesSpace = m_Transform; // This is the space for the generated vertices below
-                    m_TransformId = ShaderInfoAllocator.BMPAllocToId(m_CurrentRenderData.transformID);
-                    m_OpacityId = ShaderInfoAllocator.BMPAllocToId(m_CurrentRenderData.opacityID);
-                    m_VertexDataComputed = true;
+                    m_ElementIdValid = m_RenderTreeManager.EnsureElementId(m_CurrentRenderData);
+                    m_RequestedElementId = true;
                 }
+
+                if (!m_ElementIdValid)
+                    return; // Couldn't acquire an id, discard meshes
 
                 ushort clipRectId = ShaderInfoAllocator.BMPAllocToId(m_ClipRectId);
                 bool usesPerGlyphTextCoreSettings = (entry.flags & EntryFlags.UsesPerGlyphTextCoreSettings) != 0;
@@ -477,11 +475,9 @@ namespace UnityEngine.UIElements.UIR
                     vertDst = targetVerticesSlice.GetUnsafePtr(),
                     vertCount = entryVertexCount,
                     vertStride = targetVerticesSlice.Stride,
-                    transform = m_Transform,
                     clipRectId = clipRectId,
-                    transformId = m_TransformId,
+                    elementId = m_CurrentRenderData.elementId,
                     dynamicColorOrTextCoreId = m_TextCoreId,
-                    opacityId = m_OpacityId,
                     flags = m_RenderType,
                     textureId = (ushort)textureId.index,
                     gradientSettingsIndexOffset = m_GradientSettingIndexOffset,

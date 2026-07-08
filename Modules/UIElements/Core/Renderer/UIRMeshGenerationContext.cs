@@ -64,9 +64,9 @@ namespace UnityEngine.UIElements
         public Vector2 uv;
         internal Vector2 layoutUV; // Layout UV of Visual Element
         internal ushort clipRectId;
-        internal ushort transformId;
+        internal ushort elementId;
         internal ushort dynamicColorOrTextCoreId;
-        internal ushort opacityId;
+        internal ushort _reserved2;
         internal VertexFlags flags;
         internal ushort textureId;
         internal ushort svgGradientIndex;

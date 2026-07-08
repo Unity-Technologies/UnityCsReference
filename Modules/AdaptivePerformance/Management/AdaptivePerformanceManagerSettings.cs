@@ -100,7 +100,7 @@ namespace UnityEngine.AdaptivePerformance
         }
 
         [HideInInspector]
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         static AdaptivePerformanceLoader s_ActiveLoader = null;
 
         ///<summary>

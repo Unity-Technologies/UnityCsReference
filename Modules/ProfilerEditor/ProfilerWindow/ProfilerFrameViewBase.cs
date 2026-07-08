@@ -641,7 +641,8 @@ namespace UnityEditorInternal.Profiling
                 {
                     GUILayout.BeginVertical();
                     GUILayout.Label(label);
-                    GUILayout.TextArea(sampleStack.text, GUILayout.ExpandHeight(true));
+                    // Render with GUI.skin.textArea to match the original TextArea style and the window sizing in CalcSampleStackSize.
+                    EditorGUILayout.SelectableLabel(sampleStack.text, GUI.skin.textArea, GUILayout.ExpandHeight(true));
                     if (sampleStack.text != BaseStyles.sampleHiddenText && GUILayout.Button(BaseStyles.tooltipCopyTooltip))
                     {
                         Clipboard.stringValue = sampleStack.text;

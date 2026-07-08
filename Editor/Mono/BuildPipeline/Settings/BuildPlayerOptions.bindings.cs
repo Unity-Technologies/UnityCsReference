@@ -64,6 +64,11 @@ namespace UnityEditor
         [NativeName("platformGroup")]
         public BuildTargetGroup targetGroup { get; set; }
         ///<summary>The <see cref="BuildTarget" /> to build.</summary>
+        ///<remarks>For best results, leave this property unset so that the build uses the target defined in the active <see cref="BuildProfile" />. If you do set it, set it to match the active build target.
+        ///
+        ///Building a target that doesn't match the active build target is unreliable. Changing the active build target requires recompiling Editor scripts for the new platform and a domain reload, which can't happen while a build script is running. As a result, build callbacks and platform-dependent code might compile for the wrong platform, and some platforms fail to build at all.
+        ///
+        ///To select the target, set the active build profile first: use the Build Profiles window in the Editor, or the <c>-activeBuildProfile</c> or <c>-buildTarget</c> argument on the [command line](xref:um-build-command-line). For more information, refer to [Create a custom build script](xref:um-build-script-build).</remarks>
         ///<seealso cref="EditorUserBuildSettings.activeBuildTarget" />
         [NativeName("platform")]
         public BuildTarget target { get; set; }
@@ -92,9 +97,13 @@ namespace UnityEditor
         ///<summary>The additional preprocessor defines you can specify while compiling assemblies for the Player. These defines are appended to the existing Scripting Define Symbols list configured in the Player settings.</summary>
         public string[] extraScriptingDefines { get; set; }
         
-        ///<summary>Use this property to reference the output folders or build report directories from one or more content directory builds.</summary>
+        ///<summary>Use this property to reference the output folders or build report directories from one or more <see cref="BuildPipeline.BuildContentDirectory"/> builds.</summary>
         ///<remarks>The types used in those builds are included in the information provided to UnityLinker.
-        ///This ensures that the player can load all the content from those additional builds.</remarks>
+        ///This ensures that the Player can load all the content from those additional builds.
+        ///
+        ///During a build you can also add directories from a build callback with <see cref="Build.BuildPlayerContext.AddPreviousBuildReportDirectory"/>.</remarks>
+        ///<seealso cref="BuildPipeline.BuildContentDirectory"/>
+        ///<seealso cref="Build.BuildPlayerContext.AddPreviousBuildReportDirectory"/>
         public string[] previousBuildReportDirectories { get; set; }
 
         [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerOptions.h")]

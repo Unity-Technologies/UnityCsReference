@@ -161,7 +161,15 @@ namespace UnityEngine
 
         public override int GetHashCode()
         {
-            return (int)(uint)m_rawData;
+            // Mirrors native EntityId::CalculateHash (Fibonacci hash, 2^64 / phi multiplier,
+            // with a high-to-low fold so callers that mask off only the low bits of the
+            // hash still see the full avalanche from Version bits).
+            unchecked // No-op under the assembly's default /checked- build; documents that the multiply is meant to wrap.
+            {
+                const ulong kKnuth64 = 0x9E3779B97F4A7C15UL;
+                uint hash = (uint)((m_rawData * kKnuth64) >> 32);
+                return (int)(hash ^ (hash >> 16));
+            }
         }
 
         public bool IsValid()

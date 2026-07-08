@@ -20,10 +20,10 @@ using Object = UnityEngine.Object;
 namespace Unity.Loading
 {
     /// <summary>
-    /// A handle that references a registered content directory and is returned from the RegisterContentDirectory operation
-    /// in <see cref="ContentLoadManager"/>.
+    /// A handle that references a registered content directory.
     /// </summary>
     /// <remarks>
+    /// This handle is returned from <see cref="ContentLoadManager.RegisterContentDirectory(string)"/>.
     /// Keep the handle to call <see cref="ContentLoadManager.UnregisterContentDirectory"/> after all loadables and scenes from that
     /// directory are released. Valid handles expose metadata such as <see cref="BuildName"/> from the content manifest, and can be
     /// used to query root assets from a specific content directory via <see cref="ContentLoadManager.GetRootAssets(ContentDirectoryHandle)"/>.
@@ -32,7 +32,6 @@ namespace Unity.Loading
     /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/ContentDirectoryHandle_RegisterUnregister.cs"/>
     /// </example>
     /// <seealso cref="ContentLoadManager.RegisterContentDirectory(string)"/>
-    /// <seealso cref="ContentLoadManager.RegisterContentDirectory(ContentManifest)"/>
     [StructLayout(LayoutKind.Sequential)]
     public struct ContentDirectoryHandle
     {
@@ -45,6 +44,7 @@ namespace Unity.Loading
         public readonly bool IsValid => m_Handle != 0;
 
         /// <summary> The build name of the content directory (e.g. from the Manifest build name).</summary>
+        /// <remarks>This is the name set through <see cref="UnityEditor.BuildContentDirectoryParameters.name"/> when the content directory was built.</remarks>
         public string BuildName
         {
             get
@@ -66,7 +66,7 @@ namespace Unity.Loading
     /// In the Editor this is not typically used, because the content is available directly in the project using
     /// <see cref="UnityEditor.AssetDatabase"/> and <see cref="UnityEditor.SceneManagement.EditorSceneManager"/> calls.
     /// However, it can be useful in Editor play mode to run the same loading case as the runtime and to try out the
-    /// output of your Content Directory build, directly inside the Editor.
+    /// output of your content directory build, directly inside the Editor.
     /// </remarks>
     /// <example>
     /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/ContentLoadManager_GetRootAssets.cs"/>
@@ -123,29 +123,28 @@ namespace Unity.Loading
         /// and Assets.
         /// </summary>
         /// <remarks>
-        /// In the runtime this is required when <see cref="BuildPipeline.BuildContentDirectory"/> has been used to build and
-        /// distribute additional content.
+        /// At runtime, call this for each content directory that <see cref="BuildPipeline.BuildContentDirectory"/> produced and
+        /// that you distribute alongside the Player, so that the scenes and assets it contains can be loaded. You can call it multiple
+        /// times with different paths to register several content directories, but each directory is limited to a single build.
         ///
-        /// This can be called multiple times with different paths to expose the contents of additional content directories to
-        /// the editor/runtime. However, this method is bound to a specific directory structure and limited to one build per directory.
-        /// Use <see cref="RegisterContentDirectory(ContentManifest)"/> lower-level API when you need more flexibility in content
-        /// organization or when registering multiple builds from custom locations.
+        /// Match every call with a corresponding call to <see cref="UnregisterContentDirectory"/> once all loadables and scenes
+        /// from the directory are released.
         ///
-        /// For a clean shutdown, each call to RegisterContentDirectory should be matched with a call to
-        /// UnregisterContentDirectory.
-        ///
-        /// Registering a content directory is not supported in the Editor outside of Play Mode and will throw
-        /// <see cref="InvalidOperationException"/>. Enter Play Mode before calling this method from Editor code.
-        ///
-        /// Throws <see cref="InvalidOperationException"/> if called from the Editor outside of Play Mode, if the path is
-        /// already registered, or if the content manifest cannot be loaded.
-        /// Throws <see cref="FileNotFoundException"/> if the required manifest hash file is not found.
-        /// Throws <see cref="DirectoryNotFoundException"/> if the directory does not exist.
+        /// In the Editor, registration is only supported in Play mode, where it lets you load and test built content the same way
+        /// the runtime does. Outside of Play mode the content is already available through <see cref="UnityEditor.AssetDatabase"/>,
+        /// <see cref="UnityEditor.LoadableObjectIdEditorUtility"/> and <see cref="UnityEditor.LoadableSceneIdEditorUtility"/>, so registration is unnecessary and throws <see cref="InvalidOperationException"/>.
         /// </remarks>
         /// <param name="contentDirectoryPath">
         /// A local path pointing to a directory that contains the output from a call to
         /// <see cref="BuildPipeline.BuildContentDirectory"/>.
         /// </param>
+        /// <returns>A handle to the registered content directory, used to unregister it and to query its content.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when called from the Editor outside of Play mode, when the path is already registered, or when the content
+        /// manifest cannot be loaded.
+        /// </exception>
+        /// <exception cref="FileNotFoundException">Thrown when the required manifest hash file is not found.</exception>
+        /// <exception cref="DirectoryNotFoundException">Thrown when the directory does not exist.</exception>
         public static ContentDirectoryHandle RegisterContentDirectory(string contentDirectoryPath)
         {
             return RegisterContentDirectoryFromPath(contentDirectoryPath);
@@ -189,8 +188,12 @@ namespace Unity.Loading
         /// Remove access to content that had been loaded from a content directory.
         /// </summary>
         /// <remarks>
-        /// All `Loadable{T}` references into the content directory must be explicitly released prior to calling this.
-        /// Similarly all LoadableSceneId must be Unloaded.
+        /// Before calling this, release everything that was loaded from the content directory. Release each
+        /// <see cref="Loadable{T}"/> with <see cref="Loadable{T}.Release"/>, and unload each scene that was loaded from a
+        /// <see cref="LoadableSceneId"/>. Use <see cref="SceneManager.GetSceneByLoadableSceneId(LoadableSceneId)"/> to get the
+        /// loaded scene and unload it through the <see cref="SceneManager"/> API.
+        ///
+        /// For content directories registered in Play mode, call this before exiting Play mode.
         /// </remarks>
         /// <param name="contentDirectory">
         /// Content directory handle to unregister

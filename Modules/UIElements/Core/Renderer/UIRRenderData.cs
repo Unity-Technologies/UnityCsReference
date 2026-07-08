@@ -47,6 +47,8 @@ namespace UnityEngine.UIElements.UIR
         IsSubTreeQuad = 1 << 4,
         IsNestedRenderTreeRoot = 1 << 5,
         IsClippingRectDirty = 1 << 6,
+        IsStickyBone = 1 << 7,
+        IsElementInfoDirty = 1 << 8,
     }
 
     // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
@@ -92,7 +94,7 @@ namespace UnityEngine.UIElements.UIR
         public int childrenMaskDepth;
 
         public MeshHandle headMesh, tailMesh;
-        public Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
+        public ushort elementId; // 0 <=> none
         public BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
         public BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
         public float compositeOpacity;
@@ -162,7 +164,7 @@ namespace UnityEngine.UIElements.UIR
             childrenMaskDepth = 0;
             headMesh = null;
             tailMesh = null;
-            verticesSpace = Matrix4x4.identity;
+            elementId = 0;
             transformID = ShaderInfoAllocator.identityTransform;
             clipRectID = ShaderInfoAllocator.infiniteClipRect;
             opacityID = ShaderInfoAllocator.fullOpacity;
@@ -256,6 +258,18 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty;
+        }
+
+        public bool isStickyBone
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsStickyBone) == RenderDataFlags.IsStickyBone;
+        }
+
+        public bool isElementInfoDirty
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsElementInfoDirty) == RenderDataFlags.IsElementInfoDirty;
         }
 
         private Rect m_ClippingRect;

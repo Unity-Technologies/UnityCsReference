@@ -6,10 +6,12 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine;
 
+#pragma warning disable CS1574 // XML comment with cref attribute to types in UnityEditor namespace
+
 namespace Unity.Loading
 {
     /// <summary>
-    /// Describes the current asynchronous loading phase of a `Loadable{T}` after <see cref="Loadable{T}.Load"/> or <see cref="Loadable{T}.LoadAsync"/> is used.
+    /// Describes the current loading phase of a <see cref="Loadable{T}"/> after <see cref="Loadable{T}.Load"/> or <see cref="Loadable{T}.LoadAsync"/> is used.
     /// </summary>
     /// <remarks>
     /// Query <see cref="Loadable{T}.Status"/> to drive UI or to assert that a load finished before reading
@@ -41,12 +43,48 @@ namespace Unity.Loading
     /// <summary>
     /// Serialized reference that loads a specific <typeparamref name="T"/> asset from registered built content on demand instead of pulling it in with direct references.
     /// </summary>
+    /// <remarks>
+    /// Add a <see cref="Loadable{T}"/> field to a <see cref="ScriptableObject"/> or <see cref="MonoBehaviour"/> to reference an
+    /// asset without loading it immediately. The reference is stored as a <see cref="LoadableObjectId"/>, which you create in the
+    /// Editor with <see cref="UnityEditor.LoadableObjectIdEditorUtility"/>. When the containing object is built into a content
+    /// directory with <see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>, the referenced asset and its dependencies are
+    /// pulled into the build output.
+    ///
+    /// At runtime, call <see cref="Load"/> or <see cref="LoadAsync"/> to load the asset on demand, read it from <see cref="Target"/>,
+    /// and call <see cref="Release"/> when it is no longer needed. The asset must belong to a content directory that has been
+    /// registered with <see cref="ContentLoadManager.RegisterContentDirectory(string)"/>.
+    ///
+    /// In Play mode you can load built content with much the same code and behavior as in the Player. Register the content
+    /// directory with <see cref="ContentLoadManager.RegisterContentDirectory(string)"/>, get its root assets with
+    /// <see cref="ContentLoadManager.GetRootAssets{T}()"/>, then read the <see cref="Loadable{T}"/> fields on those root assets or
+    /// on any asset or scene they reference. A <see cref="Loadable{T}"/> reached from built content always loads its asset from that
+    /// built content, never from the project.
+    ///
+    /// In Play mode you can also load the live project version of an asset, such as a scene loaded by path with
+    /// <see cref="UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(string)"/> or a <see cref="ScriptableObject"/> loaded
+    /// through <see cref="UnityEditor.AssetDatabase"/>. A <see cref="Loadable{T}"/> field on an asset loaded this way always resolves
+    /// to the latest project version of the referenced asset through the <see cref="UnityEditor.AssetDatabase"/>, even when a
+    /// registered content directory contains a built version of that asset.
+    ///
+    /// Content loaded from the <see cref="UnityEditor.AssetDatabase"/> in this way is not reference counted, so <see cref="Release"/>
+    /// does not unload it. It unloads through the same garbage collection that handles other AssetDatabase content in the Editor. The
+    /// asset unloads when nothing references it and a collection runs. Call <see cref="Resources.UnloadUnusedAssets"/> to force a collection.
+    ///
+    /// A <see cref="Loadable{T}"/> field is only supported in content built with <see cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>.
+    /// If a Loadable field is found in serialized data during a Player or AssetBundle build, the underlying reference is set to null
+    /// in the build output and an error is logged. Suppress this error with <see cref="UnityEditor.BuildOptions.SuppressLoadableErrors"/>
+    /// for Player builds or <see cref="UnityEditor.BuildAssetBundleOptions.SuppressLoadableErrors"/> for AssetBundle builds.
+    /// </remarks>
     /// <typeparam name="T">
     /// Concrete Unity <see cref="UnityEngine.Object"/> type referenced by this field (for example <see cref="GameObject"/> for a prefab or a custom <see cref="ScriptableObject"/> type).
     /// </typeparam>
     /// <example>
     /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/Loadable_LoadAndRelease.cs"/>
     /// </example>
+    /// <seealso cref="LoadableObjectId"/>
+    /// <seealso cref="UnityEditor.LoadableObjectIdEditorUtility"/>
+    /// <seealso cref="UnityEditor.BuildPipeline.BuildContentDirectory"/>
+    /// <seealso cref="ContentLoadManager"/>
     [Serializable]
     public sealed class Loadable<T> where T : UnityEngine.Object
     {
@@ -98,7 +136,13 @@ namespace Unity.Loading
         /// <summary>
         /// Loads the object synchronously. Blocks until loading is complete.
         /// </summary>
-        /// <returns>The loaded object, or null if loading failed.</returns>
+        /// <remarks>
+        /// Load does not throw when the asset cannot be returned. Instead it returns <see langword="null"/>, logs an error, and
+        /// sets <see cref="Status"/> to <see cref="LoadableStatus.Failed"/>. This happens when the asset is not present in any
+        /// registered content directory, when it has already been released, or when the loaded object cannot be cast to
+        /// <typeparamref name="T"/> because the <see cref="LoadableObjectId"/> points at an object of an incompatible type.
+        /// </remarks>
+        /// <returns>The loaded object, or <see langword="null"/> if loading failed.</returns>
         public T Load()
         {
             LoadAsyncInternal().WaitForCompletion();

@@ -11,7 +11,7 @@ namespace Unity.UIToolkit.Editor;
 
 sealed class AddElementCommand : Command<AddElementCommand>
 {
-    public static AddElementCommand GetPooled(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1)
+    public static AddElementCommand GetPooled(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1, string variantName = null)
     {
         var cmd = GetPooled();
         cmd.Source = source;
@@ -19,12 +19,13 @@ sealed class AddElementCommand : Command<AddElementCommand>
         cmd.m_VisualTreeAsset = visualTreeAsset;
         cmd.m_ParentVea = parentVea ?? visualTreeAsset.visualTree;
         cmd.m_Index = index;
+        cmd.m_VariantName = variantName;
         return cmd;
     }
 
-    public static void Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1)
+    public static void Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1, string variantName = null)
     {
-        using var command = GetPooled(source, elementType, visualTreeAsset, parentVea, index);
+        using var command = GetPooled(source, elementType, visualTreeAsset, parentVea, index, variantName);
         UICommandQueue.Execute(command);
     }
 
@@ -32,6 +33,7 @@ sealed class AddElementCommand : Command<AddElementCommand>
     VisualTreeAsset m_VisualTreeAsset;
     VisualElementAsset m_ParentVea;
     int m_Index;
+    string m_VariantName;
 
     public override string UndoName => "Add element";
     public override CommandCategory Category { get; } = CommandCategory.Hierarchy;
@@ -40,6 +42,7 @@ sealed class AddElementCommand : Command<AddElementCommand>
     public VisualTreeAsset VisualTreeAsset => m_VisualTreeAsset;
     public VisualElementAsset ParentVea => m_ParentVea;
     public int Index => m_Index;
+    public string VariantName => m_VariantName;
 
     protected override void Init()
     {
@@ -48,6 +51,7 @@ sealed class AddElementCommand : Command<AddElementCommand>
         m_VisualTreeAsset = null;
         m_ParentVea = null;
         m_Index = -1;
+        m_VariantName = null;
     }
 
     public override void Prepare(in PrepareContext context)
@@ -61,6 +65,8 @@ sealed class AddElementCommand : Command<AddElementCommand>
     {
         var vea = m_VisualTreeAsset.AddElementOfType(m_ParentVea, m_ElementType.FullName);
         vea.serializedData = UxmlSerializedDataCreator.CreateUxmlSerializedData(m_ElementType);
+
+        ElementConfiguratorRegistry.Configure(m_ElementType, m_VariantName, m_VisualTreeAsset, vea);
 
         if (vea is VisualElementAsset newVea)
             HandlePositioning(newVea);

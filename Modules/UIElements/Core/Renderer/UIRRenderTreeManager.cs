@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements.UIR
         public uint recursiveTransformUpdates, recursiveTransformUpdatesExpanded;
         public uint recursiveOpacityUpdates, recursiveOpacityUpdatesExpanded;
         public uint opacityIdUpdates;
+        public uint elementInfoUpdates;
         public uint colorUpdates, colorUpdatesExpanded;
         public uint recursiveVisualUpdates, recursiveVisualUpdatesExpanded, nonRecursiveVisualUpdates;
         public uint dirtyProcessed;
@@ -39,6 +40,67 @@ namespace UnityEngine.UIElements.UIR
 
     partial class RenderTreeManager : IDisposable
     {
+        readonly ElementIdPool m_ElementIdPool = new();
+        internal ElementIdPool elementIdPool => m_ElementIdPool;
+
+        // Lazily acquire the id + queue the record write. Returns false (caller discards the mesh) when exhausted.
+        public bool EnsureElementId(RenderData renderData)
+        {
+            if (renderData.elementId == 0)
+            {
+                if (!m_ElementIdPool.Acquire(out ushort id))
+                {
+                    Debug.LogError($"UIE element-id pool exhausted at {ElementIdPool.kMaxElementIds} ids. Excess elements will not render until ids are freed.");
+                    return false;
+                }
+
+                renderData.elementId = id;
+            }
+
+            MarkElementInfoDirty(renderData);
+            return true;
+        }
+
+        readonly List<RenderData> m_ElementInfoUpdates = new();
+
+        public void MarkElementInfoDirty(RenderData renderData)
+        {
+            if (renderData.isElementInfoDirty)
+                return; // Already queued
+
+            renderData.flags |= RenderDataFlags.IsElementInfoDirty;
+            m_ElementInfoUpdates.Add(renderData);
+        }
+
+        public void UpdateElementInfoRecords()
+        {
+            for (int i = 0; i < m_ElementInfoUpdates.Count; i++)
+            {
+                var renderData = m_ElementInfoUpdates[i];
+                renderData.flags &= ~RenderDataFlags.IsElementInfoDirty;
+                if (renderData.elementId != 0)
+                {
+                    UIRUtility.GetVerticesTransformInfo(renderData, out Matrix4x4 localToBone);
+                    shaderInfoAllocator.SetElementInfoValue(
+                        renderData.elementId,
+                        ShaderInfoAllocator.BMPAllocToId(renderData.transformID),
+                        ShaderInfoAllocator.BMPAllocToId(renderData.opacityID),
+                        localToBone.m03, localToBone.m13);
+                    m_Stats.elementInfoUpdates++;
+                }
+            }
+            m_ElementInfoUpdates.Clear();
+        }
+
+        public void ReleaseElementId(RenderData renderData)
+        {
+            if (renderData.elementId == 0)
+                return;
+
+            m_ElementIdPool.Release(renderData.elementId);
+            renderData.elementId = 0;
+        }
+
         RenderTreeCompositor m_Compositor;
         VisualChangesProcessor m_VisualChangesProcessor;
         LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), cmd => cmd.Reset());
@@ -65,7 +127,6 @@ namespace UnityEngine.UIElements.UIR
         internal TextureRegistry textureRegistry => m_TextureRegistry;
         internal VisualChangesProcessor visualChangesProcessor => m_VisualChangesProcessor;
 
-        public OpacityIdAccelerator opacityIdAccelerator { get; private set; }
         internal PerGlyphTextCoreSettings perGlyphTcs => m_PerGlyphTcs;
 
         // TODO: Consider exposing these pools globally, not per panel
@@ -124,7 +185,6 @@ namespace UnityEngine.UIElements.UIR
             m_Compositor = new RenderTreeCompositor(this);
             tempMeshAllocator = new TempMeshAllocatorImpl();
             jobManager = new JobManager();
-            opacityIdAccelerator = new OpacityIdAccelerator();
             entryRecorder = new EntryRecorder(s_SharedEntryPool, panel.panelRenderer.extraVertexChannels);
             meshGenerationNodeManager = new MeshGenerationNodeManager(entryRecorder);
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
@@ -191,9 +251,6 @@ namespace UnityEngine.UIElements.UIR
                 device?.Dispose();
                 device = null;
 
-                opacityIdAccelerator?.Dispose();
-                opacityIdAccelerator = null;
-
                 m_VisualChangesProcessor?.Dispose();
                 m_VisualChangesProcessor = null;
 
@@ -208,6 +265,8 @@ namespace UnityEngine.UIElements.UIR
 
                 m_RenderDataPool.Clear();
                 m_RenderDataPool = null;
+
+                m_ElementIdPool.Clear();
 
                 foreach (var data in m_InsertionList)
                     data.element.insertionIndex = -1;

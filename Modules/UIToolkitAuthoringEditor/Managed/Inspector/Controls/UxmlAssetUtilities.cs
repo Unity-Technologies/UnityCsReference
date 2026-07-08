@@ -512,10 +512,13 @@ internal static class UxmlAssetUtilities
                 {
                     // Extract the serialized data list
                     var serializedDataList = (IList)attribute.GetSerializedValue(uxmlSerializedData);
-                    foreach (UxmlSerializedData serializedDataItem in serializedDataList)
+                    if (serializedDataList != null)
                     {
-                        CreateUxmlObjectAsset(visualTreeAsset, attributeUxmlObjectDescription, serializedDataItem,
-                            uxmlAsset);
+                        foreach (UxmlSerializedData serializedDataItem in serializedDataList)
+                        {
+                            CreateUxmlObjectAsset(visualTreeAsset, attributeUxmlObjectDescription, serializedDataItem,
+                                uxmlAsset);
+                        }
                     }
                 }
                 else

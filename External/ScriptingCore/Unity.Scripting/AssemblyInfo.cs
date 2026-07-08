@@ -50,3 +50,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("LifecycleTestAssembly2")]
 [assembly: InternalsVisibleTo("LifecycleTestAssembly3")]
 [assembly: InternalsVisibleTo("LifecycleTestAssembly4")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Scripting")]
+[assembly: InternalsVisibleTo("UnityEngine.AdaptivePerformanceModule")]

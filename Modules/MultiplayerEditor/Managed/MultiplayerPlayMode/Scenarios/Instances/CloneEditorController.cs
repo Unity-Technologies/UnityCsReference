@@ -65,7 +65,12 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
 
     protected internal override void SetupExecutionGraph(ExecutionGraphBuilder graphBuilder)
     {
-        if (EditorMultiplayerManager.enableMultiplayerRoles)
+        var players = MultiplayerPlaymode.Players;
+        var player = players != null && Settings.PlayerInstanceIndex < players.Length
+            ? players[Settings.PlayerInstanceIndex]
+            : null;
+
+        if (EditorMultiplayerManager.enableMultiplayerRoles && player != null)
         {
             var roleNode = graphBuilder.AddNode<SetupEditorMultiplayerRoleNode>(ExecutionStage.Deploy);
             graphBuilder.ConnectConstant(roleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
@@ -73,16 +78,19 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
 
             var restoreRoleNode = graphBuilder.AddNode<SetupEditorMultiplayerRoleNode>(ExecutionStage.Cleanup);
             graphBuilder.ConnectConstant(restoreRoleNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-            graphBuilder.ConnectConstant(restoreRoleNode.Role, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Role);
+            graphBuilder.ConnectConstant(restoreRoleNode.Role, player.Role);
         }
 
-        var tagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Deploy);
-        graphBuilder.ConnectConstant(tagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        graphBuilder.ConnectConstant(tagsNode.Tags, new[] { Settings.PlayerTag });
+        if (player != null)
+        {
+            var tagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Deploy);
+            graphBuilder.ConnectConstant(tagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+            graphBuilder.ConnectConstant(tagsNode.Tags, new[] { Settings.PlayerTag });
 
-        var restoreTagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Cleanup);
-        graphBuilder.ConnectConstant(restoreTagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
-        graphBuilder.ConnectConstant(restoreTagsNode.Tags, MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Tags);
+            var restoreTagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Cleanup);
+            graphBuilder.ConnectConstant(restoreTagsNode.PlayerInstanceIndex, Settings.PlayerInstanceIndex);
+            graphBuilder.ConnectConstant(restoreTagsNode.Tags, player.Tags);
+        }
 
 
         var deployNode = graphBuilder.AddNode<CloneEditorDeployNode>(ExecutionStage.Deploy);

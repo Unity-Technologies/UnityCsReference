@@ -336,7 +336,10 @@ namespace UnityEditorInternal.Profiling
             {
                 var columnName = GetProfilerColumnName(profilerColumns[i]);
                 var content = profilerColumns[i] == HierarchyFrameDataView.columnWarningCount
-                    ? EditorGUIUtility.IconContent("ProfilerColumn.WarningCount", columnName)
+                    // console.warnicon.sml is shared Editor-wide and IconContent caches one GUIContent
+                    // per icon name. Build our own so we neither inherit another window's (missing)
+                    // tooltip nor leak "Warnings" onto every other use of this icon.
+                    ? new GUIContent(string.Empty, EditorGUIUtility.IconContent("console.warnicon.sml").image, EditorGUIUtility.GetNameAndTooltipString(columnName)[2])
                     : new GUIContent(columnName);
                 var column = new ProfilerFrameDataMultiColumnHeader.Column
                 {
@@ -359,6 +362,7 @@ namespace UnityEditorInternal.Profiling
                 var maxWidth = 1000000f;
                 var autoResize = false;
                 var allowToggleVisibility = true;
+                var headerTextAlignment = TextAlignment.Left;
                 switch (columns[i].profilerColumn)
                 {
                     case HierarchyFrameDataView.columnName:
@@ -368,16 +372,17 @@ namespace UnityEditorInternal.Profiling
                         allowToggleVisibility = false;
                         break;
                     case HierarchyFrameDataView.columnWarningCount:
-                        width = 25;
-                        minWidth = 25;
-                        maxWidth = 25;
+                        width = 40;
+                        minWidth = 40;
+                        maxWidth = 40;
+                        headerTextAlignment = TextAlignment.Center;
                         break;
                 }
 
                 var headerColumn = new MultiColumnHeaderState.Column
                 {
                     headerContent = columns[i].headerLabel,
-                    headerTextAlignment = TextAlignment.Left,
+                    headerTextAlignment = headerTextAlignment,
                     sortingArrowAlignment = TextAlignment.Right,
                     width = width,
                     minWidth = minWidth,

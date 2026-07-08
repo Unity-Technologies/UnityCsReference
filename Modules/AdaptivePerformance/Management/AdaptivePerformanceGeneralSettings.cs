@@ -16,7 +16,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>The key used to query to get the current loader settings.</summary>
         [NoAutoStaticsCleanup] // public API field; readonly would be a source-breaking change
         public static string k_SettingsKey = "com.unity.adaptiveperformance.loader_settings";
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         internal static AdaptivePerformanceGeneralSettings s_RuntimeSettingsInstance = null;
 
         [SerializeField]

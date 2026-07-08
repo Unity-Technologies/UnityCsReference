@@ -70,7 +70,8 @@ namespace UnityEditor.Build.Reporting
         ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this will be identical to the output path.</summary>
         public string dataPath { get; }
 
-        ///<summary>For ContentDirectory builds this returns the build name. For Player builds this returns the product name from PlayerSettings.</summary>
+        ///<summary>For content directory builds this returns the build name. For Player builds this returns the product name from PlayerSettings.</summary>
+        ///<remarks>For content directory builds, this is the name set through <see cref="BuildContentDirectoryParameters.name"/>. The same value is reported in the lightweight <see cref="Build.BuildReportSummary.BuildName"/>.</remarks>
         public string buildName { get; }
 
         internal uint crc { get; }

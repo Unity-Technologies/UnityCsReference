@@ -246,7 +246,16 @@ namespace UnityEditor.Experimental.GraphView
                 return;
 
             hasPendingGeometryUpdate = true;
-            schedule.Execute(t => UpdateGeometryFromContent());
+            schedule.Execute(t =>
+            {
+                // The auto update may have been disabled after this update was scheduled. Honor the
+                // current setting at execution time so a stale scheduled update cannot recompute the
+                // geometry once autoUpdateGeometry has been turned off.
+                if (m_AutoUpdateGeometry)
+                    UpdateGeometryFromContent();
+                else
+                    hasPendingGeometryUpdate = false;
+            });
         }
 
         void MarkLayoutNodeSeen(LayoutNode node)

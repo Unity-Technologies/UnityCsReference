@@ -11,7 +11,6 @@ namespace UnityEngine.UIElements.UIR
     [NativeHeader("Modules/UIElements/Core/Native/Renderer/UIRendererJobProcessor.h")]
     static class JobProcessor
     {
-        internal extern static JobHandle ScheduleNudgeJobs(IntPtr buffer, int jobCount);
         internal extern static JobHandle ScheduleConvertMeshJobs(IntPtr buffer, int jobCount);
         internal extern static JobHandle ScheduleCopyMeshJobs(IntPtr buffer, int jobCount);
     }

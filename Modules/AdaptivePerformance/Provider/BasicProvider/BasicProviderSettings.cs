@@ -15,7 +15,7 @@ namespace UnityEngine.AdaptivePerformance.Basic
     [AdaptivePerformanceConfigurationData("Basic", BasicProviderConstants.k_SettingKey)]
     public partial class BasicProviderSettings: IAdaptivePerformanceSettings
     {
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         static BasicProviderSettings m_Instance = null;
         void Awake()
         {

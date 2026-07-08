@@ -26,34 +26,6 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_EnterManagedObjectsAwokenScope()
-        {
-            try
-            {
-                LifecycleController.Instance.EnterScope<ManagedObjectsAwokenScope>();
-            }
-            catch (Exception e)
-            {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to enter ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
-                Debug.LogException(e);
-            }
-        }
-
-        [RequiredByNativeCode]
-        internal static void Internal_ExitManagedObjectsAwokenScope()
-        {
-            try
-            {
-                LifecycleController.Instance.ExitScope<ManagedObjectsAwokenScope>();
-            }
-            catch (Exception e)
-            {
-                DebugLifecycle.ReportError($"Lifecycle ERROR : Failed to exit ManagedObjectsAwokenScope due to exception {e.ToString()}", true);
-                Debug.LogException(e);
-            }
-        }
-
-        [RequiredByNativeCode]
         internal static void Internal_ExitCodeInitializedScope()
         {
             try

@@ -96,6 +96,8 @@ namespace UnityEditor
             foreach (var type in obsoleteTypes)
             {
                 var attr = type.GetCustomAttribute<ObsoleteAttribute>();
+                if (attr == null)
+                    continue; // TODO: attr should never be null, it indicates a TypeCache issue!!!
                 var message = string.IsNullOrEmpty(attr.Message)
                     ? "This component has been marked as obsolete."
                     : attr.Message;

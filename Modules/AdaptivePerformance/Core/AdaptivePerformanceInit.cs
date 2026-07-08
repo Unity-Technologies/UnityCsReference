@@ -9,7 +9,7 @@ namespace UnityEngine.AdaptivePerformance
 {
     internal static partial class AdaptivePerformanceInitializer
     {
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         static AdaptivePerformanceManagerSpawner s_Spawner;
 
         [RequiredByNativeCode(optional: false)]

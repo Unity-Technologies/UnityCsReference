@@ -77,6 +77,19 @@ namespace Unity.U2D.Physics
         #endregion
 
         /// <summary>
+        /// Create a <see cref="PhysicsHandle"/> from its constituent parts.
+        /// </summary>
+        /// <param name="index">The handle index.</param>
+        /// <param name="world">The world the handle refers to.</param>
+        /// <param name="generation">The handle generation.</param>
+        PhysicsHandle(Int32 index, UInt16 world, UInt16 generation)
+        {
+            m_Index1 = index;
+            m_World0 = world;
+            m_Generation = generation;
+        }
+
+        /// <summary>
         /// Create a <see cref="PhysicsHandle"/>.
         /// </summary>
         /// <returns>The created physics handle.</returns>
@@ -128,5 +141,14 @@ namespace Unity.U2D.Physics
         /// Get the handle generation.
         /// </summary>
         public readonly UInt16 generation => m_Generation;
+
+        /// <summary>
+        /// Get a copy of this handle that refers to the specified <see cref="PhysicsWorld"/>.
+        /// The index and generation are preserved and only the world is changed, so the result refers to the same object slot in the specified world.
+        /// This is useful when one world shares an identical handle layout with another, such as a world created from a snapshot of, or a clone of, the original.
+        /// </summary>
+        /// <param name="world">The world the returned handle should refer to.</param>
+        /// <returns>A handle referring to the same slot and generation in the specified world.</returns>
+        public readonly PhysicsHandle AsWorld(PhysicsWorld world) => new(m_Index1, (UInt16)(world.index - 1), m_Generation);
     }
 }

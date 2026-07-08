@@ -28,6 +28,11 @@ namespace Unity.UIToolkit.Editor
         public string name;
 
         /// <summary>
+        /// The variant name when this key represents a configured variant of the type, otherwise null.
+        /// </summary>
+        public string variantName;
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="type">The element type.</param>
@@ -50,11 +55,23 @@ namespace Unity.UIToolkit.Editor
         /// <param name="type">The element type.</param>
         /// <param name="id">The unique identifier of this type.</param>
         /// <param name="name">The name to be displayed of this type.</param>
-        public LibraryTypeKey(Type type, string id, string name)
+        public LibraryTypeKey(Type type, string id, string name) :this(type, id, name, null)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for a configured variant of a type.
+        /// </summary>
+        /// <param name="type">The element type.</param>
+        /// <param name="id">The unique identifier of this variant.</param>
+        /// <param name="name">The name to be displayed for this variant.</param>
+        /// <param name="variantName">The variant name.</param>
+        public LibraryTypeKey(Type type, string id, string name, string variantName)
         {
             this.type = type;
             this.id = id;
             this.name = name;
+            this.variantName = variantName;
         }
 
         public bool Equals(LibraryTypeKey other)
@@ -62,12 +79,13 @@ namespace Unity.UIToolkit.Editor
             return other != null &&
                    type == other.type &&
                    string.Equals(id, other.id, StringComparison.Ordinal) &&
-                   string.Equals(name, other.name, StringComparison.Ordinal);
+                   string.Equals(name, other.name, StringComparison.Ordinal) &&
+                   string.Equals(variantName, other.variantName, StringComparison.Ordinal);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(id);
+            return HashCode.Combine(type, id, name, variantName);
         }
 
         /// <summary>

@@ -506,11 +506,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void Internal_EnterEditModeLifecycleScope()
         {
-            if (Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>())
-                return;
-
-            if (!Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<Unity.Scripting.LifecycleManagement.CodeInitializedScope>())
-                Unity.Scripting.LifecycleManagement.LifecycleController.Instance.EnterScope<Unity.Scripting.LifecycleManagement.CodeInitializedScope>();
+            Debug.Assert(!Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>(), "Tried to enter EditModeScope while already in EditModeScope");
 
             Unity.Scripting.LifecycleManagement.LifecycleController.Instance.EnterScope<UnityEditor.Scripting.LifecycleManagement.EditModeScope>();
         }
@@ -518,6 +514,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void Internal_ExitEditModeLifecycleScope()
         {
+            // This method can be called while not in EditModeScope if we exit the editor while in PlayModeScope
             if (!Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>())
                 return;
 

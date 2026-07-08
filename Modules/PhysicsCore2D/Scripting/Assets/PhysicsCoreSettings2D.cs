@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Serialization;
 
 namespace Unity.U2D.Physics
 {
@@ -26,7 +27,7 @@ namespace Unity.U2D.Physics
     /// </summary>
     [RequiredByNativeCode]
     [Serializable]
-    public sealed class PhysicsCoreSettings2D : ScriptableObject
+    public sealed partial class PhysicsCoreSettings2D : ScriptableObject
     {
         /// <undoc/>
         public PhysicsCoreSettings2D()
@@ -52,7 +53,7 @@ namespace Unity.U2D.Physics
             m_ContactFilterMode = PhysicsShape.ContactFilterMode.Both;
             m_ContactFilterGroupMode = PhysicsShape.ContactFilterGroupMode.Group;
             m_PhysicsLayerNames = PhysicsLayers.LayerNames.DefaultLayerNames;
-            m_MaximumWorlds = 128;
+            m_InitialWorldCapacity = 4;
             m_ConcurrentSimulations = 2;
             m_LengthUnitsPerMeter = 1.0f;
             m_DisableSimulation = false;
@@ -147,15 +148,18 @@ namespace Unity.U2D.Physics
         public PhysicsShape.ContactFilterGroupMode contactFilterGroupMode { get => m_ContactFilterGroupMode; set => m_ContactFilterGroupMode = value; }
 
         /// <summary>
-        /// Get/Set the maximum number of worlds that can be created.
-        /// The larger the number of worlds, the more memory that is initially allocated so care must be taken.
-        /// Setting this value to one will reduce start-up memory usage to a minimum but will not allow any additional worlds to be created.
-        /// The maximum value must be in the range of 1 to 1024.
+        /// Get/Set the number of worlds allocated up-front when the physics system starts.
+        /// Worlds are allocated as a single contiguous block, so a larger capacity uses more memory immediately and care must be taken.
+        /// When all worlds are in use, more are allocated on demand up to the supported maximum, so this is an initial capacity and not a hard limit.
+        /// Growing the array reallocates it, so set this to the number of worlds you expect in order to avoid reallocations during gameplay.
+        /// Setting this value to one reduces start-up memory usage to a minimum while still allowing more worlds to be created later.
+        /// The value must be in the range of 1 to 1024.
         /// Any change will only be handled by Exiting Play mode in the Editor or restarting the player build.
-        /// 
-        /// A single <see cref="PhysicsWorld.defaultWorld"/> is automatically created therefore occupies one of the available worlds.
+        ///
+        /// A single <see cref="PhysicsWorld.defaultWorld"/> is automatically created therefore occupies one of the allocated worlds.
+        /// See <see cref="PhysicsWorld.allocatedWorldCapacity"/> for the number currently allocated, which can grow at runtime.
         /// </summary>
-        public int maximumWorlds { get => m_MaximumWorlds; set => m_MaximumWorlds = Mathf.Clamp(value, 1, 1024); }
+        public int initialWorldCapacity { get => m_InitialWorldCapacity; set => m_InitialWorldCapacity = Mathf.Clamp(value, 1, 1024); }
 
         /// <summary>
         /// Controls how many simulations can be started in parallel.
@@ -230,7 +234,7 @@ namespace Unity.U2D.Physics
         [SerializeField] internal PhysicsWorld.TransformChangeMode m_TransformChangeMode;
         [SerializeField] internal PhysicsShape.ContactFilterMode m_ContactFilterMode;
         [SerializeField] internal PhysicsShape.ContactFilterGroupMode m_ContactFilterGroupMode;
-        [SerializeField][Range(1, 1024)] internal int m_MaximumWorlds;
+        [SerializeField][Range(1, 1024)][FormerlySerializedAs("m_MaximumWorlds")] internal int m_InitialWorldCapacity;
         [SerializeField][Range(1, PhysicsConstants.MaxWorkers)] internal int m_ConcurrentSimulations;
         [SerializeField][Range(0.00001f, 10000.0f)] internal float m_LengthUnitsPerMeter;
         [SerializeField] internal PhysicsWorld.RenderingMode m_RenderingMode;
@@ -299,7 +303,7 @@ namespace Unity.U2D.Physics
         
         /// <undoc/>
         [RequiredByNativeCode]
-        int GetMaximumWorlds() => m_MaximumWorlds;
+        int GetInitialWorldCapacity() => m_InitialWorldCapacity;
         
         /// <undoc/>
         [RequiredByNativeCode]

@@ -34,9 +34,9 @@ namespace Unity.Burst
     /// </summary>
     public sealed partial class BurstCompilerOptions
     {
-        private const string DisableCompilationArg = "--burst-disable-compilation";
+        private const string DisableCompilationArg = "burst-disable-compilation";
 
-        private const string ForceSynchronousCompilationArg = "--burst-force-sync-compilation";
+        private const string ForceSynchronousCompilationArg = "burst-force-sync-compilation";
 
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal const string DefaultLibraryName = "lib_burst_generated";
@@ -730,8 +730,23 @@ namespace Unity.Burst
         {
             foreach (var arg in Environment.GetCommandLineArgs())
             {
-                switch (arg)
+                var option = arg;
+                if (arg.StartsWith("--"))
                 {
+                    option = arg.Substring(2);
+                }
+                else  if (arg.StartsWith("-"))
+                {
+                    option = arg.Substring(1);
+                }
+                else
+                {
+                    continue;
+                }
+
+                switch (option)
+                {
+                    case "readonly":
                     case DisableCompilationArg:
                         _forceDisableBurstCompilation = true;
                         break;

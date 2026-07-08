@@ -66,7 +66,7 @@ namespace Unity.U2D.Physics
 
         [NativeMethod(Name = "PhysicsCore2D::Global_GetObject", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsGlobal_GetObject(EntityId entityId);
         [NativeMethod(Name = "PhysicsCore2D::Global_GetDefaultWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsGlobal_GetDefaultWorld();
-        [NativeMethod(Name = "PhysicsCore2D::Global_GetMaximumWorldsAllocated")] extern internal static int PhysicsGlobal_GetMaximumWorldsAllocated();       
+        [NativeMethod(Name = "PhysicsCore2D::Global_GetAllocatedWorldCapacity")] extern internal static int PhysicsGlobal_GetAllocatedWorldCapacity();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetSafetyLocksEnabled")] extern internal static bool PhysicsGlobal_GetSafetyLocksEnabled();
         [NativeMethod(Name = "PhysicsCore2D::Global_SetSafetyLocksEnabled")] extern internal static void PhysicsGlobal_SetSafetyLocksEnabled(bool flag);
         [NativeMethod(Name = "PhysicsCore2D::Global_GetDisableSimulation")]extern internal static bool PhysicsGlobal_GetDisableSimulation();

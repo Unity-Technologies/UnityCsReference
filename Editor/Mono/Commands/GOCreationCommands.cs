@@ -178,103 +178,108 @@ namespace UnityEditor
             GameObject defaultParentObject = SceneView.GetDefaultParentObjectIfSet()?.gameObject;
             var defaultParentObjectScene = defaultParentObject != null ? defaultParentObject.scene : default;
 
-            // Clear default parent object so we could always reparent and move the new parent to the scene we need
+            // Clear default parent object so the ObjectFactory does not attach the new parent to it.
             if (defaultParentObject != null)
             {
-                SceneHierarchy.ClearDefaultParentObject(defaultParentObjectScene);
+                defaultParentObjectScene.defaultParent = EntityId.None;
             }
 
-            // If selected object is a prefab, get the its root object
-            if (selected.Length > 0)
+            try
             {
-                for (int i = 0; i < selected.Length; i++)
+                // If selected object is a prefab, get the its root object
+                if (selected.Length > 0)
                 {
-                    if (PrefabUtility.GetPrefabAssetType(selected[i].gameObject) != PrefabAssetType.NotAPrefab)
+                    for (int i = 0; i < selected.Length; i++)
                     {
-                        selected[i] = PrefabUtility.GetOutermostPrefabInstanceRoot(selected[i].gameObject).transform;
-                    }
-                }
-            }
-
-            // Selection.transform does not provide correct list order, so we have to do it manually
-            Array.Sort(selected, (a, b) => { return a.GetSiblingIndex().CompareTo(b.GetSiblingIndex()); });
-
-            GameObject go = ObjectFactory.CreateGameObject("GameObject");
-
-            if (Selection.activeGameObject == null && Selection.gameObjects != null)
-            {
-                Selection.activeGameObject = Selection.gameObjects[0];
-            }
-
-            if (Selection.activeGameObject != null)
-                go.transform.position = Selection.activeGameObject.transform.position;
-
-            GameObject parent = Selection.activeTransform != null ? Selection.activeTransform.gameObject : null;
-            Transform sibling = null;
-
-            if (parent != null)
-            {
-                sibling = parent.transform;
-                parent = parent.transform.parent != null ? parent.transform.parent.gameObject : null;
-            }
-
-            Place(go, parent, false);
-            var rectTransform = go.GetComponent<RectTransform>();
-
-            // If new parent is RectTransform, make sure its position and size matches child rect transforms
-            if (rectTransform != null && selected != null && selected.Length > 0)
-            {
-                CenterRectTransform(selected, rectTransform);
-            }
-
-            if (parent == null && sibling != null)
-            {
-                Undo.MoveGameObjectToScene(go,  sibling.gameObject.scene, "Move To Scene");
-            }
-
-            if (parent == null && sibling == null)
-            {
-                go.transform.SetAsLastSibling();
-            }
-            else
-            {
-                go.transform.MoveAfterSibling(sibling, true);
-            }
-
-            // At this point, RecordStructureChange is already ongoing (from the CreateGameObject call).
-            // We need to flush the stack to finalise the RecordStructureChange before any of following SetTransformParent calls takes place.
-            Undo.FlushTrackedObjects();
-
-            // Put gameObjects under a created parent
-            if (selected.Length > 0)
-            {
-                foreach (var gameObject in selected)
-                {
-                    if (gameObject != null)
-                    {
-                        Undo.SetTransformParent(gameObject.transform, go.transform, "Reparenting");
-                        gameObject.transform.SetAsLastSibling();
+                        if (PrefabUtility.GetPrefabAssetType(selected[i].gameObject) != PrefabAssetType.NotAPrefab)
+                        {
+                            selected[i] = PrefabUtility.GetOutermostPrefabInstanceRoot(selected[i].gameObject).transform;
+                        }
                     }
                 }
 
-                using var _ = ListPool<IHierarchyWindow>.Get(out var windows);
-                IHierarchyWindow.GetAllHierarchyWindows(windows);
-                foreach (var window in windows)
+                // Selection.transform does not provide correct list order, so we have to do it manually
+                Array.Sort(selected, (a, b) => { return a.GetSiblingIndex().CompareTo(b.GetSiblingIndex()); });
+
+                GameObject go = ObjectFactory.CreateGameObject("GameObject");
+
+                if (Selection.activeGameObject == null && Selection.gameObjects != null)
                 {
-                    window.SetExpanded(go.GetEntityId(), true);
+                    Selection.activeGameObject = Selection.gameObjects[0];
                 }
 
-                // Ensure empty parent after reparenting jumps into rename mode if needed UUM-15042
-                if (HierarchyPreferences.RenameNewObjects)
+                if (Selection.activeGameObject != null)
+                    go.transform.position = Selection.activeGameObject.transform.position;
+
+                GameObject parent = Selection.activeTransform != null ? Selection.activeTransform.gameObject : null;
+                Transform sibling = null;
+
+                if (parent != null)
                 {
-                    SceneHierarchyWindow.FrameAndRenameNewGameObject();
+                    sibling = parent.transform;
+                    parent = parent.transform.parent != null ? parent.transform.parent.gameObject : null;
+                }
+
+                Place(go, parent, false);
+                var rectTransform = go.GetComponent<RectTransform>();
+
+                // If new parent is RectTransform, make sure its position and size matches child rect transforms
+                if (rectTransform != null && selected != null && selected.Length > 0)
+                {
+                    CenterRectTransform(selected, rectTransform);
+                }
+
+                if (parent == null && sibling != null)
+                {
+                    Undo.MoveGameObjectToScene(go,  sibling.gameObject.scene, "Move To Scene");
+                }
+
+                if (parent == null && sibling == null)
+                {
+                    go.transform.SetAsLastSibling();
+                }
+                else
+                {
+                    go.transform.MoveAfterSibling(sibling, true);
+                }
+
+                // At this point, RecordStructureChange is already ongoing (from the CreateGameObject call).
+                // We need to flush the stack to finalise the RecordStructureChange before any of following SetTransformParent calls takes place.
+                Undo.FlushTrackedObjects();
+
+                // Put gameObjects under a created parent
+                if (selected.Length > 0)
+                {
+                    foreach (var gameObject in selected)
+                    {
+                        if (gameObject != null)
+                        {
+                            Undo.SetTransformParent(gameObject.transform, go.transform, "Reparenting");
+                            gameObject.transform.SetAsLastSibling();
+                        }
+                    }
+
+                    using var _ = ListPool<IHierarchyWindow>.Get(out var windows);
+                    IHierarchyWindow.GetAllHierarchyWindows(windows);
+                    foreach (var window in windows)
+                    {
+                        window.SetExpanded(go.GetEntityId(), true);
+                    }
+
+                    // Ensure empty parent after reparenting jumps into rename mode if needed UUM-15042
+                    if (HierarchyPreferences.RenameNewObjects)
+                    {
+                        SceneHierarchyWindow.FrameAndRenameNewGameObject();
+                    }
                 }
             }
-
-            // Set back default parent object if we have one
-            if (defaultParentObject != null)
+            finally
             {
-                defaultParentObjectScene.defaultParent = defaultParentObject.GetEntityId();
+                // Set back default parent object if we have one, even if creation failed above.
+                if (defaultParentObject != null)
+                {
+                    defaultParentObjectScene.defaultParent = defaultParentObject.GetEntityId();
+                }
             }
         }
 

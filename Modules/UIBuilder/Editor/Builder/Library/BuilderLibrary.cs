@@ -181,11 +181,11 @@ namespace Unity.UI.Builder
                     : DropdownMenuAction.Status.Normal);
         }
 
-        void ToggleEditorExtensionsAuthoring()
+        internal void ToggleEditorExtensionsAuthoring()
         {
             var newValue = !m_PaneWindow.document.fileSettings.editorExtensionMode;
             m_PaneWindow.document.fileSettings.editorExtensionMode = newValue;
-            m_Selection.NotifyOfHierarchyChange(m_PaneWindow.document);
+            m_Selection.NotifyOfHierarchyChange(null);
             SwitchLibraryTab(BuilderLibraryTab.Standard);
 
             if (newValue)

@@ -49,7 +49,7 @@ class MainEditorController : EditorController<MainEditorController.InstanceSetti
             graphBuilder.ConnectConstant(restoreSceneNode.ScenesSetup, EditorSceneManager.GetSceneManagerSetup());
         }
 
-        var player = MultiplayerPlaymode.Players[0];
+        var player = MultiplayerPlaymode.Players?[0];
         if (player != null)
         {
             var tagsNode = graphBuilder.AddNode<SetupEditorTagsNode>(ExecutionStage.Deploy);

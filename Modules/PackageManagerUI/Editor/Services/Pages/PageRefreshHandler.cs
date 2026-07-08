@@ -16,7 +16,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void Refresh(IPage page);
         void Refresh(RefreshOptions options);
-        void CancelRefresh(RefreshOptions options);
         bool IsRefreshInProgress(RefreshOptions options);
         void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp);
         long GetRefreshTimestamp(RefreshOptions options);
@@ -103,9 +102,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnActivePageChanged(IPage page)
         {
-            if (m_PageManager.lastActivePage != null)
-                CancelRefresh(m_PageManager.lastActivePage.refreshOptions);
-
             if (!IsInitialFetchingDone(page))
                 Refresh(page);
         }
@@ -210,12 +206,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_AssetStoreClient.FullScanLocalInfos();
         }
 
-        public void CancelRefresh(RefreshOptions options)
-        {
-            if (options.Contains(RefreshOptions.Purchased))
-                m_AssetStoreClient.CancelListPurchases();
-        }
-
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
             if (!loggedIn)
@@ -242,6 +232,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+            m_UnityConnect.onOrganizationsChange += OnOrganizationsChange;
             m_PageManager.onActivePageChanged += OnActivePageChanged;
         }
 
@@ -255,12 +246,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified -= OnRegistriesModified;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+            m_UnityConnect.onOrganizationsChange -= OnOrganizationsChange;
             m_PageManager.onActivePageChanged -= OnActivePageChanged;
         }
 
         private void OnRegistriesModified()
         {
             Refresh(RefreshOptions.UpmSearch);
+        }
+
+        private void OnOrganizationsChange()
+        {
+            // We need to refresh to update UI here because the trust infos in PackageInfo would change when organization info changes
+            Refresh(RefreshOptions.UpmList);
         }
 
         private void OnRefreshOperation(IOperation operation)

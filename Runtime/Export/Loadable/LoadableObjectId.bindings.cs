@@ -13,7 +13,7 @@ namespace Unity.Loading
 {
 
     /// <summary>
-    /// A low-level reference to an object within an asset, used to pull assets into a ContentDirectory build, and for on-demand
+    /// A low-level reference to an object within an asset, used to pull assets into a content directory build, and for on-demand
     /// loading.
     /// </summary>
     /// <remarks>
@@ -21,13 +21,18 @@ namespace Unity.Loading
     /// to identify and load a specific object from built content.
     ///
     /// In the Editor, use <see cref="UnityEditor.LoadableObjectIdEditorUtility"/> to create LoadableObjectIds. Typically these
-    /// will be serialized as part of `Loadable{T}` fields on ScriptableObject-derived classes. When those ScriptableObjects are
-    /// built as part of a Content Directory, the assets referenced by the LoadableObjectId are recursively pulled into
-    /// the build output. At runtime, the <see cref="ContentLoadManager"/> resolves LoadableObjectIds to the
-    /// correct built content as long as it is part of the currently registered content directories.
+    /// are serialized as part of <see cref="Loadable{T}"/> fields on classes derived from <see cref="ScriptableObject"/> or
+    /// <see cref="MonoBehaviour"/>. You can also use LoadableObjectId directly as a field type in a ScriptableObject or MonoBehaviour,
+    /// and then create <see cref="Loadable{T}"/> objects on the fly as needed.
     ///
-    /// Player and AssetBundle builds do not pull assets referenced by LoadableObjectId into the build, this is only supported
-    /// by <see cref="BuildPipeline.BuildContentDirectory"/>.
+    /// When those objects are built as part of a content directory, the assets referenced by the
+    /// LoadableObjectId are recursively pulled into the build output. At runtime, the <see cref="ContentLoadManager"/> resolves
+    /// LoadableObjectIds to the correct built content as long as it is part of the currently registered content directories.
+    ///
+    /// A LoadableObjectId is only supported in content built with <see cref="BuildPipeline.BuildContentDirectory"/>. If a
+    /// LoadableObjectId is found in serialized data during a Player or AssetBundle build, the reference is set to null in the
+    /// build output and an error is logged. Suppress this error with <see cref="BuildOptions.SuppressLoadableErrors"/> for Player
+    /// builds or <see cref="BuildAssetBundleOptions.SuppressLoadableErrors"/> for AssetBundle builds.
     /// </remarks>
     /// <example>
     /// <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/LoadableObjectId_Example.cs"/>

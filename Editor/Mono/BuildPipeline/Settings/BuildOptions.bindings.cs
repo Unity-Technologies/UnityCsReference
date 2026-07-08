@@ -220,7 +220,15 @@ namespace UnityEditor
 
         // Force the build to fail when any errors are encountered
         ///<summary>Prevent the build from succeeding if any errors are reported during the build process.</summary>
-        ///<remarks>Without this flag, non-fatal errors, such as shader compilation issues on a particular platform, won't cause the build to fail, but might lead to incorrect behavior at runtime.</remarks>
+        ///<remarks>Without this flag, non-fatal errors, such as shader compilation issues on a particular platform, won't cause the build to fail, but might lead to incorrect behavior at runtime.
+        /// When this flag is set, errors logged from build callbacks also
+        /// fail the build, including these build callbacks:
+        /// <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild"/>,
+        /// <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild"/>,
+        /// <see cref="Build.IProcessSceneWithReport.OnProcessScene"/>,
+        /// <see cref="Build.IPreprocessShaders.OnProcessShader"/>, and
+        /// <see cref="Build.IPreprocessComputeShaders.OnProcessComputeShader"/>.
+        /// </remarks>
         StrictMode = 1 << 21,
 
         ///<summary>Build will include Assemblies for testing.</summary>

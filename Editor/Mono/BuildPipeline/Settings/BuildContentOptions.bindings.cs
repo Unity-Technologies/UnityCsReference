@@ -27,7 +27,7 @@ namespace UnityEditor
         /// <remarks>
         /// When this flag is set, the build system will package content into archive files with the ".archive" extension,
         /// which can improve loading performance and reduce file system overhead.
-        /// 
+        ///
         /// This flag is unnecessary if compression is enabled using the <see cref="BuildContentDirectoryParameters.compression"/> field.
         /// </remarks>
         UseArchive = 1 << 0,
@@ -45,17 +45,25 @@ namespace UnityEditor
 
         /// <summary>
         /// Clear all cached build results, resulting in a full rebuild of content.
-        /// </summary>        
+        /// </summary>
+        /// <seealso cref="BuildPipeline.CleanBuildCache"/>
         /// <seealso cref="BuildOptions.CleanBuildCache"/>
         /// <seealso cref="BuildAssetBundleOptions.ForceRebuildAssetBundle"/>
         CleanBuildCache = 1 << 5,
 
         /// <summary>
-        /// Do not allow the build to succeed if any errors are reported during it.
+        /// Fail the build if any errors are logged while it runs.
         /// </summary>
         /// <remarks>
-        /// Without this flag, non-fatal errors - such as a failure to compile a shader for a particular platform - will not
+        /// Without this flag, non-fatal errors - such as a failure to compile a shader for a particular platform - do not
         /// cause the build to fail, but may result in incorrect behaviour at runtime.
+        /// When this flag is set, errors logged from build callbacks also
+        /// fail the build, including these build callbacks:
+        /// <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild"/>,
+        /// <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild"/>,
+        /// <see cref="Build.IProcessSceneWithReport.OnProcessScene"/>,
+        /// <see cref="Build.IPreprocessShaders.OnProcessShader"/>, and
+        /// <see cref="Build.IPreprocessComputeShaders.OnProcessComputeShader"/>.
         ///
         /// This flag is equivalent to <see cref="BuildOptions.StrictMode"/>.
         /// </remarks>

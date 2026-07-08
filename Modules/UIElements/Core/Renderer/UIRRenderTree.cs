@@ -231,13 +231,6 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void OnRenderDataOpacityIdChanged(RenderData renderData)
-        {
-            Debug.Assert((m_AllowedDirtyClasses & AllowedClasses.Visuals) != 0);
-            m_DirtyTracker.RegisterDirty(renderData, RenderDataDirtyTypes.VisualsOpacityId, RenderDataDirtyTypeClasses.Visuals);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void OnRenderDataVisualsChanged(RenderData renderData, bool hierarchical)
         {
             Debug.Assert((m_AllowedDirtyClasses & AllowedClasses.Visuals) != 0);
@@ -351,8 +344,6 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            m_RenderTreeManager.jobManager.CompleteNudgeJobs();
-
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
             dirtyFlags = RenderDataDirtyTypes.AllVisuals;
@@ -394,8 +385,9 @@ namespace UnityEngine.UIElements.UIR
 
                 m_RenderTreeManager.jobManager.CompleteConvertMeshJobs();
                 m_RenderTreeManager.jobManager.CompleteCopyMeshJobs();
-                m_RenderTreeManager.opacityIdAccelerator.CompleteJobs();
             }
+
+            m_RenderTreeManager.UpdateElementInfoRecords();
 
             // Done with all dirtied elements
             m_DirtyTracker.Reset();

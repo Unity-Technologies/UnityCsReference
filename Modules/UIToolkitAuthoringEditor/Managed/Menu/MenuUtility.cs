@@ -32,22 +32,22 @@ static class MenuUtility
     /// When adding from a top menu, we will prioritize to find an existing <see cref="IPanelComponent"/> component in the
     /// scene or create a new one a the last root sibling and add the element to its targeted <see cref="VisualTreeAsset"/>.
     /// </summary>
-    public static void AddElementAsSibling(Type elementType)
-        => AddElement(elementType, addAsSibling: true, parentNewGameObjectUnderSelection: false);
+    public static void AddElementAsSibling(Type elementType, string variantName = null)
+        => AddElement(elementType, addAsSibling: true, parentNewGameObjectUnderSelection: false, variantName);
 
     /// <summary>
     /// While adding from a context menu, we will prioritize trying to find (and possible add) a <see cref="IPanelComponent"/>
     /// component on the selected game object and add the element to its targeted <see cref="VisualTreeAsset"/>.
     /// </summary>
-    public static void AddElementAsLastChild(Type elementType)
-        => AddElement(elementType, addAsSibling: false, parentNewGameObjectUnderSelection: true);
+    public static void AddElementAsLastChild(Type elementType, string variantName = null)
+        => AddElement(elementType, addAsSibling: false, parentNewGameObjectUnderSelection: true, variantName);
 
-    static void AddElement(Type elementType, bool addAsSibling, bool parentNewGameObjectUnderSelection)
+    static void AddElement(Type elementType, bool addAsSibling, bool parentNewGameObjectUnderSelection, string variantName = null)
     {
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
         {
             var parentVea = ResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling);
-            ExecuteAdd(activeStage, elementType, parentVea);
+            ExecuteAdd(activeStage, elementType, parentVea, variantName);
             return;
         }
 
@@ -62,7 +62,7 @@ static class MenuUtility
                 when vtaSelection.panelComponent.visualTreeAsset:
             {
                 var sceneContext = new VisualTreeAssetEditingContext(vtaSelection.panelComponent.visualTreeAsset, vtaSelection.panelComponent.panelSettings);
-                EnterStageAndAdd(sceneContext, elementType, parentVea: null);
+                EnterStageAndAdd(sceneContext, elementType, parentVea: null, variantName);
                 return;
             }
             case VisualElementSelection { Element: not null } ves
@@ -71,12 +71,12 @@ static class MenuUtility
                 var vea = GetFirstSuitableVisualElementAsset(ves.Element, elementContext.EditedVisualTreeAsset);
                 if (addAsSibling)
                     vea = (VisualElementAsset)vea?.parentAsset;
-                EnterStageAndAdd(elementContext, elementType, vea);
+                EnterStageAndAdd(elementContext, elementType, vea, variantName);
                 return;
             }
         }
 
-        AddInAppropriatePanelRendererComponent(Selection.activeGameObject, elementType, parentNewGameObjectUnderSelection);
+        AddInAppropriatePanelRendererComponent(Selection.activeGameObject, elementType, parentNewGameObjectUnderSelection, variantName);
     }
 
     static bool TryResolveNewVisualTreeAssetPath(out string assetPath)
@@ -111,7 +111,7 @@ static class MenuUtility
             DialogIconType.Info);
     }
 
-    static void AddInAppropriatePanelRendererComponent(GameObject selectedGo, Type elementType, bool parentNewGameObjectUnderSelection)
+    static void AddInAppropriatePanelRendererComponent(GameObject selectedGo, Type elementType, bool parentNewGameObjectUnderSelection, string variantName = null)
     {
         var existingPanel = (IPanelComponent)selectedGo?.GetComponent<PanelRenderer>()
                             ?? selectedGo?.GetComponent<UIDocument>();
@@ -122,7 +122,7 @@ static class MenuUtility
             if (existingPanel?.visualTreeAsset != null)
             {
                 var ctx = new VisualTreeAssetEditingContext(existingPanel.visualTreeAsset, existingPanel.panelSettings);
-                EnterStageAndAdd(ctx, elementType, parentVea: null);
+                EnterStageAndAdd(ctx, elementType, parentVea: null, variantName);
                 return;
             }
 
@@ -130,12 +130,12 @@ static class MenuUtility
             // don't leave an empty Panel sitting next to the new one); otherwise create a new
             // GameObject - parented under the selection only when explicitly requested.
             if (TryCreatePanelRendererAndAsset(null, existingPanel, out var newContext))
-                EnterStageAndAdd(newContext, elementType, parentVea: null);
+                EnterStageAndAdd(newContext, elementType, parentVea: null, variantName);
         }
         else if (parentNewGameObjectUnderSelection)
         {
             if (TryCreatePanelRendererAndAsset(selectedGo, null, out var newContext))
-                EnterStageAndAdd(newContext, elementType, parentVea: null);
+                EnterStageAndAdd(newContext, elementType, parentVea: null, variantName);
         }
         else
         {
@@ -143,12 +143,12 @@ static class MenuUtility
             if (panelComponent != null)
             {
                 var sceneContext = new VisualTreeAssetEditingContext(panelComponent.visualTreeAsset, panelComponent.panelSettings);
-                EnterStageAndAdd(sceneContext, elementType, parentVea: null);
+                EnterStageAndAdd(sceneContext, elementType, parentVea: null, variantName);
                 return;
             }
 
             if (TryCreatePanelRendererAndAsset(null, reusableComponent: null, out var newContext))
-                EnterStageAndAdd(newContext, elementType, parentVea: null);
+                EnterStageAndAdd(newContext, elementType, parentVea: null, variantName);
         }
     }
 
@@ -316,15 +316,15 @@ static class MenuUtility
         return true;
     }
 
-    static void EnterStageAndAdd(VisualTreeAssetEditingContext context, Type elementType, VisualElementAsset parentVea)
+    static void EnterStageAndAdd(VisualTreeAssetEditingContext context, Type elementType, VisualElementAsset parentVea, string variantName = null)
     {
         var stage = VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Arrow);
-        ExecuteAdd(stage, elementType, parentVea);
+        ExecuteAdd(stage, elementType, parentVea, variantName);
     }
 
-    static void ExecuteAdd(VisualElementEditingStage stage, Type elementType, VisualElementAsset parentVea)
+    static void ExecuteAdd(VisualElementEditingStage stage, Type elementType, VisualElementAsset parentVea, string variantName = null)
     {
-        AddElementCommand.Execute(CommandSources.Menus, elementType, stage.EditedVisualTreeAsset, parentVea);
+        AddElementCommand.Execute(CommandSources.Menus, elementType, stage.EditedVisualTreeAsset, parentVea, -1, variantName);
         stage.RequestRefresh();
     }
 }

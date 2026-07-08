@@ -19,6 +19,12 @@ namespace Unity.U2D.Physics
         public const int MaxWorkers = 64;
 
         /// <summary>
+        /// The maximum number of <see cref="PhysicsWorld"/> that can exist at one time.
+        /// The world array grows on demand up to this ceiling, which is the limit of the 16-bit world index carried in physics handles.
+        /// </summary>
+        public const int MaxWorldCapacity = ushort.MaxValue;
+
+        /// <summary>
         /// The maximum number of supported vertices in <see cref="PolygonGeometry"/>.
         /// </summary>
         public const int MaxPolygonVertices = 8;

@@ -35,6 +35,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
     enum PrecompiledAssemblyProperty
     {
         RoslynAnalyzer = 0,
+        TargetFramework,
         Num
     }
 
@@ -65,7 +66,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         Num
     };
 
-    class CodeModule : ModuleWithAnalyzers<CodeModuleInstructionAnalyzer>
+    class CodeModule : ModuleWithAnalyzers<CodeModuleAnalyzer>
     {
         static readonly IssueLayout k_AssemblyLayout = new IssueLayout
         {
@@ -89,6 +90,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 new PropertyDefinition { Type = PropertyType.Description, Name = "Name"},
                 new PropertyDefinition { Type = PropertyType.Directory, Name = "Path", IsDefaultGroup = true},
                 new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PrecompiledAssemblyProperty.RoslynAnalyzer), Format = PropertyFormat.Bool, Name = "Roslyn Analyzer"},
+                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(PrecompiledAssemblyProperty.TargetFramework), Format = PropertyFormat.String, Name = "Target Framework"},
             }
         };
 
@@ -152,7 +154,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         List<OpCode> m_OpCodes;
         List<int>[] m_OpCodeAnalyzers = new List<int>[ushort.MaxValue];
-        CodeModuleInstructionAnalyzer[] m_CompatibleAnalyzers;
+        List<CodeModuleInstructionAnalyzer> m_CodeAnalyzers;
+        List<CodeModulePrecompiledAssemblyAnalyzer> m_PrecompiledAssemblyAnalyzers;
 
         Thread m_AssemblyAnalysisThread;
 
@@ -177,7 +180,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             base.Initialize();
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            m_OpCodes = new List<OpCode>(GetAnalyzers().Select(a => a.opCodes).SelectMany(c => c).Distinct());
+            m_OpCodes = new List<OpCode>(GetAnalyzers().OfType<CodeModuleInstructionAnalyzer>().Select(a => a.opCodes).SelectMany(c => c).Distinct());
 #pragma warning restore UA2001
 
             ProjectIssueExtensions.AddCustomComparer(IssueCategory.Assembly, PropertyTypeUtil.FromCustom(AssemblyProperty.CompileTime),
@@ -207,31 +210,57 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 Params = analysisParams
             };
 
-            m_CompatibleAnalyzers = GetCompatibleAnalyzers(analysisParams);
-            for (var i = 0; i < m_OpCodeAnalyzers.Length; i++)
+            var compatibleAnalyzers = GetCompatibleAnalyzers(analysisParams);
+            m_CodeAnalyzers = new List<CodeModuleInstructionAnalyzer>();
+            m_PrecompiledAssemblyAnalyzers = new List<CodeModulePrecompiledAssemblyAnalyzer>();
+            foreach (var analyzer in compatibleAnalyzers)
             {
-                m_OpCodeAnalyzers[i] = null;
+                if (analyzer is CodeModuleInstructionAnalyzer codeAnalyzer)
+                    m_CodeAnalyzers.Add(codeAnalyzer);
+                else if (analyzer is CodeModulePrecompiledAssemblyAnalyzer precompiledAssemblyAnalyzer)
+                    m_PrecompiledAssemblyAnalyzers.Add(precompiledAssemblyAnalyzer);
             }
+
+            for (var i = 0; i < m_OpCodeAnalyzers.Length; i++)
+                m_OpCodeAnalyzers[i] = null;
             foreach (var opCode in m_OpCodes)
             {
                 var opCodeAnalyzers = new List<int>();
-                for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
+                for (int analyzerIndex = 0; analyzerIndex < m_CodeAnalyzers.Count; analyzerIndex++)
                 {
-                    if (m_CompatibleAnalyzers[analyzerIndex].opCodes.Contains(opCode))
+                    if (m_CodeAnalyzers[analyzerIndex].opCodes.Contains(opCode))
                         opCodeAnalyzers.Add(analyzerIndex);
                 }
                 m_OpCodeAnalyzers[(ushort)opCode.Value] = opCodeAnalyzers;
             }
 
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var precompiledAssemblies = AssemblyInfoProvider.GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.All)
-                .Select(assemblyPath => (ReportItem)context.CreateInsight(IssueCategory.PrecompiledAssembly, Path.GetFileNameWithoutExtension(assemblyPath))
-                    .WithCustomProperties([false])
-                    .WithLocation(assemblyPath))
-                .ToArray();
-#pragma warning restore UA2001
-            if (precompiledAssemblies.Length > 0)
-                analysisParams.OnIncomingIssues(precompiledAssemblies);
+            var precompiledAssemblyPaths = AssemblyInfoProvider.GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.All);
+            var precompiledAssemblyIssues = new List<ReportItem>(precompiledAssemblyPaths.Count);
+            var onPrecompiledAssemblyIssueFoundInternal = new Action<ReportItem>(precompiledAssemblyIssues.Add);
+
+            AsyncProgressState progressState = progress?.Start("Analyzing Precompiled Assemblies", precompiledAssemblyPaths.Count);
+
+            long threadExecutionTimeMs = 0;
+
+            // Analyze precompiled assemblies
+            m_AssemblyAnalysisThread = new Thread(() =>
+            {
+                var startTime = DateTime.UtcNow;
+                AnalyzePrecompiledAssemblies(analysisParams, precompiledAssemblyPaths, onPrecompiledAssemblyIssueFoundInternal, progress, progressState);
+                threadExecutionTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+            });
+            m_AssemblyAnalysisThread.Name = "Precompiled Assembly Analysis";
+            m_AssemblyAnalysisThread.Priority = ThreadPriority.BelowNormal;
+            m_AssemblyAnalysisThread.Start();
+
+            // wait for thread
+            while (m_AssemblyAnalysisThread.IsAlive)
+                yield return new WaitForEndOfFrame();
+
+            progress?.Clear(progressState);
+
+            if (precompiledAssemblyIssues.Count > 0)
+                analysisParams.OnIncomingIssues(precompiledAssemblyIssues);
 
             yield return null;
 
@@ -248,7 +277,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 .Select(roslynAnalyzerDllPath => (ReportItem)context.CreateInsight(
                 IssueCategory.PrecompiledAssembly,
                 Path.GetFileNameWithoutExtension(roslynAnalyzerDllPath))
-                .WithCustomProperties([true])
+                .WithCustomProperties([true, string.Empty])
                 .WithLocation(roslynAnalyzerDllPath));
 
             analysisParams.OnIncomingIssues(roslynAnalyzerIssues);
@@ -339,7 +368,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 yield break;
             }
             
-            AsyncProgressState progressState = progress?.Start("Analyzing Assemblies", assemblyInfos.Length);
+            AsyncProgressState assemblyProgressState = progress?.Start("Analyzing Assemblies", assemblyInfos.Length);
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             // Process successfully compiled assemblies
             var localAssemblyInfos = assemblyInfos.Where(info => !info.IsReadOnly).ToArray();
@@ -355,8 +384,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             yield return null;
 
-            long executionTimeMs = 0;
-
             // first phase: analyze assemblies generated from editable scripts
             // second phase: analyze all remaining assemblies
             m_AssemblyAnalysisThread = new Thread(() =>
@@ -364,10 +391,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 // Run analysis on the background thread
                 var startTime = DateTime.UtcNow;
 
-                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, progressState);
-                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, progressState);
+                AnalyzeAssemblies(localAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
+                AnalyzeAssemblies(readOnlyAssemblyInfos, analysisParams, assemblyDirectories, onIssueFoundInternal, progress, assemblyProgressState);
 
-                executionTimeMs = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+                threadExecutionTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
             });
             m_AssemblyAnalysisThread.Name = "Assembly Analysis";
             m_AssemblyAnalysisThread.Priority = ThreadPriority.BelowNormal;
@@ -387,8 +414,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (foundIssues.Count > 0)
                 analysisParams.OnIncomingIssues(foundIssues);
 
-            progress?.Clear(progressState);
-            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, executionTimeMs);
+            progress?.Clear(assemblyProgressState);
+            analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, threadExecutionTimeMs);
         }
 
         bool AssemblyPackageFilter(AssemblyInfo assemblyInfo, AnalysisParams analysisParams)
@@ -446,6 +473,35 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return true;
         }
 
+        void AnalyzePrecompiledAssemblies(AnalysisParams analysisParams, List<string> precompiledAssemblyPaths, Action<ReportItem> onIssueFound, IProgress progress, AsyncProgressState progressState)
+        {
+            foreach (var assemblyPath in precompiledAssemblyPaths)
+            {
+                var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
+                if (AdvanceAsyncProgress(progress, progressState, assemblyName) == false)
+                    break;
+
+                var targetFramework = ReadTargetFramework(assemblyPath);
+
+                var context = new PrecompiledAssemblyAnalysisContext
+                {
+                    AssemblyPath = assemblyPath,
+                    TargetFramework = targetFramework,
+                    Params = analysisParams
+                };
+
+                onIssueFound.Invoke((ReportItem)context.CreateInsight(IssueCategory.PrecompiledAssembly, Path.GetFileNameWithoutExtension(assemblyPath))
+                    .WithCustomProperties([false, targetFramework])
+                    .WithLocation(assemblyPath));
+
+                foreach (var analyzer in m_PrecompiledAssemblyAnalyzers)
+                {
+                    foreach (var issue in analyzer.Analyze(context))
+                        onIssueFound.Invoke(issue.WithLocation(assemblyPath));
+                }
+            }
+        }
+
         void AnalyzeAssemblies(IReadOnlyCollection<AssemblyInfo> assemblyInfos, AnalysisParams analysisParams, IReadOnlyCollection<string> assemblyDirectories, Action<ReportItem> onIssueFound, IProgress progress, AsyncProgressState progressState)
         {
             using (var assemblyResolver = new DefaultAssemblyResolver())
@@ -483,9 +539,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 using (var assembly = AssemblyDefinition.ReadAssembly(assemblyInfo.Path,
                     new ReaderParameters { ReadSymbols = true, AssemblyResolver = assemblyResolver, MetadataResolver = new MetadataResolverWithCache(assemblyResolver) }))
                 {
-                    object[] assemblyUserData = new object[m_CompatibleAnalyzers.Length];
-                    for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
-                        assemblyUserData[analyzerIndex] = m_CompatibleAnalyzers[analyzerIndex].OnAnalyzeAssembly();
+                    object[] assemblyUserData = new object[m_CodeAnalyzers.Count];
+                    for (int analyzerIndex = 0; analyzerIndex < m_CodeAnalyzers.Count; analyzerIndex++)
+                        assemblyUserData[analyzerIndex] = m_CodeAnalyzers[analyzerIndex].OnAnalyzeAssembly();
 
                     bool isDefaultAssembly = (assemblyInfo.Name == AssemblyInfo.DefaultAssemblyName || assemblyInfo.Name == AssemblyInfo.DefaultEditorAssemblyName);
 
@@ -540,7 +596,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             var sequencePoints = caller.DebugInformation.SequencePoints;
 
-            for (int analyzerIndex = 0; analyzerIndex < m_CompatibleAnalyzers.Length; analyzerIndex++)
+            for (int analyzerIndex = 0; analyzerIndex < m_CodeAnalyzers.Count; analyzerIndex++)
             {
                 var methodContext = new MethodAnalysisContext
                 {
@@ -548,7 +604,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     AssemblyUserData = assemblyUserData[analyzerIndex]
                 };
 
-                var reportItemBuilder = m_CompatibleAnalyzers[analyzerIndex].OnAnalyzeMethodBody(methodContext);
+                var reportItemBuilder = m_CodeAnalyzers[analyzerIndex].OnAnalyzeMethodBody(methodContext);
                 if (reportItemBuilder != null)
                 {
                     var s = sequencePoints[0];
@@ -628,7 +684,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 foreach (var analyzer in analyzers)
                 {
                     context.AssemblyUserData = assemblyUserData[analyzer];
-                    foreach (var reportItemBuilder in m_CompatibleAnalyzers[analyzer].Analyze(context))
+                    foreach (var reportItemBuilder in m_CodeAnalyzers[analyzer].Analyze(context))
                     {
                         onIssueFound(reportItemBuilder
                             .WithDependencies(callerNode)
@@ -762,6 +818,33 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     .WithLocation(relativePath, message.Line)
                     .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type));
             }
+        }
+
+        // Reads the assembly-level TargetFrameworkAttribute (for example ".NETStandard,Version=v2.1") from a
+        // precompiled managed assembly. Returns an empty string when the attribute is absent or the file
+        // cannot be read as a managed assembly.
+        static string ReadTargetFramework(string assemblyPath)
+        {
+            try
+            {
+                using (var assembly = AssemblyDefinition.ReadAssembly(assemblyPath))
+                {
+                    foreach (var attribute in assembly.CustomAttributes)
+                    {
+                        if (attribute.AttributeType.FullName == "System.Runtime.Versioning.TargetFrameworkAttribute"
+                            && attribute.ConstructorArguments.Count > 0)
+                        {
+                            return attribute.ConstructorArguments[0].Value as string ?? string.Empty;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Unreadable or non-managed assembly — treat the target framework as unknown.
+            }
+
+            return string.Empty;
         }
 
         static LogLevel CompilerMessageTypeToLogLevel(CompilerMessageType compilerMessageType)

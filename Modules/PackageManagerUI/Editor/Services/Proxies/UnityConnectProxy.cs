@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IUnityConnectProxy : IService
     {
         event Action<bool, bool> onUserLoginStateChange;
+        event Action onOrganizationsChange;
         bool isUserInfoReady { get; }
         bool isUserLoggedIn { get; }
         string userPrimaryOrg { get; }
@@ -92,7 +93,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly OrganizationInfoParser m_OrganizationInfoParser = new();
 
+        [SerializeField]
+        private string m_OrganizationForeignKeys = string.Empty;
+
         public event Action<bool, bool> onUserLoginStateChange = delegate {};
+        public event Action onOrganizationsChange = delegate {};
         public bool isUserInfoReady => m_IsUserInfoReady;
         public bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
         public string userPrimaryOrg => m_UserPrimaryOrg;
@@ -113,6 +118,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
             m_UserPrimaryOrg = UnityConnect.instance.userInfo.valid ? UnityConnect.instance.userInfo.primaryOrg : string.Empty;
+            m_OrganizationForeignKeys = UnityConnect.instance.userInfo.valid ? UnityConnect.instance.userInfo.organizationForeignKeys ?? string.Empty : string.Empty;
             m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
             m_UserId = UnityConnect.instance.userInfo.userId;
             m_DisplayName = UnityConnect.instance.userInfo.displayName;
@@ -144,8 +150,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var prevIsUserLoggedIn = isUserLoggedIn;
             var prevUserId = m_UserId;
             var prevDisplayName = m_DisplayName;
+            var prevOrganizationForeignKeys = m_OrganizationForeignKeys;
 
             RefreshUserData();
+
+            if (prevOrganizationForeignKeys != m_OrganizationForeignKeys)
+                onOrganizationsChange?.Invoke();
 
             if (isUserInfoReady != prevIsUserInfoReady || isUserLoggedIn != prevIsUserLoggedIn || prevUserId != m_UserId || prevDisplayName != m_DisplayName)
                 onUserLoginStateChange?.Invoke(isUserInfoReady, isUserLoggedIn);

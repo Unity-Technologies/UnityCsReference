@@ -14,6 +14,11 @@ namespace Unity.U2D.Physics
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorld.maximumWorldsAllocated is deprecated, please use PhysicsWorld.allocatedWorldCapacity instead. (UnityUpgradable) -> allocatedWorldCapacity", false)]
+        public static int maximumWorldsAllocated => allocatedWorldCapacity;
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorld.simulationMode is obsolete. Please use PhysicsWorld.simulationType instead.", true)]
         public readonly SimulationMode2D simulationMode { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
@@ -53,6 +58,14 @@ namespace Unity.U2D.Physics
             [EditorBrowsable(EditorBrowsableState.Never)]
             [Obsolete("PhysicsWorld.WorldProfile.solveConstraints is deprecated, please use PhysicsWorld.WorldProfile.constraints instead. (UnityUpgradable) -> constraints", false)]
             public float solveConstraints { readonly get => constraints; set => constraints = value; }
+        }
+
+        public partial struct WorldCounters
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.WorldCounters.memoryUsed is deprecated, please use PhysicsWorld.WorldCounters.usedMemory instead, which is a long covering the full memory range.", false)]
+            public int memoryUsed { readonly get => (int)usedMemory; set => usedMemory = value; }
         }
     }
 
@@ -257,7 +270,15 @@ namespace Unity.U2D.Physics
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("PhysicsConstants.MaxWorlds is deprecated. The maximum number of worlds is no longer a constant but can instead be configured with PhysicsWorld.maximumWorlds.", false)]
+        [Obsolete("PhysicsConstants.MaxWorlds is deprecated. The maximum number of worlds is no longer a constant but can instead be configured with PhysicsCoreSettings2D.initialWorldCapacity.", false)]
         public const int MaxWorlds = 128;
+    }
+
+    public sealed partial class PhysicsCoreSettings2D
+    {
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsCoreSettings2D.maximumWorlds is deprecated, please use PhysicsCoreSettings2D.initialWorldCapacity instead. (UnityUpgradable) -> initialWorldCapacity", false)]
+        public int maximumWorlds { get => initialWorldCapacity; set => initialWorldCapacity = value; }
     }
 }

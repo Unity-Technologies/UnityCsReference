@@ -25,6 +25,25 @@ namespace UnityEngine.TextCore.Text
         static List<FontAsset> k_FontAssets_FontFeaturesUpdateQueue = new List<FontAsset>();
         static HashSet<EntityId> k_FontAssets_FontFeaturesUpdateQueueLookup = new HashSet<EntityId>();
 
+        uint GetGlyphIndexWithFallback(uint unicode)
+        {
+            uint glyphIndex = FontEngine.GetGlyphIndex(m_FontFaceHandle, unicode);
+            if (glyphIndex == 0)
+            {
+                switch (unicode)
+                {
+                    case 0xA0: // Non Breaking Space <NBSP> -> Space
+                        glyphIndex = FontEngine.GetGlyphIndex(m_FontFaceHandle, 0x20);
+                        break;
+                    case 0xAD: // Soft Hyphen <SHY>
+                    case 0x2011: // Non Breaking Hyphen -> Hyphen Minus
+                        glyphIndex = FontEngine.GetGlyphIndex(m_FontFaceHandle, 0x2D);
+                        break;
+                }
+            }
+            return glyphIndex;
+        }
+
         static List<FontAsset> k_FontAssets_KerningUpdateQueue = new List<FontAsset>();
         static HashSet<EntityId> k_FontAssets_KerningUpdateQueueLookup = new HashSet<EntityId>();
 
@@ -440,35 +459,17 @@ namespace UnityEngine.TextCore.Text
                 if (characterLookupDictionary.ContainsKey(unicode))
                     continue;
 
-                // Get the index of the glyph for this Unicode value.
-                var glyphIndex = FontEngine.GetGlyphIndex(unicode);
+                // Get the index of the glyph for this Unicode value (with NBSP/SHY fallback).
+                var glyphIndex = GetGlyphIndexWithFallback(unicode);
 
-                // Skip missing glyphs
+                // Skip to next character if no glyph (or fallback) is present in the font file.
                 if (glyphIndex == 0)
                 {
-                    // Special handling for characters with potential alternative glyph representations
-                    switch (unicode)
-                    {
-                        case 0xA0: // Non Breaking Space <NBSP>
-                            // Use Space
-                            glyphIndex = FontEngine.GetGlyphIndex(0x20);
-                            break;
-                        case 0xAD: // Soft Hyphen <SHY>
-                        case 0x2011: // Non Breaking Hyphen
-                            // Use Hyphen Minus
-                            glyphIndex = FontEngine.GetGlyphIndex(0x2D);
-                            break;
-                    }
+                    // Add character to list of missing characters.
+                    s_MissingCharacterList.Add(unicode);
 
-                    // Skip to next character if no potential alternative glyph representation is present in font file.
-                    if (glyphIndex == 0)
-                    {
-                        // Add character to list of missing characters.
-                        s_MissingCharacterList.Add(unicode);
-
-                        isMissingCharacters = true;
-                        continue;
-                    }
+                    isMissingCharacters = true;
+                    continue;
                 }
 
                 var character = new Character(unicode, glyphIndex);
@@ -509,7 +510,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             Glyph[] glyphs;
-            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant font asset data structure
             {
@@ -635,7 +636,7 @@ namespace UnityEngine.TextCore.Text
             while (!allGlyphsAddedToTexture)
             {
                 Glyph[] glyphs;
-                allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(glyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+                allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, glyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
                 // Add new glyphs to relevant font asset data structure
                 {
@@ -813,30 +814,12 @@ namespace UnityEngine.TextCore.Text
                     return false;
                 }
 
-                uint glyphIndex = FontEngine.GetGlyphIndex(unicode);
+                uint glyphIndex = GetGlyphIndexWithFallback(unicode);
                 if (glyphIndex == 0)
                 {
-                    // Special handling for characters with potential alternative glyph representations
-                    switch (unicode)
-                    {
-                        case 0xA0: // Non Breaking Space <NBSP>
-                            // Use Space
-                            glyphIndex = FontEngine.GetGlyphIndex(0x20);
-                            break;
-                        case 0xAD: // Soft Hyphen <SHY>
-                        case 0x2011: // Non Breaking Hyphen
-                            // Use Hyphen Minus
-                            glyphIndex = FontEngine.GetGlyphIndex(0x2D);
-                            break;
-                    }
+                    m_MissingUnicodesFromFontFile.Add(unicode);
 
-                    // Return if no potential alternative glyph representation is present in font file.
-                    if (glyphIndex == 0)
-                    {
-                        m_MissingUnicodesFromFontFile.Add(unicode);
-
-                        return false;
-                    }
+                    return false;
                 }
 
                 // Check if glyph is already contained in the font asset as the same glyph might be referenced by multiple characters.
@@ -907,7 +890,7 @@ namespace UnityEngine.TextCore.Text
 
         bool TryAddGlyphToTexture(uint glyphIndex, out Glyph glyph, bool populateLigatures = true)
         {
-            if (FontEngine.TryAddGlyphToTexture(glyphIndex, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyph))
+            if (FontEngine.TryAddGlyphToTexture(m_FontFaceHandle, glyphIndex, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyph))
             {
                 // Update glyph atlas index
                 glyph.atlasIndex = m_AtlasTextureIndex;
@@ -950,7 +933,7 @@ namespace UnityEngine.TextCore.Text
             Glyph[] glyphs;
 
             // Try adding remaining glyphs in the newly created atlas texture
-            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant data structures.
             for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)

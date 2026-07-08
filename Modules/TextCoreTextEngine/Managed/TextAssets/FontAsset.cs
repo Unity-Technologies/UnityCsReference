@@ -190,6 +190,10 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [SerializeField] internal string m_SourceFontFilePath;
 
+        // Handle to the font face loaded for this asset, captured by LoadFontFace() and threaded into FontEngine
+        // operations so they target this asset's face instead of whatever face is globally current. Runtime-only.
+        FontFaceHandle m_FontFaceHandle;
+
 #nullable enable
         public AtlasPopulationMode atlasPopulationMode
         {
@@ -676,13 +680,13 @@ namespace UnityEngine.TextCore.Text
         static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport = true)
         {
             // Load Font Face
-            if (FontEngine.LoadFontFace(fontFilePath, samplingPointSize, faceIndex) != FontEngineError.Success)
+            if (FontEngine.LoadFontFace(fontFilePath, samplingPointSize, faceIndex, out FontFaceHandle faceHandle) != FontEngineError.Success)
             {
                 Debug.Log("Unable to load font face from [" + fontFilePath + "].");
                 return null;
             }
 
-            var fontAsset = CreateFontAssetInstance(null, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
+            var fontAsset = CreateFontAssetInstance(null, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport, faceHandle);
 
             // Set font file path
             if (fontAsset)
@@ -723,9 +727,9 @@ namespace UnityEngine.TextCore.Text
             if (font.name == "LegacyRuntime")
             {
                 var fonts = Font.GetOSFallbacks();
-                if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) == FontEngineError.Success)
+                if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex, out FontFaceHandle legacyRuntimeFaceHandle) == FontEngineError.Success)
                 {
-                    var mainFontAssset = CreateFontAssetInstance(font, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
+                    var mainFontAssset = CreateFontAssetInstance(font, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport, legacyRuntimeFaceHandle);
                     var fallbacks = CreateFontAssetOSFallbackList(fonts, samplingPointSize);
                     mainFontAssset.fallbackFontAssetTable = fallbacks;
                     return mainFontAssset;
@@ -737,7 +741,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Load Font Face
-            if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) != FontEngineError.Success)
+            if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex, out FontFaceHandle faceHandle) != FontEngineError.Success)
             {
                 FontAsset systemFontAsset = CreateFontAsset(font.name, "Regular");
                 if (systemFontAsset != null)
@@ -747,20 +751,20 @@ namespace UnityEngine.TextCore.Text
                 return null;
             }
 
-            return CreateFontAssetInstance(font, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
+            return CreateFontAssetInstance(font, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport, faceHandle);
         }
 
-        static FontAsset CreateFontAssetInstance(Font font, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport)
+        static FontAsset CreateFontAssetInstance(Font font, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport, FontFaceHandle faceHandle)
         {
             // Create new font asset
             FontAsset fontAsset = CreateInstance<FontAsset>();
 
             fontAsset.m_Version = "1.1.0";
-            fontAsset.faceInfo = FontEngine.GetFaceInfo();
+            fontAsset.faceInfo = FontEngine.GetFaceInfo(faceHandle);
 
             if (renderMode == GlyphRenderMode.DEFAULT)
             {
-                renderMode = FontEngine.IsColorFontFace() ? GlyphRenderMode.COLOR : GlyphRenderMode.SDFAA;
+                renderMode = FontEngine.IsColorFontFace(faceHandle) ? GlyphRenderMode.COLOR : GlyphRenderMode.SDFAA;
             }
 
             if (atlasPopulationMode == AtlasPopulationMode.Dynamic && font != null)
@@ -1016,7 +1020,7 @@ namespace UnityEngine.TextCore.Text
                     // Only retrieve Units Per EM if we are on the main thread.
                     if (!JobsUtility.IsExecutingJob)
                     {
-                        m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
+                        m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo(m_FontFaceHandle).unitsPerEM;
                         Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.", this);
                     }
                     else
@@ -1296,7 +1300,7 @@ namespace UnityEngine.TextCore.Text
             if (isFontFaceLoaded)
             {
                 // Check if unicode is present in font file
-                if (FontEngine.GetGlyphIndex(unicode) != 0)
+                if (FontEngine.GetGlyphIndex(m_FontFaceHandle, unicode) != 0)
                 {
                     if (addImmediately == false)
                         return;
@@ -1307,7 +1311,7 @@ namespace UnityEngine.TextCore.Text
                         ? GlyphLoadFlags.LOAD_NO_BITMAP | GlyphLoadFlags.LOAD_NO_HINTING
                         : GlyphLoadFlags.LOAD_NO_BITMAP;
 
-                    if (FontEngine.TryGetGlyphWithUnicodeValue(unicode, glyphLoadFlags, out glyph))
+                    if (FontEngine.TryGetGlyphWithUnicodeValue(m_FontFaceHandle, unicode, glyphLoadFlags, out glyph))
                     {
                         character = new Character(unicode, this, glyph);
                         foreach (TextFontWeight fontWeight in Enum.GetValues(typeof(TextFontWeight)))
@@ -1409,12 +1413,12 @@ namespace UnityEngine.TextCore.Text
                     m_SourceFontFile = SourceFont_EditorRef;
 
                 // Try loading the font face from source font object
-                if (FontEngine.LoadFontFace(m_SourceFontFile, m_FaceInfo.pointSize, m_FaceInfo.faceIndex) == FontEngineError.Success)
+                if (FontEngine.LoadFontFace(m_SourceFontFile, m_FaceInfo.pointSize, m_FaceInfo.faceIndex, out m_FontFaceHandle) == FontEngineError.Success)
                     return FontEngineError.Success;
 
                 // Try loading the font face from file path
                 if (string.IsNullOrEmpty(m_SourceFontFilePath) == false)
-                    return  FontEngine.LoadFontFace(m_SourceFontFilePath, m_FaceInfo.pointSize, m_FaceInfo.faceIndex);
+                    return  FontEngine.LoadFontFace(m_SourceFontFilePath, m_FaceInfo.pointSize, m_FaceInfo.faceIndex, out m_FontFaceHandle);
 
                 return FontEngineError.Invalid_Face;
             }
@@ -1423,11 +1427,11 @@ namespace UnityEngine.TextCore.Text
             if (SourceFont_EditorRef != null)
             {
                 // Try loading the font face from the referenced source font
-                if (FontEngine.LoadFontFace(m_SourceFontFile_EditorRef, m_FaceInfo.pointSize, m_FaceInfo.faceIndex) == FontEngineError.Success)
+                if (FontEngine.LoadFontFace(m_SourceFontFile_EditorRef, m_FaceInfo.pointSize, m_FaceInfo.faceIndex, out m_FontFaceHandle) == FontEngineError.Success)
                     return FontEngineError.Success;
             }
 
-            return FontEngine.LoadFontFace(m_FaceInfo.familyName, m_FaceInfo.styleName, m_FaceInfo.pointSize);
+            return FontEngine.LoadFontFace(m_FaceInfo.familyName, m_FaceInfo.styleName, m_FaceInfo.pointSize, out m_FontFaceHandle);
         }
 
         /// <summary>
@@ -1593,7 +1597,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Load font face.
-            return LoadFontFace() == FontEngineError.Success ? FontEngine.GetGlyphIndex(unicode) : 0;
+            return LoadFontFace() == FontEngineError.Success ? FontEngine.GetGlyphIndex(m_FontFaceHandle, unicode) : 0;
         }
 
         /// <summary>
@@ -1605,7 +1609,7 @@ namespace UnityEngine.TextCore.Text
         internal uint GetGlyphVariantIndex(uint unicode, uint variantSelectorUnicode)
         {
             // Load font face.
-            return LoadFontFace() == FontEngineError.Success ? FontEngine.GetVariantGlyphIndex(unicode, variantSelectorUnicode) : 0;
+            return LoadFontFace() == FontEngineError.Success ? FontEngine.GetVariantGlyphIndex(m_FontFaceHandle, unicode, variantSelectorUnicode) : 0;
         }
 
         internal void UpdateFontAssetData()

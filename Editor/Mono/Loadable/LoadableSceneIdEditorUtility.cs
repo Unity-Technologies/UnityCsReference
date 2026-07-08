@@ -14,6 +14,8 @@ namespace UnityEditor
     /// Utility class to create <see cref="LoadableSceneId"/> objects for use in the Editor. A typical use would be to populate fields of type
     /// <see cref="LoadableSceneId"/> on a class derived from <see cref="ScriptableObject"/> (or <see cref="MonoBehaviour"/>).
     /// </summary>
+    /// <seealso cref="LoadableSceneId"/>
+    /// <seealso cref="LoadableObjectIdEditorUtility"/>
     public static class LoadableSceneIdEditorUtility
     {
         /// <summary>

@@ -21,6 +21,10 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
       <Link>Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs</Link>
@@ -3477,6 +3481,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\EditModeScope.cs">
       <Link>Editor\Mono\Scripting\EditModeScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\EditModeScopePostprocessor.cs">
+      <Link>Editor\Mono\Scripting\EditModeScopePostprocessor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ManagedDebugger.bindings.cs">
       <Link>Editor\Mono\Scripting\ManagedDebugger.bindings.cs</Link>
@@ -9610,6 +9617,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageManagerPrefs.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageManagerPrefs.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageProgressTracker.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageProgressTracker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageSourceExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageSourceExtension.cs</Link>
     </Compile>
@@ -12052,8 +12062,14 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\AudioClipModuleAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\AudioClipModuleAnalyzer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleAnalyzer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleInstructionAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleInstructionAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModulePrecompiledAssemblyAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Core\API\CodeModulePrecompiledAssemblyAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\DiagnosticParameterAttribute.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\DiagnosticParameterAttribute.cs</Link>
@@ -12093,9 +12109,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\AnalysisCoroutine.cs">
       <Link>Modules\ProjectAuditorEditor\Core\AnalysisCoroutine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\AnalysisPlatformAttribute.cs">
-      <Link>Modules\ProjectAuditorEditor\Core\AnalysisPlatformAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\AssemblyDependencyNode.cs">
       <Link>Modules\ProjectAuditorEditor\Core\AssemblyDependencyNode.cs</Link>
@@ -15976,6 +15989,18 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Commands\WriteStyleRulePropertyValueCommand.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Commands\WriteStyleRulePropertyValueCommand.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Configuration\BuiltInElementConfigurations.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Configuration\BuiltInElementConfigurations.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Configuration\ConfigurationAttributes.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Configuration\ConfigurationAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Configuration\ElementConfigurationContext.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Configuration\ElementConfigurationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Configuration\ElementConfiguratorRegistry.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Configuration\ElementConfiguratorRegistry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Controls\Background\CheckerboardBackground.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Controls\Background\CheckerboardBackground.cs</Link>
     </Compile>
@@ -17032,18 +17057,18 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_7ef3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools_60e6/buildTools/UnityEditor.MSBuild.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools_60e6/msbuild.host/Unity.BuildService.Host.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools_60e6/buildTools/Unity.BuildService.dll" />
-    <Reference Include="../../artifacts/Stevedore/msbu-tools_60e6/asmDefToCSProj/AsmDefToCSProjLib.dll" />
-    <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
-    <Reference Include="../../External/ExCSS/builds/builds/lib/netstandard2.0/ExCSS.Unity.dll" />
-    <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />
-    <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BinLog.dll" />
-    <Reference Include="../../Tools/Bee/build/Distribution/BeeTinyProfiler2/Bee.TinyProfiler2.dll" />
-    <Reference Include="../../External/NetStandardExtensions/System.CodeDom.dll" />
-    <Reference Include="../../External/nugets/unity-nugets/newtonsoft.json/13.0.3/lib/netstandard2.0/Newtonsoft.Json.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_7ef3\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\UnityEditor.MSBuild.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\msbuild.host\Unity.BuildService.Host.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\Unity.BuildService.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\asmDefToCSProj\AsmDefToCSProjLib.dll" />
+    <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
+    <Reference Include="..\..\External\ExCSS\builds\builds\lib\netstandard2.0\ExCSS.Unity.dll" />
+    <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BeeDriver2.dll" />
+    <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BinLog.dll" />
+    <Reference Include="..\..\Tools\Bee\build\Distribution\BeeTinyProfiler2\Bee.TinyProfiler2.dll" />
+    <Reference Include="..\..\External\NetStandardExtensions\System.CodeDom.dll" />
+    <Reference Include="..\..\External\nugets\unity-nugets\newtonsoft.json\13.0.3\lib\netstandard2.0\Newtonsoft.Json.dll" />
     <ProjectReference Include="UnityEngine.csproj" />
     <ProjectReference Include="../../Tools/Unity.CecilTools/Unity.CecilTools.gen.csproj" />
     <ProjectReference Include="../../Tools/Unity.SerializationLogic/Unity.SerializationLogic.gen.csproj" />
@@ -17052,10 +17077,8 @@
     <ProjectReference Include="../../Editor/IncrementalBuildPipeline/BeeBuildProgramCommon.Data/BeeBuildProgramCommon.Data.gen.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <TargetingPack Include="Unity.BCLExtensions.Netstandard21" Path="/usr/src/app/repos/unity/External/BCLExtensions/built/TargetingPacks/netstandard2.1" NuGetPackageId="Unity.BCLExtensions.Netstandard21" NuGetPackageVersion="1.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <FrameworkReference Include="Unity.BCLExtensions.Netstandard21" />
   </ItemGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="UnityEnableAutoStaticsCleanupCodeGen" />
@@ -17065,13 +17088,23 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\Debug\ManagedMonolithic\BoundToNative\UnityEditor.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)../../artifacts/MonolithicEditorDlls/Debug/ManagedMonolithic/BoundToNative/UnityEditor.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_gtg6l9k1/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_j7nz6p0w/Unity.UIToolkit.SourceGenerator.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="8.0.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
   </ItemGroup>
 </Project>

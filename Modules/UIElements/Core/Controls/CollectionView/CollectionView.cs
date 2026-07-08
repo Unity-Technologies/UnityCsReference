@@ -715,7 +715,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanelEvent);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
-            RegisterCallback<GeometryChangedEvent>(evt => ContainerSizeChanged(evt.newRect.height, evt.newRect.width));
+            m_Container.RegisterCallback<GeometryChangedEvent>(evt => ContainerSizeChanged(evt.newRect.height, evt.newRect.width));
         }
 
         void OnAttachToPanelEvent(AttachToPanelEvent evt)
@@ -910,7 +910,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (!Mathf.Approximately(m_LastHeight, containerHeight))
             {
                 m_LastHeight = containerHeight;
-                RefreshItems();
+                RefreshItems(forceBindItem: false);
             }
         }
 
@@ -995,7 +995,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
 
             if (m_RefreshScheduled == null)
-                m_RefreshScheduled = schedule.Execute(RefreshItems);
+                m_RefreshScheduled = schedule.Execute(() => RefreshItems());
             else if (!m_RefreshScheduled.isActive)
                 m_RefreshScheduled.Resume();
         }
@@ -1124,7 +1124,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <summary>
         /// Rebinds all items currently visible.
         /// </summary>
-        public void RefreshItems()
+        public void RefreshItems(bool forceBindItem = true)
         {
             // Defer mid-animation refreshes — items are reparented in the clip container.
             if (m_Animation is { isAnimating: true })
@@ -1165,7 +1165,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             var maxScrollRange = rangeEstimate > m_LastHeight ? Math.Abs(rangeEstimate - m_LastHeight) : 0;
             m_VerticalScroller.style.display = rangeEstimate > height - m_HorizontalScroller.worldBound.height ? DisplayStyle.Flex : DisplayStyle.None;
             SetScrollingParameters(m_ScrollValue, maxScrollRange);
-            BindVisibleItems(true);
+            BindVisibleItems(forceBindItem);
             UpdateBackgroundFill();
             ApplyHoverStateFromPointerPosition();
         }

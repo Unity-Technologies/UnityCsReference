@@ -118,6 +118,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_OpacityPagePosID  = Shader.PropertyToID("_OpacityPagePos");
         static readonly int s_ColorPagePosID    = Shader.PropertyToID("_ColorPagePos");
         static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
+        static readonly int s_ElementInfoPagePosID = Shader.PropertyToID("_ElementInfoPagePos");
 
         static ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
         static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AdvanceFrame");
@@ -1067,6 +1068,7 @@ namespace UnityEngine.UIElements.UIR
                 constantProps.SetVectorArray(s_OpacityPagePosID,  shaderInfoAllocator.opacityPagePositions);
                 constantProps.SetVectorArray(s_ColorPagePosID,    shaderInfoAllocator.colorPagePositions);
                 constantProps.SetVectorArray(s_TextCorePagePosID, shaderInfoAllocator.textCorePagePositions);
+                constantProps.SetVectorArray(s_ElementInfoPagePosID, shaderInfoAllocator.elementInfoPagePositions);
             }
         }
 

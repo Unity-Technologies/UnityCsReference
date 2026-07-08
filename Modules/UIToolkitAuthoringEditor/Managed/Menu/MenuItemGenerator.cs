@@ -215,6 +215,10 @@ internal static class MenuItemGenerator
 
         foreach (var (key, item) in libraryTypeKeys)
         {
+            // Variants are surfaced in the UI Library only, not in the GameObject menu.
+            if (key.variantName != null)
+                continue;
+
             var menuPath = GetContextMenuPath(key, item.libraryPath);
             if (string.IsNullOrEmpty(menuPath))
                 continue;

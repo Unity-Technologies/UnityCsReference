@@ -151,7 +151,7 @@ namespace Unity.ProjectAuditor.Editor
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
             var requestedModules = categories.SelectMany(GetModules).Distinct().ToArray();
-            var supportedModules = requestedModules.Where(m => m != null && CoreUtils.SupportsPlatform(m.GetType(), platform)).ToArray();
+            var supportedModules = requestedModules.Where(m => m != null).ToArray();
 
             analysisParams.OnStarted?.Invoke(
                 report,

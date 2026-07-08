@@ -169,11 +169,20 @@ namespace UnityEngine.UIElements.UIR
         readonly Vector4[] m_TextCorePagePos = new Vector4[kMaxPages];
         bool m_TransformPagesErrored, m_ClipRectPagesErrored, m_OpacityPagesErrored, m_ColorPagesErrored, m_TextCorePagesErrored;
 
+        // ElementInfo is indexed per Id (no BitmapAllocator32).
+        // 8 bits to get the page
+        // 8 bits to index within the 32x8 page
+        public const int kElementInfoPageCount = 256;
+        readonly Vector4[] m_ElementInfoPagePos = new Vector4[kElementInfoPageCount];
+        int m_ElementInfoPageCount;
+        bool m_ElementInfoPagesErrored;
+
         internal Vector4[] transformPagePositions { get { return m_XformPagePos; } }
         internal Vector4[] clipRectPagePositions { get { return m_ClipPagePos; } }
         internal Vector4[] opacityPagePositions { get { return m_OpacityPagePos; } }
         internal Vector4[] colorPagePositions { get { return m_ColorPagePos; } }
         internal Vector4[] textCorePagePositions { get { return m_TextCorePagePos; } }
+        internal Vector4[] elementInfoPagePositions { get { return m_ElementInfoPagePos; } }
 
         // Returns the underlying allocator by value. BitmapAllocator32 holds a List<Page>,
         // so the copy shares storage with the original — safe for read-only inspection.
@@ -366,6 +375,10 @@ namespace UnityEngine.UIElements.UIR
             SetColorValue(clearColor, clearColorValue); // color is saturated, no need to check the colorspace
             SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue); // colors are saturated, no need to check the colorspace
 
+            // Seed the default record at id 0 (all-zero = identity transform, full opacity, no translation).
+            EnsureElementInfoPage(0);
+            WriteElementInfoTexel(0, 0, 0, 0f, 0f);
+
             m_StorageReallyCreated = true;
         }
 
@@ -479,6 +492,51 @@ namespace UnityEngine.UIElements.UIR
             }
 
             m_Storage.SetTexel(allocXY.x, allocXY.y + 3, settingValues);
+        }
+
+        // Grows the element-info region to cover the given page index.
+        void EnsureElementInfoPage(int page)
+        {
+            if (page < m_ElementInfoPageCount || m_ElementInfoPagesErrored)
+                return;
+
+            while (m_ElementInfoPageCount <= page)
+            {
+                if (m_ElementInfoPageCount >= kElementInfoPageCount ||
+                    !m_Storage.AllocateRect(pageWidth, pageHeight, out RectInt rc))
+                {
+                    m_ElementInfoPagesErrored = true;
+                    Debug.LogError($"UIE shader-info ElementInfo allocator exhausted at {kElementInfoPageCount} pages × {pageWidth * pageHeight} slots. Subsequent records fall back to defaults.");
+                    return;
+                }
+
+                m_ElementInfoPagePos[m_ElementInfoPageCount] = new Vector4(rc.xMin, rc.yMin, 0, 0);
+                ++m_ElementInfoPageCount;
+            }
+        }
+
+        // Writes a record texel; caller guarantees the storage exists (see SetElementInfoValue).
+        void WriteElementInfoTexel(ushort elementId, ushort transformId, ushort opacityId, float tx, float ty)
+        {
+            int page = elementId >> 8;
+            EnsureElementInfoPage(page);
+            if (page >= m_ElementInfoPageCount)
+                return; // Exhausted: id falls back to the default record
+
+            var origin = m_ElementInfoPagePos[page];
+            int slot = elementId & 0xFF;
+            int x = (int)origin.x + (slot & 31);
+            int y = (int)origin.y + (slot >> 5);
+            m_Storage.SetTexel(x, y, new Color(transformId, opacityId, tx, ty));
+        }
+
+        // Record lanes: (transformId, opacityId, tx, ty). Ids are integer-exact in RGBAFloat, re-read as uint on the GPU.
+        public void SetElementInfoValue(ushort elementId, ushort transformId, ushort opacityId, float tx, float ty)
+        {
+            if (!m_StorageReallyCreated)
+                ReallyCreateStorage();
+
+            WriteElementInfoTexel(elementId, transformId, opacityId, tx, ty);
         }
 
         public void FreeTransform(BMPAlloc alloc)

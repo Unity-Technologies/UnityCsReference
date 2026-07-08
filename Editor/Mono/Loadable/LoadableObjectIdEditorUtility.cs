@@ -14,12 +14,19 @@ namespace UnityEditor
     /// Editor utilities for creating and converting <see cref="LoadableObjectId"/> values when authoring content.
     /// </summary>
     /// <remarks>
-    /// <see cref="LoadableObjectId"/> is the low-level reference type used by `Loadable{T}` for on-demand object loading.
+    /// <see cref="LoadableObjectId"/> is the low-level reference type used by <see cref="Loadable{T}"/> for on-demand object loading.
     /// These methods convert between live <see cref="Object"/> instances and serialized loadable object IDs for content directory builds.
+    ///
+    /// Use this utility to populate a root asset or a <see cref="LoadableObjectId"/> field from a script. It is also useful when
+    /// implementing custom Editor UI for ScriptableObjects or MonoBehaviours that contain <see cref="Loadable{T}"/> or
+    /// <see cref="LoadableObjectId"/> fields.
     /// </remarks>
     /// <example>
     /// <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/LoadableObjectIdEditorUtility_Example.cs"/>
     /// </example>
+    /// <seealso cref="LoadableObjectId"/>
+    /// <seealso cref="Loadable{T}"/>
+    /// <seealso cref="LoadableSceneIdEditorUtility"/>
     [NativeHeader("Editor/Src/Utility/LoadableObjectIdEditorUtility.bindings.h")]
     [VisibleToOtherModules]
     public static class LoadableObjectIdEditorUtility
@@ -40,7 +47,7 @@ namespace UnityEditor
         /// <param name="loadableObjectId">The <see cref="LoadableObjectId"/> to deconstruct.</param>
         /// <param name="guid">The GUID of the asset file containing the referenced object.</param>
         /// <param name="localId">The local file identifier of the object within the asset.</param>
-        /// <param name="fileType">The file identifier type indicating whether this is a source asset, primary artifact, or non-asset reference.</param>
+        /// <param name="fileType">The <see cref="FileIdentifierType"/> indicating whether this is a source asset, primary artifact, or non-asset reference.</param>
         /// <returns>
         /// <c>true</c> if the LoadableObjectId represents an asset reference and all components were successfully retrieved;
         /// <c>false</c> if the LoadableObjectId is a runtime handle.

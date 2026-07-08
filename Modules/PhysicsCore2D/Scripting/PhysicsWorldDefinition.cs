@@ -230,6 +230,13 @@ namespace Unity.U2D.Physics
         public PhysicsWorld.IgnoreFilter drawFilter { readonly get => m_DrawFilter; set => m_DrawFilter = value; }
 
         /// <summary>
+        /// Controls which Unity editor views the world is drawn into (Scene view, Game view or both).
+        /// This only filters the built-in viewport rendering; it does not control whether drawing occurs at all.
+        /// See <see cref="PhysicsWorld.drawTarget"/>.
+        /// </summary>
+        public PhysicsWorld.DrawTarget drawTarget { readonly get => m_DrawTarget; set => m_DrawTarget = value; }
+
+        /// <summary>
         /// Controls the draw thickness (outline and orientation).
         /// See <see cref="PhysicsWorld.drawThickness"/>.
         /// </summary>
@@ -258,6 +265,13 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.drawForceScale"/>.
         /// </summary>
         public float drawForceScale { readonly get => m_DrawForceScale; set => m_DrawForceScale = Mathf.Clamp(value, 0.0001f, 10f); }
+
+        /// <summary>
+        /// Controls the relative order this world is drawn in across all worlds.
+        /// Worlds with a lower draw order are drawn first, so worlds with a higher draw order are drawn on top.
+        /// See <see cref="PhysicsWorld.drawOrder"/>.
+        /// </summary>
+        public int drawOrder { readonly get => m_DrawOrder; set => m_DrawOrder = value; }
 
         /// <summary>
         /// Controls what colors are used to draw <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsJoint"/> etc.
@@ -303,11 +317,13 @@ namespace Unity.U2D.Physics
         [SerializeField] PhysicsWorld.DrawFillOptions m_DrawFillOptions;
         [SerializeField] PhysicsWorld.DrawContactType m_DrawContactType;
         [SerializeField] PhysicsWorld.IgnoreFilter m_DrawFilter;
+        [SerializeField] PhysicsWorld.DrawTarget m_DrawTarget;
         [SerializeField] [Range(1f, 5f)] float m_DrawThickness;
         [SerializeField] [Range(0f, 1f)] float m_DrawFillAlpha;
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawPointScale;
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawNormalScale;
         [SerializeField] [FormerlySerializedAs("m_DrawImpulseScale")] [Range(0.0001f, 10f)] float m_DrawForceScale;
+        [SerializeField] int m_DrawOrder;
         [SerializeField] PhysicsWorld.DrawColors m_DrawColors;
         [SerializeField] PhysicsWorld.WorldCapacity m_Capacity;
 

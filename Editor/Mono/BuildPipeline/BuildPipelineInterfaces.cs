@@ -448,20 +448,22 @@ namespace UnityEditor.Build
         /// <summary>
         /// Implement this method to receive a callback for each scene during the build.
         /// </summary>
-        /// <remarks>Unity invokes this callback during Player and AssetBundle builds, and also when a scene is reloaded while entering Play mode. Use <see cref="BuildPipeline.isBuildingPlayer" /> to determine in which context the callback is called.
+        /// <remarks>Unity invokes this callback during Player, AssetBundle, and content directory builds, and also when a scene is loaded while in Play mode. Use <see cref="BuildPipeline.isBuildingPlayer" /> to determine in which context the callback is called.
         ///
         /// This callback supports editing the provided scene to prepare it for a Player build or entering Play mode, and reading assets. For example, you can add or remove references to project assets in that scene.
         ///
-        /// This callback doesn't support modifying the state of other assets. Use it to modify only the provided scene.
+        /// This callback doesn't support modifying the state of other assets, creating new assets, or deleting assets. Use it to modify only the provided scene.
         ///
         /// Keep implementations deterministic. Avoid random values, timestamps, or external changing data sources. For more information, refer to [Deterministic builds](xref:um-build-deterministic-builds).
+        ///
+        /// Use <see cref="BuildPipelineContext.DependOnAsset"/> and <see cref="BuildPipelineContext.DependOnPath"/> to add explicit dependencies to assets used during your scene modifications.
         ///
         /// Apply <see cref="Build.BuildCallbackVersionAttribute" /> to callback types and increment the version whenever the callback logic changes to help Unity invalidate cached scene processing results when needed.
         ///
         /// For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks).</remarks>
         /// <param name="scene">The current scene being processed.</param>
         /// <param name="report">A report containing information about the current build. When this callback is invoked for scene loading during Play mode, this parameter is null.</param>
-        ///<example>
+        /// <example>
         ///  <code><![CDATA[
         /// using UnityEditor;
         /// using UnityEditor.Build;
@@ -477,10 +479,11 @@ namespace UnityEditor.Build
         ///     }
         /// }
         ///]]></code>
-        ///</example>
-        ///<seealso cref="BuildPipeline.BuildPlayer" />
-        ///<seealso cref="BuildPipeline.BuildAssetBundles" />
-        ///<seealso cref="Build.BuildCallbackVersionAttribute" />
+        /// </example>
+        /// <seealso cref="BuildPipeline.BuildPlayer" />
+        /// <seealso cref="BuildPipeline.BuildAssetBundles" />
+        /// <seealso cref="Build.BuildCallbackVersionAttribute" />
+        /// <seealso cref="BuildPipelineContext"/>
         void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report);
     }
 
@@ -537,11 +540,11 @@ namespace UnityEditor.Build
         ///3. Implements the `OnProcessShader` callback function and iterates over the `data` list, which contains every variant in the shader.
         ///4. Uses `data.shaderKeywordSet.IsEnabled()` to check if each variant uses the keyword.
         ///5. Uses `data.removeAt()` to strip a shader variant if it contains the keyword and you've disabled **Development build** in **[Build Settings](xref:um-build-settings)**.
-        /// 
+        ///
         ///You can also find local keywords. You must create the `ShaderKeyword` instance inside the implementation of `OnProcessShader`, so you can use the callback's `shader` variable in the `ShaderKeyword` constructor.
         ///
         ///For example if you declare a local keyword called `RED` in your shader code using `#pragma multi_compile_local _ RED`, the following script finds and strips shader variants that use the keyword.
-        /// 
+        ///
         ///If you strip a variant that a Material needs at runtime, Unity chooses an available shader variant that matches as closely as possible.
         ///
         ///Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).

@@ -53,22 +53,22 @@ namespace UnityEngine.TextCore.Text
                 return;
 
             // Get Pair Adjustment records
-            var pairAdjustmentRecords = FontEngine.GetAllPairAdjustmentRecords();
+            var pairAdjustmentRecords = FontEngine.GetAllPairAdjustmentRecords(m_FontFaceHandle);
             if (pairAdjustmentRecords != null)
                 AddPairAdjustmentRecords(pairAdjustmentRecords);
 
             // Get Mark-to-Base adjustment records
-            var markToBaseRecords = FontEngine.GetAllMarkToBaseAdjustmentRecords();
+            var markToBaseRecords = FontEngine.GetAllMarkToBaseAdjustmentRecords(m_FontFaceHandle);
             if (markToBaseRecords != null)
                 AddMarkToBaseAdjustmentRecords(markToBaseRecords);
 
             // Get Mark-to-Mark adjustment records
-            var markToMarkRecords = FontEngine.GetAllMarkToMarkAdjustmentRecords();
+            var markToMarkRecords = FontEngine.GetAllMarkToMarkAdjustmentRecords(m_FontFaceHandle);
             if (markToMarkRecords != null)
                 AddMarkToMarkAdjustmentRecords(markToMarkRecords);
 
             // Get Ligature Substitution records
-            var records = FontEngine.GetAllLigatureSubstitutionRecords();
+            var records = FontEngine.GetAllLigatureSubstitutionRecords(m_FontFaceHandle);
             if (records != null)
                 AddLigatureSubstitutionRecords(records);
 
@@ -80,7 +80,7 @@ namespace UnityEngine.TextCore.Text
 
         void UpdateGSUBFontFeaturesForNewGlyphIndex(uint glyphIndex)
         {
-            var records = FontEngine.GetLigatureSubstitutionRecords(glyphIndex);
+            var records = FontEngine.GetLigatureSubstitutionRecords(m_FontFaceHandle, glyphIndex);
 
             if (records != null)
                 AddLigatureSubstitutionRecords(records);
@@ -93,7 +93,7 @@ namespace UnityEngine.TextCore.Text
         {
             using (k_UpdateLigatureSubstitutionRecordsMarker.Auto())
             {
-                var records = FontEngine.GetLigatureSubstitutionRecords(m_GlyphIndexListNewlyAdded);
+                var records = FontEngine.GetLigatureSubstitutionRecords(m_FontFaceHandle, m_GlyphIndexListNewlyAdded);
 
                 if (records != null)
                     AddLigatureSubstitutionRecords(records);
@@ -145,7 +145,7 @@ namespace UnityEngine.TextCore.Text
             using (k_UpdateGlyphAdjustmentRecordsMarker.Auto())
             {
                 LoadFontFace();
-                GlyphPairAdjustmentRecord[] records = FontEngine.GetPairAdjustmentRecords(m_GlyphIndexListNewlyAdded);
+                GlyphPairAdjustmentRecord[] records = FontEngine.GetPairAdjustmentRecords(m_FontFaceHandle, m_GlyphIndexListNewlyAdded);
 
                 if (records != null)
                     AddPairAdjustmentRecords(records);
@@ -194,12 +194,12 @@ namespace UnityEngine.TextCore.Text
             using (k_UpdateDiacriticalMarkAdjustmentRecordsMarker.Auto())
             {
                 // Get Mark-to-Base adjustment records
-                var markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_GlyphIndexListNewlyAdded);
+                var markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_FontFaceHandle, m_GlyphIndexListNewlyAdded);
                 if (markToBaseRecords != null)
                     AddMarkToBaseAdjustmentRecords(markToBaseRecords);
 
                 // Get Mark-to-Mark adjustment records
-                var markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_GlyphIndexListNewlyAdded);
+                var markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_FontFaceHandle, m_GlyphIndexListNewlyAdded);
                 if (markToMarkRecords != null)
                     AddMarkToMarkAdjustmentRecords(markToMarkRecords);
             }

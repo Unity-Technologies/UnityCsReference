@@ -156,6 +156,12 @@ namespace Unity.U2D.Physics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool IsCameraTypeValid(Camera camera) => (camera.cameraType & (CameraType.Game | CameraType.SceneView)) != 0;
 
+        // Map a camera (already validated as Game or SceneView) to the matching DrawTarget so the per-world draw filter
+        // can compare it against each world's drawTarget. A camera is only ever one view, never Both.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static PhysicsWorld.DrawTarget GetCameraDrawTarget(Camera camera) =>
+            camera.cameraType == CameraType.SceneView ? PhysicsWorld.DrawTarget.SceneView : PhysicsWorld.DrawTarget.GameView;
+
         /// <undoc/>
         static void RenderWorlds_BIRP(Camera camera)
         {
@@ -173,7 +179,7 @@ namespace Unity.U2D.Physics
             {
 
                 // Draw all the worlds.
-                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
+                PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera), cameraTarget: GetCameraDrawTarget(camera));
 
                 // Render if allowed.
                 if (isRenderingAllowed && s_RendererCommandBuffer != null)
@@ -218,7 +224,7 @@ namespace Unity.U2D.Physics
                 {
 
                     // Draw all the worlds.
-                    PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera));
+                    PhysicsWorld.DrawAllWorlds(drawAABB: GetCameraViewAABB(camera), cameraTarget: GetCameraDrawTarget(camera));
 
                     // Render if allowed.
                     if (isRenderingAllowed && s_RendererCommandBuffer != null)
@@ -250,8 +256,10 @@ namespace Unity.U2D.Physics
                 using (s_DrawWorldsAddRenderCommandsMarker.Auto())
                 {
 
-                    // Yes, so create the drawer groups.
-                    s_DrawerGroups ??= new DrawerGroup[PhysicsWorld.maximumWorldsAllocated];
+                    // Yes, so create/grow the drawer groups (the world array can grow on demand at runtime).
+                    var worldIndex = physicsWorld.m_Index1 - 1;
+                    if (s_DrawerGroups == null || s_DrawerGroups.Length <= worldIndex)
+                        Array.Resize(ref s_DrawerGroups, PhysicsWorld.allocatedWorldCapacity);
 
                     // Create the renderer command buffer.
                     s_RendererCommandBuffer ??= new CommandBuffer { name = s_RenderCommandBufferName };
@@ -260,8 +268,8 @@ namespace Unity.U2D.Physics
                     if (drawResults.isValid)
                     {
                         // Fetch/Initialize the drawer group.
-                        var drawerGroup = s_DrawerGroups[physicsWorld.m_Index1 - 1];
-                        drawerGroup ??= s_DrawerGroups[physicsWorld.m_Index1 - 1] = new DrawerGroup();
+                        var drawerGroup = s_DrawerGroups[worldIndex];
+                        drawerGroup ??= s_DrawerGroups[worldIndex] = new DrawerGroup();
 
                         // Draw the drawer group.
                         drawerGroup.Draw(rendererCommandBuffer: s_RendererCommandBuffer, drawResults: ref drawResults, thickness: thickness, fillAlpha: fillAlpha, transformPlane: transformPlane, transformPlaneCustomMatrix: ref transformPlaneCustomMatrix);

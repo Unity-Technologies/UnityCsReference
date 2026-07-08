@@ -30,7 +30,6 @@ namespace UnityEngine.UIElements.UIR
             static readonly ProfilerMarker k_GenerateEntriesMarker = new(ProfilerCategory.UIToolkit, "UIR.GenerateEntries");
             static readonly ProfilerMarker k_ConvertEntriesToCommandsMarker = new(ProfilerCategory.UIToolkit, "UIR.ConvertEntriesToCommands");
             static readonly ProfilerMarker k_MeshModifierMarker = new(ProfilerCategory.UIToolkit, "UIR.MeshModificationCallback");
-            static readonly ProfilerMarker k_UpdateOpacityIdMarker = new (ProfilerCategory.UIToolkit, "UIR.UpdateOpacityId");
 
             RenderTreeManager m_RenderTreeManager;
             MeshGenerationContext m_MeshGenerationContext;
@@ -105,13 +104,6 @@ namespace UnityEngine.UIElements.UIR
 
                 renderData.pendingHierarchicalRepaint = false;
                 renderData.pendingRepaint = false;
-
-                if (!hierarchical && (renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == RenderDataDirtyTypes.VisualsOpacityId)
-                {
-                    stats.opacityIdUpdates++;
-                    UpdateOpacityId(renderData, m_RenderTreeManager);
-                    return;
-                }
 
                 UpdateWorldFlipsWinding(renderData);
 
@@ -354,43 +346,6 @@ namespace UnityEngine.UIElements.UIR
                         m_Processors[i].ClearReferences();
 
                 }
-            }
-
-
-            public static void UpdateOpacityId(RenderData renderData, RenderTreeManager renderTreeManager)
-            {
-                using (k_UpdateOpacityIdMarker.Auto())
-                {
-
-                    if (renderData.headMesh != null)
-                        DoUpdateOpacityId(renderData, renderTreeManager, renderData.headMesh);
-
-                    if (renderData.tailMesh != null)
-                        DoUpdateOpacityId(renderData, renderTreeManager, renderData.tailMesh);
-
-                    if (renderData.hasExtraMeshes)
-                    {
-                        ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
-                        BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
-                        while (extraMesh != null)
-                        {
-                            DoUpdateOpacityId(renderData, renderTreeManager, extraMesh.data);
-                            extraMesh = extraMesh.next;
-                        }
-                    }
-
-                }
-            }
-
-            static void DoUpdateOpacityId(RenderData renderData, RenderTreeManager renderTreeManager, MeshHandle mesh)
-            {
-                int vertCount = (int)mesh.allocVerts.size;
-                RawSlice oldSlice = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
-                renderTreeManager.device.Update(mesh, (uint)vertCount, out RawSlice newSlice);
-
-                ushort opacityId = ShaderInfoAllocator.BMPAllocToId(renderData.opacityID);
-                renderTreeManager.opacityIdAccelerator.CreateJob(
-                    oldSlice.GetUnsafeReadOnlyPtr(), newSlice.GetUnsafePtr(), newSlice.Stride, opacityId, vertCount);
             }
 
             #region Dispose Pattern

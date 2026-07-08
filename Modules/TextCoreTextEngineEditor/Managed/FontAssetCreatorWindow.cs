@@ -186,6 +186,12 @@ namespace UnityEditor.TextCore.Text
         List<uint> m_ExcludedCharacters = new List<uint>();
 
         private FaceInfo m_FaceInfo;
+        private FontFaceHandle m_FontFaceHandle;
+
+        // Font faces this creator window loaded, isolated under a window-unique owner id so they get
+        // their own per-face lock and never contend with live runtime/dynamic font faces. Unloaded in
+        // OnDisable so testing multiple fonts in one session doesn't leave faces in the shared cache.
+        private readonly HashSet<FontFaceHandle> m_LoadedFaceHandles = new HashSet<FontFaceHandle>();
 
         bool m_IncludeFontFeatures;
 
@@ -227,8 +233,12 @@ namespace UnityEditor.TextCore.Text
         {
             //Debug.Log("TextMeshPro Editor Window has been disabled.");
 
-            // Destroy Engine only if it has been initialized already
-            FontEngine.DestroyFontEngine();
+            if (m_IsProcessing)
+                FontEngine.SendCancellationRequest();
+
+            foreach (FontFaceHandle handle in m_LoadedFaceHandles)
+                FontEngine.UnloadFontFace(handle);
+            m_LoadedFaceHandles.Clear();
 
             ClearGeneratedData();
 
@@ -719,22 +729,17 @@ namespace UnityEditor.TextCore.Text
                     m_SavedFontAtlas = null;
                     m_OutputFeedback = string.Empty;
 
-                    // Initialize font engine
-                    FontEngineError errorCode = FontEngine.InitializeFontEngine();
+                    FontEngineError errorCode = FontEngine.LoadFontFace(m_SourceFont, 0, m_SourceFontFaceIndex, GetEntityId(), out m_FontFaceHandle);
+
                     if (errorCode != FontEngineError.Success)
                     {
-                        Debug.Log("Font Asset Creator - Error [" + errorCode + "] has occurred while Initializing the FreeType Library.");
+                        Debug.LogWarning("Unable to load font face for [" + m_SourceFont.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings. You may disable it after creating the static Font Asset.", m_SourceFont);
                     }
-
-                    if (errorCode == FontEngineError.Success)
+                    else
                     {
-                        errorCode = FontEngine.LoadFontFace(m_SourceFont, 0, m_SourceFontFaceIndex);
+                        m_LoadedFaceHandles.Add(m_FontFaceHandle);
 
-                        if (errorCode != FontEngineError.Success)
-                        {
-                            Debug.LogWarning("Unable to load font face for [" + m_SourceFont.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings. You may disable it after creating the static Font Asset.", m_SourceFont);
-                        }
-                        else if (FontEngine.IsVariableFontFace())
+                        if (FontEngine.IsVariableFontFace(m_FontFaceHandle))
                         {
                             Debug.LogWarning(k_VariableFontUnsupportedMessage, m_SourceFont);
                             errorCode = FontEngineError.Invalid_File_Format;
@@ -826,7 +831,7 @@ namespace UnityEditor.TextCore.Text
                                 uint unicode = characterSet[i];
                                 uint glyphIndex;
 
-                                if (FontEngine.TryGetGlyphIndex(unicode, out glyphIndex))
+                                if (FontEngine.TryGetGlyphIndex(m_FontFaceHandle, unicode, out glyphIndex))
                                 {
                                     // Skip over potential duplicate characters.
                                     if (m_CharacterLookupMap.ContainsKey(unicode))
@@ -874,7 +879,7 @@ namespace UnityEditor.TextCore.Text
                                     {
                                         m_AtlasGenerationProgressLabel = "Packing glyphs - Pass (" + iteration + ")";
 
-                                        FontEngine.SetFaceSize(m_PointSize);
+                                        FontEngine.SetFaceSize(ref m_FontFaceHandle, m_PointSize);
 
                                         m_Padding = (int)(m_PaddingMode == PaddingMode.Percentage ? m_PointSize * m_PaddingFieldValue / 100f : m_PaddingFieldValue);
 
@@ -890,7 +895,7 @@ namespace UnityEditor.TextCore.Text
                                             uint glyphIndex = m_AvailableGlyphsToAdd[i];
                                             Glyph glyph;
 
-                                            if (FontEngine.TryGetGlyphWithIndexValue(glyphIndex, glyphLoadFlags, out glyph))
+                                            if (FontEngine.TryGetGlyphWithIndexValue(m_FontFaceHandle, glyphIndex, glyphLoadFlags, out glyph))
                                             {
                                                 if (glyph.glyphRect.width > 0 && glyph.glyphRect.height > 0)
                                                 {
@@ -946,7 +951,7 @@ namespace UnityEditor.TextCore.Text
                                     m_AtlasGenerationProgressLabel = "Packing glyphs...";
 
                                     // Set point size
-                                    FontEngine.SetFaceSize(m_PointSize);
+                                    FontEngine.SetFaceSize(ref m_FontFaceHandle, m_PointSize);
 
                                     m_Padding = (int)(m_PaddingMode == PaddingMode.Percentage ? m_PointSize * m_PaddingFieldValue / 100 : m_PaddingFieldValue);
 
@@ -962,7 +967,7 @@ namespace UnityEditor.TextCore.Text
                                         uint glyphIndex = m_AvailableGlyphsToAdd[i];
                                         Glyph glyph;
 
-                                        if (FontEngine.TryGetGlyphWithIndexValue(glyphIndex, glyphLoadFlags, out glyph))
+                                        if (FontEngine.TryGetGlyphWithIndexValue(m_FontFaceHandle, glyphIndex, glyphLoadFlags, out glyph))
                                         {
                                             if (glyph.glyphRect.width > 0 && glyph.glyphRect.height > 0)
                                             {
@@ -990,7 +995,7 @@ namespace UnityEditor.TextCore.Text
                             {
                                 int packingModifier = ((GlyphRasterModes)m_GlyphRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP ? 0 : 1;
 
-                                FontEngine.SetFaceSize(m_PointSize);
+                                FontEngine.SetFaceSize(ref m_FontFaceHandle, m_PointSize);
 
                                 m_Padding = (int)(m_PaddingMode == PaddingMode.Percentage ? m_PointSize * m_PaddingFieldValue / 100 : m_PaddingFieldValue);
 
@@ -1064,7 +1069,7 @@ namespace UnityEditor.TextCore.Text
                             }
 
                             // Get the face info for the current sampling point size.
-                            m_FaceInfo = FontEngine.GetFaceInfo();
+                            m_FaceInfo = FontEngine.GetFaceInfo(m_FontFaceHandle);
 
                             autoEvent.Set();
                         });
@@ -1094,7 +1099,7 @@ namespace UnityEditor.TextCore.Text
                                 // Render and add glyphs to the given atlas texture.
                                 if (m_GlyphsToRender.Count > 0)
                                 {
-                                    FontEngine.RenderGlyphsToTexture(m_GlyphsToRender, m_Padding, m_GlyphRenderMode, m_AtlasTextureBuffer, m_AtlasWidth, m_AtlasHeight);
+                                    FontEngine.RenderGlyphsToTexture(m_FontFaceHandle, m_GlyphsToRender, m_Padding, m_GlyphRenderMode, m_AtlasTextureBuffer, m_AtlasWidth, m_AtlasHeight);
                                 }
 
                                 m_IsRenderingDone = true;
@@ -1235,23 +1240,28 @@ namespace UnityEditor.TextCore.Text
         /// <returns></returns>
         string[] GetFontFaces()
         {
+            if (m_SourceFont == null)
+                return Array.Empty<string>();
+
             if (m_IsGenerationDisabled)
             {
                 m_WarningMessage = string.Empty;
                 m_IsGenerationDisabled = false;
             }
 
-            if (FontEngine.LoadFontFace(m_SourceFont, 0, 0) != FontEngineError.Success)
+            if (FontEngine.LoadFontFace(m_SourceFont, 0, 0, GetEntityId(), out FontFaceHandle faceHandle) != FontEngineError.Success)
                 return Array.Empty<string>();
 
-            if (FontEngine.IsVariableFontFace())
+            m_LoadedFaceHandles.Add(faceHandle);
+
+            if (FontEngine.IsVariableFontFace(faceHandle))
             {
                 m_WarningMessage = k_VariableFontUnsupportedMessage;
                 m_IsGenerationDisabled = true;
                 return Array.Empty<string>();
             }
 
-            return FontEngine.GetFontFaces();
+            return FontEngine.GetFontFaces(faceHandle);
         }
 
         /// <summary>
@@ -2003,7 +2013,7 @@ namespace UnityEditor.TextCore.Text
 
         void PopulateGlyphAdjustmentTable(FontFeatureTable fontFeatureTable)
         {
-            GlyphPairAdjustmentRecord[] adjustmentRecords = FontEngine.GetPairAdjustmentRecords(m_AvailableGlyphsToAdd);
+            GlyphPairAdjustmentRecord[] adjustmentRecords = FontEngine.GetPairAdjustmentRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
 
             if (adjustmentRecords == null)
                 return;
@@ -2028,7 +2038,7 @@ namespace UnityEditor.TextCore.Text
 
         void PopulateLigatureTable(FontFeatureTable fontFeatureTable)
         {
-            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] ligatureRecords = FontEngine.GetLigatureSubstitutionRecords(m_AvailableGlyphsToAdd);
+            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] ligatureRecords = FontEngine.GetLigatureSubstitutionRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
             if (ligatureRecords != null)
                 AddLigatureRecords(fontFeatureTable, ligatureRecords);
         }
@@ -2062,11 +2072,11 @@ namespace UnityEditor.TextCore.Text
 
         void PopulateDiacriticalMarkAdjustmentTables(FontFeatureTable fontFeatureTable)
         {
-            MarkToBaseAdjustmentRecord[] markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_AvailableGlyphsToAdd);
+            MarkToBaseAdjustmentRecord[] markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
             if (markToBaseRecords != null)
                 AddMarkToBaseAdjustmentRecords(fontFeatureTable, markToBaseRecords);
 
-            MarkToMarkAdjustmentRecord[] markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_AvailableGlyphsToAdd);
+            MarkToMarkAdjustmentRecord[] markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
             if (markToMarkRecords != null)
                 AddMarkToMarkAdjustmentRecords(fontFeatureTable, markToMarkRecords);
 

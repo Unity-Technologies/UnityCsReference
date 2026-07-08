@@ -40,7 +40,8 @@ namespace UnityEditor.Build
         /// <summary>For ContentDirectory builds, the Hash128 of the build manifest as a string. For other build types, this is a default Hash128 string.</summary>
         public string BuildManifestHash;
 
-        ///<summary>For ContentDirectory builds, the build name. For Player builds, the product name from PlayerSettings.</summary>
+        ///<summary>For content directory builds, the build name. For Player builds, the product name from PlayerSettings.</summary>
+        ///<remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.buildName"/>. For content directory builds, it is the name set through <see cref="BuildContentDirectoryParameters.name"/>.</remarks>
         public string BuildName;
 
         /// <summary>For Player builds, the build options, as an array of string values from the <see cref="UnityEditor.BuildOptions"/> enum.</summary>

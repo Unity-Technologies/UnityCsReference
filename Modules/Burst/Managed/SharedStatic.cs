@@ -16,13 +16,14 @@ namespace Unity.Burst
     /// </summary>
     /// <typeparam name="T">Type of the data to share (must not contain any reference types)</typeparam>
     [VisibleToOtherModules]
-    public readonly unsafe struct SharedStatic<T> where T : unmanaged
+    public readonly unsafe struct SharedStatic<T> where T : struct
     {
         private readonly void* _buffer;
 
         private SharedStatic(void* buffer)
         {
             _buffer = buffer;
+            CheckIf_T_IsUnmanagedOrThrow(); // We will remove this once we have full support for unmanaged constraints with C# 8.0
         }
 
         /// <summary>
@@ -156,6 +157,13 @@ namespace Unity.Burst
                 alignment,
                 BurstRuntime.GetHashCode64(contextType),
                 BurstRuntime.GetHashCode64(subContextType));
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckIf_T_IsUnmanagedOrThrow()
+        {
+            if (!Unity.Burst.LowLevel.Unsafe.BurstUnsafeUtility.IsUnmanaged<T>())
+                throw new InvalidOperationException($"The type {typeof(T)} used in SharedStatic<{typeof(T)}> must be unmanaged (contain no managed types).");
         }
     }
 

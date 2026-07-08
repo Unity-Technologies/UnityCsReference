@@ -389,16 +389,24 @@ namespace Unity.U2D.Physics
 
         static TransformAccessArray[] s_WorldTransformAccessArrays = null;
 
+        // Ensures the per-world array can index the given world.
+        // The world array can grow on demand at runtime, so an array sized to an earlier world count may be too small.
+        static void EnsureWorldTransformAccessArrayCapacity(int worldIndex)
+        {
+            if (s_WorldTransformAccessArrays == null || s_WorldTransformAccessArrays.Length <= worldIndex)
+                Array.Resize(ref s_WorldTransformAccessArrays, PhysicsWorld.allocatedWorldCapacity);
+        }
+
         /// <undoc/>
         [RequiredByNativeCode]
         static void CreateWorldTransformAccessArray(PhysicsWorld world, int capacity, int desiredJobCount)
         {
-            // Create the transform access arrays if not available.
-            if (s_WorldTransformAccessArrays == null)
-                s_WorldTransformAccessArrays = new TransformAccessArray[PhysicsWorld.maximumWorldsAllocated];
-
             // Fetch the transform access array.
             var worldIndex = world.m_Index1 - 1;
+
+            // Ensure the array can index this world (it can grow on demand at runtime).
+            EnsureWorldTransformAccessArrayCapacity(worldIndex);
+
             var transformAccessArray = s_WorldTransformAccessArrays[worldIndex];
 
             // Dispose if already created.
@@ -420,6 +428,11 @@ namespace Unity.U2D.Physics
 
             // Fetch the transform access array.
             var worldIndex = world.m_Index1 - 1;
+
+            // The array may pre-date a runtime grow, so it might not extend to this world.
+            if (worldIndex >= s_WorldTransformAccessArrays.Length)
+                return;
+
             var transformAccessArray = s_WorldTransformAccessArrays[worldIndex];
 
             // Dispose if already created.
@@ -433,11 +446,11 @@ namespace Unity.U2D.Physics
         /// <undoc/>
         internal static TransformAccessArray GetWorldTransformAccessArray(PhysicsWorld world)
         {
-            // Create the transform access arrays if not available.
-            if (s_WorldTransformAccessArrays == null)
-                s_WorldTransformAccessArrays = new TransformAccessArray[PhysicsWorld.maximumWorldsAllocated];
-
             var worldIndex = world.m_Index1 - 1;
+
+            // Ensure the array can index this world (it can grow on demand at runtime).
+            EnsureWorldTransformAccessArrayCapacity(worldIndex);
+
             var transformAccessArray = s_WorldTransformAccessArrays[worldIndex];
 
             if (transformAccessArray.isCreated)

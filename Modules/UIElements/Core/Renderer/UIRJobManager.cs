@@ -13,17 +13,11 @@ namespace UnityEngine.UIElements.UIR
     {
         const string k_JobManagerName = $"Renderer.{nameof(JobManager)}";
 
-        NativePagedList<NudgeJobData> m_NudgeJobs = new NativePagedList<NudgeJobData>(64, k_JobManagerName);
         NativePagedList<ConvertMeshJobData> m_ConvertMeshJobs = new NativePagedList<ConvertMeshJobData>(64, k_JobManagerName);
         NativePagedList<ConvertMeshExtrasData> m_ConvertMeshExtras = new NativePagedList<ConvertMeshExtrasData>(16, k_JobManagerName);
         NativePagedList<CopyMeshJobData> m_CopyMeshJobs = new NativePagedList<CopyMeshJobData>(64, k_JobManagerName);
 
         JobMerger m_JobMerger = new JobMerger(128);
-
-        public void Add(ref NudgeJobData job)
-        {
-            m_NudgeJobs.Add(ref job);
-        }
 
         public void Add(ref ConvertMeshJobData job)
         {
@@ -39,14 +33,6 @@ namespace UnityEngine.UIElements.UIR
         public unsafe ConvertMeshExtrasData* AllocConvertMeshExtras()
         {
             return m_ConvertMeshExtras.AllocLast();
-        }
-
-        public unsafe void CompleteNudgeJobs()
-        {
-            foreach (NativeSlice<NudgeJobData> page in m_NudgeJobs.GetPages())
-                m_JobMerger.Add(JobProcessor.ScheduleNudgeJobs((IntPtr)page.GetUnsafePtr(), page.Length));
-            m_JobMerger.MergeAndReset().Complete();
-            m_NudgeJobs.Reset();
         }
 
         public unsafe void CompleteConvertMeshJobs()
@@ -84,7 +70,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                m_NudgeJobs.Dispose();
                 m_ConvertMeshJobs.Dispose();
                 m_ConvertMeshExtras.Dispose();
                 m_CopyMeshJobs.Dispose();
@@ -108,35 +93,15 @@ namespace UnityEngine.UIElements.UIR
 
     // *** The following structs must remain in sync with those defined in UIRendererJobProcessor ***
     [StructLayout(LayoutKind.Sequential)]
-    struct NudgeJobData
-    {
-        public IntPtr headSrc;
-        public IntPtr headDst;
-        public int headCount;
-
-        public IntPtr tailSrc;
-        public IntPtr tailDst;
-        public int tailCount;
-
-        public int vertStride; // Vertex + Extra (bytes)
-
-        public Matrix4x4 transform;
-
-        public int keepZ;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     struct ConvertMeshJobData
     {
         public IntPtr vertSrc;
         public IntPtr vertDst;
         public int vertCount;
         public int vertStride; // Vertex + Extra (bytes)
-        public Matrix4x4 transform;
         public ushort clipRectId;
-        public ushort transformId;
+        public ushort elementId;
         public ushort dynamicColorOrTextCoreId;
-        public ushort opacityId;
         public VertexFlags flags;
         public ushort textureId;
         public ushort gradientSettingsIndexOffset;

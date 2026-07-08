@@ -41,7 +41,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal static readonly UserSettings DefaultUserSettings = new UserSettings { UseExistingBuild = false };
 
+        [Serializable]
+        struct LocalPlayerAnalyticsData : ICustomInstanceAnalyticsData
+        {
+            public bool IsReuseBuildEnabled; // The "Use Existing Build" checkbox value the user selected at scenario start.
+            public bool DidReuseBuild;       // Whether an existing build was actually reused instead of being rebuilt.
+            public string ToJsonString() => JsonUtility.ToJson(this);
+        }
+
         internal override string GetTypeNameForAnalytics() => "Local";
+
+        protected internal override ICustomInstanceAnalyticsData GetCustomAnalyticsData(ExecutionGraph graph)
+        {
+            // Read both values from the executed graph rather than from the live user settings, so that the
+            // reported data reflects what the scenario actually used.
+            var isReuseBuildEnabled = false;
+            var didReuseBuild = false;
+            foreach (var node in graph.GetNodes(ExecutionStage.Prepare))
+            {
+                if (node is BuildPlayerNode buildNode)
+                {
+                    isReuseBuildEnabled = buildNode.ReuseExistingBuild?.GetValue<bool>() ?? false;
+                    didReuseBuild = buildNode.ReusedExistingBuild?.GetValue<bool>() ?? false;
+                    break;
+                }
+            }
+
+            return new LocalPlayerAnalyticsData { IsReuseBuildEnabled = isReuseBuildEnabled, DidReuseBuild = didReuseBuild };
+        }
 
         protected internal override void SetupExecutionGraph(ExecutionGraphBuilder executionGraph)
         {

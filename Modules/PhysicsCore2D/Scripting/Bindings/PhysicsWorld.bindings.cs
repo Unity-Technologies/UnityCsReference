@@ -123,6 +123,9 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::CastMover", IsThreadSafe = true)] extern internal static PhysicsQuery.WorldMoverResult PhysicsWorld_CastMover(PhysicsWorld world, PhysicsQuery.WorldMoverInput input);
         [NativeMethod(Name = "PhysicsWorld::GetAwakeBodyCount", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetAwakeBodyCount(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetCounters(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::GetBounds", IsThreadSafe = true)] extern internal static PhysicsAABB PhysicsWorld_GetBounds(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::CreateSnapshot", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CreateSnapshot(PhysicsWorld world, Allocator allocator);
+        [NativeMethod(Name = "PhysicsWorld::RestoreSnapshot")] extern internal static bool PhysicsWorld_RestoreSnapshot(PhysicsWorld world, ReadOnlySpan<byte> image);
         [NativeMethod(Name = "PhysicsWorld::GetProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetProfile(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
         [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();
@@ -147,6 +150,12 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetDrawColors", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawColors PhysicsWorld_GetDrawColors(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetDrawThickness", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawThickness(PhysicsWorld world, float thickness);
         [NativeMethod(Name = "PhysicsWorld::GetDrawThickness", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetDrawThickness(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetDrawOrder", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawOrder(PhysicsWorld world, int drawOrder);
+        [NativeMethod(Name = "PhysicsWorld::GetDrawOrder", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetDrawOrder(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetDrawTarget", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawTarget(PhysicsWorld world, PhysicsWorld.DrawTarget drawTarget);
+        [NativeMethod(Name = "PhysicsWorld::GetDrawTarget", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawTarget PhysicsWorld_GetDrawTarget(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetAutoClearCustom", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetAutoClearCustom(PhysicsWorld world, bool autoClearCustom);
+        [NativeMethod(Name = "PhysicsWorld::GetAutoClearCustom", IsThreadSafe = true)] extern internal static bool PhysicsWorld_GetAutoClearCustom(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetDrawFillAlpha", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawFillAlpha(PhysicsWorld world, float alpha);
         [NativeMethod(Name = "PhysicsWorld::GetDrawFillAlpha", IsThreadSafe = true)] extern internal static float PhysicsWorld_GetDrawFillAlpha(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetDrawPointScale", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetDrawPointScale(PhysicsWorld world, float scale);
@@ -187,6 +196,6 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetOwnerUserData(PhysicsWorld world, PhysicsUserData physicsUserData, int ownerKey);
         [NativeMethod(Name = "PhysicsWorld::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsWorld_GetOwnerUserData(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsDefaultWorld", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsDefaultWorld(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::DrawAllWorlds")] extern internal static void PhysicsWorld_DrawAllWorlds(PhysicsAABB drawAABB);
+        [NativeMethod(Name = "PhysicsWorld::DrawAllWorlds")] extern internal static void PhysicsWorld_DrawAllWorlds(PhysicsAABB drawAABB, PhysicsWorld.DrawTarget cameraTarget);
     }
 }

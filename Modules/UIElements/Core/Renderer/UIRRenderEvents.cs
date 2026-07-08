@@ -20,7 +20,6 @@ namespace UnityEngine.UIElements.UIR
 
     internal static class RenderEvents
     {
-        static readonly ProfilerMarker k_NudgeVerticesMarker = new (ProfilerCategory.UIToolkit, "UIR.NudgeVertices");
 
         private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 
@@ -32,7 +31,7 @@ namespace UnityEngine.UIElements.UIR
             else
                 stats.nonRecursiveClipUpdates++;
 
-            DepthFirstOnClippingChanged(renderTreeManager, renderData.parent, renderData, dirtyID, hierarchical, true, false, false, false, renderTreeManager.device, ref stats);
+            DepthFirstOnClippingChanged(renderTreeManager, renderData.parent, renderData, dirtyID, hierarchical, true, false, false, false, ref stats);
         }
 
         internal static void ProcessOnOpacityChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
@@ -51,7 +50,7 @@ namespace UnityEngine.UIElements.UIR
         internal static void ProcessOnTransformOrSizeChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
             stats.recursiveTransformUpdates++;
-            DepthFirstOnTransformOrSizeChanged(renderTreeManager, renderData, dirtyID, renderTreeManager.device, false, false, ref stats);
+            DepthFirstOnTransformOrSizeChanged(renderTreeManager, renderData, dirtyID, false, false, false, ref stats);
         }
 
         static Matrix4x4 GetTransformIDTransformInfo(RenderData renderData)
@@ -219,8 +218,11 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // TransformID
-            // Since transform type is controlled by render hints which are locked on the VE by now, we can
-            // go ahead and prep transform data now and never check on it again under regular circumstances
+            // Non-identity rotation/scale, or a Z-translation, makes this a sticky bone. Z must go
+            // through the full bone matrix because the ElementInfo offset only carries X/Y.
+            if (!renderData.isGroupTransform && (!ve.hasDefaultRotationAndScale || ve.has3DTranslation))
+                renderData.flags |= RenderDataFlags.IsStickyBone;
+
             Debug.Assert(!RenderData.AllocatesID(renderData.transformID));
             if (NeedsTransformID(ve))
                 renderData.transformID = renderTreeManager.shaderInfoAllocator.AllocTransform(); // May fail, that's ok
@@ -454,6 +456,7 @@ namespace UnityEngine.UIElements.UIR
                 renderData.transformID = ShaderInfoAllocator.identityTransform;
             }
             renderData.boneTransformAncestor = renderData.groupTransformAncestor = null;
+            renderTreeManager.ReleaseElementId(renderData);
             if (renderData.tailMesh != null)
             {
                 renderTreeManager.device.Free(renderData.tailMesh);
@@ -485,7 +488,6 @@ namespace UnityEngine.UIElements.UIR
             bool isPendingHierarchicalRepaint,  // MUST be false on the root call.
             bool inheritedClipRectIDChanged,    // MUST be false on the root call.
             bool inheritedMaskingChanged,       // MUST be false on the root call.
-            UIRenderDevice device,
             ref ChainBuilderStats stats)
         {
             bool upToDate = dirtyID == renderData.dirtyID;
@@ -653,7 +655,6 @@ namespace UnityEngine.UIElements.UIR
                         isPendingHierarchicalRepaint,
                         clipRectIDChanged,
                         maskingChanged,
-                        device,
                         ref stats);
 
                     child = child.nextSibling;
@@ -662,7 +663,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         static void DepthFirstOnOpacityChanged(RenderTreeManager renderTreeManager, float parentCompositeOpacity, RenderData renderData,
-            uint dirtyID, bool hierarchical, ref ChainBuilderStats stats, bool isDoingFullVertexRegeneration = false)
+            uint dirtyID, bool hierarchical, ref ChainBuilderStats stats)
         {
             if (dirtyID == renderData.dirtyID)
                 return;
@@ -726,19 +727,8 @@ namespace UnityEngine.UIElements.UIR
                     renderTreeManager.shaderInfoAllocator.SetOpacityValue(renderData.opacityID, newOpacity);
             }
 
-            if ((renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0)
-                isDoingFullVertexRegeneration = true;
-
-            if (isDoingFullVertexRegeneration)
-            {
-                // A parent already called UIEOnVisualsChanged with hierarchical=true
-            }
-            else if (changedOpacityID && ((renderData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0) &&
-                     (renderData.headMesh != null || renderData.tailMesh != null))
-            {
-                // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
-                renderData.renderTree.OnRenderDataOpacityIdChanged(renderData);
-            }
+            if (changedOpacityID)
+                renderTreeManager.MarkElementInfoDirty(renderData);
 
             if (compositeOpacityChanged || changedOpacityID || hierarchical)
             {
@@ -746,8 +736,7 @@ namespace UnityEngine.UIElements.UIR
                 var child = renderData.firstChild;
                 while (child != null)
                 {
-                    DepthFirstOnOpacityChanged(renderTreeManager, newOpacity, child, dirtyID, hierarchical, ref stats,
-                        isDoingFullVertexRegeneration);
+                    DepthFirstOnOpacityChanged(renderTreeManager, newOpacity, child, dirtyID, hierarchical, ref stats);
 
                     child = child.nextSibling;
                 }
@@ -795,7 +784,7 @@ namespace UnityEngine.UIElements.UIR
                 renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
         }
 
-        static void DepthFirstOnTransformOrSizeChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
+        static void DepthFirstOnTransformOrSizeChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, bool isAncestorOfChangeSkinned, bool transformChanged, bool parentBoneChanged, ref ChainBuilderStats stats)
         {
             if (dirtyID == renderData.dirtyID)
                 return;
@@ -805,6 +794,7 @@ namespace UnityEngine.UIElements.UIR
             renderData.flags |= RenderDataFlags.IsClippingRectDirty;
 
             transformChanged |= (renderData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
+            bool promotedToBone = false;
 
             if (RenderData.AllocatesID(renderData.clipRectID))
             {
@@ -814,6 +804,12 @@ namespace UnityEngine.UIElements.UIR
 
             if (transformChanged)
             {
+                promotedToBone = !RenderData.AllocatesID(renderData.transformID)
+                    && !renderData.isGroupTransform
+                    && !renderData.isNestedRenderTreeRoot
+                    && (!renderData.owner.hasDefaultRotationAndScale || renderData.owner.has3DTranslation)
+                    && PromoteToBone(renderTreeManager, renderData);
+
                 if (UpdateLocalFlipsWinding(renderData))
                 {
                     // TODO: Optimized flip-winding instead of a full repaint
@@ -835,6 +831,15 @@ namespace UnityEngine.UIElements.UIR
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
+            else if (parentBoneChanged)
+            {
+                // An ancestor was promoted: re-point to the new nearest bone (the parent's bone) and rewrite the record.
+                var bone = RenderData.AllocatesID(renderData.parent.transformID) ? renderData.parent : renderData.parent.boneTransformAncestor;
+                renderData.boneTransformAncestor = bone;
+                renderData.transformID = bone.transformID;
+                renderData.transformID.ownedState = OwnedState.Inherited;
+                renderTreeManager.MarkElementInfoDirty(renderData);
+            }
             else if (!transformChanged)
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
@@ -853,14 +858,9 @@ namespace UnityEngine.UIElements.UIR
             else if ((renderData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 &&
                      (renderData.headMesh != null || renderData.tailMesh != null))
             {
-                // If a visual update will happen, then skip work here as the visual update will incorporate the transformed vertices
-                if (NudgeVerticesToNewSpace(renderData, renderTreeManager, device))
-                    stats.nudgeTransformed++;
-                else
-                {
-                    renderData.renderTree.OnRenderDataVisualsChanged(renderData, false); // Nudging not allowed, so do a full visual repaint
-                    stats.visualUpdateTransformed++;
-                }
+                // Offset to the bone shifted: rewrite the record (vertices stay local). Descendants recurse below.
+                renderTreeManager.MarkElementInfoDirty(renderData);
+                stats.nudgeTransformed++;
             }
 
             if (dirtyHasBeenResolved)
@@ -872,14 +872,31 @@ namespace UnityEngine.UIElements.UIR
 
             if (!renderData.isGroupTransform)
             {
+                bool childParentBoneChanged = promotedToBone
+                    || (parentBoneChanged && !RenderData.AllocatesID(renderData.transformID) && !renderData.isNestedRenderTreeRoot);
+
                 // Recurse on children
                 var child = renderData.firstChild;
                 while (child != null)
                 {
-                    DepthFirstOnTransformOrSizeChanged(renderTreeManager, child, dirtyID, device, isAncestorOfChangeSkinned, transformChanged, ref stats);
+                    DepthFirstOnTransformOrSizeChanged(renderTreeManager, child, dirtyID, isAncestorOfChangeSkinned, transformChanged, childParentBoneChanged, ref stats);
                     child = child.nextSibling;
                 }
             }
+        }
+
+        static bool PromoteToBone(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            var shaderInfo = renderTreeManager.shaderInfoAllocator;
+            BMPAlloc boneId = shaderInfo.AllocTransform();
+            if (!boneId.IsValid())
+                return false;
+
+            renderData.flags |= RenderDataFlags.IsStickyBone;
+            renderData.transformID = boneId;
+            renderData.boneTransformAncestor = null; // Bones resolve relative to their group/tree
+            renderTreeManager.MarkElementInfoDirty(renderData);
+            return true;
         }
 
         public static bool UpdateTextCoreSettings(RenderTreeManager renderTreeManager, TextElement te)
@@ -921,90 +938,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return true;
-        }
-
-        static bool NudgeVerticesToNewSpace(RenderData renderData, RenderTreeManager renderTreeManager, UIRenderDevice device)
-        {
-            using (k_NudgeVerticesMarker.Auto())
-            {
-                Matrix4x4 newTransform;
-                UIRUtility.GetVerticesTransformInfo(renderData, out newTransform);
-                Matrix4x4 nudgeTransform = newTransform * renderData.verticesSpace.inverse;
-
-                // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
-                // considerably, then we assume that the vertices have become degenerate beyond restoration.
-                // In this case we refuse to nudge, and ask for this element to be fully repainted to regenerate
-                // the vertices without error.
-                const float kMaxAllowedDeviation = 0.0001f;
-                Matrix4x4 reconstructedNewTransform = nudgeTransform * renderData.verticesSpace;
-                float error;
-                error = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
-                error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
-                error += Mathf.Abs(newTransform.m02 - reconstructedNewTransform.m02);
-                error += Mathf.Abs(newTransform.m03 - reconstructedNewTransform.m03);
-                error += Mathf.Abs(newTransform.m10 - reconstructedNewTransform.m10);
-                error += Mathf.Abs(newTransform.m11 - reconstructedNewTransform.m11);
-                error += Mathf.Abs(newTransform.m12 - reconstructedNewTransform.m12);
-                error += Mathf.Abs(newTransform.m13 - reconstructedNewTransform.m13);
-                error += Mathf.Abs(newTransform.m20 - reconstructedNewTransform.m20);
-                error += Mathf.Abs(newTransform.m21 - reconstructedNewTransform.m21);
-                error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
-                error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
-                if (error > kMaxAllowedDeviation)
-                    return false;
-
-                renderData.verticesSpace = newTransform; // This is the new space of the vertices
-
-                var job = new NudgeJobData
-                {
-                    transform = nudgeTransform,
-                    keepZ = renderTreeManager.isFlat ? 1 : 0,
-                    vertStride = (int)device.vertexStride,
-                };
-
-                if (renderData.headMesh != null)
-                    PrepareNudgeVertices(device, renderData.headMesh,
-                        out job.headSrc, out job.headDst, out job.headCount);
-
-                if (renderData.tailMesh != null)
-                    PrepareNudgeVertices(device, renderData.tailMesh,
-                        out job.tailSrc, out job.tailDst, out job.tailCount);
-
-                renderTreeManager.jobManager.Add(ref job);
-
-                if (renderData.hasExtraMeshes)
-                {
-                    ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
-                    BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
-                    while (extraMesh != null)
-                    {
-                        var extraJob = new NudgeJobData
-                        {
-                            transform = job.transform,
-                            keepZ = job.keepZ,
-                            vertStride = job.vertStride,
-                        };
-                        PrepareNudgeVertices(device, extraMesh.data,
-                            out extraJob.headSrc, out extraJob.headDst, out extraJob.headCount);
-                        renderTreeManager.jobManager.Add(ref extraJob);
-                        extraMesh = extraMesh.next;
-                    }
-                }
-
-                return true;
-            }
-        }
-
-        static void PrepareNudgeVertices(UIRenderDevice device, MeshHandle mesh,
-            out IntPtr src, out IntPtr dst, out int count)
-        {
-            int vertCount = (int)mesh.allocVerts.size;
-            RawSlice oldSlice = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
-            device.Update(mesh, (uint)vertCount, out RawSlice newSlice);
-
-            src = oldSlice.GetUnsafeReadOnlyPtr();
-            dst = newSlice.GetUnsafePtr();
-            count = vertCount;
         }
 
         static ClipMethod DetermineSelfClipMethod(RenderTreeManager renderTreeManager, RenderData renderData)
@@ -1086,7 +1019,9 @@ namespace UnityEngine.UIElements.UIR
 
         static bool NeedsTransformID(VisualElement ve)
         {
-            return !ve.renderData.isGroupTransform && (ve.renderHints & RenderHints.BoneTransform) != 0;
+            var renderData = ve.renderData;
+            return !renderData.isGroupTransform &&
+                (renderData.isStickyBone || (ve.renderHints & RenderHints.BoneTransform) != 0);
         }
 
         // Indicates whether the transform id assigned to an element has changed. It does not care who the owner is.

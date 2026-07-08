@@ -36,6 +36,7 @@ internal class CloneEditorInstanceStatusElement : VisualElement
     private Label m_LogInfoText;
     private Label m_LogWarningText;
     private Label m_LogErrorText;
+    private int m_PlayerInstanceIndex;
     private UnityPlayer m_Player;
 
     internal CloneEditorInstanceStatusElement(Instance instance, CloneEditorController.InstanceSettings settings, SerializedProperty usersettings)
@@ -43,7 +44,11 @@ internal class CloneEditorInstanceStatusElement : VisualElement
         RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         m_Instance = instance;
-        m_Player = MultiplayerPlaymode.Players[settings.PlayerInstanceIndex];
+        m_PlayerInstanceIndex = settings.PlayerInstanceIndex;
+        var players = MultiplayerPlaymode.Players;
+        m_Player = players != null && m_PlayerInstanceIndex < players.Length
+            ? players[m_PlayerInstanceIndex]
+            : null;
         Add(CreatePills(settings.RoleMask, settings.PlayerTag));
 
         var keepAliveProperty = usersettings.FindPropertyRelative(nameof(CloneEditorController.UserSettings.KeepAliveEnabled));
@@ -166,6 +171,8 @@ internal class CloneEditorInstanceStatusElement : VisualElement
             Debug.LogWarning("Clone Editor Instance Status Element Error: Cannot activate instance that is already running.");
             return;
         }
+        if (m_Player == null)
+            return;
         var args = new List<string> { CommandLineParameters.k_ScenarioClone };
         m_Player.Activate(out _, args);
         UpdateUI();
@@ -195,12 +202,20 @@ internal class CloneEditorInstanceStatusElement : VisualElement
 
     private void UpdateUI()
     {
+        if (m_Player == null)
+        {
+            var players = MultiplayerPlaymode.Players;
+            if (players != null && m_PlayerInstanceIndex < players.Length)
+                m_Player = players[m_PlayerInstanceIndex];
+        }
         UpdateActivationButtons();
         AssignLogs();
     }
 
     private void UpdateActivationButtons()
     {
+        if (m_Player == null)
+            return;
         var isInstanceExecuting = m_Instance.StatusData.IsExecuting();
         var isInPlayMode = UnityEditor.EditorApplication.isPlaying;
         var shouldEnable = !isInPlayMode &&  !isInstanceExecuting;

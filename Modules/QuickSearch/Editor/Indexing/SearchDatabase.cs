@@ -774,7 +774,7 @@ namespace UnityEditor.Search
                 // If there is any setup to do before merging, do it now.
                 onBeforeMerge?.Invoke(mergeTask);
                 MergeProducedArtifacts(importContext, mergeTask, productionTaskDoneWaitHandle, artifactsImportedHandle, baseScore);
-            }, () =>
+            }, finalize: () =>
             {
                 // Resolve merge task when thread is done
                 mergeTask.Resolve(new TaskData(null, null));

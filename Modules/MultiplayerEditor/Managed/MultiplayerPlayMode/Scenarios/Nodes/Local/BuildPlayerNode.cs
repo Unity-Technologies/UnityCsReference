@@ -36,6 +36,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeReference] public NodeOutput<string> RelativeExecutablePath;
         [SerializeReference] public NodeOutput<Hash128> BuildHash;
         [SerializeReference] public NodeOutput<BuildReport> BuildReport;
+        // True when an existing build was actually reused instead of being rebuilt.
+        [SerializeReference] public NodeOutput<bool> ReusedExistingBuild;
 
         public BuildPlayerNode()
         {
@@ -48,6 +50,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             RelativeExecutablePath = new(this);
             BuildHash = new(this);
             BuildReport = new(this);
+            ReusedExistingBuild = new(this);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -55,6 +58,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var buildPath = GetInput(BuildPath);
             var buildProfile = GetInput(Profile);
             var reuseExistingBuild = GetInput(ReuseExistingBuild);
+
+            // Default to false; flipped to true only when an existing build is successfully reused.
+            SetOutput(ReusedExistingBuild, false);
 
             if (EditorUtility.scriptCompilationFailed)
                 throw new ApplicationException("Script compilation failed, aborting build.");
@@ -82,6 +88,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                             SetOutput(RelativeExecutablePath, relativeExecutablePath);
                             SetOutput(BuildHash, ComputeBuildHash(outputPath));
                             SetOutput(BuildReport, null);
+                            SetOutput(ReusedExistingBuild, true);
                             return;
                         }
                         catch (Exception)

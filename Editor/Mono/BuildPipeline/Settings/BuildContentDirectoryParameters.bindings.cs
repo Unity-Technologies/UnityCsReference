@@ -29,15 +29,17 @@ namespace UnityEditor
         public string outputPath { get; set; }
 
         /// <summary>
-        /// Array of paths to the root Assets that should be included in the build.
+        /// Array of paths to the root assets to include in the build.
         /// </summary>
         /// <remarks>
-        /// This property should contain project-relative paths to existing ScriptableObject-derived Assets. Each specified
-        /// Asset will be included in the build, and available for direct load. Any dependency referenced from the Asset will also
-        /// be included in the build. Root assets are automatically loaded when a Content Directory is registered, so only
-        /// ScriptableObject-derived assets are permitted to prevent accidental misuse (such as attempting to use large assets
-        /// like Textures or Meshes as root assets).
+        /// Set this property to project-relative paths of existing <see cref="ScriptableObject"/>-derived assets. The build
+        /// includes each specified asset along with any dependency it references. After you register the content directory, retrieve
+        /// the root assets at runtime with <see cref="Unity.Loading.ContentLoadManager.GetRootAssets{T}()"/>.
+        ///
+        /// Only ScriptableObject-derived assets are permitted as roots, to prevent accidental misuse such as using large assets
+        /// like Textures or Meshes as root assets.
         /// </remarks>
+        /// <seealso cref="Unity.Loading.ContentLoadManager.GetRootAssets{T}()"/>
         public string[] rootAssetPaths { get; set; }
 
         /// <summary>
@@ -48,6 +50,17 @@ namespace UnityEditor
         /// <summary>
         /// The compression settings for the build. Defaults to <see cref="BuildCompression.Uncompressed"/>.
         /// </summary>
+        /// <remarks>
+        /// With the default <see cref="BuildCompression.Uncompressed"/>, the build writes the content as individual loose files
+        /// without an archive wrapper. Set <see cref="BuildContentOptions.UseArchive"/> to wrap the output in archive (.archive)
+        /// files instead. Any other compression setting always produces archive files.
+        ///
+        /// <see cref="Unity.Loading.ContentLoadManager.RegisterContentDirectory(string)"/> can load a content directory whether
+        /// its content is stored as loose files or wrapped in archive files. You can also create archive files from loose-file
+        /// output as a separate step after the build with
+        /// <see cref="Build.Content.ContentBuildInterface.ArchiveAndCompress(Build.Content.ResourceFile[], string, BuildCompression)"/>.
+        /// </remarks>
+        /// <seealso cref="BuildContentOptions.UseArchive"/>
         public BuildCompression compression { get; set; }
 
         // Internal: optional BuildTarget. When unset at default, native code takes both platform and subtarget from current Editor build settings.
@@ -72,9 +85,14 @@ namespace UnityEditor
         /// Optional name for the build.
         /// </summary>
         /// <remarks>
-        /// This name is stored in the BuildReport and BuildManifest for identification purposes.
+        /// This name is stored in the BuildReport and BuildManifest for identification purposes. It is reported as
+        /// <see cref="Build.Reporting.BuildSummary.buildName"/> in the build's <see cref="Build.Reporting.BuildReport"/>, and as
+        /// <see cref="Build.BuildReportSummary.BuildName"/> in the lightweight build summary.
         /// If not specified, the leaf folder name of <see cref="outputPath"/> is used as the default.
         /// </remarks>
+        /// <seealso cref="Build.Reporting.BuildSummary.buildName"/>
+        /// <seealso cref="Build.BuildReportSummary.BuildName"/>
+        /// <seealso cref="Unity.Loading.ContentDirectoryHandle.BuildName"/>
         public string name { get; set; }
 
         /// <summary>

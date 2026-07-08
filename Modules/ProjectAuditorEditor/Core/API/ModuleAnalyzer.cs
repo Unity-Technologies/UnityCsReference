@@ -7,6 +7,31 @@ using System.Reflection;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
+    // Temporary class to disable analyzers as we move them to the rules package
+    internal class MigratedToRulesPackageAttribute : Attribute
+    {
+        public MigratedToRulesPackageAttribute(int sinceMajorVersion)
+        {
+            m_SinceMajorVersion = sinceMajorVersion;
+        }
+
+        readonly int m_SinceMajorVersion;
+
+        // True once an installed rules package version provides this migrated analyzer
+        public bool IsProvidedByInstalledPackage()
+        {
+            var version = ProjectAuditorRulesPackage.Version;
+            if (string.IsNullOrEmpty(version))
+                return false;
+
+            var versionParts = version.Split('.');
+            if (versionParts.Length > 0 && int.TryParse(versionParts[0], out var majorVersion))
+                return majorVersion >= m_SinceMajorVersion;
+
+            return false;
+        }
+    }
+
     /// <summary>
     /// Base class for all ModuleAnalyzers
     /// </summary>

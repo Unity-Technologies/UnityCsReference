@@ -116,6 +116,10 @@ namespace Unity.Profiling.Editor.UI
             m_BlocksGraphView.Responder = this;
             UpdateTargetLabelText();
 
+            // Ensure the toolbar menu's label shows a tooltip when its text is ellided.
+            var targetMenuTextElement = m_TargetMenu.Q<TextElement>(className: ToolbarMenu.textUssClassName);
+            targetMenuTextElement.pickingMode = PickingMode.Position;
+
             m_KeyContainer.RegisterCallback<ClickEvent>(OnKeyContainerClicked);
             View.RegisterCallback<GeometryChangedEvent>(ViewPerformedLayout);
             View.RegisterCallback<KeyDownEvent>(OnKeyDownInView, TrickleDown.TrickleDown);

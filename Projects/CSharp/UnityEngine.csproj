@@ -21,6 +21,10 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDCommands.cs">
       <Link>External\AMDUnityPlugin\Scripts\AMDCommands.cs</Link>
@@ -174,9 +178,6 @@
     </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeWithContext.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\LifecycleScopeWithContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ManagedObjectsAwokenScope.cs">
-      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ManagedObjectsAwokenScope.cs</Link>
     </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\OnceInScope.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\OnceInScope.cs</Link>
@@ -2575,6 +2576,9 @@
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontEngineMarshallingCommon.cs">
       <Link>Modules\TextCoreFontEngine\Managed\FontEngineMarshallingCommon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontFaceHandle.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FontFaceHandle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontFeatureCommon.cs">
       <Link>Modules\TextCoreFontEngine\Managed\FontFeatureCommon.cs</Link>
     </Compile>
@@ -4336,6 +4340,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRElementBuilder.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRElementBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRElementIdPool.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRElementIdPool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryPool.cs">
       <Link>Modules\UIElements\Core\Renderer\UIREntryPool.cs</Link>
     </Compile>
@@ -4407,9 +4414,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRNativePagedList.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRNativePagedList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIROpacityIdAccelerator.cs">
-      <Link>Modules\UIElements\Core\Renderer\UIROpacityIdAccelerator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRPainter2D.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRPainter2D.cs</Link>
@@ -7083,10 +7087,8 @@
     </AdditionalFiles>
   </ItemGroup>
   <ItemGroup>
-    <TargetingPack Include="Unity.BCLExtensions.Netstandard21" Path="/usr/src/app/repos/unity/External/BCLExtensions/built/TargetingPacks/netstandard2.1" NuGetPackageId="Unity.BCLExtensions.Netstandard21" NuGetPackageVersion="1.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <FrameworkReference Include="Unity.BCLExtensions.Netstandard21" />
   </ItemGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="UnityEnableAutoStaticsCleanupCodeGen" />
@@ -7096,13 +7098,23 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\Debug\ManagedMonolithic\BoundToNative\UnityEngine.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)../../artifacts/MonolithicEditorDlls/Debug/ManagedMonolithic/BoundToNative/UnityEngine.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_gtg6l9k1/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_j7nz6p0w/Unity.UIToolkit.SourceGenerator.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="8.0.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
   </ItemGroup>
 </Project>

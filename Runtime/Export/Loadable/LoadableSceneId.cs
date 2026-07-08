@@ -29,14 +29,19 @@ namespace Unity.Loading
     /// When authoring content in the Editor, use <see cref="LoadableSceneIdEditorUtility"/> to create LoadableSceneId objects and assign
     /// them to fields on ScriptableObject-derived classes.
     ///
-    /// Player and AssetBundle builds do not pull scenes referenced by LoadableSceneId into the build. Only
-    /// the scenes listed in <see cref="EditorBuildSettings.scenes"/> are included. However, a LoadableSceneId field in any built content can be
-    /// used to load the scene at runtime if it is available inside a registered ContentDirectory.
+    /// A LoadableSceneId is only supported in content built with <see cref="BuildPipeline.BuildContentDirectory"/>. If a
+    /// LoadableSceneId is found in serialized data during a Player or AssetBundle build, the reference is set to null in the
+    /// build output and an error is logged. Suppress this error with <see cref="BuildOptions.SuppressLoadableErrors"/> for Player
+    /// builds or <see cref="BuildAssetBundleOptions.SuppressLoadableErrors"/> for AssetBundle builds.
     ///
     /// When a scripting object that has LoadableSceneId fields loads, it does not automatically load the referenced scenes. Instead,
     /// scripts can use <see cref="SceneManager.LoadSceneAsync(LoadableSceneId, LoadSceneParameters)"/> to load the referenced scene when needed.
-    /// The loading capability is available in both Editor play mode and in the Player.
     /// Similarly, scripts can use <see cref="SceneManager"/> APIs to unload scenes when no longer needed.
+    ///
+    /// In the Player, <see cref="SceneManager.LoadSceneAsync(LoadableSceneId, LoadSceneParameters)"/> loads the scene from built content.
+    /// In Play mode it loads either the built scene or the live project scene, depending on where the LoadableSceneId came from.
+    /// A LoadableSceneId reached from built content, for example through a root asset, loads the built scene, while one created with
+    /// <see cref="LoadableSceneIdEditorUtility"/> loads the live project scene.
     /// </remarks>
     /// <example>
     /// <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/LoadableSceneId_Example.cs"/>

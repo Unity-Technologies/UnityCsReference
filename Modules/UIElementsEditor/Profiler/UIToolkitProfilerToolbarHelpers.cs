@@ -33,7 +33,13 @@ namespace UnityEditor.UIElements
         public static readonly string PingTooltip = L10n.Tr("Ping");
 
         public static ToolbarButton CreateOpenFrameDebuggerButton()
-            => new ToolbarButton(OpenFrameDebugger) { text = OpenFrameDebuggerLabel, tooltip = OpenFrameDebuggerTooltip };
+        {
+            var button = new ToolbarButton(OpenFrameDebugger) { text = OpenFrameDebuggerLabel, tooltip = OpenFrameDebuggerTooltip };
+            // Disable Frame Debugger in standalone profiler - it requires local PlayModeViews
+            if (MPE.ProcessService.level != MPE.ProcessLevel.Main)
+                button.SetEnabled(false);
+            return button;
+        }
 
         public static ToolbarButton CreateOpenUIToolkitDebuggerButton()
             => new ToolbarButton(OpenUIToolkitDebugger) { text = OpenUiToolkitDebuggerLabel, tooltip = OpenUiToolkitDebuggerTooltip };

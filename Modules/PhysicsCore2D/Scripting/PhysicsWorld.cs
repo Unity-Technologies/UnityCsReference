@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Jobs;
 using Unity.Collections;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Serialization;
 using static Unity.U2D.Physics.Scripting2D;
 
 namespace Unity.U2D.Physics
@@ -17,7 +18,7 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A world is a container for all other physics objects such as <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsJoint"/> etc.
     /// A world can be simulated in isolation from all other worlds.
-    /// The maximum number of worlds that can be created at one time is defined by <see cref="PhysicsCoreSettings2D.maximumWorlds"/>.
+    /// The number of worlds allocated up-front is defined by <see cref="PhysicsCoreSettings2D.initialWorldCapacity"/>, after which more are allocated on demand as required.
     /// A world is completely isolated from all other worlds.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -518,14 +519,36 @@ namespace Unity.U2D.Physics
             Average = 4
         }
 
+        /// <summary>
+        /// Controls which Unity editor views a <see cref="PhysicsWorld"/> is drawn into.
+        /// This only filters the built-in viewport rendering and does not control whether drawing occurs at all, which is governed by <see cref="PhysicsWorld.DrawOptions"/> and <see cref="PhysicsCoreSettings2D.renderingMode"/>.
+        /// </summary>
+        public enum DrawTarget
+        {
+            /// <summary>
+            /// The world is drawn in both the Scene view and the Game view.
+            /// </summary>
+            Both = 0,
+
+            /// <summary>
+            /// The world is drawn only in the Scene view.
+            /// A player build has no Scene view, so selecting this means the world is never drawn in a build.
+            /// </summary>
+            SceneView = 1,
+
+            /// <summary>
+            /// The world is drawn only in the Game view.
+            /// </summary>
+            GameView = 2
+        }
+
         #region Globals
 
         /// <summary>
-        /// Get the actual allocated  maximum worlds available.
-        /// This can differ at runtime from <see cref="PhysicsCoreSettings2D.maximumWorlds"/> if it was changed and the physics system has not been restarted.
-        /// Another reason this can differ would be if there was not available memory to allocate the requested maximum worlds.
+        /// Get the number of worlds currently allocated.
+        /// The world array grows on demand, so this can exceed <see cref="PhysicsCoreSettings2D.initialWorldCapacity"/> and can also differ from it if that setting was changed without restarting the physics system.
         /// </summary>
-        public static int maximumWorldsAllocated => PhysicsGlobal_GetMaximumWorldsAllocated();
+        public static int allocatedWorldCapacity => PhysicsGlobal_GetAllocatedWorldCapacity();
 
         /// <summary>
         /// Get/Set whether safety threading locks are enabled or not.
@@ -573,7 +596,7 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Get the number of created worlds.
-        /// This will be a value in the range of 1 to <see cref="PhysicsCoreSettings2D.maximumWorlds"/>.
+        /// This will be a value in the range of 1 to <see cref="allocatedWorldCapacity"/>.
         /// </summary>
         public static int worldCount => PhysicsWorld_GetWorldCount();
 
@@ -792,6 +815,104 @@ namespace Unity.U2D.Physics
         public static PhysicsWorld Create(PhysicsWorldDefinition definition) => PhysicsWorld_Create(definition);
 
         /// <summary>
+        /// An opaque, point-in-time capture of a <see cref="PhysicsWorld"/> simulation state, produced by <see cref="PhysicsWorld.CreateSnapshot"/>.
+        /// Restore it into the same world with <see cref="PhysicsWorld.ApplySnapshot"/>, or create a new world from it with <see cref="PhysicsWorld.Create(Snapshot, PhysicsWorldDefinition)"/>.
+        /// </summary>
+        /// <remarks>
+        /// A snapshot owns native memory and must be disposed after use.
+        /// A snapshot is only valid for the same Unity build that produced it and is not a portable on-disk format.
+        /// </remarks>
+        public struct Snapshot : IDisposable
+        {
+            internal Snapshot(NativeArray<byte> image) => m_Image = image;
+
+            /// <summary>
+            /// Whether this snapshot holds a valid captured image.
+            /// </summary>
+            public readonly bool IsCreated => m_Image.IsCreated;
+
+            /// <summary>
+            /// The size of the snapshot image in bytes.
+            /// </summary>
+            public readonly int Length => m_Image.IsCreated ? m_Image.Length : 0;
+
+            /// <summary>
+            /// Release the native memory held by this snapshot.
+            /// </summary>
+            public void Dispose()
+            {
+                if (m_Image.IsCreated)
+                    m_Image.Dispose();
+            }
+
+            internal readonly ReadOnlySpan<byte> AsReadOnlySpan() => m_Image.AsReadOnlySpan();
+
+            #region Internal
+
+            NativeArray<byte> m_Image;
+
+            #endregion
+        }
+
+        /// <summary>
+        /// Capture the current simulation state of this world into a <see cref="Snapshot"/>.
+        /// </summary>
+        /// <param name="allocator">The allocator for the snapshot memory. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A snapshot of the world that must be disposed of after use. The snapshot is not created if the world or allocator is invalid.</returns>
+        public readonly Snapshot CreateSnapshot(Allocator allocator = Allocator.Persistent) => new(PhysicsWorld_CreateSnapshot(this, allocator).ToNativeArray<byte>());
+
+        /// <summary>
+        /// Restore this world to the state captured in <paramref name="snapshot"/>, in place.
+        /// The world keeps the same handles, so any <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/> you already hold remain valid.
+        /// </summary>
+        /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/> on a compatible world.</param>
+        /// <returns>Whether the world was restored. Returns false if the snapshot or world is invalid, or the image is rejected.</returns>
+        public readonly bool ApplySnapshot(Snapshot snapshot)
+        {
+            if (!snapshot.IsCreated)
+                return false;
+
+            return PhysicsWorld_RestoreSnapshot(this, snapshot.AsReadOnlySpan());
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="PhysicsWorld"/> from <paramref name="snapshot"/>, using <paramref name="definition"/> for the settings a snapshot does not store.
+        /// </summary>
+        /// <remarks>
+        /// A snapshot restores the full simulation configuration, so these <see cref="PhysicsWorldDefinition"/> properties are taken from <paramref name="snapshot"/> and their values in <paramref name="definition"/> are ignored:
+        /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// All other <paramref name="definition"/> properties are applied normally, for example <see cref="PhysicsWorldDefinition.simulationWorkers"/> and <see cref="PhysicsWorldDefinition.simulationSubSteps"/>.
+        /// To use a value other than the snapshot's, set the matching property on the returned world after this call.
+        /// </remarks>
+        /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/>.</param>
+        /// <param name="definition">The world definition supplying the settings the snapshot does not store.</param>
+        /// <returns>The created world, restored to the snapshot state.</returns>
+        public static PhysicsWorld Create(Snapshot snapshot, PhysicsWorldDefinition definition)
+        {
+            // Create returns an invalid world when no world slots remain (a finite resource, see allocatedWorldCapacity); skip the restore in that case.
+            var world = Create(definition);
+            if (world.isValid)
+                world.ApplySnapshot(snapshot);
+
+            return world;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="PhysicsWorld"/> that is a copy of this world, including all of its <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/>.
+        /// </summary>
+        /// <remarks>
+        /// The clone is a separate world, so handles you hold for this world do not resolve against it; enumerate the clone with <see cref="GetBodies"/> and similar.
+        /// The clone is not owned and its <see cref="userData"/> is not copied; callback options come across but any callback targets must be set on the clone.
+        /// </remarks>
+        /// <returns>The cloned world.</returns>
+        public readonly PhysicsWorld Clone()
+        {
+            // Persistent rather than Temp: the intermediate image can be large for a big world, and this is not a hot path.
+            using var snapshot = CreateSnapshot(Allocator.Persistent);
+            return Create(snapshot, definition);
+        }
+
+        /// <summary>
         /// Destroy a world, destroying all objects contained within it such as all <see cref="PhysicsBody"/> and attached <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/>.
         /// If the object is owned with <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/> then you must provide the owner key it returned. Failing to do so will return a warning and the world will not be destroyed.
         /// You cannot destroy the <see cref="PhysicsWorld.defaultWorld"/> as it is permanently owned by Unity itself.
@@ -824,7 +945,6 @@ namespace Unity.U2D.Physics
         /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
         /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
         public static void SetOwner(ReadOnlySpan<PhysicsWorld> worlds, UnityEngine.Object owner, int ownerKey) => PhysicsWorld_SetOwner(worlds, owner, ownerKey);
-
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -2000,7 +2120,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct WorldCounters
+        public unsafe partial struct WorldCounters
         {
             /// <summary>
             /// The number of all body types.
@@ -2045,7 +2165,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// The total byte allocation used by the physics system.
             /// </summary>
-            public int memoryUsed { readonly get => m_MemoryUsed; set => m_MemoryUsed = value; }
+            public long usedMemory { readonly get => m_UsedMemory; set => m_UsedMemory = value; }
 
             /// <summary>
             /// The broadphase tree height for Static bodies.
@@ -2081,7 +2201,7 @@ namespace Unity.U2D.Physics
                     jointCount = countersA.jointCount + countersB.jointCount,
                     islandCount = countersA.islandCount + countersB.islandCount,
                     stackUsed = countersA.stackUsed + countersB.stackUsed,
-                    memoryUsed = countersA.memoryUsed + countersB.memoryUsed,
+                    usedMemory = countersA.usedMemory + countersB.usedMemory,
                     staticBroadphaseHeight = countersA.staticBroadphaseHeight + countersB.staticBroadphaseHeight,
                     broadphaseHeight = countersA.broadphaseHeight + countersB.broadphaseHeight,
                     taskCount = countersA.taskCount + countersB.taskCount
@@ -2107,7 +2227,7 @@ namespace Unity.U2D.Physics
                     jointCount = Mathf.Max(countersA.jointCount, countersB.jointCount),
                     islandCount = Mathf.Max(countersA.islandCount, countersB.islandCount),
                     stackUsed = Mathf.Max(countersA.stackUsed, countersB.stackUsed),
-                    memoryUsed = Mathf.Max(countersA.memoryUsed, countersB.memoryUsed),
+                    usedMemory = System.Math.Max(countersA.usedMemory, countersB.usedMemory),
                     staticBroadphaseHeight = Mathf.Max(countersA.staticBroadphaseHeight, countersB.staticBroadphaseHeight),
                     broadphaseHeight = Mathf.Max(countersA.broadphaseHeight, countersB.broadphaseHeight),
                     taskCount = Mathf.Max(countersA.taskCount, countersB.taskCount)
@@ -2116,6 +2236,7 @@ namespace Unity.U2D.Physics
 
             #region Internal
 
+            [SerializeField, FormerlySerializedAs("m_MemoryUsed")] long m_UsedMemory;
             [SerializeField] int m_BodyCount;
             [SerializeField] int m_ShapeCount;
             [SerializeField] int m_ContactCount;
@@ -2126,7 +2247,6 @@ namespace Unity.U2D.Physics
             [SerializeField] int m_StackUsed;
             [SerializeField] int m_StaticBroadphaseHeight;
             [SerializeField] int m_BroadphaseHeight;
-            [SerializeField] int m_MemoryUsed;
             [SerializeField] int m_TaskCount;
             fixed int m_ColorCounts[PhysicsConstants.SolverGraphColorCount];
 
@@ -2419,6 +2539,11 @@ namespace Unity.U2D.Physics
         /// Get the world counters.
         /// </summary>
         public readonly WorldCounters counters => PhysicsWorld_GetCounters(this);
+
+        /// <summary>
+        /// Get the bounding box that encloses all the shapes in the world.
+        /// </summary>
+        public readonly PhysicsAABB bounds => PhysicsWorld_GetBounds(this);
 
         /// <summary>
         /// Get the world counters, summed for all the active worlds.
@@ -3188,6 +3313,13 @@ namespace Unity.U2D.Physics
         public readonly IgnoreFilter drawFilter { get => PhysicsWorld_GetDrawFilter(this); set => PhysicsWorld_SetDrawFilter(this, value); }
 
         /// <summary>
+        /// Controls which Unity editor views this world is drawn into (Scene view, Game view or both).
+        /// This only filters the built-in viewport rendering; it does not control whether drawing occurs at all.
+        /// See <see cref="PhysicsWorldDefinition.drawTarget"/>.
+        /// </summary>
+        public readonly DrawTarget drawTarget { get => PhysicsWorld_GetDrawTarget(this); set => PhysicsWorld_SetDrawTarget(this, value); }
+
+        /// <summary>
         /// Controls the draw thickness (outline and orientation).
         /// </summary>
         public readonly float drawThickness { get => PhysicsWorld_GetDrawThickness(this); set => PhysicsWorld_SetDrawThickness(this, value); }
@@ -3221,6 +3353,20 @@ namespace Unity.U2D.Physics
         /// Controls the <see cref="PhysicsWorld.DrawContactType"/> used when drawing contact points.
         /// </summary>
         public readonly DrawContactType drawContactType { get => PhysicsWorld_GetDrawContactType(this); set => PhysicsWorld_SetDrawContactType(this, value);  }
+
+        /// <summary>
+        /// Controls the relative order this world is drawn in across all worlds.
+        /// Worlds with a lower draw order are drawn first, so worlds with a higher draw order are drawn on top.
+        /// See <see cref="PhysicsWorldDefinition.drawOrder"/>.
+        /// </summary>
+        public readonly int drawOrder { get => PhysicsWorld_GetDrawOrder(this); set => PhysicsWorld_SetDrawOrder(this, value); }
+
+        /// <summary>
+        /// Controls whether this world's custom draw is automatically cleared each frame.
+        /// When enabled (the default), custom draw elements with a lifetime of zero are cleared each frame so they must be submitted every frame to remain visible.
+        /// When disabled, custom draw is retained until <see cref="PhysicsWorld.ClearDraw"/> is called, so it persists across frames and repaints without being resubmitted.
+        /// </summary>
+        public readonly bool autoClearCustom { get => PhysicsWorld_GetAutoClearCustom(this); set => PhysicsWorld_SetAutoClearCustom(this, value); }
 
         /// <summary>
         /// Controls the element depth.
@@ -3438,7 +3584,7 @@ namespace Unity.U2D.Physics
         public readonly void DrawTransformAxis(PhysicsTransform transform, float scale, float lifetime = 0.0f) => PhysicsWorld_DrawTransformAxis(this, transform, scale, lifetime);
 
         /// <undoc/>
-        internal static void DrawAllWorlds(PhysicsAABB drawAABB) => PhysicsWorld_DrawAllWorlds(drawAABB);
+        internal static void DrawAllWorlds(PhysicsAABB drawAABB, DrawTarget cameraTarget) => PhysicsWorld_DrawAllWorlds(drawAABB, cameraTarget);
 
         #region Query Drawing
 

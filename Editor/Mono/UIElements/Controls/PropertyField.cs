@@ -335,6 +335,14 @@ namespace UnityEditor.UIElements
                     else
                     {
                         RegisterPropertyChangesOnCustomDrawerElement(customPropertyGUI);
+
+                        // Bind a custom drawer's root foldout to its expanded state (like the default drawer) so recursive expand/collapse reaches it.
+                        if (customPropertyGUI is Foldout customFoldout
+                            && string.IsNullOrEmpty(customFoldout.bindingPath)
+                            && m_SerializedProperty.hasChildren)
+                        {
+                            customFoldout.bindingPath = m_SerializedProperty.propertyPath;
+                        }
                     }
                 }
                 else

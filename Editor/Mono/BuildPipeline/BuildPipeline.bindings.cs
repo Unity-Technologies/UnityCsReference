@@ -425,13 +425,19 @@ namespace UnityEditor
         /// Builds a content directory (serialized assets and scenes plus a manifest) at a defined output path.
         /// </summary>
         /// <remarks>
-        /// Register the folder at runtime with <see cref="Unity.Loading.ContentLoadManager.RegisterContentDirectory"/>.
-        /// Each entry in <see cref="BuildContentDirectoryParameters.rootAssetPaths"/> must be a <c>ScriptableObject</c>; the build includes those roots and
-        /// everything they reference (including <see cref="Unity.Loading.LoadableObjectId"/>, <see cref="Unity.Loading.Loadable{T}"/>, and <see cref="Unity.Loading.LoadableSceneId"/>).
-        /// Creates an <c>outputPath</c> if missing, normalizes path separators, and defaults <see cref="BuildContentDirectoryParameters.name"/> to the output folder name.
+        /// Use <c>buildParameters</c> to configure the build, including the root assets to include, the output
+        /// path, and optional compression and build options. Each entry in <see cref="BuildContentDirectoryParameters.rootAssetPaths"/>
+        /// must be a <see cref="ScriptableObject"/>. The build includes those root assets and everything they reference, such as
+        /// assets referenced through <see cref="Unity.Loading.LoadableObjectId"/>, <see cref="Unity.Loading.Loadable{T}"/>, and
+        /// <see cref="Unity.Loading.LoadableSceneId"/>.
+        ///
+        /// The method creates <see cref="BuildContentDirectoryParameters.outputPath"/> if it doesn't exist, normalizes path
+        /// separators, and defaults <see cref="BuildContentDirectoryParameters.name"/> to the output folder name.
         ///
         /// The build uses <see cref="EditorUserBuildSettings.activeBuildTarget"/> and the active subtarget configured for that target in the build settings.
         /// Select the intended platform in the **Build Profile** window or through [command line arguments](xref:um-command-line-arguments) so that the active target is set to the desired setting prior to calling this method.
+        ///
+        /// To load the built content, register the output directory with <see cref="Unity.Loading.ContentLoadManager.RegisterContentDirectory(string)"/>.
         /// </remarks>
         ///<example>
         ///  <code source="../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/BuildPipeline_BuildContentDirectory.cs"/>
@@ -525,6 +531,7 @@ namespace UnityEditor
         ///<seealso cref="AssetDatabase.GetImplicitAssetBundleName" />
         ///<seealso cref="AssetImporter.assetBundleName" />
         ///<seealso cref="AssetBundle" />
+        ///<seealso cref="BuildContentDirectory" />
         public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildAssetBundlesParameters input = new BuildAssetBundlesParameters
@@ -730,6 +737,7 @@ namespace UnityEditor
         ///]]></code>
         ///</example>
         ///<seealso href="xref:um-asset-bundles-intro">AssetBundles</seealso>
+        ///<seealso cref="BuildContentDirectory" />
         public static AssetBundleManifest BuildAssetBundles(BuildAssetBundlesParameters buildParameters)
         {
             if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)

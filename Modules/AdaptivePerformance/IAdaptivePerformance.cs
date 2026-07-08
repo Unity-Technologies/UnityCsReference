@@ -200,7 +200,7 @@ namespace UnityEngine.AdaptivePerformance
     /// </example>
     public static partial class Holder
     {
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         static IAdaptivePerformance m_Instance;
 
         /// <summary>
@@ -373,7 +373,7 @@ namespace UnityEngine.AdaptivePerformance
         /// }
         /// </code>
         /// </example>
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         public static event LifecycleEventHandler LifecycleEventHandler;
     }
 
