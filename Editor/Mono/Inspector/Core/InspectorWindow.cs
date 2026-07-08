@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -236,9 +237,18 @@ namespace UnityEditor
             // This method could be called before `OnEnable` is being called on an editor window.
             // Therefore it is important to make sure your editor window is enabled/active/alive first,
             // which means it have to be contained in `activeEditorWindows` list.
-            foreach (var editorWindow in activeEditorWindows)
+
+            // Acquire a snapshot instead of directly iterating over activeEditorWindows as calling
+            // RebuildContentsContainers can mutate activeEditorWindows.
+            var activeWindowCount = activeEditorWindows.Count;
+
+            using var _ = ListPool<EditorWindow>.Get(out List<EditorWindow> windowsSnapshot);
+            for (int i = 0; i < activeWindowCount; ++i)
+                windowsSnapshot.Add(activeEditorWindows[i]);
+
+            foreach (var editorWindow in windowsSnapshot)
             {
-                if (editorWindow is PropertyEditor propertyEditor)
+                if (editorWindow != null && editorWindow is PropertyEditor propertyEditor)
                     propertyEditor.RebuildContentsContainers();
             }
         }

@@ -451,6 +451,8 @@ namespace UnityEditor
 
         public extern ModelImporterMaterialLocation materialLocation { get; set; }
 
+        public extern bool searchTexturesGlobally { get; set; }
+
         internal extern SourceAssetIdentifier[] sourceMaterials
         {
             [FreeFunction(Name = "ModelImporterBindings::GetSourceMaterials", HasExplicitThis = true)]

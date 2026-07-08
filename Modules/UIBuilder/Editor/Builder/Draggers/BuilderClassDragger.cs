@@ -59,9 +59,9 @@ namespace Unity.UI.Builder
 
         public override void RegisterCallbacksOnTarget(VisualElement target)
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
             target.RegisterCallback<KeyUpEvent>(OnEsc);
         }
 
@@ -69,9 +69,9 @@ namespace Unity.UI.Builder
         {
             var target = evt.elementTarget;
 
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             target.UnregisterCallback<KeyUpEvent>(OnEsc);
         }
 

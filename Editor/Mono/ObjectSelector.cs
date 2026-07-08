@@ -250,7 +250,13 @@ namespace UnityEditor
             else
             {
                 m_FocusSearchFilter = false;
-                NotifySelectionChanged(true);
+                // (e.g. assigning a UITK ObjectField value queues a ChangeEvent) that opens a
+                // native modal dialog. Exiting the GUI throws an ExitGUIException that flushes
+                // that queued event during its unwind, which wedges the selector because of the
+                // native modal dialog. Letting the GUI complete normally flushes the queued event
+                // through the regular dispatcher path instead. (Same as the engine-override path,
+                // which also notifies with exitGUI: false.)
+                NotifySelectionChanged(false);
             }
         }
 
@@ -670,7 +676,8 @@ namespace UnityEditor
         void TreeViewSelection(TreeViewItem item)
         {
             SetSelectedInstanceID(GetInternalSelectedInstanceID());
-            NotifySelectionChanged(true);
+            // See ListAreaItemSelectedCallback for why we notify with exitGUI: false.
+            NotifySelectionChanged(false);
         }
 
         // Grid Section
