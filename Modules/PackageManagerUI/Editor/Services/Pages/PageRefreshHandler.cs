@@ -16,7 +16,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void Refresh(IPage page);
         void Refresh(RefreshOptions options);
-        void CancelRefresh(RefreshOptions options);
         bool IsRefreshInProgress(RefreshOptions options);
         void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp);
         long GetRefreshTimestamp(RefreshOptions options);
@@ -103,9 +102,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnActivePageChanged(IPage page)
         {
-            if (m_PageManager.lastActivePage != null)
-                CancelRefresh(m_PageManager.lastActivePage.refreshOptions);
-
             if (!IsInitialFetchingDone(page))
                 Refresh(page);
         }
@@ -208,12 +204,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, DateTime.Now.Ticks);
             if (needFullScan)
                 m_AssetStoreClient.FullScanLocalInfos();
-        }
-
-        public void CancelRefresh(RefreshOptions options)
-        {
-            if (options.Contains(RefreshOptions.Purchased))
-                m_AssetStoreClient.CancelListPurchases();
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)

@@ -86,7 +86,8 @@ namespace UnityEditor
         ///<seealso cref="EditorUserBuildSettings.webGLBuildSubtarget" />
         ///<seealso cref="EditorUserBuildSettings.ps4BuildSubtarget" />
         public int subtarget { get; set; }
-        ///<summary>Additional <see cref="BuildOptions" />, like whether to run the built player.</summary>
+        ///<summary>The <see cref="BuildOptions" /> flags to apply when building the Player.</summary>
+        ///<remarks>Set this property to a bitwise combination of <see cref="BuildOptions" /> values before you pass <see cref="BuildPlayerOptions" /> to <see cref="BuildPipeline.BuildPlayer" />. For example, set <c>options = BuildOptions.Development | BuildOptions.AutoRunPlayer</c> to create a development build and run it automatically after the build completes.</remarks>
         public BuildOptions options { get; set; }
         ///<summary>The additional preprocessor defines you can specify while compiling assemblies for the Player. These defines are appended to the existing Scripting Define Symbols list configured in the Player settings.</summary>
         public string[] extraScriptingDefines { get; set; }

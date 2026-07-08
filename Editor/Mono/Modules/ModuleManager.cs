@@ -223,7 +223,7 @@ namespace UnityEditor.Modules
                     var (buildTarget, _) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformSupportModule.PlatformBuildTarget.Guid);
                     if (BuildTargetDiscovery.IsStandalonePlatform(buildTarget))
                     {
-                        if (BuildTargetDiscovery.TryGetServerGUIDFromBuildTarget(NamedBuildTarget.Server, buildTarget, out var serverGuid))
+                        if (BuildTargetDiscovery.TryGetBaseServerGUIDFromBuildTarget(NamedBuildTarget.Server, buildTarget, out var serverGuid))
                         {
                             if (BuildTargetDiscovery.BuildPlatformIsInstalled(serverGuid))
                                 s_PlatformModulesByGuid.Add(serverGuid, platformSupportModule);

@@ -953,7 +953,46 @@ namespace UnityEditor
             return EmptyGuid;
         }
 
+        /// <summary>
+        /// Get the server platform GUID corresponding to the NamedBuildTarget.Server and BuildTarget.
+        /// </summary>
+        /// <param name="namedBuildTarget">The NamedBuildTarget to get the server platform GUID for.</param>
+        /// <param name="buildTarget">The BuildTarget to get the server platform GUID for.</param>
+        /// <param name="result">The server platform GUID. Derived server platform GUID when the active platform is a derived server platform. Base server platform GUID otherwise.</param>
+        /// <returns>True if a server platform GUID was found; otherwise, false.</returns>
         internal static bool TryGetServerGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget, out GUID result)
+        {
+            result = EmptyGuid;
+
+            if (namedBuildTarget != NamedBuildTarget.Server || !IsStandalonePlatform(buildTarget))
+                return false;
+
+            if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out var guid))
+            {
+                var module = ModuleManager.FindPlatformSupportModule(guid);
+                if (module is IDerivedBuildTargetProvider)
+                {
+                    var derivedPlatformGuid = module.PlatformBuildTarget.Guid;
+                    var (_, subtarget) = GetBuildTargetAndSubtargetFromGUID(derivedPlatformGuid);
+                    if (subtarget == StandaloneBuildSubtarget.Server)
+                    {
+                        result = derivedPlatformGuid;
+                        return true;
+                    }
+                }
+            }
+
+            return TryGetBaseServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out result);
+        }
+
+        /// <summary>
+        /// Get the base server platform GUID corresponding to the NamedBuildTarget.Server and BuildTarget.
+        /// </summary>
+        /// <param name="namedBuildTarget">The NamedBuildTarget to get the base server platform GUID for.</param>
+        /// <param name="buildTarget">The BuildTarget to get the base server platform GUID for.</param>
+        /// <param name="result">The base server platform GUID. If the platform is not a derived platform, the same GUID is returned.</param>
+        /// <returns>True if a base server platform GUID was found; otherwise, false.</returns>
+        internal static bool TryGetBaseServerGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget, out GUID result)
         {
             result = EmptyGuid;
 
@@ -977,7 +1016,7 @@ namespace UnityEditor
 
         internal static GUID GetBasePlatformGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
-            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
+            if (TryGetBaseServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
                 return value;
 
             if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out GUID guid))
@@ -1004,7 +1043,7 @@ namespace UnityEditor
                 if (platformInfo.subtarget != StandaloneBuildSubtarget.Server)
                     return basePlatformGuid;
                 
-                if (TryGetServerGUIDFromBuildTarget(NamedBuildTarget.Server, platformInfo.buildTarget, out var serverPlatformGuid))
+                if (TryGetBaseServerGUIDFromBuildTarget(NamedBuildTarget.Server, platformInfo.buildTarget, out var serverPlatformGuid))
                     return serverPlatformGuid;
             }
 

@@ -222,6 +222,7 @@ using UnityEngine;
 //For add Component tests
 [assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.Playmode.EditorScripts.AssetCreation")]
 
+[assembly: InternalsVisibleTo("Unity.Scenes.Editor.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Tests")]
 

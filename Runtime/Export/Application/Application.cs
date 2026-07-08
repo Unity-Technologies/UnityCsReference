@@ -388,8 +388,8 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void Internal_EnterPlayModeLifecycleScope()
         {
-            if (!LifecycleController.Instance.IsScopePresent<CodeInitializedScope>())
-                LifecycleController.Instance.EnterScope<CodeInitializedScope>();
+            Debug.Assert(LifecycleController.Instance.IsScopePresent<CodeInitializedScope>(),
+                "CodeInitializedScope must be present before entering PlayModeScope");
 
             using (s_CodeReloadInPlayModeReEnterScopeMarker.Auto())
             {
@@ -400,6 +400,7 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void Internal_ExitPlayModeLifecycleScope()
         {
+            // This method can be called while not in PlayModeScope if we exit the editor while in EditModeScope
             if (!LifecycleController.Instance.IsScopePresent<PlayModeScope>())
                 return;
 

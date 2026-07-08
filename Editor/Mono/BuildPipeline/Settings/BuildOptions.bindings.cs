@@ -44,7 +44,7 @@ namespace UnityEditor
 
         // Do not overwrite player directory, but accept user's modifications.
         ///<summary>Appends to an existing Xcode (iOS) project during the build process.</summary>
-        ///<remarks>This preserves any changes made to the existing Xcode project settings. With the IL2CPP scripting backend, this setting also allows incremental builds of the generated C++ code to work in Xcode. Appending to Xcode projects is supported only on macOS and Windows platforms.</remarks>
+        ///<remarks>This preserves any changes made to the existing Xcode project settings. With the IL2CPP scripting backend, this setting also allows incremental builds of the generated C++ code to work in Xcode. Appending to Xcode projects is supported only on macOS and Windows platforms. This option applies to iOS builds; for similar behavior on Android, use <see cref="EditorUserBuildSettings.exportAsGoogleAndroidProject" /> instead.</remarks>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         AcceptExternalModificationsToPlayer = 1 << 5,
 

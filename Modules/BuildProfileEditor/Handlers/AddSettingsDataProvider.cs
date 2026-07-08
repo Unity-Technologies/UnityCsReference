@@ -134,6 +134,14 @@ namespace UnityEditor.Build.Profile.Handlers
                 return false;
             }
 
+            foreach (var provider in s_GenericSettingProviders)
+            {
+                if (!provider.CanAddSettings(m_BuildProfile) || provider.HasSettings(m_BuildProfile))
+                    continue;
+
+                return false;
+            }
+
             return true;
         }
     }

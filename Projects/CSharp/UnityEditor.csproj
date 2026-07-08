@@ -3747,6 +3747,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\EditModeScope.cs">
       <Link>Editor\Mono\Scripting\EditModeScope.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\EditModeScopePostprocessor.cs">
+      <Link>Editor\Mono\Scripting\EditModeScopePostprocessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ManagedDebugger.bindings.cs">
       <Link>Editor\Mono\Scripting\ManagedDebugger.bindings.cs</Link>
     </Compile>

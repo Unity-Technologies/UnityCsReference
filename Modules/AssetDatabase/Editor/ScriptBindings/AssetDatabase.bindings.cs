@@ -1276,7 +1276,6 @@ namespace UnityEditor
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
-        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static bool IsAssetImportWorkerProcess();
 
         [FreeFunction("AssetDatabase::GetImporterType")]
