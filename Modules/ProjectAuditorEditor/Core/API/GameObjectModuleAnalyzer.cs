@@ -8,6 +8,21 @@ using UnityEngine;
 namespace Unity.ProjectAuditor.Editor.Core
 {
     /// <summary>
+    /// Describes where a GameObject is stored.
+    /// </summary>
+    public enum GameObjectSource
+    {
+        /// <summary>
+        /// The GameObject belongs to a Scene.
+        /// </summary>
+        Scene,
+        /// <summary>
+        /// The GameObject belongs to a Prefab.
+        /// </summary>
+        Prefab
+    }
+
+    /// <summary>
     /// A context object passed by GameObjectModule to an GameObjectModuleAnalyzer's Analyze() method.
     /// </summary>
     public class GameObjectAnalysisContext : AnalysisContext
@@ -16,6 +31,11 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// The GameObject to analyze.
         /// </summary>
         public GameObject GameObject;
+
+        /// <summary>
+        /// The owner of this GameObject (Scene or Prefab).
+        /// </summary>
+        public GameObjectSource Source;
     }
 
     /// <summary>

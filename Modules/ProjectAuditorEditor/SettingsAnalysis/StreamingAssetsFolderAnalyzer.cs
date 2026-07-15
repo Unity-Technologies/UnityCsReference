@@ -40,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         public override IEnumerable<ReportItem> Analyze(SettingsAnalysisContext context)
         {
             // StreamingAssets folder is checked once, AssetsModule might not be the best place this check
-            if (k_StreamingAssetsFolderDescriptor.IsApplicable(context.Params))
+            if (k_StreamingAssetsFolderDescriptor.IsSupported(context.Params))
             {
                 var issue = AnalyzeStreamingAssets(context);
                 if (issue != null)

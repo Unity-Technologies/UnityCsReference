@@ -763,16 +763,10 @@ namespace Unity.U2D.Physics
             /// <param name="count">The number of shape array elements to return.</param>
             /// <returns>The span representing the shape array.</returns>
             /// <exception cref="System.IndexOutOfRangeException">Thrown if the count is not in the range [0, <see cref="PhysicsConstants.MaxPolygonVertices"/>].</exception>
-            public unsafe Span<Vector2> AsSpan(int count = PhysicsConstants.MaxPolygonVertices)
+            public Span<Vector2> AsSpan(int count = PhysicsConstants.MaxPolygonVertices)
             {
                 if (count > 0 && count <= PhysicsConstants.MaxPolygonVertices)
-                {
-                    ref Vector2 vertex0 = ref m_Vertex0;
-                    fixed (Vector2* pThis = &vertex0)
-                    {
-                        return new Span<Vector2>(pThis, count);
-                    }
-                }
+                    return MemoryMarshal.CreateSpan(ref m_Vertex0, count);
 
                 throw new IndexOutOfRangeException($"{count} must be in the range [0, {PhysicsConstants.MaxPolygonVertices}]");
             }
@@ -1004,7 +998,7 @@ namespace Unity.U2D.Physics
                     {
                         fixed (Vector2* pVertices = &m_Vertices.m_Vertex0)
                         {
-                            return PolygonGeometry.Create(AsSpan(), m_Radius);
+                            return PolygonGeometry.Create(new ReadOnlySpan<Vector2>(pVertices, m_Count), m_Radius);
                         }
                     }
 

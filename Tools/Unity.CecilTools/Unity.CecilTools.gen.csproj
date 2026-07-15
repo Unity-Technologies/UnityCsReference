@@ -19,6 +19,10 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="CecilUtils.cs" />
     <Compile Include="ElementType.cs" />

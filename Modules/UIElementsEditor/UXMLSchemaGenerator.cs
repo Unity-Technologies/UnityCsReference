@@ -291,7 +291,8 @@ namespace UnityEditor.UIElements
 
             void AddSpecialElements()
             {
-                // UXML
+                // UXML is the document root. It is not substitutable, so it keeps a standalone type whose
+                // children are any VisualElement (and, through substitution, the special tags added below).
                 var uxmlType = AddFakeElement(k_DefaultNamespace, "UXML");
 
                 var uxmlChildren = new XmlSchemaChoice
@@ -304,25 +305,80 @@ namespace UnityEditor.UIElements
                 uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "class", SchemaTypeName = s_StringTypeQualifiedName });
                 uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "editor-extension-mode", SchemaTypeName = s_BoolTypeQualifiedName });
 
-                // Style
-                var styleType = AddFakeElement(k_DefaultNamespace, "Style");
-                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
-                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
-                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                // The importer accepts Style, Template and AttributeOverrides by local name regardless of namespace, so
+                // declare them in both the engine namespace (default-namespace or ui-prefixed UXML) and the global
+                // namespace (the unqualified tags UI Builder exports). Instance is namespace-sensitive in the importer
+                // (engine only), so it is declared once. Each joins the VisualElement substitution group so it validates
+                // wherever a VisualElement is allowed.
+                AddSpecialChildElement("Style", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                }, k_DefaultNamespace, string.Empty);
 
-                // Template
-                var templateType = AddFakeElement(k_DefaultNamespace, "Template");
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                AddSpecialChildElement("Template", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                }, k_DefaultNamespace, string.Empty);
 
-                // Instance
-                var instanceType = AddFakeElement(k_DefaultNamespace, "Instance");
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "template", SchemaTypeName = s_StringTypeQualifiedName });
+                AddSpecialChildElement("AttributeOverrides", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "element-name", SchemaTypeName = s_StringTypeQualifiedName, Use = XmlSchemaUse.Required });
+                }, k_DefaultNamespace, string.Empty);
 
-                // AttributeOverrides
-                var attributeOverridesType = AddFakeElement(k_DefaultNamespace, "AttributeOverrides");
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "element-name", SchemaTypeName = s_StringTypeQualifiedName, Use = XmlSchemaUse.Required });
+                AddSpecialChildElement("Instance", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "template", SchemaTypeName = s_StringTypeQualifiedName });
+                }, k_DefaultNamespace);
+            }
+
+            // Declares a special UXML tag (Style, Template, Instance, AttributeOverrides) in each of the given namespaces.
+            // The tag restricts VisualElementType and joins the VisualElement substitution group, so it validates wherever
+            // a VisualElement is allowed, matching what the importer accepts and what the UXML exporter writes.
+            // addAttributes runs once per namespace so each schema gets its own attribute instances (they cannot be shared).
+            void AddSpecialChildElement(string uxmlName, Action<XmlSchemaObjectCollection> addAttributes, params string[] namespaces)
+            {
+                var typeName = uxmlName + k_TypeSuffix;
+
+                foreach (var ns in namespaces)
+                {
+                    var schemaInfo = GetSchemaInfo(ns);
+
+                    var restriction = new XmlSchemaComplexContentRestriction
+                    {
+                        BaseTypeName = new XmlQualifiedName(nameof(VisualElement) + k_TypeSuffix, k_DefaultNamespace),
+                        AnyAttribute = new XmlSchemaAnyAttribute { ProcessContents = XmlSchemaContentProcessing.Lax }
+                    };
+
+                    var choice = new XmlSchemaChoice
+                    {
+                        MinOccurs = 0,
+                        MaxOccursString = "unbounded"
+                    };
+                    choice.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+                    restriction.Particle = choice;
+
+                    addAttributes(restriction.Attributes);
+
+                    var xmlElementType = new XmlSchemaComplexType
+                    {
+                        Name = typeName,
+                        ContentModel = new XmlSchemaComplexContent { Content = restriction }
+                    };
+                    schemaInfo.schema.Items.Add(xmlElementType);
+                    schemaInfo.importNamespaces.Add(k_DefaultNamespace);
+
+                    var element = new XmlSchemaElement
+                    {
+                        Name = uxmlName,
+                        SchemaTypeName = new XmlQualifiedName(typeName, ns),
+                        SubstitutionGroup = s_VisualElementName
+                    };
+                    schemaInfo.schema.Items.Add(element);
+                }
             }
 
             (XmlSchemaElement element, XmlSchemaComplexType type) AddFakeElement(string ns, string uxmlName)

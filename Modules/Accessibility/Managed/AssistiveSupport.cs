@@ -167,6 +167,13 @@ namespace UnityEngine.Accessibility
         /// When this property is set, Unity notifies the screen reader of the new hierarchy by calling
         /// <see cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
         /// </para>
+        /// <para>
+        /// **Warning**: Assigning a hierarchy builds its native representation, and setting this property to @@null@@
+        /// tears it down. This has a non-trivial cost on the following platforms:
+        ///\\
+        ///- **iOS**: Switching the active hierarchy has a high cost that scales with the size of the hierarchy. Avoid setting this property frequently in performance-sensitive code.
+        ///- **macOS**: Switching the active hierarchy has a moderate cost that scales with the size of the hierarchy. Doing so frequently can affect performance.
+        /// </para>
         /// </remarks>
         public static AccessibilityHierarchy activeHierarchy
         {

@@ -20,6 +20,10 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDCommands.cs">
       <Link>External\AMDUnityPlugin\Scripts\AMDCommands.cs</Link>
@@ -6296,10 +6300,8 @@
     </AdditionalFiles>
   </ItemGroup>
   <ItemGroup>
-    <TargetingPack Include="Unity.BCLExtensions.Netstandard21" Path="/usr/src/app/repos/unity/External/BCLExtensions/built/TargetingPacks/netstandard2.1" NuGetPackageId="Unity.BCLExtensions.Netstandard21" NuGetPackageVersion="1.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <FrameworkReference Include="Unity.BCLExtensions.Netstandard21" />
   </ItemGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="UnityEnableAutoStaticsCleanupCodeGen" />
@@ -6309,10 +6311,20 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\ManagedMonolithic\BoundToNative\UnityEngine.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)../../artifacts/MonolithicEditorDlls/ManagedMonolithic/BoundToNative/UnityEngine.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>
     </PropertyGroup>
   </Target>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="8.0.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+  </ItemGroup>
 </Project>

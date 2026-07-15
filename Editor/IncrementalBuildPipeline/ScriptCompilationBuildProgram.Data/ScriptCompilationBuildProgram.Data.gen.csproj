@@ -18,6 +18,10 @@
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Data.cs" />
     <ProjectReference Include="../BeeBuildProgramCommon.Data/BeeBuildProgramCommon.Data.gen.csproj" />

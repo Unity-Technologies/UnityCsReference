@@ -451,7 +451,10 @@ namespace Unity.GraphToolkit.Editor
             using (var graphUpdater = graphViewState.UpdateScope)
             {
                 graphUpdater.Position = command.Position;
-                graphUpdater.Scale = command.Scale;
+                var scale = command.Scale;
+                if (float.IsNaN(scale.x) || float.IsNaN(scale.y) || float.IsNaN(scale.z))
+                    scale = Vector3.one;
+                graphUpdater.Scale = scale;
 
                 if (command.NewSelection != null)
                 {

@@ -65,6 +65,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
                     break;
 
+                context.AssetPath = assetPath;
                 context.Material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
 
                 if (string.IsNullOrEmpty(context.Material.name))

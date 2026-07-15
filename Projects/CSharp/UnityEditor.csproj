@@ -20,6 +20,10 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
+  <PropertyGroup>
+    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
+    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
       <Link>Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs</Link>
@@ -11574,8 +11578,14 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\AudioClipModuleAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\AudioClipModuleAnalyzer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleAnalyzer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleInstructionAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleInstructionAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModulePrecompiledAssemblyAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Core\API\CodeModulePrecompiledAssemblyAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\DiagnosticParameterAttribute.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\DiagnosticParameterAttribute.cs</Link>
@@ -11615,9 +11625,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\AnalysisCoroutine.cs">
       <Link>Modules\ProjectAuditorEditor\Core\AnalysisCoroutine.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\AnalysisPlatformAttribute.cs">
-      <Link>Modules\ProjectAuditorEditor\Core\AnalysisPlatformAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\AssemblyDependencyNode.cs">
       <Link>Modules\ProjectAuditorEditor\Core\AssemblyDependencyNode.cs</Link>
@@ -11697,8 +11704,8 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\UnsupportedOnWebGLAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\UnsupportedOnWebGLAnalyzer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AnimationAnalyzer.cs">
-      <Link>Modules\ProjectAuditorEditor\Modules\AnimationAnalyzer.cs</Link>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AnimationClipAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Modules\AnimationClipAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AnimationModule.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\AnimationModule.cs</Link>
@@ -15677,10 +15684,8 @@
     <ProjectReference Include="../../Editor/IncrementalBuildPipeline/BeeBuildProgramCommon.Data/BeeBuildProgramCommon.Data.gen.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <TargetingPack Include="Unity.BCLExtensions.Netstandard21" Path="/usr/src/app/repos/unity/External/BCLExtensions/built/TargetingPacks/netstandard2.1" NuGetPackageId="Unity.BCLExtensions.Netstandard21" NuGetPackageVersion="1.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <FrameworkReference Include="Unity.BCLExtensions.Netstandard21" />
   </ItemGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="UnityEnableAutoStaticsCleanupCodeGen" />
@@ -15690,10 +15695,20 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\ManagedMonolithic\BoundToNative\UnityEditor.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)../../artifacts/MonolithicEditorDlls/ManagedMonolithic/BoundToNative/UnityEditor.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>
     </PropertyGroup>
   </Target>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="8.0.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+  </ItemGroup>
 </Project>

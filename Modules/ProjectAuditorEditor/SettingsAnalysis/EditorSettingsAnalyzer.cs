@@ -56,7 +56,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 
         public override IEnumerable<ReportItem> Analyze(SettingsAnalysisContext context)
         {
-            if (k_EnterPlayModeOptionsDescriptor.IsVersionCompatible() &&
+            if (k_EnterPlayModeOptionsDescriptor.IsSupported() &&
                 !EditorSettings.enterPlayModeOptionsEnabled)
             {
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_EnterPlayModeOptionsDescriptor.Id)
@@ -64,7 +64,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
             }
             else
             {
-                if (k_DomainReloadDescriptor.IsVersionCompatible() &&
+                if (k_DomainReloadDescriptor.IsSupported() &&
                     (EditorSettings.enterPlayModeOptions & EnterPlayModeOptions.DisableDomainReload) != EnterPlayModeOptions.DisableDomainReload)
                 {
                     yield return context.CreateIssue(IssueCategory.ProjectSetting, k_DomainReloadDescriptor.Id)

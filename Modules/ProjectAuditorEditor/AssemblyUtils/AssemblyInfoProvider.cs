@@ -5,11 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEngine;
 using UnityEditor.PackageManager;
-using UnityEditorInternal;
 
 namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 {
@@ -54,23 +52,25 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 #pragma warning restore 0649
         }
 
-        internal static IEnumerable<string> GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes flags)
+        internal static List<string> GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes flags)
         {
-            var assemblyPaths = new List<string>();
             var precompiledAssemblySources = (UnityEditor.Compilation.CompilationPipeline.PrecompiledAssemblySources)flags;
-            assemblyPaths.AddRange(UnityEditor.Compilation.CompilationPipeline.GetPrecompiledAssemblyPaths(precompiledAssemblySources));
+            var assemblyPaths = UnityEditor.Compilation.CompilationPipeline.GetPrecompiledAssemblyPaths(precompiledAssemblySources);
 
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            return assemblyPaths.Select(PathUtils.ReplaceSeparators);
-#pragma warning restore UA2001
+            var result = new List<string>(assemblyPaths.Length);
+            foreach (var path in assemblyPaths)
+                result.Add(PathUtils.ReplaceSeparators(path));
+            return result;
         }
 
-        internal static IEnumerable<string> GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes flags)
+        internal static HashSet<string> GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes flags)
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (var dir in GetPrecompiledAssemblyPaths(flags).Select(Path.GetDirectoryName).Distinct())
-#pragma warning restore UA2001
-                yield return dir;
+            var assemblyPaths = GetPrecompiledAssemblyPaths(flags);
+
+            var result = new HashSet<string>(assemblyPaths.Count);
+            foreach (var path in assemblyPaths)
+                result.Add(PathUtils.GetDirectoryName(path));
+            return result;
         }
 
         internal static bool FilterAssembly(string assemblyName, bool allowPackages, bool allowUnityCode, bool allowUserCode)

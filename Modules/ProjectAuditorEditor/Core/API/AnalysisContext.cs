@@ -65,7 +65,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// </remarks>
         public bool IsDescriptorEnabled(Descriptor descriptor)
         {
-            if (!descriptor.IsApplicable(Params))
+            if (!descriptor.IsSupported(Params))
                 return false;
 
             var rule = Params.Rules.GetRule(descriptor.Id);
