@@ -71,6 +71,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
         public void Update()
         {
+            if (playToggle.enabledSelf != m_State.canPlay)
+                playToggle.SetEnabled(m_State.canPlay);
+
             if (playToggle.value != m_State.playing)
                 playToggle.SetValueWithoutNotify(m_State.playing);
 

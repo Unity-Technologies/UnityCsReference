@@ -668,7 +668,7 @@ namespace UnityEngine.UIElements
 
             // The VersionChangeType.Layout does nothing on the nodes because they don't have measure, but might be needed by something else.
             // The stylesheet change force the stylesheet re-evaluation so that scaling-dependent values are resolved.
-            visualTree.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout); 
+            visualTree.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout);
         }
 
         public float scaledPixelsPerPoint
@@ -749,6 +749,8 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             using var scope = new IMGUIContainer.UITKScope();
             Debug.Assert(dispatcher != null, "dispatcher != null");
             e.AssignTimeStamp(TimeSinceStartupMs());
@@ -1572,6 +1574,8 @@ namespace UnityEngine.UIElements
 
         public override void ValidateLayout()
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             using var scope = new IMGUIContainer.UITKScope();
             // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
             // Actual case: TransformClip update phase recomputes elements under mouse, which does a pick, which validates layout.
@@ -1609,6 +1613,8 @@ namespace UnityEngine.UIElements
 
         public override void TickSchedulingUpdaters()
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             beforeTickingAnyScheduledPanel?.Invoke(this);
             using var scope = new IMGUIContainer.UITKScope();
             using var _ = m_MarkerTickScheduledActions.Auto();
@@ -1723,6 +1729,8 @@ namespace UnityEngine.UIElements
 
         public override void Repaint()
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             using var scope = new IMGUIContainer.UITKScope();
             if (ProfilerUIToolkit.ShouldCapturePanel(contextType == ContextType.Editor))
                 m_PendingRepaintVersionChanges += version - m_RepaintVersion;
@@ -1744,6 +1752,8 @@ namespace UnityEngine.UIElements
 
         public override void Render()
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             using var scope = new IMGUIContainer.UITKScope();
             using (m_MarkerRender.Auto())
             {
@@ -1921,6 +1931,8 @@ namespace UnityEngine.UIElements
 
         public override void Render()
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             if (drawsInCameras)
             {
                 Debug.LogError("Panel.Render() must not be called on a panel that draws in cameras.");

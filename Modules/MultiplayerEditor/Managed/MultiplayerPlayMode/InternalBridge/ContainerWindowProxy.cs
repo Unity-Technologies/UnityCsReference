@@ -10,7 +10,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     class ContainerWindowProxy
     {
-        readonly ContainerWindow m_BackingObject;
+        private readonly ContainerWindow m_BackingObject;
+        internal ContainerWindow BackingObject => m_BackingObject;
 
         public ContainerWindowProxy(ContainerWindow backingObject)
         {

@@ -102,7 +102,7 @@ namespace Unity.Profiling.Editor.UI
         {
             var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml(k_UxmlAsset);
             if (view == null)
-                throw new InvalidOperationException("Unable to create view from Uxml. Uxml must contain at least one child element.");
+                throw new InvalidOperationException($"Unable to create view from built-in Uxml '{k_UxmlAsset}'. See the preceding error for details.");
 
             var themeUssClass = EditorGUIUtility.isProSkin ? k_UssClass_Dark : k_UssClass_Light;
             view.AddToClassList(themeUssClass);

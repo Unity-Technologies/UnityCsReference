@@ -229,6 +229,9 @@ sealed partial class PanelElement
         runtimePanel.scale = 1.0f;
         runtimePanel.visualTree.SetSize(SubPanelSize);
         runtimePanel.Root.SetSize(Size);
+        runtimePanel.Root.style.scale = Vector2.one * (ScaleFactor * SubPanelPixelsPerPoint);
+        runtimePanel.Root.style.transformOrigin = new TransformOrigin(0, 0);
+        runtimePanel.Root.style.translate = Offset * SubPanelPixelsPerPoint;
         if (runtimePanel.panelRenderer != null)
         {
             runtimePanel.panelRenderer.forceGammaRendering = false;

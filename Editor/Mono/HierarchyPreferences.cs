@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("HierarchyModule", "UnityEditor.UIToolkitAuthoringModule", "MultiplayerEditorModule")]
     internal static partial class HierarchyPreferences
     {
         public enum IconMode
@@ -32,27 +32,30 @@ namespace UnityEditor
             }
         }
 
-        public static IconMode GameObjectIconMode
-        {
-            get => (IconMode)s_GameObjectIconMode.value;
-            set
-            {
-                if (s_GameObjectIconMode.value != (int)value)
-                {
-                    s_GameObjectIconMode.value = (int)value;
-                    GameObjectIconModeChanged?.Invoke();
-                }
-            }
-        }
-
-        [AutoStaticsCleanupOnCodeReload]
-        public static event Action GameObjectIconModeChanged;
         public static readonly SavedBool RenameNewObjects = new SavedBool("SceneHierarchyWindow.RenameNewObjects", true);
         public static readonly SavedBool UseQueryBuilder = new SavedBool("HierarchyWindow.UseQueryBuilder", true);
         public static readonly SavedBool AlternatingRowBackground = new SavedBool("HierarchyWindow.AlternatingRowBackground", true);
         public static readonly SavedBool AllowAlphaNumericHierarchy = new SavedBool("AllowAlphaNumericHierarchy", false);
+        public static readonly SavedInt GameObjectIconMode = new SavedInt("HierarchyWindow.GameObjectIconMode", 0);
 
-        static readonly SavedInt s_GameObjectIconMode = new SavedInt("HierarchyWindow.GameObjectIconMode", 0);
+        /// <summary>
+        /// Fired whenever any tracked hierarchy preference value changes.
+        /// Subscribers receive no argument; query the specific preference for the new value.
+        /// </summary>
+        [VisibleToOtherModules("HierarchyModule", "MultiplayerEditorModule")]
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action AnyPreferenceChanged;
+
+        static void FireAnyPreferenceChanged() => AnyPreferenceChanged?.Invoke();
+
+        static HierarchyPreferences()
+        {
+            RenameNewObjects.valueChanged         += FireAnyPreferenceChanged;
+            UseQueryBuilder.valueChanged          += FireAnyPreferenceChanged;
+            AlternatingRowBackground.valueChanged    += FireAnyPreferenceChanged;
+            EditorSettings.useLegacyHierarchyChanged += FireAnyPreferenceChanged;
+            GameObjectIconMode.valueChanged        += FireAnyPreferenceChanged;
+        }
 
         public static void EnsureCorrectHierarchyIsInUse(EditorWindow window)
         {
@@ -63,7 +66,7 @@ namespace UnityEditor
             var wndType = EditorSettings.useLegacyHierarchy ? typeof(SceneHierarchyWindow) : HierarchyV2WindowType;
             var replacementWindow = (EditorWindow)ScriptableObject.CreateInstance(wndType);
 
-            if (window.docked && window.m_Parent is DockArea dockParent)
+            if (window.m_Parent is DockArea dockParent)
                 dockParent.AddTab(dockParent.m_Panes.IndexOf(window), replacementWindow);
             else
             {
@@ -73,6 +76,23 @@ namespace UnityEditor
             window.Close();
         }
 
+        /// <summary>
+        /// Re-reads all hierarchy preferences from the EditorPrefs store and fires
+        /// <see cref="SavedValue{T}.valueChanged"/> for any value that has changed since
+        /// the last read. Intended for use by virtual-player clones after
+        /// <see cref="EditorPrefs.Sync"/> to pick up changes made in the main editor
+        /// without bypassing the cached <see cref="SavedValue{T}"/> layer.
+        /// </summary>
+        [VisibleToOtherModules("HierarchyModule", "MultiplayerEditorModule")]
+        internal static void RefreshPreferences()
+        {
+            RenameNewObjects.Refresh();
+            UseQueryBuilder.Refresh();
+            AlternatingRowBackground.Refresh();
+            GameObjectIconMode.Refresh();
+        }
+
+        [VisibleToOtherModules("HierarchyModule", "MultiplayerEditorModule")]
         [AutoStaticsCleanupOnCodeReload]
         internal static Type HierarchyV2WindowType;
     }

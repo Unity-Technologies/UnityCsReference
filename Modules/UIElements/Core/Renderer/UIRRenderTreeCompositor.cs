@@ -61,6 +61,9 @@ namespace UnityEngine.UIElements.UIR
             public int FilterPassIndex => m_FilterPassIndex;
             public FilterFunction filter => m_Filter;
 
+            // Identifies a specific filter application, all passes belonging to one filter share the same id
+            public int filterGroupId;
+
             public void Init(VisualElement ve, in PostProcessingPass filterPass, int filterPassIndex, FilterFunction filter)
             {
                 m_Type = DrawOperationType.Effect;
@@ -99,6 +102,7 @@ namespace UnityEngine.UIElements.UIR
                 m_RenderTree = null;
                 m_FilterPass = new PostProcessingPass();
                 m_Filter = new FilterFunction();
+                filterGroupId = 0;
 
                 dstAtlasBlock = default;
                 dstTextureId = TextureId.invalid;
@@ -127,6 +131,7 @@ namespace UnityEngine.UIElements.UIR
         List<RenderTexture> m_AllocatedTextures = new();
         MaterialPropertyBlock m_Block = new();
         ObjectPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation());
+        int m_NextFilterGroupId;
 
         public RenderTreeCompositor(RenderTreeManager owner)
         {
@@ -154,6 +159,8 @@ namespace UnityEngine.UIElements.UIR
 
         void BuildDrawOperationTree(RenderTree rootRenderTree)
         {
+            m_NextFilterGroupId = 1; // 0 is reserved for "not a filter pass"
+
             m_RootOperation = m_DrawOperationPool.Get();
             m_RootOperation.Init(rootRenderTree);
 
@@ -182,6 +189,8 @@ namespace UnityEngine.UIElements.UIR
                 if (filterDef == null || filterDef.passes == null)
                     continue;
 
+                int filterGroupId = m_NextFilterGroupId++;
+
                 for (int j = filterDef.passes.Length - 1; j >= 0; j--)
                 {
                     var pass = filterDef.passes[j];
@@ -190,6 +199,7 @@ namespace UnityEngine.UIElements.UIR
 
                     var operation = m_DrawOperationPool.Get();
                     operation.Init(ve, pass, j, filterFunc);
+                    operation.filterGroupId = filterGroupId;
 
                     parentOperation.AddChild(operation);
                     parentOperation = operation;
@@ -553,21 +563,22 @@ namespace UnityEngine.UIElements.UIR
 
         static DrawOperation ResolveInputOp(DrawOperation currentOp, string name)
         {
+            // All passes of one filter share the same filterGroupId while the id matches
+            // keeps us inside the current filter's pass chain.
+            int groupId = currentOp.filterGroupId;
+
             if (name == k_SourceInputName)
             {
-                // Walk past every operations to get the source, stopping at the first RenderTree
-                // boundary to avoid crossing into a different nested filter operation.
-                var op = currentOp.firstChild;
-                while (op != null && op.type != DrawOperationType.RenderTree)
+                var op = currentOp;
+                while (op.firstChild != null && op.firstChild.filterGroupId == groupId)
                     op = op.firstChild;
-                return op;
+                return op.firstChild;
             }
-            else
+
+            // Named output: search only among passes belonging to the current filter.
             {
-                // Walk down the child chain looking for a pass with matching outputName.
-                // Stop at the RenderTree boundary to avoid crossing into a different nested filter operation.
                 var op = currentOp.firstChild;
-                while (op != null && op.type == DrawOperationType.Effect)
+                while (op != null && op.filterGroupId == groupId)
                 {
                     if (op.FilterPass.outputTextureName == name)
                         return op;

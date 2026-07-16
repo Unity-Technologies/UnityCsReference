@@ -732,6 +732,7 @@ namespace UnityEngine.UIElements
             set => GameViewRenderInfoQuery.getImplementation = value;
         }
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
+        internal static Action RequestEditorPlayerLoopUpdate;
 
         internal static void SetupLiveReloadPanelTrackers(bool isLiveReloadOn)
         {
@@ -1121,6 +1122,7 @@ namespace UnityEngine.UIElements
         private float m_OldFallbackDpi;
         private RenderTexture m_OldTargetTexture;
         private float m_OldSortingOrder;
+        private PanelRenderMode m_OldRenderMode;
         private bool m_IsLoaded = false;
         internal static Action<PanelSettings> s_AssignICUData;
 
@@ -1168,6 +1170,13 @@ namespace UnityEngine.UIElements
                     isDirty = true;
                 }
 
+                if (m_OldRenderMode != m_RenderMode)
+                {
+                    // World-space panels only refresh on a player-loop tick; request one so the change shows in the Scene view immediately.
+                    RequestEditorPlayerLoopUpdate?.Invoke();
+                    isDirty = true;
+                }
+
                 if (AssignICUData())
                 {
                     isDirty = true;
@@ -1182,6 +1191,7 @@ namespace UnityEngine.UIElements
             m_OldFallbackDpi = m_FallbackDpi;
             m_OldTargetTexture = m_TargetTexture;
             m_OldSortingOrder = m_SortingOrder;
+            m_OldRenderMode = m_RenderMode;
             m_OldThemeUss = themeUss;
 
             if (isDirty)

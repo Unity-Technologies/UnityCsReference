@@ -67,7 +67,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         Num
     }
 
-    class AnimationModule : ModuleWithAnalyzers<AnimationAnalyzer>
+    class AnimationModule : ModuleWithAnalyzers<AnimationModuleAnalyzer>
     {
         static readonly IssueLayout k_AnimatorControllerLayout = new IssueLayout
         {
@@ -172,12 +172,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         public override IEnumerator Audit(AnalysisParams analysisParams, IProgress progress)
         {
+            var analyzers = GetCompatibleAnalyzers(analysisParams);
+
             var context = new AnalysisContext
             {
                 Params = analysisParams
             };
+
             yield return ProcessAnimatorControllers(context, progress);
-            yield return ProcessAnimationClips(context, progress);
+            yield return ProcessAnimationClips(context, analyzers, progress);
             yield return ProcessAvatars(context, progress);
             yield return ProcessAvatarMasks(context, progress);
 
@@ -228,7 +231,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             progress?.Clear(progressState);
         }
 
-        IEnumerator ProcessAnimationClips(AnalysisContext context, IProgress progress)
+        IEnumerator ProcessAnimationClips(AnalysisContext context, AnimationModuleAnalyzer[] analyzers, IProgress progress)
         {
             var issues = new List<ReportItem>();
             var assetPaths = GetAssetPathsByFilter("t:animationclip, a:assets", context);
@@ -246,7 +249,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (clip == null)
                 {
                     Debug.LogError(assetPath + " is not an Animation Clip.");
-
                     continue;
                 }
 
@@ -272,6 +274,19 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     ])
                     .WithLocation(assetPath)
                 );
+
+                var animationClipAnalysisContext = new AnimationClipAnalysisContext
+                {
+                    Clip = clip,
+                    AssetPath = assetPath,
+                    Params = context.Params
+                };
+
+                foreach (var analyzer in analyzers)
+                {
+                    if (analyzer is AnimationClipAnalyzer clipAnalyzer)
+                        issues.AddRange(clipAnalyzer.Analyze(animationClipAnalysisContext));
+                }
 
                 yield return null;
             }

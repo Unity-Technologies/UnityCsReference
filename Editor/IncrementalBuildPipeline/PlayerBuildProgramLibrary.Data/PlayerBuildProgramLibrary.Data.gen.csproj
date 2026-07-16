@@ -30,6 +30,6 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_j7nz6p0w/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen__ms8edw2/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

@@ -26,6 +26,7 @@ namespace UnityEditor.UIElements
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme;
             PanelSettings.GetGameViewRenderInfo = PlayModeView.GetLastInteractedGameView;
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
+            PanelSettings.RequestEditorPlayerLoopUpdate = EditorApplication.QueuePlayerLoopUpdate;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
 
             EditorApplication.playModeStateChanged += stateChange =>

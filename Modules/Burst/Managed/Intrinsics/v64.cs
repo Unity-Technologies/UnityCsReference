@@ -114,6 +114,22 @@ namespace Unity.Burst.Intrinsics
         /// </summary>
         [FieldOffset(6)] public short SShort3;
 
+        /// <summary>
+        /// Get the 0th f16 of the vector
+        /// </summary>
+        [FieldOffset(0)] public f16 Half0;
+        /// <summary>
+        /// Get the 1st f16 of the vector
+        /// </summary>
+        [FieldOffset(2)] public f16 Half1;
+        /// <summary>
+        /// Get the 2nd f16 of the vector
+        /// </summary>
+        [FieldOffset(4)] public f16 Half2;
+        /// <summary>
+        /// Get the 3rd f16 of the vector
+        /// </summary>
+        [FieldOffset(6)] public f16 Half3;
 
         /// <summary>
         /// Get the 0th UInt of the vector
@@ -282,6 +298,31 @@ namespace Unity.Burst.Intrinsics
             UShort3 = d;
         }
 
+        /// <summary>
+        /// Splat a single f16 across the v64
+        /// </summary>
+        /// <param name="v">Splatted f16</param>
+        public v64(f16 v)
+        {
+            this = default(v64);
+            Half0 = Half1 = Half2 = Half3 = v;
+        }
+
+        /// <summary>
+        /// Initialize the v64 with 4 half's
+        /// </summary>
+        /// <param name="a">f16 a</param>
+        /// <param name="b">f16 b</param>
+        /// <param name="c">f16 c</param>
+        /// <param name="d">f16 d</param>
+        public v64(f16 a, f16 b, f16 c, f16 d)
+        {
+            this = default(v64);
+            Half0 = a;
+            Half1 = b;
+            Half2 = c;
+            Half3 = d;
+        }
 
         /// <summary>
         /// Splat a single int across the v64
@@ -380,4 +421,108 @@ namespace Unity.Burst.Intrinsics
         }
     }
 
+    /// <summary>
+    /// Represents a 128-bit SIMD value (Arm only)
+    /// (a combination of 2 64-bit values, equivalent to Arm Neon *x2 types)
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct v64x2
+    {
+        /// <summary>
+        /// Get the first 64 bits of the vector
+        /// </summary>
+        [FieldOffset(0)] public v64 v64_0;
+        /// <summary>
+        /// Get the second 64 bits of the vector
+        /// </summary>
+        [FieldOffset(8)] public v64 v64_1;
+
+        /// <summary>
+        /// Initialize the v64x2 with 2 v64's
+        /// </summary>
+		/// <param name="v0">First v64.</param>
+		/// <param name="v1">Second v64.</param>
+        public v64x2(v64 v0, v64 v1)
+        {
+            this = default(v64x2);
+            v64_0 = v0;
+            v64_1 = v1;
+        }
+    }
+
+    /// <summary>
+    /// Represents a 192-bit SIMD value (Arm only)
+    /// (a combination of 3 64-bit values, equivalent to Arm Neon *x3 types)
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct v64x3
+    {
+        /// <summary>
+        /// Get the first 64 bits of the vector
+        /// </summary>
+        [FieldOffset(0)] public v64 v64_0;
+        /// <summary>
+        /// Get the second 64 bits of the vector
+        /// </summary>
+        [FieldOffset(8)] public v64 v64_1;
+        /// <summary>
+        /// Get the third 64 bits of the vector
+        /// </summary>
+        [FieldOffset(16)] public v64 v64_2;
+
+        /// <summary>
+        /// Initialize the v64x3 with 3 v64's
+        /// </summary>
+		/// <param name="v0">First v64.</param>
+		/// <param name="v1">Second v64.</param>
+		/// <param name="v2">Third v64.</param>
+        public v64x3(v64 v0, v64 v1, v64 v2)
+        {
+            this = default(v64x3);
+            v64_0 = v0;
+            v64_1 = v1;
+            v64_2 = v2;
+        }
+    }
+
+    /// <summary>
+    /// Represents a 256-bit SIMD value (Arm only)
+    /// (a combination of 4 64-bit values, equivalent to Arm Neon *x4 types)
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct v64x4
+    {
+        /// <summary>
+        /// Get the first 64 bits of the vector
+        /// </summary>
+        [FieldOffset(0)] public v64 v64_0;
+        /// <summary>
+        /// Get the second 64 bits of the vector
+        /// </summary>
+        [FieldOffset(8)] public v64 v64_1;
+        /// <summary>
+        /// Get the third 64 bits of the vector
+        /// </summary>
+        [FieldOffset(16)] public v64 v64_2;
+        /// <summary>
+        /// Get the fourth 64 bits of the vector
+        /// </summary>
+        [FieldOffset(24)] public v64 v64_3;
+
+        /// <summary>
+        /// Initialize the v64x4 with 4 v64's
+        /// </summary>
+		/// <param name="v0">First v64.</param>
+		/// <param name="v1">Second v64.</param>
+		/// <param name="v2">Third v64.</param>
+		/// <param name="v3">Fourth v64.</param>
+        public v64x4(v64 v0, v64 v1, v64 v2, v64 v3)
+        {
+            this = default(v64x4);
+            v64_0 = v0;
+            v64_1 = v1;
+            v64_2 = v2;
+            v64_3 = v3;
+        }
+    }
 }

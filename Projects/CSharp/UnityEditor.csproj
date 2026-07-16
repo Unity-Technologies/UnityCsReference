@@ -7910,6 +7910,9 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Node\NodeAttribute.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Node\NodeAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Node\NodeExtensions.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Node\NodeExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Node\PortConnectorUI.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Node\PortConnectorUI.cs</Link>
     </Compile>
@@ -9082,6 +9085,9 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\BroadcastOpenPlayerWindowMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\EditorPrefsSyncedMessage.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\EditorPrefsSyncedMessage.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\VirtualProjects\Messaging\Messages\LogMessage.cs</Link>
@@ -12194,8 +12200,8 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\UnsupportedOnWebGLAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\UnsupportedOnWebGLAnalyzer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AnimationAnalyzer.cs">
-      <Link>Modules\ProjectAuditorEditor\Modules\AnimationAnalyzer.cs</Link>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AnimationClipAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Modules\AnimationClipAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\AnimationModule.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\AnimationModule.cs</Link>
@@ -17095,7 +17101,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_j7nz6p0w/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen__ms8edw2/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

@@ -16,6 +16,12 @@ internal partial class DictionaryDrawer : PropertyDrawer
     {
         var dictionaryView = new DictionaryView();
 
+        // preferredLabel is set by PropertyField just before this call (label ?? localizedDisplayName).
+        // The view uses it as its foldout title, so a nested dictionary value — which the enclosing
+        // drawer labels "Dictionary" via GetNestedCollectionValueLabel — reads correctly without the
+        // view having to detect that case itself.
+        dictionaryView.preferredLabel = preferredLabel;
+
         // At this point the view has just been constructed and is not yet
         // parented, so dictionaryView.panel is null. Calling BindProperty here
         // would (a) set bindingPath, and (b) take the "element.panel == null"

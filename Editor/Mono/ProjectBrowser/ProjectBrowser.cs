@@ -3173,24 +3173,25 @@ namespace UnityEditor
         private void FrameObjectInTwoColumnMode(EntityId entityId, bool frame, bool ping)
         {
             EntityId folderEntityId = EntityId.None;
+            string assetPath = AssetDatabase.GetAssetPath(entityId);
 
-            if (entityId == kPackagesFolderInstanceId)
+            // Root folders for Assets and Packages are special, as we cannot show their parent folder
+            // we simply ping them in the folder tree and show their contents
+            if (assetPath == "Assets")
+                folderEntityId = entityId;
+            else if (entityId == kPackagesFolderInstanceId)
                 folderEntityId = kPackagesFolderInstanceId;
             else
             {
-                string assetPath = AssetDatabase.GetAssetPath((EntityId)entityId);
                 if (!String.IsNullOrEmpty(assetPath))
                 {
                     string containingFolder = ProjectWindowUtil.GetContainingFolder(assetPath);
                     if (!String.IsNullOrEmpty(containingFolder))
                         folderEntityId = GetFolderInstanceID(containingFolder);
-
-                    if (folderEntityId == EntityId.None)
-                        folderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets");
                 }
             }
 
-            // Could be a scene gameobject
+            // folderEntityId stays None for a scene GameObject or an out-of-tree asset (e.g. ProjectSettings); leave navigation unchanged.
             if (folderEntityId != EntityId.None)
             {
                 m_FolderTree.Frame(folderEntityId, frame, ping);

@@ -402,6 +402,70 @@ namespace Unity.Burst.Intrinsics
 		/// </summary>
         [FieldOffset(30)] public short SShort15;
 
+        /// <summary>
+        /// Get the 0th f16 of the vector
+        /// </summary>
+        [FieldOffset(0)] public f16 Half0;
+        /// <summary>
+        /// Get the 1st f16 of the vector
+        /// </summary>
+        [FieldOffset(2)] public f16 Half1;
+        /// <summary>
+        /// Get the 2nd f16 of the vector
+        /// </summary>
+        [FieldOffset(4)] public f16 Half2;
+        /// <summary>
+        /// Get the 3rd f16 of the vector
+        /// </summary>
+        [FieldOffset(6)] public f16 Half3;
+        /// <summary>
+        /// Get the 4th f16 of the vector
+        /// </summary>
+        [FieldOffset(8)] public f16 Half4;
+        /// <summary>
+        /// Get the 5th f16 of the vector
+        /// </summary>
+        [FieldOffset(10)] public f16 Half5;
+        /// <summary>
+        /// Get the 6th f16 of the vector
+        /// </summary>
+        [FieldOffset(12)] public f16 Half6;
+        /// <summary>
+        /// Get the 7th f16 of the vector
+        /// </summary>
+        [FieldOffset(14)] public f16 Half7;
+        /// <summary>
+        /// Get the 8th f16 of the vector
+        /// </summary>
+        [FieldOffset(16)] public f16 Half8;
+        /// <summary>
+        /// Get the 9th f16 of the vector
+        /// </summary>
+        [FieldOffset(18)] public f16 Half9;
+        /// <summary>
+        /// Get the 10th f16 of the vector
+        /// </summary>
+        [FieldOffset(20)] public f16 Half10;
+        /// <summary>
+        /// Get the 11th f16 of the vector
+        /// </summary>
+        [FieldOffset(22)] public f16 Half11;
+        /// <summary>
+        /// Get the 12th f16 of the vector
+        /// </summary>
+        [FieldOffset(24)] public f16 Half12;
+        /// <summary>
+        /// Get the 13th f16 of the vector
+        /// </summary>
+        [FieldOffset(26)] public f16 Half13;
+        /// <summary>
+        /// Get the 14th f16 of the vector
+        /// </summary>
+        [FieldOffset(28)] public f16 Half14;
+        /// <summary>
+        /// Get the 15th f16 of the vector
+        /// </summary>
+        [FieldOffset(30)] public f16 Half15;
 
         /// <summary>
         /// Get the 0th UInt of the vector
@@ -858,6 +922,59 @@ namespace Unity.Burst.Intrinsics
             UShort15 = p;
         }
 
+        /// <summary>
+        /// Splat a single f16 across the v256
+        /// </summary>
+        /// <param name="v">Splatted f16.</param>
+        public v256(f16 v)
+        {
+            this = default(v256);
+            Half0 = Half1 = Half2 = Half3 = Half4 = Half5 = Half6 = Half7 =
+            Half8 = Half9 = Half10 = Half11 = Half12 = Half13 = Half14 = Half15 =
+                v;
+        }
+
+        /// <summary>
+        /// Initialize the v256 with 16 f16's
+        /// </summary>
+        /// <param name="a">f16 a.</param>
+        /// <param name="b">f16 b.</param>
+        /// <param name="c">f16 c.</param>
+        /// <param name="d">f16 d.</param>
+        /// <param name="e">f16 e.</param>
+        /// <param name="f">f16 f.</param>
+        /// <param name="g">f16 g.</param>
+        /// <param name="h">f16 h.</param>
+        /// <param name="i">f16 i.</param>
+        /// <param name="j">f16 j.</param>
+        /// <param name="k">f16 k.</param>
+        /// <param name="l">f16 l.</param>
+        /// <param name="m">f16 m.</param>
+        /// <param name="n">f16 n.</param>
+        /// <param name="o">f16 o.</param>
+        /// <param name="p">f16 p.</param>
+        public v256(
+            f16 a, f16 b, f16 c, f16 d, f16 e, f16 f, f16 g, f16 h,
+            f16 i, f16 j, f16 k, f16 l, f16 m, f16 n, f16 o, f16 p)
+        {
+            this = default(v256);
+            Half0 = a;
+            Half1 = b;
+            Half2 = c;
+            Half3 = d;
+            Half4 = e;
+            Half5 = f;
+            Half6 = g;
+            Half7 = h;
+            Half8 = i;
+            Half9 = j;
+            Half10 = k;
+            Half11 = l;
+            Half12 = m;
+            Half13 = n;
+            Half14 = o;
+            Half15 = p;
+        }
 
         /// <summary>
         /// Splat a single int across the v256

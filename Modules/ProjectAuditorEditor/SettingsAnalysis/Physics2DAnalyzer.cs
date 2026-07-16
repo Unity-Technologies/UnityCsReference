@@ -46,7 +46,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
                     .WithLocation("Project/Physics 2D/Layer Collision Matrix");
             }
             // Commented out as per Slack thread https://unity.slack.com/archives/CM6B17X50/p1740487386459879
-            /*if (k_SimulationModeDescriptor.IsApplicable(context.Params) && IsNotUsingSimulationModeScript())
+            /*if (k_SimulationModeDescriptor.IsSupported(context.Params) && IsNotUsingSimulationModeScript())
             {
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_SimulationModeDescriptor.Id)
                     .WithLocation("Project/Physics 2D/General");

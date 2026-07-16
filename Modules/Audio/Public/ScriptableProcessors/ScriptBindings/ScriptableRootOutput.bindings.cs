@@ -271,7 +271,7 @@ namespace UnityEngine.Audio
             internal static unsafe void Initialize()
             {
                 if (jobReflectionData.Data == IntPtr.Zero)
-                    jobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(Storage), (ExecuteJobFunction)Execute);
+                    jobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(Storage), typeof(TUserProcessor), (ExecuteJobFunction)Execute);
             }
 
             internal delegate void ExecuteJobFunction(ref Storage storage, IntPtr additionalPtr, IntPtr additionalPtr2, ref JobRanges ranges, int jobIndex);

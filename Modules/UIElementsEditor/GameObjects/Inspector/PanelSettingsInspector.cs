@@ -329,18 +329,6 @@ namespace UnityEditor.UIElements.Inspector
                     }
                 }
             }
-
-            if (ps?.m_AttachedPanelComponentsList?.m_AttachedPanelComponents!= null)
-            {
-                foreach (var document in ps.m_AttachedPanelComponentsList.m_AttachedPanelComponents)
-                {
-                    if (document != null)
-                    {
-                        // Let the UIDocument update its rendering properties (UUM-105765)
-                        ((IPanelComponent)document).PerformUpdate();
-                    }
-                }
-            }
         }
 
         public override VisualElement CreateInspectorGUI()

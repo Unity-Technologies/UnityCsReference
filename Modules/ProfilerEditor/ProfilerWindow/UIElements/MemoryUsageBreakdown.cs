@@ -42,8 +42,22 @@ namespace Unity.Profiling.Editor
             public static readonly string TotalAndMaxLabelTooltipForMaxValue = L10n.Tr("This is one of the frames with the highest total memory usage (Max).");
         }
 
+        string m_HeaderText;
+
         [UxmlAttribute]
-        public string HeaderText { get; private set; }
+        public string HeaderText
+        {
+            get { return m_HeaderText; }
+            private set
+            {
+                m_HeaderText = value;
+
+                // Push the value to the header label so elements created from UXML (via the generated
+                // UxmlSerializedData) show their title instead of the template default "Memory Usage".
+                if (m_HeaderName != null)
+                    m_HeaderName.text = m_HeaderText;
+            }
+        }
 
         ulong m_TotalBytes;
 
@@ -71,7 +85,7 @@ namespace Unity.Profiling.Editor
         VisualElement m_Content;
         VisualElement m_MemoryUsageBar;
         VisualElement m_MemoryUsageTable;
-        Label m_HeaderNamne;
+        Label m_HeaderName;
         Label m_HeaderSize;
 
         VisualElement m_UnknownBar;
@@ -118,13 +132,6 @@ namespace Unity.Profiling.Editor
             get { return m_Content; }
         }
 
-        public MemoryUsageBreakdown(string headerText, bool showUnknown = false) : this()
-        {
-            ShowUnknown = showUnknown;
-            HeaderText = headerText;
-            Init(headerText, m_TotalBytes, showUnknown, UnknownName);
-        }
-
         public MemoryUsageBreakdown() : base()
         {
             VisualTreeAsset memoryUsageBreakdownViewTree;
@@ -145,7 +152,7 @@ namespace Unity.Profiling.Editor
             hierarchy.Add(m_Root);
             m_Root.parent.style.flexDirection = FlexDirection.Row;
 
-            m_HeaderNamne = m_Root.Q<Label>("memory-usage-breakdown__header__title");
+            m_HeaderName = m_Root.Q<Label>("memory-usage-breakdown__header__title");
             m_HeaderSize = m_Root.Q<Label>("memory-usage-breakdown__header__total-value");
 
             m_MemoryUsageBar = m_Root.Q("memory-usage-breakdown__memory-usage-bar");
@@ -254,19 +261,6 @@ namespace Unity.Profiling.Editor
                 m_HeaderSize.text = string.Format(Content.TotalFormatString, EditorUtility.FormatBytes((long)m_TotalBytes));
                 m_HeaderSize.tooltip = m_Normalized ? Content.TotalLabelTooltip : Content.TotalAndMaxLabelTooltipForMaxValue;
             }
-        }
-
-        void Init(string headerText, ulong totalMemory, bool showUnknown, string unknownName)
-        {
-            ShowUnknown = showUnknown;
-            m_TotalBytes = totalMemory;
-            UnknownName = unknownName;
-            if (m_HeaderNamne != null)
-            {
-                m_HeaderNamne.text = HeaderText = headerText;
-                UpdateTotalSizeText();
-            }
-            Setup();
         }
 
         public void Setup()

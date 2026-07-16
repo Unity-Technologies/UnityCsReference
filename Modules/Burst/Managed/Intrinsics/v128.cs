@@ -212,6 +212,38 @@ namespace Unity.Burst.Intrinsics
 		/// </summary>
         [FieldOffset(14)] public short SShort7;
 
+        /// <summary>
+        /// Get the 0th f16 of the vector
+        /// </summary>
+        [FieldOffset(0)] public f16 Half0;
+        /// <summary>
+        /// Get the 1st f16 of the vector
+        /// </summary>
+        [FieldOffset(2)] public f16 Half1;
+        /// <summary>
+        /// Get the 2nd f16 of the vector
+        /// </summary>
+        [FieldOffset(4)] public f16 Half2;
+        /// <summary>
+        /// Get the 3rd f16 of the vector
+        /// </summary>
+        [FieldOffset(6)] public f16 Half3;
+        /// <summary>
+        /// Get the 4th f16 of the vector
+        /// </summary>
+        [FieldOffset(8)] public f16 Half4;
+        /// <summary>
+        /// Get the 5th f16 of the vector
+        /// </summary>
+        [FieldOffset(10)] public f16 Half5;
+        /// <summary>
+        /// Get the 6th f16 of the vector
+        /// </summary>
+        [FieldOffset(12)] public f16 Half6;
+        /// <summary>
+        /// Get the 7th f16 of the vector
+        /// </summary>
+        [FieldOffset(14)] public f16 Half7;
 
         /// <summary>
         /// Get the 0th UInt of the vector
@@ -476,6 +508,39 @@ namespace Unity.Burst.Intrinsics
             UShort7 = h;
         }
 
+        /// <summary>
+        /// Splat a single f16 across the v128
+        /// </summary>
+        /// <param name="v">Splatted f16.</param>
+        public v128(f16 v)
+        {
+            this = default(v128);
+            Half0 = Half1 = Half2 = Half3 = Half4 = Half5 = Half6 = Half7 = v;
+        }
+
+        /// <summary>
+        /// Initialize the v128 with 8 half's
+        /// </summary>
+        /// <param name="a">f16 a.</param>
+        /// <param name="b">f16 b.</param>
+        /// <param name="c">f16 c.</param>
+        /// <param name="d">f16 d.</param>
+        /// <param name="e">f16 e.</param>
+        /// <param name="f">f16 f.</param>
+        /// <param name="g">f16 g.</param>
+        /// <param name="h">f16 h.</param>
+        public v128(f16 a, f16 b, f16 c, f16 d, f16 e, f16 f, f16 g, f16 h)
+        {
+            this = default(v128);
+            Half0 = a;
+            Half1 = b;
+            Half2 = c;
+            Half3 = d;
+            Half4 = e;
+            Half5 = f;
+            Half6 = g;
+            Half7 = h;
+        }
 
         /// <summary>
         /// Splat a single int across the v128
@@ -634,4 +699,108 @@ namespace Unity.Burst.Intrinsics
         }
     }
 
+    /// <summary>
+    /// Represents a 256-bit SIMD value (Arm only)
+    /// (a combination of 2 128-bit values, equivalent to Arm Neon *x2 types)
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct v128x2
+    {
+        /// <summary>
+        /// Get the first 128 bits of the vector
+        /// </summary>
+        [FieldOffset(0)] public v128 v128_0;
+        /// <summary>
+        /// Get the second 128 bits of the vector
+        /// </summary>
+        [FieldOffset(16)] public v128 v128_1;
+
+        /// <summary>
+        /// Initialize the v128x2 with 2 v128's
+        /// </summary>
+		/// <param name="v0">First v128.</param>
+		/// <param name="v1">Second v128.</param>
+        public v128x2(v128 v0, v128 v1)
+        {
+            this = default(v128x2);
+            v128_0 = v0;
+            v128_1 = v1;
+        }
+    }
+
+    /// <summary>
+    /// Represents a 384-bit SIMD value (Arm only)
+    /// (a combination of 3 128-bit values, equivalent to Arm Neon *x3 types)
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct v128x3
+    {
+        /// <summary>
+        /// Get the first 128 bits of the vector
+        /// </summary>
+        [FieldOffset(0)] public v128 v128_0;
+        /// <summary>
+        /// Get the second 128 bits of the vector
+        /// </summary>
+        [FieldOffset(16)] public v128 v128_1;
+        /// <summary>
+        /// Get the third 128 bits of the vector
+        /// </summary>
+        [FieldOffset(32)] public v128 v128_2;
+
+        /// <summary>
+        /// Initialize the v128x3 with 3 v128's
+        /// </summary>
+		/// <param name="v0">First v128.</param>
+		/// <param name="v1">Second v128.</param>
+		/// <param name="v2">Third v128.</param>
+        public v128x3(v128 v0, v128 v1, v128 v2)
+        {
+            this = default(v128x3);
+            v128_0 = v0;
+            v128_1 = v1;
+            v128_2 = v2;
+        }
+    }
+
+    /// <summary>
+    /// Represents a 512-bit SIMD value (Arm only)
+    /// (a combination of 4 128-bit values, equivalent to Arm Neon *x4 types)
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct v128x4
+    {
+        /// <summary>
+        /// Get the first 128 bits of the vector
+        /// </summary>
+        [FieldOffset(0)] public v128 v128_0;
+        /// <summary>
+        /// Get the second 128 bits of the vector
+        /// </summary>
+        [FieldOffset(16)] public v128 v128_1;
+        /// <summary>
+        /// Get the third 128 bits of the vector
+        /// </summary>
+        [FieldOffset(32)] public v128 v128_2;
+        /// <summary>
+        /// Get the fourth 128 bits of the vector
+        /// </summary>
+        [FieldOffset(48)] public v128 v128_3;
+
+        /// <summary>
+        /// Initialize the v128x4 with 4 v128's
+        /// </summary>
+		/// <param name="v0">First v128.</param>
+		/// <param name="v1">Second v128.</param>
+		/// <param name="v2">Third v128.</param>
+		/// <param name="v3">Fourth v128.</param>
+        public v128x4(v128 v0, v128 v1, v128 v2, v128 v3)
+        {
+            this = default(v128x4);
+            v128_0 = v0;
+            v128_1 = v1;
+            v128_2 = v2;
+            v128_3 = v3;
+        }
+    }
 }

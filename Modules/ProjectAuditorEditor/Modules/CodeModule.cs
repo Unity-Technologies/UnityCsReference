@@ -406,7 +406,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             // remove issues if platform does not match
             foundIssues.RemoveAll(i => i.Id.IsValid() &&
-                !i.Id.GetDescriptor().IsApplicable(analysisParams));
+                !i.Id.GetDescriptor().IsSupported(analysisParams));
 
             compilationPipeline.Dispose();
 

@@ -439,6 +439,15 @@ namespace UnityEngine.UIElements
             // If so, let's initialize the root visual element.
             if (rootVisualElement == null && panelSettings != null)
                 InitRootVisualElement(true);
+            else if (rootVisualElement != null && rootVisualElement.panel == null)
+            {
+                // Reactivation path: the root survived OnPanelRendererDeactivated but was detached
+                // from its panel. It will be reattached by ReactToHierarchyChanges; flag the
+                // callback as pending so InvokeUIReloadCallbacks fires once the panel is restored.
+                // Skip when the root is still attached (e.g., entering playmode without domain
+                // reload), the immediate-fire branch of RegisterUIReloadCallback handles that.
+                m_UIReloadCallbackPending = true;
+            }
         }
 
         [RequiredByNativeCode(Optional = true)]

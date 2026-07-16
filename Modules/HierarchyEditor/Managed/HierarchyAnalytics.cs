@@ -118,7 +118,7 @@ namespace Unity.Hierarchy.Editor
 
             HierarchyPreferences.UseQueryBuilder.valueChanged += RequestPreferenceChangeEvent;
             HierarchyPreferences.AlternatingRowBackground.valueChanged += RequestPreferenceChangeEvent;
-            HierarchyPreferences.GameObjectIconModeChanged += RequestPreferenceChangeEvent;
+            HierarchyPreferences.GameObjectIconMode.valueChanged += RequestPreferenceChangeEvent;
             HierarchyPreferences.RenameNewObjects.valueChanged += RequestPreferenceChangeEvent;
 
             HierarchyPreferences.AllowAlphaNumericHierarchy.valueChanged += SendHierarchyV1SortChanged;
@@ -151,9 +151,9 @@ namespace Unity.Hierarchy.Editor
         static bool s_ColumnsChangedRequested = false;
 
         // Doesn't use ToString to ensure that any changes to the enum name doesn't change what the analytics receive
-        static string GetIconModeString(HierarchyPreferences.IconMode mode)
+        static string GetIconModeString()
         {
-            switch (mode)
+            switch ((HierarchyPreferences.IconMode)HierarchyPreferences.GameObjectIconMode.value)
             {
                 case HierarchyPreferences.IconMode.ComponentsAndGizmos: return "Components And Gizmos";
                 case HierarchyPreferences.IconMode.ComponentsOnly: return "Components Only";
@@ -231,7 +231,7 @@ namespace Unity.Hierarchy.Editor
             {
                 queryBuilderEnabled = HierarchyPreferences.UseQueryBuilder,
                 alternatingRowColorsEnabled = HierarchyPreferences.AlternatingRowBackground,
-                gameObjectIconsMode = GetIconModeString(HierarchyPreferences.GameObjectIconMode),
+                gameObjectIconsMode = GetIconModeString(),
                 renameNewObjects = HierarchyPreferences.RenameNewObjects,
                 columnsTracked = columnsTracked.ToArray(),
             }));

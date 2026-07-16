@@ -69,6 +69,9 @@ namespace Unity.GraphToolkit.Editor
 
         GraphViewZoomMode m_ZoomMode;
 
+        //TODO : GTF-2489 - Remove GraphViewEditorWindow.s_FrameElementDelayMs and queue Framing after Graph Load
+        public const long s_FrameElementDelayMs = 60;
+
         /// <summary>
         /// GraphView elements are organized into layers to ensure some type of graph elements
         /// are always drawn on top of others.
@@ -581,8 +584,8 @@ namespace Unity.GraphToolkit.Editor
             // If pan and zoom are the default values, re-frame to see all elements in the graph
             if (ShouldFrameAllOnFirstLoad && GraphModel != null && pan == GraphViewStateComponent.defaultPosition && zoom == GraphViewStateComponent.defaultScale)
             {
-                // Needs to schedule to have the graph elements views
-                schedule.Execute(this.DispatchFrameAllCommand).ExecuteLater(0);
+                // Needs to schedule to have the graph elements views and layout fully calculated
+                schedule.Execute(this.DispatchFrameAllCommand).ExecuteLater(s_FrameElementDelayMs);
                 return;
             }
 

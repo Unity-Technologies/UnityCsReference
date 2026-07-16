@@ -44,11 +44,11 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         public override IEnumerable<ReportItem> Analyze(SettingsAnalysisContext context)
         {
             // PlayerSettings.GetArchitecture returns an integer value associated with the architecture of a BuildTargetPlatformGroup. 0 - None, 1 - ARM64, 2 - Universal.
-            if (k_DescriptorIOS.IsApplicable(context.Params) && PlayerSettingsUtil.GetArchitecture(BuildTargetGroup.iOS) == 2)
+            if (k_DescriptorIOS.IsSupported(context.Params) && PlayerSettingsUtil.GetArchitecture(BuildTargetGroup.iOS) == 2)
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_DescriptorIOS.Id)
                     .WithLocation("Project/Player");
 
-            if (k_DescriptorAndroid.IsApplicable(context.Params) && (PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARMv7) != 0 &&
+            if (k_DescriptorAndroid.IsSupported(context.Params) && (PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARMv7) != 0 &&
                 (PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != 0)
                 yield return context.CreateIssue(IssueCategory.ProjectSetting, k_DescriptorAndroid.Id)
                     .WithLocation("Project/Player");

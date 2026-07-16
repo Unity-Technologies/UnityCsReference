@@ -291,7 +291,8 @@ namespace UnityEditor.UIElements
 
             void AddSpecialElements()
             {
-                // UXML
+                // UXML is the document root. It is not substitutable, so it keeps a standalone type whose
+                // children are any VisualElement (and, through substitution, the special tags added below).
                 var uxmlType = AddFakeElement(k_DefaultNamespace, "UXML");
 
                 var uxmlChildren = new XmlSchemaChoice
@@ -301,28 +302,84 @@ namespace UnityEditor.UIElements
                 };
                 uxmlType.type.Particle = uxmlChildren;
                 uxmlChildren.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+                AddUnqualifiedSpecialChildren(uxmlChildren);
                 uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "class", SchemaTypeName = s_StringTypeQualifiedName });
                 uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "editor-extension-mode", SchemaTypeName = s_BoolTypeQualifiedName });
 
-                // Style
-                var styleType = AddFakeElement(k_DefaultNamespace, "Style");
-                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
-                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
-                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                // Declare the special tags in the engine namespace with a VisualElement substitution group so qualified
+                // usage (<ui:Style>) validates. UI Builder also writes Style and AttributeOverrides unqualified; those are
+                // handled by the ##local wildcard added to element content models, because strict validators do not honor
+                // a no-namespace element substituting for a namespaced head.
+                AddSpecialChildElement("Style", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                }, k_DefaultNamespace);
 
-                // Template
-                var templateType = AddFakeElement(k_DefaultNamespace, "Template");
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                AddSpecialChildElement("Template", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
+                    attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+                }, k_DefaultNamespace);
 
-                // Instance
-                var instanceType = AddFakeElement(k_DefaultNamespace, "Instance");
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "template", SchemaTypeName = s_StringTypeQualifiedName });
+                AddSpecialChildElement("AttributeOverrides", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "element-name", SchemaTypeName = s_StringTypeQualifiedName, Use = XmlSchemaUse.Required });
+                }, k_DefaultNamespace);
 
-                // AttributeOverrides
-                var attributeOverridesType = AddFakeElement(k_DefaultNamespace, "AttributeOverrides");
-                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "element-name", SchemaTypeName = s_StringTypeQualifiedName, Use = XmlSchemaUse.Required });
+                AddSpecialChildElement("Instance", attributes =>
+                {
+                    attributes.Add(new XmlSchemaAttribute { Name = "template", SchemaTypeName = s_StringTypeQualifiedName });
+                }, k_DefaultNamespace);
+            }
+
+            // Declares a special UXML tag (Style, Template, Instance, AttributeOverrides) in each of the given namespaces.
+            // The tag restricts VisualElementType and joins the VisualElement substitution group, so it validates wherever
+            // a VisualElement is allowed, matching what the importer accepts and what the UXML exporter writes.
+            // addAttributes runs once per namespace so each schema gets its own attribute instances (they cannot be shared).
+            void AddSpecialChildElement(string uxmlName, Action<XmlSchemaObjectCollection> addAttributes, params string[] namespaces)
+            {
+                var typeName = uxmlName + k_TypeSuffix;
+
+                foreach (var ns in namespaces)
+                {
+                    var schemaInfo = GetSchemaInfo(ns);
+
+                    var restriction = new XmlSchemaComplexContentRestriction
+                    {
+                        BaseTypeName = new XmlQualifiedName(nameof(VisualElement) + k_TypeSuffix, k_DefaultNamespace),
+                        AnyAttribute = new XmlSchemaAnyAttribute { ProcessContents = XmlSchemaContentProcessing.Lax }
+                    };
+
+                    var choice = new XmlSchemaChoice
+                    {
+                        MinOccurs = 0,
+                        MaxOccursString = "unbounded"
+                    };
+                    choice.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+                    AddUnqualifiedSpecialChildren(choice);
+                    restriction.Particle = choice;
+
+                    addAttributes(restriction.Attributes);
+
+                    var xmlElementType = new XmlSchemaComplexType
+                    {
+                        Name = typeName,
+                        ContentModel = new XmlSchemaComplexContent { Content = restriction }
+                    };
+                    schemaInfo.schema.Items.Add(xmlElementType);
+                    schemaInfo.importNamespaces.Add(k_DefaultNamespace);
+
+                    var element = new XmlSchemaElement
+                    {
+                        Name = uxmlName,
+                        SchemaTypeName = new XmlQualifiedName(typeName, ns),
+                        SubstitutionGroup = s_VisualElementName
+                    };
+                    schemaInfo.schema.Items.Add(element);
+                }
             }
 
             (XmlSchemaElement element, XmlSchemaComplexType type) AddFakeElement(string ns, string uxmlName)
@@ -539,6 +596,11 @@ namespace UnityEditor.UIElements
                         rootChoice.MaxOccursString = "unbounded";
                     }
                 }
+
+                // Let the unqualified Style/AttributeOverrides tags UI Builder writes validate as children. Extension
+                // types inherit these from their base content model, so only base and restriction types add them.
+                if (!useExtension)
+                    AddUnqualifiedSpecialChildren(GetRootChoice(xmlElementType));
 
                 // Add element to the schema.
                 var element = new XmlSchemaElement
@@ -808,6 +870,40 @@ namespace UnityEditor.UIElements
                         return elementType.Particle as XmlSchemaChoice;
                     }
                 }
+            }
+
+            // Adds Style and AttributeOverrides as local unqualified child elements so the tags UI Builder writes without
+            // a namespace prefix validate as children. They are distinct named elements, so they coexist with the
+            // unqualified UxmlObject roots (Bindings, Columns, ...) without a Unique Particle Attribution conflict, and
+            // strict validators (Rider) honor them where a no-namespace element substituting for the namespaced
+            // VisualElement head is rejected. Added consistently to every element content model so restrictions stay valid.
+            static void AddUnqualifiedSpecialChildren(XmlSchemaChoice choice)
+            {
+                if (choice == null)
+                    return;
+
+                AddUnqualifiedChild(choice, "Style");
+                AddUnqualifiedChild(choice, "Template");
+                AddUnqualifiedChild(choice, "AttributeOverrides");
+            }
+
+            static void AddUnqualifiedChild(XmlSchemaChoice choice, string uxmlName)
+            {
+                foreach (var item in choice.Items)
+                {
+                    if (item is XmlSchemaElement existing && existing.Name == uxmlName)
+                        return;
+                }
+
+                choice.MinOccurs = 0;
+                choice.MaxOccursString = "unbounded";
+                choice.Items.Add(new XmlSchemaElement
+                {
+                    Name = uxmlName,
+                    SchemaTypeName = new XmlQualifiedName(uxmlName + k_TypeSuffix, k_DefaultNamespace),
+                    Form = XmlSchemaForm.Unqualified,
+                    MinOccurs = 0
+                });
             }
 
             /// <summary>

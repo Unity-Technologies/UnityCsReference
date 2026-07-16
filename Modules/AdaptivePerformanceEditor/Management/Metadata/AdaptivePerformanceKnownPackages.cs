@@ -178,6 +178,29 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                     }
                 }
             });
+
+            packages.Add(new KnownPackage() {
+                metadata = new KnownPackageMetadata(){
+                    packageName = "Adaptive Performance Meta OpenXR",
+                    packageId = "com.unity.xr.meta-openxr",
+                    settingsType = "UnityEngine.XR.OpenXR.Features.Meta.MetaOpenXRAdaptivePerformanceProviderSettings",
+                    licenseURL = "https://docs.unity3d.com/Packages/com.unity.xr.meta-openxr@latest?subfolder=/license/LICENSE.html",
+                    isDefaultPlatformProvider = "false",
+                    isDeprecated = "false",
+                    loaderMetadata = new List<IAdaptivePerformanceLoaderMetadata>()
+                    {
+                        new KnownLoaderMetadata() {
+                            loaderName = "Meta OpenXR Provider",
+                            loaderType = "UnityEngine.XR.OpenXR.Features.Meta.MetaOpenXRAdaptivePerformanceProviderLoader",
+                            supportedBuildTargets = new List<BuildTargetGroup>()
+                            {
+                                BuildTargetGroup.Android
+                            },
+                            priority = 2,
+                        },
+                    }
+                }
+            });
             return packages;
         }
     }

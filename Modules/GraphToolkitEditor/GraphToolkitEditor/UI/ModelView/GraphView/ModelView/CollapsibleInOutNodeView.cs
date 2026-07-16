@@ -190,11 +190,23 @@ namespace Unity.GraphToolkit.Editor
         void EnableCollapseButton()
         {
             var collapseButton = GetNodeToolbarButton(CollapseButton.collapseButtonName);
-            if (collapseButton is null || NodeModel is not PortNodeModel portHolder || portHolder.GetPorts() == null)
+            if (collapseButton is null || NodeModel is not PortNodeModel portHolder)
                 return;
 
+            var ports = portHolder.GetPorts();
+            if (ports == null)
+                return;
+
+            if (ports.Count == 0)
+            {
+                // No ports: enable the button only if there are node options to collapse.
+                var hasNodeOptions = NodeModel is InputOutputPortsNodeModel ioNode && ioNode.NodeOptions.Count > 0;
+                collapseButton.SetEnabled(hasNodeOptions);
+                return;
+            }
+
             var allPortConnected = true;
-            foreach (var port in portHolder.GetPorts())
+            foreach (var port in ports)
             {
                 if (!port.IsConnected())
                 {
@@ -203,7 +215,6 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            // When all ports are connected, the collapse button should be disabled.
             collapseButton.SetEnabled(!allPortConnected);
         }
 

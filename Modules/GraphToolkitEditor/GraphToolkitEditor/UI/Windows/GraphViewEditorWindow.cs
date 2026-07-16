@@ -262,15 +262,6 @@ Would you like to save these changes?
         [SerializeField]
         Hash128 m_WindowHash;
 
-        //TODO : GTF-2489 - Remove GraphViewEditorWindow.s_FrameElementDelayMs and queue Framing after Graph Load
-        static long s_FrameElementDelayMs
-        {
-            get
-            {
-                return 10;
-            }
-        }
-
         public virtual IEnumerable<GraphView> GraphViews
         {
             get { yield return GraphView; }
@@ -1310,7 +1301,8 @@ Would you like to save these changes?
                 if (graphModelToLoad.TryGetModelFromGuid(elementGuid, out var elementModel))
                 {
                     // Wait some time for the graph to be loaded before framing the element.
-                    graphView.schedule.Execute(() => { FrameElement(elementModel); }).ExecuteLater(s_FrameElementDelayMs);
+                    //TODO : GTF-2489 - Remove GraphViewEditorWindow.s_FrameElementDelayMs and queue Framing after Graph Load
+                    graphView.schedule.Execute(() => { FrameElement(elementModel); }).ExecuteLater(Editor.GraphView.s_FrameElementDelayMs);
                 }
             }
             else

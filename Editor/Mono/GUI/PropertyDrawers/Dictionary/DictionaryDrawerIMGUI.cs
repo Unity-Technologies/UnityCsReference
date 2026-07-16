@@ -64,6 +64,8 @@ internal partial class DictionaryDrawer
             public const float k_RowVerticalPadding = 5f;
             public const float k_CellHorizontalPadding = 8f;
             public const float k_ValueLeftPadding = 16f;
+            public const float k_OneColumnValueIndent = 14f;
+            public const float k_StaticValueHeaderTopMargin = 2f;
             public const float k_CellLabelWidthFraction = 0.35f;
             public const float k_CellLabelMinWidth = 80f;
             public const float k_CellControlMinWidth = 40f;
@@ -156,6 +158,21 @@ internal partial class DictionaryDrawer
         public bool needsHeightRefresh; // a rendered row's measured height drifted from cached value
         public bool needsHeightMeasure; // row-height measurement deferred to the next OnGUI Layout pass
         public bool sortAscending = true;
+        // Single source of truth for the column layout; oneColumnMode/useValueFoldouts are
+        // derived views kept so the row-drawing code reads intent-named flags. The two
+        // OneColumn_* modes both stack key over value, differing only in the per-row foldout.
+        public DictionaryLayout layout = DictionaryLayout.TwoColumns;
+        public bool oneColumnMode => layout != DictionaryLayout.TwoColumns;
+        public bool useValueFoldouts => layout == DictionaryLayout.OneColumnWithValueFoldout;
+        // Default layout resolved from [DictionaryDisplay] (field- or assembly-level); the
+        // active layout falls back to this until the user overrides it from the context menu.
+        public readonly DictionaryLayout attributeLayout;
+        public readonly GUIContent valueLabelContent;
+        // Value-cell label when the value type is a collection ("Dictionary"/"Array"/"List"); null
+        // otherwise, so the cell draws with GUIContent.none. This is what gives a nested collection value
+        // its foldout title: it is forwarded as the label to the value's own drawer (a nested dictionary
+        // reads it as its OnGUI label, an array/list as its built-in foldout title).
+        public readonly GUIContent valueCollectionLabel;
         public readonly float attributeKeyFraction;
         public readonly Hash128 stateCacheKey;
         public float availableWidth;
@@ -240,22 +257,32 @@ internal partial class DictionaryDrawer
 
             dictionaryProperty = property.Copy();
 
-            var genericArgs = GetDictionaryGenericArguments(m_FieldInfo);
+            // The property's static type is the closed Dictionary<K,V> for *this* field/value, which
+            // for a nested dictionary differs from m_FieldInfo.FieldType (the outer field). Prefer it
+            // for the key/value types and layout lookup; fall back to the field type if unavailable.
+            ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(property, out var dictionaryType);
+            var genericArgs = dictionaryType != null && dictionaryType.IsGenericType
+                ? dictionaryType.GetGenericArguments()
+                : GetDictionaryGenericArguments(m_FieldInfo);
             keyType = genericArgs[0];
             valueType = genericArgs[1];
             keyHasCustomDrawer = ScriptAttributeUtility.GetDrawerTypeForType(keyType, null) != null;
             valueHasCustomDrawer = ScriptAttributeUtility.GetDrawerTypeForType(valueType, null) != null;
 
-            GetHeaderLabels(m_FieldInfo, out var keyLabel, out var valueLabel, out var keyFraction);
+            GetHeaderLabels(m_FieldInfo, dictionaryType, out var keyLabel, out var valueLabel, out var keyFraction);
             attributeKeyFraction = keyFraction;
+            attributeLayout = ResolveDefaultLayout(m_FieldInfo, dictionaryType);
+            valueLabelContent = new GUIContent(valueLabel);
+            var collectionLabel = GetNestedCollectionValueLabel(valueType);
+            if (collectionLabel != null)
+                valueCollectionLabel = new GUIContent(collectionLabel);
             stateCacheKey = ComputeStateCacheKey(property.propertyPath);
 
             float effectiveFraction = GetActiveKeyColumnFraction(stateCacheKey, keyFraction);
+            layout = GetActiveLayout(stateCacheKey, attributeLayout);
             var cachedState = s_StateCache.GetState(stateCacheKey);
             if (cachedState != null)
-            {
                 sortAscending = cachedState.sortAscending;
-            }
 
             header = new DictionaryHeader(keyLabel, valueLabel, effectiveFraction, stateCacheKey);
             treeViewState = new TreeViewState();
@@ -267,10 +294,7 @@ internal partial class DictionaryDrawer
 
             treeView = new DictionaryTreeView(this);
 
-            if (displayedItemCount > 0)
-                ClassifyRowHeights();
-            else
-                needsHeightClassification = IsComplexCellType(keyType, keyHasCustomDrawer) || IsComplexCellType(valueType, valueHasCustomDrawer);
+            ClassifyRowHeights();
 
             treeView.Reload();
         }
@@ -384,21 +408,7 @@ internal partial class DictionaryDrawer
             // each frame, so a totalHeight that keeps changing as rows are lazily measured would
             // repeatedly clamp the scroll and walk it away from a framed position. Measuring all
             // rows once makes totalHeight exact and stable, so framing (and the scrollbar) hold.
-            if (Event.current.type == EventType.Layout && displayedItemCount > 0 && needsHeightMeasure)
-            {
-                needsHeightMeasure = false;
-                if (variableRowHeight)
-                    treeView.MeasureAllRowHeights();
-                else if (hasStaticInlineHeight)
-                    treeView.ComputeFixedInlineRowHeight();
-                treeView.RefreshCustomRowHeights();
-            }
-
-            if (dynamicRowHeight && displayedItemCount > 0 && needsHeightRefresh)
-            {
-                treeView.RefreshCustomRowHeights();
-                needsHeightRefresh = false;
-            }
+            MeasureRowHeightsIfNeeded();
 
             // Apply a deferred frame request (e.g. a newly added row) once row heights are
             // settled — after the measure/refresh above on this Layout pass — so the scroll uses
@@ -431,6 +441,25 @@ internal partial class DictionaryDrawer
             float footer = Styles.k_FooterHeight + Styles.k_FooterSpacing;
             float duplicatesBlock = CalcDuplicatesHelpBoxHeight(availableWidth);
             return foldoutLine + columnHeader + rowsArea + 1f + footer + duplicatesBlock;
+        }
+
+        void MeasureRowHeightsIfNeeded()
+        {
+            if (Event.current.type == EventType.Layout && displayedItemCount > 0 && needsHeightMeasure)
+            {
+                needsHeightMeasure = false;
+                if (variableRowHeight)
+                    treeView.MeasureAllRowHeights();
+                else if (hasStaticInlineHeight)
+                    treeView.ComputeFixedInlineRowHeight();
+                treeView.RefreshCustomRowHeights();
+            }
+
+            if ((dynamicRowHeight || hasStaticInlineHeight) && displayedItemCount > 0 && needsHeightRefresh)
+            {
+                treeView.RefreshCustomRowHeights();
+                needsHeightRefresh = false;
+            }
         }
 
         float CalcDuplicatesHelpBoxHeight(float availWidth)
@@ -494,6 +523,8 @@ internal partial class DictionaryDrawer
                 needsDuplicate = false;
                 return;
             }
+
+            MeasureRowHeightsIfNeeded();
 
             // Expanded body: Two column header, rows (or empty label), footer and help box
             DrawExpandedBody(position, foldoutRect.yMax, property);
@@ -804,11 +835,43 @@ internal partial class DictionaryDrawer
         {
             needsHeightClassification = false;
 
+            dynamicRowHeight = false;
+            variableRowHeight = false;
+            hasStaticInlineHeight = false;
+
+            // OneColumnWithValueFoldout: the per-row foldout is toggled at runtime, which changes
+            // the row height each time it expands/collapses, so these rows are always dynamic
+            // regardless of the key/value types — no element needs to be inspected.
+            if (useValueFoldouts)
+            {
+                dynamicRowHeight = true;
+                variableRowHeight = true;
+                needsHeightMeasure = true;
+                return;
+            }
+
             bool keyIsComplex = IsComplexCellType(keyType, keyHasCustomDrawer);
             bool valueIsComplex = IsComplexCellType(valueType, valueHasCustomDrawer);
 
+            // Simple key and value: every row is the same fixed height. Flag it static so
+            // ComputeFixedInlineRowHeight recomputes the shared rowHeight on each switch,
+            // keeping it correct for the current layout.
             if (!keyIsComplex && !valueIsComplex)
+            {
+                hasStaticInlineHeight = true;
+                needsHeightMeasure = true;
                 return;
+            }
+
+            // A complex cell's height depends on the actual element, which can only be inspected
+            // once one exists. Callers classify eagerly — including on an empty dictionary, so the
+            // layout is ready before the first add — so defer the per-element analysis until the
+            // first entry exists.
+            if (displayedItemCount == 0)
+            {
+                needsHeightClassification = true;
+                return;
+            }
 
             var element = arrayProperty.GetArrayElementAtIndex(0);
             GetKeyAndValueProperties(element, out var keyProp, out var valueProp);
@@ -1182,10 +1245,37 @@ internal partial class DictionaryDrawer
 
             sortAscending = true;
             header.ResetToDefaultFraction(attributeKeyFraction);
+            // Cache was just cleared, so the active layout reverts to the attribute default.
+            layout = attributeLayout;
 
             sortedIndices = SortedIndexMap.Build(arrayProperty, sortAscending);
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
+            ClassifyRowHeights();
             treeView.Reload();
+            imguiContainer?.MarkDirtyRepaint();
+        }
+
+        // Single entry point for every layout change from the context menu. Persists the
+        // user's choice (layoutSetByUser) so it wins over the attribute default, then
+        // reclassifies row heights and reloads the tree.
+        void SetLayout(DictionaryLayout newLayout)
+        {
+            if (layout == newLayout)
+                return;
+            layout = newLayout;
+            UpdateCachedState(stateCacheKey, state =>
+            {
+                state.layout = newLayout;
+                state.layoutSetByUser = true;
+            });
+            ApplyLayoutModeChange();
+        }
+
+        void ApplyLayoutModeChange()
+        {
+            ClassifyRowHeights();
+            treeView.Reload();
+            imguiContainer?.MarkDirtyRepaint();
         }
 
         static int[] MapSelectionToArrayIndices(IList<int> displayIndices, SortedIndexMap sortedIndices)
@@ -1207,6 +1297,8 @@ internal partial class DictionaryDrawer
             readonly Hash128 m_StateCacheKey;
             readonly GUIContent m_KeyLabel;
             readonly GUIContent m_ValueLabel;
+            // One-column mode stacks key over value, so the single header spans both.
+            readonly GUIContent m_OneColumnLabel;
 
             public float height => EditorGUIUtility.singleLineHeight + 2f;
             public bool HasCachedState => DictionaryDrawer.HasCachedState(m_StateCacheKey);
@@ -1221,6 +1313,7 @@ internal partial class DictionaryDrawer
             {
                 m_KeyLabel = new GUIContent(keyLabel);
                 m_ValueLabel = new GUIContent(valueLabel);
+                m_OneColumnLabel = new GUIContent(Texts.GetOneColumnHeaderLabel(keyLabel, valueLabel));
                 m_Column1Fraction = initialFraction;
                 m_ResizeHandleControlID = GUIUtility.GetPermanentControlID();
                 m_SortToggleControlID = GUIUtility.GetPermanentControlID();
@@ -1233,6 +1326,14 @@ internal partial class DictionaryDrawer
                 if (evt.type == EventType.MouseDown && rect.Contains(evt.mousePosition) && instance.treeView != null)
                 {
                     instance.treeView.SetFocus();
+                }
+
+                if (instance.oneColumnMode)
+                {
+                    DrawOneColumnHeader(rect, instance);
+                    HandleContextMenu(rect, instance);
+                    HandleSortToggle(rect, instance);
+                    return;
                 }
 
                 // Use the effective dictionary width (floored at k_MinDictionaryPixelWidth)
@@ -1275,6 +1376,21 @@ internal partial class DictionaryDrawer
                 }
                 HandleContextMenu(rect, instance);
                 HandleSortToggle(col0ButtonRect, instance);
+            }
+
+            void DrawOneColumnHeader(Rect rect, DrawerInstanceIMGUI instance)
+            {
+                float keyLabelInset = Styles.k_KeyLeftMargin;
+                float arrowX = rect.xMax - Styles.k_SortArrowSize - 5f;
+                var label0Rect = new Rect(rect.x + keyLabelInset, rect.y, arrowX - (rect.x + keyLabelInset) - 2f, rect.height);
+                GUI.Label(label0Rect, m_OneColumnLabel, Styles.columnLabelClipped);
+
+                var arrowIcon = instance.sortAscending ? Styles.sortAscIcon : Styles.sortDescIcon;
+                if (arrowIcon != null)
+                {
+                    var arrowRect = new Rect(arrowX, rect.y + (rect.height - Styles.k_SortArrowSize) * 0.5f, Styles.k_SortArrowSize, Styles.k_SortArrowSize);
+                    GUI.DrawTexture(arrowRect, arrowIcon);
+                }
             }
 
             public void GetColumnRects(Rect rowRect, out Rect col0Rect, out Rect col1Rect)
@@ -1362,12 +1478,24 @@ internal partial class DictionaryDrawer
                 UpdateCachedState(m_StateCacheKey, cached => cached.sortAscending = sortAscending);
             }
 
+            static void AddLayoutItem(GenericMenu menu, string label, DictionaryLayout layout, DrawerInstanceIMGUI instance)
+            {
+                menu.AddItem(new GUIContent(label), instance.layout == layout, () => instance.SetLayout(layout));
+            }
+
             static void HandleContextMenu(Rect headerRect, DrawerInstanceIMGUI instance)
             {
                 var evt = Event.current;
                 if (evt.type == EventType.ContextClick && headerRect.Contains(evt.mousePosition))
                 {
                     var menu = new GenericMenu();
+
+                    // The three layouts form a radio group (the active one is checked),
+                    // followed by a separator and the "Reset to Defaults" action.
+                    AddLayoutItem(menu, Texts.TwoColumnsLayoutLabel, DictionaryLayout.TwoColumns, instance);
+                    AddLayoutItem(menu, Texts.OneColumnWithValueFoldoutLayoutLabel, DictionaryLayout.OneColumnWithValueFoldout, instance);
+                    AddLayoutItem(menu, Texts.OneColumnWithValueVisibleLayoutLabel, DictionaryLayout.OneColumnWithValueVisible, instance);
+                    menu.AddSeparator(string.Empty);
 
                     if (instance.header.HasCachedState)
                     {
@@ -1394,7 +1522,7 @@ internal partial class DictionaryDrawer
             // Per-row measured heights; -1 = unmeasured. Allocated only when variableRowHeight is
             // true. Filled by MeasureAllRowHeights on the Layout pass after a reload so totalHeight
             // is exact (a partially-measured total is unstable and fights the scroll view's clamp —
-            // see GetExpandedPropertyHeight). RowGUI keeps entries current via RecordDynamicRowHeight
+            // see GetExpandedPropertyHeight). RowGUI keeps entries current via RecordRowHeight
             // for runtime height changes (e.g. expanding an inline nested dictionary). Any row left
             // unmeasured falls back to m_EstimatedRowHeight (the tallest measured row) in
             // GetCustomRowHeight.
@@ -1414,12 +1542,13 @@ internal partial class DictionaryDrawer
                 var element = m_Instance.arrayProperty.GetArrayElementAtIndex(0);
                 GetKeyAndValueProperties(element, out var keyProp, out var valueProp);
 
-                float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
-                float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
+                // Static-inline rows are uniform, so row 0 represents them all.
+                // MeasureRowContentHeight accounts for the active layout — stacked key-over-value
+                // in one-column mode, max(key, value) in two-column — so the fixed height is
+                // correct for both.
+                rowHeight = MeasureRowContentHeight(keyProp, valueProp) + Styles.k_RowVerticalPadding * 2;
 
                 EditorGUIUtility.wideMode = prevWideMode;
-
-                rowHeight = Mathf.Max(keyH, valH) + Styles.k_RowVerticalPadding * 2;
             }
 
             // Measures every variable-height row into m_LazyHeights so totalHeight is exact and
@@ -1447,9 +1576,7 @@ internal partial class DictionaryDrawer
                     float h;
                     if (TryGetEntryProperties(displayIndex, out var keyProp, out var valueProp, out _))
                     {
-                        float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
-                        float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
-                        h = Mathf.Max(keyH, valH) + Styles.k_RowVerticalPadding * 2;
+                        h = MeasureRowContentHeight(keyProp, valueProp) + Styles.k_RowVerticalPadding * 2;
                     }
                     else
                     {
@@ -1572,6 +1699,8 @@ internal partial class DictionaryDrawer
             protected override void BeforeRowsGUI()
             {
                 base.BeforeRowsGUI();
+                if (m_Instance.oneColumnMode)
+                    return;
                 GetColumnPixelWidths(m_Instance.header.column1Fraction, treeViewRect.width, out var col0Width, out _);
                 Rect lineRect = new Rect(col0Width, 0, k_VerticalSplitterWidth, totalHeight);
                 EditorGUI.DrawRect(lineRect, SharedStyles.k_RowsSplitColor);
@@ -1596,17 +1725,28 @@ internal partial class DictionaryDrawer
                 // use the full treeview rect width. This is needed when the dictionary drawer is
                 // overflowing in narrow Inspectors.
                 Rect fullRowRect = new Rect(args.rowRect.x, args.rowRect.y, treeViewRect.width, args.rowRect.height);
-                m_Instance.header.GetColumnRects(fullRowRect, out var keyRect, out var valueRect);
 
-                if (showingVerticalScrollBar)
+                if (m_Instance.oneColumnMode)
                 {
-                    float visibleRightEdge = fullRowRect.xMax - Styles.k_VerticalScrollbarWidth;
-                    valueRect.xMax = Mathf.Max(valueRect.xMin, visibleRightEdge);
+                    Rect oneColumnRect = fullRowRect;
+                    if (showingVerticalScrollBar)
+                        oneColumnRect.width = Mathf.Max(0f, oneColumnRect.width - Styles.k_VerticalScrollbarWidth);
+                    DrawOneColumnRow(oneColumnRect, keyProp, valueProp, arrayIndex);
                 }
+                else
+                {
+                    m_Instance.header.GetColumnRects(fullRowRect, out var keyRect, out var valueRect);
 
-                DrawKeyCell(keyRect, keyProp, arrayIndex);
-                DrawValueCell(valueRect, valueProp);
-                RecordDynamicRowHeight(displayIndex, args.rowRect.height, keyProp, valueProp);
+                    if (showingVerticalScrollBar)
+                    {
+                        float visibleRightEdge = fullRowRect.xMax - Styles.k_VerticalScrollbarWidth;
+                        valueRect.xMax = Mathf.Max(valueRect.xMin, visibleRightEdge);
+                    }
+
+                    DrawKeyCell(keyRect, keyProp, arrayIndex);
+                    DrawValueCell(valueRect, valueProp);
+                }
+                RecordRowHeight(displayIndex, args.rowRect.height, keyProp, valueProp);
 
                 EditorGUIUtility.labelWidth = prevLabelWidth;
                 EditorGUIUtility.wideMode = prevWideMode;
@@ -1693,7 +1833,89 @@ internal partial class DictionaryDrawer
                 float minFieldWidth = GetCellMinFieldWidth(valueProp, m_Instance.valueHasCustomDrawer);
                 var fieldRect = BuildCellFieldRect(cellRect, Styles.k_ValueLeftPadding, Styles.k_CellHorizontalPadding, minFieldWidth);
                 EditorGUIUtility.labelWidth = ComputeCellLabelWidth(fieldRect.width);
-                DrawPropertyField(fieldRect, valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
+                DrawPropertyField(fieldRect, valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer, m_Instance.valueCollectionLabel);
+            }
+
+            void DrawOneColumnRow(Rect rowRect, SerializedProperty keyProp, SerializedProperty valueProp, int arrayIndex)
+            {
+                float spacing = EditorGUIUtility.standardVerticalSpacing;
+                float contentLeft = Styles.k_KeyLeftMargin + Styles.k_CellHorizontalPadding;
+                float y = rowRect.y + Styles.k_RowVerticalPadding;
+
+                float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
+                var keyCellRect = new Rect(rowRect.x, y, rowRect.width, keyH);
+                var markerKind = DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_Instance.duplicateEntryIndices);
+                if (markerKind != DictionaryKeyUtility.KeyMarkerKind.None)
+                    DrawDuplicateKeyIcon(keyCellRect);
+                float keyMinFieldWidth = GetCellMinFieldWidth(keyProp, m_Instance.keyHasCustomDrawer);
+                var keyFieldRect = BuildCellFieldRect(keyCellRect, contentLeft, Styles.k_CellHorizontalPadding, keyMinFieldWidth);
+                EditorGUIUtility.labelWidth = ComputeCellLabelWidth(keyFieldRect.width);
+                DrawPropertyField(keyFieldRect, keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
+                y += keyH + spacing;
+
+                if (!m_Instance.useValueFoldouts)
+                    y += Styles.k_StaticValueHeaderTopMargin;
+
+                float headerLine = EditorGUIUtility.singleLineHeight;
+                bool showValue = !m_Instance.useValueFoldouts || (valueProp != null && valueProp.isExpanded);
+                float labelX = rowRect.x + contentLeft;
+                float labelWidth = Mathf.Max(0f, rowRect.xMax - Styles.k_CellHorizontalPadding - labelX);
+                var labelRect = EditorGUI.IndentedRect(new Rect(labelX, y, labelWidth, headerLine));
+                if (m_Instance.useValueFoldouts)
+                {
+                    bool expanded = valueProp != null && valueProp.isExpanded;
+                    const float foldoutArrowAdjustment = 4f; // Move foldout arrow out to align with duplicate-key warning icon in the gutter. Still clickable in entire label width
+                    Rect foldoutRect = new Rect(labelRect.x - foldoutArrowAdjustment, labelRect.y, labelRect.width + foldoutArrowAdjustment, labelRect.height);
+                    bool newExpanded = EditorGUI.Foldout(foldoutRect, expanded, GUIContent.none, true);
+
+                    var e = Event.current;
+                    if (e.type == EventType.MouseDown && e.button == 0 && foldoutRect.Contains(e.mousePosition))
+                    {
+                        newExpanded = !expanded;
+                        e.Use();
+                    }
+
+                    if (newExpanded != expanded && valueProp != null)
+                        valueProp.isExpanded = newExpanded;
+                    showValue = newExpanded;
+                }
+                GUI.Label(labelRect, m_Instance.valueLabelContent, EditorStyles.boldLabel);
+                y += headerLine;
+
+                if (showValue)
+                {
+                    y += spacing;
+                    float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
+                    var valueCellRect = new Rect(rowRect.x, y, rowRect.width, valH);
+                    float valueMinFieldWidth = GetCellMinFieldWidth(valueProp, m_Instance.valueHasCustomDrawer);
+                    float valueIndent = m_Instance.useValueFoldouts ? Styles.k_OneColumnValueIndent : 0f;
+                    var valueFieldRect = BuildCellFieldRect(valueCellRect, contentLeft + valueIndent, Styles.k_CellHorizontalPadding, valueMinFieldWidth);
+                    EditorGUIUtility.labelWidth = ComputeCellLabelWidth(valueFieldRect.width);
+                    DrawPropertyField(valueFieldRect, valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer, m_Instance.valueCollectionLabel);
+                }
+            }
+
+            float MeasureRowContentHeight(SerializedProperty keyProp, SerializedProperty valueProp)
+            {
+                float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
+
+                if (m_Instance.oneColumnMode)
+                {
+                    // GetPropertyFieldHeight recurses through every visible child field of the value,
+                    // which is wasted work when the value is hidden behind a collapsed foldout — defer
+                    // it until we know the value is shown (mirrors the deferral in DrawOneColumnRow).
+                    float spacing = EditorGUIUtility.standardVerticalSpacing;
+                    float total = keyH + spacing + EditorGUIUtility.singleLineHeight;
+                    if (!m_Instance.useValueFoldouts)
+                        total += Styles.k_StaticValueHeaderTopMargin;
+                    bool showValue = !m_Instance.useValueFoldouts || (valueProp != null && valueProp.isExpanded);
+                    if (showValue)
+                        total += spacing + GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
+                    return total;
+                }
+
+                float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
+                return Mathf.Max(keyH, valH);
             }
 
             // BuildCellFieldRect floors the field width at a non-zero minimum, so on a narrow
@@ -1759,17 +1981,22 @@ internal partial class DictionaryDrawer
                 return Mathf.Clamp(desired, Styles.k_CellLabelMinWidth, maxLabel);
             }
 
-            void RecordDynamicRowHeight(int displayIndex, float currentRowHeight, SerializedProperty keyProp, SerializedProperty valueProp)
+            void RecordRowHeight(int displayIndex, float currentRowHeight, SerializedProperty keyProp, SerializedProperty valueProp)
             {
-                if (!m_Instance.dynamicRowHeight)
+                if (!m_Instance.dynamicRowHeight && !m_Instance.hasStaticInlineHeight)
                     return;
 
-                float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
-                float valH = GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
-                float measuredH = Mathf.Max(keyH, valH) + Styles.k_RowVerticalPadding * 2;
+                float measuredH = MeasureRowContentHeight(keyProp, valueProp) + Styles.k_RowVerticalPadding * 2;
 
-                if (m_LazyHeights != null && displayIndex >= 0 && displayIndex < m_LazyHeights.Length)
-                    m_LazyHeights[displayIndex] = measuredH;
+                if (m_Instance.dynamicRowHeight)
+                {
+                    if (m_LazyHeights != null && displayIndex >= 0 && displayIndex < m_LazyHeights.Length)
+                        m_LazyHeights[displayIndex] = measuredH;
+                }
+                else
+                {
+                    rowHeight = measuredH;
+                }
 
                 if (!m_Instance.needsHeightRefresh && Mathf.Abs(currentRowHeight - measuredH) > 0.5f)
                 {
@@ -1817,7 +2044,7 @@ internal partial class DictionaryDrawer
                     && !prop.isArray;
             }
 
-            static void DrawPropertyField(Rect rect, SerializedProperty prop, Type type, bool hasCustomDrawer)
+            static void DrawPropertyField(Rect rect, SerializedProperty prop, Type type, bool hasCustomDrawer, GUIContent label = null)
             {
                 if (prop == null)
                     return;
@@ -1828,7 +2055,9 @@ internal partial class DictionaryDrawer
                 }
                 else
                 {
-                    EditorGUI.PropertyField(rect, prop, GUIContent.none, true);
+                    // label is non-null only for collection value cells ("Array"/"List"); everything else
+                    // draws label-less so the value fills the cell (a nested dictionary supplies its own title).
+                    EditorGUI.PropertyField(rect, prop, label ?? GUIContent.none, true);
                 }
             }
 

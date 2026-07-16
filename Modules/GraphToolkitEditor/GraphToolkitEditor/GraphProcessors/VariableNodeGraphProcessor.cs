@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 
 namespace Unity.GraphToolkit.Editor
@@ -35,6 +34,8 @@ namespace Unity.GraphToolkit.Editor
                 for (var i = 0; i < graphToCheck.NodeModels.Count; i++)
                 {
                     var nodeModel = graphToCheck.NodeModels[i];
+                    CheckNodeForErrors(graphToCheck, nodeModel, res);
+
                     if (nodeModel is not SubgraphNodeModel subgraphNodeModel)
                         continue;
 
@@ -45,20 +46,18 @@ namespace Unity.GraphToolkit.Editor
                     if (uniqueGraphs.Add(subgraph))
                         graphsToCheck.Enqueue(subgraph);
                 }
-                CheckGraphErrors(graphToCheck, res);
             }
 
             return res;
         }
 
-        static void CheckGraphErrors(GraphModel graphModel, ErrorsAndWarningsResult res)
+        static void CheckNodeForErrors(GraphModel graphModel, AbstractNodeModel abstractNodeModel, ErrorsAndWarningsResult res)
         {
-            for (var i = 0; i < graphModel.NodeModels.Count; i++)
-            {
-                var nodeModel = graphModel.NodeModels[i];
-                if (nodeModel is VariableNodeModel variableNodeModel && ShouldAddError(variableNodeModel.VariableDeclarationModel, graphModel))
-                    res.AddError("Only one instance of an output variable is allowed in the graph.", variableNodeModel);
-            }
+            if (abstractNodeModel is NodeModel nodeModel)
+                nodeModel.CheckNodeErrors(res);
+
+            if (abstractNodeModel is VariableNodeModel variableNodeModel && ShouldAddError(variableNodeModel.VariableDeclarationModel, graphModel))
+                res.AddError("Only one instance of an output variable is allowed in the graph.", variableNodeModel);
         }
 
         static bool ShouldAddError(VariableDeclarationModelBase variable, GraphModel graphModel)

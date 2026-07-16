@@ -12,6 +12,7 @@ using UnityEngine.Scripting;
 
 [assembly: InternalsVisibleTo("TestRuntime")]
 [assembly: InternalsVisibleTo("TestRuntime.FakingHDR")]
+[assembly: InternalsVisibleTo("UnityEngine.TestTools.Graphics.Contexts")]
 namespace UnityEngine.Internal
 {
     [NativeHeader("Runtime/GfxDevice/HDROutputSettings.h")]
@@ -21,5 +22,9 @@ namespace UnityEngine.Internal
         [FreeFunction("HDROutputSettingsBindings::SetFakeHDROutputEnabled")]
         [ExcludeFromDocs]
         extern internal static void SetEnabled(bool enabled);
+
+        [FreeFunction("HDROutputSettingsBindings::IsRealDisplayHDRAvailable")]
+        [ExcludeFromDocs]
+        extern internal static bool IsRealDisplayHDRAvailable();
     }
 }

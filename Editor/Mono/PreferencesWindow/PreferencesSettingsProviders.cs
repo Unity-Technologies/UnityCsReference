@@ -703,12 +703,12 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUI.BeginChangeCheck();
             var alternatingRows = EditorGUILayout.Toggle(GeneralProperties.alternatingRowBackground, HierarchyPreferences.AlternatingRowBackground);
             var useQueryBuilder = EditorGUILayout.Toggle(GeneralProperties.queryBuilder, HierarchyPreferences.UseQueryBuilder);
-            var gameObjectIconMode = (HierarchyPreferences.IconMode)EditorGUILayout.Popup(GeneralProperties.gameObjectIconMode, (int)HierarchyPreferences.GameObjectIconMode, GeneralProperties.gameObjectIconModeOptions);
+            var gameObjectIconMode = EditorGUILayout.Popup(GeneralProperties.gameObjectIconMode, HierarchyPreferences.GameObjectIconMode.value, GeneralProperties.gameObjectIconModeOptions);
             if (EditorGUI.EndChangeCheck())
             {
                 HierarchyPreferences.AlternatingRowBackground.value = alternatingRows;
                 HierarchyPreferences.UseQueryBuilder.value = useQueryBuilder;
-                HierarchyPreferences.GameObjectIconMode = gameObjectIconMode;
+                HierarchyPreferences.GameObjectIconMode.value = gameObjectIconMode;
             }
             EditorGUI.EndDisabled();
             EditorGUI.indentLevel--;

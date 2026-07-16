@@ -118,16 +118,41 @@ namespace UnityEngine.UIElements
 
         static ProfilerMarker s_CodeUnloadingMarker = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIElements.OnCodeUnloading");
 
+        internal static bool isUnloaded { get; private set; }
+
+        [OnCodeLoaded]
+        static void OnCodeLoaded()
+        {
+            isUnloaded = false;
+        }
+
+        internal static bool LogErrorIfShutdown()
+        {
+            if (isUnloaded)
+            {
+                Debug.LogError("UI Toolkit has already been shutdown. Operation refused");
+                return true;
+            }
+            return false;
+        }
+
         [OnCodeUnloading]
         static void OnCodeUnloading()
         {
-            using (s_CodeUnloadingMarker.Auto())
+            try
             {
-                for (int i = 0; i < s_Subscribers.Length; i++)
+                using (s_CodeUnloadingMarker.Auto())
                 {
-                    s_Subscribers[i]?.Invoke();
-                    s_Subscribers[i] = null;
+                    for (int i = 0; i < s_Subscribers.Length; i++)
+                    {
+                        s_Subscribers[i]?.Invoke();
+                        s_Subscribers[i] = null;
+                    }
                 }
+            }
+            finally
+            {
+                isUnloaded = true;
             }
         }
 
@@ -218,6 +243,8 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void UpdateSchedulers()
         {
+            if (UnloadingUtility.LogErrorIfShutdown())
+                return;
             if (LayoutManager.IsSharedManagerCreated)
             {
                 LayoutManager.SharedManager.Collect();

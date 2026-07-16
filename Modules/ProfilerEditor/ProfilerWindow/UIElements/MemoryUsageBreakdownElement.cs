@@ -74,8 +74,32 @@ namespace Unity.Profiling.Editor
             get { return m_TotalBytes == 0 ? 100 : m_SelectedBytes / (float)m_TotalBytes * 100; }
         }
 
+        string m_BackgroundColorClass;
+
         [UxmlAttribute]
-        public string BackgroundColorClass { get; private set; }
+        public string BackgroundColorClass
+        {
+            get { return m_BackgroundColorClass; }
+            private set
+            {
+                // The reserved and used bar elements default to a black background in USS; the
+                // category color class overrides it. Re-apply it here so that elements created
+                // from UXML (via the generated UxmlSerializedData) are colored, not left black.
+                if (!string.IsNullOrEmpty(m_BackgroundColorClass))
+                {
+                    m_ReservedElement.RemoveFromClassList(m_BackgroundColorClass);
+                    m_UsedElement.RemoveFromClassList(m_BackgroundColorClass);
+                }
+
+                m_BackgroundColorClass = value;
+
+                if (!string.IsNullOrEmpty(m_BackgroundColorClass))
+                {
+                    m_ReservedElement.AddToClassList(m_BackgroundColorClass);
+                    m_UsedElement.AddToClassList(m_BackgroundColorClass);
+                }
+            }
+        }
 
         VisualElement m_ReservedElement;
         VisualElement m_BackgroundElement;
@@ -114,29 +138,11 @@ namespace Unity.Profiling.Editor
             m_SelectedElement = new VisualElement();
             m_SelectedElement.AddToClassList("memory-usage-breakdown__memory-usage-bar__selected-portion");
             m_ReservedElement.Add(m_SelectedElement);
-        }
-
-        void Init(string text, bool showUsed, ulong used, ulong total, bool showSelected, ulong selected, string backgroundColorClass)
-        {
-            Text = text;
-            ShowUsed = showUsed;
-            m_UsedBytes = used;
-            m_TotalBytes = total;
-            ShowSelected = showSelected;
-            m_SelectedBytes = selected;
-            BackgroundColorClass = backgroundColorClass;
-            m_ReservedElement.AddToClassList(backgroundColorClass);
 
             m_BackgroundElement.style.backgroundColor = Color.black;
 
-            UIElementsHelper.SetVisibility(m_UsedElement, ShowUsed);
-
+            // Dims the reserved portion once the element has a resolved color (see OnGeometryChangedEvent).
             RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
-
-            m_UsedElement.style.width = new Length(PercentageUsed, LengthUnit.Percent);
-            m_UsedElement.AddToClassList(BackgroundColorClass);
-            UIElementsHelper.SetVisibility(m_SelectedElement, ShowSelected);
-            m_SelectedElement.style.width = new Length(m_SelectedBytes, LengthUnit.Percent);
         }
 
         void OnGeometryChangedEvent(GeometryChangedEvent e)

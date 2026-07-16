@@ -103,6 +103,8 @@ namespace UnityEditor.UIElements
 
         internal static T AddPanelComponentHelper<T>(MenuCommand menuCommand) where T: IPanelComponent
         {
+            var panelSettings = GetPanelSettingsFromProjectOrCreate();
+
             GameObject parent = menuCommand.context as GameObject;
             Type type = typeof(T);
             var root = ObjectFactory.CreateGameObject(type.Name, type);
@@ -135,7 +137,7 @@ namespace UnityEditor.UIElements
             // Set a PanelSettings instance so that the UI appears immediately on selecting the UXML.
             // If the Panel Component was created as a child of another Panel Component, this step is not necessary.
             if (panelComponent.parentUI == null)
-                panelComponent.panelSettings = GetPanelSettingsFromProjectOrCreate();
+                panelComponent.panelSettings = panelSettings;
 
             return panelComponent;
         }

@@ -105,6 +105,9 @@ namespace UnityEngine.Accessibility
         ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "search text field".
         ///- **Windows**: If this role is set on a node, the screen reader announces the node as "edit". The resulting behavior of this role is identical to that of <see cref="AccessibilityRole.TextField"/>.
         ///\\
+        /// On Android, subscribe to the <see cref="AccessibilityNode.invoked"/> event to put the search field into edit
+        /// mode when the user activates it, so that it can receive hardware keyboard input.
+        ///\\
         /// On Windows and macOS, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the
         /// search field represented by the node when the user navigates to it, so that it can receive keyboard input.
         /// </remarks>
@@ -200,9 +203,9 @@ namespace UnityEngine.Accessibility
         /// <see cref="AccessibilityNode.decremented"/> events to perform an appropriate action when the user increases
         /// or decreases the node's value, such as changing the value of the slider represented by the node. On Windows,
         /// these events are only triggered for nodes whose <see cref="AccessibilityNode.value"/> contains a number.
-        /// \\
-        /// On Windows, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the slider
-        /// represented by the node when the user navigates to it, so that it can receive keyboard input.
+        ///\\
+        /// On Android and Windows, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the
+        /// slider represented by the node when the user navigates to it, so that it can receive keyboard input.
         /// </remarks>
         Slider,
 
@@ -348,6 +351,9 @@ namespace UnityEngine.Accessibility
         ///- **iOS**: This role has no effect.
         ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "text".
         ///- **Windows**: If this role is set on a node, the screen reader announces the node as "edit".
+        ///\\
+        /// On Android, subscribe to the <see cref="AccessibilityNode.invoked"/> event to put the text field into edit
+        /// mode when the user activates it, so that it can receive hardware keyboard input.
         ///\\
         /// On Windows and macOS, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the text
         /// field represented by the node when the user navigates to it, so that it can receive keyboard input.

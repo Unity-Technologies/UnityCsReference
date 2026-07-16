@@ -1042,6 +1042,107 @@ namespace Unity.Burst.Intrinsics
                 return *(v128*)a0;
             }
 
+            // Intrinsics dealing with f16 type are still experimental, until we ship support for f16 type.
+
+            /// <summary>Duplicate vector element to vector or scalar. This instruction duplicates the vector element at the specified element index in the source SIMD&amp;FP register into a scalar or each element in a vector, and writes the result to the destination SIMD&amp;FP register.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>DUP Vd.4H,rn</c></summary>
+            /// <param name="a0">f16 a0</param>
+            /// <returns>64-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v64 vmov_n_f16(f16 a0)
+            {
+                return new v64(a0);
+            }
+
+            /// <summary>Duplicate vector element to vector or scalar. This instruction duplicates the vector element at the specified element index in the source SIMD&amp;FP register into a scalar or each element in a vector, and writes the result to the destination SIMD&amp;FP register.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>DUP Vd.8H,rn</c></summary>
+            /// <param name="a0">f16 a0</param>
+            /// <returns>128-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v128 vmovq_n_f16(f16 a0)
+            {
+                return new v128(a0);
+            }
+
+            /// <summary>Duplicate vector element to vector or scalar. This instruction duplicates the vector element at the specified element index in the source SIMD&amp;FP register into a scalar or each element in a vector, and writes the result to the destination SIMD&amp;FP register.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>DUP Vd.4H,rn</c></summary>
+            /// <param name="a0">f16 a0</param>
+            /// <returns>64-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v64 vdup_n_f16(f16 a0)
+            {
+                return new v64(a0);
+            }
+
+            /// <summary>Duplicate vector element to vector or scalar. This instruction duplicates the vector element at the specified element index in the source SIMD&amp;FP register into a scalar or each element in a vector, and writes the result to the destination SIMD&amp;FP register.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>DUP Vd.8H,rn</c></summary>
+            /// <param name="a0">f16 a0</param>
+            /// <returns>128-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v128 vdupq_n_f16(f16 a0)
+            {
+                return new v128(a0);
+            }
+
+            /// <summary>Load multiple single-element structures to a register. This instruction loads multiple single-element structures from memory and writes the result to a SIMD&amp;FP register.
+            /// <br/>Equivalent instruction: <c>LD1 {Vt.4H},[Xn]</c></summary>
+            /// <param name="a0">Pointer to the address to load from</param>
+            /// <returns>64-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v64 vld1_f16(f16* a0)
+            {
+                return *(v64*)a0;
+            }
+
+            /// <summary>Load multiple single-element structures to a register. This instruction loads multiple single-element structures from memory and writes the result to a SIMD&amp;FP register.
+            /// <br/>Equivalent instruction: <c>LD1 {Vt.8H},[Xn]</c></summary>
+            /// <param name="a0">Pointer to the address to load from</param>
+            /// <returns>128-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v128 vld1q_f16(f16* a0)
+            {
+                return *(v128*)a0;
+            }
+
+            /// <summary>Duplicate vector element to vector or scalar. This instruction duplicates the vector element at the specified element index in the source SIMD&amp;FP register into a scalar or each element in a vector, and writes the result to the destination SIMD&amp;FP register.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>DUP Vd.1D,Vn.D[0]</c></summary>
+            /// <param name="a0">128-bit vector a0</param>
+            /// <returns>64-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v64 vget_low_f16(v128 a0)
+            {
+                return a0.Lo64;
+            }
+
+            /// <summary>Duplicate vector element to vector or scalar. This instruction duplicates the vector element at the specified element index in the source SIMD&amp;FP register into a scalar or each element in a vector, and writes the result to the destination SIMD&amp;FP register.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>DUP Vd.1D,Vn.D[1]</c></summary>
+            /// <param name="a0">128-bit vector a0</param>
+            /// <returns>64-bit vector</returns>
+            [DebuggerStepThrough]
+            public static v64 vget_high_f16(v128 a0)
+            {
+                return a0.Hi64;
+            }
+
+            /// <summary>Store multiple single-element structures from one, two, three, or four registers. This instruction stores elements to memory from one, two, three, or four SIMD&amp;FP registers, without interleaving. Every element of each register is stored.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>ST1 {Vt.4H},[Xn]</c></summary>
+            /// <param name="a0">Pointer to the address to store to</param>
+            /// <param name="a1">64-bit vector a1</param>
+            [DebuggerStepThrough]
+            public static void vst1_f16(f16* a0, v64 a1)
+            {
+                *(v64*)a0 = a1;
+            }
+
+            /// <summary>Store multiple single-element structures from one, two, three, or four registers. This instruction stores elements to memory from one, two, three, or four SIMD&amp;FP registers, without interleaving. Every element of each register is stored.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
+            /// <br/>Equivalent instruction: <c>ST1 {Vt.8H},[Xn]</c></summary>
+            /// <param name="a0">Pointer to the address to store to</param>
+            /// <param name="a1">128-bit vector a1</param>
+            [DebuggerStepThrough]
+            public static void vst1q_f16(f16* a0, v128 a1)
+            {
+                *(v128*)a0 = a1;
+            }
 
             /// <summary>Store multiple single-element structures from one, two, three, or four registers. This instruction stores elements to memory from one, two, three, or four SIMD&amp;FP registers, without interleaving. Every element of each register is stored.Depending on the settings in the CPACR_EL1, CPTR_EL2, and CPTR_EL3 registers, and the current Security state and Exception level, an attempt to execute the instruction might be trapped.
             /// <br/>Equivalent instruction: <c>ST1 {Vt.8B},[Xn]</c></summary>

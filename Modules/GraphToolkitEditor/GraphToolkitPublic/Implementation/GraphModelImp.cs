@@ -1018,6 +1018,13 @@ namespace Unity.GraphToolkit.Editor.Implementation
             try
             {
                 Graph.OnGraphChanged(graphChanges);
+                for (var i = 0; i < NodeModels.Count; i++)
+                {
+                    if (NodeModels[i] is NodeModel nodeModel)
+                    {
+                        nodeModel.CheckNodeErrors(result);
+                    }
+                }
             }
             finally
             {

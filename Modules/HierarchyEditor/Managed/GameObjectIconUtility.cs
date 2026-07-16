@@ -64,9 +64,11 @@ namespace Unity.Hierarchy.Editor
             return texture;
         }
 
-        static bool ShouldShowUserDefinedIcons => HierarchyPreferences.GameObjectIconMode == HierarchyPreferences.IconMode.ComponentsAndGizmos;
+        static HierarchyPreferences.IconMode CurrentIconMode => (HierarchyPreferences.IconMode)HierarchyPreferences.GameObjectIconMode.value;
 
-        static bool ShouldShowComponentIcons => HierarchyPreferences.GameObjectIconMode != HierarchyPreferences.IconMode.GameObjectOnly;
+        static bool ShouldShowUserDefinedIcons => CurrentIconMode == HierarchyPreferences.IconMode.ComponentsAndGizmos;
+
+        static bool ShouldShowComponentIcons => CurrentIconMode != HierarchyPreferences.IconMode.GameObjectOnly;
 
         public static void SetNodeIconForObject(HierarchyViewItem item, GameObject gameObject)
         {

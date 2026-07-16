@@ -37,6 +37,7 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/TypeTreeExtractionUtilities.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/BuildUtilities.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/TraceEventProfile.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/BuildUsage/ComputeBuildUsageTagOnObjects.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static partial class ContentBuildInterface
     {
@@ -381,6 +382,9 @@ namespace UnityEditor.Build.Content
         extern internal static int BeginTraceProfileBlock(string name);
         extern internal static void EndTraceProfileBlock(int index);
 
+        extern internal static void BeginBuildUsageWarningScope();
+        extern internal static void EndBuildUsageWarningScope();
+
         /// <summary>
         /// Combines multiple TypeTree archive files into a single archive.  All duplicated entries are removed.
         /// </summary>
@@ -418,6 +422,19 @@ namespace UnityEditor.Build.Content
         public void Dispose()
         {
             ContentBuildInterface.EndTraceProfileBlock(m_Index);
+        }
+    }
+
+    internal sealed class BuildUsageWarningScope : IDisposable
+    {
+        public BuildUsageWarningScope()
+        {
+            ContentBuildInterface.BeginBuildUsageWarningScope();
+        }
+
+        public void Dispose()
+        {
+            ContentBuildInterface.EndBuildUsageWarningScope();
         }
     }
 }

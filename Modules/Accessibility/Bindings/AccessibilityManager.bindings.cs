@@ -290,7 +290,7 @@ namespace UnityEngine.Accessibility
         }
 
         [NativeHeader("Modules/Accessibility/Native/AccessibilityManager.h")]
-        [FreeFunction("SetAccessibilityNodeDataPtr")]
+        [FreeFunction("SetAccessibilityNodeDataPtr", IsThreadSafe = true)]
         internal extern static void SetAccessibilityNodeDataPtr(IntPtr destNodeDataPtr, AccessibilityNodeData sourceNodeData);
 
         /// <summary>

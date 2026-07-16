@@ -107,7 +107,7 @@ namespace Unity.ProjectAuditor.Editor.Core
                 {
                     var roots = scene.GetRootGameObjects();
                     foreach (var go in roots)
-                        IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, go, scene.path);
+                        IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, go, scene.path, GameObjectSource.Scene);
                 }
 
                 // Unload preview
@@ -161,7 +161,7 @@ namespace Unity.ProjectAuditor.Editor.Core
                     if (meshColliderIssues is { Count: > 0 })
                         analysisParams.OnIncomingIssues(meshColliderIssues);
 
-                    IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, loadedPrefabRoot, assetPath);
+                    IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, loadedPrefabRoot, assetPath, GameObjectSource.Prefab);
                 }
 
                 yield return null;
@@ -182,7 +182,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         }
 
         // Traverse a GameObject hierarchy and run the analyzers
-        void IterateGameObjectHierarchy(GameObjectModuleAnalyzer[] analyzers, HashSet<EntityId> gameObjectTracker, AnalysisParams analysisParams, GameObject gameObject, string issuePath)
+        void IterateGameObjectHierarchy(GameObjectModuleAnalyzer[] analyzers, HashSet<EntityId> gameObjectTracker, AnalysisParams analysisParams, GameObject gameObject, string issuePath, GameObjectSource source)
         {
             // Only visit each GameObject once
             if (gameObjectTracker.Add(gameObject.GetEntityId()) == false)
@@ -191,7 +191,8 @@ namespace Unity.ProjectAuditor.Editor.Core
             var gameObjectAnalysisContext = new GameObjectAnalysisContext
             {
                 Params = analysisParams,
-                GameObject = gameObject
+                GameObject = gameObject,
+                Source = source
             };
 
             // Analyze
@@ -209,7 +210,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             for (int i = 0; i < transform.childCount; i++)
             {
                 var child = transform.GetChild(i).gameObject;
-                IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, child, issuePath);
+                IterateGameObjectHierarchy(analyzers, gameObjectTracker, analysisParams, child, issuePath, source);
             }
         }
 

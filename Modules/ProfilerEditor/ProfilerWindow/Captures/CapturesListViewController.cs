@@ -269,7 +269,30 @@ namespace Unity.Profiling.Editor.UI
 
         VisualElement MakeTreeItem()
         {
-            return ViewControllerUtility.LoadVisualTreeFromBuiltInUxml(k_UxmlTreeItemGuid);
+            var element = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml(k_UxmlTreeItemGuid);
+
+            // The TreeView only toggles a foldout when its expand arrow is clicked. Users expect clicking the
+            // session title (date) to toggle the foldout too, so wire that up here. The item id is stored in
+            // the label's userData when the session row is bound.
+            //
+            // We use a Clickable manipulator rather than a plain ClickEvent/PointerUpEvent callback because it
+            // is the exact mechanism the expand arrow's Toggle uses, and it is what keeps the row's hover
+            // highlight working.
+            var sessionCard = element.Q<Label>(k_UxmlTreeViewItemSession);
+            sessionCard.AddManipulator(new Clickable(() => ToggleSessionFoldout(sessionCard)));
+
+            return element;
+        }
+
+        void ToggleSessionFoldout(VisualElement sessionCard)
+        {
+            if (sessionCard.userData is not int itemId)
+                return;
+
+            if (m_CapturesCollection.IsExpanded(itemId))
+                m_CapturesCollection.CollapseItem(itemId);
+            else
+                m_CapturesCollection.ExpandItem(itemId);
         }
 
         void BindTreeItem(VisualElement element, int index)
@@ -294,7 +317,11 @@ namespace Unity.Profiling.Editor.UI
                 m_TreeViewControllers[itemId] = viewController;
             }
             else
+            {
                 sessionCard.text = itemData.Name;
+                // Store the item id so ToggleSessionFoldout can toggle this foldout when the title is clicked.
+                sessionCard.userData = m_CapturesCollection.GetIdForIndex(index);
+            }
         }
 
         void UnbindTreeItem(VisualElement element, int index)

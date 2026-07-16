@@ -446,7 +446,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.UseQueryBuilder.valueChanged += OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged += OnToggleBackgroundStyleChange;
             EditorSettings.useLegacyHierarchyChanged += OnUseLegacyHierarchyChanged;
-            HierarchyPreferences.GameObjectIconModeChanged += OnGameObjectIconModeChanged;
+            HierarchyPreferences.GameObjectIconMode.valueChanged += OnGameObjectIconModeChanged;
 
             // Now that the UI is initialized, set the hierarchy source.
             m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
@@ -466,14 +466,15 @@ namespace Unity.Hierarchy.Editor
             // Be certain to register the event only once.
             // In case the window is not visible when starting the editor, opening it would trigger
             // both OnEnable and OnAttachedToPanel, registering the event twice if not unregistered first.
-            HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
-            HierarchyPreferences.GameObjectIconModeChanged += OnGameObjectIconModeChanged;
+            HierarchyPreferences.GameObjectIconMode.valueChanged -= OnGameObjectIconModeChanged;
+            HierarchyPreferences.GameObjectIconMode.valueChanged += OnGameObjectIconModeChanged;
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
         {
-            HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
+            HierarchyPreferences.GameObjectIconMode.valueChanged -= OnGameObjectIconModeChanged;
         }
+
 
         void OnEnterPlayModePreStart()
         {
@@ -535,7 +536,7 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.UseQueryBuilder.valueChanged -= OnToggleQueryBuilder;
             HierarchyPreferences.AlternatingRowBackground.valueChanged -= OnToggleBackgroundStyleChange;
             EditorSettings.useLegacyHierarchyChanged -= OnUseLegacyHierarchyChanged;
-            HierarchyPreferences.GameObjectIconModeChanged -= OnGameObjectIconModeChanged;
+            HierarchyPreferences.GameObjectIconMode.valueChanged -= OnGameObjectIconModeChanged;
 
             m_StageNavigationView?.Dispose();
 
@@ -674,7 +675,11 @@ namespace Unity.Hierarchy.Editor
 
         void OnUseLegacyHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
 
-        void OnGameObjectIconModeChanged() => m_HierarchyView.ListView.RefreshItems();
+        void OnGameObjectIconModeChanged()
+        {
+            m_HierarchyView.ListView.RefreshItems();
+            Repaint();
+        }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {

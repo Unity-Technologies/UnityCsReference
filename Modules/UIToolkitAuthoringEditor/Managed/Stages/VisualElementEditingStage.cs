@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Unity.Hierarchy.Editor;
 using UnityEditor;
@@ -22,6 +23,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private int[] m_SerializedPath;
     private SubDocumentOptions m_Options;
     private GlobalObjectId m_PanelSettings;
+    private AssetHash[] m_SerializedBaselines;
     private Clipboard m_Clipboard;
     private bool m_FrameUpdateRequested;
     private bool m_InsideGroup;
@@ -32,6 +34,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private PanelElement m_PanelElement;
     readonly MatchedRulesExtractor m_RulesExtractor = new (AssetDatabase.GetAssetPath);
+
+    private readonly Dictionary<EntityId, AssetHash> m_DirtyCaches = new();
 
     public event Action<VisualElementEditingStage> MainDocumentWasCloned;
     public event Action<PanelElement> PanelWasRepainted;
@@ -250,13 +254,147 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private bool AnyReferencedAssetDirty()
     {
-        if (EditorUtility.IsDirty(EditedVisualTreeAsset))
+        if (IsAssetModified(EditedVisualTreeAsset))
             return true;
-        var styleSheets = EditedVisualTreeAsset.GetAllReferencedStyleSheets();
-        foreach(var styleSheet in styleSheets)
-            if (EditorUtility.IsDirty(styleSheet))
+
+        using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
+        EditedVisualTreeAsset.GetAllReferencedStyleSheets(styleSheets);
+        foreach (var styleSheet in styleSheets)
+            if (IsAssetModified(styleSheet))
                 return true;
         return false;
+    }
+
+    private bool IsAssetModified(UnityEngine.Object asset)
+    {
+        if (asset == null)
+            return false;
+
+        // We can't rely on this call alone to determine if the asset is dirty or not. This is because it relies on the
+        // dirty count, which will be increased on reported asset changes, on undo/redo operations and when using driven
+        // properties, leading to assets being "dirty" even if the exported version of the asset would have no actual
+        // changes.
+        if (!EditorUtility.IsDirty(asset))
+            return false;
+
+        var entityId = asset.GetEntityId();
+        if (!m_DirtyCaches.TryGetValue(entityId, out var cache))
+        {
+            return true;
+        }
+
+        var dirtyCount = EditorUtility.GetDirtyCount(entityId);
+        if (dirtyCount == cache.LastDirtyCount)
+            return cache.LastResult;
+
+        cache.LastDirtyCount = dirtyCount;
+        cache.LastResult = ComputeContentHash(asset) != cache.Hash;
+        m_DirtyCaches[entityId] = cache;
+        return cache.LastResult;
+    }
+
+    private void CaptureCleanBaseline()
+    {
+        m_DirtyCaches.Clear();
+
+        using var _ = ListPool<UnityEngine.Object>.Get(out var assets);
+        CollectTrackedAssets(assets);
+        foreach (var asset in assets)
+            TryCaptureBaseline(asset);
+    }
+
+    private void CollectTrackedAssets(List<UnityEngine.Object> assets)
+    {
+        var vta = EditedVisualTreeAsset;
+        if (vta == null)
+            return;
+
+        assets.Add(vta);
+
+        using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
+        vta.GetAllReferencedStyleSheets(styleSheets);
+        foreach (var styleSheet in styleSheets)
+            if (styleSheet != null)
+                assets.Add(styleSheet);
+    }
+
+    private void TryCaptureBaseline(UnityEngine.Object asset)
+    {
+        if (asset == null || EditorUtility.IsDirty(asset))
+            return;
+
+        CaptureBaseline(asset);
+    }
+
+    private void CaptureBaseline(UnityEngine.Object asset)
+    {
+        var entityId = asset.GetEntityId();
+        m_DirtyCaches[entityId] = new AssetHash
+        {
+            AssetId = GlobalObjectId.GetGlobalObjectIdSlow(asset),
+            Hash = ComputeContentHash(asset),
+            LastDirtyCount = EditorUtility.GetDirtyCount(entityId),
+            LastResult = false,
+        };
+    }
+
+    private void SerializeBaselines()
+    {
+        var baselines = new AssetHash[m_DirtyCaches.Count];
+        m_DirtyCaches.Values.CopyTo(baselines, 0);
+        m_SerializedBaselines = baselines;
+    }
+
+    private void RestoreBaselines()
+    {
+        m_DirtyCaches.Clear();
+
+        if (m_SerializedBaselines == null)
+            return;
+
+        foreach (var serialized in m_SerializedBaselines)
+        {
+            var asset = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(serialized.AssetId);
+            if (asset == null)
+                continue;
+
+            RestoreBaseline(asset, serialized.AssetId, serialized.Hash);
+        }
+    }
+
+    private void RestoreBaseline(UnityEngine.Object asset, GlobalObjectId assetId, Hash128 baseline)
+    {
+        var entityId = asset.GetEntityId();
+        m_DirtyCaches[entityId] = new AssetHash
+        {
+            AssetId = assetId,
+            Hash = baseline,
+            LastDirtyCount = EditorUtility.GetDirtyCount(entityId),
+            LastResult = EditorUtility.IsDirty(asset) && ComputeContentHash(asset) != baseline,
+        };
+    }
+
+    private static Hash128 ComputeContentHash(UnityEngine.Object asset)
+    {
+        switch (asset)
+        {
+            case VisualTreeAsset vta:
+                return Hash128.Compute(VisualTreeAssetExporter.Default.ToUxmlString(vta));
+            case StyleSheet styleSheet:
+                return Hash128.Compute(StyleSheetExporter.Default.ToUssString(styleSheet));
+            default:
+                return default;
+        }
+    }
+
+    [Serializable]
+    private struct AssetHash
+    {
+        public GlobalObjectId AssetId;
+        public Hash128 Hash;
+
+        [NonSerialized] public int LastDirtyCount;
+        [NonSerialized] public bool LastResult;
     }
 
     internal override bool Save()
@@ -268,7 +406,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             var styleSheets = EditedVisualTreeAsset.GetAllReferencedStyleSheets();
             foreach (var styleSheet in styleSheets)
             {
-                if (EditorUtility.IsDirty(styleSheet))
+                if (IsAssetModified(styleSheet))
                 {
                     var styleSheetPath = AssetDatabase.GetAssetPath(styleSheet);
                     if (string.IsNullOrEmpty(styleSheetPath))
@@ -278,6 +416,10 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
                     succeeded &= WriteTextFileToDisk(styleSheetPath, styleSheetStr);
                     AssetDatabase.ImportAsset(styleSheetPath);
                 }
+                else
+                {
+                    EditorUtility.ClearDirty(styleSheet);
+                }
             }
 
             if (string.IsNullOrEmpty(assetPath))
@@ -286,12 +428,16 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
                 return false;
             }
 
-            if (EditorUtility.IsDirty(EditedVisualTreeAsset))
+            if (IsAssetModified(EditedVisualTreeAsset))
             {
                 VisualTreeAsset.HarmonizeIds(EditedVisualTreeAsset);
                 var assetStr = VisualTreeAssetExporter.Default.ToUxmlString(EditedVisualTreeAsset);
                 succeeded &= WriteTextFileToDisk(assetPath, assetStr);
                 AssetDatabase.ImportAsset(assetPath);
+            }
+            else
+            {
+                EditorUtility.ClearDirty(EditedVisualTreeAsset);
             }
         }
 
@@ -384,11 +530,13 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private void ReloadAssets()
     {
         Context = VisualTreeAssetEditingContext.Reload(Context);
+        CaptureCleanBaseline();
     }
 
     private void ReimportAssets()
     {
         Context = VisualTreeAssetEditingContext.Reimport(Context);
+        CaptureCleanBaseline();
     }
 
     protected internal override Hash128 GetHashForStateStorage()
@@ -439,6 +587,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
         m_PanelSettings = GlobalObjectId.GetGlobalObjectIdSlow(m_Context.PanelSettings);
         m_Options = m_Context.SubDocumentOptions;
+
+        SerializeBaselines();
     }
 
     public void OnAfterDeserialize()
@@ -478,6 +628,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         var settings = (PanelSettings)GlobalObjectId.GlobalObjectIdentifierToObjectSlow(m_PanelSettings);
         Context = new VisualTreeAssetEditingContext(main, path, options, settings);
         m_PanelElement.PanelSettings = Context.PanelSettings;
+        RestoreBaselines();
+
         CloneTree();
     }
 

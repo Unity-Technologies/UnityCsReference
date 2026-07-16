@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
 
 namespace UnityEditor
@@ -89,6 +90,11 @@ internal partial class DictionaryDrawer
     internal static class Texts
     {
         internal static readonly string EmptyDictionaryLabel = L10n.Tr("Dictionary is empty");
+        // Foldout title for a nested dictionary, replacing its entry "value" field's displayName ("Value").
+        internal static readonly string NestedDictionaryLabel = L10n.Tr("Dictionary");
+        // Foldout titles for a dictionary value that is itself a collection, replacing the "Value" displayName.
+        internal static readonly string NestedArrayLabel = L10n.Tr("Array");
+        internal static readonly string NestedListLabel = L10n.Tr("List");
         internal static readonly string ResetToDefaultsLabel = L10n.Tr("Reset to Defaults");
         internal static readonly string MultiEditUnsupportedMessage = L10n.Tr("Dictionary: Multi-object editing is not supported."); // Entries are sorted by key, so a given row may correspond to different entries across targets, so edits could affect unrelated entries
         internal static readonly string DuplicateMarkerTooltip = L10n.Tr("An element with the same key already exists, so this element is excluded from the runtime dictionary.");
@@ -98,10 +104,20 @@ internal partial class DictionaryDrawer
         internal static readonly string DuplicatesHelpBoxSingle = L10n.Tr("1 duplicate key ignored. Ensure all keys are unique.");
         internal static readonly string DuplicatesHelpBoxFormat = L10n.Tr("{0} duplicate keys ignored. Ensure all keys are unique.");
         internal static readonly string SelectFirstDuplicateButtonLabel = L10n.Tr("Select Duplicate");
+        // Header context-menu labels for the three DictionaryLayout values, shown as a
+        // radio group (the active layout is checked).
+        internal static readonly string TwoColumnsLayoutLabel = L10n.Tr("Two Columns");
+        internal static readonly string OneColumnWithValueFoldoutLayoutLabel = L10n.Tr("One Column With Value Foldout");
+        internal static readonly string OneColumnWithValueVisibleLayoutLabel = L10n.Tr("One Column With Value Visible");
 
         internal static readonly string DefaultKeyLabel = L10n.Tr("Key");
         internal static readonly string DefaultValueLabel = L10n.Tr("Value");
+        // One-column mode stacks the key and value, so the single header column spans both.
+        internal static readonly string OneColumnHeaderFormat = L10n.Tr("{0} & {1}");
         internal static readonly string ExpectedCurrentContainerMessage = "Expected a current IMGUIContainer, please report a bug with repro steps";
+
+        internal static string GetOneColumnHeaderLabel(string keyLabel, string valueLabel) =>
+            string.Format(OneColumnHeaderFormat, keyLabel, valueLabel);
 
         internal static string GetItemCountText(int count)
         {
@@ -134,6 +150,15 @@ internal partial class DictionaryDrawer
         // GetActiveKeyColumnFraction falls back to the attribute default in that case.
         public float keyColumnFractionSetByUser = -1f;
         public bool sortAscending = true;
+        // Single source of truth for the column layout. TwoColumns: key | value side by
+        // side. OneColumnWithValueFoldout: key stacked over value, each value collapsible
+        // behind a "Value" foldout via SerializedProperty.isExpanded. OneColumnWithValueVisible:
+        // same stacking but every value renders inline with no per-row foldout.
+        public DictionaryLayout layout = DictionaryLayout.TwoColumns;
+        // Negative sentinel pattern, mirroring keyColumnFractionSetByUser: false means the
+        // user has never picked a layout from the context menu, so GetActiveLayout falls
+        // back to the attribute default. Set to true the moment the user toggles layout.
+        public bool layoutSetByUser = false;
     }
 
     // Disk-backed, persistent across editor sessions. Key: Hash128 of normalized path
@@ -201,6 +226,18 @@ internal partial class DictionaryDrawer
         if (cached == null || cached.keyColumnFractionSetByUser <= 0f)
             return attributeFraction;
         return cached.keyColumnFractionSetByUser;
+    }
+
+    // Layout follows the same default-vs-override rules as the key column fraction: the
+    // attribute supplies the default, and the cached layout only wins once the user has
+    // explicitly toggled it from the header context menu (layoutSetByUser). "Reset to
+    // Defaults" removes the cache entry, so the attribute default returns.
+    internal static DictionaryLayout GetActiveLayout(Hash128 stateCacheKey, DictionaryLayout attributeLayout)
+    {
+        var cached = s_StateCache.GetState(stateCacheKey);
+        if (cached == null || !cached.layoutSetByUser)
+            return attributeLayout;
+        return cached.layout;
     }
 
     static DictionaryState GetOrCreateCachedState(Hash128 stateCacheKey)
@@ -340,27 +377,281 @@ internal partial class DictionaryDrawer
         return true;
     }
 
-    internal static void GetHeaderLabels(FieldInfo fieldInfo, out string keyLabel, out string valueLabel, out float keyColumnFraction)
+    // Resolves the key/value column header labels and default key-column fraction for a dictionary.
+    // These come from the same [DictionaryDisplay] attribute that drives layout: a field-level
+    // attribute on the directly-declared field, or an assembly-level attribute targeting the exact
+    // closed Dictionary<K,V>. dictionaryType is the property's static closed type, which for a nested
+    // inner dictionary differs from fieldInfo.FieldType (see GetFieldDisplayAttribute).
+    internal static void GetHeaderLabels(FieldInfo fieldInfo, Type dictionaryType, out string keyLabel, out string valueLabel, out float keyColumnFraction)
     {
         keyLabel = Texts.DefaultKeyLabel;
         valueLabel = Texts.DefaultValueLabel;
         keyColumnFraction = 0.5f;
 
-        var attr = fieldInfo?.GetCustomAttribute<DictionaryHeaderAttribute>();
-        if (attr != null)
+        var fieldAttr = GetFieldDisplayAttribute(fieldInfo, dictionaryType);
+        if (fieldAttr != null)
         {
-            if (!string.IsNullOrEmpty(attr.keyColumnLabel))
-                keyLabel = attr.keyColumnLabel;
-            if (!string.IsNullOrEmpty(attr.valueColumnLabel))
-                valueLabel = attr.valueColumnLabel;
-            // Sanity-clamp only — keeps NaN/<0/>1 attribute values out of the cache.
-            // The actual rendered width is enforced by GetKeyColumnPixelWidth, which
-            // applies the pixel floor regardless of the stored fraction's exact value.
-            var fraction = attr.keyColumnFraction;
-            if (float.IsNaN(fraction))
-                fraction = 0.5f;
-            keyColumnFraction = Mathf.Clamp(fraction, 0.01f, 0.99f);
+            ApplyHeaderLabels(fieldAttr, ref keyLabel, ref valueLabel, ref keyColumnFraction);
+            return;
         }
+
+        if (dictionaryType != null && GetAssemblyLayoutRegistry().TryGetValue(dictionaryType, out var entry))
+            ApplyHeaderLabels(entry.attribute, ref keyLabel, ref valueLabel, ref keyColumnFraction);
+    }
+
+    static void ApplyHeaderLabels(DictionaryDisplayAttribute attr, ref string keyLabel, ref string valueLabel, ref float keyColumnFraction)
+    {
+        if (!string.IsNullOrEmpty(attr.keyLabel))
+            keyLabel = attr.keyLabel;
+        if (!string.IsNullOrEmpty(attr.valueLabel))
+            valueLabel = attr.valueLabel;
+        // Sanity-clamp only — keeps NaN/<0/>1 attribute values out of the cache.
+        // The actual rendered width is enforced by GetKeyColumnPixelWidth, which
+        // applies the pixel floor regardless of the stored fraction's exact value.
+        var fraction = attr.keyColumnFraction;
+        if (float.IsNaN(fraction))
+            fraction = 0.5f;
+        keyColumnFraction = Mathf.Clamp(fraction, 0.01f, 0.99f);
+    }
+
+    // Returns the field-level [DictionaryDisplay] that applies to THIS dictionary, or null.
+    // A field attribute only governs the dictionary the field *directly* declares. For a nested
+    // inner dictionary, fieldInfo resolves to the outer field (dict elements are not fields), so
+    // its dictionaryType differs from fieldInfo.FieldType; in that case the field attribute belongs
+    // to the outer dictionary and must not leak onto the inner one (which resolves via the
+    // assembly-level registry instead). The assembly form (DictionaryDisplayForTypeAttribute) is
+    // AttributeTargets.Assembly, so it can never appear on a field — no form check is needed here.
+    static DictionaryDisplayAttribute GetFieldDisplayAttribute(FieldInfo fieldInfo, Type dictionaryType)
+    {
+        if (fieldInfo == null || dictionaryType != fieldInfo.FieldType)
+            return null;
+
+        return fieldInfo.GetCustomAttribute<DictionaryDisplayAttribute>();
+    }
+
+    // Single source of truth for the foldout title of a nested collection value, keyed on its type:
+    // "Dictionary" / "Array" / "List" (add new collection kinds, e.g. HashSet, here). Returns null for
+    // any non-collection type so the value cell stays label-less and the field keeps its "Value" name.
+    //
+    // The enclosing dictionary calls this for its value type and feeds the result to the value cell as a
+    // plain label (see DictionaryView.m_ValueFieldLabel / DrawerInstanceIMGUI.valueCollectionLabel). The
+    // value's own drawer then renders it: a nested dictionary reads it through PropertyField (UITK) or its
+    // OnGUI label (IMGUI), an array/list through its built-in foldout title — so no drawer needs to detect
+    // the nested-value case itself.
+    internal static string GetNestedCollectionValueLabel(Type collectionType)
+    {
+        if (collectionType == null)
+            return null;
+        if (collectionType.IsArray)
+            return Texts.NestedArrayLabel;
+        if (collectionType.IsGenericType)
+        {
+            var definition = collectionType.GetGenericTypeDefinition();
+            if (definition == typeof(Dictionary<,>))
+                return Texts.NestedDictionaryLabel;
+            if (definition == typeof(List<>))
+                return Texts.NestedListLabel;
+        }
+        return null;
+    }
+
+    // Resolves the default layout for a dictionary, applying this precedence:
+    //   1. A field-level [DictionaryDisplay] on the dictionary field (explicit per-field intent).
+    //   2. An assembly-level [DictionaryDisplayForType(typeof(Dictionary<K,V>), ...)] matching the exact
+    //      closed dictionary type — the only way to reach a nested dictionary or a type you don't own.
+    //      Matches globally (applies wherever such a dictionary is used), but a rule is only admitted
+    //      if its declaring assembly owns K or V — see GetAssemblyLayoutRegistry / DeclaresTargetType.
+    //   3. TwoColumns.
+    // The user's context-menu choice still wins at runtime; GetActiveLayout layers that on top of this.
+    // dictionaryType is the closed Dictionary<K,V> for this specific field/value (from the property's
+    // static type), which for nested dictionaries differs from fieldInfo.FieldType.
+    internal static DictionaryLayout ResolveDefaultLayout(FieldInfo fieldInfo, Type dictionaryType)
+    {
+        var fieldAttr = GetFieldDisplayAttribute(fieldInfo, dictionaryType);
+        if (fieldAttr != null)
+            return fieldAttr.layout;
+
+        if (dictionaryType != null && GetAssemblyLayoutRegistry().TryGetValue(dictionaryType, out var exact))
+            return exact.attribute.layout;
+
+        return DictionaryLayout.TwoColumns;
+    }
+
+    // True for a closed Dictionary<TKey,TValue>. Used by the registry builder to reject a
+    // [DictionaryDisplayForType] whose target is not a closed dictionary: only exact Dictionary<K,V>
+    // targets are supported. IsConstructedGenericType (not IsGenericType) is required so the open
+    // typeof(Dictionary<,>) — which has no concrete K/V to match — is rejected rather than silently
+    // registered under a key nothing ever resolves to.
+    static bool IsExactDictionaryType(Type type)
+        => type != null && type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+
+    // One resolved assembly-level entry. Holds the originating attribute so layout, labels, and
+    // fraction all read from the same source without a second reflection pass, plus the name of the
+    // assembly that declared it so a duplicate warning can point back to the winning declaration.
+    readonly struct AssemblyLayoutEntry
+    {
+        public readonly DictionaryDisplayAttribute attribute;
+        public readonly string declaringAssemblyName;
+        public AssemblyLayoutEntry(DictionaryDisplayAttribute attribute, string declaringAssemblyName)
+        {
+            this.attribute = attribute;
+            this.declaringAssemblyName = declaringAssemblyName;
+        }
+    }
+
+    // Lazily-built map of [assembly: DictionaryDisplayForType(targetType, ...)] across all loaded
+    // assemblies. A target must be a closed Dictionary<K,V> (other shapes are ignored). Matching is
+    // global — a target matches wherever such a dictionary is used — but an assembly may only declare
+    // a rule for a target that involves a type it *defines* somewhere in the dictionary's shape — its
+    // key, its value, or a type nested within either (see DeclaresTargetType). That ownership gate lets
+    // an extension style dictionaries over its own types everywhere they appear, while stopping a rule
+    // for a shape it has no stake in (e.g. Dictionary<int,int>) from hijacking every such dictionary in
+    // a project. The key is the closed Dictionary<K,V> targetType.
+    // Statics reset on domain reload, so the cache rebuilds automatically when assemblies change.
+    static Dictionary<Type, AssemblyLayoutEntry> s_AssemblyLayoutRegistry;
+
+    static Dictionary<Type, AssemblyLayoutEntry> GetAssemblyLayoutRegistry()
+    {
+        if (s_AssemblyLayoutRegistry != null)
+            return s_AssemblyLayoutRegistry;
+
+        var registry = new Dictionary<Type, AssemblyLayoutEntry>();
+
+        // CurrentAssemblies.GetLoadedAssemblies() is the Unity-safe enumeration (AppDomain.GetAssemblies
+        // can return already-unloaded assemblies — analyzer UAC0005). Sort by name so a target that is
+        // legitimately owned by more than one assembly (K and V authored in different assemblies)
+        // resolves deterministically (first by assembly name wins).
+        var assemblies = new List<Assembly>(CurrentAssemblies.GetLoadedAssemblies());
+        assemblies.Sort((a, b) => string.CompareOrdinal(a.FullName, b.FullName));
+
+        foreach (var assembly in assemblies)
+        {
+            object[] attrs;
+            try
+            {
+                attrs = assembly.GetCustomAttributes(typeof(DictionaryDisplayForTypeAttribute), false);
+            }
+            catch
+            {
+                // A dynamic or otherwise reflection-hostile assembly: skip it.
+                continue;
+            }
+
+            foreach (DictionaryDisplayForTypeAttribute attr in attrs)
+            {
+                var target = attr.targetType;
+
+                // Only exact closed Dictionary<K,V> targets are supported.
+                if (!IsExactDictionaryType(target))
+                {
+                    Debug.LogWarning($"The DictionaryDisplayForType attribute targeting {FormatType(target)} in {assembly.GetName().Name} is ignored: it must target a Dictionary<K,V>, for example typeof(Dictionary<string, MyType>).");
+                    continue;
+                }
+
+                // Ownership gate: reject a rule whose target involves no type defined in this assembly.
+                if (!DeclaresTargetType(target, assembly))
+                {
+                    Debug.LogWarning(OwnershipRejectionMessage(target, assembly));
+                    continue;
+                }
+
+                // Duplicate rules for the same target: keep the first and warn. Note this only sees
+                // duplicates that survive to metadata — two byte-for-byte identical attributes in one
+                // assembly (same ctor args and same named args) are folded into a single entry by the
+                // C# compiler, so they never reach here and cannot be warned about at runtime. What we
+                // do catch: same-assembly duplicates that differ in any setting, and any cross-assembly
+                // duplicate (identical or not, since each assembly contributes its own metadata entry).
+                if (registry.TryGetValue(target, out var existing))
+                {
+                    var assemblyName = assembly.GetName().Name;
+                    var where = existing.declaringAssemblyName == assemblyName
+                        ? $"is declared more than once in {assemblyName}"
+                        : $"is declared more than once: kept the rule from {existing.declaringAssemblyName} and ignored the one from {assemblyName}";
+                    Debug.LogWarning($"The DictionaryDisplayForType attribute targeting {FormatType(target)} {where}; the first registered rule is used.");
+                    continue;
+                }
+                registry.Add(target, new AssemblyLayoutEntry(attr, assembly.GetName().Name));
+            }
+        }
+
+        s_AssemblyLayoutRegistry = registry;
+        return s_AssemblyLayoutRegistry;
+    }
+
+    // Gates which [DictionaryDisplayForType] rules an assembly may declare: you may only style a
+    // Dictionary<K,V> that involves a type you authored *anywhere in its shape*, not merely as the
+    // direct K or V. A closed generic's own Assembly is its definition's (Dictionary<,> and List<>
+    // live in the framework), so ownership is carried by the type arguments, and we recurse through
+    // element types and nested generic arguments to find an authored type at any depth. This is
+    // intentionally broader than "the direct key or value is owned", because a dictionary that
+    // contains your type is legitimately yours to style. For an assembly that defines only MyType:
+    //   Dictionary<int, MyType>                       -> owned (MyType is the direct value)
+    //   Dictionary<int, MyType[]>                     -> owned (an array reports its element's assembly)
+    //   Dictionary<int, List<MyType>>                 -> owned (MyType nested in the value's generic args)
+    //   Dictionary<int, Dictionary<string, MyType>>   -> owned (MyType nested in the inner dictionary)
+    //   Dictionary<int, int>                          -> NOT owned (no authored type appears anywhere)
+    // The gate's purpose is only to stop an assembly from hijacking a shape it has no stake in (the
+    // last case); it is not meant to require ownership of the outermost key/value specifically.
+    static bool DeclaresTargetType(Type type, Assembly declaringAssembly)
+    {
+        if (type == null)
+            return false;
+        if (type.Assembly == declaringAssembly)
+            return true;
+        if (type.HasElementType && DeclaresTargetType(type.GetElementType(), declaringAssembly))
+            return true;
+        if (type.IsGenericType)
+        {
+            foreach (var arg in type.GetGenericArguments())
+            {
+                if (DeclaresTargetType(arg, declaringAssembly))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    // Builds the warning for a Dictionary<K,V> rule rejected by the ownership gate. It names K and V
+    // and states the rule in plain English: the fix is for the developer to declare the attribute in
+    // whichever assembly defines a type used in the dictionary — they know which one that is, so we
+    // don't try to guess it. A rejection means no authored type appears anywhere in the shape (not the
+    // direct key or value, nor any type nested within them), so naming the top-level key and value is
+    // enough to point at the problem. target is a closed Dictionary<,> (guaranteed by IsExactDictionaryType upstream).
+    static string OwnershipRejectionMessage(Type target, Assembly declaringAssembly)
+    {
+        var args = target.GetGenericArguments();
+        var declaringName = declaringAssembly.GetName().Name;
+
+        return $"The DictionaryDisplayForType attribute targeting {FormatType(target)} in {declaringName} is ignored: it must "
+            + $"target a dictionary whose key, value, or a type nested within either is defined in the declaring assembly, "
+            + $"but neither key '{FormatType(args[0])}' nor value '{FormatType(args[1])}' involves a type defined in {declaringName}. "
+            + $"Apply the attribute in the assembly that defines a key or value type used by the dictionary.";
+    }
+
+    // Renders a Type for a warning: angle-bracket generics (Dictionary`2[Int32,Foo] ->
+    // Dictionary<Int32, Foo>), recursing through generic arguments. Arrays (and other
+    // element types) are not generic, so format the element type and re-append the suffix
+    // (e.g. List`1[] -> List<Int32>[]) rather than printing the raw runtime name.
+    static string FormatType(Type type)
+    {
+        if (type == null)
+            return "<null>";
+        if (type.HasElementType)
+        {
+            var element = type.GetElementType();
+            var runtimeName = type.Name;
+            var suffix = runtimeName.StartsWith(element.Name) ? runtimeName.Substring(element.Name.Length) : string.Empty;
+            return FormatType(element) + suffix;
+        }
+        if (!type.IsGenericType)
+            return type.Name;
+
+        var name = type.Name;
+        var tick = name.IndexOf('`');
+        if (tick >= 0)
+            name = name.Substring(0, tick);
+        var args = Array.ConvertAll(type.GetGenericArguments(), FormatType);
+        return $"{name}<{string.Join(", ", args)}>";
     }
 
     internal static bool IsEditingMultipleObjects(SerializedProperty property)

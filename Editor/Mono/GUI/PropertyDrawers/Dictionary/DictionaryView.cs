@@ -56,9 +56,17 @@ internal class DictionaryView : ListView
     static readonly string k_ListViewClass = ussClassName + "__list-view";
     static readonly string k_ListViewFocusedClass = ussClassName + "__list-view--focused";
     static readonly string k_ListHeaderClass = ussClassName + "__list-header";
+    // Leak-safe styling hook for the slim one-column header (see k_OneColumnModeClass for why
+    // header/row styling can't key on the view root). The header subtree never contains a nested
+    // dictionary view, so its rules may descend from this marker freely.
+    static readonly string k_ListHeaderOneColumnClass = k_ListHeaderClass + "--one-column";
     static readonly string k_ListHeaderKeyClass = ussClassName + "__list-header__key";
     static readonly string k_ListHeaderValueClass = ussClassName + "__list-header__value";
     static readonly string k_RowClass = ussClassName + "__row";
+    // Leak-safe styling hook for one-column rows/cells (see k_OneColumnModeClass). Row and cell
+    // rules match via the child combinator from this (e.g. __row--one-column > __field--key) so
+    // they reach only this view's own rows, never a nested dictionary's rows deeper down.
+    static readonly string k_RowOneColumnClass = k_RowClass + "--one-column";
     static readonly string k_HelpBoxClass = ussClassName + "__helpbox";
     static readonly string k_HelpBoxDuplicatesClass = ussClassName + "__helpbox--duplicates";
     static readonly string k_HelpBoxSelectDuplicateClass = ussClassName + "__helpbox__select-duplicate";
@@ -70,6 +78,22 @@ internal class DictionaryView : ListView
     static readonly string k_SelectionIndicatorClass = ussClassName + "__selection-indicator";
     static readonly string k_ColumnResizerClass = ussClassName + "__column-resizer";
     static readonly string k_ColumnResizerLineClass = ussClassName + "__column-resizer__line";
+    // View-level source of truth for one-column mode, toggled on the ListView root. It carries
+    // NO styling on purpose: a rule descending from it (.unity-dictionary-view--one-column X)
+    // would also match a NESTED dictionary's elements, since a nested dict lives inside an outer
+    // one-column row — that descendant leak is exactly what the per-element markers above
+    // (k_RowOneColumnClass, k_ListHeaderOneColumnClass) avoid. We keep this root marker because
+    // it's the stable, content-independent signal for "is this view one-column?": present even
+    // when the view has no rows (the per-element markers only exist alongside their elements),
+    // so tests/debugging assert against it rather than fishing for an internal modifier.
+    static readonly string k_OneColumnModeClass = ussClassName + "--one-column";
+    // Per-row "Value" disclosure foldout shown in the OneColumnWithValueFoldout layout. Its
+    // contentContainer holds the value field, so the foldout drives native show/hide + content
+    // indentation.
+    static readonly string k_RowFoldoutClass = ussClassName + "__row-foldout";
+    // Static bold "Value" header shown in the OneColumnWithValueVisible layout in place of a
+    // foldout, so the value is always visible and the header is plain, non-interactive text.
+    static readonly string k_RowValueHeaderClass = ussClassName + "__row-value-header";
 
     SerializedProperty m_DictionaryFieldProperty;
     SerializedProperty m_ArrayProperty;
@@ -81,8 +105,23 @@ internal class DictionaryView : ListView
     VisualElement m_ListHeader;
     ColumnResizer m_ColumnResizer;
     VisualElement m_KeyHeader;
+    Label m_KeyHeaderLabel;
     Label m_ValueLabel;
     VisualElement m_SortIndicator;
+    // Resolved key column label (default "Key" or DictionaryDisplayAttribute override).
+    string m_KeyLabelText;
+    // Resolved value column label (default "Value" or DictionaryDisplayAttribute override),
+    // reused as the per-row foldout text in one-column mode.
+    string m_ValueLabelText;
+    // Label for the value cell's PropertyField: "Array"/"List" when the value type is a collection
+    // (so the built-in collection drawer's header reads that instead of falling back to "Value"),
+    // otherwise string.Empty. Uniform across rows since every entry shares the value type.
+    string m_ValueFieldLabel = string.Empty;
+    // Foldout title supplied by the hosting PropertyField (PropertyDrawer.preferredLabel) and set in
+    // DictionaryDrawer.CreatePropertyGUI. A nested dictionary value arrives labelled "Dictionary" from
+    // its enclosing drawer; an empty/null value falls back to the property's own localizedDisplayName,
+    // mirroring how ListView resolves its header title.
+    internal string preferredLabel { get; set; }
 
     HelpBox m_MultiEditHelpBox;
     HelpBox m_DuplicatesHelpBox;
@@ -91,6 +130,16 @@ internal class DictionaryView : ListView
 
     bool m_SortScheduled;
     bool m_SortAscending = true;
+    // Single source of truth for the column layout. Persisted in DictionaryState and
+    // shared across list siblings via the normalized path. The two booleans below are
+    // derived views kept so the render code reads intent-named flags rather than enum
+    // comparisons. The two OneColumn_* modes both stack Key over Value; they differ
+    // only in whether each value sits behind a per-row "Value" foldout.
+    DictionaryLayout m_Layout = DictionaryLayout.TwoColumns;
+    // Default layout resolved from [DictionaryDisplay] (field- or assembly-level); the
+    // active layout falls back to this until the user overrides it from the context menu.
+    DictionaryLayout m_AttributeLayout = DictionaryLayout.TwoColumns;
+    bool m_OneColumnMode => m_Layout != DictionaryLayout.TwoColumns;
     DictionaryDrawer.SortedIndexMap m_SortedIndexMap = DictionaryDrawer.SortedIndexMap.Empty;
     // Hash of the keys at the time we last produced m_SortedIndexMap.
     // Lets the TrackPropertyValue callback skip sort scheduling when only a
@@ -102,6 +151,11 @@ internal class DictionaryView : ListView
     readonly List<int> m_RestoredDisplayIndicesScratch = new List<int>();
 
     bool m_IsBound;
+
+    // The layout the installed makeItem factory was built for. Each layout uses a distinct row
+    // template (two-column, one-column foldout, one-column static value), so a layout change
+    // compares against this to know it must rebuild the row pool with the new template.
+    DictionaryLayout m_MakeItemLayout = DictionaryLayout.TwoColumns;
 
     int displayedItemCount => m_SortedIndexMap.Length;
 
@@ -152,7 +206,9 @@ internal class DictionaryView : ListView
         autoSelectNewItemOnAdd = false;
 
         makeNoneElement = MakeEmptyElement;
-        makeItem = MakeListItem;
+        // Default to the two-column template; RebuildFromProperty/ApplyLayoutMode swap in
+        // the one-column factory when the persisted/selected layout calls for it.
+        makeItem = MakeTwoColumnRow;
         bindItem = BindListItem;
         unbindItem = UnbindListItem;
         destroyItem = DestroyListItem;
@@ -174,14 +230,14 @@ internal class DictionaryView : ListView
     }
 
     // Tears down any prior bound state and rebuilds the view against the new
-    // property. Resolves key/value types and the optional DictionaryHeaderAttribute
+    // property. Resolves key/value types and the optional DictionaryDisplayAttribute
     // from the property's reflected FieldInfo, builds the column header, sort
     // scheduler, and duplicate tracking, and installs makeItem/bindItem/onAdd/onRemove
     // on the list. Only called from HandleEventBubbleUp's SerializedPropertyBindEvent
     // handler; external callers bind via bindingPath + the inspector's tree walk.
     void RebuildFromProperty(SerializedProperty property)
     {
-        using var _ = s_BuildMarker.Auto();
+        using var buildMarker = s_BuildMarker.Auto();
 
         if (property == null)
             return;
@@ -191,17 +247,35 @@ internal class DictionaryView : ListView
         m_DictionaryFieldProperty = property.Copy();
         m_StateCacheKey = DictionaryDrawer.ComputeStateCacheKey(m_DictionaryFieldProperty.propertyPath);
 
+        var fieldInfo = ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(m_DictionaryFieldProperty, out var dictionaryType);
+        m_AttributeLayout = DictionaryDrawer.ResolveDefaultLayout(fieldInfo, dictionaryType);
+
+        // Resolve the value-cell label before SyncMakeItemToLayout()/RefreshListView() build any rows,
+        // so the value PropertyField is created with the right collection label on first paint.
+        var valueType = dictionaryType != null && dictionaryType.IsGenericType
+            ? dictionaryType.GetGenericArguments()[1]
+            : null;
+        m_ValueFieldLabel = DictionaryDrawer.GetNestedCollectionValueLabel(valueType) ?? string.Empty;
+
         var cachedState = DictionaryDrawer.GetCachedState(m_StateCacheKey);
         if (cachedState != null)
-        {
             m_SortAscending = cachedState.sortAscending;
-        }
+        m_Layout = DictionaryDrawer.GetActiveLayout(m_StateCacheKey, m_AttributeLayout);
+
+        // Install the matching row template before RefreshListView() builds any rows, so
+        // the persisted layout is reflected on first paint without a redundant rebuild.
+        SyncMakeItemToLayout();
 
         // Foldout's bindingPath drives open/closed state via SerializedProperty.isExpanded,
-        // so the user's collapse/expand survives rebuilds and domain reloads.
-        m_Foldout.text = m_DictionaryFieldProperty.displayName;
+        // so the user's collapse/expand survives rebuilds and domain reloads. The title follows the
+        // label the hosting PropertyField supplied (like ListView.headerTitle does), so a nested
+        // dictionary value reads "Dictionary" while a real field keeps its own display name.
+        var foldoutLabel = string.IsNullOrEmpty(preferredLabel)
+            ? m_DictionaryFieldProperty.localizedDisplayName
+            : preferredLabel;
+        m_Foldout.text = foldoutLabel;
         m_Foldout.bindingPath = m_DictionaryFieldProperty.propertyPath;
-        headerTitle = m_DictionaryFieldProperty.displayName;
+        headerTitle = foldoutLabel;
 
         if (DictionaryDrawer.IsEditingMultipleObjects(m_DictionaryFieldProperty))
         {
@@ -234,6 +308,12 @@ internal class DictionaryView : ListView
         RefreshListView();
         UpdateHeaderInfo();
         UpdateRemoveButtonState();
+
+        // Apply the restored persisted layout mode after the header + list are built
+        // so the root modifier class and per-row config reflect it on first paint.
+        // RefreshListView() above already bound the rows with the correct layout, so
+        // skip the redundant rebind here.
+        ApplyLayoutMode(refresh: false);
 
         m_IsBound = true;
     }
@@ -303,6 +383,12 @@ internal class DictionaryView : ListView
         m_KeyHeader = null;
         m_ValueLabel = null;
         m_SortIndicator = null;
+        // Reset the layout and its root modifier so a rebind to a different (or
+        // multi-edit) property starts from the default two-column layout rather than
+        // leaking the previous view's one-column class.
+        m_Layout = DictionaryLayout.TwoColumns;
+        m_AttributeLayout = DictionaryLayout.TwoColumns;
+        EnableInClassList(k_OneColumnModeClass, false);
         m_IsBound = false;
     }
 
@@ -417,8 +503,10 @@ internal class DictionaryView : ListView
 
     VisualElement BuildColumnHeader()
     {
-        var fieldInfo = ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(m_DictionaryFieldProperty, out _);
-        DictionaryDrawer.GetHeaderLabels(fieldInfo, out var keyLabelText, out var valueLabelText, out var attributeFraction);
+        var fieldInfo = ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(m_DictionaryFieldProperty, out var dictionaryType);
+        DictionaryDrawer.GetHeaderLabels(fieldInfo, dictionaryType, out var keyLabelText, out var valueLabelText, out var attributeFraction);
+        m_KeyLabelText = keyLabelText;
+        m_ValueLabelText = valueLabelText;
 
         var header = new VisualElement();
         header.AddToClassList(k_ListHeaderClass);
@@ -431,8 +519,8 @@ internal class DictionaryView : ListView
 
         // keyLabel is styled via .unity-dictionary-view__list-header__key > .unity-text-element
         // (ellipsis overflow + flex grow/shrink), so no inline styles needed here.
-        var keyLabel = new Label(keyLabelText);
-        m_KeyHeader.Add(keyLabel);
+        m_KeyHeaderLabel = new Label(keyLabelText);
+        m_KeyHeader.Add(m_KeyHeaderLabel);
 
         m_SortIndicator = new VisualElement();
         m_SortIndicator.AddToClassList(MultiColumnHeaderColumnSortIndicator.ussClassName);
@@ -459,6 +547,12 @@ internal class DictionaryView : ListView
         header.Add(m_ValueLabel);
         header.AddManipulator(new ContextualMenuManipulator(evt =>
         {
+            // The three layouts form a radio group (the active one is checked), followed
+            // by a separator and the "Reset to Defaults" action.
+            AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.TwoColumnsLayoutLabel, DictionaryLayout.TwoColumns);
+            AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.OneColumnWithValueFoldoutLayoutLabel, DictionaryLayout.OneColumnWithValueFoldout);
+            AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.OneColumnWithValueVisibleLayoutLabel, DictionaryLayout.OneColumnWithValueVisible);
+            evt.menu.AppendSeparator();
             evt.menu.AppendAction(DictionaryDrawer.Texts.ResetToDefaultsLabel,
                 _ => ResetToDefaults(),
                 _ => DictionaryDrawer.HasCachedState(m_StateCacheKey) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
@@ -467,12 +561,38 @@ internal class DictionaryView : ListView
         return header;
     }
 
-    VisualElement MakeListItem()
+    // Strongly-typed list row. Caches its child references so BindListItem reads them
+    // directly instead of re-running Q<>() tree queries on every bind during scroll, and
+    // stores the display index in a typed field (no int->object boxing, which element.userData
+    // would incur). Two-column rows use DictionaryRow; one-column rows use the subclass below.
+    class DictionaryRow : VisualElement
     {
-        var container = new VisualElement();
-        container.AddToClassList("unity-list-view__reorderable-item__container");
-        container.AddToClassList(k_RowClass);
-        container.name = "dict-element";
+        public int displayIndex = -1;
+        public VisualElement keyContainer;
+        public VisualElement valueContainer;
+        public VisualElement duplicateKeyIcon;
+        public PropertyField keyField;
+        public PropertyField valueField;
+    }
+
+    // One-column foldout row: the value field lives in valueFoldout.contentContainer (parented
+    // once at build, never reparented per bind), so the foldout owns native show/hide and content
+    // indentation. Only the OneColumnWithValueFoldout layout uses this; the value-visible layout
+    // uses a plain DictionaryRow with a static header (see MakeOneColumnVisibleRow).
+    sealed class OneColumnDictionaryRow : DictionaryRow
+    {
+        public Foldout valueFoldout;
+    }
+
+    // Builds the parts every row shares regardless of layout: the row container, the
+    // duplicate-key icon, the key/value cell containers + their PropertyFields, the
+    // selection indicator, and the row pointer-down handler. The per-mode factory below
+    // decides how the value field is parented under valueContainer.
+    DictionaryRow BuildRowScaffold(DictionaryRow row)
+    {
+        row.AddToClassList("unity-list-view__reorderable-item__container");
+        row.AddToClassList(k_RowClass);
+        row.name = "dict-element";
 
         var duplicateKeyIcon = new VisualElement();
         duplicateKeyIcon.AddToClassList(k_DuplicateKeyIconClass);
@@ -498,59 +618,151 @@ internal class DictionaryView : ListView
 
         ApplyKeyColumnWidth(keyContainer);
 
-        // Build the row's two PropertyFields up-front and parent them under the
-        // key/value containers. They start unbound — BindListItem just calls
-        // BindProperty on them every time the row is reused, hitting the fast
-        // rebind path in PropertyField.ResetInternal so the child field tree is
-        // not torn down and rebuilt per row.
+        // Build the row's two PropertyFields up-front. They start unbound — BindListItem
+        // just calls BindProperty on them every time the row is reused, hitting the fast
+        // rebind path in PropertyField.ResetInternal so the child field tree is not torn
+        // down and rebuilt per row.
         var keyField = new PropertyField(property: null, label: string.Empty, showFirstFoldoutHeader: false);
-        var valueField = new PropertyField(property: null, label: string.Empty, showFirstFoldoutHeader: false);
+        // m_ValueFieldLabel is "Array"/"List" for collection value types, else string.Empty; an empty
+        // label lets PropertyField fall back to the value's "Value" displayName (e.g. leaf/struct cells).
+        var valueField = new PropertyField(property: null, label: m_ValueFieldLabel, showFirstFoldoutHeader: false);
+
         keyContainer.Add(keyField);
-        valueContainer.Add(valueField);
 
         var selectionIndicator = new VisualElement();
         selectionIndicator.AddToClassList(k_SelectionIndicatorClass);
         selectionIndicator.pickingMode = PickingMode.Ignore;
 
-        container.Add(duplicateKeyIcon);
-        container.Add(keyContainer);
-        container.Add(valueContainer);
-        container.Add(selectionIndicator);
+        row.Add(duplicateKeyIcon);
+        row.Add(keyContainer);
+        row.Add(valueContainer);
+        row.Add(selectionIndicator);
 
-        container.RegisterCallback<PointerDownEvent>(OnRowPointerDown, TrickleDown.TrickleDown);
+        row.RegisterCallback<PointerDownEvent>(OnRowPointerDown, TrickleDown.TrickleDown);
 
-        return container;
+        row.keyContainer = keyContainer;
+        row.valueContainer = valueContainer;
+        row.duplicateKeyIcon = duplicateKeyIcon;
+        row.keyField = keyField;
+        row.valueField = valueField;
+        return row;
+    }
+
+    // Two-column template: key | value side by side. The value field sits directly in the
+    // value cell; USS + the resizer drive the column widths.
+    VisualElement MakeTwoColumnRow()
+    {
+        var row = BuildRowScaffold(new DictionaryRow());
+        row.valueContainer.Add(row.valueField);
+        return row;
+    }
+
+    // One-column foldout template (OneColumnWithValueFoldout): key stacked over value, with the
+    // value field inside a per-row collapsible "Value" foldout whose content the foldout drives
+    // native show/hide + indentation for. ConfigureOneColumnRow restores each row's expansion
+    // state per bind.
+    VisualElement MakeOneColumnFoldoutRow()
+    {
+        var row = (OneColumnDictionaryRow)BuildRowScaffold(new OneColumnDictionaryRow());
+        row.AddToClassList(k_RowOneColumnClass);
+
+        var foldout = new Foldout { name = "row-foldout" };
+        foldout.AddToClassList(k_RowFoldoutClass);
+        // Foldout.text adds the .unity-foldout__text class (which the bold USS keys on) to
+        // the toggle label; set it once here since the value label is stable per view.
+        foldout.text = m_ValueLabelText;
+        foldout.RegisterValueChangedCallback(evt =>
+        {
+            // Ignore ChangeEvent<bool> bubbling up from toggles inside the value field.
+            if (evt.target == foldout)
+                OnRowFoldoutToggled(row, evt.newValue);
+        });
+        foldout.contentContainer.Add(row.valueField);
+
+        row.valueContainer.Add(foldout);
+        row.valueFoldout = foldout;
+        return row;
+    }
+
+    // One-column static template (OneColumnWithValueVisible): key stacked over value, with the
+    // value always shown beneath a plain bold "Value" label. The header is a Label, not a foldout
+    // toggle, so it is inherently non-interactive — clicking it does nothing. Unlike the foldout
+    // variant the value sits directly under the header with no extra indentation.
+    VisualElement MakeOneColumnVisibleRow()
+    {
+        var row = BuildRowScaffold(new DictionaryRow());
+        row.AddToClassList(k_RowOneColumnClass);
+
+        var valueHeader = new Label(m_ValueLabelText);
+        valueHeader.AddToClassList(k_RowValueHeaderClass);
+
+        row.valueContainer.Add(valueHeader);
+        row.valueContainer.Add(row.valueField);
+        return row;
     }
 
     void BindListItem(VisualElement element, int displayIndex)
     {
         using var _ = s_BindListItemMarker.Auto();
 
-        if (!TryGetArrayIndexForBinding(element, displayIndex, out int arrayIndex))
+        var row = (DictionaryRow)element;
+        if (!TryGetArrayIndexForBinding(row, displayIndex, out int arrayIndex))
             return;
 
-        ApplyAlternatingBackground(element, displayIndex);
+        ApplyAlternatingBackground(row, displayIndex);
 
         var arrayElement = m_ArrayProperty.GetArrayElementAtIndex(arrayIndex);
         DictionaryDrawer.GetKeyAndValueProperties(arrayElement, out var keyProp, out var valueProp);
 
-        var keyContainer = element.Q<VisualElement>("key-container");
-        var valueContainer = element.Q<VisualElement>("value-container");
-        ApplyKeyColumnWidth(keyContainer);
+        ApplyKeyColumnWidth(row.keyContainer);
 
-        // The row's PropertyFields were created in MakeListItem; rebinding flips
+        // The row's PropertyFields were created in the makeItem factory; rebinding flips
         // their target property without recreating the child field tree. When the
-        // key/value lookup unexpectedly returns null (e.g. corrupted entry), the
-        // stale binding is dropped via Unbind() instead of leaving the previous
-        // row's data visible.
-        RebindCellField(keyContainer, keyProp);
-        UpdateDuplicateKeyIconVisibility(element, arrayIndex);
-        RebindCellField(valueContainer, valueProp);
+        // key/value lookup unexpectedly returns null (e.g. corrupted entry), the stale
+        // binding is dropped via Unbind() instead of leaving the previous row's data visible.
+        RebindCellField(row.keyField, keyProp);
+        UpdateDuplicateKeyIconVisibility(row, arrayIndex);
+        RebindCellField(row.valueField, valueProp);
+        // Reassert the collection label on reused rows: the label persists across rebinds, but a
+        // pooled row may have been built for a different value type (the makeItem delegate compares
+        // equal, so the pool isn't rebuilt on rebind). The setter no-ops when already correct.
+        row.valueField.label = m_ValueFieldLabel;
+
+        if (row is OneColumnDictionaryRow oneColumnRow)
+            ConfigureOneColumnRow(oneColumnRow, valueProp);
     }
 
-    static void RebindCellField(VisualElement container, SerializedProperty property)
+    // Restores a one-column foldout row's expansion state on bind. The value field's visibility
+    // and indentation are owned by the foldout natively; this just syncs the foldout to the
+    // persisted per-row expansion state. Only called for OneColumnWithValueFoldout rows — the
+    // value-visible layout uses a static, always-shown header with no per-bind state.
+    void ConfigureOneColumnRow(OneColumnDictionaryRow row, SerializedProperty valueProp)
     {
-        var field = container.Q<PropertyField>();
+        bool expanded = valueProp != null && valueProp.isExpanded;
+        row.valueFoldout.SetValueWithoutNotify(expanded);
+    }
+
+    // Foldout toggle handler for one-column rows: persists the new expansion state on the
+    // value property (so it survives rebuilds/domain reloads). The foldout shows/hides its
+    // content (the value field) natively; DynamicHeight virtualization re-measures the row
+    // on the resulting layout change.
+    void OnRowFoldoutToggled(OneColumnDictionaryRow row, bool expanded)
+    {
+        if (m_ArrayProperty == null || !m_ArrayProperty.isValid)
+            return;
+        int displayIndex = row.displayIndex;
+        if (displayIndex < 0 || displayIndex >= displayedItemCount)
+            return;
+
+        int arrayIndex = DisplayToArrayIndex(displayIndex);
+        var arrayElement = m_ArrayProperty.GetArrayElementAtIndex(arrayIndex);
+        DictionaryDrawer.GetKeyAndValueProperties(arrayElement, out _, out var valueProp);
+        if (valueProp != null)
+            valueProp.isExpanded = expanded;
+    }
+
+    static void RebindCellField(PropertyField field, SerializedProperty property)
+    {
         if (field == null)
             return;
         if (property != null)
@@ -567,14 +779,9 @@ internal class DictionaryView : ListView
 
     static void UnbindRowPropertyFields(VisualElement element)
     {
-        UnbindCellField(element.Q<VisualElement>("key-container"));
-        UnbindCellField(element.Q<VisualElement>("value-container"));
-    }
-
-    static void UnbindCellField(VisualElement container)
-    {
-        var field = container?.Q<PropertyField>();
-        field?.Unbind();
+        var row = (DictionaryRow)element;
+        row.keyField?.Unbind();
+        row.valueField?.Unbind();
     }
 
     static void DestroyListItem(VisualElement element)
@@ -582,13 +789,13 @@ internal class DictionaryView : ListView
         UnbindRowPropertyFields(element);
     }
 
-    bool TryGetArrayIndexForBinding(VisualElement element, int displayIndex, out int arrayIndex)
+    bool TryGetArrayIndexForBinding(DictionaryRow row, int displayIndex, out int arrayIndex)
     {
         arrayIndex = -1;
         if (displayIndex < 0 || displayIndex >= displayedItemCount)
             return false;
 
-        element.userData = displayIndex;
+        row.displayIndex = displayIndex;
         arrayIndex = DisplayToArrayIndex(displayIndex);
         return true;
     }
@@ -599,6 +806,16 @@ internal class DictionaryView : ListView
     // alignment — is defined statically in UnityEngine.UIElements.uss.
     void ApplyKeyColumnWidth(VisualElement keyContainer)
     {
+        // In one-column mode the key spans the full row width (driven by USS on
+        // the --one-column modifier); pushing a pixel width here would fight that,
+        // and the geometry-change loop must not re-stamp stale widths onto rows.
+        if (m_OneColumnMode)
+        {
+            keyContainer.style.width = StyleKeyword.Null;
+            keyContainer.style.flexBasis = StyleKeyword.Null;
+            return;
+        }
+
         float keyWidth = GetHeaderSplitLineX();
         keyContainer.style.flexBasis = keyWidth;
         keyContainer.style.width = keyWidth;
@@ -676,8 +893,9 @@ internal class DictionaryView : ListView
 
     void OnRowPointerDown(PointerDownEvent evt)
     {
-        if (!(evt.currentTarget is VisualElement row) || !(row.userData is int displayIndex))
+        if (!(evt.currentTarget is DictionaryRow row) || row.displayIndex < 0)
             return;
+        int displayIndex = row.displayIndex;
 
         var selectionSnapshot = new HashSet<int>(SelectedDisplayIndices);
         schedule.Execute(() =>
@@ -693,6 +911,12 @@ internal class DictionaryView : ListView
     // min-width, padding-left/right around the resizer) lives in USS.
     void ApplyHeaderColumnLayout()
     {
+        // One-column mode owns the header layout via ApplyHeaderLayoutMode (key
+        // header spans full width, value label + resizer hidden); skip the
+        // two-column width math so geometry-change callbacks don't fight it.
+        if (m_OneColumnMode)
+            return;
+
         if (m_ColumnResizer == null || m_KeyHeader == null || m_ValueLabel == null || m_ListHeader == null)
             return;
 
@@ -723,11 +947,10 @@ internal class DictionaryView : ListView
         if (scrollView?.contentContainer == null)
             return;
 
-        foreach (var row in scrollView.contentContainer.Children())
+        foreach (var wrapper in scrollView.contentContainer.Children())
         {
-            var keyContainer = row.Q<VisualElement>("key-container");
-            if (keyContainer != null)
-                ApplyKeyColumnWidth(keyContainer);
+            if (wrapper.Q<DictionaryRow>() is { } row)
+                ApplyKeyColumnWidth(row.keyContainer);
         }
     }
 
@@ -791,6 +1014,114 @@ internal class DictionaryView : ListView
         FocusContentContainer();
     }
 
+    // Single entry point for every layout change from the context menu. Persists the
+    // user's choice (layoutSetByUser) so it wins over the attribute default, then runs
+    // ApplyLayoutMode, which rebuilds the row pool with the new layout's template. The
+    // rebuild only ever recreates the handful of virtualized visible rows, so it scales
+    // to large dictionaries.
+    void AppendLayoutAction(DropdownMenu menu, string label, DictionaryLayout layout)
+    {
+        menu.AppendAction(label,
+            _ => SetLayout(layout),
+            _ => m_Layout == layout ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+    }
+
+    void SetLayout(DictionaryLayout layout)
+    {
+        if (m_Layout == layout)
+            return;
+        m_Layout = layout;
+        DictionaryDrawer.UpdateCachedState(m_StateCacheKey, state =>
+        {
+            state.layout = layout;
+            state.layoutSetByUser = true;
+        });
+        ApplyLayoutMode();
+    }
+
+    // Installs the row template (makeItem) for the current layout without rebuilding.
+    // Called before the initial row build in RebuildFromProperty; ApplyLayoutMode owns the
+    // rebuild when the layout (and thus the template) changes at runtime.
+    void SyncMakeItemToLayout()
+    {
+        m_MakeItemLayout = m_Layout;
+        makeItem = m_Layout switch
+        {
+            DictionaryLayout.OneColumnWithValueFoldout => MakeOneColumnFoldoutRow,
+            DictionaryLayout.OneColumnWithValueVisible => MakeOneColumnVisibleRow,
+            _ => MakeTwoColumnRow,
+        };
+    }
+
+    // Applies the layout mode. Each layout uses a distinct row template (two-column, one-column
+    // foldout, one-column static value), so any layout change swaps makeItem and rebuilds the
+    // pool — heavier than an in-place rebind, but a rare user-initiated switch, and virtualization
+    // means the pool only ever holds the handful of visible rows. The sorted-index map, property
+    // tracking, and duplicate state are layout-independent.
+    // Pass refresh: false when a list reload already runs alongside this call, so the visible rows
+    // aren't rebuilt/rebound twice in a single layout change. Returns whether the template changed,
+    // so a caller that deferred the refresh (refresh: false) knows it must Rebuild() rather than
+    // RefreshItems() — the stale row pool is the wrong template.
+    bool ApplyLayoutMode(bool refresh = true)
+    {
+        EnableInClassList(k_OneColumnModeClass, m_OneColumnMode);
+        ApplyHeaderLayoutMode();
+
+        bool templateChanged = m_MakeItemLayout != m_Layout;
+        if (templateChanged)
+        {
+            SyncMakeItemToLayout();
+            if (refresh)
+                Rebuild();
+        }
+        else if (refresh)
+        {
+            RefreshItems();
+        }
+        return templateChanged;
+    }
+
+    // The slim one-column header (value label + resizer hidden, key header spanning
+    // full width) is driven by USS on the list header's --one-column modifier. C# only has to
+    // clear the resizer-driven inline widths that ApplyHeaderColumnLayout stamps on
+    // the key/value header in two-column mode — otherwise those inline widths would
+    // outrank the USS flex-grow and pin the slim header to a stale column width.
+    // Returning to two-column recomputes them.
+    void ApplyHeaderLayoutMode()
+    {
+        if (m_ListHeader == null)
+            return;
+
+        // Per-view marker that scopes the slim-header USS to this header only (see
+        // k_ListHeaderOneColumnClass) instead of the leaky view-root --one-column class.
+        m_ListHeader.EnableInClassList(k_ListHeaderOneColumnClass, m_OneColumnMode);
+
+        // The single header column spans both key and value in one-column mode, so it
+        // reads "Key & Value" (honoring any DictionaryDisplayAttribute label overrides).
+        if (m_KeyHeaderLabel != null)
+            m_KeyHeaderLabel.text = m_OneColumnMode
+                ? DictionaryDrawer.Texts.GetOneColumnHeaderLabel(m_KeyLabelText, m_ValueLabelText)
+                : m_KeyLabelText;
+
+        if (m_OneColumnMode)
+        {
+            if (m_KeyHeader != null)
+            {
+                m_KeyHeader.style.width = StyleKeyword.Null;
+                m_KeyHeader.style.flexBasis = StyleKeyword.Null;
+            }
+            if (m_ValueLabel != null)
+            {
+                m_ValueLabel.style.width = StyleKeyword.Null;
+                m_ValueLabel.style.flexBasis = StyleKeyword.Null;
+            }
+        }
+        else
+        {
+            ApplyHeaderColumnLayout();
+        }
+    }
+
     void OnKeyHeaderClicked(ClickEvent evt)
     {
         m_SortAscending = !m_SortAscending;
@@ -806,8 +1137,16 @@ internal class DictionaryView : ListView
         m_SortAscending = true;
         UpdateSortIndicatorClass();
 
+        // Cache was just cleared, so the active layout reverts to the attribute default.
+        m_Layout = m_AttributeLayout;
+        // RebuildSortedIndicesAndRefresh() below performs the single binding pass. When the
+        // reset changes the template, that pass must Rebuild() the row pool: a plain
+        // RefreshItems() would rebind the recycled rows of the previous template (e.g. stacked
+        // one-column rows) without recreating them, corrupting the layout.
+        bool templateChanged = ApplyLayoutMode(refresh: false);
+
         m_ColumnResizer?.ResetToDefaultFraction();
-        RebuildSortedIndicesAndRefresh();
+        RebuildSortedIndicesAndRefresh(rebuild: templateChanged);
     }
 
     void UpdateSortIndicatorClass()
@@ -816,9 +1155,9 @@ internal class DictionaryView : ListView
         m_KeyHeader.EnableInClassList(MultiColumnHeaderColumn.sortedDescendingUssClassName, !m_SortAscending);
     }
 
-    void UpdateDuplicateKeyIconVisibility(VisualElement rowElement, int arrayIndex)
+    void UpdateDuplicateKeyIconVisibility(DictionaryRow row, int arrayIndex)
     {
-        var icon = rowElement?.Q<VisualElement>(className: k_DuplicateKeyIconClass);
+        var icon = row?.duplicateKeyIcon;
         if (icon == null)
             return;
 
@@ -847,9 +1186,8 @@ internal class DictionaryView : ListView
         var content = scrollView.contentContainer;
         foreach (var wrapper in content.Children())
         {
-            var dictElement = wrapper.Q("dict-element");
-            if (dictElement != null && dictElement.userData is int displayIndex && displayIndex < displayedItemCount)
-                UpdateDuplicateKeyIconVisibility(dictElement, DisplayToArrayIndex(displayIndex));
+            if (wrapper.Q<DictionaryRow>() is { } row && row.displayIndex >= 0 && row.displayIndex < displayedItemCount)
+                UpdateDuplicateKeyIconVisibility(row, DisplayToArrayIndex(row.displayIndex));
         }
     }
 
@@ -907,11 +1245,13 @@ internal class DictionaryView : ListView
         m_HashOfKeys = DictionaryDrawer.GetKeysContentHash(m_ArrayProperty);
     }
 
-    void RebuildSortedIndicesAndRefresh()
+    // Pass rebuild: true when the row template changed (one-column <-> two-column axis flip),
+    // so the binding pass recreates the row pool instead of rebinding stale rows in place.
+    void RebuildSortedIndicesAndRefresh(bool rebuild = false)
     {
         var selectedArrayIndices = GetSelectedArrayIndices();
         RebuildSortedIndices();
-        RefreshListView();
+        RefreshListView(rebuild);
         RestoreSelectionByArrayIndices(selectedArrayIndices);
         FocusContentContainer();
     }
@@ -951,13 +1291,18 @@ internal class DictionaryView : ListView
         }
     }
 
-    void RefreshListView()
+    void RefreshListView(bool rebuild = false)
     {
         UpdateDuplicateIndicesOnly();
         UpdateHeaderInfo();
         UpdateListViewItemsSource(displayedItemCount);
 
-        RefreshItems();
+        // Rebuild() recreates the row pool from the current makeItem; RefreshItems() only
+        // rebinds the existing rows. A template-axis flip needs the former (see ApplyLayoutMode).
+        if (rebuild)
+            Rebuild();
+        else
+            RefreshItems();
     }
 
     // Keeps m_ItemsSource sized to arraySize and wired up as the
