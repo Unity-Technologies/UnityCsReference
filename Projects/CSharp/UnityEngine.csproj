@@ -5622,7 +5622,7 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\ManagedMonolithic\BoundToNative\UnityEngine.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)../../artifacts/MonolithicEditorDlls/ManagedMonolithic/BoundToNative/UnityEngine.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>

@@ -123,6 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies) ||
                 p1.projectDependenciesEntry != p2.projectDependenciesEntry ||
                 p1.signature.status != p2.signature.status ||
+                p1.trustLevel != p2.trustLevel ||
                 p1.documentationUrl != p2.documentationUrl ||
                 p1.changelogUrl != p2.changelogUrl ||
                 p1.licensesUrl != p2.licensesUrl ||

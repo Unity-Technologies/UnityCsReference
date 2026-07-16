@@ -4910,7 +4910,13 @@ namespace UnityEditor
             MultiFloatFieldInternal(position, s_XYZLabels, s_Vector3Floats);
             if (EndChangeCheck())
             {
-                property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+                bool isFinite = (!float.IsNaN(s_Vector3Floats[0]) && !float.IsInfinity(s_Vector3Floats[0]) &&
+                    !float.IsNaN(s_Vector3Floats[1]) && !float.IsInfinity(s_Vector3Floats[1]) &&
+                    !float.IsNaN(s_Vector3Floats[2]) && !float.IsInfinity(s_Vector3Floats[2]));
+                if (isFinite)
+                {
+                    property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+                }
             }
         }
 

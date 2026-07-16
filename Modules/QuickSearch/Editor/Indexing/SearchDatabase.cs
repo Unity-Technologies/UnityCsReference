@@ -299,6 +299,10 @@ namespace UnityEditor.Search
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
         [NonSerialized] private ReaderWriterLockSlim m_ImmutableLock = new(LockRecursionPolicy.SupportsRecursion);
 
+        // True while we are cancelling/disposing pending tasks. Disposing a task invokes its resolver, which can
+        // call back into the incremental update scheduler; we must not start new work during teardown.
+        [NonSerialized] private bool m_DisposingTasks;
+
         private int m_IndexingRequestTrackerId;
         private int m_IncrementalIndexingRequestTrackerId;
 
@@ -650,6 +654,9 @@ namespace UnityEditor.Search
                 return;
             }
 
+            // Set default loading state
+            LoadingState = LoadState.Loading;
+
             Dispatcher.Enqueue(LoadAsync);
         }
 
@@ -670,12 +677,24 @@ namespace UnityEditor.Search
 
         internal void CancelAllPendingTasksImmediately()
         {
-            m_CurrentResolveTask?.Dispose();
-            m_CurrentResolveTask = null;
-            m_CurrentIncrementalLoadTask?.Dispose();
-            m_CurrentIncrementalLoadTask = null;
-            m_CurrentUpdateTask?.Dispose();
-            m_CurrentUpdateTask = null;
+            // Disposing a task runs its resolver (e.g. ResolveIncrementalUpdate), which calls back into
+            // ProcessIncrementalUpdates. Latch m_DisposingTasks so that re-entrancy cannot start a new update task
+            // that would then be orphaned (and left running against an index we are about to free).
+            var wasDisposingTasks = m_DisposingTasks;
+            m_DisposingTasks = true;
+            try
+            {
+                m_CurrentResolveTask?.Dispose();
+                m_CurrentResolveTask = null;
+                m_CurrentIncrementalLoadTask?.Dispose();
+                m_CurrentIncrementalLoadTask = null;
+                m_CurrentUpdateTask?.Dispose();
+                m_CurrentUpdateTask = null;
+            }
+            finally
+            {
+                m_DisposingTasks = wasDisposingTasks;
+            }
         }
 
         private void LoadAsync()
@@ -757,7 +776,7 @@ namespace UnityEditor.Search
         {
             if (!this)
             {
-                loadTask.Resolve(null, completed: true);
+                loadTask.Resolve(null);
                 return;
             }
 
@@ -899,7 +918,7 @@ namespace UnityEditor.Search
             }
             catch (Exception err)
             {
-                task.Resolve(err);
+                task.ResolveException(err);
             }
         }
 
@@ -950,23 +969,22 @@ namespace UnityEditor.Search
             }
 
             LoadingState = LoadState.Loading;
-            m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = new Task("Build", $"Building {name.ToLowerInvariant()} search index", OnBuildFinished, 1, this);
             ResolveArtifacts(m_CurrentResolveTask, (artifacts, task) =>
             {
                 task.RunThread(routine: () => CombineBuildArtifacts(artifacts, task),
-                    finalize: () => task.Resolve(new TaskData(null, index), completed: true));
+                    finalize: () => task.Resolve(new TaskData(null, index)));
             });
         }
 
         private void OnBuildFinished(Task task, TaskData data)
         {
-            m_CurrentResolveTask?.Dispose();
+            var taskCancelled = task?.Canceled() ?? false;
             m_CurrentResolveTask = null;
-            if (!this || task.canceled || task.error != null)
+            if (!this || taskCancelled || task?.error != null)
             {
-                LoadingState = task.canceled ? LoadState.Canceled : LoadState.Error;
+                LoadingState = taskCancelled ? LoadState.Canceled : LoadState.Error;
                 return;
             }
 
@@ -977,12 +995,12 @@ namespace UnityEditor.Search
 
         private void OnIncrementalLoadFinished(Task task, TaskData data)
         {
-            m_CurrentIncrementalLoadTask?.Dispose();
+            var taskCancelled = task?.Canceled() ?? false;
             m_CurrentIncrementalLoadTask = null;
-            if (!this || task.error != null)
+            if (!this || taskCancelled || task?.error != null)
             {
-                LoadingState = LoadState.Error;
-                if (task.error != null)
+                LoadingState = taskCancelled ? LoadState.Canceled : LoadState.Error;
+                if (task?.error != null)
                     Debug.LogException(task.error);
                 return;
             }
@@ -1116,6 +1134,12 @@ namespace UnityEditor.Search
             if (!this)
                 return;
 
+            // Do not start (or reschedule) work while tearing down pending tasks. A task resolver firing during
+            // disposal calls back here; starting a new update at that point creates a task the disposal has already
+            // passed, leaving a merge thread running against an index we are about to free.
+            if (m_DisposingTasks)
+                return;
+
             if (ready && !updating && !m_ImmutableLock.IsReadLockHeld)
             {
                 if (m_UpdateQueue.TryTake(out var diff))
@@ -1151,7 +1175,7 @@ namespace UnityEditor.Search
             ResolveArtifacts(updates, null, m_CurrentUpdateTask, (artifacts, task) =>
             {
                 task.RunThread(routine: () => MergeArtifacts(artifacts, task, changeset),
-                    finalize: () => task.Resolve(new TaskData(null, index), completed: true));
+                    finalize: () => task.Resolve(new TaskData(null, index)));
             });
         }
 
@@ -1189,7 +1213,6 @@ namespace UnityEditor.Search
         {
             if (task.error != null)
                 Debug.LogException(task.error);
-            m_CurrentUpdateTask?.Dispose();
             m_CurrentUpdateTask = null;
             Interlocked.Decrement(ref m_UpdateTasks);
             ProcessIncrementalUpdates();

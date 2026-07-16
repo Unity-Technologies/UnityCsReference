@@ -215,6 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+            m_UnityConnect.onOrganizationsChange += OnOrganizationsChange;
             m_PageManager.onActivePageChanged += OnActivePageChanged;
         }
 
@@ -228,12 +229,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified -= OnRegistriesModified;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+            m_UnityConnect.onOrganizationsChange -= OnOrganizationsChange;
             m_PageManager.onActivePageChanged -= OnActivePageChanged;
         }
 
         private void OnRegistriesModified()
         {
             Refresh(RefreshOptions.UpmSearch);
+        }
+
+        private void OnOrganizationsChange()
+        {
+            // We need to refresh to update UI here because the trust infos in PackageInfo would change when organization info changes
+            Refresh(RefreshOptions.UpmList);
         }
 
         private void OnRefreshOperation(IOperation operation)

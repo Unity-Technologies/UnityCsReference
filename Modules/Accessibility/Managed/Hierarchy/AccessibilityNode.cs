@@ -341,11 +341,11 @@ namespace UnityEngine.Accessibility
         ///- <see cref="AccessibilityRole.Dropdown"/>
         ///- <see cref="AccessibilityRole.ScrollView"/>
         ///
-        /// On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have
-        /// a value containing a number between 0 and 100 to accurately communicate the scroll percentage
-        /// to the screen reader. For scroll views that support both vertical and horizontal scrolling, the value
-        /// must contain two numbers, with the vertical scroll percentage listed first.
-        /// For example, a value of `50, 75` indicates that the scroll view represented by the node is scrolled 50% vertically and 75% horizontally.
+        /// On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have a value containing a
+        /// number between 0 and 100 to accurately communicate the scroll percentage to the screen reader. For scroll
+        /// views that support both vertical and horizontal scrolling, the value must contain two numbers, with the
+        /// vertical scroll percentage listed first. For example, a value of `50, 75` indicates that the scroll view
+        /// represented by the node is scrolled 50% vertically and 75% horizontally.
         /// </para>
         /// </remarks>
         public string value

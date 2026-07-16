@@ -8721,6 +8721,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexAccessGuard.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexAccessGuard.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactImporter.cs</Link>
     </Compile>
@@ -11675,7 +11678,7 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Target Name="GetTargetPath" DependsOnTargets="$(GetTargetPathDependsOn)" Returns="$(ReferencePath)">
     <PropertyGroup Condition="'$(DesignTimeBuild)' != 'true'">
-      <ReferencePath>$(ProjectDir)..\..\artifacts\MonolithicEditorDlls\ManagedMonolithic\BoundToNative\UnityEditor.dll</ReferencePath>
+      <ReferencePath>$(ProjectDir)../../artifacts/MonolithicEditorDlls/ManagedMonolithic/BoundToNative/UnityEditor.dll</ReferencePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
       <ReferencePath>@(TargetPathWithTargetPlatformMoniker)</ReferencePath>

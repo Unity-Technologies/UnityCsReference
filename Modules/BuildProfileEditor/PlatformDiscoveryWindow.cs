@@ -9,6 +9,7 @@ using UnityEditor.Build.Profile.Handlers;
 using UnityEditor.Modules;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using Application = UnityEngine.Device.Application;
 using Button = UnityEngine.UIElements.Button;
@@ -67,18 +68,18 @@ namespace UnityEditor.Build.Profile
         VisualElement m_HelpBoxWrapper;
         private BuildProfileRenameOverlay m_RenameOverlay;
 
-        public static void ShowWindow()
-        {
-            ShowWindowAndSelectPlatform();
-        }
-
         public static void ShowWindowAndSelectPlatform(GUID? platformGuid = null)
         {
             var window = GetWindow<PlatformDiscoveryWindow>(true, TrText.platformDiscoveryTitle, true);
             window.minSize = new Vector2(900, 500);
 
-            if (platformGuid != null)
-                window.SelectPlatform(platformGuid.Value);
+            if (platformGuid == null)
+            {
+                window.SelectDefaultPlatform();
+                return;
+            }
+
+            window.SelectPlatform(platformGuid.Value);
         }
 
         static void AddSelectedBuildProfiles(BuildProfileCard card, string customProfileName, string[] packagesToAdd)
@@ -154,6 +155,8 @@ namespace UnityEditor.Build.Profile
 
         public void CreateGUI()
         {
+            DisableViewDataPersistence();
+
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
             rootVisualElement.styleSheets.Add(windowUss);
@@ -249,13 +252,14 @@ namespace UnityEditor.Build.Profile
                 });
                 Close();
             };
-
-            // First element should match standalone platform.
-            cards.SetSelection(0);
         }
 
         void OnPackageInfoUpdated()
         {
+            if (m_SelectedCard.platformId.Empty())
+            {
+                return;
+            }
             OnCardSelected(m_SelectedCard);
         }
 
@@ -340,14 +344,21 @@ namespace UnityEditor.Build.Profile
         {
             for (var index = 0; index < m_Cards.Length; index++)
             {
-                var card = m_Cards[index];
-                if (card.platformId == platformGuid)
+                if (m_Cards[index].platformId == platformGuid)
                 {
                     var cardListView = rootVisualElement.Q<ListView>("cards-root-listview");
                     cardListView.SetSelection(index);
+                    OnCardSelected(m_Cards[index]);
                     break;
                 }
             }
+        }
+
+        void SelectDefaultPlatform()
+        {
+            var cardListView = rootVisualElement.Q<ListView>("cards-root-listview");
+            cardListView.SetSelection(0);
+            OnCardSelected(m_Cards[0]);
         }
 
         void ClearWindowData()

@@ -385,7 +385,8 @@ namespace UnityEditor.Build.Profile.Elements
                     type = ListItemType.InstalledPlatform,
                     data = profile,
                     text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
-                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformGuid)
+                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformGuid),
+                    platformId = profile.platformGuid // Ensure platformId is set for consistency
                 });
             }
 
