@@ -131,8 +131,8 @@ namespace UnityEditor.Build.Profile
                 OnBuildButtonClicked(BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
             };
             m_ActivateButton.clicked += OnActivateButtonClicked;
-            addBuildProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
-            listViewAddProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
+            addBuildProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
+            listViewAddProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
             playerSettingsButton.clicked += () =>
             {
                 SettingsService.OpenProjectSettings(k_PlayerSettingsWindow);
@@ -643,6 +643,15 @@ namespace UnityEditor.Build.Profile
         {
             if (m_WarningIcon == null)
                 m_WarningIcon = Background.FromTexture2D(BuildProfileModuleUtil.GetWarningIcon());
+        }
+
+        /// <summary>
+        /// Opens the platform discovery window, activates the first profile created.
+        /// </summary>
+        void OpenPlatformDiscoveryWindow()
+        {
+            var profile = m_BuildProfileSelection.Get(0);
+            PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile?.platformId);
         }
     }
 }

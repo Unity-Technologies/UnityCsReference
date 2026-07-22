@@ -44,8 +44,13 @@ namespace UnityEditor.Build.Profile
             var window = GetWindow<PlatformDiscoveryWindow>(true, TrText.platformDiscoveryTitle, true);
             window.minSize = new Vector2(900, 500);
 
-            if (platformId != null)
-                window.SelectPlatform(platformId);
+            if (platformId == null)
+            {
+                window.SelectDefaultPlatform();
+                return;
+            }
+
+            window.SelectPlatform(platformId);
         }
 
         public void OnDisable()
@@ -55,6 +60,8 @@ namespace UnityEditor.Build.Profile
 
         public void CreateGUI()
         {
+            DisableViewDataPersistence();
+
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
             rootVisualElement.styleSheets.Add(windowUss);
@@ -77,7 +84,7 @@ namespace UnityEditor.Build.Profile
 
             // Build dynamic visual elements.
             m_Cards = FindAllVisiblePlatforms();
-            var cards = CreateCardListView();
+            _ = CreateCardListView();
 
             // Register event handlers.
             m_AddBuildProfileButton.SetEnabled(true);
@@ -92,23 +99,27 @@ namespace UnityEditor.Build.Profile
                 });
                 Close();
             };
-
-            // First element should match standalone platform.
-            cards.SetSelection(0);
         }
 
         void SelectPlatform(string platformId)
         {
             for (var index = 0; index < m_Cards.Length; index++)
             {
-                var card = m_Cards[index];
-                if (card.platformId == platformId)
+                if (m_Cards[index].platformId == platformId)
                 {
                     var cardListView = rootVisualElement.Q<ListView>("cards-root-listview");
                     cardListView.SetSelection(index);
+                    OnCardSelected(m_Cards[index]);
                     break;
                 }
             }
+        }
+
+        void SelectDefaultPlatform()
+        {
+            var cardListView = rootVisualElement.Q<ListView>("cards-root-listview");
+            cardListView.SetSelection(0);
+            OnCardSelected(m_Cards[0]);
         }
 
         /// <summary>

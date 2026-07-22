@@ -147,6 +147,7 @@ namespace UnityEditor
         }
 
         // TODO: These should be made public when UIElements is no longer experimental.
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal void DisableViewDataPersistence()
         {
             m_EnableViewDataPersistence = false;

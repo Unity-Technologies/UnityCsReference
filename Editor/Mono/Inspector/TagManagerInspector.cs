@@ -208,6 +208,9 @@ namespace UnityEditor
                 var index = (int)textField.userData;
                 tagManager.SetSortingLayerName(index, evt.newValue);
                 serializedObject.ApplyModifiedProperties();
+
+                if (SortingLayer.onLayerChanged != null)
+                    SortingLayer.onLayerChanged();
             }
 
             sortingLayers.bindItem = (ve, index) =>
