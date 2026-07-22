@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// Makes a field for entering Scale.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Hidden)]
     internal partial class ScaleField : BaseField<Scale>
     {
         Vector3Field m_VectorField;

@@ -22,8 +22,8 @@
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
   <PropertyGroup>
-    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
-    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+    <HomeDir Condition="'$(HOME.Length)' != '0'">$(HOME)</HomeDir>
+    <HomeDir Condition="'$(USERPROFILE.Length)' != '0'">$(USERPROFILE)</HomeDir>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -3749,11 +3749,11 @@
     <Compile Include="..\..\Editor\Mono\SerializationDebug.bindings.cs">
       <Link>Editor\Mono\SerializationDebug.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Serialization\DictionarySerializationDuplicateEntriesCleanup.cs">
-      <Link>Editor\Mono\Serialization\DictionarySerializationDuplicateEntriesCleanup.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Serialization\DictionaryIgnoredEntriesCache.cs">
+      <Link>Editor\Mono\Serialization\DictionaryIgnoredEntriesCache.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Serialization\DuplicateEntriesForDictionaries.cs">
-      <Link>Editor\Mono\Serialization\DuplicateEntriesForDictionaries.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Serialization\DictionarySerializationIgnoredEntriesCleanup.cs">
+      <Link>Editor\Mono\Serialization\DictionarySerializationIgnoredEntriesCleanup.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SerializedObject.bindings.cs">
       <Link>Editor\Mono\SerializedObject.bindings.cs</Link>
@@ -5075,6 +5075,9 @@
     <Compile Include="..\..\Modules\BuildAnalysis\Data\Models\RootAssetStats.cs">
       <Link>Modules\BuildAnalysis\Data\Models\RootAssetStats.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\Services\BuildAnalysisAssembler.cs">
+      <Link>Modules\BuildAnalysis\Services\BuildAnalysisAssembler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\Services\BuildAnalysisFileSystem.cs">
       <Link>Modules\BuildAnalysis\Services\BuildAnalysisFileSystem.cs</Link>
     </Compile>
@@ -5110,6 +5113,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs">
       <Link>Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\ZebraEmptyBody.cs">
       <Link>Modules\BuildAnalysis\UI\Common\ZebraEmptyBody.cs</Link>
@@ -17063,7 +17069,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_7ef3\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_403c\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\UnityEditor.MSBuild.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\msbuild.host\Unity.BuildService.Host.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\Unity.BuildService.dll" />
@@ -17101,7 +17107,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen__ms8edw2/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_hd6w9cck/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

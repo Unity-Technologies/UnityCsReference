@@ -47,7 +47,7 @@ namespace UnityEditor.UIElements
     /// ]]>
     /// </code>
     /// </example>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/ToolbarBreadcrumbs.png")]
     public partial class ToolbarBreadcrumbs : VisualElement
     {

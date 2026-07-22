@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace UnityEditor.Build.Analysis
@@ -15,13 +16,16 @@ namespace UnityEditor.Build.Analysis
     /// </summary>
     internal static class RootAssetStatsCalculator
     {
+        static readonly ProfilerMarker s_CalculateMarker = new ProfilerMarker("RootAssetStatsCalculator.Calculate");
+
         public static RootAssetStats[] Calculate(ContentLayout layout)
         {
             if (layout == null)
                 throw new ArgumentNullException(nameof(layout));
             try
             {
-                return new Context(layout).Calculate();
+                using (s_CalculateMarker.Auto())
+                    return new Context(layout).Calculate();
             }
             catch (Exception e)
             {

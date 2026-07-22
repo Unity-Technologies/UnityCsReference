@@ -98,6 +98,9 @@ namespace UnityEditor.Build
         /// <summary>Index into <see cref="ContentLayout.SerializedFiles"/> for the file that contains this
         /// loadable, or -1 if it was dropped (e.g. server build shader references).</summary>
         public int SerializedFile = -1;
+
+        /// <summary>Local file id of the object in the output <see cref="SerializedFile"/>.</summary>
+        public long OutputLFID;
     }
 
     /// <summary>
@@ -180,8 +183,9 @@ namespace UnityEditor.Build
     [Serializable]
     internal class ContentLayout
     {
-        // Keep in sync with kContentLayoutVersion in WriteBuildOutput.cpp.
-        const int kContentLayoutVersion = 1;
+        // Keep in sync with kLayoutVersion in WriteBuildOutput.cpp.
+        // v1 -> v2: added OutputLFID to LoadableObjectIds entries.
+        const int kContentLayoutVersion = 2;
 
         /// <summary>Schema version of the ContentLayout.json file.</summary>
         public int Version;

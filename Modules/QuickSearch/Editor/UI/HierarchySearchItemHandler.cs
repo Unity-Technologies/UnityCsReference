@@ -596,7 +596,7 @@ namespace UnityEditor.Search
                 {
                     priority = childProvider.priority,
                     fetchLabel = (item, context) => item.label ?? item.id,
-                    fetchThumbnail = (item, context) => item.thumbnail,
+                    fetchThumbnail = childProvider.fetchThumbnail,
                 };
                 m_TokenSeparatedParentProviders[childProvider] = tokenSeparatedProvider;
             }

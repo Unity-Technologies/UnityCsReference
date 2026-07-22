@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for editing an <see cref="Gradient"/>. For more information, refer to [[wiki:UIE-uxml-element-GradientField|UXML element GradientField]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/GradientField.png")]
     public partial class GradientField : BaseField<Gradient>
     {

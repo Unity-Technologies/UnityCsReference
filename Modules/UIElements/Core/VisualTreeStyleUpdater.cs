@@ -367,9 +367,12 @@ namespace UnityEngine.UIElements
             if (isDirty)
             {
                 element.stylesDirty = true; // Propagate inherited dirty to this element's flag for children
-                ref var selectorData = ref element.layoutNode.SelectorData;
-                selectorData.triggerPseudoMask = PseudoStates.None;
-                selectorData.dependencyPseudoMask = PseudoStates.None;
+                unsafe
+                {
+                    ref var selectorData = ref *element.selectorDataPtr;
+                    selectorData.triggerPseudoMask = PseudoStates.None;
+                    selectorData.dependencyPseudoMask = PseudoStates.None;
+                }
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetCount;

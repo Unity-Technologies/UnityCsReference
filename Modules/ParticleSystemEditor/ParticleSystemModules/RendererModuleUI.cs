@@ -598,10 +598,6 @@ namespace UnityEditor
 
         private void ValidateMeshes()
         {
-            // Only validate when GPU instancing is not enabled (instancing doesn't require Read/Write)
-            if (m_EnableGPUInstancing != null && !m_EnableGPUInstancing.hasMultipleDifferentValues && m_EnableGPUInstancing.boolValue)
-                return;
-
             // Check all shown meshes
             foreach (SerializedProperty meshProp in m_ShownMeshes)
             {

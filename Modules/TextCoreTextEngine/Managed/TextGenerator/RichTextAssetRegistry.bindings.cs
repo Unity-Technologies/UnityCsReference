@@ -112,7 +112,8 @@ namespace UnityEngine.TextCore
 
             spriteAssetId = asset.entityId;
             metrics = ch.glyph != null ? ch.glyph.metrics : default;
-            scale = ch.scale;
+            float glyphScale = ch.glyph != null ? ch.glyph.scale : 1f;
+            scale = ch.scale * glyphScale;
             return index;
         }
 
@@ -153,6 +154,8 @@ namespace UnityEngine.TextCore
             for (int i = 0; i < name.Length; i++)
             {
                 ushort c = name[i];
+                // case-insensitive conversion
+                if (c >= 'a' && c <= 'z') c = (ushort)(c - 32);
                 hash ^= (byte)(c & 0xFF);
                 hash *= k_FnvPrime;
                 hash ^= (byte)((c >> 8) & 0xFF);

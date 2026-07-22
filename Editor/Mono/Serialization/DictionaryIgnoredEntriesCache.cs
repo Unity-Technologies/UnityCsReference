@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace UnityEngine
 {
     /// <summary>
-    /// Managed-side storage for duplicate dictionary entries (e.g. duplicate keys) per (instance, property path).
+    /// Managed-side storage for ignored dictionary entries (e.g. duplicate keys, null-key placeholders) per (instance, property path).
     /// Outer key is the hosting object's entity id; inner key is the formatted property path for the dictionary field.
     /// Editor and Editor play mode only; not included in the player.
     ///
@@ -15,13 +15,13 @@ namespace UnityEngine
     /// (<see cref="DictionarySerialization.SetEntriesFromSerializedData"/> and
     /// <see cref="DictionarySerialization.GetDictionaryEntriesForSerialization"/>) are reachable from worker
     /// threads through the native transfer pipeline, while editor cleanup
-    /// (<see cref="DictionarySerialization.PruneDuplicateDictionaryEntriesForUnloadedHosts"/>) and the public
+    /// (<see cref="DictionarySerialization.PruneIgnoredDictionaryEntriesForUnloadedHosts"/>) and the public
     /// <c>SerializedProperty.GetDictionaryDuplicateEntryIndices</c> API are invoked from the main thread.
     /// </summary>
-    internal sealed class DuplicateEntriesForDictionaries : IDuplicateEntriesForDictionaries
+    internal sealed class DictionaryIgnoredEntriesCache : IDictionaryIgnoredEntriesCache
     {
         private readonly object m_Lock = new object();
-        private readonly Dictionary<EntityId, Dictionary<string, DuplicateEntriesData>> m_DuplicateEntriesByHost = new Dictionary<EntityId, Dictionary<string, DuplicateEntriesData>>();
+        private readonly Dictionary<EntityId, Dictionary<string, IgnoredEntriesData>> m_IgnoredEntriesByHost = new Dictionary<EntityId, Dictionary<string, IgnoredEntriesData>>();
 
         public bool HasAnyCachedHosts
         {
@@ -29,36 +29,36 @@ namespace UnityEngine
             {
                 lock (m_Lock)
                 {
-                    return m_DuplicateEntriesByHost.Count > 0;
+                    return m_IgnoredEntriesByHost.Count > 0;
                 }
             }
         }
 
-        public void Store(EntityId hostId, string dictionaryPath, DuplicateEntriesData duplicateEntriesData)
+        public void Store(EntityId hostId, string dictionaryPath, IgnoredEntriesData ignoredEntriesData)
         {
-            if (duplicateEntriesData.indices == null || duplicateEntriesData.indices.Length == 0
-                || duplicateEntriesData.entries == null || duplicateEntriesData.entries.Length == 0)
+            if (ignoredEntriesData.indices == null || ignoredEntriesData.indices.Length == 0
+                || ignoredEntriesData.entries == null || ignoredEntriesData.entries.Length == 0)
                 return;
             if (hostId == EntityId.None || string.IsNullOrEmpty(dictionaryPath))
                 return;
             lock (m_Lock)
             {
-                if (!m_DuplicateEntriesByHost.TryGetValue(hostId, out var inner))
+                if (!m_IgnoredEntriesByHost.TryGetValue(hostId, out var inner))
                 {
-                    inner = new Dictionary<string, DuplicateEntriesData>();
-                    m_DuplicateEntriesByHost[hostId] = inner;
+                    inner = new Dictionary<string, IgnoredEntriesData>();
+                    m_IgnoredEntriesByHost[hostId] = inner;
                 }
-                inner[dictionaryPath] = duplicateEntriesData;
+                inner[dictionaryPath] = ignoredEntriesData;
             }
         }
 
-        public DuplicateEntriesData Get(EntityId hostId, string dictionaryPath)
+        public IgnoredEntriesData Get(EntityId hostId, string dictionaryPath)
         {
             if (hostId == EntityId.None || string.IsNullOrEmpty(dictionaryPath))
                 return default;
             lock (m_Lock)
             {
-                if (!m_DuplicateEntriesByHost.TryGetValue(hostId, out var inner))
+                if (!m_IgnoredEntriesByHost.TryGetValue(hostId, out var inner))
                     return default;
                 if (!inner.TryGetValue(dictionaryPath, out var data))
                     return default;
@@ -72,11 +72,11 @@ namespace UnityEngine
                 return;
             lock (m_Lock)
             {
-                if (!m_DuplicateEntriesByHost.TryGetValue(hostId, out var inner))
+                if (!m_IgnoredEntriesByHost.TryGetValue(hostId, out var inner))
                     return;
                 inner.Remove(dictionaryPath);
                 if (inner.Count == 0)
-                    m_DuplicateEntriesByHost.Remove(hostId);
+                    m_IgnoredEntriesByHost.Remove(hostId);
             }
         }
 
@@ -98,11 +98,11 @@ namespace UnityEngine
             // enumerating it; it is not a snapshot of the full host set.
             lock (m_Lock)
             {
-                if (m_DuplicateEntriesByHost.Count == 0)
+                if (m_IgnoredEntriesByHost.Count == 0)
                     return 0;
 
                 List<EntityId> toRemove = null;
-                foreach (EntityId hostId in m_DuplicateEntriesByHost.Keys)
+                foreach (EntityId hostId in m_IgnoredEntriesByHost.Keys)
                 {
                     if (hostId == EntityId.None || !Resources.IsInstanceLoaded(hostId))
                     {
@@ -115,18 +115,18 @@ namespace UnityEngine
                     return 0;
 
                 foreach (EntityId id in toRemove)
-                    m_DuplicateEntriesByHost.Remove(id);
+                    m_IgnoredEntriesByHost.Remove(id);
                 return toRemove.Count;
             }
         }
 
-        public bool HostHasDuplicateDictionaryEntries(EntityId hostId)
+        public bool HostHasIgnoredDictionaryEntries(EntityId hostId)
         {
             if (hostId == EntityId.None)
                 return false;
             lock (m_Lock)
             {
-                return m_DuplicateEntriesByHost.TryGetValue(hostId, out var inner) && inner.Count > 0;
+                return m_IgnoredEntriesByHost.TryGetValue(hostId, out var inner) && inner.Count > 0;
             }
         }
     }

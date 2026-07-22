@@ -482,6 +482,12 @@ namespace UnityEditor
 
             var previousMimallocEnabled = GetEffectiveMimallocEnabled(currentSettings);
             var buildTarget = m_EditorSelected ? "Editor" : m_ValidPlatforms[m_SelectedPlatform].defaultTarget.ToString();
+            // iOS/tvOS/visionOS never use mimalloc (the engine always selects the system allocator there),
+            // so the setting is shown disabled/off and emits no analytics.
+            bool isAppleNonDesktop = !m_EditorSelected &&
+                (m_ValidPlatforms[m_SelectedPlatform].defaultTarget == BuildTarget.iOS
+                || m_ValidPlatforms[m_SelectedPlatform].defaultTarget == BuildTarget.tvOS
+                || m_ValidPlatforms[m_SelectedPlatform].defaultTarget == BuildTarget.VisionOS);
 
             if (BeginGroup(0, Content.kMainAllocatorsTitle))
             {
@@ -496,7 +502,20 @@ namespace UnityEditor
                         OptionalVariableField(currentSettings, "m_ThreadAllocatorBlockSize", Content.kThreadAllocatorBlockSize);
                     }
 
-                    OptionalBooleanField(currentSettings, kMainAllocatorMimallocEnabledPropertyName, Content.kMainAllocatorMimallocEnabled);
+                    if (isAppleNonDesktop)
+                    {
+                        // Not supported on iOS/tvOS/visionOS: show disabled + off, and clear any stored override.
+                        var mimallocProp = currentSettings.FindPropertyRelative(kMainAllocatorMimallocEnabledPropertyName);
+                        if (mimallocProp.intValue != -1)
+                            mimallocProp.intValue = -1;
+                        using (new EditorGUI.DisabledScope(true))
+                            EditorGUILayout.Toggle(Content.kMainAllocatorMimallocEnabled, false);
+                        EditorGUILayout.HelpBox("Mimalloc is not supported on iOS, tvOS and visionOS. These platforms always use the system allocator.", MessageType.Info);
+                    }
+                    else
+                    {
+                        OptionalBooleanField(currentSettings, kMainAllocatorMimallocEnabledPropertyName, Content.kMainAllocatorMimallocEnabled);
+                    }
                 }
                 EndGroup();
                 if (BeginGroup(2, Content.kGfxAllocatorTitle))
@@ -571,7 +590,10 @@ namespace UnityEditor
             else
             {
                 EditorGUILayout.EndPlatformGrouping();
-                ApplyChangesAndSendMimallocAnalytics(currentSettings, previousMimallocEnabled, buildTarget);
+                if (isAppleNonDesktop)
+                    serializedObject.ApplyModifiedProperties(); // persist the cleared override, but emit no analytics (mimalloc isn't a user choice here)
+                else
+                    ApplyChangesAndSendMimallocAnalytics(currentSettings, previousMimallocEnabled, buildTarget);
             }
 
             EditorGUILayout.EndVertical();

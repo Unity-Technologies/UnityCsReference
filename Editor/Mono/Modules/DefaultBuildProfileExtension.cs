@@ -41,6 +41,13 @@ namespace UnityEditor.Modules
             EditorGUIUtility.TrTextContent("LZ4HC"),
         };
         static readonly GUIContent k_InstallInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
+
+        // Development build infobox
+        static readonly string developmentBuildInfoBoxText = string.Format(L10n.Tr("Starting in Unity 6.6, part of the Development Build setting has been split out into the Managed Code Variant player setting. <a href={0}>Click here</a> for more information."), kDevelopmentBuildInfoBoxUrl);
+        static readonly string developmentBuildInfoBoxButtonText = L10n.Tr("Dismiss");
+        const string kDevelopmentBuildInfoBoxUrl = "https://discussions.unity.com/t/-/1721546";
+        const string kDevelopmentBuildInfoBoxPreferenceKey = "developmentBuildInfoBoxDismissed";
+
         protected SerializedProperty m_Development = null;
         SerializedProperty m_ConnectProfiler = null;
         SerializedProperty m_BuildWithDeepProfilingSupport = null;
@@ -130,8 +137,62 @@ namespace UnityEditor.Modules
             settingsGUI.Add(platformSettingsGUI);
             if (BuildPlayerWindow.WillDrawMultiplayerBuildOptions())
                 settingsGUI.Add(CreateMultiplayerSettingsGUI(serializedObject.targetObject as BuildProfile));
+
+            AddDevelopmentBuildCheckbox(settingsGUI, serializedObject, rootProperty);
+
             settingsGUI.Add(commonSettingsGUI);
             return settingsGUI;
+        }
+
+        private void AddDevelopmentBuildCheckbox(VisualElement parent, SerializedObject serializedObject, SerializedProperty rootProperty)
+        {
+            void AssignPropertiesIfNeeded()
+            {
+                if (m_Development == null || !m_Development.isValid)
+                    m_Development = FindPlatformSettingsPropertyAssert(rootProperty, "m_Development");
+            }
+
+            AssignPropertiesIfNeeded();
+
+            parent.Add(new IMGUIContainer(() =>
+            {
+                if (serializedObject == null || !serializedObject.isValid || !ShouldDrawDevelopmentPlayerCheckbox())
+                    return;
+
+                var oldLabelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = labelWidth;
+                try
+                {
+                    serializedObject.UpdateIfRequiredOrScript();
+                    AssignPropertiesIfNeeded();
+                    ShowDevelopmentPlayerCheckbox();
+                    serializedObject.ApplyModifiedProperties();
+                }
+                finally
+                {
+                    EditorGUIUtility.labelWidth = oldLabelWidth;
+                }
+            }));
+
+            if (!EditorPrefs.GetBool(kDevelopmentBuildInfoBoxPreferenceKey, false))
+                parent.Add(CreateDevelopmentBuildInfoBox());
+        }
+
+        private VisualElement CreateDevelopmentBuildInfoBox()
+        {
+            var infoBox = new HelpBox();
+            infoBox.style.flexDirection = FlexDirection.Row;
+
+            infoBox.buttonText = developmentBuildInfoBoxButtonText;
+            infoBox.onButtonClicked += () =>
+            {
+                infoBox.style.display = DisplayStyle.None;
+                EditorPrefs.SetBool(kDevelopmentBuildInfoBoxPreferenceKey, true);
+            };
+
+            infoBox.text = developmentBuildInfoBoxText;
+
+            return infoBox;
         }
 
         public virtual VisualElement CreatePlatformSettingsGUI(
@@ -238,11 +299,6 @@ namespace UnityEditor.Modules
 
         public void ShowCommonBuildOptions(BuildProfileWorkflowState workflowState)
         {
-            if (ShouldDrawDevelopmentPlayerCheckbox())
-            {
-                ShowDevelopmentPlayerCheckbox();
-            }
-
             if (ShouldDrawLinkTimeOptimization())
             {
                 ShowLinkTimeOptimization();

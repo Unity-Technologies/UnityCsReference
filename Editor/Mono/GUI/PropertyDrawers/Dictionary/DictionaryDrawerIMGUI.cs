@@ -69,15 +69,15 @@ internal partial class DictionaryDrawer
             public const float k_CellLabelWidthFraction = 0.35f;
             public const float k_CellLabelMinWidth = 80f;
             public const float k_CellControlMinWidth = 40f;
-            public const float k_DuplicateKeyIconLeftMargin = 4f;
-            public const float k_DuplicateKeyIconTopOffset = 2f;
-            public const float k_DuplicateKeyIconSize = 14f;
+            public const float k_KeyWarningIconLeftMargin = 4f;
+            public const float k_KeyWarningIconTopOffset = 2f;
+            public const float k_KeyWarningIconSize = 14f;
             public const float k_HandleWidth = 6f;
             public const float k_SortArrowSize = 12f;
             public const float k_SelectionBorderWidth = 3f;
             public const float k_VerticalScrollbarWidth = 16f;
-            public const float k_DuplicatesHelpBoxTopMargin = 4f;
-            public const float k_DuplicatesHelpBoxBottomMargin = 4f;
+            public const float k_IgnoredHelpBoxTopMargin = 4f;
+            public const float k_IgnoredHelpBoxBottomMargin = 4f;
 
             public static readonly GUIStyle headerBackground = "RL Header";
             public static readonly GUIStyle boxBackground = "RL Background";
@@ -128,6 +128,7 @@ internal partial class DictionaryDrawer
         public readonly SerializedProperty arrayProperty;
         public SortedIndexMap sortedIndices = SortedIndexMap.Empty;
         public readonly HashSet<int> duplicateEntryIndices = new HashSet<int>();
+        public readonly HashSet<int> nullKeyEntryIndices = new HashSet<int>();
         // Count of items the TreeView is currently rendering. Equal to
         // sortedIndices.Length by invariant; may differ from arrayProperty.arraySize
         // between an external array mutation (Undo, script, prefab apply,
@@ -205,7 +206,7 @@ internal partial class DictionaryDrawer
         // PerformSortToggle doesn't depend on selection that may have moved by
         // the time it runs.
         public bool deferredWorkScheduled;
-        public bool needsDuplicateRefresh;
+        public bool needsMarkerRefresh;
         public bool pendingSortToggle;
         public int[] pendingSortToggleSelectionArrayIndices;
         public bool needsTreeViewFocus;
@@ -290,7 +291,7 @@ internal partial class DictionaryDrawer
             arrayProperty = GetArrayProperty(dictionaryProperty);
             sortedIndices = SortedIndexMap.Build(arrayProperty, sortAscending);
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
-            TryRefreshDuplicateIndicesInto(dictionaryProperty, duplicateEntryIndices);
+            TryRefreshDuplicateAndNullKeyIndicesInto(dictionaryProperty, duplicateEntryIndices, nullKeyEntryIndices);
 
             treeView = new DictionaryTreeView(this);
 
@@ -331,7 +332,7 @@ internal partial class DictionaryDrawer
                 RegisterCacheEvictionOnDetach(imguiContainer, key);
 
             // Bind a property-change listener on the IMGUIContainer so any inspector
-            // showing this dictionary re-sorts and refreshes its duplicate markers when
+            // showing this dictionary re-sorts and refreshes its key warning markers when
             // the SerializedObject is mutated elsewhere (e.g. a key edit in a second
             // inspector pinned to the same target). Stubs (multi-edit) have no
             // dictionaryProperty to track, so we only register on fully-initialized
@@ -439,8 +440,8 @@ internal partial class DictionaryDrawer
             }
 
             float footer = Styles.k_FooterHeight + Styles.k_FooterSpacing;
-            float duplicatesBlock = CalcDuplicatesHelpBoxHeight(availableWidth);
-            return foldoutLine + columnHeader + rowsArea + 1f + footer + duplicatesBlock;
+            float ignoredBlock = CalcIgnoredHelpBoxHeight(availableWidth);
+            return foldoutLine + columnHeader + rowsArea + 1f + footer + ignoredBlock;
         }
 
         void MeasureRowHeightsIfNeeded()
@@ -462,14 +463,16 @@ internal partial class DictionaryDrawer
             }
         }
 
-        float CalcDuplicatesHelpBoxHeight(float availWidth)
+        float CalcIgnoredHelpBoxHeight(float availWidth)
         {
-            if (duplicateEntryIndices.Count == 0 || availWidth <= 0f)
+            int duplicateCount = duplicateEntryIndices.Count;
+            int nullKeyCount = nullKeyEntryIndices.Count;
+            if (duplicateCount + nullKeyCount == 0 || availWidth <= 0f)
                 return 0f;
 
-            string text = Texts.GetDuplicatesHelpBoxText(duplicateEntryIndices.Count);
+            string text = Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
             float helpBoxHeight = DrawerEditorGUI.GetHelpBoxWithButtonHeight(MessageType.Warning, text, availWidth);
-            return Styles.k_DuplicatesHelpBoxTopMargin + helpBoxHeight  + Styles.k_DuplicatesHelpBoxBottomMargin;
+            return Styles.k_IgnoredHelpBoxTopMargin + helpBoxHeight  + Styles.k_IgnoredHelpBoxBottomMargin;
         }
 
         void OnGUI(Rect position, SerializedProperty property, GUIContent label, bool isMultiEdit)
@@ -605,7 +608,7 @@ internal partial class DictionaryDrawer
         void ClearAllPendingFlags()
         {
             needsReload = false;
-            needsDuplicateRefresh = false;
+            needsMarkerRefresh = false;
             pendingSortToggle = false;
             pendingSortToggleSelectionArrayIndices = null;
             StopInteractionCheck();
@@ -691,7 +694,7 @@ internal partial class DictionaryDrawer
         // Runs strictly between OnGUI passes. Order matters: sort toggle runs first
         // because it rebuilds sortedIndices wholesale, which makes a subsequent gated
         // reload either a no-op or correctly idempotent; needsReload then
-        // needsDuplicateRefresh follow in decreasing structural impact. The
+        // needsMarkerRefresh follow in decreasing structural impact. The
         // interaction gate only applies to needsReload — SortToggle originates from
         // an explicit user click that is itself the interaction, so re-arming would
         // just spin.
@@ -728,16 +731,16 @@ internal partial class DictionaryDrawer
                     // Pure value-only edit. Duplicates are determined solely by key
                     // content, so a same-hash refresh would also be a no-op.
                     needsReload = false;
-                    needsDuplicateRefresh = false;
+                    needsMarkerRefresh = false;
                     StopInteractionCheck();
                 }
                 else if (EditorInteractionMonitor.IsReadyToApplyDeferredChanges(null))
                 {
                     PerformReload();
                     needsReload = false;
-                    // A full reload also recomputes duplicateEntryIndices, so a pending
-                    // duplicate-only refresh is subsumed and can be cleared.
-                    needsDuplicateRefresh = false;
+                    // A full reload also recomputes both marker sets, so a pending
+                    // marker-only refresh is subsumed and can be cleared.
+                    needsMarkerRefresh = false;
                     needsRepaint = true;
                     StopInteractionCheck();
                 }
@@ -746,19 +749,19 @@ internal partial class DictionaryDrawer
                     // Interaction is in flight (text edit, hot control, picker open) so
                     // start a EditorApplication.update handler that checks when
                     // the user is done editing at a coarse interval and re-enters
-                    // ScheduleDeferredStructuralWork once the gate opens. The duplicate
-                    // refresh below still runs ungated so the per-row duplicate-key
-                    // icons and the "X duplicates" count keep updating live as the
+                    // ScheduleDeferredStructuralWork once the gate opens. The marker
+                    // refresh below still runs ungated so the per-row key warning
+                    // icons and the "X ignored" count keep updating live as the
                     // user types.
-                    needsDuplicateRefresh = true;
+                    needsMarkerRefresh = true;
                     StartInteractionCheck();
                 }
             }
 
-            if (needsDuplicateRefresh)
+            if (needsMarkerRefresh)
             {
-                needsDuplicateRefresh = false;
-                if (TryRefreshDuplicateIndicesInto(dictionaryProperty, duplicateEntryIndices))
+                needsMarkerRefresh = false;
+                if (TryRefreshDuplicateAndNullKeyIndicesInto(dictionaryProperty, duplicateEntryIndices, nullKeyEntryIndices))
                     needsRepaint = true;
             }
 
@@ -991,29 +994,31 @@ internal partial class DictionaryDrawer
             var footerRect = new Rect(position.x, y + Styles.k_FooterSpacing - 1f, position.width, Styles.k_FooterHeight);
             DrawFooter(footerRect, property);
 
-            DrawDuplicatesHelpBox(position, footerRect.yMax);
+            DrawIgnoredHelpBox(position, footerRect.yMax);
         }
 
-        void DrawDuplicatesHelpBox(Rect position, float startY)
+        void DrawIgnoredHelpBox(Rect position, float startY)
         {
-            if (duplicateEntryIndices.Count == 0)
+            int duplicateCount = duplicateEntryIndices.Count;
+            int nullKeyCount = nullKeyEntryIndices.Count;
+            if (duplicateCount + nullKeyCount == 0)
                 return;
 
-            string text = Texts.GetDuplicatesHelpBoxText(duplicateEntryIndices.Count);
+            string text = Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
             float helpBoxHeight = DrawerEditorGUI.GetHelpBoxWithButtonHeight(MessageType.Warning, text, position.width);
-            float helpBoxY = startY + Styles.k_DuplicatesHelpBoxTopMargin;
+            float helpBoxY = startY + Styles.k_IgnoredHelpBoxTopMargin;
             var helpBoxRect = new Rect(position.x, helpBoxY, position.width, helpBoxHeight);
 
-            if (DrawerEditorGUI.HelpBoxWithButton(helpBoxRect, MessageType.Warning, text, Texts.SelectFirstDuplicateButtonLabel))
-                SelectFirstDuplicate();
+            if (DrawerEditorGUI.HelpBoxWithButton(helpBoxRect, MessageType.Warning, text, Texts.SelectFirstIgnoredButtonLabel))
+                SelectFirstIgnored();
         }
 
-        void SelectFirstDuplicate()
+        void SelectFirstIgnored()
         {
             if (treeView == null)
                 return;
 
-            int firstDisplayIndex = FindFirstDuplicateDisplayIndex(duplicateEntryIndices, sortedIndices);
+            int firstDisplayIndex = FindFirstIgnoredDisplayIndex(duplicateEntryIndices, nullKeyEntryIndices, sortedIndices);
             if (firstDisplayIndex < 0)
                 return;
 
@@ -1024,13 +1029,15 @@ internal partial class DictionaryDrawer
         void DrawFoldoutHeader(Rect rect, SerializedProperty property, GUIContent label)
         {
             int duplicateCount = duplicateEntryIndices?.Count ?? 0;
+            int nullKeyCount = nullKeyEntryIndices?.Count ?? 0;
+            int ignoredCount = duplicateCount + nullKeyCount;
             int itemCount = displayedItemCount;
 
             string countText = Texts.GetItemCountText(itemCount);
-            string duplicateText = duplicateCount > 0
-                ? Texts.GetDuplicateCountText(duplicateCount)
+            string ignoredText = ignoredCount > 0
+                ? Texts.GetIgnoredCountText(ignoredCount)
                 : "";
-            string infoText = $"{countText}{duplicateText}";
+            string infoText = $"{countText}{ignoredText}";
 
             var infoSize = EditorStyles.miniLabel.CalcSize(new GUIContent(infoText));
             var infoRect = new Rect(rect.xMax - infoSize.x - 4f, rect.y, infoSize.x, rect.height);
@@ -1124,7 +1131,7 @@ internal partial class DictionaryDrawer
 
             sortedIndices = SortedIndexMap.Build(arrayProperty, sortAscending);
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
-            TryRefreshDuplicateIndicesInto(dictionaryProperty, duplicateEntryIndices);
+            TryRefreshDuplicateAndNullKeyIndicesInto(dictionaryProperty, duplicateEntryIndices, nullKeyEntryIndices);
             if (needsHeightClassification)
                 ClassifyRowHeights();
             treeView.Reload();
@@ -1151,7 +1158,7 @@ internal partial class DictionaryDrawer
 
             sortedIndices = SortedIndexMap.Build(arrayProperty, sortAscending);
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
-            TryRefreshDuplicateIndicesInto(dictionaryProperty, duplicateEntryIndices);
+            TryRefreshDuplicateAndNullKeyIndicesInto(dictionaryProperty, duplicateEntryIndices, nullKeyEntryIndices);
             treeView.Reload();
 
             if (displayedItemCount <= 0 || newSelectedDisplayIndex < 0)
@@ -1202,7 +1209,7 @@ internal partial class DictionaryDrawer
             int currentSize = arrayProperty.arraySize;
             sortedIndices = SortedIndexMap.Build(arrayProperty, sortAscending);
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
-            TryRefreshDuplicateIndicesInto(dictionaryProperty, duplicateEntryIndices);
+            TryRefreshDuplicateAndNullKeyIndicesInto(dictionaryProperty, duplicateEntryIndices, nullKeyEntryIndices);
             // Classification only sets flags (which cells are dynamic); it never measures, so it
             // is safe here in the deferred (container-less) path. It must run before Reload so
             // InitializeLazyHeights allocates per-row tracking for a dictionary that became
@@ -1812,14 +1819,14 @@ internal partial class DictionaryDrawer
             {
                 keyRect.yMin += Styles.k_RowVerticalPadding;
                 keyRect.yMax -= Styles.k_RowVerticalPadding;
-                var markerKind = DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_Instance.duplicateEntryIndices);
+                var markerKind = DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_Instance.duplicateEntryIndices, m_Instance.nullKeyEntryIndices);
                 if (markerKind != DictionaryKeyUtility.KeyMarkerKind.None)
-                    DrawDuplicateKeyIcon(keyRect);
+                    DrawKeyWarningIcon(keyRect, DictionaryKeyUtility.GetMarkerTooltip(markerKind));
                 float keyLeft = Styles.k_KeyLeftMargin;
                 float minFieldWidth = GetCellMinFieldWidth(keyProp, m_Instance.keyHasCustomDrawer);
                 var keyFieldRect = BuildCellFieldRect(keyRect, keyLeft + Styles.k_CellHorizontalPadding, Styles.k_CellHorizontalPadding, minFieldWidth);
                 EditorGUIUtility.labelWidth = ComputeCellLabelWidth(keyFieldRect.width);
-                // Key edits no longer flip needsReload / needsDuplicateRefresh from here.
+                // Key edits no longer flip needsReload / needsMarkerRefresh from here.
                 // The TrackPropertyValue listener registered on the IMGUIContainer in
                 // GetOrCreate handles both same-inspector and cross-inspector
                 // updates uniformly, so this draw site only renders the field.
@@ -1844,9 +1851,9 @@ internal partial class DictionaryDrawer
 
                 float keyH = GetPropertyFieldHeight(keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
                 var keyCellRect = new Rect(rowRect.x, y, rowRect.width, keyH);
-                var markerKind = DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_Instance.duplicateEntryIndices);
+                var markerKind = DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_Instance.duplicateEntryIndices, m_Instance.nullKeyEntryIndices);
                 if (markerKind != DictionaryKeyUtility.KeyMarkerKind.None)
-                    DrawDuplicateKeyIcon(keyCellRect);
+                    DrawKeyWarningIcon(keyCellRect, DictionaryKeyUtility.GetMarkerTooltip(markerKind));
                 float keyMinFieldWidth = GetCellMinFieldWidth(keyProp, m_Instance.keyHasCustomDrawer);
                 var keyFieldRect = BuildCellFieldRect(keyCellRect, contentLeft, Styles.k_CellHorizontalPadding, keyMinFieldWidth);
                 EditorGUIUtility.labelWidth = ComputeCellLabelWidth(keyFieldRect.width);
@@ -1864,7 +1871,7 @@ internal partial class DictionaryDrawer
                 if (m_Instance.useValueFoldouts)
                 {
                     bool expanded = valueProp != null && valueProp.isExpanded;
-                    const float foldoutArrowAdjustment = 4f; // Move foldout arrow out to align with duplicate-key warning icon in the gutter. Still clickable in entire label width
+                    const float foldoutArrowAdjustment = 4f; // Move foldout arrow out to align with the key warning icon in the gutter. Still clickable in entire label width
                     Rect foldoutRect = new Rect(labelRect.x - foldoutArrowAdjustment, labelRect.y, labelRect.width + foldoutArrowAdjustment, labelRect.height);
                     bool newExpanded = EditorGUI.Foldout(foldoutRect, expanded, GUIContent.none, true);
 
@@ -2085,23 +2092,23 @@ internal partial class DictionaryDrawer
             }
 
             // Draws a fixed-size warning icon at the top of the key column gutter for
-            // rows whose key is a duplicate. Position and size mirror UITK
-            // .unity-dictionary-view__duplicate-key-icon so both backends look identical. The
+            // rows excluded from the runtime dictionary (duplicate or null key). Position and
+            // size mirror UITK .unity-dictionary-view__duplicate-key-icon so both backends look identical. The
             // GUI.Label call paints nothing on its own (GUIStyle.none + empty text) but
             // registers the hit area for the hover tooltip.
-            static void DrawDuplicateKeyIcon(Rect cellRect)
+            static void DrawKeyWarningIcon(Rect cellRect, string tooltip)
             {
                 var icon = EditorGUIUtility.GetHelpIcon(MessageType.Warning);
                 if (icon == null)
                     return;
 
                 var iconRect = new Rect(
-                    cellRect.x + Styles.k_DuplicateKeyIconLeftMargin,
-                    cellRect.y + Styles.k_DuplicateKeyIconTopOffset,
-                    Styles.k_DuplicateKeyIconSize,
-                    Styles.k_DuplicateKeyIconSize);
+                    cellRect.x + Styles.k_KeyWarningIconLeftMargin,
+                    cellRect.y + Styles.k_KeyWarningIconTopOffset,
+                    Styles.k_KeyWarningIconSize,
+                    Styles.k_KeyWarningIconSize);
                 GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
-                GUI.Label(iconRect, EditorGUIUtility.TempContent(string.Empty, Texts.DuplicateMarkerTooltip), GUIStyle.none);
+                GUI.Label(iconRect, EditorGUIUtility.TempContent(string.Empty, tooltip), GUIStyle.none);
             }
 
             protected override bool CanMultiSelect(TreeViewItem item)

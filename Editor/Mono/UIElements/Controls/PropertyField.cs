@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements
     /// A SerializedProperty wrapper VisualElement that, on [[BindingExtensions.Bind|Bind()]], will generate the correct field elements with the correct binding paths. For more information, refer to [[wiki:UIE-uxml-element-PropertyField|UXML element PropertyField]].
     /// </summary>
     [Icon("UIToolkit/Icons/PropertyField.png")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     public partial class PropertyField : VisualElement, IBindable
     {
         static readonly BindingId labelProperty = nameof(label);
@@ -837,56 +837,71 @@ namespace UnityEditor.UIElements
         private static readonly Action<BaseListView, string> SetListViewHeaderTitle = (view, s) => view.headerTitle = s;
         private static readonly Action<Foldout, string> SetFoldoutText = (f, s) => f.text = s;
 
+        private EventCallback<KeyDownEvent> m_DebugAltKeyDownCallback;
+        private EventCallback<KeyUpEvent> m_DebugAltKeyUpCallback;
+
         private void ConfigureDebugHelpers<TField, TValue>(TField field) where TField : BaseField<TValue>
         {
             field.RegisterCallback<AttachToPanelEvent, Action<TField, string>>(AttachDebugCallbackOnPanel, (f, s) => f.label = s);
-            field.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<TField>);
+            field.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel);
         }
 
         private void ConfigureFoldoutDebugHelpers(Foldout view)
         {
             view.RegisterCallback<AttachToPanelEvent, Action<Foldout, string>>(AttachDebugCallbackOnPanel, SetFoldoutText);
-            view.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<Foldout>);
+            view.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel);
         }
 
         private void ConfigureListViewDebugHelpers(BaseListView view)
         {
             view.RegisterCallback<AttachToPanelEvent, Action<BaseListView, string>>(AttachDebugCallbackOnPanel, SetListViewHeaderTitle);
-            view.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<BaseListView>);
+            view.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel);
         }
 
         private void AttachDebugCallbackOnPanel<T>(AttachToPanelEvent evt, Action<T, string> setLabelAction)
-            where T:VisualElement
+            where T : VisualElement
         {
             if (evt.destinationPanel == null)
                 return;
-            var p = evt.destinationPanel;
+
+            var visualTree = evt.destinationPanel.visualTree;
             var field = evt.elementTarget as T;
-            var propertyPath = serializedProperty.propertyPath;
-            var regularLabel = label ?? serializedProperty.localizedDisplayName;
-            p.visualTree.RegisterCallback<KeyDownEvent, T>((e, f) =>
+
+            UnregisterDebugAltCallbacks(visualTree);
+
+            // A pooled list item can re-attach before being rebound, so read serializedProperty on key events and guard with isValid. (UUM-143676)
+            m_DebugAltKeyDownCallback = e =>
             {
-                if (e.altKey)
-                {
-                    setLabelAction.Invoke(f, propertyPath);
-                }
-            }, field, TrickleDown.TrickleDown);
-            p.visualTree.RegisterCallback<KeyUpEvent, T>((e, f) =>
+                if (e.altKey && serializedProperty.isValid)
+                    setLabelAction.Invoke(field, serializedProperty.propertyPath);
+            };
+            m_DebugAltKeyUpCallback = e =>
             {
                 if (!e.altKey)
-                {
-                    setLabelAction.Invoke(f, regularLabel);
-                }
-            }, field, TrickleDown.TrickleDown);
+                    setLabelAction.Invoke(field, label ?? (serializedProperty.isValid ? serializedProperty.localizedDisplayName : null));
+            };
+
+            visualTree.RegisterCallback(m_DebugAltKeyDownCallback, TrickleDown.TrickleDown);
+            visualTree.RegisterCallback(m_DebugAltKeyUpCallback, TrickleDown.TrickleDown);
         }
 
-        private void DetachDebugCallbackFromPanel<T>(DetachFromPanelEvent evt)
-            where T:VisualElement
+        private void DetachDebugCallbackFromPanel(DetachFromPanelEvent evt)
         {
             if (evt.originPanel != null)
+                UnregisterDebugAltCallbacks(evt.originPanel.visualTree);
+        }
+
+        private void UnregisterDebugAltCallbacks(VisualElement visualTree)
+        {
+            if (m_DebugAltKeyDownCallback != null)
             {
-                evt.originPanel.visualTree.UnregisterCallback<AttachToPanelEvent, Action<T, string>>(AttachDebugCallbackOnPanel);
-                evt.originPanel.visualTree.UnregisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<T>);
+                visualTree.UnregisterCallback(m_DebugAltKeyDownCallback, TrickleDown.TrickleDown);
+                m_DebugAltKeyDownCallback = null;
+            }
+            if (m_DebugAltKeyUpCallback != null)
+            {
+                visualTree.UnregisterCallback(m_DebugAltKeyUpCallback, TrickleDown.TrickleDown);
+                m_DebugAltKeyUpCallback = null;
             }
         }
 

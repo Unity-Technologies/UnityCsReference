@@ -43,6 +43,10 @@ namespace Unity.UI.Builder
             };
         }
 
+        static bool IsUnityBuiltInEditorAssembly(Assembly assembly) =>
+            assembly.GetCustomAttribute<AssemblyIsEditorAssembly>() != null &&
+            assembly.GetName().Name.StartsWith("UnityEditor");
+
         static bool AllowPackageType(Type type)
         {
             var packageInfo = PackageInfo.FindForAssembly(type.Assembly);
@@ -72,6 +76,19 @@ namespace Unity.UI.Builder
 
                     if (elementAttribute == null || elementAttribute.visibility == LibraryVisibility.Default)
                     {
+                        if (!Unsupported.IsDeveloperMode())
+                        {
+                            var hidden = IsUnityBuiltInEditorAssembly(elementType.Assembly);
+                            if (!hidden)
+                            {
+                                var a = elementType.Assembly.GetCustomAttribute<UILibraryVisibilityAttribute>();
+                                if (a != null && a.Visibility == LibraryVisibility.Hidden)
+                                    hidden = true;
+                            }
+                            if (hidden)
+                                continue;
+                        }
+
                         // Avoid adding our own internal factories (like Package Manager templates).
                         if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Exists(elementType.Namespace.StartsWith))
                         {

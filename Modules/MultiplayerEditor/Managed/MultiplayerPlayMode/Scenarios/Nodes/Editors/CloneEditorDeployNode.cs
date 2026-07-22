@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Multiplayer.Internal;
 
@@ -14,6 +15,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     class CloneEditorDeployNode : ExecutionNode
     {
+        // Guards against saving assets more than once when several clones deploy in the same run.
+        static bool s_SavingAssets;
+
         bool m_HasConnected;
 
         [SerializeReference] public NodeInput<int> PlayerInstanceIndex;
@@ -39,6 +43,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            // Persist dirty assets/project settings before deploying so the clone reads current
+            // values on launch. 
+            // Guarded so a single save happens even when multiple clones deploy in the same run.
+            if (!s_SavingAssets)
+            {
+                s_SavingAssets = true;
+                AssetDatabase.SaveAssets();
+
+                await Task.Yield();
+                s_SavingAssets = false;
+            }
+
             var playerInstanceIndex = GetInput(PlayerInstanceIndex);
             var player = MultiplayerPlaymode.Players[playerInstanceIndex];
             var args = new List<string> { CommandLineParameters.k_ScenarioClone };

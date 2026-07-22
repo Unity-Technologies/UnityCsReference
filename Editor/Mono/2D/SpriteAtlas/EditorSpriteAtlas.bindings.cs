@@ -37,6 +37,9 @@ namespace UnityEditor.U2D
 
         [FreeFunction("SpriteAtlasExtensions::CleanupAtlasPacking")]
         extern public static void CleanupAtlasPacking();
+
+        [FreeFunction("SpriteAtlasExtensions::OnSpriteAtlasSettingsChanged")]
+        extern internal static void OnSpriteAtlasSettingsChanged();
     }
 
 

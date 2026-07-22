@@ -12,6 +12,8 @@ using UnityEngine.Bindings;
 
 namespace Unity.AI.Navigation.LowLevel;
 
+///<summary>Object used for doing navigation operations in a <see cref="NavWorld" />.</summary>
+
 [NativeContainer]
 [StructLayout(LayoutKind.Sequential)]
 [NativeHeader("Modules/AI/LowLevel/NavWorld.bindings.h")]
@@ -28,7 +30,7 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     internal readonly bool isNull => m_NavMeshQuery == IntPtr.Zero;
 
     internal AtomicSafetyHandle m_Safety;
-    internal uint m_SafetyOpenListId;
+    internal uint m_SafetyUniqueId;
 
     internal static readonly int k_StaticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NavQueryBuffer>();
 
@@ -44,6 +46,7 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     // Keep in sync with kMaxNavMeshNodePoolSize = USHRT_MAX from NavMeshNode.h
     const int k_MaxNavMeshNodePoolSize = ushort.MaxValue;
 
+    ///<exclude />
     public NavQueryBuffer(NavWorld world, Allocator allocator, int maxNodesToVisit = 1024)
     {
         if (!world.IsValid())
@@ -80,12 +83,13 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
 
         AddQuerySafety(m_NavMeshQuery, m_Safety);
 
-        m_SafetyOpenListId = GetOpenListId(m_NavMeshQuery);
-        var brokenNodePoolInit = m_SafetyOpenListId == 0;
+        m_SafetyUniqueId = GetUniqueId(m_NavMeshQuery);
+        var brokenNodePoolInit = m_SafetyUniqueId == 0;
         if (brokenNodePoolInit)
-            m_SafetyOpenListId = uint.MaxValue;
+            m_SafetyUniqueId = uint.MaxValue;
     }
 
+    ///<exclude />
     [WriteAccessRequired]
     public void Dispose()
     {
@@ -120,39 +124,44 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
 
     static extern void Destroy(IntPtr navMeshQuery);
 
+    ///<exclude />
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public static bool operator ==(NavQueryBuffer left, NavQueryBuffer right)
     {
         return left.Equals(right);
     }
 
+    ///<exclude />
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public static bool operator !=(NavQueryBuffer left, NavQueryBuffer right)
     {
         return !left.Equals(right);
     }
 
+    ///<exclude />
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly bool Equals(NavQueryBuffer other)
     {
         var pointersEqual = m_NavMeshQuery == other.m_NavMeshQuery && m_NavMeshUniqueId == other.m_NavMeshUniqueId;
 
-        pointersEqual = pointersEqual && m_SafetyOpenListId == other.m_SafetyOpenListId;
+        pointersEqual = pointersEqual && m_SafetyUniqueId == other.m_SafetyUniqueId;
         return pointersEqual;
     }
 
+    ///<exclude />
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly override bool Equals(object obj)
     {
         return obj is NavQueryBuffer other && Equals(other);
     }
 
+    ///<exclude />
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly override int GetHashCode()
     {
         var hashCode = HashCode.Combine(m_NavMeshQuery, m_NavMeshUniqueId);
 
-        hashCode = HashCode.Combine(hashCode, m_SafetyOpenListId);
+        hashCode = HashCode.Combine(hashCode, m_SafetyUniqueId);
         return hashCode;
     }
 
@@ -160,7 +169,7 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     static extern void RemoveQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern uint GetOpenListId(IntPtr navMeshQuery);
+    static extern uint GetUniqueId(IntPtr navMeshQuery);
 
     [NativeMethod(IsThreadSafe = true)]
     static extern bool HasNodePool(IntPtr navMeshQuery);
@@ -189,8 +198,8 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
                 throw new ObjectDisposedException(k_NoInternalQueryAllocatedErrorMessage);
         }
 
-        var safetyIdAtKnownAddress = GetOpenListId(m_NavMeshQuery);
-        if (safetyIdAtKnownAddress != m_SafetyOpenListId)
+        var currentUniqueId = GetUniqueId(m_NavMeshQuery);
+        if (currentUniqueId != m_SafetyUniqueId)
             throw new ObjectDisposedException(k_NoInternalQueryAllocatedErrorMessage);
     }
 }

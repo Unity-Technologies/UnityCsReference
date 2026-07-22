@@ -22,7 +22,7 @@ namespace UnityEditor.UIElements
     /// <remarks>
     /// SA: [[Button]], [[Toolbar]]
     /// </remarks>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/ToolbarButton.png")]
     public partial class ToolbarButton : Button
     {

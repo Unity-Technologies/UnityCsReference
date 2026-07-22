@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -16,6 +17,9 @@ namespace UnityEditor.Build.Analysis
 
     internal sealed class BuildReportConverter : IBuildReportConverter
     {
+        static readonly ProfilerMarker s_ExtractAssetsMarker = new ProfilerMarker("BuildReportConverter.ExtractAssets");
+        static readonly ProfilerMarker s_GetImporterTypesMarker = new ProfilerMarker("BuildReportConverter.GetImporterTypes");
+
         public BuildReportData Convert(BuildReport buildReport)
         {
             if (buildReport == null)
@@ -91,40 +95,45 @@ namespace UnityEditor.Build.Analysis
 
         private static BuildReportAssetData[] ExtractAssets(BuildReport buildReport)
         {
-            if (buildReport == null)
-                return Array.Empty<BuildReportAssetData>();
-
-            var contentSummary = buildReport.contentSummary;
-            if (contentSummary == null)
-                return Array.Empty<BuildReportAssetData>();
-
-            var assetStats = contentSummary.assetStats;
-            if (assetStats.Length == 0)
-                return Array.Empty<BuildReportAssetData>();
-
-            var guids = new GUID[assetStats.Length];
-            for (var i = 0; i < assetStats.Length; i++)
-                guids[i] = assetStats[i].sourceAssetGUID;
-
-            var importerTypes = AssetDatabase.GetImporterTypes(guids);
-            Debug.Assert(importerTypes.Length == assetStats.Length);
-
-            var assets = new BuildReportAssetData[assetStats.Length];
-            for (var i = 0; i < assetStats.Length; i++)
+            using (s_ExtractAssetsMarker.Auto())
             {
-                var stats = assetStats[i];
-                assets[i] = new BuildReportAssetData
-                {
-                    Path = stats.sourceAssetPath ?? string.Empty,
-                    GUID = stats.sourceAssetGUID,
-                    OutputSizeBytes = stats.size,
-                    ObjectCount = stats.objectCount,
-                    ResourceCount = stats.resourceCount,
-                    ImporterTypeName = importerTypes[i]?.Name,
-                };
-            }
+                if (buildReport == null)
+                    return Array.Empty<BuildReportAssetData>();
 
-            return assets;
+                var contentSummary = buildReport.contentSummary;
+                if (contentSummary == null)
+                    return Array.Empty<BuildReportAssetData>();
+
+                var assetStats = contentSummary.assetStats;
+                if (assetStats.Length == 0)
+                    return Array.Empty<BuildReportAssetData>();
+
+                var guids = new GUID[assetStats.Length];
+                for (var i = 0; i < assetStats.Length; i++)
+                    guids[i] = assetStats[i].sourceAssetGUID;
+
+                Type[] importerTypes;
+                using (s_GetImporterTypesMarker.Auto())
+                    importerTypes = AssetDatabase.GetImporterTypes(guids);
+                Debug.Assert(importerTypes.Length == assetStats.Length);
+
+                var assets = new BuildReportAssetData[assetStats.Length];
+                for (var i = 0; i < assetStats.Length; i++)
+                {
+                    var stats = assetStats[i];
+                    assets[i] = new BuildReportAssetData
+                    {
+                        Path = stats.sourceAssetPath ?? string.Empty,
+                        GUID = stats.sourceAssetGUID,
+                        OutputSizeBytes = stats.size,
+                        ObjectCount = stats.objectCount,
+                        ResourceCount = stats.resourceCount,
+                        ImporterTypeName = importerTypes[i]?.Name,
+                    };
+                }
+
+                return assets;
+            }
         }
 
         private static string ToSeverityString(LogType messageType)

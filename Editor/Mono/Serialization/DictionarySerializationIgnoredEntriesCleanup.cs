@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 namespace UnityEditor
 {
     /// <summary>
-    /// Clears duplicate dictionary serialization cache when hosts are destroyed. Uses <see cref="ObjectChangeEvents"/>
+    /// Clears ignored dictionary serialization cache when hosts are destroyed. Uses <see cref="ObjectChangeEvents"/>
     /// for undo-recorded destroys, <see cref="EditorSceneManager.sceneClosed"/> when a scene is closed in the Editor
     /// (including <see cref="EditorSceneManager.CloseScene"/> in Edit Mode), and <see cref="SceneManager.sceneUnloaded"/>
     /// for runtime unloads (e.g. Play Mode). Prunes map entries whose host is no longer in memory.
@@ -18,31 +18,31 @@ namespace UnityEditor
     // 'partial' is required by the [OnCodeLoaded] source generator (UAC0031); the
     // generated companion holds the registration that wires Initialize() into the
     // lifecycle pipeline.
-    internal static partial class DictionarySerializationDuplicateEntriesCleanup
+    internal static partial class DictionarySerializationIgnoredEntriesCleanup
     {
         // [OnCodeLoaded] runs before SerializableManagedRefsUtilities::RestoreBackups, ensuring the
-        // managed cache is non-null when restored duplicate dictionary entries are written into it.
+        // managed cache is non-null when restored ignored dictionary entries are written into it.
         // The previous [InitializeOnLoad] hook ran *after* RestoreBackups and silently dropped those
         // entries on every script-recompile domain reload.
         [OnCodeLoaded]
         static void Initialize()
         {
-            EnsureDuplicateEntriesCacheInitialized();
+            EnsureIgnoredEntriesCacheInitialized();
             ObjectChangeEvents.changesPublished += OnObjectChanges;
             EditorSceneManager.sceneClosed += OnEditorSceneClosed;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
         /// <summary>
-        /// Constructs the editor-only duplicate-entry storage and assigns it to the runtime field.
+        /// Constructs the editor-only ignored-entry storage and assigns it to the runtime field.
         /// Idempotent: re-entry leaves the existing instance untouched.
         /// </summary>
-        internal static void EnsureDuplicateEntriesCacheInitialized()
+        internal static void EnsureIgnoredEntriesCacheInitialized()
         {
-            if (DictionarySerialization.s_DuplicateEntriesForDictionaries != null)
+            if (DictionarySerialization.s_IgnoredEntriesForDictionaries != null)
                 return;
-            // Runtime does not construct storage (player stays null); wire the editor-only implementation here so edit mode and play mode in the Editor preserve duplicate dictionary rows.
-            DictionarySerialization.s_DuplicateEntriesForDictionaries = new DuplicateEntriesForDictionaries();
+            // Runtime does not construct storage (player stays null); wire the editor-only implementation here so edit mode and play mode in the Editor preserve duplicate-key and null-key dictionary rows.
+            DictionarySerialization.s_IgnoredEntriesForDictionaries = new DictionaryIgnoredEntriesCache();
         }
 
         static void OnObjectChanges(ref ObjectChangeEventStream stream)
@@ -58,7 +58,7 @@ namespace UnityEditor
             if (!sawDestroy)
                 return;
 
-            PruneStaleDuplicateHosts();
+            PruneStaleIgnoredHosts();
         }
 
         static void OnEditorSceneClosed(Scene scene) => PruneAfterSceneRemovedFromHierarchyIfNeeded();
@@ -67,15 +67,15 @@ namespace UnityEditor
 
         static void PruneAfterSceneRemovedFromHierarchyIfNeeded()
         {
-            if (!DictionarySerialization.HasAnyCachedDuplicateDictionaryHosts())
+            if (!DictionarySerialization.HasAnyCachedIgnoredDictionaryHosts())
                 return;
 
-            PruneStaleDuplicateHosts();
+            PruneStaleIgnoredHosts();
         }
 
-        static void PruneStaleDuplicateHosts()
+        static void PruneStaleIgnoredHosts()
         {
-            DictionarySerialization.PruneDuplicateDictionaryEntriesForUnloadedHosts();
+            DictionarySerialization.PruneIgnoredDictionaryEntriesForUnloadedHosts();
         }
     }
 }

@@ -67,25 +67,29 @@ partial struct LayoutNode
     public void AddChild(LayoutNode child)
     {
         Assert.IsFalse(child.IsUndefined);
-        Assert.IsTrue(child.Parent.IsUndefined);
 
-        var firstChild = FirstChild;
-        if (firstChild.IsUndefined)
+        ref var childData = ref m_Access.GetNodeData(child.m_Handle);
+        Assert.IsTrue(childData.Parent.IsUndefined);
+
+        ref var data = ref m_Access.GetNodeData(m_Handle);
+        var firstChildHandle = data.FirstChild;
+        if (firstChildHandle.IsUndefined)
         {
-            child.PrevSiblingRing = child;
-            child.NextSibling = Undefined;
-            FirstChild = child;
+            childData.PrevSiblingRing = child.m_Handle;
+            childData.NextSibling = UnmanagedDataHandle.Undefined;
+            data.FirstChild = child.m_Handle;
         }
         else
         {
-            var oldLastChild = firstChild.PrevSiblingRing;
-            firstChild.PrevSiblingRing = child;
-            child.PrevSiblingRing = oldLastChild;
-            oldLastChild.NextSibling = child;
-            child.NextSibling = Undefined;
+            ref var firstChildData = ref m_Access.GetNodeData(firstChildHandle);
+            var oldLastChildHandle = firstChildData.PrevSiblingRing;
+            firstChildData.PrevSiblingRing = child.m_Handle;
+            childData.PrevSiblingRing = oldLastChildHandle;
+            m_Access.GetNodeData(oldLastChildHandle).NextSibling = child.m_Handle;
+            childData.NextSibling = UnmanagedDataHandle.Undefined;
         }
 
-        child.Parent = this;
+        childData.Parent = m_Handle;
         MarkDirty();
     }
 
@@ -97,21 +101,26 @@ partial struct LayoutNode
     public void InsertBefore(LayoutNode nextChild, LayoutNode child)
     {
         Assert.IsFalse(child.IsUndefined);
-        Assert.IsTrue(child.Parent.IsUndefined);
         Assert.IsFalse(nextChild.IsUndefined);
-        if (nextChild.Parent != this)
+
+        ref var childData = ref m_Access.GetNodeData(child.m_Handle);
+        Assert.IsTrue(childData.Parent.IsUndefined);
+
+        ref var nextChildData = ref m_Access.GetNodeData(nextChild.m_Handle);
+        if (nextChildData.Parent != m_Handle)
             throw new ArgumentException("Argument nextChild is not a child of this node.");
 
-        var oldNextPrevSibling = nextChild.PrevSiblingRing;
-        nextChild.PrevSiblingRing = child;
-        child.PrevSiblingRing = oldNextPrevSibling;
-        child.NextSibling = nextChild;
-        if (nextChild == FirstChild)
-            FirstChild = child;
+        ref var data = ref m_Access.GetNodeData(m_Handle);
+        var oldNextPrevSiblingHandle = nextChildData.PrevSiblingRing;
+        nextChildData.PrevSiblingRing = child.m_Handle;
+        childData.PrevSiblingRing = oldNextPrevSiblingHandle;
+        childData.NextSibling = nextChild.m_Handle;
+        if (nextChild.m_Handle == data.FirstChild)
+            data.FirstChild = child.m_Handle;
         else
-            oldNextPrevSibling.NextSibling = child;
+            m_Access.GetNodeData(oldNextPrevSiblingHandle).NextSibling = child.m_Handle;
 
-        child.Parent = this;
+        childData.Parent = m_Handle;
         MarkDirty();
     }
 
@@ -122,29 +131,34 @@ partial struct LayoutNode
     public void RemoveChild(LayoutNode child)
     {
         Assert.IsFalse(child.IsUndefined);
-        if (child.Parent != this)
+
+        ref var childData = ref m_Access.GetNodeData(child.m_Handle);
+        if (childData.Parent != m_Handle)
             throw new ArgumentException("Argument child is not a child of this node.");
 
-        var firstChild = FirstChild;
-        if (firstChild == child)
+        ref var data = ref m_Access.GetNodeData(m_Handle);
+        var firstChildHandle = data.FirstChild;
+        if (firstChildHandle == child.m_Handle)
         {
-            var secondChild = firstChild.NextSibling;
-            if (!secondChild.IsUndefined)
-                secondChild.PrevSiblingRing = firstChild.PrevSiblingRing;
-            FirstChild = secondChild;
+            var secondChildHandle = childData.NextSibling;
+            if (!secondChildHandle.IsUndefined)
+                m_Access.GetNodeData(secondChildHandle).PrevSiblingRing = childData.PrevSiblingRing;
+            data.FirstChild = secondChildHandle;
         }
         else
         {
-            var prevChild = child.PrevSiblingRing;
-            var nextChild = child.NextSibling;
-            prevChild.NextSibling = nextChild;
-            if (!nextChild.IsUndefined)
-                nextChild.PrevSiblingRing = prevChild;
+            var prevChildHandle = childData.PrevSiblingRing;
+            var nextChildHandle = childData.NextSibling;
+            m_Access.GetNodeData(prevChildHandle).NextSibling = nextChildHandle;
+            if (!nextChildHandle.IsUndefined)
+                m_Access.GetNodeData(nextChildHandle).PrevSiblingRing = prevChildHandle;
             else
-                firstChild.PrevSiblingRing = prevChild;
+                m_Access.GetNodeData(firstChildHandle).PrevSiblingRing = prevChildHandle;
         }
 
-        child.PrevSiblingRing = child.NextSibling = child.Parent = Undefined;
+        childData.PrevSiblingRing = UnmanagedDataHandle.Undefined;
+        childData.NextSibling = UnmanagedDataHandle.Undefined;
+        childData.Parent = UnmanagedDataHandle.Undefined;
         MarkDirty();
     }
 
@@ -153,20 +167,24 @@ partial struct LayoutNode
     /// </summary>
     public void Clear()
     {
-        var child = FirstChild;
+        ref var data = ref m_Access.GetNodeData(m_Handle);
+        var childHandle = data.FirstChild;
 
         // Empty list
-        if (child.IsUndefined)
+        if (childHandle.IsUndefined)
             return;
 
         do
         {
-            var oldNextSibling = child.NextSibling;
-            child.PrevSiblingRing = child.NextSibling = child.Parent = Undefined;
-            child = oldNextSibling;
-        } while (!child.IsUndefined);
+            ref var childData = ref m_Access.GetNodeData(childHandle);
+            var nextSiblingHandle = childData.NextSibling;
+            childData.PrevSiblingRing = UnmanagedDataHandle.Undefined;
+            childData.NextSibling = UnmanagedDataHandle.Undefined;
+            childData.Parent = UnmanagedDataHandle.Undefined;
+            childHandle = nextSiblingHandle;
+        } while (!childHandle.IsUndefined);
 
-        FirstChild = Undefined;
+        data.FirstChild = UnmanagedDataHandle.Undefined;
         MarkDirty();
     }
 

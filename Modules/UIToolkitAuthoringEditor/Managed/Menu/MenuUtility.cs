@@ -33,21 +33,33 @@ static class MenuUtility
     /// scene or create a new one a the last root sibling and add the element to its targeted <see cref="VisualTreeAsset"/>.
     /// </summary>
     public static void AddElementAsSibling(Type elementType, string variantName = null)
-        => AddElement(elementType, addAsSibling: true, parentNewGameObjectUnderSelection: false, variantName);
+        => AddElement(AddRequest.ForType(elementType, variantName), addAsSibling: true, parentNewGameObjectUnderSelection: false);
 
     /// <summary>
     /// While adding from a context menu, we will prioritize trying to find (and possible add) a <see cref="IPanelComponent"/>
     /// component on the selected game object and add the element to its targeted <see cref="VisualTreeAsset"/>.
     /// </summary>
     public static void AddElementAsLastChild(Type elementType, string variantName = null)
-        => AddElement(elementType, addAsSibling: false, parentNewGameObjectUnderSelection: true, variantName);
+        => AddElement(AddRequest.ForType(elementType, variantName), addAsSibling: false, parentNewGameObjectUnderSelection: true);
 
-    static void AddElement(Type elementType, bool addAsSibling, bool parentNewGameObjectUnderSelection, string variantName = null)
+    /// <summary>
+    /// Adds a UXML document as a template instance beside the current selection.
+    /// </summary>
+    public static void AddTemplateAsSibling(VisualTreeAsset template)
+        => AddElement(AddRequest.ForTemplate(template), addAsSibling: true, parentNewGameObjectUnderSelection: false);
+
+    /// <summary>
+    /// Adds a UXML document as a template instance under the current selection.
+    /// </summary>
+    public static void AddTemplateAsLastChild(VisualTreeAsset template)
+        => AddElement(AddRequest.ForTemplate(template), addAsSibling: false, parentNewGameObjectUnderSelection: true);
+
+    static void AddElement(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection)
     {
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
         {
             var parentVea = ResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling);
-            ExecuteAdd(activeStage, elementType, parentVea, variantName);
+            ExecuteAdd(activeStage, request, parentVea);
             return;
         }
 
@@ -62,7 +74,7 @@ static class MenuUtility
                 when vtaSelection.panelComponent.visualTreeAsset:
             {
                 var sceneContext = new VisualTreeAssetEditingContext(vtaSelection.panelComponent.visualTreeAsset, vtaSelection.panelComponent.panelSettings);
-                EnterStageAndAdd(sceneContext, elementType, parentVea: null, variantName);
+                EnterStageAndAdd(sceneContext, request, parentVea: null);
                 return;
             }
             case VisualElementSelection { Element: not null } ves
@@ -71,12 +83,12 @@ static class MenuUtility
                 var vea = GetFirstSuitableVisualElementAsset(ves.Element, elementContext.EditedVisualTreeAsset);
                 if (addAsSibling)
                     vea = (VisualElementAsset)vea?.parentAsset;
-                EnterStageAndAdd(elementContext, elementType, vea, variantName);
+                EnterStageAndAdd(elementContext, request, vea);
                 return;
             }
         }
 
-        AddInAppropriatePanelRendererComponent(Selection.activeGameObject, elementType, parentNewGameObjectUnderSelection, variantName);
+        AddInAppropriatePanelRendererComponent(Selection.activeGameObject, request, parentNewGameObjectUnderSelection);
     }
 
     static bool TryResolveNewVisualTreeAssetPath(out string assetPath)
@@ -111,7 +123,7 @@ static class MenuUtility
             DialogIconType.Info);
     }
 
-    static void AddInAppropriatePanelRendererComponent(GameObject selectedGo, Type elementType, bool parentNewGameObjectUnderSelection, string variantName = null)
+    static void AddInAppropriatePanelRendererComponent(GameObject selectedGo, AddRequest request, bool parentNewGameObjectUnderSelection)
     {
         var existingPanel = (IPanelComponent)selectedGo?.GetComponent<PanelRenderer>()
                             ?? selectedGo?.GetComponent<UIDocument>();
@@ -122,7 +134,7 @@ static class MenuUtility
             if (existingPanel?.visualTreeAsset != null)
             {
                 var ctx = new VisualTreeAssetEditingContext(existingPanel.visualTreeAsset, existingPanel.panelSettings);
-                EnterStageAndAdd(ctx, elementType, parentVea: null, variantName);
+                EnterStageAndAdd(ctx, request, parentVea: null);
                 return;
             }
 
@@ -130,12 +142,12 @@ static class MenuUtility
             // don't leave an empty Panel sitting next to the new one); otherwise create a new
             // GameObject - parented under the selection only when explicitly requested.
             if (TryCreatePanelRendererAndAsset(null, existingPanel, out var newContext))
-                EnterStageAndAdd(newContext, elementType, parentVea: null, variantName);
+                EnterStageAndAdd(newContext, request, parentVea: null);
         }
         else if (parentNewGameObjectUnderSelection)
         {
             if (TryCreatePanelRendererAndAsset(selectedGo, null, out var newContext))
-                EnterStageAndAdd(newContext, elementType, parentVea: null, variantName);
+                EnterStageAndAdd(newContext, request, parentVea: null);
         }
         else
         {
@@ -143,12 +155,12 @@ static class MenuUtility
             if (panelComponent != null)
             {
                 var sceneContext = new VisualTreeAssetEditingContext(panelComponent.visualTreeAsset, panelComponent.panelSettings);
-                EnterStageAndAdd(sceneContext, elementType, parentVea: null, variantName);
+                EnterStageAndAdd(sceneContext, request, parentVea: null);
                 return;
             }
 
             if (TryCreatePanelRendererAndAsset(null, reusableComponent: null, out var newContext))
-                EnterStageAndAdd(newContext, elementType, parentVea: null, variantName);
+                EnterStageAndAdd(newContext, request, parentVea: null);
         }
     }
 
@@ -316,15 +328,49 @@ static class MenuUtility
         return true;
     }
 
-    static void EnterStageAndAdd(VisualTreeAssetEditingContext context, Type elementType, VisualElementAsset parentVea, string variantName = null)
+    static void EnterStageAndAdd(VisualTreeAssetEditingContext context, AddRequest request, VisualElementAsset parentVea)
     {
         var stage = VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Arrow);
-        ExecuteAdd(stage, elementType, parentVea, variantName);
+        ExecuteAdd(stage, request, parentVea);
     }
 
-    static void ExecuteAdd(VisualElementEditingStage stage, Type elementType, VisualElementAsset parentVea, string variantName = null)
+    static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea)
     {
-        AddElementCommand.Execute(CommandSources.Menus, elementType, stage.EditedVisualTreeAsset, parentVea, -1, variantName);
+        if (request.IsTemplate)
+        {
+            if (stage.Context.WillCauseCircularDependency(request.Template))
+            {
+                Debug.LogWarning($"Cannot add '{request.Template.name}' here because it would create a circular reference.");
+                return;
+            }
+
+            var parentAsset = parentVea ?? stage.EditedVisualTreeAsset.visualTree;
+            AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, -1, new[] { request.Template });
+        }
+        else
+        {
+            AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, -1, request.VariantName);
+        }
+
         stage.RequestRefresh();
+    }
+
+    readonly struct AddRequest
+    {
+        public readonly Type ElementType;
+        public readonly string VariantName;
+        public readonly VisualTreeAsset Template;
+
+        AddRequest(Type elementType, string variantName, VisualTreeAsset template)
+        {
+            ElementType = elementType;
+            VariantName = variantName;
+            Template = template;
+        }
+
+        public bool IsTemplate => Template != null;
+
+        public static AddRequest ForType(Type elementType, string variantName) => new(elementType, variantName, null);
+        public static AddRequest ForTemplate(VisualTreeAsset template) => new(null, null, template);
     }
 }

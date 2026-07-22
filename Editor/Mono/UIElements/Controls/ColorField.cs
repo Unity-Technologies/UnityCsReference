@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for selecting a color. For more information, refer to [[wiki:UIE-uxml-element-ColorField|UXML element ColorField]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/ColorField.png")]
     public partial class ColorField : BaseField<Color>
     {

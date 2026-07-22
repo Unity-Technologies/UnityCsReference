@@ -4,12 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
 {
     internal class BuildAnalysisTabHost
     {
+        static readonly ProfilerMarker s_SetSelectionMarker = new ProfilerMarker("BuildAnalysisTabHost.SetSelection");
+
         private readonly TabView m_TabView;
         private readonly List<TabRegistration> m_TabRegistrations = new List<TabRegistration>();
 
@@ -51,8 +54,11 @@ namespace UnityEditor.Build.Analysis
 
         public void SetSelection(BuildEntry selection, BuildAnalysis analysis)
         {
-            foreach (var registration in m_TabRegistrations)
-                registration.TabView.SetSelection(selection, analysis);
+            using (s_SetSelectionMarker.Auto())
+            {
+                foreach (var registration in m_TabRegistrations)
+                    registration.TabView.SetSelection(selection, analysis);
+            }
         }
 
         public void NotifyCurrentTabVisibility()

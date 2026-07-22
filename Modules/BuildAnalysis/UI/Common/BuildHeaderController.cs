@@ -33,12 +33,10 @@ namespace UnityEditor.Build.Analysis
             m_TimeRange    = headerRoot.Q<Label>("time-range");
         }
 
-        public void Bind(BuildEntry selection, BuildAnalysis analysis)
+        public void Bind(BuildEntry selection)
         {
-            var summary = analysis.Summary;
-
             m_Title.text = selection.BuildName ?? string.Empty;
-            m_Subtitle.text = $"{selection.Platform} • {summary.BuildType}";
+            m_Subtitle.text = $"{selection.Platform} • {selection.BuildType}";
             m_PlatformIcon.image = IconUtility.GetPlatformIcon(selection.Platform);
             m_StatusText.text = selection.BuildResult == BuildResult.Succeeded ? "Success" : "Failure";
             m_TimeRange.text = FormatTimeRange(selection.BuildStartedAt, selection.TotalTimeMs);

@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// A LayerMaskField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerMaskField|UXML element LayerMaskField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerMaskField.png")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     public partial class LayerMaskField : MaskField
     {
         [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices)), HideInInspector]

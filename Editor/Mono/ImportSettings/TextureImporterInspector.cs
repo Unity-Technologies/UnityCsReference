@@ -342,9 +342,9 @@ namespace UnityEditor
 
             public readonly GUIContent spritePixelsPerUnit = EditorGUIUtility.TrTextContent("Pixels Per Unit", "How many pixels in the sprite correspond to one unit in the world.");
             public readonly GUIContent spriteExtrude = EditorGUIUtility.TrTextContent("Extrude Edges", "How much empty area to leave around the sprite in the generated mesh.");
-            public readonly GUIContent spriteTriangulation = EditorGUIUtility.TrTextContent("Sprite Mesh Triangulation Method", "Use Legacy for old method. And UTess for Delaunary with Subdivision");
-            public readonly GUIContent spriteOutline = EditorGUIUtility.TrTextContent("Sprite Outline Detail", "Sprite Outline Detail.");
-            public readonly GUIContent spriteSubdivision = EditorGUIUtility.TrTextContent("Sprite Mesh Subdivision", "Refine triangulation.");
+            public readonly GUIContent spriteTriangulation = EditorGUIUtility.TrTextContent("Mesh Triangulation Method", "Use Legacy for old method. And UTess for Delaunary with Subdivision");
+            public readonly GUIContent spriteOutline = EditorGUIUtility.TrTextContent("Outline Detail", "Sprite Outline Detail.");
+            public readonly GUIContent spriteSubdivision = EditorGUIUtility.TrTextContent("Mesh Subdivision", "Refine triangulation.");
             public readonly GUIContent spriteMeshType = EditorGUIUtility.TrTextContent("Mesh Type", "Type of sprite mesh to generate.");
             public readonly GUIContent spriteAlignment = EditorGUIUtility.TrTextContent("Pivot", "Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
             public readonly GUIContent[] spriteAlignmentOptions =
@@ -1269,8 +1269,10 @@ namespace UnityEditor
                         m_SpriteTessellationMethod.intValue = (int)spriteTessellationMethod;
                     if (SpriteTessellationMethod.DelaunaySubdivision == spriteTessellationMethod)
                     {
+                        EditorGUI.indentLevel++;
                         m_SpriteTessellationDetail.floatValue = EditorGUILayout.Slider(s_Styles.spriteOutline, m_SpriteTessellationDetail.floatValue, 0, 1.0f);
                         m_SpriteGeometrySubdivision.floatValue = EditorGUILayout.Slider(s_Styles.spriteSubdivision, m_SpriteGeometrySubdivision.floatValue, 0, 1.0f);
+                        EditorGUI.indentLevel--;
                     }
                 }
 

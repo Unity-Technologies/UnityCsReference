@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements.StyleSheets
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
 
             // Extract selectorData ref once to avoid repeated lookups in hot loop
-            ref var selectorData = ref context.currentElement.layoutNode.SelectorData;
+            ref var selectorData = ref *context.currentElement.selectorDataPtr;
 
 
             for (int i = 0; i < descriptors.Length; i++)

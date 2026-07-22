@@ -340,6 +340,15 @@ namespace UnityEngine
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
+    [StructLayout(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    internal class DerivedScriptableObject2 : ScriptableObject
+    {
+        public string Value { get; set;}
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [ExcludeFromDocs]
     internal struct StructUnityObject
     {
         public MarshallingTestObject field;
@@ -416,6 +425,7 @@ namespace UnityEngine
         public static extern ScriptableObject[] ReturnScriptableObjectArray(ScriptableObject param);
 
         public static extern DerivedScriptableObject[] ReturnDerivedScriptableObjectArray(DerivedScriptableObject param);
+        public static extern DerivedScriptableObject2[] ReturnDerivedScriptableObject2Array(DerivedScriptableObject2 param);
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]

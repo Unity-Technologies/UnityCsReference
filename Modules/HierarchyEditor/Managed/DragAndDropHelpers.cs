@@ -22,7 +22,7 @@ namespace Unity.Hierarchy.Editor
                 case DragAndDropVisualMode.Copy:
                     return DragVisualMode.Copy;
                 case DragAndDropVisualMode.Link:
-                    return DragVisualMode.Copy;
+                    return DragVisualMode.Link;
                 case DragAndDropVisualMode.Move:
                     return DragVisualMode.Move;
                 case DragAndDropVisualMode.Generic:

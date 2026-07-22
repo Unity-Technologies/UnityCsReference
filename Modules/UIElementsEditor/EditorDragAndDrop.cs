@@ -47,6 +47,7 @@ namespace UnityEditor.UIElements
                     DragAndDropVisualMode.Copy => DragVisualMode.Copy,
                     DragAndDropVisualMode.None => DragVisualMode.None,
                     DragAndDropVisualMode.Move => DragVisualMode.Move,
+                    DragAndDropVisualMode.Link => DragVisualMode.Link,
                     DragAndDropVisualMode.Rejected => DragVisualMode.Rejected,
                     _ => LogUnsupportedVisualMode(DragAndDrop.visualMode)
                 };
@@ -104,6 +105,7 @@ namespace UnityEditor.UIElements
                 DragVisualMode.Copy => DragAndDropVisualMode.Copy,
                 DragVisualMode.None => DragAndDropVisualMode.None,
                 DragVisualMode.Move => DragAndDropVisualMode.Move,
+                DragVisualMode.Link => DragAndDropVisualMode.Link,
                 DragVisualMode.Rejected => DragAndDropVisualMode.Rejected,
                 _ => throw new ArgumentException($"Visual mode {visualMode} is not supported", nameof(visualMode), null)
             };

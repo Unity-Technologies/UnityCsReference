@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
     [Icon("UIToolkit/Icons/TagField.png")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     public partial class TagField : PopupField<string>
     {
         internal override string GetValueToDisplay()

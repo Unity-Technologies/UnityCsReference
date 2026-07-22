@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// The pop-up search field for the toolbar. The search field includes a menu button. For more information, refer to [[wiki:UIE-uxml-element-ToolbarPopupSearchField|UXML element ToolbarPopupSearchField]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/ToolbarPopupSearchField.png")]
     public partial class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {

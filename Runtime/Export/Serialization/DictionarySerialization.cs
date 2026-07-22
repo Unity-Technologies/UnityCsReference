@@ -13,9 +13,38 @@ using UnityEngine.Bindings;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
+// Under UNITY_NATIVE_TEST_RESOURCES there is no UnityEngine.Object; the native-test fixture
+// provides a layout-compatible stub (ScriptWithManagedRefTestFixture.Object, same GetCachedPtr)
+// in its own namespace. Aliasing it keeps the null-key detection below identical to production
+// instead of #if-ing the fake-null branch out. Trunk resolves this globally by moving the fixture
+// Object into UnityEngine; this is the local equivalent.
+using UnityEngineObject = UnityEngine.Object;
+
 namespace UnityEngine
 {
-    internal static class DictionarySerialization
+    /// <summary>
+    /// The rows a serialized dictionary preserves outside its live runtime map, returned by
+    /// <c>SerializedProperty.GetDictionaryIgnoredEntries</c>. Both arrays are non-null and disjoint.
+    /// </summary>
+    public readonly struct DictionaryIgnoredEntries
+    {
+        /// <summary>Array indices of genuine duplicate-key rows that could not be merged into the live dictionary.</summary>
+        public int[] duplicateEntryIndices { get; }
+
+        /// <summary>Array indices of null-key placeholder rows shown in the inspector but excluded from the live dictionary.</summary>
+        public int[] nullKeyEntryIndices { get; }
+
+        /// <summary>A result with no ignored rows: both index arrays are empty (never null).</summary>
+        internal static DictionaryIgnoredEntries Empty => new DictionaryIgnoredEntries(Array.Empty<int>(), Array.Empty<int>());
+
+        internal DictionaryIgnoredEntries(int[] duplicateEntryIndices, int[] nullKeyEntryIndices)
+        {
+            this.duplicateEntryIndices = duplicateEntryIndices;
+            this.nullKeyEntryIndices = nullKeyEntryIndices;
+        }
+    }
+
+    internal static partial class DictionarySerialization
     {
         /// <summary>
         /// One serialized entry for a <c>Dictionary&lt;TKey, TValue&gt;</c>: the key/value pair as stored in the
@@ -40,53 +69,53 @@ namespace UnityEngine
         internal const string ValueFieldName = nameof(SerializedKeyValue<int, int>.value);
 
         /// <summary>
-        /// Static context for duplicate dictionary entries. Non-null only in the Editor (including play mode in the Editor);
-        /// the player leaves this null so duplicate rows are not tracked.
+        /// Static context for ignored dictionary entries (duplicate-key and null-key placeholder rows). Non-null only in the Editor (including play mode in the Editor);
+        /// the player leaves this null so ignored rows are not tracked.
         /// </summary>
         /// <remarks>
-        /// Threading: set once per domain on the main thread from <see cref="UnityEditor.DictionarySerializationDuplicateEntriesCleanup.Initialize"/>,
+        /// Threading: set once per domain on the main thread from <see cref="UnityEditor.DictionarySerializationIgnoredEntriesCleanup.Initialize"/>,
         /// which is invoked under <c>[OnCodeLoaded]</c>. <c>[OnCodeLoaded]</c> is sequenced before
         /// <c>SerializableManagedRefsUtilities::RestoreBackups</c> and before any worker-thread serialization in the new domain,
-        /// which provides the happens-before relationship relied on by readers. Duplicate-entry callbacks may read this property
+        /// which provides the happens-before relationship relied on by readers. Ignored-entry callbacks may read this property
         /// from worker threads during serialization; no explicit memory barrier is required for those reads.
         /// </remarks>
-        internal static IDuplicateEntriesForDictionaries s_DuplicateEntriesForDictionaries { get; set; }
+        internal static IDictionaryIgnoredEntriesCache s_IgnoredEntriesForDictionaries { get; set; }
 
         [FreeFunction("DictionaryFieldUniqueIdentifierBindings::FormatDictionaryFieldUniqueIdentifierForActiveContext", IsThreadSafe = true)]
         [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/DictionaryFieldUniqueIdentifierStack.h")]
         private static extern string Internal_FormatDictionaryFieldUniqueIdentifierForActiveContext(IntPtr dictionaryIdentifierTemplateUtf8);
 
-        // Read-path helper: skips native path formatting unless this host already has stored duplicates.
+        // Read-path helper: skips native path formatting unless this host already has stored ignored entries.
         // Write path receives the already-formatted identifier from native via SetEntriesFromSerializedData.
-        static string ResolveDictionaryFieldUniqueIdentifierForDuplicateLookups(EntityId hostingEntityId, IntPtr dictionaryIdentifierTemplateUtf8)
+        static string ResolveDictionaryFieldUniqueIdentifierForIgnoredLookups(EntityId hostingEntityId, IntPtr dictionaryIdentifierTemplateUtf8)
         {
-            if (s_DuplicateEntriesForDictionaries == null || dictionaryIdentifierTemplateUtf8 == IntPtr.Zero)
+            if (s_IgnoredEntriesForDictionaries == null || dictionaryIdentifierTemplateUtf8 == IntPtr.Zero)
                 return string.Empty;
             if (hostingEntityId == EntityId.None)
                 return string.Empty;
-            if (!s_DuplicateEntriesForDictionaries.HostHasDuplicateDictionaryEntries(hostingEntityId))
+            if (!s_IgnoredEntriesForDictionaries.HostHasIgnoredDictionaryEntries(hostingEntityId))
                 return string.Empty;
             return Internal_FormatDictionaryFieldUniqueIdentifierForActiveContext(dictionaryIdentifierTemplateUtf8) ?? string.Empty;
         }
 
-        internal static bool HostHasDuplicateDictionaryEntries(EntityId entityId)
+        internal static bool HostHasIgnoredDictionaryEntries(EntityId entityId)
         {
-            return s_DuplicateEntriesForDictionaries != null && s_DuplicateEntriesForDictionaries.HostHasDuplicateDictionaryEntries(entityId);
+            return s_IgnoredEntriesForDictionaries != null && s_IgnoredEntriesForDictionaries.HostHasIgnoredDictionaryEntries(entityId);
         }
 
-        internal static int PruneDuplicateDictionaryEntriesForUnloadedHosts()
+        internal static int PruneIgnoredDictionaryEntriesForUnloadedHosts()
         {
-            if (s_DuplicateEntriesForDictionaries == null)
+            if (s_IgnoredEntriesForDictionaries == null)
                 return 0;
-            return s_DuplicateEntriesForDictionaries.PruneUnloadedHosts();
+            return s_IgnoredEntriesForDictionaries.PruneUnloadedHosts();
         }
 
-        internal static bool HasAnyCachedDuplicateDictionaryHosts()
+        internal static bool HasAnyCachedIgnoredDictionaryHosts()
         {
-            return s_DuplicateEntriesForDictionaries != null && s_DuplicateEntriesForDictionaries.HasAnyCachedHosts;
+            return s_IgnoredEntriesForDictionaries != null && s_IgnoredEntriesForDictionaries.HasAnyCachedHosts;
         }
 
-        private delegate bool SetEntriesTypedDelegate(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates);
+        private delegate bool SetEntriesTypedDelegate(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys);
         private static readonly MethodInfo s_SetEntriesTypedInfo = typeof(DictionarySerialization).GetMethod(nameof(SetEntriesTyped), BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly ConcurrentDictionary<Type, SetEntriesTypedDelegate> s_SetEntriesTypedCache = new ConcurrentDictionary<Type, SetEntriesTypedDelegate>();
 
@@ -94,9 +123,10 @@ namespace UnityEngine
         private static readonly MethodInfo s_GetEntriesTypedInfo = typeof(DictionarySerialization).GetMethod(nameof(GetEntriesTyped), BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly ConcurrentDictionary<Type, GetEntriesTypedDelegate> s_GetEntriesTypedCache = new ConcurrentDictionary<Type, GetEntriesTypedDelegate>();
 
-        private static bool SetEntriesTyped<TKey, TValue>(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates)
+        private static bool SetEntriesTyped<TKey, TValue>(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys)
         {
             hadDuplicates = false;
+            hadNullKeys = false;
 
             if (dictionary is not Dictionary<TKey, TValue> dict)
                 return false;
@@ -105,32 +135,50 @@ namespace UnityEngine
             dict.Clear();
             dict.EnsureCapacity(entries.Length);
 
-            List<int> duplicateIndices = null;
-            List<SerializedKeyValue<TKey, TValue>> duplicateEntries = null;
+            // Rows that can't live in the Dictionary itself but must be preserved for a lossless inspector
+            // round-trip: duplicate-key and null-key placeholder rows. Ascending-index (loop appends in ascending i).
+            List<int> ignoredIndices = null;
+            List<SerializedKeyValue<TKey, TValue>> ignoredEntries = null;
+            // The two disjoint subsets of ignoredIndices, tracked separately so the UI can query both in one pass (GetIgnoredEntryIndices).
+            List<int> duplicateIndices = null; // rows where TryAdd returned false (duplicate key)
+            List<int> nullKeyIndices = null;   // placeholder rows with a null key
 
-            // Track entries skipped because TryAdd threw (e.g. a user-defined GetHashCode/Equals on the
-            // key type raised). We log a single warning at the end with the first failure's details and
-            // the total skip count instead of one warning per entry, to avoid console spam when the key
-            // type is broken across many rows.
+            // Entries skipped because TryAdd threw (e.g. a user-defined GetHashCode/Equals raised). We log a
+            // single warning at the end with the first failure's details, to avoid per-entry console spam.
             int skippedDueToException = 0;
             int firstSkippedIndex = -1;
             Exception firstSkippedException = null;
+
+            // Hoisted out of the loop: whether TKey is a UnityEngine.Object subtype is fixed per closed generic,
+            // so the fake-null lifetime check below is skipped entirely -- no per-entry isinst / boxing -- for the
+            // common value-type and non-Object reference key types.
+            bool keyIsUnityObject = typeof(UnityEngineObject).IsAssignableFrom(typeof(TKey));
 
             for (int i = 0; i < entries.Length; i++)
             {
                 TKey key = entries[i].key;
                 TValue value = entries[i].value;
-                // Intentional: skip (null, null) entries. The inspector inserts a (null, null) placeholder
-                // row when the user clicks "+" to add a new dictionary entry but has not yet filled in
-                // either field. Such placeholders must not be promoted into the live dictionary because
-                // (a) Dictionary<TKey, TValue> with a reference-type TKey rejects null keys via
-                // ArgumentNullException at TryAdd time, and (b) preserving placeholders in the live
-                // dict would surface them as real entries on the next read pass. A genuine
-                // (null, null) row in user data (e.g. Dictionary<string, string>) would also be
-                // dropped here without warning, but that shape is indistinguishable from a placeholder
-                // and would have failed Dictionary.Add for the same null-key reason anyway.
-                if (key is null && value is null)
+                // Null-key placeholder row: the inspector inserts one when the user adds an entry but hasn't filled
+                // in the key. It can't go in the live dict, so preserve it (editor-only) without flagging a duplicate.
+                // A UnityEngine.Object key is a real managed "fake-null" wrapper when unassigned/missing, so `is null`
+                // (CLR reference-null) misses it. We can't use the overloaded ==/bool operator here: this runs on a
+                // deserialization worker thread, and their editor path resolves the EntityId (EnsureRunningOnMainThread
+                // -> throws). GetCachedPtr() reads the native pointer directly (thread-safe) and is zero exactly when
+                // the key references no live native object -- the placeholder case we want to route here. The
+                // keyIsUnityObject guard (hoisted above) short-circuits before the cast, so value-type keys never box.
+                // `is null` stays first so its short-circuit guards the cast: a genuine CLR-null key (a true-null
+                // UnityObject in players, or when no fake-null wrapper was built) must not be dereferenced below.
+                bool keyIsNull = key is null || (keyIsUnityObject && ((UnityEngineObject)(object)key).GetCachedPtr() == IntPtr.Zero);
+                if (keyIsNull)
+                {
+                    ignoredIndices ??= new List<int>();
+                    ignoredEntries ??= new List<SerializedKeyValue<TKey, TValue>>();
+                    ignoredIndices.Add(i);
+                    ignoredEntries.Add(entries[i]);
+                    nullKeyIndices ??= new List<int>();
+                    nullKeyIndices.Add(i);
                     continue;
+                }
 
                 bool added;
                 try
@@ -150,10 +198,12 @@ namespace UnityEngine
 
                 if (!added)
                 {
+                    ignoredIndices ??= new List<int>();
+                    ignoredEntries ??= new List<SerializedKeyValue<TKey, TValue>>();
+                    ignoredIndices.Add(i);
+                    ignoredEntries.Add(entries[i]);
                     duplicateIndices ??= new List<int>();
-                    duplicateEntries ??= new List<SerializedKeyValue<TKey, TValue>>();
                     duplicateIndices.Add(i);
-                    duplicateEntries.Add(entries[i]);
                 }
             }
 
@@ -170,19 +220,21 @@ namespace UnityEngine
                     + "This typically indicates a user-defined GetHashCode or Equals on the key type threw.");
             }
 
-            // Intentional: hadDuplicates is assigned only on the editor duplicate-tracking path. Player
-            // builds (s_DuplicateEntriesForDictionaries == null) and editor loads without an active
-            // FieldUniqueIdentifierContext (empty dictionaryIdentifier) do not track duplicates and must
-            // not surface the Console warning -- the native caller (DictionaryField::SetArray) gates
-            // logging on this flag, and the matching DebugAssert there encodes the same invariant.
-            if (s_DuplicateEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryIdentifier))
+            // hadDuplicates/hadNullKeys are assigned only on the editor ignored-tracking path; player builds and editor
+            // loads without an active FieldUniqueIdentifierContext don't track ignored rows and must not surface a warning.
+            if (s_IgnoredEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryIdentifier))
             {
-                if (duplicateIndices == null)
-                    s_DuplicateEntriesForDictionaries.Clear(hostingEntityId, dictionaryIdentifier);
+                if (ignoredIndices == null)
+                    s_IgnoredEntriesForDictionaries.Clear(hostingEntityId, dictionaryIdentifier);
                 else
                 {
-                    s_DuplicateEntriesForDictionaries.Store(hostingEntityId, dictionaryIdentifier, new DuplicateEntriesData(duplicateIndices.ToArray(), duplicateEntries.ToArray(), dict.Count));
-                    hadDuplicates = duplicateIndices.Count > 0;
+                    int[] duplicateKeyIndices = duplicateIndices?.ToArray() ?? Array.Empty<int>();
+                    int[] nullKeyIndicesArray = nullKeyIndices?.ToArray() ?? Array.Empty<int>();
+                    s_IgnoredEntriesForDictionaries.Store(hostingEntityId, dictionaryIdentifier, new IgnoredEntriesData(ignoredIndices.ToArray(), ignoredEntries.ToArray(), dict.Count, duplicateKeyIndices, nullKeyIndicesArray));
+                    // Both duplicate-key rows and null-key placeholder rows are excluded from the live dictionary and
+                    // are reported back so the read dispatcher can emit a single combined Console warning on load/instantiate.
+                    hadDuplicates = duplicateKeyIndices.Length > 0;
+                    hadNullKeys = nullKeyIndicesArray.Length > 0;
                 }
             }
 
@@ -204,24 +256,23 @@ namespace UnityEngine
             if (dictionary is not Dictionary<TKey, TValue> dict)
                 return null;
 
-            string dictionaryPath = ResolveDictionaryFieldUniqueIdentifierForDuplicateLookups(hostingEntityId, dictionaryIdentifierTemplateUtf8);
+            string dictionaryPath = ResolveDictionaryFieldUniqueIdentifierForIgnoredLookups(hostingEntityId, dictionaryIdentifierTemplateUtf8);
 
             int count = dict.Count;
-            DuplicateEntriesData storedDuplicates = default;
-            if (s_DuplicateEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryPath))
-                storedDuplicates = s_DuplicateEntriesForDictionaries.Get(hostingEntityId, dictionaryPath);
+            IgnoredEntriesData storedIgnored = default;
+            if (s_IgnoredEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryPath))
+                storedIgnored = s_IgnoredEntriesForDictionaries.Get(hostingEntityId, dictionaryPath);
 
-            int duplicateCount = 0;
-            if (storedDuplicates.indices != null && storedDuplicates.entries != null)
+            int ignoredCount = 0;
+            if (storedIgnored.indices != null && storedIgnored.entries != null)
             {
-                // Per DuplicateEntriesData's contract: when the arrays are non-null they are also same-length
-                // (asserted at construction) and indices is strictly ascending (caller-maintained at the sole
-                // producer SetEntriesTyped). Both null = default = cache miss.
-                duplicateCount = storedDuplicates.indices.Length;
+                // Per IgnoredEntriesData's contract: non-null arrays are same-length and indices strictly
+                // ascending. Both null = default = cache miss.
+                ignoredCount = storedIgnored.indices.Length;
             }
 
-            // Normal fast path. No cached duplicate entries; only live dictionary pairs are serialized.
-            if (duplicateCount == 0)
+            // Normal fast path. No cached ignored entries; only live dictionary pairs are serialized.
+            if (ignoredCount == 0)
             {
                 var fastPathResult = new SerializedKeyValue<TKey, TValue>[count];
                 int fastIndex = 0;
@@ -232,43 +283,38 @@ namespace UnityEngine
             }
             else
             {
-                return GetArrayWithHandledDuplicateEntries(dict, hostingEntityId, dictionaryPath, count, storedDuplicates, duplicateCount);
+                return GetArrayWithHandledIgnoredEntries(dict, hostingEntityId, dictionaryPath, count, storedIgnored, ignoredCount);
             }
         }
 
-        private static Array GetArrayWithHandledDuplicateEntries<TKey, TValue>(Dictionary<TKey, TValue> dict, EntityId hostingEntityId, string dictionaryPath, int count, DuplicateEntriesData storedDuplicates, int duplicateCount)
+        private static Array GetArrayWithHandledIgnoredEntries<TKey, TValue>(Dictionary<TKey, TValue> dict, EntityId hostingEntityId, string dictionaryPath, int count, IgnoredEntriesData storedIgnored, int ignoredCount)
         {
-            if (count == storedDuplicates.dictionaryCountWhenRecorded)
+            if (count == storedIgnored.dictionaryCountWhenRecorded)
             {
-                // When the dictionary count still matches the count from when duplicate entries were recorded, preserve original serialized indices so ordering in saved files is unchanged.
+                // Count still matches when the ignored rows were recorded: preserve original serialized indices so ordering in saved files is unchanged.
 
-                var typedDuplicateEntries = (SerializedKeyValue<TKey, TValue>[])storedDuplicates.entries;
-                int totalSize = count + duplicateCount;
+                var typedIgnoredEntries = (SerializedKeyValue<TKey, TValue>[])storedIgnored.entries;
+                int totalSize = count + ignoredCount;
                 var result = new SerializedKeyValue<TKey, TValue>[totalSize];
 
-                // Single bounds precondition: indices is strictly-ascending by DuplicateEntriesData's
-                // caller-maintained contract (upheld at the sole producer SetEntriesTyped), so checking the
-                // maximum (last) index covers every entry without a per-iteration assert below.
-                Assert.IsTrue(duplicateCount == 0 || storedDuplicates.indices[duplicateCount - 1] < totalSize,
-                    "Duplicate entry index out of bounds");
+                // indices is strictly-ascending (IgnoredEntriesData's contract), so checking the maximum
+                // (last) index covers every entry without a per-iteration assert.
+                Assert.IsTrue(ignoredCount == 0 || storedIgnored.indices[ignoredCount - 1] < totalSize,
+                    "Ignored entry index out of bounds");
 
-                for (int i = 0; i < duplicateCount; i++)
-                    result[storedDuplicates.indices[i]] = typedDuplicateEntries[i];
+                for (int i = 0; i < ignoredCount; i++)
+                    result[storedIgnored.indices[i]] = typedIgnoredEntries[i];
 
-                // Linear lockstep merge: walk the sorted duplicate-index array and the live dict together,
-                // emitting each kvp into the next non-duplicate slot. Replaces the previous per-call
-                // HashSet<int> membership lookup with a single int of state, eliminating the only avoidable
-                // allocation on this hot inspector-repaint path. Correctness depends on indices being strictly
-                // ascending; this is upheld by the sole producer site DictionarySerialization.SetEntriesTyped
-                // (see DuplicateEntriesData's caller contract).
-                int dupIdxPos = 0;
+                // Linear lockstep merge: walk the sorted ignored-index array and the live dict together,
+                // emitting each kvp into the next non-ignored slot. Depends on indices being strictly ascending.
+                int ignoredIdxPos = 0;
                 int writeSlot = 0;
                 foreach (KeyValuePair<TKey, TValue> kvp in dict)
                 {
-                    while (dupIdxPos < duplicateCount && storedDuplicates.indices[dupIdxPos] == writeSlot)
+                    while (ignoredIdxPos < ignoredCount && storedIgnored.indices[ignoredIdxPos] == writeSlot)
                     {
                         writeSlot++;
-                        dupIdxPos++;
+                        ignoredIdxPos++;
                     }
                     if (writeSlot >= totalSize)
                         break;
@@ -280,14 +326,11 @@ namespace UnityEngine
             }
             else
             {
-                // Dictionary count changed since duplicates were recorded, meaning the live dictionary was
-                // mutated outside of the inspector. Cached duplicate indices and entries can no longer be
-                // mapped back into the serialized view in a meaningful way, so drop the cache entirely and
-                // serialize only the live dictionary entries. Any duplicate rows previously preserved in
-                // the cache are discarded.
+                // Dictionary count changed since the ignored rows were recorded (mutated outside the inspector), so the
+                // cached indices can't be mapped back. Drop the cache and serialize only the live entries.
 
-                if (s_DuplicateEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryPath))
-                    s_DuplicateEntriesForDictionaries.Clear(hostingEntityId, dictionaryPath);
+                if (s_IgnoredEntriesForDictionaries != null && !string.IsNullOrEmpty(dictionaryPath))
+                    s_IgnoredEntriesForDictionaries.Clear(hostingEntityId, dictionaryPath);
 
                 var liveOnlyResult = new SerializedKeyValue<TKey, TValue>[count];
                 int writeIndex = 0;
@@ -395,12 +438,12 @@ namespace UnityEngine
         /// </summary>
         internal static bool InvokeSetEntriesTyped(
             int idx, EntityId hostingEntityId, object dictionary, Array entries,
-            string dictionaryIdentifier, out bool hadDuplicates)
+            string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys)
         {
             if (idx < 0)
-                return SetEntriesFromSerializedData(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates);
+                return SetEntriesFromSerializedData(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
             var del = (SetEntriesTypedDelegate)SerializationCommandObjectTable.Get(idx);
-            return del(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates);
+            return del(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
         }
 
         /// <summary>
@@ -426,37 +469,40 @@ namespace UnityEngine
         }
 
         /// <summary>
-        /// Returns the array indices of duplicate keys that could not be merged
-        /// into the live dictionary, for the given host and dictionary field path. Used by the Editor (e.g.
-        /// <see cref="UnityEditor.SerializedProperty.GetDictionaryDuplicateEntryIndices"/>) to highlight or preserve duplicate rows.
+        /// Single-lookup retrieval of a dictionary's ignored rows: the disjoint duplicate-key and null-key index
+        /// sets (both non-null, each empty when there are none). Shares one cache lookup for the Editor UI.
         /// </summary>
-        internal static int[] GetDuplicateIndices(EntityId entityId, string dictionaryPropertyPath)
+        internal static DictionaryIgnoredEntries GetIgnoredEntryIndices(EntityId entityId, string dictionaryPropertyPath)
         {
-            if (s_DuplicateEntriesForDictionaries == null)
-                return Array.Empty<int>();
-            if (entityId == EntityId.None || string.IsNullOrEmpty(dictionaryPropertyPath))
-                return Array.Empty<int>();
-            var data = s_DuplicateEntriesForDictionaries.Get(entityId, dictionaryPropertyPath);
-            return data.indices ?? Array.Empty<int>();
+            if (s_IgnoredEntriesForDictionaries == null || entityId == EntityId.None || string.IsNullOrEmpty(dictionaryPropertyPath))
+                return DictionaryIgnoredEntries.Empty;
+            var data = s_IgnoredEntriesForDictionaries.Get(entityId, dictionaryPropertyPath);
+            return new DictionaryIgnoredEntries(
+                data.duplicateKeyIndices ?? Array.Empty<int>(),
+                data.nullKeyIndices ?? Array.Empty<int>());
         }
 
         #region Required by native code
 
         /// <summary>
         /// Deserializes a dictionary from the native backing <c>Entry[]</c> array: clears the dictionary and repopulates it
-        /// from each serialized key/value entry. Duplicate keys are tracked in
-        /// <see cref="s_DuplicateEntriesForDictionaries"/> when the Editor context is set so Apply/Update can preserve them.
+        /// from each serialized key/value entry. Ignored rows (duplicate-key and null-key placeholder rows) are tracked in
+        /// <see cref="s_IgnoredEntriesForDictionaries"/> when the Editor context is set so Apply/Update can preserve them.
         /// </summary>
-        /// <param name="hadDuplicates">Editor-only signal: set to <c>true</c> only on the duplicate-tracking path
-        /// (when <see cref="s_DuplicateEntriesForDictionaries"/> is non-null and <paramref name="dictionaryIdentifier"/>
-        /// is non-empty). Always <c>false</c> in player builds (no duplicate tracking) and on Editor loads without an
+        /// <param name="hadDuplicates">Editor-only signal: set to <c>true</c> only on the ignored-tracking path
+        /// (when <see cref="s_IgnoredEntriesForDictionaries"/> is non-null and <paramref name="dictionaryIdentifier"/>
+        /// is non-empty), and then only when a genuine duplicate-key row was found. Always <c>false</c> in player builds (no ignored tracking) and on Editor loads without an
         /// active FieldUniqueIdentifierContext (no identifier to anchor a warning to). The native caller uses this as
         /// the gate for emitting the Editor-only Console warning in <c>DictionaryField::SetArray</c>. Always set even
         /// when this method returns <c>false</c>.</param>
+        /// <param name="hadNullKeys">Editor-only signal with the same tracking-path gating as <paramref name="hadDuplicates"/>,
+        /// set to <c>true</c> when a null-key placeholder row was found. The native caller folds this into the same
+        /// combined Console warning. Always set even when this method returns <c>false</c>.</param>
         [RequiredByNativeCode]
-        internal static bool SetEntriesFromSerializedData(EntityId hostingEntityId, object dictionary, object entriesArray, string dictionaryIdentifier, out bool hadDuplicates)
+        internal static bool SetEntriesFromSerializedData(EntityId hostingEntityId, object dictionary, object entriesArray, string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys)
         {
             hadDuplicates = false;
+            hadNullKeys = false;
 
             if (dictionary == null)
                 return false;
@@ -476,7 +522,7 @@ namespace UnityEngine
                 return false;
 
             var setEntries = GetSetEntriesTypedDelegate(dictArgs);
-            return setEntries(hostingEntityId, dictionary, array, dictionaryIdentifier, out hadDuplicates);
+            return setEntries(hostingEntityId, dictionary, array, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
         }
 
         /// <summary>
@@ -497,7 +543,7 @@ namespace UnityEngine
 
         /// <summary>
         /// Builds the array of dictionary entries for serialization (write path). Fills SerializedKeyValue&lt;TKey, TValue&gt;[] from the dictionary's
-        /// key/value pairs and any duplicate entries stored in the static context at their original indices.
+        /// key/value pairs and any ignored entries stored in the static context at their original indices.
         /// </summary>
         [RequiredByNativeCode]
         internal static Array GetDictionaryEntriesForSerialization(EntityId hostingEntityId, object dictionary, IntPtr dictionaryIdentifierTemplateUtf8)

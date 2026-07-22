@@ -16,32 +16,29 @@ namespace UnityEditor.Build
     /// Provides access to the build history generated during builds.
     /// </summary>
     /// <remarks>
-    /// For each Player or Content Directory build, Unity creates a *build report directory* inside the build history. This directory holds the
-    /// <see cref="Build.Reporting.BuildReport"/> file and the supporting data captured during that build, including profiling information and
-    /// type-usage information. The precise content is influenced by the type of build, build options
-    /// and certain settings in the **Preferences** > **Build Pipeline** window.
+    /// This class provides programmatic access to the build history: for each Player or Content Directory build, Unity creates a
+    /// *build report directory* that holds the <see cref="Build.Reporting.BuildReport"/> file and the supporting data captured during
+    /// that build. Use this class to enumerate builds, query their summaries, and locate the files in their build report directories.
+    /// For a conceptual overview of the build history and a description of each file it contains, refer to
+    /// [Build history](xref:um-build-history).
     ///
-    /// By default, build history is stored in `Library/BuildHistory`. You can change this location, for example
-    /// to consolidate builds from multiple machines into a shared build history folder.
+    /// Build report directories are self-contained and portable. The `BuildHistory` API can read a build report directory
+    /// even if a different machine or a different Unity project produced it, so you can consolidate build reports from
+    /// multiple build servers into a single build history folder.
     ///
     /// Unity assigns each build a unique GUID, which the `BuildHistory` API uses to precisely identify each build.
     /// For more information, refer to <see cref="BuildReportSummary.BuildSessionGUID"/>.
     ///
-    /// The files in the build history are for development and debugging purposes only. They are not meant to be shipped along with
-    /// the content and are not required by the runtime. Deleting build history does not impact the built content or the ability
-    /// to run the Player, but can limit the ability to analyze or debug the results of the build. Incorporate the collection
-    /// of the build history content into automated build pipelines.
-    ///
-    /// Retention Policy
+    /// **Retention policy**
     ///
     /// To prevent unbounded growth of the build history folder, Unity applies a retention policy at the start of each Player and Content Directory build.
-    /// <see cref="BuildHistoryLimit"/> sets the maximum number of builds to retain; when a new build pushes the count over the limit, the oldest entries are deleted.
+    /// <see cref="BuildHistoryLimit"/> sets the maximum number of builds to retain. When a new build pushes the count over the limit, the oldest entries are deleted.
     /// Set the limit to 0 to disable automatic deletion. You can also invoke the policy manually with <see cref="ApplyRetentionPolicy"/>.
     ///
-    /// Build Lifecycle
+    /// **Build lifecycle**
     ///
     /// For Player builds, <see cref="BuildPlayerProcessor.PrepareForBuild"/> runs before the Player build is added to the
-    /// history. This allows any Content Directory builds triggered during that callback to appear in the
+    /// history. This allows any content builds triggered during that callback to appear in the
     /// history before the Player build itself, resulting in a chronological ordering.
     ///
     /// Unity adds a build to the history early in the build process (but after <see cref="BuildPlayerProcessor.PrepareForBuild"/>) and
@@ -159,7 +156,9 @@ namespace UnityEditor.Build
         /// A value of 0 disables automatic deletion. Negative values are clamped to 0.
         ///
         /// Changes take effect on the next build. The existing history isn't pruned when this value is changed.
-        /// This setting is also exposed in **Project Settings** > **Analysis** > **Build Pipeline**.
+        ///
+        /// This is a per-project setting that Unity stores in `UserSettings/BuildPipelineSettings.asset`.
+        /// It's also exposed in **Project Settings** > **Build Pipeline**.
         /// </remarks>
         /// <seealso cref="ApplyRetentionPolicy"/>
         public static int BuildHistoryLimit

@@ -151,7 +151,7 @@ namespace UnityEditor.Build.Analysis
             m_CachedImporterTypes = analysis.Tables.ImporterTypes;
             m_CachedAssets = analysis.Tables.Assets;
 
-            m_Header.Bind(selection, analysis);
+            m_Header.Bind(selection);
             var counts = analysis.Computed.Counts;
             m_ScenesValue.text = counts.SceneCount.ToString();
             m_AssetsValue.text = counts.AssetCount.ToString();

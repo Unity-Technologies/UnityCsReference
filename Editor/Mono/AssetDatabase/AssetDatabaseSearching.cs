@@ -45,6 +45,7 @@ namespace UnityEditor
             var searchFilter = CreateSearchFilter(filter, searchInFolders);
             return FindAssetGUIDs(searchFilter);
         }
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static string[] FindAssets(SearchFilter searchFilter)
         {
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

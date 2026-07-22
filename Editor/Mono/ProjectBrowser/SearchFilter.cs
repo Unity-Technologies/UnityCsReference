@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 namespace UnityEditor
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ShaderFoundryModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ShaderFoundryModule", "UnityEditor.UIToolkitAuthoringModule")]
     [DataContract]
     internal class SearchFilter
     {

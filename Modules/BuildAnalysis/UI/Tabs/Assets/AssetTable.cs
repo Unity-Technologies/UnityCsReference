@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,6 +17,8 @@ namespace UnityEditor.Build.Analysis
         private const string k_AllExtensions = "All";
         private const int k_NoExtensionId = -1;
         private const string k_UxmlPath = "BuildAnalysis/UXML/AssetTable.uxml";
+
+        static readonly ProfilerMarker s_BindMarker = new ProfilerMarker("AssetTable.Bind");
 
         public event Action<BuildAnalysisAsset?> SelectionChanged;
 
@@ -105,21 +108,24 @@ namespace UnityEditor.Build.Analysis
 
         public void Bind(BuildAnalysis analysis)
         {
-            m_Assets = analysis.Tables.Assets;
-            var n = m_Assets.Length;
+            using (s_BindMarker.Auto())
+            {
+                m_Assets = analysis.Tables.Assets;
+                var n = m_Assets.Length;
 
-            // Reuse parallel arrays across binds when possible; only grow when capacity is exceeded.
-            EnsureCapacity(ref m_Names, n);
-            EnsureCapacity(ref m_FormattedSizes, n);
-            if (m_ExtensionIds.Length < n)
-                m_ExtensionIds = new int[n];
+                // Reuse parallel arrays across binds when possible; only grow when capacity is exceeded.
+                EnsureCapacity(ref m_Names, n);
+                EnsureCapacity(ref m_FormattedSizes, n);
+                if (m_ExtensionIds.Length < n)
+                    m_ExtensionIds = new int[n];
 
-            BuildExtensionPoolAndNames(n);
-            for (int i = 0; i < n; i++)
-                m_FormattedSizes[i] = FormatUtility.FormatSize(m_Assets[i].OutputSizeBytes);
-            BuildViewDropdownChoices();
-            ResetFilterState();
-            ApplyFilters();
+                BuildExtensionPoolAndNames(n);
+                for (int i = 0; i < n; i++)
+                    m_FormattedSizes[i] = FormatUtility.FormatSize(m_Assets[i].OutputSizeBytes);
+                BuildViewDropdownChoices();
+                ResetFilterState();
+                ApplyFilters();
+            }
         }
 
         private static void EnsureCapacity(ref string[] array, int min)

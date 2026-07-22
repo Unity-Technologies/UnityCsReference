@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// Makes a field for entering Rotate.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Hidden)]
     internal partial class RotateField : BaseField<Rotate>, IValueField<Rotate>
     {
         public static readonly string styleFieldUssClassName = "unity-style-field";

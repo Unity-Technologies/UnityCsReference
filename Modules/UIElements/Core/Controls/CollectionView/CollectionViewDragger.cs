@@ -273,9 +273,12 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
 
             // For some reason, the move cursor is missing when using visualMode, so we force it in editor.
-            if (dragAndDrop.data.visualMode == DragVisualMode.Move && targetView.elementPanel.contextType == ContextType.Editor)
+            if (targetView.elementPanel.contextType == ContextType.Editor)
             {
-                targetView.elementPanel.cursorManager.SetCursor(new UIElements.Cursor { defaultCursorId = k_DefaultCursorId });
+                if (dragAndDrop.data.visualMode == DragVisualMode.Move)
+                    targetView.elementPanel.cursorManager.SetCursor(new UIElements.Cursor { defaultCursorId = k_DefaultCursorId });
+                else if (dragAndDrop.data.visualMode == DragVisualMode.Link)
+                    targetView.elementPanel.cursorManager.SetCursor(new UIElements.Cursor { defaultCursorId = 0 });
             }
         }
 

@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering Length.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Hidden)]
     internal partial class LengthField : TextValueField<Length>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);

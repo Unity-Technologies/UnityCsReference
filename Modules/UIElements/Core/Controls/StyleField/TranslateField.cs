@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// Makes a field for entering Translate.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Hidden)]
     internal partial class TranslateField : BaseField<Translate>
     {
         /// <summary>

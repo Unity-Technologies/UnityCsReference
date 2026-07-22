@@ -94,9 +94,6 @@ namespace Unity.Hierarchy
         VisualElement m_StyleContainer;
         IVisualElementScheduledItem m_ScheduledItem;
         int m_LastMouseUpSelectionIndex;
-        // Rejects the spurious same-frame second ClickEvent from PostDispatch on the same foldout.
-        int m_LastFoldoutFrame = -1;
-        HierarchyNode m_LastFoldoutNode = HierarchyNode.Null;
 
         // Tracks the in-flight animation so same-node clicks can reverse instead of restarting.
         // m_AnimatingExpanding is the target direction — needed because deferred collapse leaves
@@ -1738,9 +1735,14 @@ namespace Unity.Hierarchy
             evt.StopImmediatePropagation();
         }
 
+        void OnBindItem(HierarchyViewItem item)
+        {
+            item.ExpandedStateChanged += SetExpandedState;
+        }
+
         void OnUnbindItem(HierarchyViewItem element)
         {
-            element.ExpandedStateChanged -= OnExpandedStateChanged;
+            element.ExpandedStateChanged -= SetExpandedState;
         }
 
         void OnHandlerCreated(HierarchyNodeTypeHandlerBase handler)
@@ -1759,22 +1761,6 @@ namespace Unity.Hierarchy
             var root = m_CollectionView.GetRootElementForIndex(index);
             var item = root?.Q<HierarchyViewItem>();
             return item;
-        }
-
-        void OnBindItem(HierarchyViewItem item)
-        {
-            item.ExpandedStateChanged += OnExpandedStateChanged;
-        }
-
-        void OnExpandedStateChanged(in HierarchyNode node, bool isExpanded, bool recurse)
-        {
-            if (m_LastFoldoutFrame == Time.frameCount && m_LastFoldoutNode.Equals(node))
-                return;
-
-            m_LastFoldoutFrame = Time.frameCount;
-            m_LastFoldoutNode = node;
-
-            SetExpandedState(in node, isExpanded, recurse);
         }
 
         internal void SetExpandedState(in HierarchyNode node, bool isExpanded, bool recurse)

@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A RenderingLayerMaskField editor.
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     public partial class RenderingLayerMaskField : BaseMaskField<uint>
     {
         /// <summary>

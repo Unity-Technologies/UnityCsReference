@@ -85,7 +85,7 @@ namespace UnityEditor.Build.Analysis
 
             var summary = analysis.Summary;
 
-            m_Header.Bind(selection, analysis);
+            m_Header.Bind(selection);
             m_TotalSizeStatValue.text = FormatUtility.FormatSize(selection.TotalSizeBytes);
             m_BuildDurationStatValue.text = FormatUtility.FormatDuration(selection.TotalTimeMs);
             m_AssetsStatValue.text = analysis.Computed.Counts.AssetCount.ToString();

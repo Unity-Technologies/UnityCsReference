@@ -796,13 +796,44 @@ namespace UnityEditor
             EntityId entityId = EntityId.None;
             if (serializedObject?.targetObject is UnityEngine.Object target)
                 entityId = target.GetEntityId();
-            if (entityId == EntityId.None || !UnityEngine.DictionarySerialization.HostHasDuplicateDictionaryEntries(entityId))
+            if (entityId == EntityId.None || !UnityEngine.DictionarySerialization.HostHasIgnoredDictionaryEntries(entityId))
                 return Array.Empty<int>();
-            return UnityEngine.DictionarySerialization.GetDuplicateIndices(entityId, GetDictionaryDuplicateLookupIdentifierInternal());
+            // Only the genuine duplicate-key rows are surfaced here; the null-key placeholder rows are discarded.
+            return UnityEngine.DictionarySerialization.GetIgnoredEntryIndices(
+                entityId, GetDictionaryIgnoredEntryIdentifierInternal()).duplicateEntryIndices;
         }
 
-        [NativeName("GetDictionaryDuplicateLookupIdentifier")]
-        private extern string GetDictionaryDuplicateLookupIdentifierInternal();
+        [NativeName("GetDictionaryIgnoredEntryIdentifier")]
+        private extern string GetDictionaryIgnoredEntryIdentifierInternal();
+
+        /// <summary>
+        /// Returns, in a single pass, the dictionary's duplicate-key and null-key placeholder rows -- both shown by
+        /// the inspector but excluded from the runtime dictionary. Prefer this over
+        /// <see cref="GetDictionaryDuplicateEntryIndices"/> plus a separate null-key query when both sets are needed:
+        /// resolving the ignored-entry identifier is the expensive part and this does it only once.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the underlying <see cref="SerializedObject"/> represents multiple selected targets. Multi-selection of dictionaries is not supported.
+        /// </exception>
+        public DictionaryIgnoredEntries GetDictionaryIgnoredEntries()
+        {
+            Verify(VerifyFlags.None);
+            if (serializedObject != null && serializedObject.targetObjectsCount > 1)
+                throw new InvalidOperationException(
+                    "GetDictionaryIgnoredEntries is not supported on a SerializedObject that represents multiple selected targets.");
+
+            UnityEngine.Debug.Assert(propertyType == SerializedPropertyType.Generic,
+                $"GetDictionaryIgnoredEntries was called on property '{propertyPath}' whose type is '{propertyType}'. This API is only valid on a Dictionary<,> field (which surfaces as SerializedPropertyType.Generic).");
+
+            EntityId entityId = EntityId.None;
+            if (serializedObject?.targetObject is UnityEngine.Object target)
+                entityId = target.GetEntityId();
+            if (entityId == EntityId.None || !UnityEngine.DictionarySerialization.HostHasIgnoredDictionaryEntries(entityId))
+                return DictionaryIgnoredEntries.Empty;
+
+            return UnityEngine.DictionarySerialization.GetIgnoredEntryIndices(
+                entityId, GetDictionaryIgnoredEntryIdentifierInternal());
+        }
 
         // Returns an FNV-1a 64-bit combination of GetContentHash() for every dictionary
         // entry's key. Receiver must be the inner Array property of a serialized dictionary

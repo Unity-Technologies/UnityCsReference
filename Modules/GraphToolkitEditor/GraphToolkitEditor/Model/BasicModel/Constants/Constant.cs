@@ -132,7 +132,18 @@ namespace Unity.GraphToolkit.Editor
             var constantType = Type;
 
             if (typeof(T) != constantType)
+            {
+                // Symmetric with TryGetValue<T>, which unwraps EnumValueReference into the underlying enum.
+                // EnumConstant.FromObject wraps the enum back into an EnumValueReference, but only if we
+                // let the assignment through instead of failing the strict type check.
+                if (constantType == typeof(EnumValueReference) && value is Enum
+                    && GetTypeHandle().Resolve() == value.GetType())
+                {
+                    ObjectValue = value;
+                    return true;
+                }
                 return false;
+            }
 
             // Disallow non-serializable types as the data would then be lost.
             if (!typeof(T).IsSerializable && !typeof(UnityEngine.Object).IsAssignableFrom(typeof(T)))

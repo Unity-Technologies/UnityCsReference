@@ -98,12 +98,16 @@ internal partial class DictionaryDrawer
         internal static readonly string ResetToDefaultsLabel = L10n.Tr("Reset to Defaults");
         internal static readonly string MultiEditUnsupportedMessage = L10n.Tr("Dictionary: Multi-object editing is not supported."); // Entries are sorted by key, so a given row may correspond to different entries across targets, so edits could affect unrelated entries
         internal static readonly string DuplicateMarkerTooltip = L10n.Tr("An element with the same key already exists, so this element is excluded from the runtime dictionary.");
+        internal static readonly string NullKeyMarkerTooltip = L10n.Tr("The key is null. A dictionary only stores entries with a valid (non-null) key, so this element is excluded from the runtime dictionary.");
         internal static readonly string SingleItemCountLabel = L10n.Tr("1 item");
         internal static readonly string MultipleItemsCountFormat = L10n.Tr("{0} items");
-        internal static readonly string DuplicatesFormat = L10n.Tr("{0} ignored");
+        internal static readonly string IgnoredFormat = L10n.Tr("{0} ignored");
         internal static readonly string DuplicatesHelpBoxSingle = L10n.Tr("1 duplicate key ignored. Ensure all keys are unique.");
         internal static readonly string DuplicatesHelpBoxFormat = L10n.Tr("{0} duplicate keys ignored. Ensure all keys are unique.");
-        internal static readonly string SelectFirstDuplicateButtonLabel = L10n.Tr("Select Duplicate");
+        internal static readonly string NullKeysHelpBoxSingle = L10n.Tr("1 null key ignored. A dictionary key can't be null.");
+        internal static readonly string NullKeysHelpBoxFormat = L10n.Tr("{0} null keys ignored. A dictionary key can't be null.");
+        internal static readonly string MixedIgnoredHelpBoxFormat = L10n.Tr("{0} entries ignored. Ensure all keys are unique and non-null.");
+        internal static readonly string SelectFirstIgnoredButtonLabel = L10n.Tr("Select");
         // Header context-menu labels for the three DictionaryLayout values, shown as a
         // radio group (the active layout is checked).
         internal static readonly string TwoColumnsLayoutLabel = L10n.Tr("Two Columns");
@@ -129,16 +133,27 @@ internal partial class DictionaryDrawer
         // Returned text includes the leading ", " separator so callers can
         // unconditionally append it after the item-count text without any
         // separator/comma bookkeeping at the call site.
-        internal static string GetDuplicateCountText(int count)
+        internal static string GetIgnoredCountText(int ignoredCount)
         {
-            return ", " + string.Format(DuplicatesFormat, count);
+            return ", " + string.Format(IgnoredFormat, ignoredCount);
         }
 
-        internal static string GetDuplicatesHelpBoxText(int count)
+        internal static string GetIgnoredHelpBoxText(int duplicateCount, int nullKeyCount)
         {
-            return count == 1
+            bool hasDuplicates = duplicateCount > 0;
+            bool hasNullKeys = nullKeyCount > 0;
+
+            if (hasDuplicates && hasNullKeys)
+                return string.Format(MixedIgnoredHelpBoxFormat, duplicateCount + nullKeyCount);
+
+            if (hasNullKeys)
+                return nullKeyCount == 1
+                    ? NullKeysHelpBoxSingle
+                    : string.Format(NullKeysHelpBoxFormat, nullKeyCount);
+
+            return duplicateCount == 1
                 ? DuplicatesHelpBoxSingle
-                : string.Format(DuplicatesHelpBoxFormat, count);
+                : string.Format(DuplicatesHelpBoxFormat, duplicateCount);
         }
 
     }
@@ -351,11 +366,20 @@ internal partial class DictionaryDrawer
         return true;
     }
 
-    // Returns true if the set actually changed, so callers can skip
+    // Returns true if either set actually changed, so callers can skip
     // UI refreshes (label text, gutter markers) when nothing differs.
-    internal static bool TryRefreshDuplicateIndicesInto(SerializedProperty dictionaryProperty, HashSet<int> target)
+    internal static bool TryRefreshDuplicateAndNullKeyIndicesInto(
+        SerializedProperty dictionaryProperty, HashSet<int> duplicateTarget, HashSet<int> nullKeyTarget)
     {
-        var newIndices = dictionaryProperty.GetDictionaryDuplicateEntryIndices() ?? Array.Empty<int>();
+        var ignored = dictionaryProperty.GetDictionaryIgnoredEntries();
+        bool duplicatesChanged = TryRefreshIndicesInto(ignored.duplicateEntryIndices, duplicateTarget);
+        bool nullKeysChanged = TryRefreshIndicesInto(ignored.nullKeyEntryIndices, nullKeyTarget);
+        return duplicatesChanged || nullKeysChanged;
+    }
+
+    static bool TryRefreshIndicesInto(int[] newIndices, HashSet<int> target)
+    {
+        newIndices ??= Array.Empty<int>();
         if (target.Count == newIndices.Length)
         {
             bool allMatch = true;
@@ -736,24 +760,31 @@ internal partial class DictionaryDrawer
         return lastIndex;
     }
 
-    internal static int FindFirstDuplicateDisplayIndex(
+    internal static int FindFirstIgnoredDisplayIndex(
         IEnumerable<int> duplicateArrayIndices,
+        IEnumerable<int> nullKeyArrayIndices,
         SortedIndexMap sortedIndices)
     {
-        if (duplicateArrayIndices == null)
-            return -1;
-
         int firstDisplayIndex = int.MaxValue;
-        foreach (var arrayIndex in duplicateArrayIndices)
+        firstDisplayIndex = MinDisplayIndex(duplicateArrayIndices, sortedIndices, firstDisplayIndex);
+        firstDisplayIndex = MinDisplayIndex(nullKeyArrayIndices, sortedIndices, firstDisplayIndex);
+        return firstDisplayIndex == int.MaxValue ? -1 : firstDisplayIndex;
+    }
+
+    static int MinDisplayIndex(IEnumerable<int> arrayIndices, SortedIndexMap sortedIndices, int current)
+    {
+        if (arrayIndices == null)
+            return current;
+
+        foreach (var arrayIndex in arrayIndices)
         {
             if (!sortedIndices.ContainsArrayIndex(arrayIndex))
                 continue;
             int displayIndex = sortedIndices.ToDisplayIndex(arrayIndex);
-            if (displayIndex < firstDisplayIndex)
-                firstDisplayIndex = displayIndex;
+            if (displayIndex < current)
+                current = displayIndex;
         }
-
-        return firstDisplayIndex == int.MaxValue ? -1 : firstDisplayIndex;
+        return current;
     }
 
     // Performs the dictionary "Remove" mutation: maps the current selection from
@@ -811,11 +842,26 @@ static class DictionaryKeyUtility
     {
         None,
         Duplicate,
+        NullKey,
     }
 
-    public static KeyMarkerKind GetMarkerKind(int arrayIndex, HashSet<int> duplicateEntryIndices)
+    public static KeyMarkerKind GetMarkerKind(int arrayIndex, HashSet<int> duplicateEntryIndices, HashSet<int> nullKeyEntryIndices)
     {
-        return duplicateEntryIndices.Contains(arrayIndex) ? KeyMarkerKind.Duplicate : KeyMarkerKind.None;
+        if (duplicateEntryIndices != null && duplicateEntryIndices.Contains(arrayIndex))
+            return KeyMarkerKind.Duplicate;
+        if (nullKeyEntryIndices != null && nullKeyEntryIndices.Contains(arrayIndex))
+            return KeyMarkerKind.NullKey;
+        return KeyMarkerKind.None;
+    }
+
+    public static string GetMarkerTooltip(KeyMarkerKind kind)
+    {
+        switch (kind)
+        {
+            case KeyMarkerKind.Duplicate: return DictionaryDrawer.Texts.DuplicateMarkerTooltip;
+            case KeyMarkerKind.NullKey: return DictionaryDrawer.Texts.NullKeyMarkerTooltip;
+            default: return null;
+        }
     }
 
 }

@@ -98,6 +98,8 @@ namespace Unity.PlayMode.Editor
 
         void AssignActiveConfig(PlayModeScenario config)
         {
+            DeselectIfStaleScenario();
+
             if (config == null)
                 config = DefaultScenarioInstance;
 
@@ -106,6 +108,18 @@ namespace Unity.PlayMode.Editor
 
             m_Config.OnSelected();
             ConfigAssetChanged?.Invoke();
+        }
+
+        void DeselectIfStaleScenario()
+        {
+            // There's a known issue where deleting ScriptableObjects does not call OnDestroy or OnDisable, so we don't
+            // have a clean way to call OnDeselected on the scenario. This is a workaround to detect if the active scenario
+            // has been deleted and call OnDeselected if it has.
+            if (!ReferenceEquals(m_Config, null) && m_Config == null)
+            {
+                m_Config.OnDeselected();
+                m_Config = null;
+            }
         }
 
         /// <summary>

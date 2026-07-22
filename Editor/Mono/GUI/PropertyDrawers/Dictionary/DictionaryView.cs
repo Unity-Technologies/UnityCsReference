@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
 /// <see cref="Dictionary{TKey, TValue}"/> field. Owns the foldout header
 /// (via <see cref="BaseListView.showFoldoutHeader"/>), the +/- footer
 /// (via <see cref="BaseListView.showAddRemoveFooter"/>), the two-column
-/// "Key | Value" header with its draggable resizer, sort + duplicate
+/// "Key | Value" header with its draggable resizer, sort + ignored-key
 /// detection state, and all per-property data needed to render and mutate
 /// the dictionary.
 ///
@@ -68,13 +68,13 @@ internal class DictionaryView : ListView
     // they reach only this view's own rows, never a nested dictionary's rows deeper down.
     static readonly string k_RowOneColumnClass = k_RowClass + "--one-column";
     static readonly string k_HelpBoxClass = ussClassName + "__helpbox";
-    static readonly string k_HelpBoxDuplicatesClass = ussClassName + "__helpbox--duplicates";
-    static readonly string k_HelpBoxSelectDuplicateClass = ussClassName + "__helpbox__select-duplicate";
+    static readonly string k_HelpBoxIgnoredClass = ussClassName + "__helpbox--duplicates";
+    static readonly string k_HelpBoxSelectIgnoredClass = ussClassName + "__helpbox__select-duplicate";
     static readonly string k_HeaderSpacerClass = ussClassName + "__header-spacer";
     static readonly string k_ToggleLabelClass = ussClassName + "__toggle-label";
     static readonly string k_EmptyLabelClass = ussClassName + "__empty-label";
     static readonly string k_HeaderInfoClass = ussClassName + "__header-info";
-    static readonly string k_DuplicateKeyIconClass = ussClassName + "__duplicate-key-icon";
+    static readonly string k_KeyWarningIconClass = ussClassName + "__duplicate-key-icon";
     static readonly string k_SelectionIndicatorClass = ussClassName + "__selection-indicator";
     static readonly string k_ColumnResizerClass = ussClassName + "__column-resizer";
     static readonly string k_ColumnResizerLineClass = ussClassName + "__column-resizer__line";
@@ -124,9 +124,10 @@ internal class DictionaryView : ListView
     internal string preferredLabel { get; set; }
 
     HelpBox m_MultiEditHelpBox;
-    HelpBox m_DuplicatesHelpBox;
+    HelpBox m_IgnoredHelpBox;
 
     readonly HashSet<int> m_DuplicateEntryIndices = new();
+    readonly HashSet<int> m_NullKeyEntryIndices = new();
 
     bool m_SortScheduled;
     bool m_SortAscending = true;
@@ -232,7 +233,7 @@ internal class DictionaryView : ListView
     // Tears down any prior bound state and rebuilds the view against the new
     // property. Resolves key/value types and the optional DictionaryDisplayAttribute
     // from the property's reflected FieldInfo, builds the column header, sort
-    // scheduler, and duplicate tracking, and installs makeItem/bindItem/onAdd/onRemove
+    // scheduler, and ignored-key tracking, and installs makeItem/bindItem/onAdd/onRemove
     // on the list. Only called from HandleEventBubbleUp's SerializedPropertyBindEvent
     // handler; external callers bind via bindingPath + the inspector's tree walk.
     void RebuildFromProperty(SerializedProperty property)
@@ -292,7 +293,7 @@ internal class DictionaryView : ListView
         arrayProp.Next(true);
         m_ArrayProperty = arrayProp;
 
-        BuildDuplicatesHelpBox(m_Foldout.contentContainer);
+        BuildIgnoredHelpBox(m_Foldout.contentContainer);
         BuildFoldoutHeaderInfoLabel();
         SetTwoColumnHeader(BuildColumnHeader());
 
@@ -337,10 +338,10 @@ internal class DictionaryView : ListView
         var listFooter = m_Foldout.Q(className: BaseListView.footerUssClassName);
         if (listFooter != null)
             listFooter.style.display = DisplayStyle.Flex;
-        if (m_DuplicatesHelpBox != null)
+        if (m_IgnoredHelpBox != null)
         {
-            m_DuplicatesHelpBox.RemoveFromHierarchy();
-            m_DuplicatesHelpBox = null;
+            m_IgnoredHelpBox.RemoveFromHierarchy();
+            m_IgnoredHelpBox = null;
         }
         if (m_ListHeader != null)
         {
@@ -374,6 +375,7 @@ internal class DictionaryView : ListView
         m_ArrayProperty = null;
 
         m_DuplicateEntryIndices.Clear();
+        m_NullKeyEntryIndices.Clear();
         m_ItemsSource = null;
         itemsSource = null;
         m_SortedIndexMap = DictionaryDrawer.SortedIndexMap.Empty;
@@ -441,13 +443,13 @@ internal class DictionaryView : ListView
         CheckIfKeysChangedAndSortIfNeeded();
 
         // While a key is being edited (or any other editor interaction is in
-        // flight) the pending sort can't run yet — keep duplicate markers in
+        // flight) the pending sort can't run yet — keep the key warning markers in
         // sync so the user sees live feedback as they type. Sorting itself
         // would yank the focused field out of their hands.
-        if (!IsReadyToSortByKey() && UpdateDuplicateIndicesOnly())
+        if (!IsReadyToSortByKey() && UpdateMarkerIndicesOnly())
         {
             UpdateHeaderInfo();
-            UpdateDuplicateKeyIconsOnVisibleItems();
+            UpdateKeyWarningIconsOnVisibleItems();
         }
     }
 
@@ -471,28 +473,28 @@ internal class DictionaryView : ListView
         toggle.Add(m_HeaderInfoLabel);
     }
 
-    void BuildDuplicatesHelpBox(VisualElement parent)
+    void BuildIgnoredHelpBox(VisualElement parent)
     {
-        // The duplicates helpbox starts hidden via .unity-dictionary-view__helpbox--duplicates
+        // The ignored-rows helpbox starts hidden via .unity-dictionary-view__helpbox--duplicates
         // (display: none in USS); UpdateHeaderInfo flips style.display when the
-        // duplicate count goes non-zero.
-        m_DuplicatesHelpBox = new HelpBox(string.Empty, HelpBoxMessageType.Warning);
-        m_DuplicatesHelpBox.AddToClassList(k_HelpBoxClass);
-        m_DuplicatesHelpBox.AddToClassList(k_HelpBoxDuplicatesClass);
+        // ignored count (duplicate + null keys) goes non-zero.
+        m_IgnoredHelpBox = new HelpBox(string.Empty, HelpBoxMessageType.Warning);
+        m_IgnoredHelpBox.AddToClassList(k_HelpBoxClass);
+        m_IgnoredHelpBox.AddToClassList(k_HelpBoxIgnoredClass);
 
-        var selectButton = new Button(OnSelectFirstDuplicateClicked)
+        var selectButton = new Button(OnSelectFirstIgnoredClicked)
         {
-            text = DictionaryDrawer.Texts.SelectFirstDuplicateButtonLabel
+            text = DictionaryDrawer.Texts.SelectFirstIgnoredButtonLabel
         };
-        selectButton.AddToClassList(k_HelpBoxSelectDuplicateClass);
-        m_DuplicatesHelpBox.Add(selectButton);
+        selectButton.AddToClassList(k_HelpBoxSelectIgnoredClass);
+        m_IgnoredHelpBox.Add(selectButton);
 
-        parent.Add(m_DuplicatesHelpBox);
+        parent.Add(m_IgnoredHelpBox);
     }
 
-    void OnSelectFirstDuplicateClicked()
+    void OnSelectFirstIgnoredClicked()
     {
-        int firstDisplayIndex = DictionaryDrawer.FindFirstDuplicateDisplayIndex(m_DuplicateEntryIndices, m_SortedIndexMap);
+        int firstDisplayIndex = DictionaryDrawer.FindFirstIgnoredDisplayIndex(m_DuplicateEntryIndices, m_NullKeyEntryIndices, m_SortedIndexMap);
         if (firstDisplayIndex < 0)
             return;
 
@@ -570,7 +572,7 @@ internal class DictionaryView : ListView
         public int displayIndex = -1;
         public VisualElement keyContainer;
         public VisualElement valueContainer;
-        public VisualElement duplicateKeyIcon;
+        public VisualElement keyWarningIcon;
         public PropertyField keyField;
         public PropertyField valueField;
     }
@@ -585,7 +587,7 @@ internal class DictionaryView : ListView
     }
 
     // Builds the parts every row shares regardless of layout: the row container, the
-    // duplicate-key icon, the key/value cell containers + their PropertyFields, the
+    // key warning icon, the key/value cell containers + their PropertyFields, the
     // selection indicator, and the row pointer-down handler. The per-mode factory below
     // decides how the value field is parented under valueContainer.
     DictionaryRow BuildRowScaffold(DictionaryRow row)
@@ -594,8 +596,8 @@ internal class DictionaryView : ListView
         row.AddToClassList(k_RowClass);
         row.name = "dict-element";
 
-        var duplicateKeyIcon = new VisualElement();
-        duplicateKeyIcon.AddToClassList(k_DuplicateKeyIconClass);
+        var keyWarningIcon = new VisualElement();
+        keyWarningIcon.AddToClassList(k_KeyWarningIconClass);
 
         var keyContainer = new VisualElement { name = "key-container" };
         keyContainer.AddToClassList(k_DrawerFieldClass);
@@ -633,7 +635,7 @@ internal class DictionaryView : ListView
         selectionIndicator.AddToClassList(k_SelectionIndicatorClass);
         selectionIndicator.pickingMode = PickingMode.Ignore;
 
-        row.Add(duplicateKeyIcon);
+        row.Add(keyWarningIcon);
         row.Add(keyContainer);
         row.Add(valueContainer);
         row.Add(selectionIndicator);
@@ -642,7 +644,7 @@ internal class DictionaryView : ListView
 
         row.keyContainer = keyContainer;
         row.valueContainer = valueContainer;
-        row.duplicateKeyIcon = duplicateKeyIcon;
+        row.keyWarningIcon = keyWarningIcon;
         row.keyField = keyField;
         row.valueField = valueField;
         return row;
@@ -721,7 +723,7 @@ internal class DictionaryView : ListView
         // key/value lookup unexpectedly returns null (e.g. corrupted entry), the stale
         // binding is dropped via Unbind() instead of leaving the previous row's data visible.
         RebindCellField(row.keyField, keyProp);
-        UpdateDuplicateKeyIconVisibility(row, arrayIndex);
+        UpdateKeyWarningIconVisibility(row, arrayIndex);
         RebindCellField(row.valueField, valueProp);
         // Reassert the collection label on reused rows: the label persists across rebinds, but a
         // pooled row may have been built for a different value type (the makeItem delegate compares
@@ -978,7 +980,7 @@ internal class DictionaryView : ListView
     // If the keys did not actually change we don't want to pay the
     // cost of sorting as this can be expensive for a large dictionary
     // If the order matches what we already have we skip the (expensive) ListView rebuild and only refresh the
-    // duplicate markers, which is much cheaper for large dictionaries.
+    // key warning markers, which is much cheaper for large dictionaries.
     void SortIfNeeded()
     {
         // If the user is interacting with the Editor we wait sorting to prevent disrupting the workflow
@@ -999,10 +1001,10 @@ internal class DictionaryView : ListView
 
         if (m_SortedIndexMap.DisplayOrderEquals(updatedSortedIndexMap))
         {
-            if (UpdateDuplicateIndicesOnly())
+            if (UpdateMarkerIndicesOnly())
             {
                 UpdateHeaderInfo();
-                UpdateDuplicateKeyIconsOnVisibleItems();
+                UpdateKeyWarningIconsOnVisibleItems();
             }
             return;
         }
@@ -1057,7 +1059,7 @@ internal class DictionaryView : ListView
     // foldout, one-column static value), so any layout change swaps makeItem and rebuilds the
     // pool — heavier than an in-place rebind, but a rare user-initiated switch, and virtualization
     // means the pool only ever holds the handful of visible rows. The sorted-index map, property
-    // tracking, and duplicate state are layout-independent.
+    // tracking, and ignored-key state are layout-independent.
     // Pass refresh: false when a list reload already runs alongside this call, so the visible rows
     // aren't rebuilt/rebound twice in a single layout change. Returns whether the template changed,
     // so a caller that deferred the refresh (refresh: false) knows it must Rebuild() rather than
@@ -1155,19 +1157,20 @@ internal class DictionaryView : ListView
         m_KeyHeader.EnableInClassList(MultiColumnHeaderColumn.sortedDescendingUssClassName, !m_SortAscending);
     }
 
-    void UpdateDuplicateKeyIconVisibility(DictionaryRow row, int arrayIndex)
+    void UpdateKeyWarningIconVisibility(DictionaryRow row, int arrayIndex)
     {
-        var icon = row?.duplicateKeyIcon;
+        var icon = row?.keyWarningIcon;
         if (icon == null)
             return;
 
-        if (DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_DuplicateEntryIndices) != DictionaryKeyUtility.KeyMarkerKind.None)
+        var markerKind = DictionaryKeyUtility.GetMarkerKind(arrayIndex, m_DuplicateEntryIndices, m_NullKeyEntryIndices);
+        if (markerKind != DictionaryKeyUtility.KeyMarkerKind.None)
         {
             // Icon, size, and top-offset all live in USS on
             // .unity-dictionary-view__duplicate-key-icon; we only flip display + tooltip
-            // from C# based on duplicate-state.
+            // from C# based on the marker kind.
             icon.style.display = DisplayStyle.Flex;
-            icon.tooltip = DictionaryDrawer.Texts.DuplicateMarkerTooltip;
+            icon.tooltip = DictionaryKeyUtility.GetMarkerTooltip(markerKind);
         }
         else
         {
@@ -1178,16 +1181,17 @@ internal class DictionaryView : ListView
 
     // Thin wrapper around the shared in-place refresh so call sites stay
     // self-documenting at the UITK layer.
-    bool UpdateDuplicateIndicesOnly()
-        => DictionaryDrawer.TryRefreshDuplicateIndicesInto(m_DictionaryFieldProperty, m_DuplicateEntryIndices);
+    bool UpdateMarkerIndicesOnly()
+        => DictionaryDrawer.TryRefreshDuplicateAndNullKeyIndicesInto(
+            m_DictionaryFieldProperty, m_DuplicateEntryIndices, m_NullKeyEntryIndices);
 
-    void UpdateDuplicateKeyIconsOnVisibleItems()
+    void UpdateKeyWarningIconsOnVisibleItems()
     {
         var content = scrollView.contentContainer;
         foreach (var wrapper in content.Children())
         {
             if (wrapper.Q<DictionaryRow>() is { } row && row.displayIndex >= 0 && row.displayIndex < displayedItemCount)
-                UpdateDuplicateKeyIconVisibility(row, DisplayToArrayIndex(row.displayIndex));
+                UpdateKeyWarningIconVisibility(row, DisplayToArrayIndex(row.displayIndex));
         }
     }
 
@@ -1293,7 +1297,7 @@ internal class DictionaryView : ListView
 
     void RefreshListView(bool rebuild = false)
     {
-        UpdateDuplicateIndicesOnly();
+        UpdateMarkerIndicesOnly();
         UpdateHeaderInfo();
         UpdateListViewItemsSource(displayedItemCount);
 
@@ -1327,25 +1331,27 @@ internal class DictionaryView : ListView
     {
         int itemCount = m_ArrayProperty.arraySize;
         int duplicateCount = m_DuplicateEntryIndices.Count;
-        bool hasDuplicates = duplicateCount > 0;
+        int nullKeyCount = m_NullKeyEntryIndices.Count;
+        int ignoredCount = duplicateCount + nullKeyCount;
+        bool hasIgnored = ignoredCount > 0;
 
         if (m_HeaderInfoLabel != null)
         {
             string text = DictionaryDrawer.Texts.GetItemCountText(itemCount);
-            if (hasDuplicates)
-                text += DictionaryDrawer.Texts.GetDuplicateCountText(duplicateCount);
+            if (hasIgnored)
+                text += DictionaryDrawer.Texts.GetIgnoredCountText(ignoredCount);
             m_HeaderInfoLabel.text = text;
         }
-        if (m_DuplicatesHelpBox != null)
+        if (m_IgnoredHelpBox != null)
         {
-            if (hasDuplicates)
+            if (hasIgnored)
             {
-                m_DuplicatesHelpBox.text = DictionaryDrawer.Texts.GetDuplicatesHelpBoxText(duplicateCount);
-                m_DuplicatesHelpBox.style.display = DisplayStyle.Flex;
+                m_IgnoredHelpBox.text = DictionaryDrawer.Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
+                m_IgnoredHelpBox.style.display = DisplayStyle.Flex;
             }
             else
             {
-                m_DuplicatesHelpBox.style.display = DisplayStyle.None;
+                m_IgnoredHelpBox.style.display = DisplayStyle.None;
             }
         }
     }

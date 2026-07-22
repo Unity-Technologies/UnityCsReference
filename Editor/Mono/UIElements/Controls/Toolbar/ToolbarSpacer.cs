@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toolbar spacer of static size. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSpacer|UXML element ToolbarSpacer]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/ToolbarSpacer.png")]
     public partial class ToolbarSpacer : VisualElement
     {

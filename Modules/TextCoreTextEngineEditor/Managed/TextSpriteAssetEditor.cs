@@ -622,28 +622,26 @@ namespace UnityEditor.TextCore.Text
                 #region Global Tools
                 GUI.enabled = true;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                rect = EditorGUILayout.GetControlRect(false, 40);
+                EditorGUILayout.LabelField("Global Offsets & Scale", EditorStyles.boldLabel);
 
-                float width = (rect.width - 75f) / 4;
-                EditorGUI.LabelField(rect, "Global Offsets & Scale", EditorStyles.boldLabel);
-
-
-                rect.x += 70;
                 bool old_ChangedState = GUI.changed;
-
                 GUI.changed = false;
-                m_xOffset = EditorGUI.FloatField(new Rect(rect.x + 5f + width * 0, rect.y + 20, width - 5f, 18), new GUIContent("OX:"), m_xOffset);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(25f);
+
+                m_xOffset = EditorGUILayout.FloatField(new GUIContent("OX:"), m_xOffset);
                 if (GUI.changed) UpdateGlobalProperty("m_HorizontalBearingX", m_xOffset);
 
-                m_yOffset = EditorGUI.FloatField(new Rect(rect.x + 5f + width * 1, rect.y + 20, width - 5f, 18), new GUIContent("OY:"), m_yOffset);
+                m_yOffset = EditorGUILayout.FloatField(new GUIContent("OY:"), m_yOffset);
                 if (GUI.changed) UpdateGlobalProperty("m_HorizontalBearingY", m_yOffset);
 
-                m_xAdvance = EditorGUI.FloatField(new Rect(rect.x + 5f + width * 2, rect.y + 20, width - 5f, 18), new GUIContent("ADV."), m_xAdvance);
+                m_xAdvance = EditorGUILayout.FloatField(new GUIContent("ADV."), m_xAdvance);
                 if (GUI.changed) UpdateGlobalProperty("m_HorizontalAdvance", m_xAdvance);
 
-                m_scale = EditorGUI.FloatField(new Rect(rect.x + 5f + width * 3, rect.y + 20, width - 5f, 18), new GUIContent("SF."), m_scale);
+                m_scale = EditorGUILayout.FloatField(new GUIContent("SF."), m_scale);
                 if (GUI.changed) UpdateGlobalProperty("m_Scale", m_scale);
 
+                EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
                 #endregion
 

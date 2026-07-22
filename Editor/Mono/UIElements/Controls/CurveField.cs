@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for editing an <see cref="AnimationCurve"/>. For more information, refer to [[wiki:UIE-uxml-element-CurveField|UXML element CurveField]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/CurveField.png")]
     public partial class CurveField : BaseField<AnimationCurve>
     {

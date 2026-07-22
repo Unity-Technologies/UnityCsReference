@@ -20,14 +20,14 @@
     <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <PropertyGroup>
-    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
-    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+    <HomeDir Condition="'$(HOME.Length)' != '0'">$(HOME)</HomeDir>
+    <HomeDir Condition="'$(USERPROFILE.Length)' != '0'">$(USERPROFILE)</HomeDir>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Data.cs" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen__ms8edw2/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_hd6w9cck/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

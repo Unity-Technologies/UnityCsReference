@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -79,9 +78,7 @@ namespace UnityEngine.UIElements
 
             unsafe
             {
-                layoutNode.SelectorData.logicalParent = logicalParent != null
-                    ? (VisualElementSelectorData*)Unsafe.AsPointer(ref logicalParent.layoutNode.SelectorData)
-                    : null;
+                m_SelectorDataPtr->logicalParent = logicalParent != null ? logicalParent.selectorDataPtr : null;
             }
         }
 
@@ -913,11 +910,17 @@ namespace UnityEngine.UIElements
                             // because their entire hierarchy is being cleared
                             descendant.m_PhysicalParent = null;
                             descendant.m_LogicalParent = null;
-                            descendant.UpdateHierarchySelectorData(null);
+
 
                             if (releaseResources)
                             {
                                 descendant.ReleaseResourcesNoChecks();
+                            }
+                            else
+                            {
+                                // Only update this data if we're not releasing the node
+                                // since otherwise nothing should be able to access this stale data
+                                descendant.UpdateHierarchySelectorData(null);
                             }
                         }
                     }

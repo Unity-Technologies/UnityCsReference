@@ -1189,6 +1189,7 @@ namespace UnityEditor
 
             // Legacy Packer has been obsoleted (1 & 2). Disabled (0) is still valid.
             popupIndex = (popupIndex != 0) ? (popupIndex + spritePackDeprecatedEnums) : 0;
+            bool refreshSprite = (m_SpritePackerMode.intValue != popupIndex);
             m_SpritePackerMode.intValue = popupIndex;
 
             if (m_IsGlobalSettings)
@@ -1198,6 +1199,11 @@ namespace UnityEditor
                 {
                     UnityEditor.U2D.SpriteAtlasImporter.MigrateAllSpriteAtlases();
                 }
+            }
+
+            if (refreshSprite)
+            {
+                UnityEditor.U2D.SpriteAtlasUtility.OnSpriteAtlasSettingsChanged();
             }
         }
 

@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toolbar for tool windows. For more information, refer to [[wiki:UIE-uxml-element-Toolbar|UXML element Toolbar]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/Toolbar.png")]
     public partial class Toolbar : VisualElement
     {

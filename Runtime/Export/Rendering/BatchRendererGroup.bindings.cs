@@ -266,8 +266,7 @@ namespace UnityEngine.Rendering
 
         public readonly EntityId GetEntityId()
         {
-            int val = (int)(handle & 0xffffffff);
-            return EntityId.FromULong((ulong)val);
+            return EntityId.FromULong(handle);
         }
 
         [Obsolete("GetSliceIndex() is obsolete.", true)]

@@ -131,15 +131,12 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var psr = context.GameObject.GetComponent<ParticleSystemRenderer>();
             if (psr != null)
             {
-                if (!psr.enableGPUInstancing)
+                var meshes = new Mesh[psr.meshCount];
+                int meshCount = psr.GetMeshes(meshes);
+                for (int i = 0; i < meshCount; i++)
                 {
-                    var meshes = new Mesh[psr.meshCount];
-                    int meshCount = psr.GetMeshes(meshes);
-                    for (int i = 0; i < meshCount; i++)
-                    {
-                        if ((meshes[i] != null) && (meshes[i].isReadable == false) && m_VisitedAssets.Add(meshes[i].GetEntityId()))
-                            yield return CreateMeshIssue(meshes[i], context);
-                    }
+                    if ((meshes[i] != null) && (meshes[i].isReadable == false) && m_VisitedAssets.Add(meshes[i].GetEntityId()))
+                        yield return CreateMeshIssue(meshes[i], context);
                 }
             }
 

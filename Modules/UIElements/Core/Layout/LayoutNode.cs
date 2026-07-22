@@ -53,6 +53,7 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     internal ref LayoutCacheData Cache => ref m_Access.GetCacheData(m_Handle);
 
     internal unsafe VisualElementTransformData* VisualElementTransformDataPtr => m_Access.GetTransformDataPtr(m_Handle);
+    internal unsafe VisualElementSelectorData* VisualElementSelectorDataPtr => m_Access.GetSelectorDataPtr(m_Handle);
     internal unsafe LayoutComputedData* ComputedDataPtr => m_Access.GetComputedDataPtr(m_Handle);
 
     /// <summary>
@@ -118,17 +119,18 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// <summary>
     /// Marks this node and all ancestors as dirty.
     /// </summary>
-    public void MarkDirty()
+    public unsafe void MarkDirty()
     {
-        if (IsDirty)
-            return;
-
-        IsDirty = true;
-
-        Layout.ComputedFlexBasis = float.NaN;
-
-        if (!Parent.IsUndefined)
-            Parent.MarkDirty();
+        var handle = m_Handle;
+        while (!handle.IsUndefined)
+        {
+            ref var data = ref m_Access.GetNodeData(handle);
+            if (data.IsDirty)
+                return;
+            data.IsDirty = true;
+            m_Access.GetComputedDataPtr(handle)->ComputedFlexBasis = float.NaN;
+            handle = data.Parent;
+        }
     }
 
     /// <summary>

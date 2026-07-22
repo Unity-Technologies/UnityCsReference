@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
@@ -18,6 +19,27 @@ namespace Unity.UIToolkit.Editor
         public string libraryPath { get; }
         public Background icon { get; set; }
         public Background largeIcon { get; set; }
+        public string assetPath { get; }
+        public bool isAsset => !string.IsNullOrEmpty(assetPath);
+
+        static Background s_AssetIcon;
+
+        VisualTreeAsset m_VisualTreeAsset;
+        bool m_VisualTreeAssetResolved;
+
+        public VisualTreeAsset visualTreeAsset
+        {
+            get
+            {
+                if (!m_VisualTreeAssetResolved)
+                {
+                    m_VisualTreeAssetResolved = true;
+                    if (!string.IsNullOrEmpty(assetPath))
+                        m_VisualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetPath);
+                }
+                return m_VisualTreeAsset;
+            }
+        }
 
         public LibraryItem(string name, LibraryTypeKey typeKey, Background icon, Background largeIcon, string path)
         {
@@ -38,6 +60,25 @@ namespace Unity.UIToolkit.Editor
             libraryType = typeKey;
             libraryPath = path;
             AssignIcon();
+        }
+
+        public LibraryItem(string name, string assetPath, string path)
+        {
+            this.name = name;
+            this.assetPath = assetPath;
+            libraryType = new LibraryTypeKey(typeof(TemplateContainer), assetPath, name);
+            libraryPath = path;
+
+            var assetIcon = GetAssetIcon();
+            icon = assetIcon;
+            largeIcon = assetIcon;
+        }
+
+        static Background GetAssetIcon()
+        {
+            if (s_AssetIcon.texture == null)
+                s_AssetIcon = Background.FromTexture2D((Texture2D)EditorGUIUtility.IconContent("VisualTreeAsset Icon").image);
+            return s_AssetIcon;
         }
 
         void AssignIcon()

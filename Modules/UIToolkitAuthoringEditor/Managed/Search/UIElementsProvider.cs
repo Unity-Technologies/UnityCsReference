@@ -4,12 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
+using PackageSource = UnityEditor.PackageManager.PackageSource;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -51,8 +54,12 @@ namespace Unity.UIToolkit.Editor
         const int k_MenuPriority = 3030;
         const string k_CustomProviderId = "uicustom";
         const string k_EngineProviderId = "uiengine";
+        const string k_UxmlProviderId = "uiuxml";
         const string k_MenuPath = "Window/UI Toolkit/UI Library";
         const string k_WindowTitle = "UI Library";
+
+        static Texture2D s_FolderIcon;
+        static Texture2D FolderIcon => s_FolderIcon != null ? s_FolderIcon : s_FolderIcon = EditorGUIUtility.FindTexture("Folder Icon");
 
         [MenuItem(k_MenuPath, false, 3010, secondaryPriority = 5)]
         internal static void OpenUIElementsPicker()
@@ -60,7 +67,8 @@ namespace Unity.UIToolkit.Editor
             var providers = new List<SearchProvider>
             {
                 SearchService.GetProvider(k_EngineProviderId),
-                SearchService.GetProvider(k_CustomProviderId)
+                SearchService.GetProvider(k_CustomProviderId),
+                SearchService.GetProvider(k_UxmlProviderId)
             };
 
             var searchContext = SearchService.CreateContext(providers, string.Empty);
@@ -69,6 +77,7 @@ namespace Unity.UIToolkit.Editor
             var state = new SearchViewState(searchContext)
             {
                 excludeClearItem = true,
+                group = k_EngineProviderId,
                 windowTitle = new GUIContent(k_WindowTitle),
                 flags = SearchViewFlags.DisableSavedSearchQuery | SearchViewFlags.DisableBuilderModeToggle | SearchViewFlags.OpenInBuilderMode,
                 resultViewDescriptorList = new SearchResultViewDescriptorList([SearchTreeView.GetDescriptor()])
@@ -89,9 +98,20 @@ namespace Unity.UIToolkit.Editor
             return CreateProvider(s_ProviderConfigs[1]);
         }
 
+        [SearchItemProvider]
+        internal static SearchProvider CreateProjectUxmlProvider()
+        {
+            return BuildProvider(k_UxmlProviderId, "UXMLs", FetchProjectUxmlItems);
+        }
+
         static SearchProvider CreateProvider(ProviderConfig config)
         {
-            return new SearchProvider(config.Id, config.Name, config.CreateFetchFunction())
+            return BuildProvider(config.Id, config.Name, config.CreateFetchFunction());
+        }
+
+        static SearchProvider BuildProvider(string id, string name, Func<SearchContext, SearchProvider, IEnumerable<SearchItem>> fetch)
+        {
+            return new SearchProvider(id, name, fetch)
             {
                 fetchLabel = FetchElementLabel,
                 fetchThumbnail = FetchElementThumbnail,
@@ -99,7 +119,7 @@ namespace Unity.UIToolkit.Editor
                 toObject = ToObject,
                 showDetails = true,
                 showDetailsOptions = ShowDetailsOptions.Preview,
-                actions = [CreateAddElementAction(config.Id), CreateAddChildElementAction(config.Id)],
+                actions = [CreateAddElementAction(id), CreateAddChildElementAction(id)],
                 isExplicitProvider = true,
                 fetchParentDescriptor = FetchParentDescriptor,
                 fetchParentsTokenSeparatedIds = FetchParentsTokenSeparatedIds
@@ -121,30 +141,47 @@ namespace Unity.UIToolkit.Editor
                     return libItem.largeIcon.texture;
                 if (libItem.icon.texture != null)
                     return libItem.icon.texture;
+                return item.thumbnail;
             }
-            return item.thumbnail;
+
+            return FolderIcon;
         }
 
         static void StartElementDrag(SearchItem item, SearchContext context)
         {
-            if (item.data is LibraryItem libItem)
+            if (item.data is not LibraryItem libItem)
+                return;
+
+            DragAndDrop.PrepareStartDrag();
+
+            if (libItem.isAsset)
             {
-                // Store the library item for drag-and-drop
-                DragAndDrop.PrepareStartDrag();
-                DragAndDrop.SetGenericData(LibraryItem.DragDataKey, libItem);
-                DragAndDrop.StartDrag(libItem.name);
+                DragAndDrop.objectReferences = [libItem.visualTreeAsset];
+                DragAndDrop.paths = [libItem.assetPath];
             }
+            else
+            {
+                DragAndDrop.SetGenericData(LibraryItem.DragDataKey, libItem);
+            }
+
+            DragAndDrop.StartDrag(libItem.name);
         }
 
         static UnityEngine.Object ToObject(SearchItem item, Type type)
         {
-            if (item.data is LibraryItem libItem && libItem.libraryType.type != null)
+            if (item.data is LibraryItem libItem)
             {
-                // Create a VisualTreeAsset containing just this element
-                var vta = CreateVisualTreeAssetFromElement(libItem);
-                if (vta != null)
+                if (libItem.isAsset)
+                    return libItem.visualTreeAsset;
+
+                if (libItem.libraryType.type != null)
                 {
-                    return vta;
+                    // Create a VisualTreeAsset containing just this element
+                    var vta = CreateVisualTreeAssetFromElement(libItem);
+                    if (vta != null)
+                    {
+                        return vta;
+                    }
                 }
             }
             return null;
@@ -218,6 +255,74 @@ namespace Unity.UIToolkit.Editor
                 yield return searchItem;
                 score++;
             }
+        }
+
+        /// <summary>
+        /// Fetches the user's project UXML documents as search items for the UXML provider.
+        /// </summary>
+        static IEnumerable<SearchItem> FetchProjectUxmlItems(SearchContext context, SearchProvider provider)
+        {
+            var includePackages = (context.options & SearchFlags.Packages) != 0;
+            long score = 0;
+            foreach (var libItem in EnumerateProjectUxmlItems(includePackages))
+            {
+                if (!string.IsNullOrEmpty(context.searchQuery)
+                    && libItem.name.IndexOf(context.searchQuery, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    yield return null;
+                    continue;
+                }
+
+                var searchItem = provider.CreateItem(
+                    context,
+                    id: $"{k_UxmlProviderId}/{libItem.assetPath}",
+                    score: ~(int)score,
+                    label: libItem.name,
+                    description: null,
+                    thumbnail: libItem.icon.texture,
+                    data: libItem
+                );
+                yield return searchItem;
+                score++;
+            }
+        }
+
+        /// <summary>
+        /// Lazily enumerates the project's UXML documents as <see cref="LibraryItem"/>s, excluding read-only assets.
+        /// Package documents are included only when the search's "Show Package Files" option is enabled.
+        /// </summary>
+        static IEnumerable<LibraryItem> EnumerateProjectUxmlItems(bool includePackages)
+        {
+            var searchFilter = new SearchFilter
+            {
+                classNames = [nameof(VisualTreeAsset)],
+                searchArea = includePackages ? SearchFilter.SearchArea.AllAssets : SearchFilter.SearchArea.InAssetsOnly
+            };
+
+            var guids = AssetDatabase.FindAssets(searchFilter);
+            var paths = new string[guids.Length];
+            for (var i = 0; i < guids.Length; i++)
+                paths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
+
+            Array.Sort(paths, StringComparer.Ordinal);
+
+            foreach (var assetPath in paths)
+            {
+                if (string.IsNullOrEmpty(assetPath) || !IsWritable(assetPath))
+                    continue;
+
+                var name = Path.GetFileName(assetPath);
+                var folder = Path.GetDirectoryName(assetPath);
+                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.Replace('\\', '/');
+
+                yield return new LibraryItem(name, assetPath, folder);
+            }
+        }
+
+        static bool IsWritable(string assetPath)
+        {
+            var packageInfo = PackageInfo.FindForAssetPath(assetPath);
+            return packageInfo == null || packageInfo.source == PackageSource.Embedded || packageInfo.source == PackageSource.Local;
         }
 
         /// <summary>
@@ -304,6 +409,14 @@ namespace Unity.UIToolkit.Editor
             if (item.data is not LibraryItem libItem)
                 return;
 
+            if (libItem.isAsset)
+            {
+                var template = libItem.visualTreeAsset;
+                if (template != null)
+                    MenuUtility.AddTemplateAsSibling(template);
+                return;
+            }
+
             var elementType = libItem.libraryType.type;
             if (elementType == null)
                 return;
@@ -329,6 +442,14 @@ namespace Unity.UIToolkit.Editor
         {
             if (item.data is not LibraryItem libItem)
                 return;
+
+            if (libItem.isAsset)
+            {
+                var template = libItem.visualTreeAsset;
+                if (template != null)
+                    MenuUtility.AddTemplateAsLastChild(template);
+                return;
+            }
 
             var elementType = libItem.libraryType.type;
             if (elementType == null)

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -26,6 +27,36 @@ namespace UnityEngine.UIElements
         /// The element is not visible in the UI Builder Library.
         /// </summary>
         Hidden
+    }
+
+    /// <summary>
+    /// Sets the default <see cref="LibraryVisibility"/> for all <see cref="UxmlElementAttribute">UxmlElement</see>-marked
+    /// types in an assembly whose own visibility is <see cref="LibraryVisibility.Default"/>.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// // In AssemblyInfo.cs:
+    /// [assembly: UILibraryVisibility(LibraryVisibility.Hidden)]
+    ///
+    /// // Opt a specific control back in:
+    /// [UxmlElement(visibility = LibraryVisibility.Visible)]
+    /// public partial class MyControl : VisualElement { }
+    /// </code>
+    /// </example>
+    [AttributeUsage(AttributeTargets.Assembly)]
+    [VisibleToOtherModules]
+    internal class UILibraryVisibilityAttribute : Attribute
+    {
+        /// <summary>
+        /// The default visibility for all controls in the assembly.
+        /// </summary>
+        public LibraryVisibility Visibility { get; }
+
+        /// <param name="visibility">The default visibility to apply to controls in this assembly.</param>
+        public UILibraryVisibilityAttribute(LibraryVisibility visibility)
+        {
+            Visibility = visibility;
+        }
     }
 
     /// <summary>

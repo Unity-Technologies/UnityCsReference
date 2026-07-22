@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -38,17 +39,21 @@ namespace UnityEditor.Build.Analysis
         private const string k_InspectorToggleTooltip = "Toggle Inspector";
         private const string k_InspectorToggleDisabledTooltip = "The inspector is only available on the Assets tab";
 
+        private const string k_LoadingMessage = "Analyzing build…";
+
         private TwoPaneSplitView m_SplitView;
         private ToolbarToggle m_InspectorToggle;
         private TabView m_TabView;
         private Tab m_OverviewTab;
         private Tab m_AssetsTab;
+        private LoadingOverlay m_LoadingOverlay;
         private BuildListPanel m_BuildListPanel;
 
         private BuildAnalysisService m_Service;
         private BuildAnalysisTabHost m_TabHost;
         private BuildHistoryWatcher m_Watcher;
-        private BuildAnalysis m_SelectedBuildAnalysis;
+
+        private SelectionGate m_Gate;
 
         [MenuItem("Window/Analysis/Build Analysis")]
         internal static void ShowWindow()
@@ -71,18 +76,29 @@ namespace UnityEditor.Build.Analysis
 
             var enumerator = new BuildEnumerator(buildHistory);
             var analyzer = new BuildAnalyzer(new BuildReportConverter(), fileSystem, buildHistory);
-            m_Service = new BuildAnalysisService(enumerator, analyzer, fileSystem, new BuildAnalysisProgressReporter(), buildHistory);
+            m_Service = new BuildAnalysisService(enumerator, analyzer, fileSystem, buildHistory);
 
             m_Watcher = new BuildHistoryWatcher(buildHistory);
             m_Watcher.BuildHistoryChanged += RefreshBuildList;
             m_Watcher.Enable();
+
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
         }
 
         private void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            m_Service?.Dispose();
             m_Watcher.Disable();
             m_Watcher.BuildHistoryChanged -= RefreshBuildList;
             SavePersistedState();
+        }
+
+        // Cancel in-flight analysis before the domain is torn down so continuations don't run against a
+        // half-dead window. OnEnable rebuilds a fresh service (and cancellation token) after the reload.
+        private void OnBeforeAssemblyReload()
+        {
+            m_Service?.CancelPending();
         }
 
         public void CreateGUI()
@@ -103,6 +119,8 @@ namespace UnityEditor.Build.Analysis
             m_TabView = rootVisualElement.Q<TabView>("main-tabs");
             m_OverviewTab = rootVisualElement.Q<Tab>("overview-tab");
             m_AssetsTab = rootVisualElement.Q<Tab>("assets-tab");
+
+            m_Gate = new SelectionGate(() => rootVisualElement?.panel != null);
 
             var buildListHost = rootVisualElement.Q<VisualElement>("build-list-host");
             m_BuildListPanel = new BuildListPanel(this);
@@ -153,6 +171,9 @@ namespace UnityEditor.Build.Analysis
             m_TabView.activeTabChanged += (_, activeTab) => UpdateInspectorToggleEnabled(activeTab);
             UpdateInspectorToggleEnabled(m_TabView.activeTab);
 
+            m_LoadingOverlay = new LoadingOverlay();
+            m_TabView.contentContainer.Add(m_LoadingOverlay);
+
             m_TabHost.NotifyCurrentTabVisibility();
             m_TabHost.SetInspectorOpen(m_InspectorToggle.value);
             m_TabHost.SetSelection(null, null);
@@ -179,17 +200,66 @@ namespace UnityEditor.Build.Analysis
             m_BuildListPanel.SetBuilds(m_Service.GetBuilds(), BuildHistory.BuildHistoryLimit);
         }
 
-        private void OnBuildSelectionChanged(BuildEntry selection)
+        private async void OnBuildSelectionChanged(BuildEntry selection)
         {
             if (selection == null)
             {
-                m_SelectedBuildAnalysis = null;
+                // Invalidate any in-flight load (so its continuation is dropped as stale) and clear the view.
+                m_Gate.Clear();
                 m_TabHost.SetSelection(null, null);
+                m_LoadingOverlay.Hide();
                 return;
             }
 
-            m_SelectedBuildAnalysis = m_Service.GetBuildAnalysis(selection.BuildSessionGUID);
-            m_TabHost.SetSelection(selection, m_SelectedBuildAnalysis);
+            // Already loading or showing this build (e.g. a build-list refresh re-fired selection) — skip.
+            if (m_Gate.IsCurrentTarget(selection.BuildSessionGUID))
+                return;
+
+            await LoadAndApplyAsync(selection, () => m_Service.GetBuildAnalysisAsync(selection.BuildSessionGUID));
+        }
+
+        // Apply for both selection and regenerate: show the overlay, await the result, and
+        // update the tabs only if this is still the latest request and the window is still alive.
+        private async Task LoadAndApplyAsync(BuildEntry build, Func<Task<BuildAnalysis>> load)
+        {
+            var seq = m_Gate.Begin(build.BuildSessionGUID);
+
+            // Show the loading overlay over the active tab's content before we await.
+            m_LoadingOverlay.Show(k_LoadingMessage);
+
+            BuildAnalysis analysis;
+            try
+            {
+                analysis = await load();
+            }
+            catch (OperationCanceledException)
+            {
+                // Service was torn down / reloaded mid-load (Dispose or CancelPending cancelled the token
+                // before the off-thread work started). Swallow so the async-void caller doesn't log it; the
+                // window is gone or being rebuilt, so there's nothing to update.
+                return;
+            }
+            catch (Exception e)
+            {
+                if (!m_Gate.IsStale(seq))
+                {
+                    m_TabHost.SetSelection(null, null); // clear to no-selection
+                    m_LoadingOverlay.Hide();
+                    m_Gate.Clear(); // a failed load isn't shown — drop the target so re-selecting retries
+                    Debug.LogError($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Failed to analyze build: {e.Message}");
+                }
+                return;
+            }
+
+            if (m_Gate.IsStale(seq))
+                return;
+
+            m_TabHost.SetSelection(build, analysis);
+            m_LoadingOverlay.Hide();
+
+            // A build that produced no analysis isn't shown — drop the target so re-selecting retries.
+            if (analysis == null)
+                m_Gate.Clear();
         }
 
         private void SavePersistedState()
@@ -279,20 +349,37 @@ namespace UnityEditor.Build.Analysis
             EditorGUIUtility.systemCopyBuffer = build.FolderPath;
         }
 
-        void IBuildListActions.RegenerateAnalysis(BuildEntry build)
+        async void IBuildListActions.RegenerateAnalysis(BuildEntry build)
         {
             if (build == null)
                 return;
+            await LoadAndApplyAsync(build, () => m_Service.RegenerateBuildAnalysisAsync(build.BuildSessionGUID));
+        }
+    }
 
-            try
-            {
-                m_SelectedBuildAnalysis = m_Service.RegenerateBuildAnalysis(build.BuildSessionGUID);
-                m_TabHost.SetSelection(build, m_SelectedBuildAnalysis);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Failed to re-generate analysis: {e.Message}");
-            }
+    // Decides which async selection/regenerate result is still worth applying.
+    internal sealed class SelectionGate
+    {
+        private readonly Func<bool> m_IsAlive;
+        private int m_Seq;
+        private GUID m_TargetGuid;
+
+        public SelectionGate(Func<bool> isAlive) => m_IsAlive = isAlive;
+
+        public int Begin(GUID target)
+        {
+            m_TargetGuid = target;
+            return ++m_Seq;
+        }
+
+        public bool IsStale(int seq) => seq != m_Seq || !m_IsAlive();
+
+        public bool IsCurrentTarget(GUID guid) => guid == m_TargetGuid;
+
+        public void Clear()
+        {
+            m_Seq++;
+            m_TargetGuid = default;
         }
     }
 }

@@ -1256,38 +1256,54 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal PseudoStates pseudoStates
+        internal unsafe PseudoStates pseudoStates
         {
             get
             {
                 if ((m_Flags & VisualElementFlags.Released) != 0)
                     throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
 
-                return layoutNode.SelectorData.pseudoStates;
+                return m_SelectorDataPtr->pseudoStates;
             }
             set
             {
                 if ((m_Flags & VisualElementFlags.Released) != 0)
                     throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
 
-                ref var selectorData = ref layoutNode.SelectorData;
-                PseudoStates diff = selectorData.pseudoStates ^ value;
-                selectorData.pseudoStates = value;
+                ApplyPseudoStateChange(value);
+            }
+        }
 
-                if ((int)diff > 0)
+        // Hot-path mutator for the SetEnabled tree traversal. Skips the Released safety check;
+        // callers must guarantee the element is not released (true when walking live children
+        // of a live tree). Goes through the cached selector-data pointer to avoid the property
+        // accessor cost on every node.
+        internal unsafe void UpdatePseudoState(PseudoStates bit, bool on)
+        {
+            var current = m_SelectorDataPtr->pseudoStates;
+            var value = on ? current | bit : current & ~bit;
+            ApplyPseudoStateChange(value);
+        }
+
+        unsafe void ApplyPseudoStateChange(PseudoStates value)
+        {
+            ref var selectorData = ref *m_SelectorDataPtr;
+            PseudoStates diff = selectorData.pseudoStates ^ value;
+            selectorData.pseudoStates = value;
+
+            if ((int)diff > 0)
+            {
+                // If only the root changed do not trigger a new style update since the root
+                // pseudo state change base on the current style sheet when selectors are matched.
+                if (diff != PseudoStates.Root)
                 {
-                    // If only the root changed do not trigger a new style update since the root
-                    // pseudo state change base on the current style sheet when selectors are matched.
-                    if (diff != PseudoStates.Root)
-                    {
-                        var added = diff & value;
-                        var removed = diff ^ added;
+                    var added = diff & value;
+                    var removed = diff ^ added;
 
-                        if ((selectorData.triggerPseudoMask & added) != 0
-                            || (selectorData.dependencyPseudoMask & removed) != 0)
-                        {
-                            IncrementVersion(VersionChangeType.StyleSheet);
-                        }
+                    if ((selectorData.triggerPseudoMask & added) != 0
+                        || (selectorData.dependencyPseudoMask & removed) != 0)
+                    {
+                        IncrementVersion(VersionChangeType.StyleSheet);
                     }
                 }
             }
@@ -1485,11 +1501,11 @@ namespace UnityEngine.UIElements
             SetNameId(uniqueName.id);
         }
 
-        private void SetNameId(int nameId)
+        private unsafe void SetNameId(int nameId)
         {
             if ((m_Flags & VisualElementFlags.Released) != 0)
                 throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
-            layoutNode.SelectorData.nameId = nameId;
+            m_SelectorDataPtr->nameId = nameId;
             IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Name);
             NotifyPropertyChanged(nameProperty);
         }
@@ -1508,6 +1524,9 @@ namespace UnityEngine.UIElements
             get => (m_Flags & VisualElementFlags.DisabledSelf) == 0;
             set
             {
+                if ((m_Flags & VisualElementFlags.Released) != 0)
+                    throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
                 if (enabledSelf == value)
                     return;
 
@@ -1771,7 +1790,7 @@ namespace UnityEngine.UIElements
 
         // Cached UniqueStyleString.id for the element name (instance-specific). Equals
         // UniqueStyleString.Empty.id when name is null/empty; otherwise a valid interned id.
-        internal int nameId => layoutNode.SelectorData.nameId;
+        internal unsafe int nameId => m_SelectorDataPtr->nameId;
 
         LayoutNode m_LayoutNode;
 
@@ -1786,6 +1805,15 @@ namespace UnityEngine.UIElements
 
         private readonly unsafe VisualElementTransformData* m_TransformDataPTr;
         private unsafe ref VisualElementTransformData transformData => ref *m_TransformDataPTr;
+
+        // Fast-tracked access to the selector data component; mirrors the m_TransformDataPTr pattern so
+        // hot paths can avoid the per-call UnmanagedDataStore.GetComponentDataPtr chunk lookup.
+        private readonly unsafe VisualElementSelectorData* m_SelectorDataPtr;
+
+        // Exposed so selector-matching and style-update paths (and any per-element mirror writes)
+        // can read/write through the same cached pointer instead of resolving the chunk address
+        // per access via layoutNode.SelectorData. Only valid while the element is not released.
+        internal unsafe VisualElementSelectorData* selectorDataPtr => m_SelectorDataPtr;
 
         internal ref ComputedStyle computedStyle
         {
@@ -1895,6 +1923,7 @@ namespace UnityEngine.UIElements
                 // Fast-tracked access to the transform matrices and flags, as their access is quite frequent.
                 // Removing this direct access makes Picking ~25% slower. See UIElementsEvents.OptimizePick tests.
                 m_TransformDataPTr = layoutNode.VisualElementTransformDataPtr;
+                m_SelectorDataPtr = layoutNode.VisualElementSelectorDataPtr;
             }
 
             renderHints = RenderHints.None;
@@ -1920,7 +1949,7 @@ namespace UnityEngine.UIElements
             // component but m_ClassList = StyleClassList.Empty already points to a valid (empty)
             // NativeArray — seed it through the helper so the in-sync assertion holds even when
             // nothing ever mutates the list.
-            layoutNode.SelectorData.typeNameId = typeNameId;
+            unsafe { m_SelectorDataPtr->typeNameId = typeNameId; }
             UpdateClassSelectorData();
         }
 
@@ -2289,7 +2318,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            pseudoStates |= PseudoStates.Disabled;
+            UpdatePseudoState(PseudoStates.Disabled, true);
 
             var count = m_Children.Count;
             for (int i = 0; i < count; ++i)
@@ -2306,7 +2335,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            pseudoStates &= ~PseudoStates.Disabled;
+            UpdatePseudoState(PseudoStates.Disabled, false);
 
             var count = m_Children.Count;
             for (int i = 0; i < count; ++i)
@@ -2401,7 +2430,7 @@ namespace UnityEngine.UIElements
             if (!value)
             {
                 AddToClassList(disabledUssClassNameUnique);
-                pseudoStates |= PseudoStates.Disabled;
+                UpdatePseudoState(PseudoStates.Disabled, true);
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {
@@ -2411,7 +2440,7 @@ namespace UnityEngine.UIElements
             else
             {
                 RemoveFromClassList(disabledUssClassNameUnique);
-                pseudoStates &= ~PseudoStates.Disabled;
+                UpdatePseudoState(PseudoStates.Disabled, false);
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {
@@ -2949,17 +2978,14 @@ namespace UnityEngine.UIElements
         // Mirrors the class-list pointer / count into the VisualElementSelectorData component so
         // the native selector matcher sees the latest set of classes. Called from every class-list
         // mutator. Pointers are stable thanks to StyleClassList's NativeArray storage.
-        private void UpdateClassSelectorData()
+        private unsafe void UpdateClassSelectorData()
         {
             if ((m_Flags & VisualElementFlags.Released) != 0)
                 throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
 
-            unsafe
-            {
-                ref var selectorData = ref layoutNode.SelectorData;
-                selectorData.classIds = m_ClassList.GetClassIdsPtr();
-                selectorData.classCount = m_ClassList.Count;
-            }
+            ref var selectorData = ref *m_SelectorDataPtr;
+            selectorData.classIds = m_ClassList.GetClassIdsPtr();
+            selectorData.classCount = m_ClassList.Count;
         }
 
         /// <summary>

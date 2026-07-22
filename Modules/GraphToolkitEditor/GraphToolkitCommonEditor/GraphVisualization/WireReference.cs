@@ -15,9 +15,10 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
     /// The reference is only meaningful for the <see cref="Context"/> that produced it.
     /// You can use its properties to set, retrieve, or clear customization for that specific wire in the graph canvas.
     /// Two <see cref="WireReference"/> values are equal when they share the same <see cref="OutputPortID"/> and <see cref="InputPortID"/>, and refer to the same <see cref="Context"/> instance.
+    ///
+    /// Create a visualization context for a graph, retrieve a <see cref="WireReference"/> for a connected pair of ports, apply customizations, then clear them.
     /// </remarks>
     /// <example>
-    /// Create a visualization context for a graph, retrieve a <see cref="WireReference"/> for a connected pair of ports, apply customizations, then clear them.
     /// <code>
     /// using Context context = Registry.CreateVisualizationContext(graph.UID);
     /// WireReference wire = context.GetWireReference(outputPortID, inputPortID);
@@ -61,9 +62,10 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
         /// Setting a new value overwrites any existing dash pattern overrides for that wire. The wire keeps the dashed pattern until you set this property back to <c>false</c> or call <see cref="ClearCustomization"/>.
         /// Setting this property has no effect when the <see cref="WireReference"/> has no associated <see cref="Context"/>, such as when it is <c>default</c>.
         /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
+        /// 
+        /// Apply a dashed style to a wire by retrieving its <see cref="WireReference"/> from a visualization <see cref="Context"/> and setting this property.
         /// </remarks>
         /// <example>
-        /// Apply a dashed style to a wire by retrieving its <see cref="WireReference"/> from a visualization <see cref="Context"/> and setting this property.
         /// <code>
         /// WireReference wire = context.GetWireReference(outputPortID, inputPortID);
         /// wire.IsDashed = true;

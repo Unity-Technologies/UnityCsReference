@@ -604,7 +604,7 @@ internal unsafe struct NativeReadBufferContext
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, void> syncReader;
     public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
     public int      flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
-    public bool     warnOnDuplicates;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
+    public bool     warnAboutIgnoredEntries;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
     public byte     _pad0;
     public byte     _pad1;
     public byte     _pad2;             // align fuidContext to 8-byte boundary
@@ -760,8 +760,8 @@ internal static unsafe class SerializationBackendManagedCommands
     [FreeFunction("DictionaryFieldUniqueIdentifierBindings::FormatDictionaryFieldUniqueIdentifierForActiveContext", IsThreadSafe = true)]
     private static extern string FormatDictionaryFieldUniqueIdentifier(IntPtr dictionaryIdentifierTemplate);
 
-    [FreeFunction("DictionaryFieldUniqueIdentifierBindings::LogDictionaryDuplicateKeyWarning", IsThreadSafe = true)]
-    private static extern void LogDictionaryDuplicateKeyWarning(string message, EntityId hostingEntityId);
+    [FreeFunction("DictionaryFieldUniqueIdentifierBindings::LogDictionaryKeyWarning", IsThreadSafe = true)]
+    private static extern void LogDictionaryKeyWarning(string message, EntityId hostingEntityId);
 
     // Must match the C++ constants in SerializationCommands.h.
     //
@@ -3795,6 +3795,25 @@ internal static unsafe class SerializationBackendManagedCommands
         pos = nestedStart + nestedBytes;
     }
 
+    // Builds the single Console warning covering whichever key problems the managed deserializer reported for a
+    // dictionary: duplicate keys, null keys, or both. At least one flag is true when this is called. Kept in sync
+    // with the native DictionaryField.cpp ComposeDictionaryKeyWarning so both read paths report identical text.
+    // Only invoked from the warning path below, which is compiled out in UNITY_NATIVE_TEST_RESOURCES.
+    private static string ComposeDictionaryKeyWarningMessage(string dictionaryIdentifier, bool hadDuplicates, bool hadNullKeys)
+    {
+        // Clauses share a single "Dictionary field '<id>' " prefix so the both-problems case names the field once.
+        string body = string.Empty;
+        if (hadDuplicates)
+            body = "contains duplicate key entries. Ensure all keys are unique. Only the first occurrence of each key will be added to the dictionary object.";
+        if (hadNullKeys)
+        {
+            if (body.Length > 0)
+                body += " It also ";
+            body += "contains entries with a null key. A dictionary can't contain a null key, so Unity excludes these entries from the dictionary object.";
+        }
+        return "Dictionary field '" + dictionaryIdentifier + "' " + body;
+    }
+
     // Read-path mirror of ConsumeDictionary. Reads the count prefix and per-entry
     // body (same shape ConsumeLinearCollectionRead's per-element-recursion path
     // produces) into a SerializedKeyValue<K,V>[] staging array, then calls
@@ -3808,11 +3827,11 @@ internal static unsafe class SerializationBackendManagedCommands
     // produces (DictionaryField.cpp:142-144) so write→read round-trips through
     // the cache are stable.
     //
-    // Duplicate-key warning: when ctx->warnOnDuplicates is set (serialized-file
+    // Ignored-entry warning: when ctx->warnAboutIgnoredEntries is set (serialized-file
     // load or Object.Instantiate clone) AND SetEntriesFromSerializedData reports
-    // hadDuplicates AND we have a non-empty dictionary identifier, emit the
-    // clickable Console warning via LogDictionaryDuplicateKeyWarning — same
-    // flags + EntityId hookup as DictionaryField::LogDuplicateKeyWarning.
+    // duplicate or null keys AND we have a non-empty dictionary identifier, emit a
+    // single clickable Console warning covering both problems via LogDictionaryKeyWarning
+    // — same flags + EntityId hookup as DictionaryField::LogDictionaryKeyWarning.
     private static unsafe void ConsumeDictionaryRead(
         NativeReadBufferContext* ctx,
         ref byte baseAddr,
@@ -3917,22 +3936,22 @@ internal static unsafe class SerializationBackendManagedCommands
                 // the non-typed SetEntriesFromSerializedData entry point when
                 // the index is -1.
                 bool hadDuplicates;
+                bool hadNullKeys;
                 DictionarySerialization.InvokeSetEntriesTyped(
                     header->setEntriesTypedIndex,
-                    ctx->hostingEntityId, dictRef, entries, dictionaryIdentifier, out hadDuplicates);
+                    ctx->hostingEntityId, dictRef, entries, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
 
-                // Warn-on-duplicates policy mirrors the legacy DictionaryField::SetArray
-                // path: only fires for serialized-file loads + Object.Instantiate clones
-                // (ctx->warnOnDuplicates set by the native dispatcher), and only when
-                // we actually have a formatted identifier — without one we can't tell
-                // the user which dictionary field is affected.
-                if (ctx->warnOnDuplicates && hadDuplicates && !string.IsNullOrEmpty(dictionaryIdentifier))
+                // Warn policy mirrors the legacy DictionaryField::SetArray path: only fires for
+                // serialized-file loads + Object.Instantiate clones (ctx->warnAboutIgnoredEntries set by
+                // the native dispatcher), and only when we actually have a formatted identifier —
+                // without one we can't tell the user which dictionary field is affected. A single
+                // combined warning covers both problems, so a dictionary with duplicate keys and
+                // null keys logs one Console entry, not two. LogDictionaryKeyWarning is a
+                // [FreeFunction] unavailable in UNITY_NATIVE_TEST_RESOURCES, so it's compiled out there.
+                if (ctx->warnAboutIgnoredEntries && (hadDuplicates || hadNullKeys) && !string.IsNullOrEmpty(dictionaryIdentifier))
                 {
-                    string message =
-                        "Dictionary field '" + dictionaryIdentifier + "' contains duplicate key entries. " +
-                        "Ensure all keys are unique. Only the first occurrence of each key will be added " +
-                        "to the dictionary object.";
-                    LogDictionaryDuplicateKeyWarning(message, ctx->hostingEntityId);
+                    string message = ComposeDictionaryKeyWarningMessage(dictionaryIdentifier, hadDuplicates, hadNullKeys);
+                    LogDictionaryKeyWarning(message, ctx->hostingEntityId);
                 }
             }
         }

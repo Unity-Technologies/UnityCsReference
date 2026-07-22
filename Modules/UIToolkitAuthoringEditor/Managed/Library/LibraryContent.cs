@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -106,14 +107,31 @@ namespace Unity.UIToolkit.Editor
             if (uxmlAttr != null && uxmlAttr.visibility == LibraryVisibility.Hidden)
                 return false;
 
-            if (type.Namespace != null && type.Namespace.StartsWith("UnityEditor."))
-                return false;
+            if (uxmlAttr == null || uxmlAttr.visibility == LibraryVisibility.Default)
+            {
+                if (!Unsupported.IsDeveloperMode())
+                {
+                    var a = type.Assembly.GetCustomAttribute<UILibraryVisibilityAttribute>();
+                    if (a != null && a.Visibility == LibraryVisibility.Hidden)
+                        return false;
+
+                    if (IsUnityBuiltInEditorAssembly(type.Assembly))
+                        return false;
+
+                    if (type.Namespace != null && type.Namespace.StartsWith("UnityEditor."))
+                        return false;
+                }
+            }
 
             if (type.IsAbstract)
                 return false;
 
             return true;
         }
+
+        static bool IsUnityBuiltInEditorAssembly(System.Reflection.Assembly assembly) =>
+            assembly.GetCustomAttribute<AssemblyIsEditorAssembly>() != null &&
+            assembly.GetName().Name.StartsWith("UnityEditor");
 
         /// <summary>
         /// Returns the explicit library path declared on the type, or null when the type isn't visible in the library or has no path set.

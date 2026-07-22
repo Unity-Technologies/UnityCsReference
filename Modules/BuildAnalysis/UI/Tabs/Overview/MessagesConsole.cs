@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -12,6 +13,8 @@ namespace UnityEditor.Build.Analysis
 {
     internal class MessagesConsole : VisualElement
     {
+        static readonly ProfilerMarker s_BindMarker = new ProfilerMarker("MessagesConsole.Bind");
+
         private const string k_AllSteps = "All Steps";
         // Tooltip shown when no specific step is selected; otherwise the tooltip is the full step name.
         private const string k_StepFilterTooltip = "Filter messages by build step";
@@ -140,29 +143,32 @@ namespace UnityEditor.Build.Analysis
 
         public void Bind(BuildAnalysis analysis)
         {
-            m_Messages = analysis.Messages;
-            var n = m_Messages.Length;
+            using (s_BindMarker.Auto())
+            {
+                m_Messages = analysis.Messages;
+                var n = m_Messages.Length;
 
-            // Reuse parallel arrays across binds when possible; only grow when capacity is exceeded.
-            // m_CollapseKeyIds is grown lazily by EnsureCollapseKeysBuilt.
-            if (m_SeverityIds.Length < n)
-                m_SeverityIds = new int[n];
-            if (m_StepNameIds.Length < n)
-                m_StepNameIds = new int[n];
-            m_CollapseKeysBuilt = false;
+                // Reuse parallel arrays across binds when possible; only grow when capacity is exceeded.
+                // m_CollapseKeyIds is grown lazily by EnsureCollapseKeysBuilt.
+                if (m_SeverityIds.Length < n)
+                    m_SeverityIds = new int[n];
+                if (m_StepNameIds.Length < n)
+                    m_StepNameIds = new int[n];
+                m_CollapseKeysBuilt = false;
 
-            BuildSeverityIds(n);
-            BuildStepNamePoolAndIds(analysis.Tables.Steps, n);
-            BuildStepDropdownChoices();
+                BuildSeverityIds(n);
+                BuildStepNamePoolAndIds(analysis.Tables.Steps, n);
+                BuildStepDropdownChoices();
 
-            var counts = analysis.Computed.Counts;
-            m_ErrorToggleCount.text = FormatUtility.FormatCappedCount(counts.ErrorMessageCount);
-            m_WarnToggleCount.text = FormatUtility.FormatCappedCount(counts.WarningMessageCount);
-            m_InfoToggleCount.text = FormatUtility.FormatCappedCount(counts.InfoMessageCount);
+                var counts = analysis.Computed.Counts;
+                m_ErrorToggleCount.text = FormatUtility.FormatCappedCount(counts.ErrorMessageCount);
+                m_WarnToggleCount.text = FormatUtility.FormatCappedCount(counts.WarningMessageCount);
+                m_InfoToggleCount.text = FormatUtility.FormatCappedCount(counts.InfoMessageCount);
 
-            ResetFilterState();
-            ShowNoDetail();
-            ApplyFilters();
+                ResetFilterState();
+                ShowNoDetail();
+                ApplyFilters();
+            }
         }
 
         private void BuildSeverityIds(int n)

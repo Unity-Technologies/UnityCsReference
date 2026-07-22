@@ -60,6 +60,9 @@ namespace UnityEngine.Accessibility
     ///- <see cref="RuntimePlatform.OSXPlayer"/>
     ///- <see cref="RuntimePlatform.WindowsPlayer"/>
     ///
+    /// **Note**: Only the accessibility hierarchy for the application's main window is supported. Content displayed on
+    /// additional windows, such as on secondary displays, is not exposed to screen readers.
+    ///
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]

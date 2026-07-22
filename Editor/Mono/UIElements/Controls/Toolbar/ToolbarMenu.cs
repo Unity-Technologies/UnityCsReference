@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A drop-down menu for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarMenu|UXML element ToolbarMenu]].
     /// </summary>
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     [Icon("UIToolkit/Icons/ToolbarMenu.png")]
     public partial class ToolbarMenu : TextElement, IToolbarMenuElement
     {

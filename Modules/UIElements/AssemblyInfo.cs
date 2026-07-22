@@ -38,6 +38,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents.Editor")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
+[assembly: InternalsVisibleTo("Test.UILibraryVisibility")]
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.InternalAccessTests")] // for UI Test Framework tests that need internal access

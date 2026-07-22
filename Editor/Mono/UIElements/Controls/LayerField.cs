@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// A LayerField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerField|UXML element LayerField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerField.png")]
-    [UxmlElement]
+    [UxmlElement(visibility = LibraryVisibility.Visible)]
     public partial class LayerField : PopupField<int>
     {
         [UxmlAttribute("value"), LayerDecorator]

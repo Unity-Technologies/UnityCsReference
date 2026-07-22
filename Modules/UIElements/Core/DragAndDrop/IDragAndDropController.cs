@@ -45,7 +45,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The drag-and-drop operation is being rejected by the handlers.
         /// </summary>
-        Rejected
+        Rejected,
+        /// <summary>
+        /// The drag-and-drop handlers want to reorder or link data without moving or copying it (arrow cursor).
+        /// </summary>
+        Link
     }
 
     /// <summary>

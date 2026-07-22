@@ -819,7 +819,8 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Backdrop-filter UVs depend on world transform, so meshes regen on transform change.
-            if (renderData.owner.hasBackdropFilter &&
+            // Gate on the allocated flag so panels with no backdrop-filter (e.g. world-space) skip this.
+            if (renderData.hasBackdropFilterAllocated &&
                 (renderData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0)
                 renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
 
@@ -1111,7 +1112,8 @@ namespace UnityEngine.UIElements.UIR
         {
             VisualElement ve = renderData.owner;
             bool wasEnabled = renderData.hasBackdropFilterAllocated;
-            bool isEnabled = ve.hasBackdropFilter;
+            // backdrop-filter is not supported on world-space (camera-drawn) panels.
+            bool isEnabled = ve.hasBackdropFilter && !renderTreeManager.drawInCameras;
 
             if (wasEnabled == isEnabled)
                 return;
