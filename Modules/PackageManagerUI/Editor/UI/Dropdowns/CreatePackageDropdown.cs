@@ -17,9 +17,11 @@ internal class CreatePackageDropdown : DropdownContent
     public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
     private readonly IPackageCreator m_PackageCreator;
-    public CreatePackageDropdown(IResourceLoader resourceLoader, IPackageCreator packageCreator)
+    private readonly IApplicationProxy m_Application;
+    public CreatePackageDropdown(IResourceLoader resourceLoader, IPackageCreator packageCreator, IApplicationProxy application)
     {
         m_PackageCreator = packageCreator;
+        m_Application = application;
 
         styleSheets.Add(resourceLoader.inputDropdownStyleSheet);
 
@@ -76,6 +78,14 @@ internal class CreatePackageDropdown : DropdownContent
         var packageDisplayName = packageDisplayNameField.value?.Trim();
         if (string.IsNullOrEmpty(packageDisplayName))
             return;
+
+        if (!m_PackageCreator.CanGenerateValidNamespace(packageDisplayName))
+        {
+            var title = L10n.Tr("Cannot generate namespace");
+            var message = L10n.Tr("A valid namespace could not be generated from the display name you entered. The default namespace will be used instead. Do you want to continue?");
+            if (!m_Application.DisplayDialog("fallbackToDefaultNamespace", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
+                return;
+        }
 
         inputForm.SetEnabled(false);
         try

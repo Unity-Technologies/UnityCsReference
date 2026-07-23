@@ -168,6 +168,10 @@ namespace UnityEngine.Accessibility
         /// <see cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
         /// </para>
         /// <para>
+        /// **Note**: Only the accessibility hierarchy for the application's main window is supported. Content displayed
+        /// on additional windows, such as on secondary displays, is not exposed to screen readers.
+        /// </para>
+        /// <para>
         /// **Warning**: Assigning a hierarchy builds its native representation, and setting this property to @@null@@
         /// tears it down. This has a non-trivial cost on the following platforms:
         ///\\

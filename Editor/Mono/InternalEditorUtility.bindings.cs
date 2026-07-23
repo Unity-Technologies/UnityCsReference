@@ -157,6 +157,36 @@ namespace UnityEditorInternal
             get;
         }
 
+        [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+        internal static bool IsReadOnlyAsset(string assetPath, out bool isEngineAsset)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                isEngineAsset = false;
+                return true;
+            }
+
+            if (!AssetModificationProcessorInternal.IsOpenForEdit(assetPath, out string message, StatusQueryOptions.UseCachedIfPossible))
+            {
+                // Asset is from a readonly package
+                isEngineAsset = false;
+                return true;
+            }
+
+            var normalizedPath = assetPath.Replace('\\', '/').ToLowerInvariant();
+
+            if (normalizedPath.StartsWith("library") ||
+                normalizedPath.EndsWith("/unity_builtin_extra"))
+            {
+                // Built-in asset
+                isEngineAsset = true;
+                return true;
+            }
+
+            isEngineAsset = false;
+            return false;
+        }
+
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
         public extern static bool BumpMapTextureNeedsFixingInternal([NotNull] Material material, string propName, bool flaggedAsNormal);
 

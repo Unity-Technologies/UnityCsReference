@@ -31,13 +31,15 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
     private readonly IPackageDatabase m_PackageDatabase;
     private readonly IPageRefreshHandler m_PageRefreshHandler;
     private readonly ICustomDisplayDialog m_CustomDisplayDialog;
+    private readonly IUpmClient m_UpmClient;
     public InProjectPackagesMonitor(IApplicationProxy application,
         IProjectSettingsProxy settingsProxy,
         IUpmCache upmCache,
         IUpmRegistryClient upmRegistryClient,
         IPackageDatabase packageDatabase,
         IPageRefreshHandler pageRefreshHandler,
-        ICustomDisplayDialog customDisplayDialog)
+        ICustomDisplayDialog customDisplayDialog,
+        IUpmClient upmClient)
     {
         m_Application = RegisterDependency(application);
         m_SettingsProxy = RegisterDependency(settingsProxy);
@@ -46,6 +48,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         m_PackageDatabase = RegisterDependency(packageDatabase);
         m_PageRefreshHandler = RegisterDependency(pageRefreshHandler);
         m_CustomDisplayDialog = RegisterDependency(customDisplayDialog);
+        m_UpmClient = RegisterDependency(upmClient);
     }
 
     public override void OnEnable()
@@ -75,6 +78,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         if (m_Application.isBatchMode || !m_Application.isUpmRunning)
             return;
         m_PageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
+        m_UpmClient.OnRegisteredPackages();
     }
 
     public void OnPackageManagerResolve()

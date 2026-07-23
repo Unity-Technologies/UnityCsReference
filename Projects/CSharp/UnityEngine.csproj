@@ -21,8 +21,8 @@
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
   <PropertyGroup>
-    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
-    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+    <HomeDir Condition="'$(HOME.Length)' != '0'">$(HOME)</HomeDir>
+    <HomeDir Condition="'$(USERPROFILE.Length)' != '0'">$(USERPROFILE)</HomeDir>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\External\AMDUnityPlugin\Scripts\AMDCommands.cs">
@@ -3864,6 +3864,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedStyle.cs">
       <Link>Modules\UIElements\Core\Style\ComputedStyle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedStyleUtility.bindings.cs">
+      <Link>Modules\UIElements\Core\Style\ComputedStyleUtility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedTransitions.cs">
       <Link>Modules\UIElements\Core\Style\ComputedTransitions.cs</Link>

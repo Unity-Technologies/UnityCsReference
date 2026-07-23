@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (loggedIn)
             {
-                if (m_PackageDatabase.allPackages.AnyMatches(p => p is { hasEntitlements: true } && p.versions.primary is { isInstalled: true, hasEntitlementsError: true }))
+                if (m_PackageDatabase.allPackages.AnyMatches(p => p?.versions.primary is { isInstalled: true, hasEntitlementsError: true }))
                     m_UpmClient.Resolve();
                 else
                 {
@@ -172,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                if (m_PackageDatabase.allPackages.AnyMatches(p => p is { hasEntitlements: true }))
+                if (m_PackageDatabase.allPackages.AnyMatches(p => p is { isEnterprise: true }))
                 {
                     m_PageRefreshHandler.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
                     m_PageManager.activePage.TriggerOnSelectionChanged(false);
@@ -285,7 +285,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             mainContainerOverlay.extendedHelpBox.customIcon = Icon.PackageErrorLarge;
             mainContainerOverlay.extendedHelpBox.text = violation?.message ?? string.Empty;
             mainContainerOverlay.extendedHelpBox.readMoreUrl = violation?.readMoreLink;
-            mainContainerOverlay.extendedHelpBox.analyticsId = "non-compliant-registry-help-box";
+            mainContainerOverlay.extendedHelpBox.readMoreAnalyticsId = "non-compliant-registry-help-box";
         }
 
         public IMenu addMenu => packageManagerToolbar.addMenu;

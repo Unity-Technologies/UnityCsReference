@@ -346,7 +346,7 @@ namespace UnityEditor.TerrainTools
                 if (detailPrototype.prototypeTexture != null && !detailPrototype.prototypeTexture.isReadableRaw)
                 {
                     string texturePath = AssetDatabase.GetAssetPath(detailPrototype.prototypeTexture);
-                    if (AssetModificationProcessorInternal.IsOpenForEdit(texturePath, out string message, StatusQueryOptions.UseCachedIfPossible))
+                    if (!InternalEditorUtility.IsReadOnlyAsset(texturePath, out var isEngineAsset))
                     {
                         string errorMessage = "Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype";
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
@@ -358,8 +358,9 @@ namespace UnityEditor.TerrainTools
                     }
                     else
                     {
+                        var advice = isEngineAsset ? $"'{detailPrototype.prototypeTexture.name}' is an engine asset and cannot be modified nor copied. It is recommended to choose another asset." : "Modify a copy of the Texture because it is not editable.";
                         if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                           EditorGUIUtility.TrTextContent("Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype. Modify a copy of the Texture because it is not editable."),
+                           EditorGUIUtility.TrTextContent($"Read/Write is disabled on the Texture referenced by the Terrain Detail Prototype. {advice}"),
                            EditorGUIUtility.TrTextContent("View")))
                         {
                             Selection.objects = new UnityEngine.Object[] { detailPrototype.prototypeTexture };

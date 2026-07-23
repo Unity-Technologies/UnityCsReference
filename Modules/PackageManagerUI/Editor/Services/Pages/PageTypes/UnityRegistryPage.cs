@@ -37,8 +37,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             base.RebuildVisualStateList();
 
-            var hasEntitlementPackagesInPage = visualStates.AnyMatches(v => m_PackageDatabase.GetPackage(v.itemUniqueId)?.hasEntitlements == true);
-            var newSupportedStatusFilters = hasEntitlementPackagesInPage
+            var hasEnterprisePackagesInPage = visualStates.AnyMatches(v => m_PackageDatabase.GetPackage(v.itemUniqueId)?.isEnterprise == true);
+            var newSupportedStatusFilters = hasEnterprisePackagesInPage
                 ? new[] { PageFilterStatus.UpdateAvailable, PageFilterStatus.SubscriptionBased }
                 : new[] { PageFilterStatus.UpdateAvailable };
             UpdateSupportedStatuses(newSupportedStatusFilters, true);

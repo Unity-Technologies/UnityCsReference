@@ -19,15 +19,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IPageManager m_PageManager;
-
-        public ManageDropdownButton(IApplicationProxy applicationProxy,
+        public ManageDropdownButton(IApplicationProxy application,
                                     IUpmCache upmCache,
                                     IPackageManagerPrefs packageManagePrefs,
                                     IPackageDatabase packageDatabase,
                                     IPackageOperationDispatcher operationDispatcher,
                                     IPageManager pageManager)
         {
-            m_Application = applicationProxy;
+            m_Application = application;
             m_UpmCache = upmCache;
             m_PackageManagerPrefs = packageManagePrefs;
             m_PackageDatabase = packageDatabase;

@@ -29,7 +29,10 @@ namespace UnityEngine.UIElements
 
         public static void SetValue(Int64 hash, ref ComputedStyle data)
         {
-            // No need to acquire ComputedStyle here because it's freshly created and already has the correct ref count
+            // No need to acquire ComputedStyle here because it's freshly created and already has the correct ref count.
+            // Release the entry being replaced so the cache's own ref doesn't leak when an existing hash is re-resolved.
+            if (s_ComputedStyleCache.TryGetValue(hash, out var existing))
+                existing.Release();
             s_ComputedStyleCache[hash] = data;
         }
 
@@ -531,7 +534,9 @@ namespace UnityEngine.UIElements
             element.variableContext = m_StyleMatchingContext.variableContext;
             m_ProcessVarContext.Clear();
 
-            if (!StyleCache.TryGetValue(matchingRulesHash, out var resolvedStyles))
+            // Re-resolve when a cached style's baked-in asset EntityIds were destroyed (e.g. an Addressables
+            // bundle unloaded) so the reloaded asset replaces the stale, now-invalid reference.
+            if (!StyleCache.TryGetValue(matchingRulesHash, out var resolvedStyles) || ComputedStyleUtility.HasStaleAssetReference(ref resolvedStyles))
             {
                 ref var parentStyle = ref parent?.computedStyle != null ? ref parent.computedStyle : ref InitialStyle.Get();
                 resolvedStyles = ComputedStyle.Create(ref parentStyle);

@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var package = m_PackageDatabase.GetPackage(itemUniqueId);
             return package != null
                    && (filterByStatus != PageFilterStatus.UpdateAvailable || package.state == PackageState.UpdateAvailable)
-                   && (filterByStatus != PageFilterStatus.SubscriptionBased || package.hasEntitlements)
+                   && (filterByStatus != PageFilterStatus.SubscriptionBased || package.isEnterprise)
                    && package.versions.primary.MatchesSearchText(trimmedSearchText);
         }
 

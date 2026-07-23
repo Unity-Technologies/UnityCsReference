@@ -13,6 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static string SanitizeFileName(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return string.Empty;
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c, '_');
             // Remove additional special characters that Unity doesn't like
@@ -39,7 +41,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static string GetFileName(string filePath) => new NPath(filePath).FileName;
 
         public static string GetParentDirectory(string path) => new NPath(path).Parent.ToString(SlashMode.Native);
-
-        public static string GetRelativePath(string basePath, string targetPath) => new NPath(targetPath).RelativeTo(basePath).ToString(SlashMode.Native);
     }
 }

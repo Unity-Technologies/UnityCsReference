@@ -8,13 +8,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class SampleAction: ActionBase<Sample>
     {
-        public override ActionState GetActionState(Sample sample, out string text, out string tooltip)
-        {
-            text = GetText(sample, false);
-            tooltip = GetTooltip(sample, false);
-            return ActionState.Visible;
-        }
-
         public override ToolbarButtonBase<Sample, Sample> CreateToolbarButton()
         {
             return new SampleToolBarSimpleButton(this);

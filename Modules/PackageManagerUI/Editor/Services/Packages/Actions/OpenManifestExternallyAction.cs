@@ -64,4 +64,11 @@ internal class OpenManifestExternallyAction : PackageAction
     {
         return L10n.Tr("Open Manifest Externally");
     }
+
+    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
+    {
+        yield return new DisableIfPackageIsInInvalidLocation(version);
+        yield return new DisableIfEntitlementsError(version);
+        yield return new DisableIfPackageIsNotLoaded(version);
+    }
 }

@@ -20,7 +20,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IApplicationProxy m_Application;
         private readonly IIOProxy m_IOProxy;
         private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
-        
         public PackageDetailsSamplesTab(IUnityConnectProxy unityConnect,
             IResourceLoader resourceLoader,
             IPackageDatabase packageDatabase,
@@ -48,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             IReadOnlyCollection<Sample> samples = version.isInstalled || version.HasTag(PackageTag.Feature)
-                ? m_PackageDatabase.GetSamples(version.package.uniqueId) 
+                ? m_PackageDatabase.GetSamples(version.package.uniqueId)
                 : Array.Empty<Sample>();
 
             return samples?.Count > 0 || CheckDependenciesForSamples(version);
@@ -117,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var sample in m_Samples.Filter(s => !string.IsNullOrEmpty(s.displayName)))
             {
-                var sampleItem = new PackageDetailsSampleItem(m_Version, sample, m_Application, m_IOProxy);
+                var sampleItem = new PackageDetailsSampleItem(sample, m_Application, m_IOProxy);
                 var sampleContainer = new VisualElement();
                 sampleContainer.AddToClassList("sampleContainer");
 
@@ -140,7 +139,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 sampleContainer.Add(actionButtonsContainer);
 
                 samplesContainer.Add(sampleContainer);
-                sampleItem.importButton.SetEnabled(m_Version.isInstalled);
             }
         }
 

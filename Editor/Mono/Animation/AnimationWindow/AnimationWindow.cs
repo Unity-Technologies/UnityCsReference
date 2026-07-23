@@ -426,6 +426,7 @@ namespace UnityEditor
 
         private void UndoRedoPerformed(in UndoRedoInfo info)
         {
+            OnSelectionChangeInternal(false);
             Repaint();
         }
 

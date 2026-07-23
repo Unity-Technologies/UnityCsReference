@@ -22,6 +22,7 @@ namespace Unity.UIToolkit.Editor
                 bindingPath = property.propertyPath,
                 objectType = typeof(ScriptableObject),
                 label = " ",
+                allowBuiltinResources = false,
             };
             field.AddToClassList(AnyObjectField.alignedFieldUssClassName);
             return field;

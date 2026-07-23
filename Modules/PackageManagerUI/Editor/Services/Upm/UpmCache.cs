@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action onScopedRegistriesPotentiallyChanged;
 
         IReadOnlyCollection<PackageInfo> searchPackageInfos { get; }
-        IReadOnlyCollection<PackageInfo> installedPackageInfos  { get; }
+        IReadOnlyCollection<PackageInfo> installedPackageInfos { get; }
         bool installedPackageInfosReady { get; }
 
         void SetLoadAllVersions(string packageUniqueId, bool value);
@@ -243,6 +243,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 TriggerOnPackageInfosUpdated(updatedInfos, changedSource);
                 DetectScopedRegistriesChanges(updatedInfos, false);
             }
+
             return updatedInfos;
         }
 

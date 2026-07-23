@@ -14,12 +14,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IPackageCreator m_PackageCreator;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUnityConnectProxy m_UnityConnectProxy;
         public UpmPackageFactory(IUpmCache upmCache,
             IUpmClient upmClient,
             IBackgroundFetchHandler backgroundFetchHandler,
             IPackageDatabase packageDatabase,
             IProjectSettingsProxy settingsProxy,
-            IPackageCreator packageCreator)
+            IPackageCreator packageCreator,
+            IIOProxy ioProxy,
+            IApplicationProxy application,
+            IUnityConnectProxy unityConnectProxy)
         {
             m_UpmCache = RegisterDependency(upmCache);
             m_UpmClient = RegisterDependency(upmClient);
@@ -27,6 +33,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = RegisterDependency(packageDatabase);
             m_SettingsProxy = RegisterDependency(settingsProxy);
             m_PackageCreator = RegisterDependency(packageCreator);
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_ApplicationProxy = RegisterDependency(application);
+            m_UnityConnectProxy = RegisterDependency(unityConnectProxy);
         }
 
         public override void OnEnable()
@@ -37,6 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
             m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
+            m_UpmClient.onPackagesReadyToReevaluate += OnPackagesReadyToReevaluate;
 
             m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
@@ -54,6 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
             m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
+            m_UpmClient.onPackagesReadyToReevaluate -= OnPackagesReadyToReevaluate;
 
             m_UpmClient.onPackagesProgressChange -= OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError -= OnPackageOperationError;
@@ -108,6 +119,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             if (packagesUpdated.Count > 0)
                 m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
+        }
+
+        private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
+        {
+            GeneratePackagesAndTriggerChangeEvent(packageNames);
         }
 
         private void HandleSpecialInstall(string packageIdOrName, string displayName, PackageTag additionalTags = PackageTag.None)
@@ -186,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else
                 {
-                    var versionList = new UpmVersionList(packageData, tagsToExclude);
+                    var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, m_UnityConnectProxy, changedSource != PackagesChangedSource.AddAndRemove);
                     var primaryVersion = versionList.primary;
                     if (primaryVersion == null)
                     {
@@ -199,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
                     // since the primary version's display name is used in the package list
-                    if (primaryVersion?.isFullyFetched == false)
+                    if (!primaryVersion.isFullyFetched)
                         m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
                 }
             }

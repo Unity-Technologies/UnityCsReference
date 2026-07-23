@@ -3,24 +3,21 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class PackageValidator
     {
+        // The maximum value of a package name follows this documentation: https://docs.unity3d.com/Manual/cus-naming.html
+        public const int k_MaxAllowedCharsInTechnicalName = 214;
         private const string k_AllowedCharsInTechnicalName = @"a-z\d\-\._";
         private static readonly Regex k_CompleteTechnicalNameRegEx = new Regex(@"^([a-z\d][" + k_AllowedCharsInTechnicalName + "]{0,213})$");
         private static readonly Regex k_AllowedSemverRegEx = new Regex(@"^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$");
         private static readonly Regex k_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
         private static readonly Regex k_UnityMinorVersionRegEx = new Regex(@"^([0-9])$");
         private static readonly Regex k_UnityReleaseVersionRegEx = new Regex(@"^(0|[1-9]\d{0,14})([abfp])(0|[1-9]\d*)$");
-
-        public static string SanitizeDisplayName(string value)
-        {
-            // Removing invalid characters because Windows does not allow them in folder names
-            return Regex.Replace(value, @"[\\/:*?""<>|]", "").Trim();
-        }
 
         public static string SanitizePackageTechnicalName(string value)
         {
@@ -29,7 +26,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string SanitizeNamespace(string value)
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(Regex.Replace(Regex.Replace(value ?? string.Empty, @"[^a-zA-Z\d]", ""), @"^\d+", ""));
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            var result = new StringBuilder();
+            var capitalizeNext = true;
+            foreach (var c in value)
+            {
+                var isAsciiLetter = c is >= 'a' and <= 'z' or >= 'A' and <= 'Z';
+                var isAsciiDigit = c is >= '0' and <= '9';
+                if (!isAsciiLetter && !isAsciiDigit)
+                    capitalizeNext = true;
+                else if (isAsciiLetter || result.Length > 0)
+                {
+                    result.Append(capitalizeNext ? char.ToUpperInvariant(c) : c);
+                    capitalizeNext = false;
+                }
+            }
+            return result.ToString();
         }
 
         public static bool ValidateCompleteTechnicalName(string completeName)

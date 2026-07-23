@@ -21,8 +21,8 @@
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
   <PropertyGroup>
-    <HomeDir Condition="$(HOME) != ''">$(HOME)</HomeDir>
-    <HomeDir Condition="$(USERPROFILE) != ''">$(USERPROFILE)</HomeDir>
+    <HomeDir Condition="'$(HOME.Length)' != '0'">$(HOME)</HomeDir>
+    <HomeDir Condition="'$(USERPROFILE.Length)' != '0'">$(USERPROFILE)</HomeDir>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -12051,6 +12051,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchDatabaseImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexAccessGuard.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexAccessGuard.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactGeneration.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexArtifactGeneration.cs</Link>

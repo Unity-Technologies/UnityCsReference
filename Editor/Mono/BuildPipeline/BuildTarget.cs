@@ -156,7 +156,7 @@ namespace UnityEditor
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         tvOS = 37,
 
-        ///<summary>Build a Nintendo Switch player.</summary>
+        ///<summary>Build a Nintendo Switch™ player.</summary>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         Switch = 38,
 
@@ -199,7 +199,8 @@ namespace UnityEditor
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         VisionOS = 47,
 
-        [ExcludeFromDocs]
+        ///<summary>Build a Nintendo Switch™ 2 player.</summary>
+        ///<seealso cref="BuildPipeline.BuildPlayer" />
         Switch2 = 48,
 
         [ExcludeFromDocs]

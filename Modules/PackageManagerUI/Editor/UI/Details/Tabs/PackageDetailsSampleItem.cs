@@ -2,53 +2,45 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
-using System.Text;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsSampleItem
     {
-        private readonly IPackageVersion m_Version;
         private Sample m_Sample;
 
-        public PackageDetailsSampleItem(IPackageVersion version, Sample sample, IApplicationProxy application, IIOProxy iOProxy)
+        public PackageDetailsSampleItem(Sample sample, IApplicationProxy application, IIOProxy iOProxy)
         {
-            m_Version = version;
             m_Sample = sample;
             nameLabel.text = sample.displayName;
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             sizeLabel.text = UIUtils.ConvertToHumanReadableSize(sample.sizeInBytes);
             descriptionLabel.text = sample.description;
-            RefreshActionButtons();
             var importSampleAction = new ImportSampleAction(application, iOProxy);
             var locateSampleAction = new LocateSampleAction(application, iOProxy);
-            importSampleAction.onActionTriggered += RefreshActionButtons;
-            importButton.clickable.clicked += () => importSampleAction.TriggerAction(m_Sample);
-            locateButton.clickable.clicked += () => locateSampleAction.TriggerAction(m_Sample);
+            m_ImportButton = new SampleToolBarSimpleButton(importSampleAction);
+            m_LocateButton = new SampleToolBarSimpleButton(locateSampleAction);
+            // We should refresh all buttons when the Import button is clicked in case no code was modified
+            // and domain reload is not triggered assuring a refresh of visibility and text either way.
+            importSampleAction.onActionTriggered += OnActionTriggered;
+            RefreshActionButtonsAndStatus();
         }
 
-        private void RefreshActionButtons()
+        private void OnActionTriggered()
         {
-            UIUtils.SetElementDisplay(locateButton, true);
-            if (m_Sample.isImported)
-            {
+            RefreshActionButtonsAndStatus();
+        }
+
+        private void RefreshActionButtonsAndStatus()
+        {
+            m_ImportButton.Refresh(m_Sample);
+            m_LocateButton.Refresh(m_Sample);
+
+            if (m_Sample.isImported || m_Sample.previousImportPaths?.Count > 0)
                 importStatus.AddToClassList("imported");
-                importButton.text = L10n.Tr("Reimport");
-            }
-            else if (m_Sample.previousImportPaths?.Count > 0)
-            {
-                importStatus.AddToClassList("imported");
-                importButton.text = L10n.Tr("Update");
-            }
             else
-            {
-                UIUtils.SetElementDisplay(locateButton, false);
                 importStatus.RemoveFromClassList("imported");
-                importButton.text = L10n.Tr("Import");
-            }
         }
 
         private Label m_ImportStatus;
@@ -59,9 +51,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public Label sizeLabel => m_SizeLabel ??= new Label { classList = { "sizeLabel" } };
         private SelectableLabel m_DescriptionLabel;
         public SelectableLabel descriptionLabel => m_DescriptionLabel ??= new SelectableLabel { classList = { "descriptionLabel" } };
-        private Button m_ImportButton;
-        public Button importButton => m_ImportButton ??= new Button { classList = { "actionButton" } };
-        private Button m_LocateButton;
-        public Button locateButton => m_LocateButton ??= new Button { text = L10n.Tr("Locate"), classList = { "actionButton" } };
+        private SampleToolBarSimpleButton m_ImportButton;
+        public SampleToolBarSimpleButton importButton => m_ImportButton;
+        private SampleToolBarSimpleButton m_LocateButton;
+        public SampleToolBarSimpleButton locateButton => m_LocateButton;
     }
 }

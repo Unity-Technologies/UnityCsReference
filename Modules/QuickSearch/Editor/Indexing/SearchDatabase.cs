@@ -200,6 +200,10 @@ namespace UnityEditor.Search
         [NonSerialized] private string m_IndexSettingsPath;
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
 
+        // True while we are cancelling/disposing pending tasks. Disposing a task invokes its resolver, which can
+        // call back into the incremental update scheduler; we must not start new work during teardown.
+        [NonSerialized] private bool m_DisposingTasks;
+
         private int m_IndexingRequestTrackerId;
         private int m_IncrementalIndexingRequestTrackerId;
 
@@ -580,12 +584,24 @@ namespace UnityEditor.Search
 
         internal void CancelAllPendingTasksImmediately()
         {
-            m_CurrentResolveTask?.Dispose();
-            m_CurrentResolveTask = null;
-            m_CurrentIncrementalLoadTask?.Dispose();
-            m_CurrentIncrementalLoadTask = null;
-            m_CurrentUpdateTask?.Dispose();
-            m_CurrentUpdateTask = null;
+            // Disposing a task runs its resolver (e.g. ResolveIncrementalUpdate), which calls back into
+            // ProcessIncrementalUpdates. Latch m_DisposingTasks so that re-entrancy cannot start a new update task
+            // that would then be orphaned (and left running against an index we are about to free).
+            var wasDisposingTasks = m_DisposingTasks;
+            m_DisposingTasks = true;
+            try
+            {
+                m_CurrentResolveTask?.Dispose();
+                m_CurrentResolveTask = null;
+                m_CurrentIncrementalLoadTask?.Dispose();
+                m_CurrentIncrementalLoadTask = null;
+                m_CurrentUpdateTask?.Dispose();
+                m_CurrentUpdateTask = null;
+            }
+            finally
+            {
+                m_DisposingTasks = wasDisposingTasks;
+            }
         }
 
         private void LoadAsync()
@@ -963,6 +979,12 @@ namespace UnityEditor.Search
         private void ProcessIncrementalUpdates()
         {
             if (!this)
+                return;
+
+            // Do not start (or reschedule) work while tearing down pending tasks. A task resolver firing during
+            // disposal calls back here; starting a new update at that point creates a task the disposal has already
+            // passed, leaving a merge thread running against an index we are about to free.
+            if (m_DisposingTasks)
                 return;
 
             if (ready && !updating)

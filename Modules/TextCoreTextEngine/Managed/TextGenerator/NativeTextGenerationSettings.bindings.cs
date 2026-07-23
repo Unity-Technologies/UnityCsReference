@@ -249,7 +249,7 @@ namespace UnityEngine.TextCore
         public GlyphMetrics spriteMetrics;
         public EntityId spriteID;
         public bool spriteTint;
-        public int spriteScale;
+        public float spriteScale;
         public Color32 spriteColor;
         public int margin;
         public MarginDirection marginDirection;

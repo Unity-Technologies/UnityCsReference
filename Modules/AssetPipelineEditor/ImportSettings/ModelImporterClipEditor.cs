@@ -284,10 +284,18 @@ namespace UnityEditor
             for (int i = 1; i < transformPaths.Length; i++)
                 m_MotionNodeList[i + 1] = new GUIContent(transformPaths[i]);
 
-            motionNodeIndex = ArrayUtility.FindIndex(m_MotionNodeList, delegate(GUIContent content) { return content.text == m_MotionNodeName.stringValue; });
-            motionNodeIndex = motionNodeIndex < 1 ? 0 : motionNodeIndex;
+            SyncMotionNodeIndex();
 
             isEditorPreset = Preset.IsEditorTargetAPreset(target);
+        }
+
+        void SyncMotionNodeIndex()
+        {
+            if (m_MotionNodeList == null)
+                return;
+
+            motionNodeIndex = ArrayUtility.FindIndex(m_MotionNodeList, delegate(GUIContent content) { return content.text == m_MotionNodeName.stringValue; });
+            motionNodeIndex = motionNodeIndex < 1 ? 0 : motionNodeIndex;
         }
 
         void SyncClipEditor(AnimationClipInfoProperties info)
@@ -1237,6 +1245,8 @@ namespace UnityEditor
             //Set the active clip within a valid range, -1 ONLY if there are no possible clips to select.
             int selectedClip = m_ClipList.count > 0 ? Mathf.Clamp(m_ClipList.index, 0, m_ClipList.count) : -1;
             SelectClip(selectedClip);
+
+            SyncMotionNodeIndex();
         }
     }
 }

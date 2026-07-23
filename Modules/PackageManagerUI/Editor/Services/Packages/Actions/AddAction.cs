@@ -122,7 +122,7 @@ internal class AddAction : PackageAction
     protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
     {
         yield return new DisableIfVersionDeprecated(version);
-        yield return new DisableIfEntitlementsError(version);
+        yield return new DisableIfEnterpriseEntitlementsError(version);
         yield return new DisableIfExportingInProgress(version.package);
     }
 }

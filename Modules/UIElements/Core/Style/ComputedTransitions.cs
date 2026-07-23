@@ -80,15 +80,16 @@ namespace UnityEngine.UIElements
 
         private static int GetTransitionHashCode(ref ComputedStyle cs)
         {
-            unchecked
-            {
-                int hashCode = 0;
-                foreach (var x in cs.transitionDelay) hashCode = (hashCode * 397) ^ x.GetHashCode();
-                foreach (var x in cs.transitionDuration) hashCode = (hashCode * 397) ^ x.GetHashCode();
-                foreach (var x in cs.transitionProperty) hashCode = (hashCode * 397) ^ x.GetHashCode();
-                foreach (var x in cs.transitionTimingFunction) hashCode = (hashCode * 397) ^ x.GetHashCode();
-                return hashCode;
-            }
+            var hash = new HashCode();
+            hash.Add(cs.transitionDelay.Length);
+            foreach (var x in cs.transitionDelay) hash.Add(x);
+            hash.Add(cs.transitionDuration.Length);
+            foreach (var x in cs.transitionDuration) hash.Add(x);
+            hash.Add(cs.transitionProperty.Length);
+            foreach (var x in cs.transitionProperty) hash.Add(x);
+            hash.Add(cs.transitionTimingFunction.Length);
+            foreach (var x in cs.transitionTimingFunction) hash.Add(x);
+            return hash.ToHashCode();
         }
 
         internal static bool SameTransitionProperty(ref ComputedStyle x, ref ComputedStyle y)

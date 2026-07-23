@@ -54,9 +54,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IReadOnlyCollection<UIError> errors { get; }
 
-        bool hasEntitlements { get; }
-
         bool hasEntitlementsError { get; }
+
+        bool isEnterprise { get; }
 
         SemVersion? version { get; }
 

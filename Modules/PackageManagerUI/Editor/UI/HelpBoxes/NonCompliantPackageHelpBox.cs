@@ -9,7 +9,7 @@ internal class NonCompliantPackageHelpBox : PackageBaseHelpBox
     public NonCompliantPackageHelpBox(IApplicationProxy application) : base(application)
     {
         customIcon = Icon.PackageErrorLarge;
-        analyticsId = "non-compliant-package-help-box";
+        readMoreAnalyticsId = "non-compliant-package-help-box";
     }
 
     public override void Refresh(IPackageVersion version)

@@ -632,7 +632,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.Space();
                 GUIObject(s_Texts.texture, m_Texture, typeof(Texture2D));
-                ValidateTexture(m_Texture, true);
+                ValidateTexture(m_Texture);
 
                 GUIPopup(s_Texts.textureClipChannel, m_TextureClipChannel, s_Texts.textureClipChannels);
                 GUIFloat(s_Texts.textureClipThreshold, m_TextureClipThreshold);
@@ -652,7 +652,7 @@ namespace UnityEditor
             }
         }
 
-        private void ValidateTexture(SerializedProperty prop, bool forceFixImmutable)
+        private void ValidateTexture(SerializedProperty prop)
         {
             if (prop.hasMultipleDifferentValues)
                 return;
@@ -664,10 +664,10 @@ namespace UnityEditor
             if (!texture.isReadableRaw)
             {
                 string texturePath = AssetDatabase.GetAssetPath(texture);
-                if (AssetModificationProcessorInternal.IsOpenForEdit(texturePath, out string message, StatusQueryOptions.UseCachedIfPossible))
+                if (!InternalEditorUtility.IsReadOnlyAsset(texturePath, out var isEngineAsset))
                 {
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture."),
+                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime."),
                         EditorGUIUtility.TrTextContent("Enable")))
                     {
                         InternalEditorUtility.ImportTextureAsReadable(texture);
@@ -675,8 +675,10 @@ namespace UnityEditor
                 }
                 else
                 {
+                    var advice = isEngineAsset ? $"'{texture.name}' is an engine asset and cannot be modified nor copied. It is recommended to choose another asset." : "Modify a copy of the Texture because it is not editable.";
+
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture. Modify a copy of the Texture because it is not editable."),
+                        EditorGUIUtility.TrTextContent($"Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime. {advice}"),
                         EditorGUIUtility.TrTextContent("View")))
                     {
                         Selection.objects = new UnityEngine.Object[] { texture };

@@ -24,8 +24,6 @@ namespace UnityEditor.Search
 
         const int k_BlockingProgress = -2;
 
-        static readonly TimeSpan k_MaxThreadJoinWaitTime = TimeSpan.FromSeconds(5);
-
         internal int progressId = Progress.InvalidProgressId;
         volatile float m_LastProgress = -1f;
         CancellationTokenSource m_LocalCancelEvent;
@@ -584,42 +582,28 @@ namespace UnityEditor.Search
                 return;
             Dispatcher.Enqueue(() =>
             {
-                var stopped = t.Join(k_MaxThreadJoinWaitTime);
-                if (!stopped)
-                {
-                    Debug.LogWarning($"SearchTask '{t.Name}' thread did not stop within {k_MaxThreadJoinWaitTime.TotalSeconds} seconds.");
-                }
+                // Block until the thread has fully stopped. The thread routine cooperatively honors the
+                // cancellation token (including in native code), so this should return promptly. We must not
+                // abandon the thread while it may still be touching the native index, otherwise disposing the
+                // index backend can free memory out from under a running LMDB transaction.
+                t.Join();
                 actionToRunAfterThread.Invoke();
             });
         }
 
         bool WaitForAllThreads()
         {
-            var allStopped = true;
+            // Block until every thread has fully stopped. The thread routines cooperatively honor the
+            // cancellation token (including in native code), so this should return promptly once canceled.
+            // We must not abandon a running thread before disposing the index backend, otherwise disposing it
+            // can free memory out from under a running native LMDB transaction and crash the editor.
             foreach (var thread in m_Threads)
             {
                 if (thread.IsAlive)
-                {
-                    var stopped = thread.Join(k_MaxThreadJoinWaitTime);
-                    allStopped &= stopped;
-                    if (!stopped)
-                    {
-                        Debug.LogWarning($"SearchTask '{name}' thread did not stop within {k_MaxThreadJoinWaitTime.TotalSeconds} seconds.");
-                    }
-                }
+                    thread.Join();
             }
 
-            return allStopped;
-        }
-
-        bool WaitForAllChildrenThreads()
-        {
-            var allStopped = true;
-            foreach (var childTask in m_ChildrenTask)
-            {
-                allStopped &= childTask.WaitForAllThreads();
-            }
-            return allStopped;
+            return true;
         }
 
         bool CancelChildrenImmediate()

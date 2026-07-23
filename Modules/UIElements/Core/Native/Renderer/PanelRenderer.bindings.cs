@@ -278,6 +278,7 @@ namespace UnityEngine.UIElements
         // For dirty tracking
         internal PanelSettings previousPanelSettings { get; set; }
         internal VisualTreeAsset previousVisualTreeAsset { get; set; }
+        int m_PreviousVisualTreeAssetContentHash;
         internal bool previousEnabled { get; set; }
         internal int previousSortingOrder { get; set; }
 
@@ -502,7 +503,12 @@ namespace UnityEngine.UIElements
             if (!IsActiveAndEnabled())
                 return;
 
-            bool visualTreeAssetChanged = visualTreeAsset != previousVisualTreeAsset;
+            // Detect both reference swaps and in-place reserialization (UI Builder save, reimport).
+            // Without the content-hash check, cloned VisualElements keep StyleValueHandles into the
+            // pre-reserialization StyleSheet arrays and hit "Accessing invalid property" during traversal.
+            bool visualTreeAssetChanged =
+                visualTreeAsset != previousVisualTreeAsset ||
+                (visualTreeAsset != null && visualTreeAsset.contentHash != m_PreviousVisualTreeAssetContentHash);
             InitRootVisualElement(visualTreeAssetChanged);
         }
 
@@ -557,6 +563,7 @@ namespace UnityEngine.UIElements
             SetupRootClassList();
 
             previousVisualTreeAsset = visualTreeAsset;
+            m_PreviousVisualTreeAssetContentHash = visualTreeAsset != null ? visualTreeAsset.contentHash : 0;
             previousPanelSettings = panelSettings;
             isAssetDirty = false;
         }

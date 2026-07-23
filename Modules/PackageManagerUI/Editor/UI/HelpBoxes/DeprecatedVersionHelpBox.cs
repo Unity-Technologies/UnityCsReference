@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DeprecatedVersionHelpBox(IApplicationProxy application) : base(application)
         {
             messageType = HelpBoxMessageType.Error;
-            analyticsId = "deprecated-version-help-box";
+            readMoreAnalyticsId = "deprecated-version-help-box";
         }
 
         public override void Refresh(IPackageVersion version)

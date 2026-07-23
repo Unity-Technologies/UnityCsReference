@@ -116,7 +116,7 @@ namespace UnityEditor
         [ExcludeFromDocs]
         Facebook = 26,
 
-        ///<summary>Nintendo Switch target.</summary>
+        ///<summary>Nintendo Switch™ target.</summary>
         Switch = 27,
 
         [Obsolete("Lumin has been removed in 2022.2")]
@@ -153,7 +153,7 @@ namespace UnityEditor
         ///<summary>Apple visionOS target.</summary>
         VisionOS = 36,
 
-        [ExcludeFromDocs]
+        ///<summary>Nintendo Switch™ 2 target.</summary>
         Switch2 = 37,
 
         [ExcludeFromDocs]
