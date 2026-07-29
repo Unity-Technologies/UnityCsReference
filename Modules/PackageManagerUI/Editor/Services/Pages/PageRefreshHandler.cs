@@ -257,6 +257,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnOrganizationsChange()
         {
+            // A -noUpm process (e.g. an MPPM Virtual Player) has no UPM server, so the fetch would only log errors (UUM-147009)
+            if (!m_Application.isUpmRunning)
+                return;
+
             // We need to refresh to update UI here because the trust infos in PackageInfo would change when organization info changes
             Refresh(RefreshOptions.UpmList);
         }

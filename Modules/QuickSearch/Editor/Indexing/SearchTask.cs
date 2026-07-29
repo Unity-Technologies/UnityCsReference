@@ -574,7 +574,7 @@ namespace UnityEditor.Search
             return status == Progress.Status.Running;
         }
 
-        static void DispatchWaitForThread(Thread t, Action actionToRunAfterThread)
+        void DispatchWaitForThread(Thread t, Action actionToRunAfterThread)
         {
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
@@ -582,6 +582,8 @@ namespace UnityEditor.Search
                 return;
             Dispatcher.Enqueue(() =>
             {
+                 if (Canceled())
+                     return;
                 // Block until the thread has fully stopped. The thread routine cooperatively honors the
                 // cancellation token (including in native code), so this should return promptly. We must not
                 // abandon the thread while it may still be touching the native index, otherwise disposing the

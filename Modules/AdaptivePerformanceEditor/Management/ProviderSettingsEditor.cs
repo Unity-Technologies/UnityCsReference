@@ -659,19 +659,18 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 {
                     ScalerSettingInformation scalerSettingInfo;
                     scalerProfileSettingInfo.scalerSettingsInfos.TryGetValue(scalerName, out scalerSettingInfo);
-                    if (scalerSettingInfo.showScalerSettings && scalerSetting.enabled)
+                    bool isDisabledFramerate = DisabledAdaptiveFramerateScaler(scalerName);
+                    bool sectionOpen = scalerSettingInfo.showScalerSettings && (scalerSetting.enabled || isDisabledFramerate);
+
+                    if (sectionOpen)
                     {
                         height += k_NumberOfScalerProperties * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
-                    }
-
-                    if (DisabledAdaptiveFramerateScaler(scalerName))
-                    {
-                        if (scalerSettingInfo.showScalerSettings && !scalerSetting.enabled) // if before was not executed due to scaler not enabled, but we need the height.
+                        
+                        // if we have a framerate section that is disabled by VSync being on, we add space for the warning
+                        if (isDisabledFramerate)
                         {
-                            height += k_NumberOfScalerProperties * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
+                            height += 2 * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing);
                         }
-
-                        height += EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
                     }
                 }
                 return height;

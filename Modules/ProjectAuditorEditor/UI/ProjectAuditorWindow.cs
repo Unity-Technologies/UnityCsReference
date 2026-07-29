@@ -621,6 +621,13 @@ namespace Unity.ProjectAuditor.Editor.UI
         [InitializeOnLoadMethod]
         static void OnLoad()
         {
+            // UUM-139591: Force ProjectAuditorSettings to load now, during InitializeOnLoad (which runs
+            // before the editor restores its window layout). Otherwise the ScriptableSingleton's backing
+            // asset is loaded for the first time from inside ProjectAuditorWindow.OnEnable() while the
+            // layout is still being deserialized. That nested LoadSerializedFileAndForget call results in
+            // a FallbackEditorWindow that later fails to save.
+            _ = ProjectAuditorSettings.instance;
+
             ViewDescriptor.Register(new ViewDescriptor
             {
                 Category = IssueCategory.Metadata,

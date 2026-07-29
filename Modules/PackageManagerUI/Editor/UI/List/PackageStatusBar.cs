@@ -22,7 +22,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     container.Resolve<IBackgroundFetchHandler>(),
                     container.Resolve<IPageRefreshHandler>(),
                     container.Resolve<IPageManager>(),
-                    container.Resolve<IUnityConnectProxy>());
+                    container.Resolve<IUnityConnectProxy>(),
+                    container.Resolve<ILicenceProxy>());
             }
         }
 
@@ -36,19 +37,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageRefreshHandler m_PageRefreshHandler;
         private readonly IPageManager m_PageManager;
         private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly ILicenceProxy m_LicenceProxy;
+
         public PackageStatusBar(
             IResourceLoader resourceLoader,
             IApplicationProxy application,
             IBackgroundFetchHandler backgroundFetchHandler,
             IPageRefreshHandler pageRefreshHandler,
             IPageManager pageManager,
-            IUnityConnectProxy unityConnect)
+            IUnityConnectProxy unityConnect,
+            ILicenceProxy licenceProxy)
         {
             m_Application = application;
             m_BackgroundFetchHandler = backgroundFetchHandler;
             m_PageRefreshHandler = pageRefreshHandler;
             m_PageManager = pageManager;
             m_UnityConnect = unityConnect;
+            m_LicenceProxy = licenceProxy;
 
             var root = resourceLoader.GetTemplate("PackageStatusBar.uxml");
             Add(root);
@@ -60,6 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownButton.mainButton.tooltip = L10n.Tr("Refresh list");
             dropdownButton.clicked += () =>
             {
+                m_LicenceProxy.UpdateLicense();
                 m_PageRefreshHandler.Refresh(m_PageManager.activePage);
                 PackageManagerWindowAnalytics.SendEvent("refreshList");
             };

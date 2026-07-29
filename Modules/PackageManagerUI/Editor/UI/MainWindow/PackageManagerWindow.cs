@@ -140,6 +140,10 @@ namespace UnityEditor.PackageManager.UI
             if (string.IsNullOrEmpty(url))
                 return;
 
+            // When the user just acquired a package on the Asset Store and then clicked the "Open in Unity" button immediately,
+            // we need to refresh the license here so the package shows up in the correct state
+            ServicesContainer.instance.Resolve<ILicenceProxy>().UpdateLicense();
+
             // com.unity3d.kharma:content/11111                       => AssetStore url
             // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url
             if (TryExtractUpmPackageInfoFromUrl(url, out var technicalName, out var version))

@@ -4081,6 +4081,9 @@
     <Compile Include="..\..\Editor\Mono\Shaders\MaterialHierarchyPopup.cs">
       <Link>Editor\Mono\Shaders\MaterialHierarchyPopup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\RenderPipelineSubShaderStripping.cs">
+      <Link>Editor\Mono\Shaders\RenderPipelineSubShaderStripping.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Shaders\ShaderBuildSettings.cs">
       <Link>Editor\Mono\Shaders\ShaderBuildSettings.cs</Link>
     </Compile>
@@ -9606,6 +9609,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\LicenceProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\LicenceProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs</Link>
@@ -15573,6 +15579,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\Events\EditorAnalyticsEvent.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\Events\EditorAnalyticsEvent.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\InheritedSessionArgs.bindings.cs">
+      <Link>Modules\UnityEditorAnalyticsEditor\InheritedSessionArgs.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs</Link>
