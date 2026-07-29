@@ -216,12 +216,14 @@ namespace Unity.Properties.Internal
         /// <returns><see langword="true"/> if the property bag exists; otherwise, <see langword="false"/>.</returns>
         internal static bool Exists<TContainer>()
         {
-            return null != TypedStore<TContainer>.PropertyBag;
+            return null != TypedStore<TContainer>.PropertyBag
+                || PropertyBagLazyInitialization.HasLazyRegistration(typeof(TContainer));
         }
 
         internal static bool Exists(Type type)
         {
-            return s_PropertyBags.ContainsKey(type);
+            return s_PropertyBags.ContainsKey(type)
+                || PropertyBagLazyInitialization.HasLazyRegistration(type);
         }
 
         /// <summary>

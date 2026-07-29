@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packages = m_PackageDatabase.allPackages.Where(
                 p => ShouldInclude(p)
                      && (filterByStatus != PageFilters.Status.UpdateAvailable || p.state == PackageState.UpdateAvailable)
-                     && (filterByStatus != PageFilters.Status.SubscriptionBased || p.hasEntitlements));
+                     && (filterByStatus != PageFilters.Status.SubscriptionBased || p.isEnterprise));
             var orderedVisualStates = packages.OrderBy(p => p, new PackageComparer(filters.sortOption)).Select(p =>
             {
                 var visualState = m_VisualStateList.Get(p.uniqueId) ?? new VisualState(p.uniqueId);

@@ -26,6 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPageRefreshHandler m_PageRefreshHandler;
         private IPageManager m_PageManager;
         private IUnityConnectProxy m_UnityConnect;
+        private ILicenceProxy m_LicenceProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -35,6 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageRefreshHandler = container.Resolve<IPageRefreshHandler>();
             m_PageManager = container.Resolve<IPageManager>();
             m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+			m_LicenceProxy = container.Resolve<ILicenceProxy>();
         }
 
         public PackageStatusBar()
@@ -68,6 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             refreshButton.mainButton.tooltip = L10n.Tr("Refresh list");
             refreshButton.clicked += () =>
             {
+				m_LicenceProxy.UpdateLicense();
                 m_PageRefreshHandler.Refresh(m_PageManager.activePage);
                 PackageManagerWindowAnalytics.SendEvent("refreshList");
             };

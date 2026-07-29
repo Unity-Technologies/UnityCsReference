@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal abstract class DisableCondition
@@ -61,6 +63,16 @@ internal class DisableIfVersionDeprecated : DisableCondition
     }
 }
 
+internal class DisableIfEnterpriseEntitlementsError : DisableCondition
+{
+    private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
+    public DisableIfEnterpriseEntitlementsError(IPackageVersion version)
+    {
+        active = version != null && version.package.hasEntitlementsError && version.package.isEnterprise;
+        tooltip = k_Tooltip;
+    }
+}
+
 internal class DisableIfEntitlementsError : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
@@ -68,6 +80,45 @@ internal class DisableIfEntitlementsError : DisableCondition
     {
         active = version != null && version.package.hasEntitlementsError;
         tooltip = k_Tooltip;
+    }
+
+}
+
+internal class DisableIfPackageIsNotLoaded : DisableCondition
+{
+    public DisableIfPackageIsNotLoaded(IPackageVersion version)
+    {
+        active = PackageIsNotLoaded(version);
+        tooltip = L10n.Tr("This package isn't loaded in your project.");
+    }
+
+    private bool PackageIsNotLoaded(IPackageVersion version)
+    {
+        foreach (var error in version?.errors ?? Array.Empty<UIError>())
+        {
+            if (error?.errorCode == UIErrorCode.UpmError_PackageNotLoaded)
+                return true;
+        }
+        return false;
+    }
+}
+
+internal class DisableIfPackageIsInInvalidLocation : DisableCondition
+{
+    public DisableIfPackageIsInInvalidLocation(IPackageVersion version)
+    {
+        active = PackageIsInInvalidLocation(version);
+        tooltip = L10n.Tr("This package is stored in an invalid location.");
+    }
+
+    private bool PackageIsInInvalidLocation(IPackageVersion version)
+    {
+        foreach (var error in version?.errors ?? Array.Empty<UIError>())
+        {
+            if (error?.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI) == false && error?.errorCode == UIErrorCode.UpmError_InvalidSourcePath)
+                return true;
+        }
+        return false;
     }
 }
 

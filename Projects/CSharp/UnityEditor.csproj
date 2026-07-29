@@ -6828,6 +6828,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackagesChangedSource.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackagesChangedSource.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs</Link>
     </Compile>
@@ -6941,6 +6944,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\LicenceProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\LicenceProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs</Link>
@@ -11564,6 +11570,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\Events\EditorAnalyticsEvent.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\Events\EditorAnalyticsEvent.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\InheritedSessionArgs.bindings.cs">
+      <Link>Modules\UnityEditorAnalyticsEditor\InheritedSessionArgs.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs</Link>

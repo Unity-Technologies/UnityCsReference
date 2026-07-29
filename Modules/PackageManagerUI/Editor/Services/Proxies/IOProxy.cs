@@ -29,6 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void CreateDirectory(string directoryPath);
         void DeleteDirectory(string directoryPath);
         string GetProjectDirectory();
+        string GetProjectRelativePath(string absolutePath, SlashMode slashMode = SlashMode.Native);
         bool IsSamePackageDirectory(string a, string b);
         void MakeFileWritable(string filePath, bool writable);
         void CopyFile(string sourceFileName, string destFileName, bool overwrite);
@@ -41,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void FileWriteAllBytes(string filePath, byte[] bytes);
         void FileWriteAllText(string filePath, string contents);
         string GetUniqueTempPathInProject();
-        NPath[] GetFiles(string tempFolder, string searchPattern, bool recurse);
+        string[] GetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly);
         void SetFileAttributes(string file, FileAttributes attributes);
         FileAttributes GetFileAttributes(string file);
         void Move(string sourceDirName, string destinationDirName);
@@ -143,6 +144,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return GetParentDirectory(Application.dataPath);
         }
 
+        public string GetProjectRelativePath(string absolutePath, SlashMode slashMode = SlashMode.Native)
+        {
+            return new NPath(absolutePath).RelativeTo(new NPath(Application.dataPath).Parent).ToString(slashMode);
+        }
+
         public bool IsSamePackageDirectory(string a, string b)
         {
             return GetPackageAbsoluteDirectory(a) == GetPackageAbsoluteDirectory(b);
@@ -197,7 +203,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void FileWriteAllText(string filePath, string contents) => new NPath(filePath).WriteAllText(contents);
         public string GetUniqueTempPathInProject() => FileUtil.GetUniqueTempPathInProject();
 
-        public NPath[] GetFiles(string path, string searchPattern, bool recurse) => new NPath(path).Files(searchPattern, recurse);
+        public string[] GetFiles(string directoryPath, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+            => Array.ConvertAll(new NPath(directoryPath).Files(searchPattern, searchOption == SearchOption.AllDirectories), p => p.ToString(SlashMode.Native));
         public void SetFileAttributes(string file, FileAttributes attributes) => new NPath(file).Attributes = attributes;
         public FileAttributes GetFileAttributes(string file) => new NPath(file).Attributes;
         public void Move(string sourceDirName, string destinationDirName) => new NPath(sourceDirName).Move(destinationDirName);

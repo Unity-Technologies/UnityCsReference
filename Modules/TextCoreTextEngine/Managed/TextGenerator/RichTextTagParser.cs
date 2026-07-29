@@ -661,7 +661,8 @@ namespace UnityEngine.TextCore
 
             spriteAssetValue = new TagValue(spriteAsset.entityId, TagUnitType.Unknown, ValueID.AssetID);
             glyphMetricsValue = new TagValue(sprite.glyph.metrics, ValueID.GlyphMetrics);
-            scaleValue = new TagValue(sprite.scale, TagUnitType.Unknown, ValueID.Scale);
+            float glyphScale = sprite.glyph != null ? sprite.glyph.scale : 1f;
+            scaleValue = new TagValue(sprite.scale * glyphScale, TagUnitType.Unknown, ValueID.Scale);
             // Sprites are assigned in the E000 Private Area + sprite Index
             unicode = (char)(k_PrivateArea + spriteIndex);
 
@@ -1526,7 +1527,7 @@ namespace UnityEngine.TextCore
                         if (segment.tags[i].value3?.ID == ValueID.Tint)
                             textSpan.spriteTint = segment.tags[i].value3!.BoolValue;
                         if (segment.tags[i].value4?.ID == ValueID.Scale)
-                            textSpan.spriteScale = (int)segment.tags[i].value4!.NumericalValue;
+                            textSpan.spriteScale = segment.tags[i].value4!.NumericalValue;
                         if (segment.tags[i].value5?.ID == ValueID.SpriteColor)
                             textSpan.spriteColor = segment.tags[i].value5!.ColorValue;
                         else

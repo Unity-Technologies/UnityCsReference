@@ -15,12 +15,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IPackageCreator m_PackageCreator;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUnityConnectProxy m_UnityConnectProxy;
         public UpmPackageFactory(IUpmCache upmCache,
             IUpmClient upmClient,
             IBackgroundFetchHandler backgroundFetchHandler,
             IPackageDatabase packageDatabase,
             IProjectSettingsProxy settingsProxy,
-            IPackageCreator packageCreator)
+            IPackageCreator packageCreator,
+            IIOProxy ioProxy,
+            IApplicationProxy applicationProxy,
+            IUnityConnectProxy unityConnectProxy)
         {
             m_UpmCache = RegisterDependency(upmCache);
             m_UpmClient = RegisterDependency(upmClient);
@@ -28,6 +34,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = RegisterDependency(packageDatabase);
             m_SettingsProxy = RegisterDependency(settingsProxy);
             m_PackageCreator = RegisterDependency(packageCreator);
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_ApplicationProxy = RegisterDependency(applicationProxy);
+            m_UnityConnectProxy = RegisterDependency(unityConnectProxy);
         }
 
         public override void OnEnable()
@@ -43,6 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
             m_UpmClient.onSpecialInstallStart += OnSpecialInstallStart;
             m_UpmClient.onSpecialInstallFinalize += OnSpecialInstallFinalize;
+            m_UpmClient.onPackagesReadyToReevaluate += OnPackagesReadyToReevaluate;
 
             m_PackageCreator.onPackageCreated += OnPackageCreated;
         }
@@ -60,8 +70,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.onPackageOperationError -= OnPackageOperationError;
             m_UpmClient.onSpecialInstallStart -= OnSpecialInstallStart;
             m_UpmClient.onSpecialInstallFinalize -= OnSpecialInstallFinalize;
+            m_UpmClient.onPackagesReadyToReevaluate -= OnPackagesReadyToReevaluate;
 
             m_PackageCreator.onPackageCreated -= OnPackageCreated;
+        }
+
+        private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
+        {
+            GeneratePackagesAndTriggerChangeEvent(packageNames);
         }
 
         private void OnPackageOperationError(string packageIdOrName, UIError error)
@@ -142,10 +158,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GeneratePackagesAndTriggerChangeEvent(new[] { packageInfo.name });
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
+        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
         {
             var packageNames = updatedInfos.Select(i => i.oldInfo?.name ?? i.newInfo?.name).ToArray();
-            GeneratePackagesAndTriggerChangeEvent(packageNames);
+            GeneratePackagesAndTriggerChangeEvent(packageNames, changedSource);
         }
 
         private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
@@ -160,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(allPackageNames);
         }
 
-        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames)
+        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             if (packageNames?.Any() != true)
                 return;
@@ -186,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else
                 {
-                    var versionList = new UpmVersionList(packageData, tagsToExclude);
+                    var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, m_UnityConnectProxy, changedSource != PackagesChangedSource.AddAndRemove);
                     if (!versionList.Any())
                     {
                         packagesToRemove.Add(packageName);
@@ -199,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
                     // since the primary version's display name is used in the package list
                     var primaryVersion = package.versions.primary;
-                    if (primaryVersion?.isFullyFetched == false)
+                    if (!primaryVersion.isFullyFetched)
                         m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
                 }
             }
@@ -219,6 +235,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUpmCache m_UpmCache;
         private readonly IUpmRegistryClient m_UpmRegistryClient;
         private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IIOProxy m_IOProxy;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUpmClient m_UpmClient;
         public UpmOnAssetStorePackageFactory(IUnityConnectProxy unityConnect,
             IAssetStoreCache assetStoreCache,
             IBackgroundFetchHandler backgroundFetchHandler,
@@ -226,7 +245,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             IFetchStatusTracker fetchStatusTracker,
             IUpmCache upmCache,
             IUpmRegistryClient upmRegistryClient,
-            IProjectSettingsProxy settingsProxy)
+            IProjectSettingsProxy settingsProxy,
+            IIOProxy ioProxy,
+            IApplicationProxy applicationProxy,
+            IUpmClient upmClient)
         {
             m_UnityConnect = RegisterDependency(unityConnect);
             m_AssetStoreCache = RegisterDependency(assetStoreCache);
@@ -236,6 +258,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache = RegisterDependency(upmCache);
             m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
             m_SettingsProxy = RegisterDependency(settingsProxy);
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_ApplicationProxy = RegisterDependency(applicationProxy);
+            m_UpmClient = RegisterDependency(upmClient);
         }
 
         public override void OnEnable()
@@ -255,6 +280,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
 
             m_FetchStatusTracker.onFetchStatusChanged += OnFetchStatusChanged;
+
+            m_UpmClient.onPackagesReadyToReevaluate += OnPackagesReadyToReevaluate;
         }
 
         public override void OnDisable()
@@ -274,6 +301,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onProductInfoChanged -= OnProductInfoChanged;
 
             m_FetchStatusTracker.onFetchStatusChanged -= OnFetchStatusChanged;
+
+            m_UpmClient.onPackagesReadyToReevaluate -= OnPackagesReadyToReevaluate;
         }
 
         private void OnShowPreReleasePackagesOrSeeAllVersionsChanged(bool _)
@@ -284,7 +313,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(allProductIds);
         }
 
-        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
+        private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
+        {
+            var productIds = packageNames
+                .Select(name => m_UpmCache.GetInstalledPackageInfo(name)?.ParseProductId() ?? 0)
+                .Where(id => id > 0);
+            GeneratePackagesAndTriggerChangeEvent(productIds);
+        }
+
+        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             if (productIds?.Any() != true)
                 return;
@@ -334,7 +371,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (packageData.mainSearchInfo == null && !fetchStatus.IsFetchInProgress(FetchType.ProductSearchInfo))
                         m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(packageName, productId);
 
-                    var versionList = new UpmVersionList(packageData, tagsToExclude);
+                    var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, m_UnityConnect, changedSource != PackagesChangedSource.AddAndRemove);
                     package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage);
                     if (productInfoFetchError != null)
                         AddError(package, productInfoFetchError.error);
@@ -373,7 +410,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
                 // since the primary version's display name is used in the package list
                 var primaryVersion = package.versions.primary;
-                if (primaryVersion?.isFullyFetched == false)
+                if (!primaryVersion.isFullyFetched)
                     m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
 
                 packagesChanged.Add(package);
@@ -398,7 +435,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
+        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changeSource)
         {
             var productIds = new List<long>();
             foreach (var (oldInfo, newInfo) in updatedInfos)
@@ -410,7 +447,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (newInfoProductId > 0 && newInfoProductId != oldInfoProductId)
                     productIds.Add(newInfoProductId);
             }
-            GeneratePackagesAndTriggerChangeEvent(productIds);
+            GeneratePackagesAndTriggerChangeEvent(productIds, changeSource);
         }
 
         private void OnExtraPackageInfoFetched(PackageInfo packageInfo)

@@ -16,7 +16,7 @@ namespace UnityEngine
 
         public static float Snap(float val, float snap)
         {
-            if (snap == 0)
+            if (snap <= 0)
                 return val;
 
             return snap * Mathf.Round(val / snap);
@@ -24,9 +24,11 @@ namespace UnityEngine
 
         public static Vector2 Snap(Vector2 val, Vector2 snap)
         {
-            return new Vector3(
-                Mathf.Abs(snap.x) < Mathf.Epsilon ? val.x : snap.x * Mathf.Round(val.x / snap.x),
-                Mathf.Abs(snap.y) < Mathf.Epsilon ? val.y : snap.y * Mathf.Round(val.y / snap.y)
+            // Treat negative snap values as 0 (no snap) to match the documentation
+            // and ignore positive snap values below Mathf.Epsilon to preserve previous behavior.
+            return new Vector2(
+                snap.x <= Mathf.Epsilon ? val.x : snap.x * Mathf.Round(val.x / snap.x),
+                snap.y <= Mathf.Epsilon ? val.y : snap.y * Mathf.Round(val.y / snap.y)
             );
         }
 

@@ -47,7 +47,7 @@ internal class InProjectPage : SimplePage
     public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
     {
         var oldSupportedStatusFilters = m_SupportedStatusFilters;
-        m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.hasEntitlements)
+        m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.isEnterprise)
             ? new[] { PageFilters.Status.SubscriptionBased }
             : Array.Empty<PageFilters.Status>();
 

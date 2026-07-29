@@ -17,7 +17,7 @@ internal class InProjectErrorsAndWarningsPage : InProjectPage
     {
         get
         {
-            if (m_PackageDatabase.allPackages.AnyMatches(package => base.ShouldInclude(package) && package.state == PackageState.Error))
+            if (m_PackageDatabase.AnyMatches(package => base.ShouldInclude(package) && package.state == PackageState.Error))
                 return Icon.Error;
             else
                 return Icon.Warning;

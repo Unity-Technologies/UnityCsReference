@@ -110,36 +110,69 @@ namespace Unity.Properties
 
         public void GetAllTypesConvertingToType(Type type, List<Type> result)
         {
-            if (m_Converters == null)
-                return;
-
-            foreach (var key in m_Converters.Keys)
+            if (m_Converters != null)
             {
-                if (key.DestinationType == type)
-                    result.Add(key.SourceType);
+                foreach (var key in m_Converters.Keys)
+                {
+                    if (key.DestinationType == type)
+                        result.Add(key.SourceType);
+                }
+            }
+
+            // Also report converters that have been registered lazily but not yet materialized so that callers
+            // enumerating the available conversions (e.g. the UI Builder) are aware of them.
+            if (m_LazyConverters != null)
+            {
+                foreach (var key in m_LazyConverters.Keys)
+                {
+                    if (key.DestinationType == type && (m_Converters == null || !m_Converters.ContainsKey(key)))
+                        result.Add(key.SourceType);
+                }
             }
         }
 
         public void GetAllTypesConvertingFromType(Type type, List<Type> result)
         {
-            if (m_Converters == null)
-                return;
-
-            foreach (var key in m_Converters.Keys)
+            if (m_Converters != null)
             {
-                if (key.SourceType == type)
-                    result.Add(key.DestinationType);
+                foreach (var key in m_Converters.Keys)
+                {
+                    if (key.SourceType == type)
+                        result.Add(key.DestinationType);
+                }
+            }
+
+            // Also report converters that have been registered lazily but not yet materialized so that callers
+            // enumerating the available conversions (e.g. the UI Builder) are aware of them.
+            if (m_LazyConverters != null)
+            {
+                foreach (var key in m_LazyConverters.Keys)
+                {
+                    if (key.SourceType == type && (m_Converters == null || !m_Converters.ContainsKey(key)))
+                        result.Add(key.DestinationType);
+                }
             }
         }
 
         public void GetAllConversions(List<(Type, Type)> result)
         {
-            if (m_Converters == null)
-                return;
-
-            foreach (var key in m_Converters.Keys)
+            if (m_Converters != null)
             {
-                result.Add((key.SourceType, key.DestinationType));
+                foreach (var key in m_Converters.Keys)
+                {
+                    result.Add((key.SourceType, key.DestinationType));
+                }
+            }
+
+            // Also report converters that have been registered lazily but not yet materialized so that callers
+            // enumerating the available conversions (e.g. the UI Builder) are aware of them.
+            if (m_LazyConverters != null)
+            {
+                foreach (var key in m_LazyConverters.Keys)
+                {
+                    if (m_Converters == null || !m_Converters.ContainsKey(key))
+                        result.Add((key.SourceType, key.DestinationType));
+                }
             }
         }
 

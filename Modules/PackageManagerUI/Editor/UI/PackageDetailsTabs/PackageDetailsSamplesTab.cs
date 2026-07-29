@@ -89,7 +89,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 sampleContainer.Add(sampleItem.importButton);
 
                 samplesContainer.Add(sampleContainer);
-                sampleItem.importButton.SetEnabled(m_Version.isInstalled);
             }
         }
 

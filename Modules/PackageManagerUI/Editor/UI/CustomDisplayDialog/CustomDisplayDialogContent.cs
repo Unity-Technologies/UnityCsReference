@@ -45,15 +45,15 @@ internal class CustomDisplayDialogContent : ModalContent
         headerMainLabel.text = args.headerMainText;
         headerSubLabel.text = args.headerSubText;
 
-        helpBoxIcon.AddToClassList(args.headerInfoBoxIcon.ClassName());
-        helpBoxLabel.text = args.headerInfoBoxText;
+        messageIcon.AddToClassList(args.headerInfoBoxIcon.ClassName());
+        messageLabel.text = args.headerInfoBoxText;
         upperContainer.AddToClassList(args.headerColor.ToString().ToLower());
 
         var showInfoBox = !string.IsNullOrEmpty(args.headerInfoBoxText);
         var showHeaderMainLabel = !string.IsNullOrEmpty(args.headerMainText);
         var showHeaderSubLabel = !string.IsNullOrEmpty(args.headerSubText);
         var showHeader = showHeaderMainLabel || showHeaderSubLabel;
-        UIUtils.SetElementDisplay(helpBoxContainer, showInfoBox);
+        UIUtils.SetElementDisplay(messageContainer, showInfoBox);
         UIUtils.SetElementDisplay(headerContainer, showHeader);
         UIUtils.SetElementDisplay(upperContainer, showHeader || showInfoBox);
         UIUtils.SetElementDisplay(headerMainLabel, showHeaderMainLabel);
@@ -117,9 +117,9 @@ internal class CustomDisplayDialogContent : ModalContent
     private Label headerMainLabel => cache.Get<Label>("headerMainLabel");
     private Label headerSubLabel => cache.Get<Label>("headerSubLabel");
     private VisualElement headerIcon => cache.Get<VisualElement>("headerIcon");
-    private VisualElement helpBoxContainer => cache.Get<VisualElement>("helpBoxContainer");
-    private VisualElement helpBoxIcon => cache.Get<VisualElement>("helpBoxIcon");
-    private Label helpBoxLabel => cache.Get<Label>("helpBoxLabel");
+    private VisualElement messageContainer => cache.Get<VisualElement>("messageContainer");
+    private VisualElement messageIcon => cache.Get<VisualElement>("messageIcon");
+    private Label messageLabel => cache.Get<Label>("messageLabel");
     private ScrollView bodyScroll => cache.Get<ScrollView>("bodyScroll");
     private VisualElement lowerContainer => cache.Get<VisualElement>("lowerContainer");
     private Label bodyLabel => cache.Get<Label>("bodyLabel");

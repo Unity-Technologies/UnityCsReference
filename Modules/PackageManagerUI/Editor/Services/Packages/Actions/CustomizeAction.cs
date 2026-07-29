@@ -53,4 +53,11 @@ internal class CustomizeAction : PackageAction
     }
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.isEmbedInProgress;
+
+    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
+    {
+        yield return new DisableIfPackageIsInInvalidLocation(version);
+        yield return new DisableIfEntitlementsError(version);
+        yield return new DisableIfPackageIsNotLoaded(version);
+    }
 }

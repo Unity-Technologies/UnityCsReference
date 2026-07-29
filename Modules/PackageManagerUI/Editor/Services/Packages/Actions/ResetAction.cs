@@ -84,7 +84,7 @@ internal class ResetAction : PackageAction
             if (!active)
                 return;
 
-            var anyCustomDependencies = nonResettableCustomizedDependencies.AnyMatches(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
+            var anyCustomDependencies = nonResettableCustomizedDependencies.Any(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
             tooltip = anyCustomDependencies ?
                 string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. " +
                                       "You must remove them manually. See the list of packages in the {0} for more information."), version.GetDescriptor()) :

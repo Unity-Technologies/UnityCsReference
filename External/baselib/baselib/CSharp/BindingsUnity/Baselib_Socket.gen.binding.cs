@@ -238,7 +238,7 @@ namespace Unity.Baselib.LowLevel
         /// The order that these error conditions are checked is always socket type, address family, platform support.
         /// </remarks>
         [FreeFunction(IsThreadSafe = true)]
-        public static extern void Baselib_Socket_SetIPv4DontFragHeader(Baselib_Socket_Handle socket,         [MarshalAs(UnmanagedType.U1)] bool set, Baselib_ErrorState* errorState);
+        public static extern void Baselib_Socket_SetIPv4DontFragHeader(Baselib_Socket_Handle socket, int set, Baselib_ErrorState* errorState);
         /// <summary>
         /// Retrieves the current value of the DON'T FRAGMENT header for an IPv4 socket.
         /// Only available on IPv4 UDP sockets on certain platforms.
@@ -252,7 +252,6 @@ namespace Unity.Baselib.LowLevel
         /// The order that these error conditions are checked is always socket type, address family, platform support.
         /// </remarks>
         [FreeFunction(IsThreadSafe = true)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool Baselib_Socket_GetIPv4DontFragHeader(Baselib_Socket_Handle socket, Baselib_ErrorState* errorState);
+        public static extern int Baselib_Socket_GetIPv4DontFragHeader(Baselib_Socket_Handle socket, Baselib_ErrorState* errorState);
     }
 }

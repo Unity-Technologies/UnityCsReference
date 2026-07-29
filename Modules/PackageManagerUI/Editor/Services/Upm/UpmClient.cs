@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<string, string> onSpecialInstallFinalize;
         event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange;
         event Action<string, UIError> onPackageOperationError;
+        event Action<IReadOnlyCollection<string>> onPackagesReadyToReevaluate;
         event Action<IOperation> onListOperation;
         event Action<IOperation> onSearchAllOperation;
         event Action<IOperation> onPackOperation;
@@ -24,6 +25,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isAddOrRemoveInProgress { get; }
         bool isEmbedInProgress { get; }
         IEnumerable<string> packageIdsOrNamesInstalling { get; }
+
+        void OnRegisteredPackages();
 
         bool IsAnyExperimentalPackagesInUse();
         bool IsRemoveInProgress(string packageName);
@@ -57,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
         public event Action<string, UIError> onPackageOperationError = delegate { };
+        public event Action<IReadOnlyCollection<string>> onPackagesReadyToReevaluate = delegate {};
 
         public event Action<IOperation> onListOperation = delegate {};
         public event Action<IOperation> onSearchAllOperation = delegate {};
@@ -91,22 +95,31 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new();
 
+        [SerializeField]
+        private List<string> m_PackagesToReevaluate = new();
+
+        [SerializeField]
+        private long m_RegisteredPackagesTimestamp = -1;
+
         private readonly IUpmCache m_UpmCache;
         private readonly IFetchStatusTracker m_FetchStatusTracker;
         private readonly IIOProxy m_IOProxy;
         private readonly IClientProxy m_ClientProxy;
         private readonly IApplicationProxy m_Application;
+        private readonly IDateTimeProxy m_DateTimeProxy;
         public UpmClient(IUpmCache upmCache,
             IFetchStatusTracker fetchStatusTracker,
             IIOProxy ioProxy,
             IClientProxy clientProxy,
-            IApplicationProxy applicationProxy)
+            IApplicationProxy applicationProxy,
+            IDateTimeProxy dateTimeProxy)
         {
             m_UpmCache = RegisterDependency(upmCache);
             m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
             m_IOProxy = RegisterDependency(ioProxy);
             m_ClientProxy = RegisterDependency(clientProxy);
             m_Application = RegisterDependency(applicationProxy);
+            m_DateTimeProxy = RegisterDependency(dateTimeProxy);
         }
 
         public bool IsAnyExperimentalPackagesInUse()
@@ -270,7 +283,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
         {
-            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(request.Result);
+            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(request.Result, changeSource: PackagesChangedSource.AddAndRemove);
+
+            foreach (var (_, newInfo) in updatedInfos)
+            {
+                var name = newInfo?.name;
+                if (!string.IsNullOrEmpty(name))
+                    m_PackagesToReevaluate.Add(name);
+            }
+
+            if (m_RegisteredPackagesTimestamp > addAndRemoveOperation.timestamp)
+                TriggerReevaluation();
 
             var mainPackageInfo = addAndRemoveOperation.FindMainPackageInfoFromResult();
             if (addAndRemoveOperation.isSpecialInstall)
@@ -316,7 +339,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (offlineMode && listOfflineOperation.dataTimestamp < listOperation.lastSuccessTimestamp)
                 return;
 
-            m_UpmCache.SetInstalledPackageInfos(request.Result, listOfflineOperation.dataTimestamp);
+            m_UpmCache.SetInstalledPackageInfos(request.Result, listOfflineOperation.dataTimestamp, PackagesChangedSource.UpmList);
         }
 
         public void RemoveByName(string packageName)
@@ -420,7 +443,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_UpmCache.AddExtraPackageInfo(packageInfo);
         }
 
-        // Restore operations that's interrupted by domain reloads
+        public void OnRegisteredPackages()
+        {
+            m_RegisteredPackagesTimestamp = m_DateTimeProxy.now.Ticks;
+            TriggerReevaluation();
+        }
+
+        private void TriggerReevaluation()
+        {
+            if (m_PackagesToReevaluate.Count == 0)
+                return;
+            onPackagesReadyToReevaluate?.Invoke(m_PackagesToReevaluate);
+            m_PackagesToReevaluate.Clear();
+        }
+
+        // Restore operations interrupted by domain reloads
         private void RestoreInProgressOperations()
         {
             if (m_AddAndRemoveOperation?.isInProgress ?? false)

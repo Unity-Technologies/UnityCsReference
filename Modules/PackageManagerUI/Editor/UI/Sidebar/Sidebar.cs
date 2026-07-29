@@ -130,7 +130,7 @@ internal class Sidebar : ScrollView
     private void UpdateErrorsAndWarningsRelatedRow()
     {
         var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
-        var showErrorsAndWarningsPage = m_PackageDatabase.allPackages.AnyMatches(errorsAndWarningsPage.ShouldInclude);
+        var showErrorsAndWarningsPage = m_PackageDatabase.AnyMatches(errorsAndWarningsPage.ShouldInclude);
         var errorsAndWarningsRow = GetRow(InProjectErrorsAndWarningsPage.k_Id);
 
         UIUtils.SetElementDisplay(errorsAndWarningsRow, showErrorsAndWarningsPage);

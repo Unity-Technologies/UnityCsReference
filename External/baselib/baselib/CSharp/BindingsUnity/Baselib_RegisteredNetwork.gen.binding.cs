@@ -305,9 +305,8 @@ namespace Unity.Baselib.LowLevel
         [FreeFunction(IsThreadSafe = true)]
         public static extern void Baselib_RegisteredNetwork_Socket_UDP_Close(Baselib_RegisteredNetwork_Socket_UDP socket);
         [FreeFunction(IsThreadSafe = true)]
-        public static extern void Baselib_RegisteredNetwork_Socket_UDP_SetIPv4DontFragHeader(Baselib_RegisteredNetwork_Socket_UDP socket,         [MarshalAs(UnmanagedType.U1)] bool set, Baselib_ErrorState* errorState);
+        public static extern void Baselib_RegisteredNetwork_Socket_UDP_SetIPv4DontFragHeader(Baselib_RegisteredNetwork_Socket_UDP socket, int set, Baselib_ErrorState* errorState);
         [FreeFunction(IsThreadSafe = true)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool Baselib_RegisteredNetwork_Socket_UDP_GetIPv4DontFragHeader(Baselib_RegisteredNetwork_Socket_UDP socket, Baselib_ErrorState* errorState);
+        public static extern int Baselib_RegisteredNetwork_Socket_UDP_GetIPv4DontFragHeader(Baselib_RegisteredNetwork_Socket_UDP socket, Baselib_ErrorState* errorState);
     }
 }

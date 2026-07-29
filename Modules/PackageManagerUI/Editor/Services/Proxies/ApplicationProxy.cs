@@ -40,6 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt);
         void CheckUrlValidity(string uri, Action success, Action failure);
         bool PingObjectInProjectBrowser(string path);
+        bool ObjectExistsInAssetDatabase(string path);
     }
 
     [Serializable]
@@ -229,6 +230,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We need the delayCall to make sure the Project Browser window is open before pinging the manifest, otherwise we use the request
             EditorApplication.delayCall += () => window.FrameObject(instanceID, true);
             return true;
+        }
+
+        public bool ObjectExistsInAssetDatabase(string path)
+        {
+            return !string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(path));
         }
     }
 }

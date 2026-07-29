@@ -182,6 +182,9 @@ namespace UnityEditor
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
+            public static readonly GUIContent adjustIOSFPSUsingThermalState = EditorGUIUtility.TrTextContent("Adjust iOS FPS based on thermal state", "When the device overheats, iOS enters Serious and then Critical thermal states. In Critical state, iOS reduces system-wide performance to lower device temperature. If this setting is enabled Unity proactively lowers the frame rate in Serious and Critical thermal states, helping prevent the device from becoming too hot, improving responsiveness under overheating conditions, and reducing the likelihood of GPU timeouts or rendering freezes.");
+            public static readonly GUIContent thermalStateSeriousIOSFPS = EditorGUIUtility.TrTextContent("Serious Thermal State FPS", "When the device enters Serious Thermal State Unity will lower the frame rate to this value.");
+            public static readonly GUIContent thermalStateCriticalIOSFPS = EditorGUIUtility.TrTextContent("Critical Thermal State FPS", "When the device enters Critical Thermal State Unity will lower the frame rate to this value.");
             public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TrTextContent("Requires Persistent WiFi*");
             public static readonly GUIContent insecureHttpOption = EditorGUIUtility.TrTextContent("Allow downloads over HTTP*", "");
             public static readonly GUIContent insecureHttpWarning = EditorGUIUtility.TrTextContent("Plain text HTTP connections are not secure and can make your application vulnerable to attacks.");
@@ -386,7 +389,9 @@ namespace UnityEditor
         SerializedProperty m_MuteOtherAudioSources;
         SerializedProperty m_PrepareIOSForRecording;
         SerializedProperty m_ForceIOSSpeakersWhenRecording;
-
+        SerializedProperty m_AdjustIOSFPSUsingThermalState;
+        SerializedProperty m_SeriousThermalStateIOSFPS;
+        SerializedProperty m_CriticalThermalStateIOSFPS;
         SerializedProperty m_EnableInternalProfiler;
         SerializedProperty m_ActionOnDotNetUnhandledException;
         SerializedProperty m_LogObjCUncaughtExceptions;
@@ -634,6 +639,9 @@ namespace UnityEditor
             m_MuteOtherAudioSources         = FindPropertyAssert("muteOtherAudioSources");
             m_PrepareIOSForRecording        = FindPropertyAssert("Prepare IOS For Recording");
             m_ForceIOSSpeakersWhenRecording = FindPropertyAssert("Force IOS Speakers When Recording");
+            m_AdjustIOSFPSUsingThermalState = FindPropertyAssert("adjustIOSFPSUsingThermalState");
+            m_SeriousThermalStateIOSFPS     = FindPropertyAssert("thermalStateSeriousIOSFPS");
+            m_CriticalThermalStateIOSFPS    = FindPropertyAssert("thermalStateCriticalIOSFPS");
             m_UIRequiresPersistentWiFi      = FindPropertyAssert("uIRequiresPersistentWiFi");
             m_InsecureHttpOption            = FindPropertyAssert("insecureHttpOption");
             m_SubmitAnalytics               = FindPropertyAssert("submitAnalytics");
@@ -3571,6 +3579,17 @@ namespace UnityEditor
                     {
                         EditorGUILayout.PropertyField(m_PrepareIOSForRecording, SettingsContent.prepareIOSForRecording);
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
+
+                        EditorGUILayout.PropertyField(m_AdjustIOSFPSUsingThermalState, SettingsContent.adjustIOSFPSUsingThermalState);
+
+                        using (new EditorGUI.DisabledScope(!m_AdjustIOSFPSUsingThermalState.boolValue))
+                        {
+                            using (new EditorGUI.IndentLevelScope())
+                            {
+                                EditorGUILayout.PropertyField(m_SeriousThermalStateIOSFPS, SettingsContent.thermalStateSeriousIOSFPS);
+                                EditorGUILayout.PropertyField(m_CriticalThermalStateIOSFPS, SettingsContent.thermalStateCriticalIOSFPS);
+                            }
+                        }
                     }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);
                 }

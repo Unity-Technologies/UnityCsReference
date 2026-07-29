@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using NiceIO;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Linq;
+using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -62,7 +64,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_HasErrorWithEntitlementMessage;
-        public override bool hasEntitlementsError => (hasEntitlements && !entitlements.isAllowed) || m_HasErrorWithEntitlementMessage;
+        public override bool hasEntitlementsError => entitlements is
+        {
+            licensingModel: EntitlementLicensingModel.AssetStore or EntitlementLicensingModel.Enterprise,
+            isAllowed: false
+        } || m_HasErrorWithEntitlementMessage;
 
         public string sourcePath
         {
@@ -122,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packageVersion = new UpmPackageVersion(packageData.name, versionString, packageData.availableRegistryType)
             {
                 m_IsFullyFetched = false,
-                m_IsInstalled =  false,
+                m_IsInstalled = false,
                 m_IsDirectDependency = false,
                 m_DisplayName = !string.IsNullOrEmpty(packageData.displayName) ? packageData.displayName : ExtractDisplayName(packageData.name)
             };
@@ -131,7 +137,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return packageVersion;
         }
 
-        public static UpmPackageVersion CreateWithCompleteInfo(IUpmPackageData packageData, PackageInfo packageInfo, bool isInstalled)
+        public static UpmPackageVersion CreateWithCompleteInfo(IUpmPackageData packageData, PackageInfo packageInfo, bool isInstalled, IIOProxy ioProxy, IApplicationProxy applicationProxy, IUnityConnectProxy unityConnectProxy, bool processLoadingError)
         {
             var packageVersion = new UpmPackageVersion(packageInfo.name, packageInfo.version, packageData.availableRegistryType)
             {
@@ -156,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageVersion.UpdateTags(packageData, packageInfo);
             packageVersion.m_PackageId = packageVersion.HasTag(PackageTag.InstalledFromPath) ? packageInfo.packageId.Replace("\\", "/") : packageInfo.packageId;
-            packageVersion.ProcessErrors(packageInfo);
+            packageVersion.ProcessErrors(packageInfo, ioProxy, applicationProxy, unityConnectProxy, processLoadingError);
             return packageVersion;
         }
 
@@ -274,18 +280,38 @@ namespace UnityEditor.PackageManager.UI.Internal
             return $"{name.ToLower()}@{version}";
         }
 
-        private void ProcessErrors(PackageInfo info)
+        private void ProcessErrors(PackageInfo info, IIOProxy ioProxy, IApplicationProxy applicationProxy, IUnityConnectProxy unityConnectProxy, bool processLoadingError)
         {
             m_HasErrorWithEntitlementMessage = info.errors.Any(error
                 => error.errorCode == ErrorCode.Forbidden
                 && error.message.IndexOf(k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
 
             m_Errors.Clear();
-
             if (hasEntitlementsError)
-                m_Errors.Add(isInstalled ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
+            {
+                string message;
+                string readMoreUrl;
+                var productId = info.ParseProductId();
+                var assetStoreUrl = unityConnectProxy.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
+                if (productId > 0)
+                {
+                    var linkId = "view-product-in-asset-store-from-entitlement-error";
+                    var linkUrl = $"{assetStoreUrl}/packages/p/{productId}";
+                    message = string.Format(
+                        L10n.Tr("Your account does not have the required Asset Store entitlement for {0}. Visit the <link id=\"{1}\" url=\"{2}\">Asset Store product page</link> to acquire the entitlement."),
+                        name, linkId, linkUrl);
+                    readMoreUrl = string.Empty;
+                }
+                else
+                {
+                    message = L10n.Tr("An error occurred: This package isn't available because its license isn't registered to your user account. Contact your administrator to assign a seat for this license. Then, go to Unity Hub > Licenses and click Refresh.");
+                    readMoreUrl = "https://docs.unity.com/en-us/cloud/organizations/manage-seats";
+                }
 
-            foreach (var error in info.errors)
+                m_Errors.Add(new UIError(UIErrorCode.UpmError_Forbidden, message, readMoreUrl: readMoreUrl));
+            }
+
+            foreach (var error in info.errors ?? Array.Empty<Error>())
             {
                 if (error.message.Contains(k_NotAcquiredUpmErrorMessage))
                     m_Errors.Add(new UIError(UIErrorCode.UpmError_NotAcquired, error.message));
@@ -297,6 +323,30 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (Unsupported.IsDeveloperBuild() && isInstalled && info.signature.status == SignatureStatus.Error)
                 m_Errors.Add(UIError.k_CantValidateSignatureError);
+
+            if (IsInvalidLocation(sourcePath, ioProxy))
+            {
+                var invalidLocationError = new UIError(UIErrorCode.UpmError_InvalidSourcePath,
+                    L10n.Tr("This package is installed in an invalid location. Move it outside of your Assets, Library, ProjectSettings, or UserSettings folders."));
+                m_Errors.Add(invalidLocationError);
+            }
+
+            if (processLoadingError && isInstalled && !applicationProxy.ObjectExistsInAssetDatabase(info.assetPath))
+            {
+                var packageNotLoadedError = new UIError(UIErrorCode.UpmError_PackageNotLoaded,
+                    L10n.Tr("This package failed to load in your project. Check the Console window for more details."));
+                m_Errors.Add(packageNotLoadedError);
+            }
+        }
+
+        private static bool IsInvalidLocation(string sourcePath, IIOProxy ioProxy)
+        {
+            if (string.IsNullOrEmpty(sourcePath))
+                return false;
+
+            var projectRelativePath = ioProxy.GetProjectRelativePath(sourcePath, SlashMode.Forward);
+            return projectRelativePath.StartsWith("Assets/") || projectRelativePath.StartsWith("Library/")
+                   || projectRelativePath.StartsWith("ProjectSettings/") || projectRelativePath.StartsWith("UserSettings/");
         }
     }
 }

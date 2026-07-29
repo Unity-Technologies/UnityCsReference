@@ -174,7 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 if (!string.IsNullOrEmpty(error.message))
                     consoleErrorMessage += !string.IsNullOrEmpty(consoleErrorMessage) ? $"\n{error.message}" : error.message;
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}"), consoleErrorMessage));
+                Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, string.Format(L10n.Tr("[Package Manager Window] {0}"), consoleErrorMessage));
                 error.attribute |= UIError.Attribute.DetailInConsole;
             }
             onOperationError?.Invoke(this, error);

@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpmError_UnsignedUnityPackage,
         UpmError_NotSignedIn,
         UpmError_NotAcquired,
+        UpmError_PackageNotLoaded,
+        UpmError_InvalidSourcePath,
 
         AssetStoreAuthorizationError = 500,
         AssetStoreClientError,

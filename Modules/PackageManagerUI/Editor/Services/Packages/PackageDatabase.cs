@@ -30,6 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
         void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId);
+        bool AnyMatches(Func<IPackage, bool> predicate);
 
         void ClearSamplesCache();
 
@@ -332,6 +333,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             RemovePackage(packageWithTempId);
             TriggerOnPackagesChanged(removed: new [] { packageWithTempId });
+        }
+
+        public bool AnyMatches(Func<IPackage, bool> predicate)
+        {
+            if (predicate == null)
+                return false;
+
+            foreach (var item in m_Packages.Values)
+            {
+                if (predicate(item))
+                    return true;
+            }
+
+            return false;
         }
 
         private void RemovePackage(IPackage package)

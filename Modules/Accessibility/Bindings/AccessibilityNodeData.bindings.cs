@@ -248,7 +248,6 @@ namespace UnityEngine.Accessibility
         ///\\
         /// This role is especially useful in:
         ///\\
-        ///\\
         ///- Tab groups or sections of a user interface that need distinct boundaries.
         ///- Navigation bars or toolbars that contain buttons or other controls.
         ///- Popups, dialogs, or other temporary views.
@@ -260,7 +259,6 @@ namespace UnityEngine.Accessibility
         ///\\
         /// Container nodes themselves are not directly focusable, but they do provide the screen reader with key
         /// information that enhances navigation:
-        ///\\
         ///\\
         ///- They enable container navigation, which can be activated through the "Containers" &lt;a href="https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls" &gt;reading control&lt;/a&gt; in TalkBack. In this navigation mode, users can move from one container to the next without having to navigate through all the nodes in between.
         ///- Starting with Android 14 (API level 34), the screen reader may announce when the user enters or exits a container.
@@ -276,7 +274,6 @@ namespace UnityEngine.Accessibility
         ///\\
         /// Container nodes are not directly focusable during standard screen reader navigation (called flat navigation
         /// on iOS), but they provide essential context for the screen reader:
-        ///\\
         ///\\
         ///- They enable container navigation, which can be activated through the "Containers" control in the &lt;a href="https://support.apple.com/en-us/111796" &gt;VoiceOver rotor&lt;/a&gt;. As on Android, this navigation mode allows users to navigate efficiently between containers.
         ///- They enable &lt;a href="https://support.apple.com/en-us/guide/iphone/iphfa3d32c50/ios#:~:text=Use%20flat%20or%20grouped%20navigation" &gt;grouped navigation&lt;/a&gt;, which can be accessed through the "Navigation Style" control in the VoiceOver rotor. In grouped navigation, container nodes are focusable. When navigating sequentially, the screen reader focuses on the container node directly instead of focusing on its child nodes. To navigate through the container's child nodes, the user must move into the container by performing a dedicated gesture. Once in a container, the user must first move out of it to navigate to nodes outside of the container. This navigation style is particularly useful in complex interfaces, where it simplifies and speeds up navigation.
@@ -366,8 +363,7 @@ namespace UnityEngine.Accessibility
         /// <remarks>
         /// **Platform-specific behavior**
         ///\\
-        ///\\
-        ///- **Android**: If this role is set on a node, the screen reader announces the node as a "dropdown list". After a short pause, it provides instructions on how to open it.
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as a "button". After a short pause, it provides instructions on how to open it. If the node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" before announcing the node's label. Otherwise, it reads "collapsed".
         ///- **iOS**: This role has no effect.
         ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "pop up button". After a short pause, it provides instructions on how to open it. If the node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing the node's label. Otherwise, it reads "collapsed".
         ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "combo box". If the node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing the node's label. Otherwise, it reads "collapsed".
@@ -391,7 +387,6 @@ namespace UnityEngine.Accessibility
         /// </summary>
         /// <remarks>
         /// **Platform-specific behavior**
-        ///\\
         ///\\
         ///- **Android**: If this role is set on a node, the screen reader announces the node as a "button". After a short pause, it provides instructions on how to activate the node.
         ///- **iOS**: If this role is set on a node and the node's parent has <see cref="AccessibilityRole.TabBar"/> set, the screen reader announces the node as a "tab". Otherwise, it announces the node as a "button".
@@ -421,7 +416,6 @@ namespace UnityEngine.Accessibility
         ///\\
         ///\\
         /// **Platform behavior specific to this role**
-        ///\\
         ///\\
         ///- **Android**: This role does not affect the node's announcement but provides the screen reader with semantic information about the node.
         ///- **iOS**: This role does not have any additional effect compared to <see cref="AccessibilityRole.Container"/>.
@@ -528,11 +522,10 @@ namespace UnityEngine.Accessibility
         ///\\
         /// **Notes**
         ///\\
-        ///\\
         ///- This state is only supported for nodes with the role <see cref="AccessibilityRole.Dropdown"/>.
         ///- On macOS, if the role <see cref="AccessibilityRole.Dropdown"/> is unset from a node, the screen reader continues to announce the expanded/collapsed state of the node if its new role is compatible with this state. This is a platform limitation.
         ///\\
-        /// **Platform support**: This state has no effect on mobile platforms.
+        /// **Platform support**: This state has no effect on iOS.
         /// </remarks>
         Expanded = 1 << 2,
     }

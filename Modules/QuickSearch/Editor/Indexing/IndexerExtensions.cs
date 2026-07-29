@@ -177,6 +177,15 @@ namespace UnityEditor.Search
             }
         }
 
+        [CustomObjectIndexer(typeof(SpriteRenderer), version = 1)]
+        internal static void SpriteRendererIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
+        {
+            if (!(context.target is SpriteRenderer sprite))
+                return;
+
+            indexer.AddReference(context.documentIndex, "material", sprite.sharedMaterial);
+        }
+
         [CustomObjectIndexer(typeof(TerrainData), version = 1)]
         internal static void TerrainIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {

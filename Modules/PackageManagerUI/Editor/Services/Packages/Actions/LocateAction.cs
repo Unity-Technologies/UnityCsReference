@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class LocateAction : PackageAction
@@ -36,5 +38,12 @@ internal class LocateAction : PackageAction
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
         return L10n.Tr("Locate");
+    }
+
+    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
+    {
+        yield return new DisableIfPackageIsInInvalidLocation(version);
+        yield return new DisableIfEntitlementsError(version);
+        yield return new DisableIfPackageIsNotLoaded(version);
     }
 }

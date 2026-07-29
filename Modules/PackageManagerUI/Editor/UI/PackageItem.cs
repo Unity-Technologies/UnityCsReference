@@ -77,9 +77,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_LeftContainer.Add(m_NameLabel);
             }
 
-            m_EntitlementLabel = new Label {name = "entitlementLabel"};
-            UIUtils.SetElementDisplay(m_EntitlementLabel, false);
-            m_LeftContainer.Add(m_EntitlementLabel);
+            m_EnterpriseLabel = new Label {name = "entitlementLabel"};
+            UIUtils.SetElementDisplay(m_EnterpriseLabel, false);
+            m_LeftContainer.Add(m_EnterpriseLabel);
 
             m_VersionLabel = new Label {name = "versionLabel", classList = {"version", "middle"}};
             m_MainItem.Add(m_VersionLabel);
@@ -245,10 +245,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshEntitlement()
         {
-            var showEntitlement = package.hasEntitlements;
-            UIUtils.SetElementDisplay(m_EntitlementLabel, showEntitlement);
-            m_EntitlementLabel.text = showEntitlement ? "E" : string.Empty;
-            m_EntitlementLabel.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
+            var showEnterpriseLabel = package.isEnterprise;
+            UIUtils.SetElementDisplay(m_EnterpriseLabel, showEnterpriseLabel);
+
+            if (!showEnterpriseLabel)
+                return;
+            m_EnterpriseLabel.text = "E";
+            m_EnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.");
         }
 
         public void SelectMainItem()
@@ -287,7 +290,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement m_LockedIcon;
         private VisualElement m_InfoStateIcon;
         private VisualElement m_StateContainer;
-        private Label m_EntitlementLabel;
+        private Label m_EnterpriseLabel;
         private Label m_VersionLabel;
         private LoadingSpinner m_Spinner;
         private Label m_PackageTypeIcon;

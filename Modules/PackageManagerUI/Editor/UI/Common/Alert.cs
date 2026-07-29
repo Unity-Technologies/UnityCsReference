@@ -3,111 +3,82 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class Alert : VisualElement
+    internal class Alert : ExtendedHelpBox
     {
         [Serializable]
-        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        public new class UxmlSerializedData : ExtendedHelpBox.UxmlSerializedData
         {
             public override object CreateInstance() => new Alert();
         }
 
-        private IResourceLoader m_ResourceLoader;
-        private IUnityConnectProxy m_UnityConnectProxy;
-
-        private Action m_OnActionButtonClicked;
-
-        private void ResolveDependencies()
-        {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_UnityConnectProxy = container.Resolve<IUnityConnectProxy>();
-        }
+        private readonly IApplicationProxy m_Application;
+        private readonly IUnityConnectProxy m_UnityConnectProxy;
 
         public Alert()
         {
-            ResolveDependencies();
+            var container = ServicesContainer.instance;
+            m_Application = container.Resolve<IApplicationProxy>();
+            m_UnityConnectProxy = container.Resolve<IUnityConnectProxy>();
 
             UIUtils.SetElementDisplay(this, false);
-
-            var root = m_ResourceLoader.GetTemplate("Alert.uxml");
-            Add(root);
-
-            cache = new VisualElementCache(root);
-
-            alertActionButton.clicked += () => m_OnActionButtonClicked?.Invoke();
         }
 
         public void RefreshError(UIError error, IPackageVersion packageVersion = null)
         {
-            if (error == null)
-            {
-                UIUtils.SetElementDisplay(this, false);
+            var showHelpBox = error != null;
+            UIUtils.SetElementDisplay(this, showHelpBox);
+            if (!showHelpBox)
                 return;
-            }
-            UIUtils.SetElementDisplay(this, true);
 
             var message = error.message ?? string.Empty;
             if (error.HasAttribute(UIError.Attribute.DetailInConsole))
                 message = string.Format(L10n.Tr("{0} See console for more details."), message);
-            alertMessage.text = message;
+            text = message;
 
-            if (error.HasAttribute(UIError.Attribute.Warning))
-            {
-                alertContainer.RemoveFromClassList("error");
-                alertContainer.AddClasses("warning");
-            }
-            else
-            {
-                alertContainer.RemoveFromClassList("warning");
-                alertContainer.AddClasses("error");
-            }
+            messageType = error.HasAttribute(UIError.Attribute.Warning) ? HelpBoxMessageType.Warning : HelpBoxMessageType.Error;
 
             RefreshActionButton(error, packageVersion);
         }
 
         private void RefreshActionButton(UIError error, IPackageVersion packageVersion)
         {
-            var buttonText = string.Empty;
-            Action buttonAction = null;
-
             if (error.errorCode is UIErrorCode.UpmError_NotSignedIn)
             {
-                buttonText = L10n.Tr("Sign in");
-                buttonAction = () => m_UnityConnectProxy.ShowLogin();
+                SetCustomLinkButton(L10n.Tr("Sign in"), () => m_UnityConnectProxy.ShowLogin());
+                return;
             }
-            else if (error.errorCode is UIErrorCode.UpmError_NotAcquired)
+
+            if (error.errorCode is UIErrorCode.UpmError_NotAcquired)
             {
                 var productUrl = packageVersion?.package?.product?.productUrl;
                 if (!string.IsNullOrEmpty(productUrl))
                 {
-                    buttonText = L10n.Tr("View in Asset Store");
-                    buttonAction = () => Application.OpenURL(productUrl);
+                    SetCustomLinkButton(L10n.Tr("View in Asset Store"), () =>
+                    {
+                        m_Application.OpenURL(productUrl);
+                        PackageManagerWindowAnalytics.SendEvent("viewProductInAssetStoreFromAlertHelpBox", packageVersion.uniqueId);
+                    }, productUrl);
+                    return;
                 }
+                SetCustomLinkButton(string.Empty, null);
+                return;
             }
-            else if (!string.IsNullOrEmpty(error.readMoreURL))
+
+            if (!string.IsNullOrEmpty(error.readMoreURL))
             {
-                buttonText = L10n.Tr("Learn More");
-                buttonAction = () =>
+                SetCustomLinkButton(L10n.Tr("Learn More"), () =>
                 {
                     PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode}", packageVersion?.uniqueId);
-                    Application.OpenURL(error.readMoreURL);
-                };
+                    m_Application.OpenURL(error.readMoreURL);
+                }, error.readMoreURL);
+                return;
             }
 
-            alertActionButton.text = buttonText;
-            m_OnActionButtonClicked = buttonAction;
-            UIUtils.SetElementDisplay(alertActionButton, buttonAction != null);
+            SetCustomLinkButton(string.Empty, null);
         }
-
-        private VisualElementCache cache { get; }
-
-        private Label alertMessage => cache.Get<Label>("alertMessage");
-        private VisualElement alertContainer => cache.Get<VisualElement>("alertContainer");
-        private Button alertActionButton => cache.Get<Button>("alertActionButton");
     }
 }

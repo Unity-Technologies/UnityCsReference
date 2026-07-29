@@ -383,11 +383,17 @@ namespace UnityEditor
                 drawAction(drawRect);
         }
 
-        internal static bool DoOpenSpriteEditorWindowUI()
+        internal static bool DoOpenSpriteEditorWindowUI(bool enableOpenSpriteEditorButton, bool enableInstallButton = true)
         {
             var buttonText = showSpriteEditorWindow == null ? Styles.install2DPackage : Styles.openSpriteEditor;
             GUILayout.BeginVertical();
-            var clicked = GUILayout.Button(buttonText);
+            var clicked = false;
+            using (new EditorGUI.DisabledScope((showSpriteEditorWindow != null && !enableOpenSpriteEditorButton) ||
+                                                (showSpriteEditorWindow == null && !enableInstallButton)))
+            {
+                clicked = GUILayout.Button(buttonText);
+            }
+
             if (showSpriteEditorWindow == null)
                 EditorGUILayout.HelpBox(Styles.install2DPackageReason.text, MessageType.Info, true);
             GUILayout.EndVertical();

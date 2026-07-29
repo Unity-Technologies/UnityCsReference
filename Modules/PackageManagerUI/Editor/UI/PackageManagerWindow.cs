@@ -44,6 +44,11 @@ namespace UnityEditor.PackageManager.UI
     [EditorWindowTitle(title = "Package Manager", icon = "Package Manager")]
     internal class PackageManagerWindow : EditorWindow
     {
+        static PackageManagerWindow()
+        {
+            Events.registeredPackages += OnRegisteredPackages;
+        }
+
         internal static PackageManagerWindow instance { get; private set; }
 
         private PackageManagerWindowRoot m_Root;
@@ -61,8 +66,6 @@ namespace UnityEditor.PackageManager.UI
 
             minSize = new Vector2(280, 250);
             BuildGUI();
-
-            Events.registeredPackages += OnRegisteredPackages;
         }
 
         private void BuildGUI()
@@ -133,8 +136,6 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             m_Root?.OnDisable();
-
-            Events.registeredPackages -= OnRegisteredPackages;
         }
 
         void OnDestroy()
@@ -180,6 +181,10 @@ namespace UnityEditor.PackageManager.UI
         {
             if (string.IsNullOrEmpty(url))
                 return;
+
+            // When the user just acquired a package on the Asset Store and then clicked the "Open in Unity" button immediately,
+            // we need to refresh the license here so the package shows up in the correct state
+            ServicesContainer.instance.Resolve<ILicenceProxy>().UpdateLicense();
 
             // com.unity3d.kharma:content/11111                       => AssetStore url
             // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url

@@ -220,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             added ??= Array.Empty<IPackage>();
             updated ??= Array.Empty<IPackage>();
             removed ??= Array.Empty<IPackage>();
-            if (!added.Concat(updated).Concat(removed).Any(p => p.hasEntitlements))
+            if (!added.Concat(updated).Concat(removed).Any(p => p.isEnterprise))
                 return;
 
             if (!RefreshSupportedStatusFiltersOnEntitlementPackageChange())

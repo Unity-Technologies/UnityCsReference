@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -32,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             sizeLabel.text = sample.size;
             descriptionLabel.text = sample.description;
-            RefreshImportStatus();
+            RefreshImportButton();
             importButton.clickable.clicked += OnImportButtonClicked;
         }
 
@@ -78,12 +77,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_Sample.Import(Sample.ImportOptions.OverridePreviousImports))
             {
-                RefreshImportStatus();
+                RefreshImportButton();
                 if (m_Sample.isImported)
                 {
                     // Highlight import path
-                    var currentPath = m_IOProxy.CurrentDirectory;
-                    var importRelativePath = m_Sample.importPath.Replace(currentPath + Path.DirectorySeparatorChar, "");
+                    var importRelativePath = m_IOProxy.GetProjectRelativePath(m_Sample.importPath);
                     var obj = m_AssetDatabase.LoadMainAssetAtPath(importRelativePath);
                     m_Selection.activeObject = obj;
                     EditorGUIUtility.PingObject(obj);
@@ -91,8 +89,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void RefreshImportStatus()
+        private void RefreshImportButton()
         {
+            RefreshButtonState();
             if (m_Sample.isImported)
             {
                 importStatus.AddToClassList("imported");
@@ -107,6 +106,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 importStatus.RemoveFromClassList("imported");
                 importButton.text = L10n.Tr("Import");
+            }
+        }
+
+        private void RefreshButtonState()
+        {
+            var error = m_Version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
+            if (error is { errorCode: UIErrorCode.UpmError_InvalidSourcePath })
+            {
+                importButton.SetEnabled(false);
+                importButton.tooltip = L10n.Tr("The package this sample belongs to is stored in an invalid location.");
+            }
+            else if (m_Version?.hasEntitlementsError == true)
+            {
+                importButton.SetEnabled(false);
+                importButton.tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
+            }
+            else if (m_Version?.errors?.Any(i => i.errorCode == UIErrorCode.UpmError_PackageNotLoaded) == true)
+            {
+                importButton.SetEnabled(false);
+                importButton.tooltip = L10n.Tr("The package this sample belongs to isn't loaded in your project.");
+            }
+            else
+            {
+                importButton.SetEnabled(true);
+                importButton.tooltip = string.Empty;
             }
         }
 

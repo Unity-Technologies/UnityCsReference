@@ -73,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            lockedPackagesInfoBox.Q<Button>().clickable.clicked += OnDeselectLockedSelectionsClicked;
+            lockedPackagesInfoBox.SetCustomLinkButton(L10n.Tr("Deselect all locked packages"), OnDeselectLockedSelectionsClicked);
 
             InitializeFoldouts();
         }
@@ -206,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { get; }
         private Label title => cache.Get<Label>("multiSelectTitle");
         private VisualElement infoBoxContainer => cache.Get<VisualElement>("multiSelectInfoBoxContainer");
-        private HelpBox lockedPackagesInfoBox => cache.Get<HelpBox>("lockedPackagesInfoBox");
+        private ExtendedHelpBox lockedPackagesInfoBox => cache.Get<ExtendedHelpBox>("lockedPackagesInfoBox");
         private VisualElement foldoutsContainer => cache.Get<VisualElement>("multiSelectFoldoutsContainer");
     }
 }

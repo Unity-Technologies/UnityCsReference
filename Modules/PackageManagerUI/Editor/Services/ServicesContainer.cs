@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var customDisplayDialog = Register(new CustomDisplayDialog(applicationProxy, resourceLoader));
 
             var upmCache = Register(new UpmCache(settingsProxy));
-            var upmClient = Register(new UpmClient(upmCache, fetchStatusTracker, ioProxy, clientProxy, applicationProxy));
+            var upmClient = Register(new UpmClient(upmCache, fetchStatusTracker, ioProxy, clientProxy, applicationProxy, dateTimeProxy));
             var upmRegistryClient = Register(new UpmRegistryClient(settingsProxy, clientProxy, upmCache, applicationProxy));
 
             var packageDatabase = Register(new PackageDatabase(assetDatabaseProxy, upmCache, ioProxy));
@@ -160,17 +160,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
             var inspectorSelectionHandler = Register(new InspectorSelectionHandler(selectionProxy, packageDatabase, pageManager));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
-            var packageCreator = Register(new PackageCreator(upmClient, packageDatabase, unityConnectProxy, ioProxy, dateTimeProxy));
-            var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, customDisplayDialog));
+            var packageCreator = Register(new PackageCreator(upmClient, upmCache, unityConnectProxy, ioProxy, dateTimeProxy));
+            var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, customDisplayDialog, upmClient));
             var operationDispatcher = Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient, ioProxy, selectionProxy, assetDatabaseProxy));
 
             Register(new EditorAnalyticsProxy());
+            Register(new LicenceProxy());
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new AssetStorePackageFactory(upmCache, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
-            Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator));
-            Register(new UpmOnAssetStorePackageFactory(unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmRegistryClient, settingsProxy));
+            Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, ioProxy, applicationProxy, unityConnectProxy));
+            Register(new UpmOnAssetStorePackageFactory(unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmRegistryClient, settingsProxy, ioProxy, applicationProxy, upmClient));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
-            Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator));
+            Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator, applicationProxy));
             Register(new ModalManager(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient));
 
             // We need to save some services as serialized members for them to survive domain reload properly
