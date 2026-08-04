@@ -38,7 +38,19 @@ namespace UnityEngine.UIElements.UIR
         {
             bool hierarchical = (renderData.dirtiedValues & RenderDataDirtyTypes.OpacityHierarchy) != 0;
             stats.recursiveOpacityUpdates++;
-            DepthFirstOnOpacityChanged(renderTreeManager, renderData.parent != null ? renderData.parent.compositeOpacity : 1.0f, renderData, dirtyID, hierarchical, ref stats);
+
+            // A nested render tree root has no parent link into the outer tree, so it draws its ancestor
+            // composite from the owner's outer subTreeQuad renderData.
+            float parentCompositeOpacity;
+            if (renderData.isNestedRenderTreeRoot)
+            {
+                Debug.Assert(renderData.owner.renderData != null, "Nested render tree root should always have an outer renderData");
+                parentCompositeOpacity = renderData.owner.renderData.compositeOpacity;
+            }
+            else
+                parentCompositeOpacity = renderData.parent != null ? renderData.parent.compositeOpacity : 1.0f;
+
+            DepthFirstOnOpacityChanged(renderTreeManager, parentCompositeOpacity, renderData, dirtyID, hierarchical, ref stats);
         }
 
         internal static void ProcessOnColorChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
@@ -670,14 +682,29 @@ namespace UnityEngine.UIElements.UIR
 
             renderData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
+            const float meaningfullOpacityChange = 0.0001f;
+
             if (renderData.isSubTreeQuad)
-                return; // TODO: We will need to process the opacity when implementing the real composite opacity
+            {
+                // Propagated opacity: track the ancestor composite here and dirty the nested tree when it changes
+                stats.recursiveOpacityUpdatesExpanded++;
+                float oldAncestorComposite = renderData.compositeOpacity;
+                bool ancestorCompositeChanged =
+                    Mathf.Abs(oldAncestorComposite - parentCompositeOpacity) > meaningfullOpacityChange
+                    || (oldAncestorComposite < VisibilityTreshold ^ parentCompositeOpacity < VisibilityTreshold);
+                if (ancestorCompositeChanged)
+                {
+                    renderData.compositeOpacity = parentCompositeOpacity;
+                    var nested = renderData.owner.nestedRenderData;
+                    if (nested != null)
+                        nested.renderTree.OnRenderDataOpacityChanged(nested, hierarchical: true);
+                }
+                return;
+            }
 
             stats.recursiveOpacityUpdatesExpanded++;
             float oldOpacity = renderData.compositeOpacity;
             float newOpacity = renderData.owner.resolvedStyle.opacity * parentCompositeOpacity;
-
-            const float meaningfullOpacityChange = 0.0001f;
 
             bool visiblityTresholdPassed = (oldOpacity < VisibilityTreshold ^ newOpacity < VisibilityTreshold);
             bool compositeOpacityChanged = Mathf.Abs(oldOpacity - newOpacity) > meaningfullOpacityChange || visiblityTresholdPassed;
@@ -690,7 +717,11 @@ namespace UnityEngine.UIElements.UIR
             }
 
             bool changedOpacityID = false;
-            bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - meaningfullOpacityChange; //assume 0 <= opacity <= 1
+
+            // For a nested render tree root, the tree has no parent to inherit an opacityID from.
+            // Compare against identity so the root allocates its own opacityID whenever the composite differs from 1
+            float distinctOpacityReference = renderData.isNestedRenderTreeRoot ? 1.0f : parentCompositeOpacity;
+            bool hasDistinctOpacity = newOpacity < distinctOpacityReference - meaningfullOpacityChange; //assume 0 <= opacity <= 1
             if (hasDistinctOpacity && renderData.opacityID.ownedState == OwnedState.Inherited)
             {
                 var newAlloc = renderTreeManager.shaderInfoAllocator.AllocOpacity();

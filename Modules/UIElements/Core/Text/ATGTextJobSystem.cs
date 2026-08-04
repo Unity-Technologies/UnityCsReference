@@ -30,6 +30,7 @@ internal class ATGTextJobSystem
         public List<NativeSlice<ushort>> indices = new();
         public List<GlyphRenderMode> renderModes = new();
         public List<List<List<int>>> textElementIndicesByMesh = new();
+        public UIRQuadMap uirQuadMap = new();
         // Key: FontAsset ID
         // Value: Set of missing glyphs (glyphID) for that font asset.
         public Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset = new();
@@ -48,6 +49,7 @@ internal class ATGTextJobSystem
             vertices.Clear();
             indices.Clear();
             renderModes.Clear();
+            uirQuadMap.Clear();
 
             foreach (var listOfAtlases in textElementIndicesByMesh)
             {
@@ -227,10 +229,7 @@ internal class ATGTextJobSystem
 
                 // No missing glyphs means we do not need to return to main thread before converting to UIR
                 if (!managedJobData.hasMissingGlyphs)
-                {
-                    managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh);
-                    ConvertMeshInfoToUIRVertex(managedJobData.textInfo, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
-                }
+                    ProcessAndConvertToUIR(managedJobData, alloc);
 
             }
         }
@@ -247,10 +246,7 @@ internal class ATGTextJobSystem
             ManagedJobData managedJobData = managedJobDatas[index];
 
             if (managedJobData.hasMissingGlyphs)
-            {
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh);
-                ConvertMeshInfoToUIRVertex(managedJobData.textInfo, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
-            }
+                ProcessAndConvertToUIR(managedJobData, alloc);
         }
     }
 
@@ -361,13 +357,11 @@ internal class ATGTextJobSystem
         {
             if (managedJobData.success)
             {
-                var textInfo = managedJobData.textInfo;
-
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
                 bool usesPerGlyphTcs = false;
                 if (managedJobData.textElement.PostProcessTextVertices != null)
                 {
-                    var glyphs = new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, textInfo.meshInfos);
+                    var glyphs = new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, managedJobData.uirQuadMap);
                     var rd = managedJobData.textElement.renderData;
                     var perGlyphTcs = rd?.renderTree?.renderTreeManager?.perGlyphTcs;
                     usesPerGlyphTcs = PerGlyphTextCoreSettings.InvokePostProcessVertices(
@@ -394,8 +388,21 @@ internal class ATGTextJobSystem
         hasPendingTextWork = false;
     }
 
-    static void ConvertMeshInfoToUIRVertex(NativeTextInfo textInfo, TempMeshAllocator alloc, TextElement visualElement, List<List<List<int>>> textElementIndicesByMesh, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
+    static void ProcessAndConvertToUIR(ManagedJobData jobData, TempMeshAllocator alloc)
     {
+        TextElement visualElement = jobData.textElement;
+        NativeTextInfo textInfo = jobData.textInfo;
+
+        visualElement.uitkTextHandle.ProcessMeshInfos(textInfo, ref jobData.textElementIndicesByMesh);
+
+        List<List<List<int>>> textElementIndicesByMesh = jobData.textElementIndicesByMesh;
+        List<Texture2D> atlases = jobData.atlases;
+        List<NativeSlice<Vertex>> verticesArray = jobData.vertices;
+        List<NativeSlice<ushort>> indicesArray = jobData.indices;
+        List<GlyphRenderMode> renderModes = jobData.renderModes;
+        List<float> sdfScales = jobData.sdfScales;
+        UIRQuadMap uirQuadMap = visualElement.PostProcessTextVertices != null ? jobData.uirQuadMap : null;
+
         float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 
         // If multiple colors are required (e.g., color tags or gradient tags are used), then ignore the
@@ -411,6 +418,9 @@ internal class ATGTextJobSystem
         {
             int atlasCount = 0;
             ATGMeshInfo meshInfo = meshInfos[i];
+
+            uirQuadMap?.BeginMesh(meshInfo.textElementInfos.Length);
+
             FontAsset fa = null;
             SpriteAsset sa = null;
             var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
@@ -470,7 +480,11 @@ internal class ATGTextJobSystem
                     {
                         var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
                         Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
-                        var tei = textElementInfosSpan[textElementInfoInAtlas[vSrc]];
+                        int teiIndex = textElementInfoInAtlas[vSrc];
+                        var tei = textElementInfosSpan[teiIndex];
+
+                        uirQuadMap?.Record(teiIndex, verticesArray.Count, vDst);
+
                         vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
                         vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);
                         vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont);

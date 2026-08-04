@@ -3749,6 +3749,9 @@
     <Compile Include="..\..\Editor\Mono\SerializationDebug.bindings.cs">
       <Link>Editor\Mono\SerializationDebug.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Serialization\DeserializationWarningHandler.cs">
+      <Link>Editor\Mono\Serialization\DeserializationWarningHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Serialization\DictionaryIgnoredEntriesCache.cs">
       <Link>Editor\Mono\Serialization\DictionaryIgnoredEntriesCache.cs</Link>
     </Compile>
@@ -3820,6 +3823,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Shaders\MaterialHierarchyPopup.cs">
       <Link>Editor\Mono\Shaders\MaterialHierarchyPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\RenderPipelineSubShaderStripping.cs">
+      <Link>Editor\Mono\Shaders\RenderPipelineSubShaderStripping.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Shaders\ShaderBuildSettings.cs">
       <Link>Editor\Mono\Shaders\ShaderBuildSettings.cs</Link>
@@ -9970,6 +9976,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\IOProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\LicenceProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\LicenceProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\PackageManagerProjectSettingsProxy.cs</Link>
@@ -17069,7 +17078,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_403c\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_e256\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\UnityEditor.MSBuild.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\msbuild.host\Unity.BuildService.Host.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\Unity.BuildService.dll" />
@@ -17107,7 +17116,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_hd6w9cck/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_4xqdia5_/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

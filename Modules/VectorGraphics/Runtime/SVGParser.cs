@@ -115,14 +115,19 @@ namespace Unity.VectorGraphics
             if ((scale != 1.0f) && (scene != null) && (scene.Root != null))
                 scene.Root.Transform = scene.Root.Transform * Matrix2D.Scale(new Vector2(scale, scale));
 
+            // Root <svg x/y> attributes are stored in doc.sceneViewport but have no visual effect
+            // per the SVG spec, and the scene contents are (0, 0)-based. Normalize the viewport
+            // position to zero so it matches the actual scene coordinate space.
+            var normalizedViewport = new Rect(Vector2.zero, doc.sceneViewport.size);
+
             if ((viewportOptions == ViewportOptions.PreserveViewport) && (scene != null) && (scene.Root != null))
             {
                 // Only add clipper if the scene isn't entirely contained in the viewport
                 var sceneBounds = VectorUtils.SceneNodeBounds(scene.Root);
-                if (!doc.sceneViewport.Contains(sceneBounds.min) || !doc.sceneViewport.Contains(sceneBounds.max))
+                if (!normalizedViewport.Contains(sceneBounds.min) || !normalizedViewport.Contains(sceneBounds.max))
                 {
                     var rectClip = new Shape();
-                    VectorUtils.MakeRectangleShape(rectClip, doc.sceneViewport);
+                    VectorUtils.MakeRectangleShape(rectClip, normalizedViewport);
 
                     // We cannot add the clipper directly on scene.Root since it may have a viewbox transform applied.
                     // The simplest is to replace the root node with the new "clipped" one, then the clipping
@@ -135,7 +140,7 @@ namespace Unity.VectorGraphics
                 }
             }
             
-            return new SceneInfo(scene, doc.sceneViewport, nodeOpacities, nodeIDs);
+            return new SceneInfo(scene, normalizedViewport, nodeOpacities, nodeIDs);
         }
     }
 

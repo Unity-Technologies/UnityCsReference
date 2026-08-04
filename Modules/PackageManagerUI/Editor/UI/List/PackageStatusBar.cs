@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageRefreshHandler m_PageRefreshHandler;
         private readonly IPageManager m_PageManager;
         private readonly IUnityConnectProxy m_UnityConnect;
+        private readonly ILicenceProxy m_LicenceProxy;
 
         public PackageStatusBar() : this(
             ServicesContainer.instance.Resolve<IResourceLoader>(),
@@ -28,7 +29,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             ServicesContainer.instance.Resolve<IBackgroundFetchHandler>(),
             ServicesContainer.instance.Resolve<IPageRefreshHandler>(),
             ServicesContainer.instance.Resolve<IPageManager>(),
-            ServicesContainer.instance.Resolve<IUnityConnectProxy>())
+            ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
+            ServicesContainer.instance.Resolve<ILicenceProxy>())
         {
         }
 
@@ -38,13 +40,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             IBackgroundFetchHandler backgroundFetchHandler,
             IPageRefreshHandler pageRefreshHandler,
             IPageManager pageManager,
-            IUnityConnectProxy unityConnect)
+            IUnityConnectProxy unityConnect,
+            ILicenceProxy licenceProxy)
         {
             m_Application = application;
             m_BackgroundFetchHandler = backgroundFetchHandler;
             m_PageRefreshHandler = pageRefreshHandler;
             m_PageManager = pageManager;
             m_UnityConnect = unityConnect;
+            m_LicenceProxy = licenceProxy;
 
             var root = resourceLoader.GetTemplate("PackageStatusBar.uxml");
             Add(root);
@@ -56,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownButton.mainButton.tooltip = L10n.Tr("Refresh list");
             dropdownButton.clicked += () =>
             {
+                m_LicenceProxy.UpdateLicense();
                 m_PageRefreshHandler.Refresh(m_PageManager.activePage);
                 PackageManagerWindowAnalytics.SendEvent("refreshList");
             };

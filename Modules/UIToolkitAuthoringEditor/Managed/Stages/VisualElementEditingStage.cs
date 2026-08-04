@@ -205,6 +205,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         m_PanelElement.PanelSettings = Context.PanelSettings;
         ReloadAssets();
+        CaptureCleanBaseline();
         RequestRefresh();
         return true;
     }
@@ -221,7 +222,13 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         if (StageUtility.GetCurrentStage() == this)
         {
+            EditedVisualTreeAsset?.inlineSheet?.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
+            foreach (var styleSheet in EditedVisualTreeAsset.GetAllReferencedStyleSheets())
+            {
+                styleSheet.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
+            }
             UIElementsEditorUtility.ClearStyleCacheAfterUndoIfTracked(default);
+            ReloadAssets();
             CloneTree();
         }
     }
@@ -441,6 +448,12 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             }
         }
 
+        if (succeeded)
+        {
+            ClearUndoForEditedAssets();
+            CaptureCleanBaseline();
+        }
+
         ReloadAssets();
         CloneTree();
 
@@ -530,13 +543,30 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private void ReloadAssets()
     {
         Context = VisualTreeAssetEditingContext.Reload(Context);
-        CaptureCleanBaseline();
     }
 
     private void ReimportAssets()
     {
         Context = VisualTreeAssetEditingContext.Reimport(Context);
         CaptureCleanBaseline();
+        ClearUndoForEditedAssets();
+    }
+
+    // Saving or reimporting reloads the edited VisualTreeAsset (and its inline sheet and referenced style sheets)
+    // from disk into new instances. Drop their undo/redo entries so a subsequent undo/redo cannot restore a
+    // pre-reload snapshot into the reloaded object. Mirrors UIBuilder's VisualTreeAsset/StyleSheet.ClearUndo.
+    private void ClearUndoForEditedAssets()
+    {
+        var vta = EditedVisualTreeAsset;
+        if (vta == null)
+            return;
+
+        Undo.ClearUndo(vta);
+        if (vta.inlineSheet != null)
+            Undo.ClearUndo(vta.inlineSheet);
+
+        foreach (var styleSheet in vta.GetAllReferencedStyleSheets())
+            Undo.ClearUndo(styleSheet);
     }
 
     protected internal override Hash128 GetHashForStateStorage()

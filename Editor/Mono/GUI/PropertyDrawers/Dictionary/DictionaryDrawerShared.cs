@@ -113,6 +113,8 @@ internal partial class DictionaryDrawer
         internal static readonly string TwoColumnsLayoutLabel = L10n.Tr("Two Columns");
         internal static readonly string OneColumnWithValueFoldoutLayoutLabel = L10n.Tr("One Column With Value Foldout");
         internal static readonly string OneColumnWithValueVisibleLayoutLabel = L10n.Tr("One Column With Value Visible");
+        internal static readonly string ShowSerializedOrderLabel = L10n.Tr("Show Serialized Order (Global)");
+        internal static readonly string ShowingSerializedOrderInfoLabel = L10n.Tr("Showing serialized order");
 
         internal static readonly string DefaultKeyLabel = L10n.Tr("Key");
         internal static readonly string DefaultValueLabel = L10n.Tr("Value");
@@ -282,6 +284,21 @@ internal partial class DictionaryDrawer
         s_StateCache.RemoveState(stateCacheKey);
     }
 
+    internal const string k_SerializedOrderSessionKey = "DictionarySerializedOrderInUI";
+
+    internal static bool ShowSerializedOrder => SessionState.GetBool(k_SerializedOrderSessionKey, false);
+
+    internal static event Action SerializedOrderChanged;
+
+    internal static void SetShowSerializedOrder(bool value)
+    {
+        if (ShowSerializedOrder == value)
+            return;
+        SessionState.SetBool(k_SerializedOrderSessionKey, value);
+        SerializedOrderChanged?.Invoke();
+        DrawerInstanceIMGUI.InvalidateAllSortOrders();
+    }
+
     // We want a shared ui state for all dictionaries in lists/arrays, so the user do not have
     // to adjust each and every dictionary in the list/array.
     static readonly Regex s_ArrayIndexPattern = new Regex(@"\[\d+\]", RegexOptions.Compiled);
@@ -316,10 +333,19 @@ internal partial class DictionaryDrawer
 
         public static SortedIndexMap Build(SerializedProperty arrayProperty, bool ascending)
         {
-            s_SortCount++;
             int n = arrayProperty.arraySize;
             if (n == 0)
                 return Empty;
+
+            if (DictionaryDrawer.ShowSerializedOrder)
+            {
+                var identity = new int[n];
+                for (int i = 0; i < n; i++)
+                    identity[i] = i;
+                return new SortedIndexMap(identity, identity);
+            }
+
+            s_SortCount++;
 
             // The native sort flips its key comparison based on `ascending` but always
             // breaks ties on the original array index in ascending order. Reversing the

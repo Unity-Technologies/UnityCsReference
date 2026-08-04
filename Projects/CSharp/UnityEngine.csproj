@@ -5012,6 +5012,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextUtilities.cs">
       <Link>Modules\UIElements\Core\Text\TextUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\UIRQuadMap.cs">
+      <Link>Modules\UIElements\Core\Text\UIRQuadMap.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\UITKTextHandle.cs</Link>
     </Compile>
@@ -7114,7 +7117,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_hd6w9cck/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_4xqdia5_/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

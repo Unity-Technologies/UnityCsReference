@@ -229,7 +229,9 @@ namespace UnityEngine.TextCore
     internal enum TextOverflow
     {
         Clip,
-        Ellipsis
+        Ellipsis,
+        EllipsisStart,
+        EllipsisMiddle
     }
 
     // Identifies the link currently under the pointer for hover styling. Non-negative

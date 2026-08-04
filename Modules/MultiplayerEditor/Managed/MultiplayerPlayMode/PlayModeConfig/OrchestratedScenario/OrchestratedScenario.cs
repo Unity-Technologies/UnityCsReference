@@ -191,6 +191,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal override void OnDeselected()
         {
+            // Dispose active instance state on every unload path, including the asset-deletion and
+            // guard-revert paths that bypass the WantsToDeselect prompt (UUM-138111).
+            if (m_Scenario != null)
+            {
+                foreach (var instance in m_Scenario.GetAllInstances())
+                    instance.TearDown();
+            }
+
             // Clear any loaded scenario from the scenario runner
             m_Scenario = null;
             ScenarioRunner.LoadScenario(null);
@@ -203,46 +211,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal override bool WantsToDeselect()
         {
-            var hasFreeRun = m_Scenario != null && m_Scenario.HasActiveFreeRunInstance();
-            var hasActiveClones = CloneEditorController.HasActiveCloneEditors();
-
-            if (!hasFreeRun && !hasActiveClones)
+            if (m_Scenario == null)
                 return true;
 
-            var message = BuildInstanceTerminationMessage(hasFreeRun, hasActiveClones);
+            // Only confirm the switch here; the teardown itself runs in OnDeselected (UUM-138111).
+            var reasons = new List<string>();
+            foreach (var instance in m_Scenario.GetAllInstances())
+            {
+                if (instance.NeedsTearDown(out var reason))
+                    reasons.Add(reason);
+            }
 
-            if (!EditorUtility.DisplayDialog(
+            if (reasons.Count == 0)
+                return true;
+
+            return ScenarioDialog.DisplayDialog(
                 "Play Mode Scenario: Active instances",
-                message,
+                BuildInstanceTerminationMessage(reasons),
                 "Terminate and Switch",
-                "Cancel"))
-                return false;
-
-            CloneEditorController.DeactivateAllActiveCloneEditors();
-            return true;
+                "Cancel");
         }
 
-        private string BuildInstanceTerminationMessage(bool hasFreeRun, bool hasActiveClones)
+        private static string BuildInstanceTerminationMessage(List<string> reasons)
         {
             var message = new StringBuilder();
             message.Append("Do you want to terminate the following and switch scenario?\n\n");
 
-            if (hasFreeRun)
-            {
-                message.Append("Free running instance(s):\n");
-                foreach (var instanceName in m_Scenario.GetActiveFreeRunInstanceNames())
-                    message.Append("- ").Append(instanceName).Append('\n');
-                message.Append('\n');
-            }
-
-            if (hasActiveClones)
-            {
-                var cloneNames = new List<string>();
-                CloneEditorController.GetActiveCloneEditorNames(cloneNames);
-                message.Append("Editor Instances still active:\n");
-                foreach (var name in cloneNames)
-                    message.Append("- ").Append(name).Append('\n');
-            }
+            foreach (var reason in reasons)
+                message.Append("- ").Append(reason).Append('\n');
 
             return message.ToString().TrimEnd();
         }

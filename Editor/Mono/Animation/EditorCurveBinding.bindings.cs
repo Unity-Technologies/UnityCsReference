@@ -74,7 +74,7 @@ namespace UnityEditor
 
         public override int GetHashCode()
         {
-            return String.Format("{0}:{1}:{2}", path, type.Name, propertyName).GetHashCode();
+            return HashCode.Combine(path, type, propertyName);
         }
 
         public override bool Equals(object other)

@@ -237,7 +237,7 @@ namespace UnityEngine.UIElements.StyleSheets
             },
                         {
                 "opacity",
-                "<number>"
+                "<number [0,1]>"
             },
                         {
                 "overflow",

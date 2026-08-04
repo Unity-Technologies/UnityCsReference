@@ -137,7 +137,21 @@ namespace UnityEditor
 
         // Force the build to fail when any errors are encountered
         ///<summary>Fails the build if any errors are reported during it.</summary>
-        ///<remarks>Without this flag, non-fatal errors - such as a failure to compile a shader for a particular platform - will not cause the build to fail, but may result in incorrect behaviour at runtime.</remarks>
+        ///<remarks>Without this flag, non-fatal errors, such as a failure to compile a shader for a particular platform, won't cause the build to fail, but might result in incorrect behavior at runtime.
+        ///
+        /// Always set this flag, unless errors are logged from packages or other third-party code that you can't fix, and you need the build to proceed despite them.
+        ///
+        /// When this flag is set, errors logged from these build callbacks also fail the build:
+        /// <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild"/>,
+        /// <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild"/>,
+        /// <see cref="Build.IProcessSceneWithReport.OnProcessScene"/>,
+        /// <see cref="Build.IPreprocessShaders.OnProcessShader"/>, and
+        /// <see cref="Build.IPreprocessComputeShaders.OnProcessComputeShader"/>.
+        ///
+        /// This flag is the AssetBundle equivalent of <see cref="BuildOptions.StrictMode"/>.
+        /// </remarks>
+        ///<seealso cref="BuildOptions.StrictMode"/>
+        ///<seealso cref="BuildContentOptions.FailBuildWhenErrorsLogged"/>
         ///<example>
         ///  <code source="../../../../Modules/ContentBuild/Tests/local.test.build-examples/Editor/BuildPipeline/Settings/BuildAssetBundleOptions_Examples.cs"/>
         ///</example>

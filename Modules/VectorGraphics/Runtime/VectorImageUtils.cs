@@ -270,8 +270,12 @@ namespace Unity.VectorGraphics
             return BuildVectorImage(sceneInfo, Rect.zero);
         }
 
-        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
-        internal static VectorImage BuildVectorImage(SVGParser.SceneInfo sceneInfo, Rect viewport)
+        /// <summary>Builds an antialiased VectorImage from a vector scene definition, preserving the specified viewport.</summary>
+        /// <param name="sceneInfo">The <see cref="SVGParser.SceneInfo"/> to build the VectorImage from.</param>
+        /// <param name="viewport">The viewport rectangle to preserve on the resulting <see cref="VectorImage"/>. The scene contents are positioned relative to the viewport origin, and the resulting <see cref="VectorImage.size"/> matches the viewport size. Pass <see cref="Rect.zero"/> to compute the viewport from the scene contents.</param>
+        /// <returns>A <see cref="VectorImage"/> constructed from the vector scene definition.</returns>
+        /// <remarks>The viewport determines the size and offset of the resulting <see cref="VectorImage"/>, but does not clip its content: geometry falling outside the viewport is still included in the vertex data. To clip the scene to the viewport, assign a <see cref="SceneNode.Clipper"/> to <see cref="SVGParser.SceneInfo.Scene"/>'s <see cref="Scene.Root"/> before calling this method.</remarks>
+        public static VectorImage BuildVectorImage(SVGParser.SceneInfo sceneInfo, Rect viewport)
         {
             using (var p = new Painter2D())
             {

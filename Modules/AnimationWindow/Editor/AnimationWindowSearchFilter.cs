@@ -13,6 +13,7 @@ namespace UnityEditorInternal
     {
         static readonly string[] k_TypePrefixes = ["t=", "type="];
         static readonly string[] k_PropertyPrefixes = ["p=", "property="];
+        public const string k_FilterPrefix = "animation:";
         static readonly char[] kFilterSeparator = new [] { ' ', '\t', ',', '*', '?'};
 
         [SerializeField] List<string> m_NameFilters = new();
@@ -102,6 +103,12 @@ namespace UnityEditorInternal
 
         void CheckForKeyWords(string searchString, int quote1, int quote2)
         {
+            // Ignore filter prefix
+            if (searchString.StartsWith(k_FilterPrefix))
+            {
+                searchString = searchString.Substring(k_FilterPrefix.Length);
+            }
+
             // Support: 't=type' syntax (e.g 't=Transform' will show Transform components)
             foreach (var typePrefix in k_TypePrefixes)
             {

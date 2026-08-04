@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using Unity.Properties;
 using UnityEngine.Bindings;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -568,7 +569,6 @@ namespace UnityEngine.UIElements
                 if (!needsPlaceholderIfTextIsEmpty)
                     return false;
 
-                var isTextEmpty = string.IsNullOrEmpty(text);
                 return isTextEmpty;
             }
         }
@@ -657,6 +657,30 @@ namespace UnityEngine.UIElements
         private void SetRenderedText(string value)
         {
             m_RenderedText = value;
+        }
+
+        internal bool isTextEmpty => m_IsTextBufferDirty ? m_TextBuffer.length == 0 : string.IsNullOrEmpty(m_Text);
+
+        internal bool TryGetProcessedRenderedText(ref NativeTextBuffer dest)
+        {
+            if (showPlaceholderText)
+            {
+                dest.CopyFrom(m_PlaceholderText);
+                return true;
+            }
+
+            char mask = effectiveMaskChar;
+            if (mask != char.MinValue)
+            {
+                int length = m_TextBuffer.length;
+                dest.EnsureCapacity(length);
+                for (int i = 0; i < length; i++)
+                    dest[i] = mask;
+                dest.length = length;
+                return true;
+            }
+
+            return false;
         }
 
         string m_OriginalText;

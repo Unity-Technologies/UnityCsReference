@@ -71,6 +71,8 @@ namespace UnityEditor.Overlays
             public DynamicPanelBehavior dynamicPanelBehavior { get; private set; }
             public bool allowDynamicPanelBehaviorChanges { get; private set; }
 
+            public string canvasSelector { get; }
+
             public bool enabled
             {
                 get => EditorPrefs.GetBool($"OverlayEnabled.{type.AssemblyQualifiedName}", true);
@@ -92,6 +94,7 @@ namespace UnityEditor.Overlays
                     defaultBackgroundColor.g,
                     defaultBackgroundColor.b,
                     defaultBackgroundColor.a);
+                canvasSelector = "unity-overlay-canvas-" + type.Name.ToLowerInvariant();
             }
         }
 
@@ -181,7 +184,10 @@ namespace UnityEditor.Overlays
 
         internal static string GetPreferenceCanvasClass(Type windowType)
         {
-            return $"unity-overlay-canvas-{windowType.Name.ToLowerInvariant()}";
+            if (instance.m_Windows.TryGetValue(windowType, out var settings))
+                return settings.canvasSelector;
+
+            return "unity-overlay-canvas-" + windowType.Name.ToLowerInvariant();
         }
 
         public static IEnumerable<Type> GetSupportedWindowTypes()
@@ -214,10 +220,14 @@ namespace UnityEditor.Overlays
         public static string BuildOverlayStylesheetString()
         {
             var sb = new StringBuilder();
+            var invariant = System.Globalization.CultureInfo.InvariantCulture;
 
             foreach (var type in GetSupportedWindowTypes())
             {
-                var color = GetBackgroundColor(type);
+                if (!instance.m_Windows.TryGetValue(type, out var settings))
+                    continue;
+
+                Color color = settings.backgroundColor;
 
                 int r = Mathf.RoundToInt(color.r * 255f);
                 int g = Mathf.RoundToInt(color.g * 255f);
@@ -225,12 +235,20 @@ namespace UnityEditor.Overlays
                 float a = color.a;
                 float popupAlpha = Mathf.Max(a, k_DefaultPopupAlpha); // Ensure we use the most opaque version for the popup
 
-                var selector = GetPreferenceCanvasClass(type);
-
-                sb.AppendLine($".{selector} {{");
-                sb.AppendLine($"    --unity-overlay-background-color: rgba({r}, {g}, {b}, {a.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)});");
-                sb.AppendLine($"    --unity-overlay-popup-background-color: rgba({r}, {g}, {b}, {popupAlpha.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)});");
-                sb.AppendLine("}");
+                sb.Append('.').Append(settings.canvasSelector).Append(" {").AppendLine();
+                sb.Append("    --unity-overlay-background-color: rgba(")
+                    .Append(r).Append(", ")
+                    .Append(g).Append(", ")
+                    .Append(b).Append(", ")
+                    .Append(a.ToString("0.###", invariant))
+                    .Append(");").AppendLine();
+                sb.Append("    --unity-overlay-popup-background-color: rgba(")
+                    .Append(r).Append(", ")
+                    .Append(g).Append(", ")
+                    .Append(b).Append(", ")
+                    .Append(popupAlpha.ToString("0.###", invariant))
+                    .Append(");").AppendLine();
+                sb.Append('}').AppendLine();
             }
 
             return sb.ToString();

@@ -438,28 +438,64 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ViewSelectionTreeView.SelectNonAnalyzedCategory(category);
         }
 
+        // Invoked whenever a module finishes during analysis. Updates the set of pending
+        // modules/categories and refreshes the summary view. Crucially, if the user is currently
+        // viewing a category whose data has just arrived (its module finished mid-analysis), it
+        // drops the "analysis running" panel so the populated view is shown immediately, instead
+        // of only refreshing once the whole analysis completes. (UUM-144826)
+        void HandleModuleCompleted(string moduleName)
+        {
+            m_ViewManager.PendingModuleNames.Remove(moduleName);
+
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+            var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
+            var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
+#pragma warning restore UA2001
+            m_ViewManager.PendingCategories = remainingCategories;
+
+            var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
+            summaryView?.MarkDirty();
+
+            // If the "analysis running" panel is showing, re-evaluate it against the category the
+            // user is currently viewing: it stays while that category is pending and clears as soon
+            // as its own data arrives, regardless of when sibling categories in the same tab finish.
+            // (UUM-144826)
+            if (m_IsNonAnalyzedViewSelected && m_SelectedNonAnalyzedTab != null)
+            {
+                OnSelectedNonAnalyzedTab(m_SelectedNonAnalyzedTab, false);
+                Repaint();
+            }
+        }
+
         public void OnSelectedNonAnalyzedTab(Tab selectedTab, bool changeView)
         {
-            bool hasAnyAnalyzedCategory = false;
-            bool hasAnyPendingCategory = false;
-            foreach (var cat in selectedTab.categories)
-            {
-                if (m_ViewManager.HasPendingCategory(cat))
-                    hasAnyPendingCategory = true;
-                else if (m_ViewManager.Report?.HasCategory(cat) ?? false)
-                    hasAnyAnalyzedCategory = true;
-            }
+            // Change to the tab's primary category unless we're keeping the current sub-view (e.g.
+            // when reanalyzing the same view).
+            if (changeView)
+                m_ViewManager.ChangeView(selectedTab.categories[0]);
 
-            if (!hasAnyAnalyzedCategory)
-            {
-                // Change view anyway, even if overridden, to get into a proper view state, not the previous view
-                if (changeView) // If reanalyzing the same view, don't change the sub-tab we are viewing
-                    m_ViewManager.ChangeView(selectedTab.categories[0]);
+            // Decide the analyze / "analysis running" panel from the category actually being viewed,
+            // not the whole tab: with vertical tabs the active view can be a specific leaf category,
+            // so a sibling category's state must not decide whether this view shows the panel. This
+            // is what keeps the panel up while the viewed category is still pending and reveals it as
+            // soon as its own data arrives, regardless of when siblings finish. (UUM-144826)
+            var activeCategory = m_ViewManager.GetActiveView().Desc.Category;
+            bool activeHasData = m_ViewManager.Report?.HasCategory(activeCategory) ?? false;
+            bool activePending = m_ViewManager.HasPendingCategory(activeCategory);
 
-                // Override view to show info and analyze button
+            if (!activeHasData)
+            {
+                // The viewed category has no data yet: override with the info / analyze button (and
+                // the "analysis running" variant while its module is still running).
                 m_IsNonAnalyzedViewSelected = true;
-                m_IsPendingAnalysisViewSelected = hasAnyPendingCategory;
+                m_IsPendingAnalysisViewSelected = activePending;
                 m_SelectedNonAnalyzedTab = selectedTab;
+            }
+            else
+            {
+                // The viewed category has its data: stop overriding and show the populated view.
+                m_IsNonAnalyzedViewSelected = false;
+                m_IsPendingAnalysisViewSelected = false;
             }
         }
 
@@ -631,6 +667,13 @@ namespace Unity.ProjectAuditor.Editor.UI
         [InitializeOnLoadMethod]
         static void OnLoad()
         {
+            // UUM-139591: Force ProjectAuditorSettings to load now, during InitializeOnLoad (which runs
+            // before the editor restores its window layout). Otherwise the ScriptableSingleton's backing
+            // asset is loaded for the first time from inside ProjectAuditorWindow.OnEnable() while the
+            // layout is still being deserialized. That nested LoadSerializedFileAndForget call results in
+            // a FallbackEditorWindow that later fails to save.
+            _ = ProjectAuditorSettings.instance;
+
             ViewDescriptor.Register(new ViewDescriptor
             {
                 Category = IssueCategory.Metadata,
@@ -1069,16 +1112,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 },
                 OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                 {
-                    m_ViewManager.PendingModuleNames.Remove(moduleName);
-
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
-                    var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
-#pragma warning restore UA2001
-                    m_ViewManager.PendingCategories = remainingCategories;
-
-                    var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
-                    summaryView?.MarkDirty();
+                    HandleModuleCompleted(moduleName);
                 },
                 OnCompleted = report =>
                 {
@@ -1161,16 +1195,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 },
                 OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                 {
-                    m_ViewManager.PendingModuleNames.Remove(moduleName);
-
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-                    var remainingModules = m_ProjectAuditor.GetModules().Where(m => m_ViewManager.PendingModuleNames.Contains(m.Name));
-                    var remainingCategories = remainingModules.SelectMany(m => m.Categories).ToHashSet();
-#pragma warning restore UA2001
-                    m_ViewManager.PendingCategories = remainingCategories;
-
-                    var summaryView = m_ViewManager.GetView(IssueCategory.Metadata);
-                    summaryView?.MarkDirty();
+                    HandleModuleCompleted(moduleName);
                 },
                 OnCompleted = report =>
                 {

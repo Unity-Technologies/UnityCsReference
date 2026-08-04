@@ -624,10 +624,10 @@ namespace UnityEditor
                                 EditorGUI.indentLevel++;
                                 if (!usingComputeLightBaker)
                                     EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
-                                MultiEditableLogarithmicIntSlider(m_PVRDirectSampleCount, Styles.directSampleCount, 1, maxDirectSamples, 1, 1 << 30);
-                                MultiEditableLogarithmicIntSlider(m_PVRSampleCount, Styles.indirectSampleCount, 1, maxIndirectSamples, 1, 1 << 30);
+                                MultiEditableLogarithmicIntSlider(m_PVRDirectSampleCount, Styles.directSampleCount, 1, maxDirectSamples, 1, maxDirectSamples);
+                                MultiEditableLogarithmicIntSlider(m_PVRSampleCount, Styles.indirectSampleCount, 1, maxIndirectSamples, 1, maxIndirectSamples);
                                 if (!usingComputeLightBaker)
-                                    MultiEditableLogarithmicIntSlider(m_PVREnvironmentSampleCount, Styles.environmentSampleCount, 1, maxEnvironmentSamples, 1, 1 << 30);
+                                    MultiEditableLogarithmicIntSlider(m_PVREnvironmentSampleCount, Styles.environmentSampleCount, 1, maxEnvironmentSamples, 1, maxEnvironmentSamples);
 
                                 maxDirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxDirectSamples, m_PVRDirectSampleCount.intValue));
                                 maxIndirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxIndirectSamples, m_PVRSampleCount.intValue));

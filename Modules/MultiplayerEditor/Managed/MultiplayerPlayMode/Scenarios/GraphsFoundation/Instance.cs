@@ -314,6 +314,49 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return m_StatusData.IsExecuting();
         }
 
+        // Aggregates the teardown contract across the controller and every decorator.
+        internal bool NeedsTearDown(out string reason)
+        {
+            var needs = false;
+            var reasons = new List<string>();
+
+            if (Controller != null && Controller.NeedsTearDown(this, out var controllerReason))
+            {
+                needs = true;
+                if (!string.IsNullOrEmpty(controllerReason))
+                    reasons.Add(controllerReason);
+            }
+
+            if (m_DecoratorsControllers != null)
+            {
+                foreach (var decorator in m_DecoratorsControllers)
+                {
+                    if (decorator != null && decorator.NeedsTearDown(this, out var decoratorReason))
+                    {
+                        needs = true;
+                        if (!string.IsNullOrEmpty(decoratorReason))
+                            reasons.Add(decoratorReason);
+                    }
+                }
+            }
+
+            reason = needs
+                ? (reasons.Count > 0 ? string.Join(" ", reasons) : $"\"{Name}\" is still active.")
+                : null;
+            return needs;
+        }
+
+        internal void TearDown()
+        {
+            Controller?.TearDown(this);
+
+            if (m_DecoratorsControllers != null)
+            {
+                foreach (var decorator in m_DecoratorsControllers)
+                    decorator?.TearDown(this);
+            }
+        }
+
         internal async Task<bool> RunOrResumeAsync(ExecutionStage executionStage, CancellationToken cancellationToken)
         {
             // Run the Executed stage and wait for the result.

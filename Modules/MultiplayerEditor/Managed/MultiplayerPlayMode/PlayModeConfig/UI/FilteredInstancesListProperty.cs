@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,16 +15,22 @@ namespace Unity.Multiplayer.PlayMode.Editor;
 
 class FilteredInstancesListProperty : Foldout
 {
-    internal const string k_FreeRunRemoveDialogTitle = "Cannot Remove Free Running Instance";
-    internal const string k_FreeRunRemoveDialogText = "This instance is currently running. To remove it, please terminate it in the Active Scenario Window.";
     internal const string k_DisabledInstanceHelpBoxUssClass = "unity-instance-field__disabled-helpbox";
-    internal const string k_DisabledInstanceHelpBoxText = "This instance is currently running. To modify it, please terminate this instance in the Active Scenario Window.";
-    internal const string k_FreeRunRemoveDialogOkButtonText = "Ok";
+    internal const string k_DisabledInstanceHelpBoxText = "This instance is currently active. To modify it, please terminate this instance in the Active Scenario Window.";
+    internal const string k_RemoveActiveInstanceDialogTitle = "Remove Active Instance";
+    internal const string k_RemoveActiveInstanceDialogHeader = "Do you want to terminate the following and remove?";
+    internal const string k_RemoveActiveInstanceConfirmButtonText = "Terminate and Remove";
+    internal const string k_RemoveActiveInstanceCancelButtonText = "Cancel";
     internal const string k_DefaultInstanceName = "Instance";
     internal const string k_ItemFieldUssClass = "unity-instance-field__list-item";
     internal const string k_DuplicatedNameUssClass = "unity-instance-field__duplicated-name";
     internal const string k_DuplicatedServerUssClass = "unity-instance-field__multiple-servers";
-} 
+
+    // Test seam mirroring the InstanceController teardown contract.
+    internal delegate bool NeedsTearDownDelegate(IInstanceItem instanceItem, out string reason);
+
+    internal virtual void RefreshItems() { }
+}
 
 class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesListProperty
     where TController : InstanceController<TSettings>
@@ -37,8 +44,10 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     readonly Dictionary<string, int> m_NameCounts = new();
     int m_ServersCount = 0;
 
-    internal Func<IInstanceItem, bool> IsInstanceStartedAsFreeRunningOverride;
-    internal Func<string, string, string, bool> DisplayDialogOverride;
+    internal NeedsTearDownDelegate NeedsTearDownOverride;
+    internal Action<IInstanceItem> TearDownOverride;
+    internal Func<string, string, string, string, bool> DisplayConfirmOverride;
+    internal Func<IInstanceItem, bool> IsInstanceActiveOverride;
 
     public FilteredInstancesListProperty(OrchestratedScenario scenario, int countLimit)
     {
@@ -198,7 +207,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         SetClassState(element, k_DuplicatedNameUssClass, isDuplicatedName);
         SetClassState(element, k_DuplicatedServerUssClass, isDuplicatedServer);
 
-        if (HasStartedAsFreeRunning(instanceItem))
+        if (IsInstanceActive(instanceItem))
         {
             propertyField.SetEnabled(false);
             var helpBox = new HelpBox(k_DisabledInstanceHelpBoxText, HelpBoxMessageType.Info);
@@ -209,16 +218,9 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         element.Add(propertyField);
     }
 
-    bool HasStartedAsFreeRunning(IInstanceItem instanceItem)
-    {
-        if (IsInstanceStartedAsFreeRunningOverride != null)
-        {
-            return IsInstanceStartedAsFreeRunningOverride(instanceItem);
-        }
-
-        var instance = m_Scenario.Scenario?.GetInstanceById(instanceItem.GetId());
-        return instance != null && instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning();
-    }
+    // Re-runs BindItem to reapply the running/edit-guard state. Called from the free-run action site
+    // (FreeRunningStatusElement), since free-run status changes have no usable event for this widget.
+    internal override void RefreshItems() => m_ListView.RefreshItems();
 
     void OnAdd(BaseListView listView)
     {
@@ -250,10 +252,18 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
 
         listView.selectedIndex = -1;
 
-        if (HasStartedAsFreeRunning(GetInstanceItemAtFilteredIndex(index)))
+        // Removing a clone re-sequences later clones' player slots, so a later activated clone would be
+        // orphaned unless torn down first. Gather the removed item plus every later sibling it strands (UUM-138111).
+        var toTearDown = CollectInstancesToTearDown(index);
+        if (toTearDown.Count > 0)
         {
-            DisplayDialog(k_FreeRunRemoveDialogTitle, k_FreeRunRemoveDialogText, k_FreeRunRemoveDialogOkButtonText);
-            return;
+            if (!DisplayConfirm(k_RemoveActiveInstanceDialogTitle, BuildRemoveActiveInstanceMessage(toTearDown),
+                    k_RemoveActiveInstanceConfirmButtonText, k_RemoveActiveInstanceCancelButtonText))
+                return;
+
+            // Tear down before the delete: teardown resolves the running player from the pre-renumber slot.
+            foreach (var (item, _) in toTearDown)
+                TearDown(item);
         }
 
         var instancesProperty = m_SerializedObject.FindProperty(ScenarioConfigEditor.k_InstancesListPropertyPath);
@@ -263,14 +273,91 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         listView.ScrollToItem(index - 1);
     }
 
-    bool DisplayDialog(string title, string message, string okButton)
+    // The removed item (if active) plus, when its removal renumbers later siblings, every later sibling
+    // that is still active — all of which would otherwise be stranded by the slot re-sequencing.
+    List<(IInstanceItem Item, string Reason)> CollectInstancesToTearDown(int filteredIndex)
     {
-        if (DisplayDialogOverride != null)
+        var result = new List<(IInstanceItem, string)>();
+
+        var removedItem = GetInstanceItemAtFilteredIndex(filteredIndex);
+        if (NeedsTearDown(removedItem, out var removedReason))
+            result.Add((removedItem, removedReason));
+
+        // Temporary special-case: only clone editors bind their running player to a positional
+        // PlayerInstanceIndex that OrchestratedScenario.MakeSettingsConsistent re-sequences on removal,
+        // so removing one strands the later activated clones. Every other instance type binds by stable
+        // id and is unaffected. Once clone editors are handled like the other instance types, drop this.
+        if (typeof(TController) == typeof(CloneEditorController))
         {
-            return DisplayDialogOverride(title, message, okButton);
+            for (var i = filteredIndex + 1; i < m_FilteredInstances.Count; i++)
+            {
+                var laterItem = GetInstanceItemAtFilteredIndex(i);
+                if (NeedsTearDown(laterItem, out var laterReason))
+                    result.Add((laterItem, laterReason));
+            }
         }
 
-        return EditorUtility.DisplayDialog(title, message, okButton);
+        return result;
+    }
+
+    static string BuildRemoveActiveInstanceMessage(List<(IInstanceItem Item, string Reason)> toTearDown)
+    {
+        var message = new StringBuilder();
+        message.Append(k_RemoveActiveInstanceDialogHeader).Append("\n\n");
+        foreach (var (_, reason) in toTearDown)
+            message.Append("- ").Append(reason).Append('\n');
+        return message.ToString().TrimEnd();
+    }
+
+    // False when the scenario isn't live (no instance to resolve), as before the fix.
+    bool NeedsTearDown(IInstanceItem instanceItem, out string reason)
+    {
+        if (NeedsTearDownOverride != null)
+        {
+            return NeedsTearDownOverride(instanceItem, out reason);
+        }
+
+        var instance = m_Scenario.Scenario?.GetInstanceById(instanceItem.GetId());
+        if (instance != null)
+        {
+            return instance.NeedsTearDown(out reason);
+        }
+
+        reason = null;
+        return false;
+    }
+
+    // Executing (scenario run / free-run) — unlike an activated clone, which NeedsTearDown but stays editable.
+    bool IsInstanceActive(IInstanceItem instanceItem)
+    {
+        if (IsInstanceActiveOverride != null)
+        {
+            return IsInstanceActiveOverride(instanceItem);
+        }
+
+        var instance = m_Scenario.Scenario?.GetInstanceById(instanceItem.GetId());
+        return instance != null && instance.IsActive();
+    }
+
+    void TearDown(IInstanceItem instanceItem)
+    {
+        if (TearDownOverride != null)
+        {
+            TearDownOverride(instanceItem);
+            return;
+        }
+
+        m_Scenario.Scenario?.GetInstanceById(instanceItem.GetId())?.TearDown();
+    }
+
+    bool DisplayConfirm(string title, string message, string confirmButton, string cancelButton)
+    {
+        if (DisplayConfirmOverride != null)
+        {
+            return DisplayConfirmOverride(title, message, confirmButton, cancelButton);
+        }
+
+        return EditorUtility.DisplayDialog(title, message, confirmButton, cancelButton);
     }
 
     string GenerateNewInstanceName()

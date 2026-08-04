@@ -23,6 +23,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
         protected internal virtual VisualElement CreateControllerUI(Instance instance) => null;
         protected internal virtual VisualElement CreateTitleBarUI(Instance instance) => null;
 
+        // The Instance is passed because the active state can live on it (e.g. the free-run
+        // token), not on the controller — mirroring CreateControllerUI(Instance).
+        internal virtual bool NeedsTearDown(Instance instance, out string reason)
+        {
+            reason = null;
+            return false;
+        }
+
+        // Must be idempotent and safe to call when there is nothing to release.
+        internal virtual void TearDown(Instance instance) { }
+
         // Returns controller-type-specific analytics data for the OnPlayFromScenario event,
         // or null when the controller has no extra data to report. 
         protected internal virtual ICustomInstanceAnalyticsData GetCustomAnalyticsData(ExecutionGraph graph) => null;

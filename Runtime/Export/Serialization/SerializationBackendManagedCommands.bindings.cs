@@ -745,23 +745,18 @@ internal static unsafe class SerializationBackendManagedCommands
     [NativeMethod(Name = "PopDictionaryFieldUniqueIdentifierStackFrame", IsFreeFunction = true, IsThreadSafe = true)]
     private static extern void PopDictionaryFUIDFrame();
 
-    // Read-side helpers (ConsumeDictionaryRead). Format the dict's FUID template
+    // Read-side helper (ConsumeDictionaryRead). Formats the dict's FUID template
     // against the currently-pushed FUID frame to get the duplicate-storage key
-    // (matches what DictionaryField::SetArray does on the legacy path), and
-    // emit the clickable duplicate-key Console warning when the read side
-    // detects keys that the live dict couldn't accept.
+    // (matches what DictionaryField::SetArray does on the legacy path).
     //
     // [FreeFunction] is incompatible with [MethodImpl(InternalCall)] — the
     // BindingsGenerator processes FreeFunction-attributed methods and rejects
     // ones already marked InternalCall. The gate below mirrors the gate on the
-    // sole caller (ConsumeDictionaryRead), so the extern declarations are absent
+    // sole caller (ConsumeDictionaryRead), so the extern declaration is absent
     // in the UNITY_NATIVE_TEST_RESOURCES compile context where the test
     // TestAssembly.dll doesn't run the BindingsGenerator.
     [FreeFunction("DictionaryFieldUniqueIdentifierBindings::FormatDictionaryFieldUniqueIdentifierForActiveContext", IsThreadSafe = true)]
     private static extern string FormatDictionaryFieldUniqueIdentifier(IntPtr dictionaryIdentifierTemplate);
-
-    [FreeFunction("DictionaryFieldUniqueIdentifierBindings::LogDictionaryKeyWarning", IsThreadSafe = true)]
-    private static extern void LogDictionaryKeyWarning(string message, EntityId hostingEntityId);
 
     // Must match the C++ constants in SerializationCommands.h.
     //
@@ -3795,25 +3790,6 @@ internal static unsafe class SerializationBackendManagedCommands
         pos = nestedStart + nestedBytes;
     }
 
-    // Builds the single Console warning covering whichever key problems the managed deserializer reported for a
-    // dictionary: duplicate keys, null keys, or both. At least one flag is true when this is called. Kept in sync
-    // with the native DictionaryField.cpp ComposeDictionaryKeyWarning so both read paths report identical text.
-    // Only invoked from the warning path below, which is compiled out in UNITY_NATIVE_TEST_RESOURCES.
-    private static string ComposeDictionaryKeyWarningMessage(string dictionaryIdentifier, bool hadDuplicates, bool hadNullKeys)
-    {
-        // Clauses share a single "Dictionary field '<id>' " prefix so the both-problems case names the field once.
-        string body = string.Empty;
-        if (hadDuplicates)
-            body = "contains duplicate key entries. Ensure all keys are unique. Only the first occurrence of each key will be added to the dictionary object.";
-        if (hadNullKeys)
-        {
-            if (body.Length > 0)
-                body += " It also ";
-            body += "contains entries with a null key. A dictionary can't contain a null key, so Unity excludes these entries from the dictionary object.";
-        }
-        return "Dictionary field '" + dictionaryIdentifier + "' " + body;
-    }
-
     // Read-path mirror of ConsumeDictionary. Reads the count prefix and per-entry
     // body (same shape ConsumeLinearCollectionRead's per-element-recursion path
     // produces) into a SerializedKeyValue<K,V>[] staging array, then calls
@@ -3826,12 +3802,6 @@ internal static unsafe class SerializationBackendManagedCommands
     // the duplicate-row storage key — must match what the legacy DictionaryField::SetArray
     // produces (DictionaryField.cpp:142-144) so write→read round-trips through
     // the cache are stable.
-    //
-    // Ignored-entry warning: when ctx->warnAboutIgnoredEntries is set (serialized-file
-    // load or Object.Instantiate clone) AND SetEntriesFromSerializedData reports
-    // duplicate or null keys AND we have a non-empty dictionary identifier, emit a
-    // single clickable Console warning covering both problems via LogDictionaryKeyWarning
-    // — same flags + EntityId hookup as DictionaryField::LogDictionaryKeyWarning.
     private static unsafe void ConsumeDictionaryRead(
         NativeReadBufferContext* ctx,
         ref byte baseAddr,
@@ -3935,24 +3905,9 @@ internal static unsafe class SerializationBackendManagedCommands
                 // dict.GetType() + ConcurrentDictionary lookup; falls back to
                 // the non-typed SetEntriesFromSerializedData entry point when
                 // the index is -1.
-                bool hadDuplicates;
-                bool hadNullKeys;
                 DictionarySerialization.InvokeSetEntriesTyped(
                     header->setEntriesTypedIndex,
-                    ctx->hostingEntityId, dictRef, entries, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
-
-                // Warn policy mirrors the legacy DictionaryField::SetArray path: only fires for
-                // serialized-file loads + Object.Instantiate clones (ctx->warnAboutIgnoredEntries set by
-                // the native dispatcher), and only when we actually have a formatted identifier —
-                // without one we can't tell the user which dictionary field is affected. A single
-                // combined warning covers both problems, so a dictionary with duplicate keys and
-                // null keys logs one Console entry, not two. LogDictionaryKeyWarning is a
-                // [FreeFunction] unavailable in UNITY_NATIVE_TEST_RESOURCES, so it's compiled out there.
-                if (ctx->warnAboutIgnoredEntries && (hadDuplicates || hadNullKeys) && !string.IsNullOrEmpty(dictionaryIdentifier))
-                {
-                    string message = ComposeDictionaryKeyWarningMessage(dictionaryIdentifier, hadDuplicates, hadNullKeys);
-                    LogDictionaryKeyWarning(message, ctx->hostingEntityId);
-                }
+                    ctx->hostingEntityId, dictRef, entries, dictionaryIdentifier, ctx->warnAboutIgnoredEntries);
             }
         }
         finally

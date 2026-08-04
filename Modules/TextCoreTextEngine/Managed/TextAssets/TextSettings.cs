@@ -83,18 +83,48 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
-                if (m_FallbackOSFontAssets == null)
+                if (!m_FallbackOSFontAssetsInitialized)
                 {
-                    m_FallbackOSFontAssets = GetOSFontAssetList();
+                    m_FallbackOSFontAssets ??= new List<FontAsset>();
+                    m_FallbackOSFontAssets.AddRange(GetOSFontAssetList());
+                    m_FallbackOSFontAssetsInitialized = true;
                 }
                 return m_FallbackOSFontAssets;
             }
         }
 
-        [SerializeField]
+        // Runtime cache, persisted by EditorTextSettings.
         List<FontAsset> m_FallbackOSFontAssets;
+        bool m_FallbackOSFontAssetsInitialized;
 
-        internal bool isFallbackOSFontAssetsInitialized => m_FallbackOSFontAssets != null;
+        static List<FontAsset> s_GlobalOSFallbackFontAssets;
+        static int s_GlobalOSFallbackVersion;
+
+        internal static void RegisterGlobalOSFallback(FontAsset fontAsset)
+        {
+            if (fontAsset == null)
+                return;
+            s_GlobalOSFallbackFontAssets ??= new List<FontAsset>();
+            if (!s_GlobalOSFallbackFontAssets.Contains(fontAsset))
+            {
+                s_GlobalOSFallbackFontAssets.Add(fontAsset);
+                s_GlobalOSFallbackVersion++;
+            }
+        }
+
+        internal static void SetGlobalOSFallbackStore(List<FontAsset> store)
+        {
+            if (store == null)
+                return;
+            s_GlobalOSFallbackFontAssets = store;
+            s_GlobalOSFallbackVersion++;
+        }
+
+        internal bool isFallbackOSFontAssetsInitialized
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get => m_FallbackOSFontAssetsInitialized;
+        }
 
         static FontAsset s_RuntimeDefault;
 
@@ -252,13 +282,27 @@ namespace UnityEngine.TextCore.Text
                 s_GlobalSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
         }
 
+        void OnDisable()
+        {
+            DestroyNativeTextSettings();
+        }
+
         void OnDestroy()
         {
-            if (m_NativeTextSettings != IntPtr.Zero)
-            {
-                DestroyNativeObject(m_NativeTextSettings, MarshalledUnityObject.MarshalNotNull(this));
-            }
+            DestroyNativeTextSettings();
         }
+
+        void DestroyNativeTextSettings()
+        {
+            if (m_NativeTextSettings == IntPtr.Zero)
+                return;
+
+            DestroyNativeObject(m_NativeTextSettings, MarshalledUnityObject.MarshalNotNull(this));
+            m_NativeTextSettings = IntPtr.Zero;
+        }
+
+        // When false, this instance's font assets are created unloadable so Unity reclaims them once it's gone.
+        internal virtual bool persistsFontAssetCaches => false;
 
         protected void InitializeFontReferenceLookup()
         {
@@ -301,8 +345,19 @@ namespace UnityEngine.TextCore.Text
         // Internal for testing purposes
         internal Dictionary<int, FontAsset> m_FontLookup;
 
-        [SerializeField]
+        // Runtime cache, persisted by EditorTextSettings.
         internal List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
+
+        // Editor-only: back the runtime caches with the editor's persisted lists.
+        internal void UsePersistedCaches(List<FontReferenceMap> fontReferences, List<FontAsset> osFallbacks, List<FontAsset> globalOSFallbacks)
+        {
+            m_FontReferences = fontReferences;
+            m_FallbackOSFontAssets = osFallbacks;
+            m_FallbackOSFontAssetsInitialized = osFallbacks is { Count: > 0 };
+            m_FontLookup = new Dictionary<int, FontAsset>();
+            InitializeFontReferenceLookup();
+            SetGlobalOSFallbackStore(globalOSFallbacks);
+        }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal FontAsset GetCachedFontAsset(Font font)
@@ -324,7 +379,9 @@ namespace UnityEngine.TextCore.Text
             if (TextGenerator.IsExecutingJob)
                 return null;
 
-            FontAsset fontAsset = FontAssetFactory.ConvertFontToFontAsset(font);
+            FontAsset fontAsset = IsLegacyRuntimeFont(font)
+                ? GetLegacyRuntimeFontAsset(font)
+                : FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches);
 
             if (fontAsset != null)
             {
@@ -335,10 +392,35 @@ namespace UnityEngine.TextCore.Text
             return fontAsset;
         }
 
+        const string k_LegacyRuntimeFontName = "LegacyRuntime";
+
+        static bool IsLegacyRuntimeFont(Font font) => font.name == k_LegacyRuntimeFontName;
+
+        FontAsset GetLegacyRuntimeFontAsset(Font font)
+        {
+            var osFallbacks = fallbackOSFontAssets;
+            if (osFallbacks is not { Count: > 0 })
+                return FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches);
+
+            if (font.includeFontData)
+            {
+                var embeddedFontAsset = FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches);
+                if (embeddedFontAsset != null)
+                {
+                    embeddedFontAsset.fallbackFontAssetTable = new List<FontAsset>(osFallbacks);
+                    return embeddedFontAsset;
+                }
+            }
+
+            var mainFontAsset = osFallbacks[0];
+            mainFontAsset.fallbackFontAssetTable = osFallbacks.GetRange(1, osFallbacks.Count - 1);
+            return mainFontAsset;
+        }
+
         private List<FontAsset> GetOSFontAssetList()
         {
             var fonts = Font.GetOSFallbacks();
-            return FontAsset.CreateFontAssetOSFallbackList(fonts);
+            return FontAssetFactory.CreateFontAssetOSFallbackList(fonts, persistent: persistsFontAssetCaches);
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]

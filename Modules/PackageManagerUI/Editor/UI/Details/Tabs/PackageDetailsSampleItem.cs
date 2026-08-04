@@ -8,6 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsSampleItem
     {
+        private const string k_ImportedStatusClass = "imported";
         private Sample m_Sample;
 
         public PackageDetailsSampleItem(Sample sample, IApplicationProxy application, IIOProxy iOProxy, ISampleImporter sampleImporter)
@@ -25,18 +26,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We should refresh all buttons when the Import button is clicked in case no code was modified
             // and domain reload is not triggered assuring a refresh of visibility and text either way.
             importSampleAction.onActionTriggered += OnActionTriggered;
-            RefreshActionButtons();
+            RefreshActionButtonsAndStatus();
         }
 
         private void OnActionTriggered()
         {
-            RefreshActionButtons();
+            RefreshActionButtonsAndStatus();
         }
 
-        private void RefreshActionButtons()
+        private void RefreshActionButtonsAndStatus()
         {
             m_ImportButton.Refresh(m_Sample);
             m_LocateButton.Refresh(m_Sample);
+
+            if (m_Sample.isImported || m_Sample.previousImportPaths?.Count > 0)
+                importStatus.AddToClassList(k_ImportedStatusClass);
+            else
+                importStatus.RemoveFromClassList(k_ImportedStatusClass);
         }
 
         private Label m_ImportStatus;

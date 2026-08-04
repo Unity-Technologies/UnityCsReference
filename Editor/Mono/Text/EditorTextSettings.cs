@@ -48,6 +48,26 @@ namespace UnityEditor
             UITKTextHandle.GenerateBitmapFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 
+        [InitializeOnLoadMethod]
+        static void InitializeDefaultTextSettings()
+        {
+            if (EditorApplication.isBuildingAnyResources)
+                return;
+
+            // Force init after each domain reload (lazy init may hit a worker thread).
+            _ = defaultTextSettings;
+        }
+
+        // Persisted across domain reloads; re-attached to the base runtime caches via UsePersistedCaches.
+        [SerializeField, HideInInspector]
+        List<FontReferenceMap> m_PersistedFontReferences = new List<FontReferenceMap>();   // -> instance m_FontReferences
+        [SerializeField, HideInInspector]
+        List<FontAsset> m_PersistedFallbackOSFontAssets = new List<FontAsset>();           // -> instance m_FallbackOSFontAssets
+        [SerializeField, HideInInspector]
+        List<FontAsset> m_PersistedGlobalOSFallbacks = new List<FontAsset>();              // -> static global OS fallback store
+
+        internal override bool persistsFontAssetCaches => true;
+
         private void OnEnable()
         {
             // We cannot rely on lazy initialization since they might be called on a thread, which isn't valid
@@ -134,6 +154,14 @@ namespace UnityEditor
                     s_DefaultTextSettings = EditorGUIUtility.Load(s_DefaultEditorTextSettingPath) as EditorTextSettings;
                     if (s_DefaultTextSettings)
                     {
+                        s_DefaultTextSettings.m_PersistedFontReferences ??= new List<FontReferenceMap>();
+                        s_DefaultTextSettings.m_PersistedFallbackOSFontAssets ??= new List<FontAsset>();
+                        s_DefaultTextSettings.m_PersistedGlobalOSFallbacks ??= new List<FontAsset>();
+                        s_DefaultTextSettings.UsePersistedCaches(
+                            s_DefaultTextSettings.m_PersistedFontReferences,
+                            s_DefaultTextSettings.m_PersistedFallbackOSFontAssets,
+                            s_DefaultTextSettings.m_PersistedGlobalOSFallbacks);
+
                         UpdateLocalizationFontAsset();
                         UpdateDefaultTextStyleSheet();
                         s_DefaultTextSettings.CreateDefaultEditorFontAsset();

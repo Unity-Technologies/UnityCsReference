@@ -192,20 +192,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return false;
         }
 
-        internal List<string> GetActiveFreeRunInstanceNames()
-        {
-            var activeInstanceNames = new List<string>();
-            foreach (var instance in m_Instances)
-            {
-                if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
-                {
-                    activeInstanceNames.Add(instance.Name);
-                }
-            }
-
-            return activeInstanceNames;
-        }
-
         internal struct ValidationResult
         {
             public bool IsValid;

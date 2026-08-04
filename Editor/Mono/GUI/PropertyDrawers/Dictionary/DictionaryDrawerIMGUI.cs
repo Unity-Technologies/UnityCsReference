@@ -47,6 +47,12 @@ internal partial class DictionaryDrawer
         // during a prior short-circuit frame.
         static readonly Dictionary<PropertyCacheKey, DrawerInstanceIMGUI> s_Cache = new();
 
+        internal static void InvalidateAllSortOrders()
+        {
+            foreach (var instance in s_Cache.Values)
+                instance.InvalidateSortOrder();
+        }
+
         static class Styles
         {
             // k_TreeViewHeight caps the rows area so the IMGUI drawer doesn't grow unbounded
@@ -147,6 +153,7 @@ internal partial class DictionaryDrawer
         // with sortedIndices.
         public ulong lastKnownKeysHash;
         public bool needsReload;
+        public bool needsSortOrderRebuild;
         public bool needsDuplicate;
         public readonly Type keyType;
         public readonly Type valueType;
@@ -608,10 +615,18 @@ internal partial class DictionaryDrawer
         void ClearAllPendingFlags()
         {
             needsReload = false;
+            needsSortOrderRebuild = false;
             needsMarkerRefresh = false;
             pendingSortToggle = false;
             pendingSortToggleSelectionArrayIndices = null;
             StopInteractionCheck();
+        }
+
+        public void InvalidateSortOrder()
+        {
+            needsReload = true;
+            needsSortOrderRebuild = true;
+            ScheduleDeferredStructuralWork();
         }
 
         // Detect external array-size changes and (re-)arm the deferred reload.
@@ -724,7 +739,7 @@ internal partial class DictionaryDrawer
             {
                 int currentSize = arrayProperty.arraySize;
                 bool sizeChanged = currentSize != displayedItemCount;
-                bool keysChanged = sizeChanged || GetKeysContentHash(arrayProperty) != lastKnownKeysHash;
+                bool keysChanged = sizeChanged || needsSortOrderRebuild || GetKeysContentHash(arrayProperty) != lastKnownKeysHash;
 
                 if (!keysChanged)
                 {
@@ -741,6 +756,7 @@ internal partial class DictionaryDrawer
                     // A full reload also recomputes both marker sets, so a pending
                     // marker-only refresh is subsumed and can be cleared.
                     needsMarkerRefresh = false;
+                    needsSortOrderRebuild = false;
                     needsRepaint = true;
                     StopInteractionCheck();
                 }
@@ -1033,11 +1049,17 @@ internal partial class DictionaryDrawer
             int ignoredCount = duplicateCount + nullKeyCount;
             int itemCount = displayedItemCount;
 
-            string countText = Texts.GetItemCountText(itemCount);
-            string ignoredText = ignoredCount > 0
-                ? Texts.GetIgnoredCountText(ignoredCount)
-                : "";
-            string infoText = $"{countText}{ignoredText}";
+            string infoText;
+            if (DictionaryDrawer.ShowSerializedOrder)
+            {
+                infoText = Texts.ShowingSerializedOrderInfoLabel;
+            }
+            else
+            {
+                infoText = Texts.GetItemCountText(itemCount);
+                if (ignoredCount > 0)
+                    infoText += Texts.GetIgnoredCountText(ignoredCount);
+            }
 
             var infoSize = EditorStyles.miniLabel.CalcSize(new GUIContent(infoText));
             var infoRect = new Rect(rect.xMax - infoSize.x - 4f, rect.y, infoSize.x, rect.height);
@@ -1360,7 +1382,7 @@ internal partial class DictionaryDrawer
                 GUI.Label(label0Rect, m_KeyLabel, Styles.columnLabelClipped);
 
                 var arrowIcon = instance.sortAscending ? Styles.sortAscIcon : Styles.sortDescIcon;
-                if (arrowIcon != null)
+                if (arrowIcon != null && !DictionaryDrawer.ShowSerializedOrder)
                 {
                     var arrowRect = new Rect(arrowX, label0Rect.y + (label0Rect.height - Styles.k_SortArrowSize) * 0.5f, Styles.k_SortArrowSize, Styles.k_SortArrowSize);
                     GUI.DrawTexture(arrowRect, arrowIcon);
@@ -1393,7 +1415,7 @@ internal partial class DictionaryDrawer
                 GUI.Label(label0Rect, m_OneColumnLabel, Styles.columnLabelClipped);
 
                 var arrowIcon = instance.sortAscending ? Styles.sortAscIcon : Styles.sortDescIcon;
-                if (arrowIcon != null)
+                if (arrowIcon != null && !DictionaryDrawer.ShowSerializedOrder)
                 {
                     var arrowRect = new Rect(arrowX, rect.y + (rect.height - Styles.k_SortArrowSize) * 0.5f, Styles.k_SortArrowSize, Styles.k_SortArrowSize);
                     GUI.DrawTexture(arrowRect, arrowIcon);
@@ -1444,6 +1466,9 @@ internal partial class DictionaryDrawer
 
             void HandleSortToggle(Rect sortRect, DrawerInstanceIMGUI instance)
             {
+                if (DictionaryDrawer.ShowSerializedOrder)
+                    return;
+
                 var evt = Event.current;
                 switch (evt.GetTypeForControl(m_SortToggleControlID))
                 {
@@ -1502,6 +1527,10 @@ internal partial class DictionaryDrawer
                     AddLayoutItem(menu, Texts.TwoColumnsLayoutLabel, DictionaryLayout.TwoColumns, instance);
                     AddLayoutItem(menu, Texts.OneColumnWithValueFoldoutLayoutLabel, DictionaryLayout.OneColumnWithValueFoldout, instance);
                     AddLayoutItem(menu, Texts.OneColumnWithValueVisibleLayoutLabel, DictionaryLayout.OneColumnWithValueVisible, instance);
+                    menu.AddSeparator(string.Empty);
+
+                    menu.AddItem(new GUIContent(Texts.ShowSerializedOrderLabel), DictionaryDrawer.ShowSerializedOrder,
+                        () => DictionaryDrawer.SetShowSerializedOrder(!DictionaryDrawer.ShowSerializedOrder));
                     menu.AddSeparator(string.Empty);
 
                     if (instance.header.HasCachedState)
@@ -1815,6 +1844,19 @@ internal partial class DictionaryDrawer
                 return true;
             }
 
+            // Selects the entry a drop lands on (before the key ObjectField Uses() the DragPerform), so the deferred re-sort keeps it selected and frames it. Mirrors DictionaryView.OnRowDragPerform.
+            void SelectEntryOnKeyDrop(Rect keyCellRect, int arrayIndex)
+            {
+                if (Event.current.type != EventType.DragPerform || !keyCellRect.Contains(Event.current.mousePosition))
+                    return;
+                if (!m_Instance.sortedIndices.ContainsArrayIndex(arrayIndex))
+                    return;
+                SetSelection(new[] { m_Instance.sortedIndices.ToDisplayIndex(arrayIndex) });
+
+                // Grab view focus (a drag from another view left focus there) so the relocated row shows the active blue outline, not grey; keyboardControl is set by the reload's needsTreeViewFocus path.
+                GUIView.current?.Focus();
+            }
+
             void DrawKeyCell(Rect keyRect, SerializedProperty keyProp, int arrayIndex)
             {
                 keyRect.yMin += Styles.k_RowVerticalPadding;
@@ -1830,6 +1872,7 @@ internal partial class DictionaryDrawer
                 // The TrackPropertyValue listener registered on the IMGUIContainer in
                 // GetOrCreate handles both same-inspector and cross-inspector
                 // updates uniformly, so this draw site only renders the field.
+                SelectEntryOnKeyDrop(keyRect, arrayIndex);
                 DrawClippedPropertyField(keyRect, keyFieldRect, keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
             }
 
@@ -1857,6 +1900,7 @@ internal partial class DictionaryDrawer
                 float keyMinFieldWidth = GetCellMinFieldWidth(keyProp, m_Instance.keyHasCustomDrawer);
                 var keyFieldRect = BuildCellFieldRect(keyCellRect, contentLeft, Styles.k_CellHorizontalPadding, keyMinFieldWidth);
                 EditorGUIUtility.labelWidth = ComputeCellLabelWidth(keyFieldRect.width);
+                SelectEntryOnKeyDrop(keyCellRect, arrayIndex);
                 DrawPropertyField(keyFieldRect, keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
                 y += keyH + spacing;
 

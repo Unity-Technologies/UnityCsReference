@@ -130,6 +130,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_Instance.StatusRefreshed += (instance, status) =>
             {
                 UpdateUI();
+                // Status settles here (after start ramp-up / stop cleanup), so the config window's
+                // per-instance edit-guard can be reapplied at the right time.
+                RefreshPlayModeConfigsWindowIfShown();
             };
 
             ReuseBuildElement.RebuildStateChanged += OnRebuildStateChanged;
@@ -324,6 +327,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (element != null)
                 element.UpdateView();
 
+            // UpdateView rebinds the inspector but not the instance ListViews, so re-run their item
+            // binding to reapply the running/edit-guard state after free-run start/stop.
+            PlayModeConfigurationsWindow.rootVisualElement
+                .Query<FilteredInstancesListProperty>()
+                .ForEach(list => list.RefreshItems());
         }
     }
 }

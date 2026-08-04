@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -115,7 +116,11 @@ namespace UnityEngine
             return s_IgnoredEntriesForDictionaries != null && s_IgnoredEntriesForDictionaries.HasAnyCachedHosts;
         }
 
-        private delegate bool SetEntriesTypedDelegate(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys);
+        [AutoStaticsCleanupOnCodeReload] // editor-set delegate; clear on reload so the old-ALC target is not pinned (the editor re-wires it in its [OnCodeLoaded])
+        internal static Action<EntityId, string, bool, bool> s_PostDictionaryKeyWarning { get; set; }
+
+        private delegate bool SetEntriesTypedDelegate(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, bool warnAboutIgnoredEntries);
+        [NoAutoStaticsCleanup] // reflection handle to a method of this CoreModule type, stable across code reload
         private static readonly MethodInfo s_SetEntriesTypedInfo = typeof(DictionarySerialization).GetMethod(nameof(SetEntriesTyped), BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly ConcurrentDictionary<Type, SetEntriesTypedDelegate> s_SetEntriesTypedCache = new ConcurrentDictionary<Type, SetEntriesTypedDelegate>();
 
@@ -123,11 +128,8 @@ namespace UnityEngine
         private static readonly MethodInfo s_GetEntriesTypedInfo = typeof(DictionarySerialization).GetMethod(nameof(GetEntriesTyped), BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly ConcurrentDictionary<Type, GetEntriesTypedDelegate> s_GetEntriesTypedCache = new ConcurrentDictionary<Type, GetEntriesTypedDelegate>();
 
-        private static bool SetEntriesTyped<TKey, TValue>(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys)
+        private static bool SetEntriesTyped<TKey, TValue>(EntityId hostingEntityId, object dictionary, Array array, string dictionaryIdentifier, bool warnAboutIgnoredEntries)
         {
-            hadDuplicates = false;
-            hadNullKeys = false;
-
             if (dictionary is not Dictionary<TKey, TValue> dict)
                 return false;
 
@@ -232,9 +234,12 @@ namespace UnityEngine
                     int[] nullKeyIndicesArray = nullKeyIndices?.ToArray() ?? Array.Empty<int>();
                     s_IgnoredEntriesForDictionaries.Store(hostingEntityId, dictionaryIdentifier, new IgnoredEntriesData(ignoredIndices.ToArray(), ignoredEntries.ToArray(), dict.Count, duplicateKeyIndices, nullKeyIndicesArray));
                     // Both duplicate-key rows and null-key placeholder rows are excluded from the live dictionary and
-                    // are reported back so the read dispatcher can emit a single combined Console warning on load/instantiate.
-                    hadDuplicates = duplicateKeyIndices.Length > 0;
-                    hadNullKeys = nullKeyIndicesArray.Length > 0;
+                    // drive a single combined Console warning on load/instantiate.
+                    bool hadDuplicates = duplicateKeyIndices.Length > 0;
+                    bool hadNullKeys = nullKeyIndicesArray.Length > 0;
+
+                    if (warnAboutIgnoredEntries && (hadDuplicates || hadNullKeys) && hostingEntityId != EntityId.None)
+                        s_PostDictionaryKeyWarning?.Invoke(hostingEntityId, dictionaryIdentifier, hadDuplicates, hadNullKeys);
                 }
             }
 
@@ -438,12 +443,12 @@ namespace UnityEngine
         /// </summary>
         internal static bool InvokeSetEntriesTyped(
             int idx, EntityId hostingEntityId, object dictionary, Array entries,
-            string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys)
+            string dictionaryIdentifier, bool warnAboutIgnoredEntries)
         {
             if (idx < 0)
-                return SetEntriesFromSerializedData(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
+                return SetEntriesFromSerializedData(hostingEntityId, dictionary, entries, dictionaryIdentifier, warnAboutIgnoredEntries);
             var del = (SetEntriesTypedDelegate)SerializationCommandObjectTable.Get(idx);
-            return del(hostingEntityId, dictionary, entries, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
+            return del(hostingEntityId, dictionary, entries, dictionaryIdentifier, warnAboutIgnoredEntries);
         }
 
         /// <summary>
@@ -489,21 +494,15 @@ namespace UnityEngine
         /// from each serialized key/value entry. Ignored rows (duplicate-key and null-key placeholder rows) are tracked in
         /// <see cref="s_IgnoredEntriesForDictionaries"/> when the Editor context is set so Apply/Update can preserve them.
         /// </summary>
-        /// <param name="hadDuplicates">Editor-only signal: set to <c>true</c> only on the ignored-tracking path
-        /// (when <see cref="s_IgnoredEntriesForDictionaries"/> is non-null and <paramref name="dictionaryIdentifier"/>
-        /// is non-empty), and then only when a genuine duplicate-key row was found. Always <c>false</c> in player builds (no ignored tracking) and on Editor loads without an
-        /// active FieldUniqueIdentifierContext (no identifier to anchor a warning to). The native caller uses this as
-        /// the gate for emitting the Editor-only Console warning in <c>DictionaryField::SetArray</c>. Always set even
-        /// when this method returns <c>false</c>.</param>
-        /// <param name="hadNullKeys">Editor-only signal with the same tracking-path gating as <paramref name="hadDuplicates"/>,
-        /// set to <c>true</c> when a null-key placeholder row was found. The native caller folds this into the same
-        /// combined Console warning. Always set even when this method returns <c>false</c>.</param>
+        /// <param name="warnAboutIgnoredEntries">Set on the load/instantiate transfer types (serialized-file loads and
+        /// <c>Object.Instantiate</c> clones); <c>false</c> for Inspector ApplyModifiedProperties and other in-memory
+        /// transfers. When set and an ignored row is found, the editor-only <see cref="s_PostDictionaryKeyWarning"/>
+        /// hook is invoked to surface a single combined Console warning (emitted on the main thread once it next drains).</param>
+        /// <returns><c>true</c> when the dictionary was recognized and repopulated; <c>false</c> when the argument is
+        /// null or not a supported generic <c>Dictionary&lt;TKey, TValue&gt;</c>.</returns>
         [RequiredByNativeCode]
-        internal static bool SetEntriesFromSerializedData(EntityId hostingEntityId, object dictionary, object entriesArray, string dictionaryIdentifier, out bool hadDuplicates, out bool hadNullKeys)
+        internal static bool SetEntriesFromSerializedData(EntityId hostingEntityId, object dictionary, object entriesArray, string dictionaryIdentifier, bool warnAboutIgnoredEntries)
         {
-            hadDuplicates = false;
-            hadNullKeys = false;
-
             if (dictionary == null)
                 return false;
 
@@ -522,7 +521,7 @@ namespace UnityEngine
                 return false;
 
             var setEntries = GetSetEntriesTypedDelegate(dictArgs);
-            return setEntries(hostingEntityId, dictionary, array, dictionaryIdentifier, out hadDuplicates, out hadNullKeys);
+            return setEntries(hostingEntityId, dictionary, array, dictionaryIdentifier, warnAboutIgnoredEntries);
         }
 
         /// <summary>

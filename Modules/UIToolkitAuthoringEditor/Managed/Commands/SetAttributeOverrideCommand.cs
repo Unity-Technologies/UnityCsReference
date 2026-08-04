@@ -70,6 +70,10 @@ internal sealed class SetAttributeOverrideCommand : Command<SetAttributeOverride
 
     public override CommandExecutionStatus Execute()
     {
+        // UxmlObject attributes are child elements, not string attributes; skip override serialization.
+        if (m_AttributeDescription is UxmlSerializedUxmlObjectAttributeDescription)
+            return CommandExecutionStatus.Success;
+
         if (UxmlAttributeConverter.TryConvertToString(m_Value, m_VisualTreeAsset, out var valueAsString))
         {
             UxmlAssetUtilities.PostAttributeValueChange(

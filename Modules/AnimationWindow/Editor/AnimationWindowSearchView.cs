@@ -40,7 +40,8 @@ namespace UnityEditorInternal
         {
             return new SearchProvider("animation", "Animation")
             {
-                isExplicitProvider = false,
+                isExplicitProvider = true,
+                filterId = AnimationWindowSearchFilter.k_FilterPrefix,
                 priority = 100,
                 active = true,
                 fetchPropositions = (context, options) => FetchAnimationPropositions(context, options)
@@ -151,7 +152,7 @@ namespace UnityEditorInternal
                 return;
 
             context.searchText = searchText;
-            m_State.searchFilter = context.searchQuery;
+            m_State.searchFilter = searchText;
         }
 
         void ISearchView.SetSelection(params int[] selection)

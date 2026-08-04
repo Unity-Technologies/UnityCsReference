@@ -85,8 +85,8 @@ namespace UnityEditor
             public static readonly GUIContent gameObjectIconMode = EditorGUIUtility.TrTextContent("GameObject Icons", "Controls how the new Hierarchy window replaces GameObject icons.");
             public static readonly GUIContent[] gameObjectIconModeOptions =
             {
-                EditorGUIUtility.TrTextContent("Use Components and Gizmos"),
-                EditorGUIUtility.TrTextContent("Use Components only"),
+                EditorGUIUtility.TrTextContent("Use components and custom icons"),
+                EditorGUIUtility.TrTextContent("Use components only"),
                 EditorGUIUtility.TrTextContent("Do not change GameObject icons"),
             };
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");

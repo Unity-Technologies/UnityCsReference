@@ -69,6 +69,12 @@ internal sealed class SetAttributeCommand : Command<SetAttributeCommand>
 
     public override CommandExecutionStatus Execute()
     {
+        // UxmlObject attributes are represented as UXML child elements, not string attributes.
+        // Their sync is already handled by SynchronizePath upstream; SetSerializedValue and
+        // UxmlAsset.SetAttribute are both incorrect for this description type.
+        if (AttributeDescription is UxmlSerializedUxmlObjectAttributeDescription)
+            return CommandExecutionStatus.Success;
+
         string valueAsString = "";
 
         if (Value != null)

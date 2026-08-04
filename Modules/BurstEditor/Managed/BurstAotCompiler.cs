@@ -25,6 +25,8 @@ using UnityEngine;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
 using Debug = UnityEngine.Debug;
 using System.Runtime.InteropServices;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using static Unity.Burst.BurstCompilerOptions;
 
 
@@ -521,6 +523,7 @@ namespace Unity.Burst.Editor
             // of the current Unity project
             // --------------------------------------------------------------------------------------------------------
             var rootAssemblies = new List<string>();
+            var userBurstRootCount = 0;
             var targetFrameworkIsDotNet = false;
             foreach (var playerAssembly in playerAssemblies)
             {
@@ -532,8 +535,16 @@ namespace Unity.Burst.Editor
                 }
                 else
                 {
-                    rootAssemblies.Add(playerAssemblyPath);
                     commonOptions.Add(GetOption(OptionAssemblyDefines, $"{playerAssembly.name};{string.Join(";", playerAssembly.defines)}"));
+
+                    // Only assemblies that reference Burst can have Burst entry points, so scope the rootAssemblies to those.
+                    if (playerAssembly.name == BurstModuleAssemblyName || AssemblyReferencesBurstModule(playerAssemblyPath))
+                    {
+                        rootAssemblies.Add(playerAssemblyPath);
+
+                        if (!IsEngineModule(playerAssemblyPath))
+                            userBurstRootCount++;
+                    }
                 }
 
                 // We use this assembly as a marker for .NET BCL builds, as opposed to Mono BCL builds.
@@ -541,6 +552,19 @@ namespace Unity.Burst.Editor
                 {
                     targetFrameworkIsDotNet = true;
                 }
+            }
+
+            if (BurstLoader.IsDebugging)
+            {
+                Debug.Log($"Burst - scoped roots to {rootAssemblies.Count} of {playerAssemblies.Length} player assemblies referencing {BurstModuleAssemblyName}");
+            }
+
+            // If there's nothing to compile, skip launching bcl.
+            if (userBurstRootCount == 0)
+            {
+                if (BurstLoader.IsDebugging)
+                    Debug.Log("Burst - skipping bcl: no assembly uses Burst");
+                return new();
             }
 
 #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
@@ -783,6 +807,78 @@ namespace Unity.Burst.Editor
 
             // Finally move out any symbols/misc files from the final output
             return CollateMiscFiles(settings.combinations, pdbsRemainInBuild);
+        }
+
+        private const string BurstModuleAssemblyName = "UnityEngine.BurstModule";
+        private const string LegacyBurstAssemblyName = "Unity.Burst";
+        private const string EngineModuleAttributeName = "UnityEngineModuleAssembly";
+
+        private static bool IsEngineModule(string assemblyPath)
+        {
+            try
+            {
+                using var stream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var peReader = new PEReader(stream);
+                if (!peReader.HasMetadata)
+                    return false;
+
+                var metadataReader = peReader.GetMetadataReader();
+                if (metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name) == "UnityEngine")
+                    return true;
+
+                foreach (var handle in metadataReader.GetAssemblyDefinition().GetCustomAttributes())
+                {
+                    if (GetAttributeTypeName(metadataReader, metadataReader.GetCustomAttribute(handle)) == EngineModuleAttributeName)
+                        return true;
+                }
+                return false;
+            }
+            catch
+            {
+                // Fail-open as user work so a parse failure never lets the skip drop real Burst code.
+                return false;
+            }
+        }
+
+        private static bool AssemblyReferencesBurstModule(string assemblyPath)
+        {
+            try
+            {
+                using var stream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var peReader = new PEReader(stream);
+                if (!peReader.HasMetadata)
+                    return true;
+
+                var metadataReader = peReader.GetMetadataReader();
+                foreach (var handle in metadataReader.AssemblyReferences)
+                {
+                    var name = metadataReader.GetString(metadataReader.GetAssemblyReference(handle).Name);
+                    if (name == BurstModuleAssemblyName || name == LegacyBurstAssemblyName)
+                        return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static string GetAttributeTypeName(MetadataReader reader, CustomAttribute attribute)
+        {
+            switch (attribute.Constructor.Kind)
+            {
+                case HandleKind.MemberReference:
+                    var memberRef = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+                    if (memberRef.Parent.Kind == HandleKind.TypeReference)
+                        return reader.GetString(reader.GetTypeReference((TypeReferenceHandle)memberRef.Parent).Name);
+                    return null;
+                case HandleKind.MethodDefinition:
+                    var methodDef = reader.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor);
+                    return reader.GetString(reader.GetTypeDefinition(methodDef.GetDeclaringType()).Name);
+                default:
+                    return null;
+            }
         }
 
         private static void AddAssemblyFolder(string assemblyRef, string stagingFolder, BuildTarget buildTarget,

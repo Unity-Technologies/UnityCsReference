@@ -271,13 +271,14 @@ namespace UnityEngine.UIElements
 
         public static TextCore.TextOverflow toTextCore(this TextOverflow textOverflow, OverflowInternal overflow, TextOverflowPosition position)
         {
-            // TextCore and ATG do not support the middle and left ellipsis. In thoses case the TextElement will take care of the ellipsi.
-            if (position != TextOverflowPosition.End)
+            if (textOverflow != TextOverflow.Ellipsis || overflow != OverflowInternal.Hidden)
                 return TextCore.TextOverflow.Clip;
 
-            return textOverflow switch
+            return position switch
             {
-                TextOverflow.Ellipsis when overflow == OverflowInternal.Hidden => TextCore.TextOverflow.Ellipsis,
+                TextOverflowPosition.End => TextCore.TextOverflow.Ellipsis,
+                TextOverflowPosition.Start => TextCore.TextOverflow.EllipsisStart,
+                TextOverflowPosition.Middle => TextCore.TextOverflow.EllipsisMiddle,
                 _ => TextCore.TextOverflow.Clip
             };
         }

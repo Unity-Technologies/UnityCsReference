@@ -16,7 +16,7 @@ namespace UnityEngine.TextCore
     internal static class NativeRichTextAssetRegistry
     {
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static readonly Dictionary<uint, IntPtr> s_FontAssetCache = new();
+        internal static readonly Dictionary<uint, FontAsset> s_FontAssetCache = new();
         internal static readonly Dictionary<uint, SpriteAsset> s_SpriteAssetCache = new();
         internal static readonly Dictionary<uint, TextColorGradient> s_GradientAssetCache = new();
 
@@ -43,7 +43,9 @@ namespace UnityEngine.TextCore
         [RequiredByNativeCode]
         internal static IntPtr GetFontAssetForNative(uint nameHash)
         {
-            return s_FontAssetCache.TryGetValue(nameHash, out var ptr) ? ptr : IntPtr.Zero;
+            if (!s_FontAssetCache.TryGetValue(nameHash, out var fontAsset) || ReferenceEquals(fontAsset, null))
+                return IntPtr.Zero;
+            return fontAsset.nativeFontAsset;
         }
 
         [RequiredByNativeCode]
@@ -184,7 +186,7 @@ namespace UnityEngine.TextCore
             if (fontAsset == null) return;
 
             fontAsset.EnsureNativeFontAssetIsCreated();
-            s_FontAssetCache[hash] = fontAsset.nativeFontAsset;
+            s_FontAssetCache[hash] = fontAsset;
         }
 
         [RequiredByNativeCode]

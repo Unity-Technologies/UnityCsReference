@@ -51,15 +51,15 @@ namespace UnityEditor
 
         public int CompareTo(CurveSelection other)
         {
-            int cmp = curveID - other.curveID;
+            int cmp = curveID.CompareTo(other.curveID);
             if (cmp != 0)
                 return cmp;
 
-            cmp = key - other.key;
+            cmp = key.CompareTo(other.key);
             if (cmp != 0)
                 return cmp;
 
-            return (int)type - (int)other.type;
+            return ((int)type).CompareTo((int)other.type);
         }
 
         public override bool Equals(object _other)

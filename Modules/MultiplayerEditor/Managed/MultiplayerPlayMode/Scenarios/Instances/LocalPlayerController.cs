@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using Unity.PlayMode.Editor;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
@@ -220,6 +221,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var userSettings = GetUserSettings(DefaultUserSettings);
             var userSettingsProperty = GetUserSettingsSerializedProperty(DefaultUserSettings);
             return new LocalPlayerInstanceStatusElement(instance, Settings, userSettings, userSettingsProperty);
+        }
+
+        internal override bool NeedsTearDown(Instance instance, out string reason)
+        {
+            if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
+            {
+                reason = $"\"{instance.Name}\" is running in Free Run mode.";
+                return true;
+            }
+
+            reason = null;
+            return false;
+        }
+
+        internal override void TearDown(Instance instance)
+        {
+            if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
+            {
+                // Fire-and-forget; StopAsFreeRunning early-returns if already stopping.
+                instance.StopAsFreeRunning().Forget();
+            }
         }
     }
 }

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using Unity.PlayMode.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -129,38 +128,42 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
         return false;
     }
 
-    internal static void GetActiveCloneEditorNames(List<string> names)
+    // An activated clone slot left behind on remove/switch orphans the virtual player (UUM-138111).
+    internal override bool NeedsTearDown(Instance instance, out string reason)
     {
-        names.Clear();
-        var players = MultiplayerPlaymode.Players;
-        if (players == null)
-            return;
-
-        foreach (var player in players)
+        if (IsActiveCloneSlot())
         {
-            if (player.PlayerIdentifier == MultiplayerPlaymode.PlayerOne.PlayerIdentifier)
-                continue;
-            if (player.PlayerState is PlayerState.Launched or PlayerState.Launching)
-                names.Add(player.Name);
+            reason = $"\"{instance.Name}\" is an activated virtual player.";
+            return true;
         }
+
+        reason = null;
+        return false;
     }
 
-    internal static void DeactivateAllActiveCloneEditors()
+    internal override void TearDown(Instance instance)
+    {
+        if (IsActiveCloneSlot())
+            MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Deactivate(out _);
+    }
+
+    bool IsActiveCloneSlot()
     {
         var players = MultiplayerPlaymode.Players;
         if (players == null)
-            return;
+            return false;
 
-        foreach (var player in players)
-        {
-            if (player.PlayerIdentifier == MultiplayerPlaymode.PlayerOne.PlayerIdentifier)
-                continue;
-            if (player.PlayerState is PlayerState.Launched or PlayerState.Launching)
-                player.Deactivate(out _);
-        }
+        var index = Settings.PlayerInstanceIndex;
+        if (index < 0 || index >= players.Length)
+            return false;
+
+        var player = players[index];
+        // Clone indices are assigned >= 1, but guard against a stale one resolving to the main editor.
+        if (player.PlayerIdentifier == MultiplayerPlaymode.PlayerOne.PlayerIdentifier)
+            return false;
+
+        return player.PlayerState is PlayerState.Launched or PlayerState.Launching;
     }
-
-
 
     protected internal override VisualElement CreateControllerUI(Instance instance)
     {

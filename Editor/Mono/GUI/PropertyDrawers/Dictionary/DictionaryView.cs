@@ -216,6 +216,18 @@ internal class DictionaryView : ListView
         onAdd = _ => OnAddClicked();
         onRemove = _ => OnRemoveClicked();
         selectionChanged += OnSelectionChanged;
+
+        RegisterCallback<AttachToPanelEvent>(_ => DictionaryDrawer.SerializedOrderChanged += OnSerializedOrderChanged);
+        RegisterCallback<DetachFromPanelEvent>(_ => DictionaryDrawer.SerializedOrderChanged -= OnSerializedOrderChanged);
+    }
+
+    void OnSerializedOrderChanged()
+    {
+        if (!m_IsBound || m_ArrayProperty == null)
+            return;
+        UpdateSortIndicatorClass();
+        RebuildSortedIndicesAndRefresh();
+        UpdateHeaderInfo();
     }
 
     [EventInterest(typeof(SerializedPropertyBindEvent))]
@@ -555,6 +567,10 @@ internal class DictionaryView : ListView
             AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.OneColumnWithValueFoldoutLayoutLabel, DictionaryLayout.OneColumnWithValueFoldout);
             AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.OneColumnWithValueVisibleLayoutLabel, DictionaryLayout.OneColumnWithValueVisible);
             evt.menu.AppendSeparator();
+            evt.menu.AppendAction(DictionaryDrawer.Texts.ShowSerializedOrderLabel,
+                _ => DictionaryDrawer.SetShowSerializedOrder(!DictionaryDrawer.ShowSerializedOrder),
+                _ => DictionaryDrawer.ShowSerializedOrder ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            evt.menu.AppendSeparator();
             evt.menu.AppendAction(DictionaryDrawer.Texts.ResetToDefaultsLabel,
                 _ => ResetToDefaults(),
                 _ => DictionaryDrawer.HasCachedState(m_StateCacheKey) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
@@ -641,6 +657,13 @@ internal class DictionaryView : ListView
         row.Add(selectionIndicator);
 
         row.RegisterCallback<PointerDownEvent>(OnRowPointerDown, TrickleDown.TrickleDown);
+        // Select the row when an object is dropped onto its key cell. Registered as
+        // TrickleDown so it runs before the key ObjectField's own DragPerform handler
+        // (which sets the value and stops propagation) — the drop then changes the key,
+        // which re-sorts and moves the row; because the entry is now selected,
+        // SortIfNeeded's RestoreSelectionByArrayIndices keeps it highlighted and scrolls
+        // it into view so it's clear where the entry went.
+        row.RegisterCallback<DragPerformEvent>(OnRowDragPerform, TrickleDown.TrickleDown);
 
         row.keyContainer = keyContainer;
         row.valueContainer = valueContainer;
@@ -907,6 +930,30 @@ internal class DictionaryView : ListView
         });
     }
 
+    // Selects the entry a drag-and-drop is landing on, but only when the drop targets the
+    // key cell — a key change is what re-sorts and relocates the row, so selecting it lets
+    // the deferred SortIfNeeded restore the selection to (and scroll to) the entry's new
+    // position. Value-cell drops don't re-sort, so we leave them to the field alone. This
+    // runs during trickle-down, before the key ObjectField's own handler sets the value and
+    // stops propagation, so the selection is in place before the resulting sort is scheduled.
+    void OnRowDragPerform(DragPerformEvent evt)
+    {
+        if (!(evt.currentTarget is DictionaryRow row) || row.displayIndex < 0)
+            return;
+
+        if (!(evt.target is VisualElement target) || !IsInSubtree(target, row.keyContainer))
+            return;
+
+        SetSelection(row.displayIndex);
+    }
+
+    static bool IsInSubtree(VisualElement element, VisualElement ancestor)
+    {
+        if (element == null || ancestor == null)
+            return false;
+        return element == ancestor || element.FindCommonAncestor(ancestor) == ancestor;
+    }
+
     // Header columns mirror what ApplyKeyColumnWidth does for row cells: only
     // the resizer-driven width is dynamic, so we just push it onto flex-basis
     // and width on both header columns. All other layout (flex grow/shrink,
@@ -1126,6 +1173,9 @@ internal class DictionaryView : ListView
 
     void OnKeyHeaderClicked(ClickEvent evt)
     {
+        if (DictionaryDrawer.ShowSerializedOrder)
+            return;
+
         m_SortAscending = !m_SortAscending;
         UpdateSortIndicatorClass();
         DictionaryDrawer.UpdateCachedState(m_StateCacheKey, state => state.sortAscending = m_SortAscending);
@@ -1153,6 +1203,13 @@ internal class DictionaryView : ListView
 
     void UpdateSortIndicatorClass()
     {
+        if (DictionaryDrawer.ShowSerializedOrder)
+        {
+            m_KeyHeader.EnableInClassList(MultiColumnHeaderColumn.sortedAscendingUssClassName, false);
+            m_KeyHeader.EnableInClassList(MultiColumnHeaderColumn.sortedDescendingUssClassName, false);
+            return;
+        }
+
         m_KeyHeader.EnableInClassList(MultiColumnHeaderColumn.sortedAscendingUssClassName, m_SortAscending);
         m_KeyHeader.EnableInClassList(MultiColumnHeaderColumn.sortedDescendingUssClassName, !m_SortAscending);
     }
@@ -1337,9 +1394,17 @@ internal class DictionaryView : ListView
 
         if (m_HeaderInfoLabel != null)
         {
-            string text = DictionaryDrawer.Texts.GetItemCountText(itemCount);
-            if (hasIgnored)
-                text += DictionaryDrawer.Texts.GetIgnoredCountText(ignoredCount);
+            string text;
+            if (DictionaryDrawer.ShowSerializedOrder)
+            {
+                text = DictionaryDrawer.Texts.ShowingSerializedOrderInfoLabel;
+            }
+            else
+            {
+            	text = DictionaryDrawer.Texts.GetItemCountText(itemCount);
+            	if (hasIgnored)
+                	text += DictionaryDrawer.Texts.GetIgnoredCountText(ignoredCount);
+            }
             m_HeaderInfoLabel.text = text;
         }
         if (m_IgnoredHelpBox != null)

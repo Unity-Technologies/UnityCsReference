@@ -106,6 +106,7 @@ namespace UnityEditor
 
 
         Vector2 m_LastScrollPosition = new Vector2(0, 0);
+        float m_FramedSelectionItemY = float.NaN;
         double LastScrollTime = 0;
 
         internal Texture m_SelectedObjectIcon = null;
@@ -461,6 +462,15 @@ namespace UnityEditor
             get { return m_LocalAssets.ItemCount; }
         }
 
+        internal bool IsSelectionFramed()
+        {
+            int idx = GetSelectedAssetIdx();
+            if (idx < 0)
+                return false;
+            Rect r = m_LocalAssets.m_Grid.CalcRect(idx, 0f);
+            return r.yMin >= m_State.m_ScrollPosition.y && r.yMax <= m_State.m_ScrollPosition.y + m_TotalRect.height;
+        }
+
         bool ObjectsHaveThumbnails(HierarchyType type, SearchFilter searchFilter, SearchService.SearchSessionOptions searchSessionOptions)
         {
             // Check if we have any built-ins, if so we have thumbs since all builtins have thumbs
@@ -652,6 +662,8 @@ namespace UnityEditor
 
         public void InitSelection(EntityId[] selectedInstanceIDs)
         {
+            m_FramedSelectionItemY = float.NaN;
+
             // Note that selectedInstanceIDs can be gameObjects
             m_State.m_SelectedInstanceIDs = new List<EntityId>(selectedInstanceIDs);
 
@@ -956,6 +968,24 @@ namespace UnityEditor
             }
 
             return false;
+        }
+
+        // The grid re-lays out over the first passes after opening; re-frame whenever the selection's position changes.
+        internal void KeepSelectionFramed()
+        {
+            if (m_State.m_SelectedInstanceIDs.Count == 0 || m_State.m_SelectedInstanceIDs[0] == EntityId.None)
+                return;
+
+            int index = m_LocalAssets.IndexOf(m_State.m_SelectedInstanceIDs[0]);
+            if (index == -1)
+                return; // items not populated yet
+
+            float itemY = m_LocalAssets.m_Grid.CalcRect(index, 0f).y;
+            if (Mathf.Approximately(itemY, m_FramedSelectionItemY))
+                return; // layout unchanged since the selection was last framed
+
+            m_FramedSelectionItemY = itemY;
+            Frame(m_State.m_SelectedInstanceIDs[0], true, false);
         }
 
         int GetSelectedAssetIdx()

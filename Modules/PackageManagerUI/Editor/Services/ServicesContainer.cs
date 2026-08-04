@@ -173,6 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             Register(new EditorAnalyticsProxy());
             Register(new PackageManagerWindowProxy());
+            Register(new LicenceProxy());
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy, packageProgressTracker));
             Register(new SampleFactory(ioProxy, upmCache, sampleCache, packageDatabase));

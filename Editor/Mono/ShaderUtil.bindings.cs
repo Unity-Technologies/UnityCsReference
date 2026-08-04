@@ -289,6 +289,7 @@ namespace UnityEditor
         [FreeFunction] extern internal static int GetSubshaderLOD([NotNull] Shader shader, int subShaderIndex);
         [FreeFunction] extern internal static bool IsGrabPass([NotNull] Shader shader, int subShaderIndex, int passId);
         [FreeFunction("ShaderUtil::GetShaderSerializedSubshaderCount")] extern internal static int GetShaderSerializedSubshaderCount([NotNull] Shader shader);
+        [FreeFunction("ShaderUtil::GetSerializedSubShaderStripFromBuild")] extern internal static bool GetSerializedSubShaderStripFromBuild([NotNull] Shader shader, int subShaderIndex);
         [FreeFunction("ShaderUtil::FindSerializedSubShaderTagValue")] extern internal static int FindSerializedSubShaderTagValue([NotNull] Shader shader, int subShaderIndex, int tagName);
         [FreeFunction("ShaderUtil::FindPassTagValue")] extern internal static int FindPassTagValue([NotNull] Shader shader, int subShaderIndex, int passIndex, int tagName);
 

@@ -1029,6 +1029,12 @@ namespace UnityEngine.UIElements
                         p.x -= bbox.x;
                         p.y -= bbox.y;
                     }
+                    else
+                    {
+                        // Viewport provided: offset the content by the viewport origin
+                        p.x -= viewport.x;
+                        p.y -= viewport.y;
+                    }
 
                     allVerts[vCount++] = new VectorImageVertex() {
                         position = new Vector3(p.x, p.y, Vertex.nearZ),

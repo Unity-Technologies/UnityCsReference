@@ -11,8 +11,6 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
-using PackageInfo = UnityEditor.PackageManager.PackageInfo;
-using PackageSource = UnityEditor.PackageManager.PackageSource;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -51,7 +49,6 @@ namespace Unity.UIToolkit.Editor
         static readonly Dictionary<string, List<LibraryTypeKey>> s_CachedTypesByCategory = new();
         static List<LibraryTypeKey> s_SortedTypes;
         static int s_CachedTypesHash;
-        const int k_MenuPriority = 3030;
         const string k_CustomProviderId = "uicustom";
         const string k_EngineProviderId = "uiengine";
         const string k_UxmlProviderId = "uiuxml";
@@ -60,6 +57,9 @@ namespace Unity.UIToolkit.Editor
 
         static Texture2D s_FolderIcon;
         static Texture2D FolderIcon => s_FolderIcon != null ? s_FolderIcon : s_FolderIcon = EditorGUIUtility.FindTexture("Folder Icon");
+        static readonly List<ISearchView> s_OpenLibraryViews = new();
+        static bool s_RefreshScheduled;
+        const string k_VisibilityButtonClassName = "search-groupbar__visibility-button";
 
         [MenuItem(k_MenuPath, false, 3010, secondaryPriority = 5)]
         internal static void OpenUIElementsPicker()
@@ -86,6 +86,32 @@ namespace Unity.UIToolkit.Editor
             SearchService.ShowWindow(state);
         }
 
+        static void RegisterLibraryView(ISearchView view)
+        {
+            if (view == null || s_OpenLibraryViews.Contains(view))
+                return;
+
+            if (s_OpenLibraryViews.Count == 0)
+                EditorApplication.projectChanged += OnProjectChanged;
+
+            s_OpenLibraryViews.Add(view);
+            HideVisibilityOptionsButton(view);
+        }
+
+        // We can remove it once Search has a flag to remove the visibility button or customize the visibility option(s)
+        static void HideVisibilityOptionsButton(ISearchView view)
+        {
+            if (view is not EditorWindow window)
+                return;
+
+            window.rootVisualElement.schedule.Execute(() =>
+            {
+                var button = window.rootVisualElement.Q(className: k_VisibilityButtonClassName);
+                if (button != null)
+                    button.style.display = DisplayStyle.None;
+            });
+        }
+
         [SearchItemProvider]
         internal static SearchProvider CreateEngineControlsProvider()
         {
@@ -101,7 +127,10 @@ namespace Unity.UIToolkit.Editor
         [SearchItemProvider]
         internal static SearchProvider CreateProjectUxmlProvider()
         {
-            return BuildProvider(k_UxmlProviderId, "UXMLs", FetchProjectUxmlItems);
+            var provider = BuildProvider(k_UxmlProviderId, "UXMLs", FetchProjectUxmlItems);
+            provider.showDetailsOptions |= ShowDetailsOptions.DefaultGroup;
+            provider.priority = 200;
+            return provider;
         }
 
         static SearchProvider CreateProvider(ProviderConfig config)
@@ -111,7 +140,11 @@ namespace Unity.UIToolkit.Editor
 
         static SearchProvider BuildProvider(string id, string name, Func<SearchContext, SearchProvider, IEnumerable<SearchItem>> fetch)
         {
-            return new SearchProvider(id, name, fetch)
+            return new SearchProvider(id, name, (context, provider) =>
+            {
+                RegisterLibraryView(context.searchView);
+                return fetch(context, provider);
+            })
             {
                 fetchLabel = FetchElementLabel,
                 fetchThumbnail = FetchElementThumbnail,
@@ -262,9 +295,8 @@ namespace Unity.UIToolkit.Editor
         /// </summary>
         static IEnumerable<SearchItem> FetchProjectUxmlItems(SearchContext context, SearchProvider provider)
         {
-            var includePackages = (context.options & SearchFlags.Packages) != 0;
             long score = 0;
-            foreach (var libItem in EnumerateProjectUxmlItems(includePackages))
+            foreach (var libItem in EnumerateProjectUxmlItems())
             {
                 if (!string.IsNullOrEmpty(context.searchQuery)
                     && libItem.name.IndexOf(context.searchQuery, StringComparison.OrdinalIgnoreCase) < 0)
@@ -288,15 +320,14 @@ namespace Unity.UIToolkit.Editor
         }
 
         /// <summary>
-        /// Lazily enumerates the project's UXML documents as <see cref="LibraryItem"/>s, excluding read-only assets.
-        /// Package documents are included only when the search's "Show Package Files" option is enabled.
+        /// Lazily enumerates the project's UXML documents under <c>Assets/</c> as <see cref="LibraryItem"/>s.
         /// </summary>
-        static IEnumerable<LibraryItem> EnumerateProjectUxmlItems(bool includePackages)
+        static IEnumerable<LibraryItem> EnumerateProjectUxmlItems()
         {
             var searchFilter = new SearchFilter
             {
                 classNames = [nameof(VisualTreeAsset)],
-                searchArea = includePackages ? SearchFilter.SearchArea.AllAssets : SearchFilter.SearchArea.InAssetsOnly
+                searchArea = SearchFilter.SearchArea.InAssetsOnly
             };
 
             var guids = AssetDatabase.FindAssets(searchFilter);
@@ -308,7 +339,7 @@ namespace Unity.UIToolkit.Editor
 
             foreach (var assetPath in paths)
             {
-                if (string.IsNullOrEmpty(assetPath) || !IsWritable(assetPath))
+                if (string.IsNullOrEmpty(assetPath))
                     continue;
 
                 var name = Path.GetFileName(assetPath);
@@ -319,10 +350,28 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        static bool IsWritable(string assetPath)
+        static void OnProjectChanged()
         {
-            var packageInfo = PackageInfo.FindForAssetPath(assetPath);
-            return packageInfo == null || packageInfo.source == PackageSource.Embedded || packageInfo.source == PackageSource.Local;
+            if (s_RefreshScheduled)
+                return;
+
+            s_RefreshScheduled = true;
+            EditorApplication.delayCall += RefreshOpenLibraryViewsDebounced;
+        }
+
+        static void RefreshOpenLibraryViewsDebounced()
+        {
+            s_RefreshScheduled = false;
+            for (var i = s_OpenLibraryViews.Count - 1; i >= 0; i--)
+            {
+                if (s_OpenLibraryViews[i] is EditorWindow window && window)
+                    s_OpenLibraryViews[i].Refresh(RefreshFlags.StructureChanged);
+                else
+                    s_OpenLibraryViews.RemoveAt(i);
+            }
+
+            if (s_OpenLibraryViews.Count == 0)
+                EditorApplication.projectChanged -= OnProjectChanged;
         }
 
         /// <summary>
@@ -361,12 +410,6 @@ namespace Unity.UIToolkit.Editor
 
             s_CachedTypesByCategory[categoryId] = filtered;
             return filtered;
-        }
-
-        static string GetParentNamespace(Type type)
-        {
-            var fullName = type?.Namespace;
-            return string.IsNullOrEmpty(fullName) ? null : fullName;
         }
 
         static SearchItemParentDescriptor FetchParentDescriptor(SearchItem searchItem, SearchContext context)

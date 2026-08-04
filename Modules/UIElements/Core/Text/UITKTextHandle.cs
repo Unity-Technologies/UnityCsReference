@@ -300,8 +300,13 @@ namespace UnityEngine.UIElements
 
         internal bool TextLibraryCanElide()
         {
-            // TextCore can only elide at the end
-            return m_TextElement.computedStyle.unityTextOverflowPosition == TextOverflowPosition.End;
+            var position = m_TextElement.computedStyle.unityTextOverflowPosition;
+            // End elision is supported natively by both text generators.
+            if (position == TextOverflowPosition.End)
+                return true;
+
+            // Start and middle elision are only supported natively by the Advanced Text Generator;
+            return TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
         }
 
         internal static readonly float k_MinPadding = 6.0f;

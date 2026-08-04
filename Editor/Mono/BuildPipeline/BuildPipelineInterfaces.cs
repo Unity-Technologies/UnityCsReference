@@ -22,7 +22,9 @@ namespace UnityEditor.Build
     ///<summary>Interface that provides control over callback order.</summary>
     ///<remarks>This is the base class for build callback interfaces, for example <see cref="Build.IPreprocessBuildWithContext" />, <see cref="Build.IPreprocessShaders" />, <see cref="Build.IProcessSceneWithReport" />, <see cref="Build.IPostprocessBuildWithContext" />, and <see cref="Build.IUnityLinkerProcessor" />.
     ///
-    ///Every class that implements these interfaces must define the callbackOrder property with a "get" accessor.</remarks>
+    ///Every class that implements these interfaces must define the callbackOrder property with a "get" accessor.
+    ///
+    ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     public interface IOrderedCallback
     {
         ///<summary>Returns a numeric value that determines the order in which the build callback is invoked.</summary>
@@ -85,7 +87,15 @@ namespace UnityEditor.Build
         ///<summary>Returns the relative callback order for callbacks.  Callbacks with lower values are called before ones with higher values.</summary>
         public virtual int callbackOrder => 0;
         ///<summary>Implement this function to receive a callback before a Player build starts.</summary>
-        ///<remarks>You can use this function to customize the build before Unity starts building the Player. For example, the following code example demonstrates how to include streaming assets in the Player build without placing them in your project's <c>StreamingAssets</c> folder.</remarks>
+        ///<remarks>You can use this function to customize the build before Unity starts building the Player. For example, the following code example demonstrates how to include streaming assets in the Player build without placing them in your project's <c>StreamingAssets</c> folder.
+        ///
+        ///This callback is a good place to confirm that the project is configured correctly before the build starts, and to fail the build early if a required setting is missing. Give validation callbacks a low <see cref="IOrderedCallback.callbackOrder" /> value so they run before other <c>PrepareForBuild</c> callbacks.
+        ///
+        ///To fail the build from this callback, throw a <see cref="BuildFailedException" />. It reports a clear message without a call stack.
+        ///
+        ///Unlike <see cref="Build.IPreprocessBuildWithContext" />, you can trigger a content-only build from this callback, for example by calling <see cref="BuildPipeline.BuildContentDirectory" />. The Addressables package uses this callback to build content during a Player build.
+        ///
+        ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks).</remarks>
         ///<param name="buildPlayerContext">The context for the scheduled Player build.</param>
         ///<example>
         ///  <code><![CDATA[
@@ -104,27 +114,15 @@ namespace UnityEditor.Build
         ///]]></code>
         ///</example>
         ///<seealso cref="BuildPlayerContext.AddAdditionalPathToStreamingAssets" />
+        ///<seealso cref="BuildPipeline.BuildContentDirectory" />
         public abstract void PrepareForBuild(BuildPlayerContext buildPlayerContext);
     }
 
     ///<summary>Implement this interface to execute code at the start of the Player build process.</summary>
-    ///<remarks>This interface is replaced by <see cref="Build.IPreprocessBuildWithContext" />, which works for AssetBundle and ContentDirectory builds as well.
+    ///<remarks>This interface behaves like <see cref="Build.IPreprocessBuildWithContext" />, but is invoked only for Player builds. Use <see cref="Build.IPreprocessBuildWithContext" /> instead, because it is also invoked for AssetBundle and content directory builds.
     ///
-    ///At the start of a Player build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.
-    ///
-    ///This callback can be useful for automated tasks and ensuring your build environment is correctly configured.
-    ///
-    ///Example usages include:
-    ///
-    ///* For validation checks, e.g. confirming required build settings, environmental variables, content or other project-specific conditions.  When possible you can automatically fix problems by changing settings. Or you can fail the build, by throwing a BuildFailedException along with a clear error message.
-    ///* To make sure required Assets are included in the build.  See <see cref="PlayerSettings.SetPreloadedAssets" />.
-    ///* To generate version numbers, change logs, link.xml files or other content that should be regenerated prior to each Player build.
-    ///* For logging, reporting or sending analytics.
-    ///
-    ///Note: Build callbacks are a powerful feature, but it is strongly recommended that their implementations maintain deterministic build outputs.
-    ///The result of a build should be predictable and reproducible, based on the project’s content, the Unity version, and installed packages.
-    ///Introducing environment-specific behavior, external dependencies, randomness, or other non-deterministic elements can lead to outcomes
-    ///that are challenging to debug or reproduce. This unpredictability may also compromise the efficiency and accuracy of incremental builds or incremental upgrades.</remarks>
+    ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
+    ///<seealso cref="Build.IPreprocessBuildWithContext" />
     ///<seealso cref="Build.BuildPlayerProcessor.PrepareForBuild" />
     ///<seealso cref="Build.IPostprocessBuildWithReport" />
     ///<seealso cref="Build.BuildPlayerProcessor" />
@@ -132,34 +130,35 @@ namespace UnityEditor.Build
     public interface IPreprocessBuildWithReport : IOrderedCallback
     {
         ///<summary>Implement this method to receive a callback before the build is started.</summary>
-        ///<remarks>This method is replaced by <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild" />, which works for AssetBundle builds as well.
-        ///                    This callback is invoked during Player builds, but not during AssetBundle builds.</remarks>
+        ///<remarks>This method is invoked during Player builds only. Use <see cref="Build.IPreprocessBuildWithContext.OnPreprocessBuild" /> instead, which is also invoked during AssetBundle and content directory builds.</remarks>
         ///<param name="report">A report containing information about the build, such as its target platform and output path.</param>
         ///<seealso cref="Build.IPostprocessBuildWithReport" />
         ///<seealso cref="Build.BuildPlayerProcessor" />
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         void OnPreprocessBuild(BuildReport report);
     }
-    ///<summary>Implement this interface to execute code at the start of the Player build or AssetBundle build process.</summary>
-    ///<remarks>At the start of a Player build or AssetBundle build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.
+    ///<summary>Implement this interface to execute code at the start of the Player, AssetBundle, or content directory build process.</summary>
+    ///<remarks>At the start of a Player, AssetBundle, or content directory build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.
     ///
     ///This callback can be useful for automated tasks and ensuring your build environment is correctly configured.
     ///
-    ///You can't invoke an additional build from inside this callback.  To invoke an AssetBundle build at the start of a Player build you should use <see cref="Build.BuildPlayerProcessor.PrepareForBuild" /> instead.
+    ///You can't invoke another build from inside this callback. To invoke a content build at the start of a Player build, use <see cref="Build.BuildPlayerProcessor.PrepareForBuild" /> instead.
     ///
     ///Example usages include:
     ///
-    ///* For validation checks, e.g. confirming required build settings, environmental variables, content or other project-specific conditions.  When possible you can automatically fix problems by changing settings. Or you can fail the build, by throwing a BuildFailedException along with a clear error message.
-    ///* To make sure required Assets are included in the build.  See <see cref="PlayerSettings.SetPreloadedAssets" />.
-    ///* To generate version numbers, change logs, link.xml files or other content that should be regenerated prior to each Player build or AssetBundle build.
-    ///* For logging, reporting or sending analytics.
+    ///* For validation checks, for example confirming required build settings, environment variables, content, or other project-specific conditions. When possible you can automatically fix problems by changing settings, or you can fail the build.
+    ///* To make sure required Assets are included in the build. Refer to <see cref="PlayerSettings.SetPreloadedAssets" />.
+    ///* To generate version numbers, change logs, link.xml files, or other content that must be regenerated before each build.
+    ///* For logging, reporting, or sending analytics.
+    ///
+    ///To fail the build from this callback, throw a <see cref="BuildFailedException" />. It reports a clear message without a call stack and fails the build whether or not the build uses strict mode. A logged error, such as from <c>Debug.LogError</c>, fails the build only when the build uses strict mode (<see cref="BuildOptions.StrictMode" />, <see cref="BuildAssetBundleOptions.StrictMode" />, or <see cref="BuildContentOptions.FailBuildWhenErrorsLogged" />).
     ///
     ///Note: Build callbacks are a powerful feature, but it is strongly recommended that their implementations maintain deterministic build outputs.
     ///The result of a build should be predictable and reproducible, based on the project’s content, the Unity version, and installed packages.
     ///Introducing environment-specific behavior, external dependencies, randomness, or other non-deterministic elements can lead to outcomes
     ///that are challenging to debug or reproduce. This unpredictability might compromise the efficiency and accuracy of incremental builds or incremental upgrades.
     ///
-    ///The main difference between this interface and <see cref="Build.IPreprocessBuildWithReport" /> or <see cref="Build.IPreprocessBuild" /> is that this callback gets called on AssetBundle builds and Player builds.
+    ///The main difference between this interface and <see cref="Build.IPreprocessBuildWithReport" /> or <see cref="Build.IPreprocessBuild" /> is that this callback is invoked on AssetBundle and content directory builds as well as Player builds.
     ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     ///<example>
     ///  <code><![CDATA[
@@ -183,10 +182,11 @@ namespace UnityEditor.Build
     ///<seealso cref="Build.BuildPlayerProcessor" />
     ///<seealso cref="BuildPipeline.BuildPlayer" />
     ///<seealso cref="BuildPipeline.BuildAssetBundles" />
+    ///<seealso cref="BuildPipeline.BuildContentDirectory" />
     public interface IPreprocessBuildWithContext : IOrderedCallback
     {
         ///<summary>Implement this method to receive a callback before the build is started.</summary>
-        ///<remarks>This callback is invoked during Player builds and AssetBundle builds.</remarks>
+        ///<remarks>This callback is invoked during Player, AssetBundle, and content directory builds.</remarks>
         ///<param name="ctx">A context containing information about the build, such as its build report.</param>
         ///<example>
         ///  <code><![CDATA[
@@ -217,6 +217,7 @@ namespace UnityEditor.Build
         ///<seealso cref="Build.BuildPlayerProcessor" />
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         ///<seealso cref="BuildPipeline.BuildAssetBundles" />
+        ///<seealso cref="BuildPipeline.BuildContentDirectory" />
         void OnPreprocessBuild(BuildCallbackContext ctx);
     }
 
@@ -263,18 +264,17 @@ namespace UnityEditor.Build
     }
 
     ///<summary>Implement this interface to execute code immediately after the Player build process is completed.</summary>
-    ///<remarks>This interface is replaced by <see cref="Build.IPostprocessBuildWithContext" />, which works for AssetBundle and ContentDirectory builds as well.
-    ///This is useful for tasks that need to be performed as the last step of building, such as cleaning up assets, generating analytics or reports, or customizing build outputs.
+    ///<remarks>This interface behaves like <see cref="Build.IPostprocessBuildWithContext" />, but is invoked only for Player builds. Use <see cref="Build.IPostprocessBuildWithContext" /> instead, because it is also invoked for AssetBundle and content directory builds.
     ///
-    ///As a final step of a Player build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.</remarks>
+    ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
+    ///<seealso cref="Build.IPostprocessBuildWithContext" />
     ///<seealso cref="Build.IPreprocessBuildWithReport" />
     ///<seealso cref="BuildPipeline.BuildPlayer" />
     public interface IPostprocessBuildWithReport : IOrderedCallback
     {
         ///<summary>Implement this function to receive a callback after the build is complete.</summary>
-        ///<remarks>This method is replaced by <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild" />, which works for AssetBundle builds as well.
-        ///                    This callback is invoked during Player builds, but not during AssetBundle builds.
-        ///                    If the build stops early, due to a failure or cancellation, then the callback is not invoked.</remarks>
+        ///<remarks>This method is invoked during Player builds only. Use <see cref="Build.IPostprocessBuildWithContext.OnPostprocessBuild" /> instead, which is also invoked during AssetBundle and content directory builds.
+        ///                    If the build stops early, due to a failure or cancellation, then this callback is not invoked.</remarks>
         ///<param name="report">A BuildReport containing information about the build, such as the target platform and output path.</param>
         ///<example>
         ///  <code><![CDATA[
@@ -297,12 +297,16 @@ namespace UnityEditor.Build
         ///<seealso cref="Build.IPreprocessBuildWithReport" />
         void OnPostprocessBuild(BuildReport report);
     }
-    ///<summary>Implement this interface to execute code immediately after the Player build or AssetBundle build process is completed.</summary>
-    ///<remarks>This is useful for tasks that need to run after a build completes, even if the build failed or was cancelled. For example, you might want to clean up assets, generate analytics or reports, or customize build outputs. The postprocess callback runs whether the build succeeds, fails, or is cancelled, as long as the corresponding <see cref="Build.IPreprocessBuildWithContext" /> callback ran. It's only skipped if early validation prevents the build from starting.
+    ///<summary>Implement this interface to execute code immediately after the Player, AssetBundle, or content directory build process is completed.</summary>
+    ///<remarks>This is useful for tasks that need to run after a build completes, even if the build failed or was canceled. For example, you might want to clean up assets, generate analytics or reports, or customize build outputs. The postprocess callback runs whether the build succeeds, fails, or is canceled, as long as the corresponding <see cref="Build.IPreprocessBuildWithContext" /> callback ran. It's only skipped if early validation prevents the build from starting.
     ///
-    ///As a final step of a Player build or AssetBundle build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.
+    ///As a final step of a Player, AssetBundle, or content directory build, Unity uses the <see cref="IOrderedCallback.callbackOrder" /> property on each implementation to determine the order in which to invoke the callbacks.
     ///
-    ///Note: The main difference between this interface and <see cref="Build.IPostprocessBuildWithReport" /> or <see cref="Build.IPostprocessBuild" /> is that this callback gets called on AssetBundle builds as well as Player builds.</remarks>
+    ///To fail the build from this callback, throw a <see cref="BuildFailedException" />. It reports a clear message without a call stack and fails the build whether or not the build uses strict mode. A logged error, such as from <c>Debug.LogError</c>, fails the build only when the build uses strict mode (<see cref="BuildOptions.StrictMode" />, <see cref="BuildAssetBundleOptions.StrictMode" />, or <see cref="BuildContentOptions.FailBuildWhenErrorsLogged" />).
+    ///
+    ///Note: The main difference between this interface and <see cref="Build.IPostprocessBuildWithReport" /> or <see cref="Build.IPostprocessBuild" /> is that this callback is invoked on AssetBundle and content directory builds as well as Player builds.
+    ///
+    ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
     ///<example>
     ///  <code><![CDATA[
     ///using System.Linq;
@@ -363,10 +367,11 @@ namespace UnityEditor.Build
     ///<seealso cref="Build.IPreprocessBuildWithContext" />
     ///<seealso cref="BuildPipeline.BuildPlayer" />
     ///<seealso cref="BuildPipeline.BuildAssetBundles" />
+    ///<seealso cref="BuildPipeline.BuildContentDirectory" />
     public interface IPostprocessBuildWithContext : IOrderedCallback
     {
         ///<summary>Implement this function to receive a callback after the build is complete.</summary>
-        ///<remarks>This callback is invoked during Player builds or AssetBundle builds.
+        ///<remarks>This callback is invoked during Player, AssetBundle, and content directory builds.
         ///                    This callback is invoked even when the build stops early due to a failure or cancellation. However it will not be invoked if initial validation checks prevent the build from starting.</remarks>
         ///<param name="ctx">A context containing information about the build, such as its build report.</param>
         ///<example>
@@ -396,6 +401,7 @@ namespace UnityEditor.Build
         ///</example>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         ///<seealso cref="BuildPipeline.BuildAssetBundles" />
+        ///<seealso cref="BuildPipeline.BuildContentDirectory" />
         ///<seealso cref="Build.IPreprocessBuildWithContext" />
         void OnPostprocessBuild(BuildCallbackContext ctx);
     }
@@ -454,6 +460,10 @@ namespace UnityEditor.Build
         ///
         /// This callback doesn't support modifying the state of other assets, creating new assets, or deleting assets. Use it to modify only the provided scene.
         ///
+        /// Don't access the build history from this callback. For content directory builds this callback can run in a separate worker process where <see cref="Build.BuildHistory" /> is not available.
+        ///
+        /// To fail the build from this callback, throw a <see cref="BuildFailedException" />. It reports a clear message without a call stack and fails the build whether or not the build uses strict mode. A logged error, such as from <c>Debug.LogError</c>, fails the build only when the build uses strict mode (<see cref="BuildOptions.StrictMode" />, <see cref="BuildAssetBundleOptions.StrictMode" />, or <see cref="BuildContentOptions.FailBuildWhenErrorsLogged" />).
+        ///
         /// Keep implementations deterministic. Avoid random values, timestamps, or external changing data sources. For more information, refer to [Deterministic builds](xref:um-build-deterministic-builds).
         ///
         /// Use <see cref="BuildPipelineContext.DependOnAsset"/> and <see cref="BuildPipelineContext.DependOnPath"/> to add explicit dependencies to assets used during your scene modifications.
@@ -482,6 +492,7 @@ namespace UnityEditor.Build
         /// </example>
         /// <seealso cref="BuildPipeline.BuildPlayer" />
         /// <seealso cref="BuildPipeline.BuildAssetBundles" />
+        /// <seealso cref="BuildPipeline.BuildContentDirectory" />
         /// <seealso cref="Build.BuildCallbackVersionAttribute" />
         /// <seealso cref="BuildPipelineContext"/>
         void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report);
@@ -529,7 +540,7 @@ namespace UnityEditor.Build
         ///- Combinations of keywords that are never used.
         ///- Keywords you only use in your debug builds.
         ///
-        ///Unity invokes the `OnProcessShader` callback in both Player and AssetBundle builds. If there are any shaders already in the cache, then this method isn't invoked for those shaders. To ensure the callback runs for all shaders, perform a [clean build](xref:um-build-clean-build). To run it for a specific shader, modify that shader or one of its dependent assets.
+        ///Unity invokes the `OnProcessShader` callback in Player, AssetBundle, and content directory builds. If there are any shaders already in the cache, then this method isn't invoked for those shaders. To ensure the callback runs for all shaders, perform a [clean build](xref:um-build-clean-build). To run it for a specific shader, modify that shader or one of its dependent assets.
         ///
         ///To help you identify keywords and variants to strip, you can [check what shader variants you have in your project](xref:um-shader-how-many-variants). For example if you [declare a keyword](xref:um-sl-multiple-program-variants) called `DEBUG` in your shader code using `#pragma multi_compile _ DEBUG`, the following [Editor script](xref:um-special-folders) finds and strips shader variants that use the keyword.
         ///
@@ -549,6 +560,7 @@ namespace UnityEditor.Build
         ///
         ///Find out about other ways you can [strip shader variants](xref:um-shader-variant-stripping).
         ///
+        ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)
         ///</remarks>
         ///<param name="shader">The shader that Unity is about to compile.</param>
         ///<param name="snippet">Details about the specific shader code being compiled.</param>
@@ -589,6 +601,7 @@ namespace UnityEditor.Build
         ///</example>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         ///<seealso cref="BuildPipeline.BuildAssetBundles" />
+        ///<seealso cref="BuildPipeline.BuildContentDirectory" />
         ///<seealso cref="Build.IPreprocessComputeShaders" />
         void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data);
     }
@@ -608,7 +621,9 @@ namespace UnityEditor.Build
         ///
         ///Note that this callback only provides details of compute shaders. To see regular shaders that Unity is about to compile into the build, see <see cref="Build.IPreprocessShaders" /> .
         ///
-        ///This callback is invoked for both Player and AssetBundle builds.</remarks>
+        ///This callback is invoked for Player, AssetBundle, and content directory builds.
+        ///
+        ///For more information about build callbacks, refer to [Use build callbacks](xref:um-build-callbacks)</remarks>
         ///<param name="shader">The compute shader that Unity is about to compile.</param>
         ///<param name="kernelName">The name of the kernel that Unity is about to compile.</param>
         ///<param name="data">The list of shader variants that Unity is about to compile.</param>
@@ -658,6 +673,7 @@ namespace UnityEditor.Build
         ///<seealso href="xref:um-sl-multiple-program-variants">Declaring and using shader keywords in HLSL</seealso>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         ///<seealso cref="BuildPipeline.BuildAssetBundles" />
+        ///<seealso cref="BuildPipeline.BuildContentDirectory" />
         void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data);
     }
 

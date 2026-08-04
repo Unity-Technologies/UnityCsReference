@@ -15,6 +15,9 @@ namespace UnityEditor
     internal static class CutBoard
     {
         internal static bool hasCutboardData { get { return m_GOCutboard != null && m_GOCutboard.Length > 0; } }
+        internal static ReadOnlySpan<Transform> cutTransformsSpan => m_GOCutboard;
+        internal static event Action cleared;
+
         private static Transform[] m_GOCutboard;
         private static Object[] m_SelectedObjects;
         private static HashSet<Transform> m_CutAffectedGOs = new HashSet<Transform>();
@@ -188,9 +191,12 @@ namespace UnityEditor
 
         internal static void Reset()
         {
+            var hadCutboardData = hasCutboardData;
             m_SelectedObjects = null;
             m_GOCutboard = null;
             m_CutAffectedGOs.Clear();
+            if (hadCutboardData)
+                cleared?.Invoke();
         }
 
         internal static bool AreCutAndPasteStagesSame()
