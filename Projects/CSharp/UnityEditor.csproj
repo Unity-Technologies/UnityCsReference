@@ -7585,8 +7585,8 @@
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\UserNodes\UserContextNodeModelImp.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\UserNodes\UserContextNodeModelImp.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\UserNodes\UserNodeModelImp.cs">
-      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\UserNodes\UserNodeModelImp.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\UserNodes\UserNodeModelImp.gen.cs">
+      <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\UserNodes\UserNodeModelImp.gen.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\VariableNodeModelImp.cs">
       <Link>Modules\GraphToolkitEditor\GraphToolkitPublic\Implementation\Nodes\VariableNodeModelImp.cs</Link>
@@ -9412,6 +9412,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs</Link>
     </Compile>
@@ -9486,6 +9489,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Samples\SampleFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Samples\SampleFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Samples\SampleImportEventArgs.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Samples\SampleImportEventArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Samples\SampleImporter.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Samples\SampleImporter.cs</Link>
@@ -9633,6 +9639,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\OperationType.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\OperationType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\PackageInfoDictionary.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\PackageInfoDictionary.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmAddAndRemoveOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmAddAndRemoveOperation.cs</Link>
@@ -9861,6 +9870,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Details\Tabs\SortedColumn.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Details\Tabs\SortedColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Details\Tabs\VersionsGroupHeader.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Details\Tabs\VersionsGroupHeader.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Details\VersionInfoIcon.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Details\VersionInfoIcon.cs</Link>
@@ -11976,9 +11988,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Utils\Json.cs">
       <Link>Modules\ProjectAuditorEditor\Utils\Json.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\Utils\PackageUtils.cs">
-      <Link>Modules\ProjectAuditorEditor\Utils\PackageUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Utils\PathUtils.cs">
       <Link>Modules\ProjectAuditorEditor\Utils\PathUtils.cs</Link>
@@ -15676,7 +15685,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_6e5e/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_0693/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_a647/buildTools/UnityEditor.MSBuild.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_a647/msbuild.host/Unity.BuildService.Host.dll" />
     <Reference Include="../../artifacts/Stevedore/msbu-tools-win-x64_a647/buildTools/Unity.BuildService.dll" />

@@ -154,17 +154,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void FetchProductInfo(long productId, Action doneCallback = null)
         {
-            m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductInfo);
+            m_FetchStatusTracker.SetProductInfoFetchInProgress(productId);
             m_AssetStoreRestAPI.GetProductDetail(productId,
                 productInfo =>
                 {
                     m_AssetStoreCache.SetProductInfo(productInfo);
-                    m_FetchStatusTracker.SetFetchSuccess(productId, FetchType.ProductInfo);
+                    m_FetchStatusTracker.SetProductInfoFetchSuccess(productId);
                     doneCallback?.Invoke();
                 },
                 error =>
                 {
-                    m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductInfo, error);
+                    m_FetchStatusTracker.SetProductInfoFetchError(productId, error);
                     doneCallback?.Invoke();
                 });
         }

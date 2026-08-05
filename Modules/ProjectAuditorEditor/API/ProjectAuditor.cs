@@ -26,6 +26,12 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         public int callbackOrder => 1;  // We want LastBuildReportProvider to update its cached report before we run analysis.
 
+        /// <summary>
+        /// Returns a list of Unity versions that is known to Project Auditor. It is based on the content in the Obsolete API Database.
+        /// </summary>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        public static IReadOnlyList<string> KnownUnityVersions { get { return ObsoleteLibrary.UnityVersions; } }
+
         internal static string s_DataPath => "ProjectAuditor"; // on disk: EditorResourcesPackage/Editor Default Resources/ProjectAuditor
         internal static string s_RulesDataPath => ProjectAuditorRulesPackage.Path + "/Rules";
         internal static string s_RoslynAnalyzersDataPath => ProjectAuditorRulesPackage.Path + "/RoslynAnalyzers";

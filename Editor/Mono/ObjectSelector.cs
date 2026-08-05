@@ -107,6 +107,11 @@ namespace UnityEditor
                 os?.GrabKeyboardFocus();
             }
 
+            public static bool IsSelectionFramed(ObjectSelector os)
+            {
+                return os?.m_ListArea?.IsSelectionFramed() ?? false;
+            }
+
             public static void NotifySelectionChanged(ObjectSelector os, UnityObject selectedObject, bool exitGUI)
             {
                 os?.NotifySelectionChanged(selectedObject, exitGUI);
@@ -1119,6 +1124,14 @@ namespace UnityEditor
 
         void OnGUIHandler()
         {
+            // Must run before the list area consumes the event, otherwise its type is already EventType.Used.
+            if (m_FrameInitialSelection)
+            {
+                var type = Event.current.type;
+                if (type == EventType.MouseDown || type == EventType.MouseDrag || type == EventType.ScrollWheel || type == EventType.KeyDown)
+                    m_FrameInitialSelection = false;
+            }
+
             HandleKeyboard();
 
             m_Position = m_ImGUIContainer.worldBound;
@@ -1328,10 +1341,7 @@ namespace UnityEditor
             GUI.EndGroup();
 
             if (m_FrameInitialSelection && Event.current.type == EventType.Layout && m_Position.height > 0)
-            {
-                m_FrameInitialSelection = false;
-                Frame();
-            }
+                m_ListArea.KeepSelectionFramed();
 
             // overlay preview resize widget
             GUI.Label(new Rect(m_Position.width * .5f - 16, m_Position.height - m_PreviewSize + 2, 32, Styles.bottomResize.fixedHeight), GUIContent.none, Styles.bottomResize);

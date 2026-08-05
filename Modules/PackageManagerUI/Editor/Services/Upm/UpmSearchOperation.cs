@@ -15,15 +15,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error searching for packages offline.") : L10n.Tr("Error searching for packages.");
 
-        [SerializeField]
-        private long m_ProductId;
-        public override long productId => m_ProductId;
-
         public void SearchAll()
         {
             m_OfflineMode = false;
             m_PackageIdOrName = string.Empty;
-            m_ProductId = 0;
             Start();
         }
 
@@ -32,15 +27,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OfflineMode = true;
             m_OfflineDataTimestamp = offlineDataTimestamp;
             m_PackageIdOrName = string.Empty;
-            m_ProductId = 0;
             Start();
         }
 
-        public void Search(string packageIdOrName, long productId)
+        public void Search(string packageIdOrName)
         {
             m_OfflineMode = false;
             m_PackageIdOrName = packageIdOrName;
-            m_ProductId = productId;
             Start();
         }
 

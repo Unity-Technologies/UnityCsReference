@@ -6,39 +6,9 @@ using System.Collections.Generic;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class UpmPackageFactory : Package.Factory
+    internal partial class PackageFactory
     {
-        private readonly IUpmCache m_UpmCache;
-        private readonly IUpmClient m_UpmClient;
-        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
-        private readonly IPackageDatabase m_PackageDatabase;
-        private readonly IProjectSettingsProxy m_SettingsProxy;
-        private readonly IPackageCreator m_PackageCreator;
-        private readonly IIOProxy m_IOProxy;
-        private readonly IApplicationProxy m_ApplicationProxy;
-        private readonly IUnityConnectProxy m_UnityConnectProxy;
-        public UpmPackageFactory(IUpmCache upmCache,
-            IUpmClient upmClient,
-            IBackgroundFetchHandler backgroundFetchHandler,
-            IPackageDatabase packageDatabase,
-            IProjectSettingsProxy settingsProxy,
-            IPackageCreator packageCreator,
-            IIOProxy ioProxy,
-            IApplicationProxy application,
-            IUnityConnectProxy unityConnectProxy)
-        {
-            m_UpmCache = RegisterDependency(upmCache);
-            m_UpmClient = RegisterDependency(upmClient);
-            m_BackgroundFetchHandler = RegisterDependency(backgroundFetchHandler);
-            m_PackageDatabase = RegisterDependency(packageDatabase);
-            m_SettingsProxy = RegisterDependency(settingsProxy);
-            m_PackageCreator = RegisterDependency(packageCreator);
-            m_IOProxy = RegisterDependency(ioProxy);
-            m_ApplicationProxy = RegisterDependency(application);
-            m_UnityConnectProxy = RegisterDependency(unityConnectProxy);
-        }
-
-        public override void OnEnable()
+        private void RegisterEventsForUpmPackages()
         {
             m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
@@ -46,8 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
             m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
-            m_UpmClient.onPackagesReadyToReevaluate += OnPackagesReadyToReevaluate;
 
+            m_UpmClient.onPackagesReadyToReevaluate += OnPackagesReadyToReevaluate;
             m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
             m_UpmClient.onSpecialInstallStart += OnSpecialInstallStart;
@@ -56,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageCreator.onPackageCreated += OnPackageCreated;
         }
 
-        public override void OnDisable()
+        private void UnregisterEventsForUpmPackages()
         {
             m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
@@ -64,8 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
             m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
-            m_UpmClient.onPackagesReadyToReevaluate -= OnPackagesReadyToReevaluate;
 
+            m_UpmClient.onPackagesReadyToReevaluate -= OnPackagesReadyToReevaluate;
             m_UpmClient.onPackagesProgressChange -= OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError -= OnPackageOperationError;
             m_UpmClient.onSpecialInstallStart -= OnSpecialInstallStart;
@@ -99,6 +69,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             HandleSpecialInstall(packageName, L10n.Tr("Creating a new package"), PackageTag.Custom);
         }
 
+        private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
+        {
+            GeneratePackagesAndTriggerChangeEvent(packageNames);
+        }
+
         private void OnPackagesProgressChange(IEnumerable<(string packageIdOrName, PackageProgress progress)> progressUpdates)
         {
             var packagesUpdated = new List<IPackage>();
@@ -119,11 +94,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             if (packagesUpdated.Count > 0)
                 m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
-        }
-
-        private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
-        {
-            GeneratePackagesAndTriggerChangeEvent(packageNames);
         }
 
         private void HandleSpecialInstall(string packageIdOrName, string displayName, PackageTag additionalTags = PackageTag.None)
@@ -151,77 +121,53 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnExtraPackageInfoFetched(PackageInfo packageInfo)
         {
-            // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
-            var productId = packageInfo.assetStore?.productId;
-            if (string.IsNullOrEmpty(productId) && m_UpmCache.GetInstalledPackageInfoByName(packageInfo.name)?.packageId != packageInfo.packageId)
+            if (m_UpmCache.GetInstalledPackageInfo(packageInfo.name)?.packageId != packageInfo.packageId)
                 GeneratePackagesAndTriggerChangeEvent(new[] { packageInfo.name });
         }
 
         private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
         {
+            // The `GeneratePackagesAndTriggerChangeEvent` call here already handles cases where an added/updated packageInfo contains product id.
+            // We only need to pass packageNames because the packageInfo is still in the UpmCache, so we'll know when there is a productId linked to it
             var packageNames = updatedInfos.SelectToNewArray(i => i.oldInfo?.name ?? i.newInfo?.name);
             GeneratePackagesAndTriggerChangeEvent(packageNames, changedSource);
+
+            // The `GeneratePackagesAndTriggerChangeEvent` call here with productIds handles cases where an old packageInfo with product id is removed
+            // or replaced with one without product id (when a scoped registry is added for example). In this case since the packageInfo in UpmCache
+            // no longer contains information about that product id, we need to explicitly call the generate function to update or remove the old package.
+            var productIds = new List<long>();
+            foreach (var (oldInfo, newInfo) in updatedInfos)
+            {
+                var oldInfoProductId = oldInfo?.ParseProductId() ?? 0;
+                if (oldInfoProductId > 0 && oldInfoProductId != newInfo?.ParseProductId())
+                    productIds.Add(oldInfoProductId);
+            }
+            GeneratePackagesAndTriggerChangeEvent(productIds, changedSource);
         }
 
-        private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
+        private void OnLoadAllVersionsChanged(string packageName, bool _)
         {
-            if (!long.TryParse(packageUniqueId, out var _))
-                GeneratePackagesAndTriggerChangeEvent(new[] { packageUniqueId });
+            GeneratePackagesAndTriggerChangeEvent(new[] { packageName });
         }
 
         private void OnShowPreReleasePackagesOrSeeAllVersionsChanged(bool _)
         {
-            var allPackageNames = m_UpmCache.installedPackageInfos.Join(m_UpmCache.searchPackageInfos).SelectToNewHashSet(p => p.name);
+            var allPackageNames = m_UpmCache.installedPackageInfos.Join(m_UpmCache.discoverableSearchPackageInfos).Join(m_UpmCache.nonDiscoverableSearchPackageInfos).SelectToNewHashSet(p => p.name);
             GeneratePackagesAndTriggerChangeEvent(allPackageNames);
         }
 
-        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
-        internal void GeneratePackagesAndTriggerChangeEvent(IReadOnlyCollection<string> packageNames, PackagesChangedSource changedSource = PackagesChangedSource.Other)
+        private IPackage CreateUpmPackage(string packageName, IUpmPackageData packageData, PackagesChangedSource changedSource)
         {
-            if (packageNames == null || packageNames.Count == 0)
-                return;
-
-            var updatedPackages = new List<IPackage>();
-            var packagesToRemove = new List<string>();
             var tagsToExclude = m_SettingsProxy.seeAllPackageVersions ? PackageTag.None :
                 m_SettingsProxy.enablePreReleasePackages ? PackageTag.Experimental : PackageTag.Experimental | PackageTag.PreRelease;
-            foreach (var packageName in packageNames)
-            {
-                var packageData = m_UpmCache.GetPackageData(packageName);
-                if (packageData == null)
-                    packagesToRemove.Add(packageName);
-                else if (packageData.installedInfo?.ParseProductId() > 0)
-                {
-                    // It could happen that an installed package changed source from scoped registry to Asset Store when user modify scoped registry settings
-                    // In that case, a package that points to the scoped registry (with package name as unique id) should have already been created, and we need
-                    // to remove that package, otherwise two entries of the same package will exist at the same time (the other one's unique id is product id).
-                    // Note that we only do this when a package is switched from scoped registry to Asset Store. When it's the other way around, we don't need
-                    // to remove the package with product id as unique id, since it's expected to have two packages then, one points to scoped registry with no error
-                    // The other one points to the asset store with error saying that the asset store product is no longer accessible due to scoped registry settings.
-                    packagesToRemove.Add(packageName);
-                }
-                else
-                {
-                    var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, m_UnityConnectProxy, changedSource != PackagesChangedSource.AddAndRemove);
-                    var primaryVersion = versionList.primary;
-                    if (primaryVersion == null)
-                    {
-                        packagesToRemove.Add(packageName);
-                        continue;
-                    }
-
-                    var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage, compliance: packageData.compliance);
-                    updatedPackages.Add(package);
-
-                    // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
-                    // since the primary version's display name is used in the package list
-                    if (!primaryVersion.isFullyFetched)
-                        m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
-                }
-            }
-
-            if (updatedPackages.Count > 0 || packagesToRemove.Count > 0)
-                m_PackageDatabase.UpdatePackages(toAddOrUpdate: updatedPackages, toRemove: packagesToRemove, changedSource);
+            var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, m_UnityConnect, changedSource != PackagesChangedSource.AddAndRemove);
+            var primaryVersion = versionList.primary;
+            if (primaryVersion == null)
+                return null;
+            if (!primaryVersion.isFullyFetched)
+                m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
+            var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage, compliance: packageData.compliance);
+            return package;
         }
     }
 }

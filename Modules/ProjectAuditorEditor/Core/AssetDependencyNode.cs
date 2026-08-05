@@ -6,19 +6,22 @@ using System;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
-    internal class AssetDependencyNode : DependencyNode
+    /// <summary>
+    /// For building an asset dependency tree.
+    /// </summary>
+    public class AssetDependencyNode : DependencyNode
     {
-        public override string GetName()
+        internal override string GetName()
         {
             return Location.Filename;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             return Location.Path;
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return false;
         }

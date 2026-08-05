@@ -358,7 +358,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="propertyEnum">Enum value indicating a property.</param>
         /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
         /// <returns>Returns the property's value if the property is valid and if the value type is boolean. Otherwise, returns false.</returns>
-        internal bool GetCustomPropertyBool<T>(T propertyEnum) where T : struct
+        public bool GetCustomPropertyBool<T>(T propertyEnum) where T : struct
         {
             var valueAsString = GetCustomProperty(propertyEnum);
             var value = false;
@@ -373,7 +373,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="propertyEnum">Enum value indicating a property.</param>
         /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
         /// <returns>Returns the property's value if the property is valid and if the value is an integer type. Otherwise, returns 0.</returns>
-        internal int GetCustomPropertyInt32<T>(T propertyEnum) where T : struct
+        public int GetCustomPropertyInt32<T>(T propertyEnum) where T : struct
         {
             var valueAsString = GetCustomProperty(propertyEnum);
             var value = 0;
@@ -388,11 +388,26 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="propertyEnum">Enum value indicating a property.</param>
         /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
         /// <returns>Returns the property's value if the property is valid and if the value is a long type. Otherwise, returns 0.</returns>
-        internal long GetCustomPropertyInt64<T>(T propertyEnum) where T : struct
+        public long GetCustomPropertyInt64<T>(T propertyEnum) where T : struct
         {
             var valueAsString = GetCustomProperty(propertyEnum);
             var value = (long)0;
             if (!long.TryParse(valueAsString, out value))
+                return 0;
+            return value;
+        }
+
+        /// <summary>
+        /// Check whether a custom property is a uint type and return its value.
+        /// </summary>
+        /// <param name="propertyEnum">Enum value indicating a property.</param>
+        /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
+        /// <returns>Returns the property's value if the property is valid and if the value is a uint type. Otherwise, returns 0.</returns>
+        public uint GetCustomPropertyUInt32<T>(T propertyEnum) where T : struct
+        {
+            var valueAsString = GetCustomProperty(propertyEnum);
+            var value = (uint)0;
+            if (!uint.TryParse(valueAsString, out value))
                 return 0;
             return value;
         }
@@ -403,7 +418,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="propertyEnum">Enum value indicating a property.</param>
         /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
         /// <returns>Returns the property's value if the property is valid and if the value is a ulong type. Otherwise, returns 0.</returns>
-        internal ulong GetCustomPropertyUInt64<T>(T propertyEnum) where T : struct
+        public ulong GetCustomPropertyUInt64<T>(T propertyEnum) where T : struct
         {
             var valueAsString = GetCustomProperty(propertyEnum);
             var value = (ulong)0;
@@ -418,7 +433,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="propertyEnum">Enum value indicating a property.</param>
         /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
         /// <returns>Returns the property's value if the property is valid and if the value is a float type. Otherwise, returns 0.0f.</returns>
-        internal float GetCustomPropertyFloat<T>(T propertyEnum) where T : struct
+        public float GetCustomPropertyFloat<T>(T propertyEnum) where T : struct
         {
             float value;
             return float.TryParse(GetCustomProperty(propertyEnum), out value) ? value : 0.0f;
@@ -430,7 +445,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="propertyEnum">Enum value indicating a property.</param>
         /// <typeparam name="T">Can be any struct, but the method expects an enum</typeparam>
         /// <returns>Returns the property's value if the property is valid and if the value is a double type. Otherwise, returns 0.0.</returns>
-        internal double GetCustomPropertyDouble<T>(T propertyEnum) where T : struct
+        public double GetCustomPropertyDouble<T>(T propertyEnum) where T : struct
         {
             double value;
             return double.TryParse(GetCustomProperty(propertyEnum), out value) ? value : 0.0;

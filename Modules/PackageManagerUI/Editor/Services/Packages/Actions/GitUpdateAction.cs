@@ -21,7 +21,7 @@ internal class GitUpdateAction : PackageAction
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
         var installedVersion = version.package.versions.installed;
-        var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, installedVersion.package.product?.id ?? 0, true);
+        var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, true);
 
         if (!m_OperationDispatcher.Install(packageInfo.packageId, OperationType.Update))
             return false;

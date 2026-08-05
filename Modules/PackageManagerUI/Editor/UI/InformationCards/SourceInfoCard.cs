@@ -22,7 +22,7 @@ internal class SourceInfoCard : PackageInformationCard
         string source;
         string registryLink;
         var verifiedIconTooltip = L10n.Tr("This package comes from a verified source.");
-        var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.package.product?.id ?? 0, version.isInstalled, version.versionString);
+        var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
 
         // Package info may be null if UI is refreshed mid-package generation.
         // Safe to ignore—the UI refreshes again after generation completes.

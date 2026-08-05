@@ -47,6 +47,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache = upmCache;
             m_PackageLinkFactory = packageLinkFactory;
 
+            m_ContentContainer.AddToClassList("versions");
+
             m_Container = new VisualElement { name = "versionsTab" };
             m_ContentContainer.Add(m_Container);
 
@@ -78,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             EditorApplication.delayCall += () =>
             {
-                m_UpmCache.SetLoadAllVersions(m_Version.package.uniqueId, true);
+                m_UpmCache.SetLoadAllVersions(m_Version.package.name, true);
                 PackageManagerWindowAnalytics.SendEvent("seeAllVersions", m_Version.package.uniqueId);
 
                 Refresh(m_Version);
@@ -120,35 +122,59 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_VersionsToolbar, versions.numUnloadedVersions > 0);
             UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
-            var primaryVersion = m_Version.package?.versions.primary;
-            // We add the versions here in ascending order, but versions show up in descending order due to styling
+            var primaryVersion = versions.primary;
+
+            // We add the versions here in ascending order, but versions show up in descending order due to styling.
+            // Due to the reversed styling we are also adding the group header after the items
+            IPackageVersion registryVersion = null;
+            IPackageVersion installedFromPathVersion = null;
             foreach (var v in versions)
-            {
-                PackageAction action;
-                if (primaryVersion?.isInstalled ?? false)
-                {
-                    if (v == primaryVersion)
-                        action = new RemoveAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
-                    else
-                        action = new VersionHistoryUpdateAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase, m_PageManager);
-                }
+                if (v.HasTag(PackageTag.InstalledFromPath))
+                    installedFromPathVersion = v;
                 else
-                    action = new AddAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase);
+                {
+                    // Since it is impossible for upm to discover packages from multiple registries at the same time
+                    // we only need to find a version from the registry list and we can use that to create group header if needed
+                    registryVersion ??= v;
+                    m_VersionHistoryList.Add(CreateVersionHistoryItem(v, primaryVersion));
+                }
 
-                var isExpanded = m_PackageManagerPrefs.IsVersionHistoryItemExpanded(v.uniqueId);
-                var versionHistoryItem = new PackageDetailsVersionHistoryItem(m_ResourceLoader,
-                    m_PackageDatabase,
-                    m_OperationDispatcher,
-                    m_UpmCache,
-                    m_ApplicationProxy,
-                    m_PackageLinkFactory,
-                    v,
-                    isExpanded,
-                    action);
-                versionHistoryItem.onToggleChanged += expanded => m_PackageManagerPrefs.SetVersionHistoryItemExpanded(versionHistoryItem.version?.uniqueId, expanded);
+            var showGroupHeader = registryVersion != null && installedFromPathVersion != null;
+            if (showGroupHeader)
+                m_VersionHistoryList.Add(new VersionsGroupHeader(registryVersion, m_UpmCache));
 
-                m_VersionHistoryList.Add(versionHistoryItem);
+            if (installedFromPathVersion != null)
+                m_VersionHistoryList.Add(CreateVersionHistoryItem(installedFromPathVersion, primaryVersion));
+
+            if (showGroupHeader)
+                m_VersionHistoryList.Add(new VersionsGroupHeader(installedFromPathVersion, m_UpmCache));
+        }
+
+        private PackageDetailsVersionHistoryItem CreateVersionHistoryItem(IPackageVersion v, IPackageVersion primaryVersion)
+        {
+            PackageAction action;
+            if (primaryVersion?.isInstalled ?? false)
+            {
+                if (v == primaryVersion)
+                    action = new RemoveAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
+                else
+                    action = new VersionHistoryUpdateAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase, m_PageManager);
             }
+            else
+                action = new AddAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase);
+
+            var isExpanded = m_PackageManagerPrefs.IsVersionHistoryItemExpanded(v.uniqueId);
+            var versionHistoryItem = new PackageDetailsVersionHistoryItem(m_ResourceLoader,
+                m_PackageDatabase,
+                m_OperationDispatcher,
+                m_UpmCache,
+                m_ApplicationProxy,
+                m_PackageLinkFactory,
+                v,
+                isExpanded,
+                action);
+            versionHistoryItem.onToggleChanged += expanded => m_PackageManagerPrefs.SetVersionHistoryItemExpanded(versionHistoryItem.version?.uniqueId, expanded);
+            return versionHistoryItem;
         }
     }
 }

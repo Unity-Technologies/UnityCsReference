@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Unity.Collections;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
@@ -274,7 +275,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             if (UserPreferences.UseRoslynAnalyzers)
             {
                 globalConfigPath = Path.Combine(m_OutputFolder, "Default.globalconfig");
-                File.WriteAllText(globalConfigPath,
+
+                var globalConfig = new StringBuilder();
+                globalConfig.Append(
                     "is_global = true\n" +
                     "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
                     // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
@@ -284,12 +287,22 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                     "dotnet_diagnostic.UAL0011.severity = warning\n" +
                     "dotnet_diagnostic.UAL0012.severity = warning\n" +
                     "dotnet_diagnostic.UAL0013.severity = warning\n" +
-                    "dotnet_diagnostic.UAL0014.severity = warning");
+                    "dotnet_diagnostic.UAL0014.severity = warning\n");
+
+                // Force-enable some specific Roslyn analyzer diagnostics to report upgrade issues (this is done properly in 6.7 with a data-driven approach)
+                for (int i = 22; i < 100; i++)
+                    globalConfig.Append($"dotnet_diagnostic.PAR{i:D4}.severity = warning\n");
+
+                File.WriteAllText(globalConfigPath, globalConfig.ToString());
             }
 
             // first pass: create all compilation tasks
             foreach (var assembly in assemblies)
             {
+                var extraArgs = new List<string>(assembly.compilerOptions.AdditionalCompilerArguments ?? Array.Empty<string>());
+                if (!string.IsNullOrEmpty(globalConfigPath))
+                    extraArgs.Add("/analyzerconfig:" + globalConfigPath);
+
                 var filename = Path.GetFileName(assembly.outputPath);
                 var assemblyName = Path.GetFileNameWithoutExtension(assembly.outputPath);
                 var assemblyPath = Path.Combine(m_OutputFolder, filename);
@@ -300,12 +313,11 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 assemblyBuilder.buildTargetGroup = BuildPipeline.GetBuildTargetGroup(Platform);
                 assemblyBuilder.compilerOptions = new ScriptCompilerOptions
                 {
-                    AdditionalCompilerArguments = assembly.compilerOptions.AdditionalCompilerArguments,
+                    AdditionalCompilerArguments = extraArgs.ToArray(),
                     AllowUnsafeCode = assembly.compilerOptions.AllowUnsafeCode,
                     ApiCompatibilityLevel = assembly.compilerOptions.ApiCompatibilityLevel,
                     CodeOptimization = CodeOptimization == CodeOptimization.Release ? UnityEditor.Compilation.CodeOptimization.Release : UnityEditor.Compilation.CodeOptimization.Debug, // assembly.compilerOptions.CodeOptimization,
-                    RoslynAnalyzerDllPaths = RoslynAnalyzers ?? Array.Empty<string>(),
-                    AnalyzerConfigPath = globalConfigPath
+                    RoslynAnalyzerDllPaths = RoslynAnalyzers ?? Array.Empty<string>()
                 };
 
                 // add asmdef-specific defines

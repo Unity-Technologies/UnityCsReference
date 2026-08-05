@@ -85,19 +85,19 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             PerfCriticalContext = false;
         }
 
-        public override string GetName()
+        internal override string GetName()
         {
             return MethodFullName;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             if (string.IsNullOrEmpty(PrettyTypeName))
                 return MethodFullName;
             return $"{PrettyTypeName}.{PrettyMethodName}";
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return PerfCriticalContext;
         }

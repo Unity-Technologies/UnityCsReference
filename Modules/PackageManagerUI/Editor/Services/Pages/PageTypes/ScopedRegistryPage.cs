@@ -56,7 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return base.ShouldInclude(package) && package.versions.AnyMatches(v =>
             {
-                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(v.name, v.package.product?.id ?? 0, v.isInstalled);
+                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(v.name, v.isInstalled);
                 return packageInfo?.registry != null && m_RegistryInfo.IsEquivalentTo(packageInfo.registry);
             });
         }

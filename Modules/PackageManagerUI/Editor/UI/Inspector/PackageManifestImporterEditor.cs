@@ -452,7 +452,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 if (DoPropertyFieldLayout(m_TechnicalName, Styles.technicalName))
-                    ValidateTechnicalName(m_TechnicalName, m_UpmCache.GetInstalledPackageInfoByName(m_TechnicalName.stringValue), m_AssetPath);
+                    ValidateTechnicalName(m_TechnicalName, m_UpmCache.GetInstalledPackageInfo(m_TechnicalName.stringValue), m_AssetPath);
                 DoPropertyFieldLayoutErrorsAndWarnings(m_TechnicalName);
 
                 GUILayout.Space(10);

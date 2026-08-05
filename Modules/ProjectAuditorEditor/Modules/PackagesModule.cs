@@ -47,7 +47,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var analyzers = GetCompatibleAnalyzers(analysisParams);
             if (analyzers.Length > 0)
             {
-                var packages = PackageUtils.GetClientPackages();
+                var packages = PackageInfo.GetAllRegisteredPackages();
                 var packageCount = packages.Length;
 
                 AsyncProgressState progressState = progress?.Start("Analyzing Packages", packageCount);

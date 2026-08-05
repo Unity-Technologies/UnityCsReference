@@ -323,6 +323,8 @@ namespace UnityEditorInternal
                 GUI.Label(rect, Styles.content, lineStyle);
 
                 SetStyleTextColor(lineStyle, oldColor);
+
+                GUIView.current?.MarkHotRegion(GUIClip.UnclipToWindow(rect));
             }
 
             if (IsRenaming(node.id) && Event.current.type != EventType.Layout)
@@ -371,7 +373,7 @@ namespace UnityEditorInternal
                         var height = Mathf.Min(k_ObjectFieldMaxHeight, valueFieldRect.height);
                         var yOffset = (valueFieldRect.height - height) * 0.5f;
                         valueFieldRect = new Rect(valueFieldRect.x - k_ObjectFieldAdditionalOffset, valueFieldRect.y + yOffset, valueFieldRect.width + k_ObjectFieldAdditionalWidth, height);
-                     
+
                         value = EditorGUI.DoObjectField(valueFieldRect, valueFieldRect, id, value as UnityEngine.Object, null, objType, null, false);
                     }
                 }
@@ -473,6 +475,7 @@ namespace UnityEditorInternal
             {
                 case EventType.Repaint:
                     style.Draw(position, content, id, false, position.Contains(evt.mousePosition));
+                    GUIView.current?.MarkHotRegion(GUIClip.UnclipToWindow(position));
                     break;
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition) && evt.button == 0)

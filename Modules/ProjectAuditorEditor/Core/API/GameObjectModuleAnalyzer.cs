@@ -44,6 +44,11 @@ namespace Unity.ProjectAuditor.Editor.Core
     public abstract class GameObjectModuleAnalyzer : ModuleAnalyzer
     {
         /// <summary>
+        /// Implement this method to initialize the analyzer at the start of analysis
+        /// </summary>
+        public virtual void OnAnalysisStarted() {}
+
+        /// <summary>
         /// Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
         /// </summary>
         /// <param name="context">Context object containing information necessary to perform analysis</param>

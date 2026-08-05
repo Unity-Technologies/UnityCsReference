@@ -72,7 +72,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
         // cases like a package with technical name `com.org.package2` but the namespace is  `Org.Package` or even `Org.Package1`, which can be confusing.
         var technicalNameWithoutSuffixNumber = RemoveSuffixNumber(technicalName);
         var newSuffix = 0;
-        while (m_UpmCache.GetInstalledPackageInfoByName(technicalName) != null)
+        while (m_UpmCache.GetInstalledPackageInfo(technicalName) != null)
         {
             newSuffix++;
             technicalName = $"{technicalNameWithoutSuffixNumber}{newSuffix}";
