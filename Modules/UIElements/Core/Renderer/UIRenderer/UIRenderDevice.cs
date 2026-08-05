@@ -119,6 +119,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_ColorPagePosID    = Shader.PropertyToID("_ColorPagePos");
         static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
         static readonly int s_ElementInfoPagePosID = Shader.PropertyToID("_ElementInfoPagePos");
+        static readonly int s_SkipGammaConversionID = Shader.PropertyToID("_SkipGammaConversion");
 
         static ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
         static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AdvanceFrame");
@@ -431,7 +432,8 @@ namespace UnityEngine.UIElements.UIR
             TextureSlotCountBits = 7 << TextureSlotCountBitOffset,
 
             IsSerializing = 1 << 9,
-            IsRenderingNestedTreeRT = 1 << 10
+            IsRenderingNestedTreeRT = 1 << 10,
+            SkipForceGamma = 1 << 11
         }
 
         // Lookup table for texture slot counts after shift by TextureSlotCountBitOffset (index 0-7)
@@ -490,6 +492,10 @@ namespace UnityEngine.UIElements.UIR
                     st.flags |= (EvaluationFlags)(noShiftFlags << (int)EvaluationFlags.ForceRenderTypeBitOffset);
                 }
 
+                st.flags &= ~EvaluationFlags.SkipForceGamma;
+                if ((cmd.flags & CommandFlags.SkipForceGamma) != 0)
+                    st.flags |= EvaluationFlags.SkipForceGamma;
+
                 // Add another material to the current owner
                 if ((st.flags & EvaluationFlags.IsSerializing) != 0)
                     SetupCommandList(ref st, gradientSettings, shaderInfoAllocator, cmd.flags);
@@ -535,6 +541,10 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(isFlat || (st.flags & EvaluationFlags.IsRenderingNestedTreeRT) == EvaluationFlags.IsRenderingNestedTreeRT);
 
                     bool setsKeyword = false;
+
+                    // Skip only the texture's linear->gamma conversion, not the whole _UIE_FORCE_GAMMA keyword.
+                    bool skipGammaConversion = (st.flags & EvaluationFlags.SkipForceGamma) != 0;
+                    st.material.SetFloat(s_SkipGammaConversionID, skipGammaConversion ? 1f : 0f);
 
                     // TODO: Avoid the use of strings
                     // TODO: Use the native material manager instead of setting keywords like this. Otherwise it invalidates the cached SMDs.
@@ -656,7 +666,7 @@ namespace UnityEngine.UIElements.UIR
             Texture gradientSettings,
             ShaderInfoAllocator shaderInfoAllocator,
             Rect? scissor,
-            Vector2 boundsMin,
+            Rect drawBounds,
             float pixelsPerPoint,
             bool isSerializing,
             TextureSlotCount defaultTextureSlotCount,
@@ -704,7 +714,7 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
-            drawParams.boundsMin = boundsMin;
+            drawParams.drawBounds = drawBounds;
 
             RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
 
@@ -778,10 +788,14 @@ namespace UnityEngine.UIElements.UIR
                     EvaluationFlags prevTextureSlotCount = st.flags & EvaluationFlags.TextureSlotCountBits;
                     EvaluationFlags nextTextureSlotCount = commandForcesSingleTextureSlot ? EvaluationFlags.TextureSlotCount1 : defaultTextureSlotCountFlags;
 
+                    // Does this draw toggle _UIE_FORCE_GAMMA suppression (gamma-quad)?
+                    bool skipForceGammaFromState = (st.flags & EvaluationFlags.SkipForceGamma) != 0;
+                    bool skipForceGammaFromCommand = (head.flags & CommandFlags.SkipForceGamma) != 0;
+
                     // Do we change the material?
                     newMat = head.material != null ? head.material : defaultMat;
 
-                    if (forcedRenderTypeFromState != forcedRenderTypeFromCommand || prevTextureSlotCount != nextTextureSlotCount || newMat != st.material)
+                    if (forcedRenderTypeFromState != forcedRenderTypeFromCommand || prevTextureSlotCount != nextTextureSlotCount || skipForceGammaFromState != skipForceGammaFromCommand || newMat != st.material)
                     {
                         mustApplyCmdState = true;
                         newMatDiffers = true;
@@ -1041,6 +1055,7 @@ namespace UnityEngine.UIElements.UIR
                     continue;
 
                 material.DisableKeyword(Shaders.k_ForceGammaKeyword);
+                material.SetFloat(s_SkipGammaConversionID, 0f);
                 material.DisableKeyword(Shaders.k_TextureSlotCount1);
                 material.DisableKeyword(Shaders.k_TextureSlotCount2);
                 material.DisableKeyword(Shaders.k_TextureSlotCount4);

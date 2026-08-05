@@ -96,6 +96,14 @@ namespace UnityEditor.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal enum PreserveUnitType
+        {
+            None,
+            CustomProperties,
+            All
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal struct UssExportOptions
         {
             const string k_DefaultIndex = "    ";
@@ -106,7 +114,8 @@ namespace UnityEditor.UIElements
                 ignoreSelectorList = IgnoredSelectorsWhenExporting,
                 ignoreSelectorPrefixList = IgnoredSelectorPrefixesWhenExporting,
                 ignorePropertyList = IgnoredStylePropertiesWhenExporting,
-                useColorHighlighting = false
+                useColorHighlighting = false,
+                preserveDimensionUnit = PreserveUnitType.CustomProperties
             };
 
             string m_PropertyIndent;
@@ -145,6 +154,14 @@ namespace UnityEditor.UIElements
                 set => m_UseColorHighlighting = value;
             }
 
+            PreserveUnitType m_PreserveDimensionUnit;
+
+            public PreserveUnitType preserveDimensionUnit
+            {
+                get => m_PreserveDimensionUnit;
+                set => m_PreserveDimensionUnit = value;
+            }
+
             public UssExportOptions()
             {
                 propertyIndent = "    ";
@@ -152,6 +169,7 @@ namespace UnityEditor.UIElements
                 ignoreSelectorPrefixList = Array.Empty<string>();
                 ignorePropertyList = Array.Empty<string>();
                 m_UseColorHighlighting = null;
+                m_PreserveDimensionUnit = PreserveUnitType.CustomProperties;
             }
 
             public bool IsSelectorIgnored(StyleComplexSelector selector)
@@ -202,6 +220,13 @@ namespace UnityEditor.UIElements
             public StyleSheet styleSheet => m_StyleSheet;
 
             public UssExportOptions options => m_Options;
+
+            internal ExportContext WithPreserveDimensionUnit()
+            {
+                var opts = m_Options;
+                opts.preserveDimensionUnit = PreserveUnitType.All;
+                return new ExportContext(m_StyleSheet, m_Builder, opts);
+            }
 
             public void Append(char c)
             {
@@ -511,7 +536,13 @@ namespace UnityEditor.UIElements
         {
             WriteStylePropertyName(ref ctx, property.name);
             WritePunctuation(ref ctx, ": ");
-            WriteStyleValueHandleBlock(ref ctx, property.values.AsSpan());
+            if (property.isCustomProperty && ctx.options.preserveDimensionUnit == PreserveUnitType.CustomProperties)
+            {
+                var customCtx = ctx.WithPreserveDimensionUnit();
+                WriteStyleValueHandleBlock(ref customCtx, property.values.AsSpan());
+            }
+            else
+                WriteStyleValueHandleBlock(ref ctx, property.values.AsSpan());
             WritePunctuation(ref ctx, ";");
         }
 
@@ -639,7 +670,8 @@ namespace UnityEditor.UIElements
         protected void WriteDimensionValue(ref ExportContext ctx, Dimension dimension)
         {
             // Display 0 without a unit when using the default unit for the type. For time values, always include the unit regardless. (UUM-99023)
-            if (dimension.value == 0 && (dimension.unit == Dimension.Unit.Pixel || dimension.unit == Dimension.Unit.Degree))
+            // Custom property values always preserve the unit to avoid losing type information on round-trip.
+            if (ctx.options.preserveDimensionUnit != PreserveUnitType.All && dimension.value == 0 && (dimension.unit == Dimension.Unit.Pixel || dimension.unit == Dimension.Unit.Degree))
                 WriteFloatValue(ref ctx, 0);
             else
             {
@@ -848,6 +880,7 @@ namespace UnityEditor.UIElements
         public static string GetStyleVariableValueString(StyleSheet styleSheet, StyleVariable variable, int index, UssExportOptions options)
         {
             using var builderHandle = StringBuilderPool.Get(out var stringBuilder);
+            options.preserveDimensionUnit = PreserveUnitType.All;
             var context = new ExportContext(styleSheet, stringBuilder, options);
             var handles = variable.handles.AsSpan();
             Default.WriteStyleValueHandle(ref context, handles, ref index);

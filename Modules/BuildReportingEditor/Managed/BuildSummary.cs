@@ -116,6 +116,14 @@ namespace UnityEditor.Build.Reporting
         /// asset at <see cref="buildProfilePath"/>. Useful for tracking the profile across renames or moves.</remarks>
         public GUID buildProfileGuid { get; }
 
+        ///<summary>For scripts-only or incremental Player builds that reuse an earlier build's content, the
+        /// <see cref="buildSessionGuid"/> of that source build. A default-valued <see cref="GUID"/> for all other builds.</summary>
+        ///<remarks>Scripts-only and incremental builds recompile scripts but reuse the content of a prior full build, so they
+        /// record no content of their own. Use this identifier with the <see cref="BuildHistory"/> API to look up the source
+        /// build and its recorded content information.</remarks>
+        [NativeName("contentSourceBuildSessionGUID")]
+        public GUID contentSourceBuildSessionGuid { get; }
+
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum
         {
             if (typeof(T) != typeof(S))

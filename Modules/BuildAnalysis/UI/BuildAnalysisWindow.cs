@@ -75,7 +75,9 @@ namespace UnityEditor.Build.Analysis
             var fileSystem = new BuildAnalysisFileSystem();
 
             var enumerator = new BuildEnumerator(buildHistory);
-            var analyzer = new BuildAnalyzer(new BuildReportConverter(), fileSystem, buildHistory);
+            var converter = new BuildReportConverter();
+            var assetResolver = new SourceBuildAssetResolver(buildHistory, converter);
+            var analyzer = new BuildAnalyzer(converter, fileSystem, buildHistory, assetResolver);
             m_Service = new BuildAnalysisService(enumerator, analyzer, fileSystem, buildHistory);
 
             m_Watcher = new BuildHistoryWatcher(buildHistory);

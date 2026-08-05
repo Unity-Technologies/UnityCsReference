@@ -12,7 +12,7 @@ namespace Unity.ProjectAuditor.Editor
     /// Represents a node in a dependency tree for reporting issues in the UI.
     /// This is used to represent call trees, and dependencies between assets, assemblies, or packages.
     /// </summary>
-    internal abstract class DependencyNode
+    public abstract class DependencyNode
     {
         internal const int k_MaxDepth = 10;
 
@@ -38,36 +38,36 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// This node's name
         /// </summary>
-        public string Name => GetName();
+        internal string Name => GetName();
 
         /// <summary>
         /// A prettified, UI-friendly version of this node's name
         /// </summary>
-        public string PrettyName => GetPrettyName();
+        internal string PrettyName => GetPrettyName();
 
         /// <summary>
         /// Checks whether this node has a valid list of children
         /// </summary>
         /// <value>True if the node has a valid list of children. Otherwise, returns false.</value>
-        public bool HasValidChildren => m_Children != null;
+        internal bool HasValidChildren => m_Children != null;
 
         /// <summary>
         /// Checks whether this node has at least one valid child
         /// </summary>
         /// <value>True if the node has at least one valid child. Otherwise, returns false.</value>
-        public bool HasChildren => m_Children != null && m_Children.Count > 0;
+        internal bool HasChildren => m_Children != null && m_Children.Count > 0;
 
         /// <summary>
         /// Gets the number of children that this node has
         /// </summary>
         /// <value>The number of children.</value>
-        public int NumChildren => m_Children.Count;
+        internal int NumChildren => m_Children.Count;
 
         /// <summary>
         /// Adds a child to this node
         /// </summary>
         /// <param name="child">The node to add as a child of this one.</param>
-        public void AddChild(DependencyNode child)
+        internal void AddChild(DependencyNode child)
         {
             m_Children.Add(child);
         }
@@ -90,7 +90,7 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         /// <param name="index">The index into the node's child list (defaults to 0)</param>
         /// <returns>The child node with the given index</returns>
-        public DependencyNode GetChild(int index = 0)
+        internal DependencyNode GetChild(int index = 0)
         {
             return m_Children[index];
         }
@@ -98,7 +98,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Sorts this node's children by their prettyName, in ascending alphabetical order.
         /// </summary>
-        public void SortChildren()
+        internal void SortChildren()
         {
             m_Children.Sort((p1, p2) => string.Compare(p1.PrettyName, p2.PrettyName));
         }
@@ -106,24 +106,24 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Called at the end of analysis to build the dependency hierarchy
         /// </summary>
-        public virtual void BuildHierarchy(int depth, DependencyBuildContext context) {}
+        internal virtual void BuildHierarchy(int depth, DependencyBuildContext context) {}
 
         /// <summary>
         /// Gets the node's "raw" name
         /// </summary>
         /// <returns>The node's name</returns>
-        public abstract string GetName();
+        internal abstract string GetName();
 
         /// <summary>
         /// Gets the node's "pretty" name, suitable for UI display
         /// </summary>
         /// <returns>The node's prettified name</returns>
-        public abstract string GetPrettyName();
+        internal abstract string GetPrettyName();
 
         /// <summary>
         /// Gets whether this node represents a performance-critical issue
         /// </summary>
         /// <returns>True if the issue is performance critical. Otherwise, returns false.</returns>
-        public abstract bool IsPerfCritical();
+        internal abstract bool IsPerfCritical();
     }
 }

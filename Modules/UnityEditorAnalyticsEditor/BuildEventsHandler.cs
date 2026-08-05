@@ -8,6 +8,7 @@ using System.Linq;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Compilation;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -63,6 +64,11 @@ namespace UnityEditor
                 if (file.role == "ManagedLibrary" || file.role == "dll")
                     managedLibraries.Add(file.path);
             }
+
+            // IL2CPP builds that emit an IDE project (iOS/tvOS/visionOS/project export) ship no managed
+            // assemblies in the build output, so buildFiles lists none; player assemblies exist regardless.
+            foreach (var assembly in CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies))
+                managedLibraries.Add(assembly.outputPath);
 
             var matchingPackages = UnityEditor.PackageManager.PackageInfo.GetForAssemblyFilePaths(managedLibraries);
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.

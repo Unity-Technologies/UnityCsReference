@@ -359,6 +359,7 @@ namespace UnityEngine.UIElements.UIR
                 TextureId textureId = m_RenderTreeManager.textureRegistry.AllocAndAcquireDynamic();
                 op.dstTextureId = textureId;
                 op.renderTree.quadTextureId = textureId;
+                op.renderTree.quadIsGammaEncoded = m_RenderTreeManager.forceGammaRendering && op.type == DrawOperationType.RenderTree;
                 op.parent.renderTree.OnRenderDataVisualsChanged(op.visualElement.renderData, false);
             }
             else
@@ -407,10 +408,9 @@ namespace UnityEngine.UIElements.UIR
 
             bool forceGamma = m_RenderTreeManager.forceGammaRendering;
 
-            // When in force-gamma rendering, the last filter pass of the stack needs to output to an sRGB render
-            // texture because when the parent render tree is rendered, the shader will expect a linear output
-            // when sampling that texture and will perform a manual linear-to-gamma conversion.
-            bool isLastFilterPass = op.parent?.type == DrawOperationType.RenderTree;
+            // Under force-gamma: a filter's last pass outputs sRGB (parent samples linear + re-applies gamma); a plain
+            // nested-tree quad stays UNorm so it blends in gamma like direct rendering (UI-5094).
+            bool isLastFilterPass = op.type == DrawOperationType.Effect && op.parent?.type == DrawOperationType.RenderTree;
 
             if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma && !isLastFilterPass, out bool allocatedNewTexture))
             {
@@ -460,12 +460,8 @@ namespace UnityEngine.UIElements.UIR
                         if (op.FilterPass.applySettingsCallback == null)
                             ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
 
-                        // Compositor-specific keyword handling: enable output linear for last pass when forcing gamma
-                        var mat = op.FilterPass.material;
-                        if (forceGamma && isLastFilterPass)
-                            mat.EnableKeyword("_UIE_OUTPUT_LINEAR");
-                        else
-                            mat.DisableKeyword("_UIE_OUTPUT_LINEAR");
+                        // In force-gamma rendering, the last filter pass outputs linear because the parent render tree expects texture reads to output linear.
+                        bool outputLinear = forceGamma && isLastFilterPass;
 
                         // Set up projection matrix for compositor rendering
                         var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, 0, 1);
@@ -482,8 +478,6 @@ namespace UnityEngine.UIElements.UIR
                             BindRequiredInput(op, drawBounds, uvRect);
 
                         // Use shared filter helper (with custom projection already set).
-                        // The _UIE_OUTPUT_LINEAR keyword set above is deterministic per call
-                        // (both branches assign it explicitly), so no save/restore is needed.
                         FilterHelper.ApplyFilterPass(
                             source: srcTexEntry.texture,
                             target: dstTex,
@@ -493,6 +487,7 @@ namespace UnityEngine.UIElements.UIR
                             propertyBlock: m_Block,
                             readsGamma: readsGamma,
                             writesGamma: writesGamma,
+                            outputLinear: outputLinear,
                             pixelsPerPoint: op.visualElement.scaledPixelsPerPoint,
                             sourceUVRect: uvRect,
                             drawBounds: drawBounds,

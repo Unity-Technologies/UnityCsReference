@@ -50,8 +50,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 Location = location
             };
 
-            context.Params.DependencyCrawler.AddToAssetDependencyCache(context.AssetPath);
-
             yield return context.CreateIssue
             (
                 IssueCategory.AssetIssue,

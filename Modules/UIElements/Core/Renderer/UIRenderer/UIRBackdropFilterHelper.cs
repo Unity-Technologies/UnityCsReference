@@ -12,25 +12,41 @@ namespace UnityEngine.UIElements.UIR
         // Not thread-safe; UIR rendering is sequential. Revisit if panel processing becomes parallel.
         static MaterialPropertyBlock s_PropertyBlock = new MaterialPropertyBlock();
 
+        // The editor window's sampleable back buffer (the GUIView aux RT) and its content row order
+        // (isTopOrigin: texel row 0 is the top of the window; platform windowing convention).
+        public static System.Func<(RenderTexture texture, bool isTopOrigin)> editorWindowBackdropSource { private get; set; }
+
+        static readonly int s_ColorMatrixId = Shader.PropertyToID("_ColorMatrix");
+        static readonly int s_ColorOffsetId = Shader.PropertyToID("_ColorOffset");
+        static readonly int s_ColorInvertId = Shader.PropertyToID("_ColorInvert");
+
+        [NoAutoStaticsCleanup] // persist the cached material; nulling it would orphan the native HideAndDontSave object
+        static Material s_NormalizeMaterial;
+        static Material normalizeMaterial
+        {
+            get
+            {
+                if (s_NormalizeMaterial == null)
+                {
+                    s_NormalizeMaterial = new Material(Shader.Find(Shaders.k_RuntimeColorEffect));
+                    s_NormalizeMaterial.hideFlags = HideFlags.HideAndDontSave;
+                    s_NormalizeMaterial.SetMatrix(s_ColorMatrixId, Matrix4x4.identity);
+                    s_NormalizeMaterial.SetFloat(s_ColorOffsetId, 0f);
+                    s_NormalizeMaterial.SetFloat(s_ColorInvertId, 0f);
+                }
+                return s_NormalizeMaterial;
+            }
+        }
+
         [NoAutoStaticsCleanup]
         static bool s_CustomFilterWarningLogged;
 
-        static bool GetForceGammaRendering(VisualElement ve)
+        static RenderTextureReadWrite GetColorSpace()
         {
-            return ve.panel is BaseVisualElementPanel basePanel && basePanel.panelRenderer != null
-                ? basePanel.panelRenderer.forceGammaRendering
-                : false;
-        }
-
-        static RenderTextureReadWrite GetColorSpace(bool forceGamma)
-        {
-            var colorspace = QualitySettings.activeColorSpace;
-            if (forceGamma)
-                colorspace = ColorSpace.Gamma;
-
-            return (colorspace == ColorSpace.Linear)
-                ? RenderTextureReadWrite.Linear  // Linear space → SRGB format
-                : RenderTextureReadWrite.Default; // Gamma space → UNorm format
+            // Linear project -> sRGB temps, Gamma -> raw: the sRGB backdrop source decodes on sample and
+            // the sRGB target encodes once on store. Raw temps here double-encoded on the sRGB game-view
+            // target (the backdrop-filter wash). Matches the filter atlas RTs and the readsGamma below.
+            return RenderTextureReadWrite.Default; // Linear -> sRGB, Gamma -> raw
         }
 
         // Reserves the TextureId. The actual GPU texture is bound to it later, during command
@@ -75,37 +91,25 @@ namespace UnityEngine.UIElements.UIR
             var veSize = ve.layoutSize;
             Matrix4x4 worldTransform = ve.worldTransform;
 
-            // Local corners: BL(0,h), TL(0,0), TR(w,0), BR(w,h)
-            Vector3 localBL = new Vector3(0, veSize.y, 0);
-            Vector3 localTL = new Vector3(0, 0, 0);
-            Vector3 localTR = new Vector3(veSize.x, 0, 0);
-            Vector3 localBR = new Vector3(veSize.x, veSize.y, 0);
-
-            Vector3 worldBL = worldTransform.MultiplyPoint3x4(localBL);
-            Vector3 worldTL = worldTransform.MultiplyPoint3x4(localTL);
-            Vector3 worldTR = worldTransform.MultiplyPoint3x4(localTR);
-            Vector3 worldBR = worldTransform.MultiplyPoint3x4(localBR);
-
             // UV = (worldPos - worldBound.min) / size. V is flipped: screen Y is down, texture V=0 is bottom.
             float invWidth = worldBound.width > UIRUtility.k_Epsilon ? 1f / worldBound.width : 0f;
             float invHeight = worldBound.height > UIRUtility.k_Epsilon ? 1f / worldBound.height : 0f;
 
-            owner.backdropFilterUVBottomLeft = new Vector2(
-                (worldBL.x - worldBound.x) * invWidth,
-                1f - (worldBL.y - worldBound.y) * invHeight
-            );
-            owner.backdropFilterUVTopLeft = new Vector2(
-                (worldTL.x - worldBound.x) * invWidth,
-                1f - (worldTL.y - worldBound.y) * invHeight
-            );
-            owner.backdropFilterUVTopRight = new Vector2(
-                (worldTR.x - worldBound.x) * invWidth,
-                1f - (worldTR.y - worldBound.y) * invHeight
-            );
-            owner.backdropFilterUVBottomRight = new Vector2(
-                (worldBR.x - worldBound.x) * invWidth,
-                1f - (worldBR.y - worldBound.y) * invHeight
-            );
+            // Maps a local corner to world space, then to its UV within worldBound (handles rotation). Local
+            // function called directly, so the capture of worldTransform/worldBound/inv* allocates nothing.
+            Vector2 CornerUV(float localX, float localY)
+            {
+                Vector3 world = worldTransform.MultiplyPoint3x4(new Vector3(localX, localY, 0));
+                return new Vector2(
+                    (world.x - worldBound.x) * invWidth,
+                    1f - (world.y - worldBound.y) * invHeight);
+            }
+
+            // Local corners: BL(0,h), TL(0,0), TR(w,0), BR(w,h)
+            owner.backdropFilterUVBottomLeft = CornerUV(0, veSize.y);
+            owner.backdropFilterUVTopLeft = CornerUV(0, 0);
+            owner.backdropFilterUVTopRight = CornerUV(veSize.x, 0);
+            owner.backdropFilterUVBottomRight = CornerUV(veSize.x, veSize.y);
         }
 
         // Captures the backdrop region, applies filters, and binds the result to the (pre-allocated) TextureId.
@@ -122,44 +126,100 @@ namespace UnityEngine.UIElements.UIR
             if (worldBound.width <= UIRUtility.k_Epsilon || worldBound.height <= UIRUtility.k_Epsilon)
                 return;
 
-            // Convert to pixel coordinates and calculate capture region
-            RectInt pixelRect = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(worldBound, drawParams.boundsMin, pixelsPerPoint);
-            if (pixelRect.width <= 0 || pixelRect.height <= 0)
-                return;
+            // A render tree backed by a nested RT projects in the tree root's space, not panel space,
+            // so it needs a different rect-to-pixel mapping (below).
+            bool isNestedRT = owner.renderTree.rootRenderData.isNestedRenderTreeRoot;
 
-            RectInt captureRect = pixelRect;
-
-            // Clamp to current scissor rect to avoid capturing outside valid region
-            Rect scissorRect = drawParams.scissor.Peek();
-            RectInt scissorRectInt = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(scissorRect, drawParams.boundsMin, pixelsPerPoint);
-
-            captureRect.xMin = Mathf.Max(captureRect.xMin, scissorRectInt.xMin);
-            captureRect.yMin = Mathf.Max(captureRect.yMin, scissorRectInt.yMin);
-            captureRect.xMax = Mathf.Min(captureRect.xMax, scissorRectInt.xMax);
-            captureRect.yMax = Mathf.Min(captureRect.yMax, scissorRectInt.yMax);
-
-            if (captureRect.width <= 0 || captureRect.height <= 0)
-                return;
-
-            // The active color target (e.g. URP's overlay-composite buffer). Null when the pipeline draws
-            // straight to the backbuffer or inside a native pass — backdrop-filter is unsupported there, skip.
+            // In editor windows the "back buffer" is GUIView's sampleable aux RT (RenderTexture.active is null there).
             RenderTexture source = RenderTexture.active;
+            bool sourceIsAuxBackBuffer = false;
+            bool auxIsTopOrigin = false;
+            if (source == null && ve.panel.contextType == ContextType.Editor)
+            {
+                (source, auxIsTopOrigin) = editorWindowBackdropSource?.Invoke() ?? default;
+                sourceIsAuxBackBuffer = source != null;
+            }
             if (source == null)
                 return;
 
+            Debug.Assert(!(isNestedRT && sourceIsAuxBackBuffer), "A nested render tree keeps RenderTexture.active non-null, so the aux back buffer is never its source.");
+
+            RectInt pixelRect;
+            RectInt captureRect;
+            if (!isNestedRT)
+            {
+                pixelRect = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(worldBound, drawParams.boundsMin, pixelsPerPoint);
+                if (pixelRect.width <= 0 || pixelRect.height <= 0)
+                    return;
+
+                // Clamp to the ancestor clip in the capture's own space: clippingRect (panel space, covers overflow:hidden)
+                // for a normal element, but the scissor for a filtered element captured in a nested tree (UI-5094).
+                Rect clipRect = object.ReferenceEquals(owner, ve.renderData) ? owner.clippingRect : drawParams.scissor.Peek();
+                RectInt clipRectInt = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(clipRect, drawParams.boundsMin, pixelsPerPoint);
+
+                // A top-origin aux RT needs the bottom-origin rects reflected about the full source
+                // height (not the viewport) into raw-row space; bottom-origin rows already match.
+                if (sourceIsAuxBackBuffer && auxIsTopOrigin)
+                {
+                    pixelRect.y = source.height - pixelRect.y - pixelRect.height;
+                    clipRectInt.y = source.height - clipRectInt.y - clipRectInt.height;
+                }
+
+                captureRect = pixelRect;
+
+                if (!ClampCapture(ref captureRect, clipRectInt))
+                    return;
+            }
+            else
+            {
+                // Nested render texture: remap the element's local rect into the nested tree root's
+                // space and through the active viewport. The ancestor scissor is clamped below in that same space.
+                UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out Matrix4x4 elementToTreeRoot);
+                Rect localRect = new Rect(0, 0, ve.layoutSize.x, ve.layoutSize.y);
+                Rect treeBound = VisualElement.CalculateConservativeRect(ref elementToTreeRoot, localRect);
+                if (treeBound.width <= UIRUtility.k_Epsilon || treeBound.height <= UIRUtility.k_Epsilon)
+                    return;
+
+                Rect drawBounds = drawParams.drawBounds;
+                RectInt activeViewport = Utility.GetActiveViewport();
+
+                // Mid-render of the nested tree: draw bounds and viewport must be valid here, so a bad value is a bug.
+                bool validRenderState = drawBounds.width > UIRUtility.k_Epsilon && drawBounds.height > UIRUtility.k_Epsilon
+                    && activeViewport.width > 0 && activeViewport.height > 0;
+                Debug.Assert(validRenderState, "Backdrop-filter nested-RT remap reached with invalid draw bounds or viewport.");
+                if (!validRenderState)
+                    return;
+
+                // The nested tree's projection scale differs from the panel's pixelsPerPoint (e.g. UIBuilder canvas
+                // zoom), so derive it from the active viewport / draw bounds; the rect mapping itself is shared.
+                float scaleX = activeViewport.width / drawBounds.width;
+                float scaleY = activeViewport.height / drawBounds.height;
+                pixelRect = RenderChainCommand.RectPointsToPixels(treeBound, drawBounds.min, scaleX, scaleY, activeViewport);
+                if (pixelRect.width <= 0 || pixelRect.height <= 0)
+                    return;
+
+                captureRect = pixelRect;
+
+                // Clamp to the ancestor scissor, mapped through the same nested projection as pixelRect. The scissor
+                // stack holds the correct tree-root-space clip here; owner.clippingRect would be the panel rect (UI-5094).
+                Rect scissorRect = drawParams.scissor.Peek();
+                RectInt scissorRectInt = RenderChainCommand.RectPointsToPixels(scissorRect, drawBounds.min, scaleX, scaleY, activeViewport);
+
+                if (!ClampCapture(ref captureRect, scissorRectInt))
+                    return;
+            }
+
             // Clamp to source bounds; worldBound can extend past the RT (custom Camera.rect, split-screen),
             // which would make the CopyTexture below throw on out-of-range coords.
-            captureRect.xMin = Mathf.Max(captureRect.xMin, 0);
-            captureRect.yMin = Mathf.Max(captureRect.yMin, 0);
-            captureRect.xMax = Mathf.Min(captureRect.xMax, source.width);
-            captureRect.yMax = Mathf.Min(captureRect.yMax, source.height);
-
-            if (captureRect.width <= 0 || captureRect.height <= 0)
+            if (!ClampCapture(ref captureRect, new RectInt(0, 0, source.width, source.height)))
                 return;
 
-            bool forceGamma = GetForceGammaRendering(ve);
-            RenderTextureReadWrite colorSpace = GetColorSpace(forceGamma);
-            bool readsGamma = forceGamma || QualitySettings.activeColorSpace == ColorSpace.Gamma;
+            // Effective force-gamma state (the raw panel flag is false for editor panels); matches the filter compositor.
+            bool forceGamma = owner.renderTree.renderTreeManager.forceGammaRendering;
+            RenderTextureReadWrite colorSpace = GetColorSpace();
+
+            // Param space must match sample space: sRGB temps hand the shader linear values even under force-gamma.
+            bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
 
             // Release only after UpdateDynamic rebinds the TextureId below; releasing now could let the
             // GetTemporary calls recycle this RT while it's still bound.
@@ -169,6 +229,25 @@ namespace UnityEngine.UIElements.UIR
             if (backdrop == null)
                 return;
 
+            // Flip a top-origin aux capture to bottom-origin; under force-gamma also decode its raw gamma values to linear.
+            if (sourceIsAuxBackBuffer)
+            {
+                RenderTexture normalized = RenderTexture.GetTemporary(backdrop.width, backdrop.height, 0, backdrop.format, colorSpace);
+                normalized.filterMode = FilterMode.Bilinear;
+
+                // Not Graphics.Blit: it clobbers the projection matrix mid-EvaluateChain.
+                var normalizePass = new PostProcessingPass { material = normalizeMaterial };
+                s_PropertyBlock.Clear();
+                FilterHelper.ApplyFilterPass(backdrop, normalized, normalizePass, default, 0, s_PropertyBlock,
+                    readsGamma: true, writesGamma: false, outputLinear: forceGamma, pixelsPerPoint,
+                    sourceUVRect: auxIsTopOrigin ? new Rect(0, 1, 1, -1) : new Rect(0, 0, 1, 1));
+
+                RenderTexture.ReleaseTemporary(backdrop);
+                backdrop = normalized;
+            }
+
+            // Filtered alpha = captured coverage scaled by the filter chain (tint/opacity alpha<1 -> translucent,
+            // empty capture -> transparent), so compositing premultiplied-over matches the runtime's backdrop opacity.
             RenderTexture filtered = ApplyBackdropFilters(backdrop, ve, pixelsPerPoint, colorSpace, readsGamma);
 
             // Output is the element's full pixel rect; the capture is blitted into its matching sub-rect.
@@ -176,13 +255,16 @@ namespace UnityEngine.UIElements.UIR
                 pixelRect.width,
                 pixelRect.height,
                 0,
-                RenderTextureFormat.ARGB32,
+                filtered.format, // Match filtered so the CopyTexture in BlitToTarget is format-compatible.
                 colorSpace
             );
             outputTexture.filterMode = FilterMode.Bilinear;
 
             int destX = captureRect.xMin - pixelRect.xMin;
-            int destY = pixelRect.yMax - captureRect.yMax; // top-left origin: flip Y
+            // Top-origin aux rects place the sub-rect from the top; bottom-origin rects from the bottom.
+            int destY = sourceIsAuxBackBuffer && auxIsTopOrigin
+                ? pixelRect.yMax - captureRect.yMax
+                : captureRect.yMin - pixelRect.yMin;
             BlitToTarget(filtered, outputTexture, new RectInt(destX, destY, captureRect.width, captureRect.height));
 
             textureRegistry.UpdateDynamic(owner.backdropFilterTextureId, outputTexture);
@@ -197,27 +279,37 @@ namespace UnityEngine.UIElements.UIR
             RenderTexture.ReleaseTemporary(backdrop);
         }
 
+        // Intersects captureRect with bounds (true rectangular intersection); returns false when the result is
+        // empty. Note: RectInt.ClampToBounds is NOT equivalent -- it repositions the rect into bounds instead of
+        // intersecting, so a fully-outside rect would yield a bogus in-bounds rect rather than an empty one.
+        static bool ClampCapture(ref RectInt captureRect, RectInt bounds)
+        {
+            captureRect.xMin = Mathf.Max(captureRect.xMin, bounds.xMin);
+            captureRect.yMin = Mathf.Max(captureRect.yMin, bounds.yMin);
+            captureRect.xMax = Mathf.Min(captureRect.xMax, bounds.xMax);
+            captureRect.yMax = Mathf.Min(captureRect.yMax, bounds.yMax);
+            return captureRect.width > 0 && captureRect.height > 0;
+        }
+
         static void BlitToTarget(RenderTexture source, RenderTexture target, RectInt destRect)
         {
-            RenderTexture oldRT = RenderTexture.active;
+            // The GetTemporary above can hand back a buffer holding a previous frame's backdrop, and the
+            // CopyTexture below only overwrites destRect (a clipped capture leaves a margin), so wipe stale
+            // pooled content first -- unless the copy fully covers the target, where the clear is redundant.
+            bool fullyCovered = destRect.x == 0 && destRect.y == 0
+                && destRect.width == target.width && destRect.height == target.height;
+            if (!fullyCovered)
+            {
+                RenderTexture oldRT = RenderTexture.active;
+                RenderTexture.active = target;
+                GL.Clear(false, true, Color.clear);
+                RenderTexture.active = oldRT;
+            }
 
-            RenderTexture.active = target;
-
-            GL.PushMatrix();
-            GL.LoadPixelMatrix(0, target.width, target.height, 0);
-
-            // No GL.Clear needed: `filtered` (alpha = 1) overwrites destRect, and texels outside it are never
-            // sampled — the quad is scissor-clipped to the captured region when finally drawn.
-            Graphics.DrawTexture(
-                new Rect(destRect.x, destRect.y, destRect.width, destRect.height),
-                source,
-                new Rect(0, 0, 1, 1),
-                0, 0, 0, 0
-            );
-
-            GL.PopMatrix();
-
-            RenderTexture.active = oldRT;
+            // Verbatim copy, NOT an alpha-blend: `filtered` is already premultiplied, so alpha-blending it would
+            // re-multiply by alpha (double premultiply -> darkened backdrop). CopyTexture overwrites exactly (UI-5094).
+            Graphics.CopyTexture(source, 0, 0, 0, 0, destRect.width, destRect.height,
+                                 target, 0, 0, destRect.x, destRect.y);
         }
 
         static RenderTexture CaptureBackdrop(Texture source, RectInt region, RenderTextureReadWrite colorSpace)

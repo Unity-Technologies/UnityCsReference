@@ -24,7 +24,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         bool m_OnlyCriticalIssues;
         bool m_OnlyPerfCriticalIssues;
         bool m_OnlyFixableIssues;
-        bool m_ShowUpgradeRecommendations;
+        bool m_ShowUpgradeRecommendations = true;
 
         public DiagnosticView(ViewManager viewManager) : base(viewManager)
         {
@@ -276,7 +276,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     var upgradeProblemSince = issue.UpgradeProperties[(int)UpgradeProperties.MinVersion];
                     var upgradeProblemUntil = issue.UpgradeProperties[(int)UpgradeProperties.MaxVersion];
 
-                    var upgradeProblemSinceInt = Utility.VersionToInt(upgradeProblemSince);
+                    var upgradeProblemSinceInt = string.IsNullOrEmpty(upgradeProblemSince) ? int.MinValue : Utility.VersionToInt(upgradeProblemSince);
                     var upgradeProblemUntilInt = string.IsNullOrEmpty(upgradeProblemUntil) ? int.MaxValue : Utility.VersionToInt(upgradeProblemUntil);
 
                     if (upgradeProblemSinceInt > realTargetVersionInt || upgradeProblemUntilInt <= realTargetVersionInt)

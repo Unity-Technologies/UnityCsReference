@@ -338,6 +338,11 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         SetupContextMenu();
     }
 
+    internal void RebindProperty(SerializedProperty property)
+    {
+        boundProperty = property;
+    }
+
     void SetupContextMenu()
     {
         var contextMenuManipulator = new ContextualMenuManipulator((evt) =>
@@ -362,7 +367,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             // Add a separator in case then menu is already filled with items (e.g: TextField's input)
             menu.AppendSeparator();
 
-            if (isBindableProperty)
+            if (isBindableProperty && boundAttributeDescription != null)
             {
                 var hasDataBinding = false;
 

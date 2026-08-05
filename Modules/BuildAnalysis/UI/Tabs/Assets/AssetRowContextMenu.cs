@@ -32,7 +32,11 @@ namespace UnityEditor.Build.Analysis
                 return;
 
             menu.AppendAction("Copy Path", _ => AssetActions.CopyPath(assetPath));
-            menu.AppendAction("Show in Project", _ => AssetActions.ShowInProject(assetPath));
+
+            var showStatus = AssetActions.CanShowInProject(assetPath)
+                ? DropdownMenuAction.Status.Normal
+                : DropdownMenuAction.Status.Disabled;
+            menu.AppendAction("Show in Project", _ => AssetActions.ShowInProject(assetPath), showStatus);
         }
     }
 }

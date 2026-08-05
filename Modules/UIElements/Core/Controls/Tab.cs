@@ -440,6 +440,11 @@ namespace UnityEngine.UIElements
 
         void OnTabClicked(PointerDownEvent _)
         {
+            // The header click is registered with IncludeDisabled so a read-only (ancestor-disabled)
+            // TabView stays navigable; a tab disabled on its own must still ignore the click.
+            if (!enabledSelf)
+                return;
+
             selected?.Invoke(this);
         }
 

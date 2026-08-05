@@ -280,7 +280,7 @@ namespace UnityEngine
             throw new NotImplementedException();
         }
 
-        [Obsolete("GetInstanceID is deprecated. Use GetEntityId instead. This will be removed in a future version.", true)]
+        [Obsolete("Use GetEntityId instead.", true)]
         [System.Security.SecuritySafeCritical]
         public unsafe int GetInstanceID() => (int)(GetEntityId().GetRawData() & 0x00000000FFFFFFFF);
 

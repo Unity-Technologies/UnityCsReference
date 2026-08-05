@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using UnityEngine;
 
@@ -95,8 +94,8 @@ namespace UnityEditor.Build.Analysis
 
         private static DateTime ParseBuildStartedAtLocal(string buildStartedAt)
         {
-            if (DateTimeOffset.TryParseExact(buildStartedAt, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedDateTime))
-                return parsedDateTime.ToLocalTime().DateTime;
+            if (FormatUtility.TryParseBuildTimestamp(buildStartedAt, out var parsed))
+                return parsed.ToLocalTime().DateTime;
 
             throw new FormatException($"Invalid BuildStartedAt value: '{buildStartedAt}'.");
         }

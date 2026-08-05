@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements.UIR
             MaterialPropertyBlock propertyBlock,
             bool readsGamma,
             bool writesGamma,
+            bool outputLinear,
             float pixelsPerPoint,
             Rect? sourceUVRect = null,
             RectInt? drawBounds = null,
@@ -62,6 +63,12 @@ namespace UnityEngine.UIElements.UIR
             }
 
             RenderTexture.active = target;
+
+            // Filter material is shared across panels: set the keyword every call so a stale value can't leak gamma state between them.
+            if (outputLinear)
+                pass.material.EnableKeyword(Shaders.k_OutputLinearKeyword);
+            else
+                pass.material.DisableKeyword(Shaders.k_OutputLinearKeyword);
 
             pass.material.SetPass(pass.passIndex);
             Utility.SetPropertyBlock(propertyBlock);
@@ -147,6 +154,7 @@ namespace UnityEngine.UIElements.UIR
                         propertyBlock: propertyBlock,
                         readsGamma: readsGamma,
                         writesGamma: writesGamma,
+                        outputLinear: false,
                         pixelsPerPoint: pixelsPerPoint,
                         usePixelMatrix: usePixelMatrix
                     );

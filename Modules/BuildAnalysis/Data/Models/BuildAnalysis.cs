@@ -16,6 +16,28 @@ namespace UnityEditor.Build.Analysis
         public BuildAnalysisTables Tables = new BuildAnalysisTables();
         public BuildAnalysisMessage[] Messages = Array.Empty<BuildAnalysisMessage>();
         public BuildAnalysisComputed Computed = new BuildAnalysisComputed();
+
+        // Where the Assets table came from. Populated when this build recorded no assets of its own
+        // (e.g. a scripts-only build) and the data was borrowed from an earlier complete build.
+        public BuildAnalysisAssetSource AssetSource = new BuildAnalysisAssetSource();
+    }
+
+    [Serializable]
+    internal class BuildAnalysisAssetSource
+    {
+        // The complete build this build reused content from (BuildReportSummary.ContentSourceBuildSessionGUID).
+        // Empty for builds that produced their own content; set for asset-less scripts-only / incremental builds.
+        public GUID ContentSourceBuildSessionGUID;
+
+        // The content-source build's start time; set only when that build was found and its assets borrowed.
+        public string BuildStartedAtUtc = string.Empty;
+
+        // The content-source build was found and its assets borrowed.
+        public bool IsBorrowed;
+
+        // A content source was declared but couldn't be resolved (pruned/deleted, or its report missing), so the
+        // reused assets are unknown.
+        public bool SourceUnavailable => !IsBorrowed && !ContentSourceBuildSessionGUID.Empty();
     }
 
     [Serializable]

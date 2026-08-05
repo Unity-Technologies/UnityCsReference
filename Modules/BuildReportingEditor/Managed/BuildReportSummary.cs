@@ -84,6 +84,12 @@ namespace UnityEditor.Build
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.buildType"/>.</remarks>
         public string BuildTypeName;
 
+        /// <summary>For scripts-only or incremental Player builds that reuse an earlier build's content, the
+        /// <see cref="BuildSessionGUID"/> of that source build. A default-valued <see cref="GUID"/> for all other builds.</summary>
+        /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.contentSourceBuildSessionGuid"/>. Use it with
+        /// the <see cref="BuildHistory"/> API to look up the source build and its recorded content information.</remarks>
+        public GUID ContentSourceBuildSessionGUID;
+
         /// <summary>The output path for the build.</summary>
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.outputPath"/>.</remarks>
         public string OutputPath;
@@ -173,6 +179,7 @@ namespace UnityEditor.Build
                 BuildStartedAt = summary.buildStartedAt.ToString("o", CultureInfo.InvariantCulture),
                 BuildType = summary.buildType,
                 BuildTypeName = summary.buildType.ToString(),
+                ContentSourceBuildSessionGUID = summary.contentSourceBuildSessionGuid,
                 OutputPath = summary.outputPath,
                 Platform = summary.platform,
                 PlatformName = summary.platform.ToString(),

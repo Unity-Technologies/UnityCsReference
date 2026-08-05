@@ -2,29 +2,31 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using Unity.ProjectAuditor.Editor.Core;
 
 namespace Unity.ProjectAuditor.Editor.AssetAnalysis
 {
-    internal class AssetDependencyNode : DependencyNode
+    /// <summary>
+    /// For building an asset dependency tree.
+    /// </summary>
+    public class AssetDependencyNode : DependencyNode
     {
-        public override string GetName()
+        internal override string GetName()
         {
             return Location.Filename;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             return Location.Path;
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return false;
         }
 
-        public override void BuildHierarchy(int depth, DependencyBuildContext context)
+        internal override void BuildHierarchy(int depth, DependencyBuildContext context)
         {
             // Prevent infinite recursion on cyclic dependencies
             if (depth > k_MaxDepth)

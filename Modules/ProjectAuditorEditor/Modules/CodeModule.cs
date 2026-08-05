@@ -164,6 +164,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         // Match a whole "word", starting with UDR and ending with exactly 4 digits, e.g. UDR1234
         static readonly Regex s_RegEx = new Regex(@"\bUDR\d{4}\b");
         static readonly Regex s_RegEx2 = new Regex(@"\bUAL\d{4}\b");
+        static readonly Regex s_RegEx3 = new Regex(@"\bPAR\d{4}\b");
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => new IssueLayout[]
         {
@@ -805,6 +806,23 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         assemblyInfo.Name,
                         assemblyInfo.GetTypeString()
                     ]);
+            }
+            else if (s_RegEx3.IsMatch(message.Code))
+            {
+                var descriptor = new Descriptor(
+                    message.Code,
+                    message.Message,
+                    Areas.Upgrade,
+                    message.Message,
+                    "");
+
+                DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
+
+                return context.CreateIssue(IssueCategory.Code, descriptor.Id)
+                    .WithLocation(relativePath, message.Line)
+                    .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type))
+                    .WithCustomProperties(new object[(int)CodeProperty.Num] { assemblyInfo.Name, assemblyInfo.GetTypeString(), false })
+                    .WithUpgradeProperties(new[] { Application.unityVersion, null, message.Message });
             }
             else
             {

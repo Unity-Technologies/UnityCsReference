@@ -153,6 +153,16 @@ namespace UnityEditor
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
         internal extern void GrabPixels(RenderTexture rd, Rect rect);
 
+        // Null until the window has rendered once.
+        [NativeMethod("MonoGUIView::GetAuxBackBufferTexture", HasExplicitThis = true)]
+        [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+        internal extern RenderTexture GetAuxBackBufferTexture();
+
+        // True when the aux back buffer's texel row 0 is the top of the window.
+        [NativeMethod("MonoGUIView::GetAuxBackBufferTextureIsTopOrigin", HasExplicitThis = true)]
+        [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+        internal extern bool GetAuxBackBufferTextureIsTopOrigin();
+
         [NativeMethod("MonoGUIView::GetBackingScaleFactor", HasExplicitThis = true)]
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
         internal extern float GetBackingScaleFactor();

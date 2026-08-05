@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Multiplayer.PlayMode.Editor;
 using UnityEditor;
+using UnityEditor.Analytics;
 using UnityEditor.Build.Profile;
 using UnityEngine;
 
@@ -43,6 +44,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             allArgs.AddRange(defaultVirtualProjectLaunchArgs);
+            allArgs.AddRange(InheritedSessionArgs.Build());
             if (BuildProfile.GetActiveBuildProfile() != null)
             {
                 var assetPath = AssetDatabase.GetAssetPath(BuildProfile.GetActiveBuildProfile());

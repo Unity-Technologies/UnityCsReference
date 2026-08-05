@@ -42,7 +42,9 @@ namespace UnityEditor.Build
         ///
         /// If the path passed into this method is not a valid build report directory, at build time an error will be thrown.
         ///
-        /// For more information on locating the build report directory for a build, refer to <see cref="UnityEditor.Build.BuildHistory"/>.</remarks>
+        /// For more information on locating the build report directory for a build, refer to <see cref="UnityEditor.Build.BuildHistory"/>.
+        ///
+        /// For more information, refer to [How code stripping affects content](xref:um-managed-code-stripping-content).</remarks>
         ///<param name="directory">The path to a build report directory. If the path is invalid, an error will be thrown during the build process.</param>
         ///<seealso cref="BuildPipeline.BuildContentDirectory"/>
         ///<seealso cref="BuildPlayerOptions.previousBuildReportDirectories"/>

@@ -6,9 +6,12 @@ using Unity.ProjectAuditor.Editor.Core;
 
 namespace Unity.ProjectAuditor.Editor.AssetAnalysis
 {
-    internal class ShaderDependencyNode : DependencyNode
+    /// <summary>
+    /// For building a shader dependency tree.
+    /// </summary>
+    public class ShaderDependencyNode : DependencyNode
     {
-        public override void BuildHierarchy(int depth, DependencyBuildContext context)
+        internal override void BuildHierarchy(int depth, DependencyBuildContext context)
         {
             if (!context.ShaderToMaterials.TryGetValue(Location.Path, out var materialPaths))
                 return;
@@ -17,17 +20,17 @@ namespace Unity.ProjectAuditor.Editor.AssetAnalysis
                 AddChild(new AssetDependencyNode { Location = new Location(path) });
         }
 
-        public override string GetName()
+        internal override string GetName()
         {
             return Location.Filename;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             return Location.Path;
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return false;
         }

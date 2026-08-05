@@ -55,6 +55,7 @@ namespace UnityEngine.UIElements.UIR
         DrawPhaseBits                = 3 << DrawPhaseBitOffset,
 
         UsesPerGlyphTextCoreSettings = 1 << 6,
+        SamplesGammaSource           = 1 << 7,
     }
 
     class Entry
@@ -222,14 +223,14 @@ namespace UnityEngine.UIElements.UIR
             return default;
         }
 
-        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, TextureId textureId, bool isPremultiplied = false, DrawPhase phase = DrawPhase.Content, int userData = 0)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, TextureId textureId, bool isPremultiplied = false, bool samplesGammaSource = false, DrawPhase phase = DrawPhase.Content, int userData = 0)
         {
             Debug.Assert(textureId.IsValid());
             var entry = m_EntryPool.Get();
             entry.vertices = vertices;
             entry.indices = indices;
             entry.textureId = textureId;
-            entry.flags = isPremultiplied ? EntryFlags.IsPremultiplied : 0;
+            entry.flags = (isPremultiplied ? EntryFlags.IsPremultiplied : 0) | (samplesGammaSource ? EntryFlags.SamplesGammaSource : 0);
             entry.type = EntryType.DrawDynamicTexturedMesh;
             entry.phase = phase;
             entry.userData = userData;

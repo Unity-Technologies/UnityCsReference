@@ -1265,7 +1265,7 @@ static void BurstSetup()
             }
             else if (targetPlatform == TargetPlatform.WASM)
             {
-                combinations.Add(new BurstOutputCombination("Data/Plugins/", new TargetCpus(BurstTargetCpu.WASM32)));
+                combinations.Add(new BurstOutputCombination("Data/Plugins/", new TargetCpus(IsWebGLWasm64() ? BurstTargetCpu.WASM64 : BurstTargetCpu.WASM32)));
             }
             else
             {
@@ -1530,7 +1530,7 @@ static void BurstSetup()
                     targetCpus = new TargetCpus(BurstTargetCpu.AVX2);
                     return TargetPlatform.PS5;
                 case BuildTarget.WebGL:
-                    targetCpus = new TargetCpus(BurstTargetCpu.WASM32);
+                    targetCpus = new TargetCpus(IsWebGLWasm64() ? BurstTargetCpu.WASM64 : BurstTargetCpu.WASM32);
                     return TargetPlatform.WASM;
                 case BuildTarget.QNX:
                     var qnxArchitecture = GetQNXTargetArchitecture();
@@ -1680,6 +1680,14 @@ static void BurstSetup()
             return GetArchitectureFromPlatformSettings(
                 "UnityEditor.QNX.Extensions",
                 "UnityEditor.QNX.Settings");
+        }
+
+        private static bool IsWebGLWasm64()
+        {
+            var effectiveMaxMemory = PlayerSettings.WebGL.memoryGrowthMode == WebGLMemoryGrowthMode.None
+                ? PlayerSettings.WebGL.initialMemorySize
+                : PlayerSettings.WebGL.maximumMemorySize;
+            return effectiveMaxMemory > 4096;
         }
 
         private static int GetVisionSdkVersion()

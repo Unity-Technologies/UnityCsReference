@@ -46,7 +46,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// <summary>
         /// Implement this method to initialize the analyzer at the start of analysis
         /// </summary>
-        internal virtual void OnAnalysisStarted() {}
+        public virtual void OnAnalysisStarted() {}
 
         /// <summary>
         /// Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.

@@ -94,7 +94,7 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
 
         if (parentProperty is { isArray: true })
         {
-            m_FieldDecoratorForListItem = new UxmlAttributeFieldDecorator();
+            m_FieldDecoratorForListItem = new UxmlAttributeFieldDecorator(property);
             hierarchy.Add(m_FieldDecoratorForListItem);
         }
     }
@@ -160,6 +160,11 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
             // Update m_IsUxmlObject when the view is rebound to handle view recycling in lists
             var property = bindEvent.bindProperty;
             m_IsUxmlObject = property?.managedReferenceValue != null && property.managedReferenceValue is not VisualElement.UxmlSerializedData;
+
+            // Forward the rebind to the list-item decorator so its boundProperty stays in sync when
+            // a virtualized row is recycled to a different array index.
+            m_FieldDecoratorForListItem?.RebindProperty(property);
+
             UpdateEnableState();
 
             evt.StopPropagation();

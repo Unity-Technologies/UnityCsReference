@@ -101,7 +101,9 @@ namespace UnityEditor
         ///<remarks>The types used in those builds are included in the information provided to UnityLinker.
         ///This ensures that the Player can load all the content from those additional builds.
         ///
-        ///During a build you can also add directories from a build callback with <see cref="Build.BuildPlayerContext.AddPreviousBuildReportDirectory"/>.</remarks>
+        ///During a build you can also add directories from a build callback with <see cref="Build.BuildPlayerContext.AddPreviousBuildReportDirectory"/>.
+        ///
+        ///For more information, refer to [How code stripping affects content](xref:um-managed-code-stripping-content).</remarks>
         ///<seealso cref="BuildPipeline.BuildContentDirectory"/>
         ///<seealso cref="Build.BuildPlayerContext.AddPreviousBuildReportDirectory"/>
         public string[] previousBuildReportDirectories { get; set; }

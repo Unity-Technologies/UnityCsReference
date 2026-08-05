@@ -10,7 +10,10 @@ using UnityEditor;
 
 namespace Unity.ProjectAuditor.Editor.Utils
 {
-    internal static class Formatting
+    /// <summary>
+    /// Methods for consistently formatting values
+    /// </summary>
+    public static class Formatting
     {
         /// <summary>
         /// Formats a given DateTime object as a string in the format "yyyy/MM/dd HH:mm".
@@ -121,6 +124,12 @@ namespace Unity.ProjectAuditor.Editor.Utils
             return framerate.ToString(CultureInfo.InvariantCulture) + " fps";
         }
 
+        /// <summary>
+        /// Formats a given float as a string.
+        /// </summary>
+        /// <param name="val">Value to format.</param>
+        /// <param name="decimalPlaces">Number of decimal places to print.</param>
+        /// <returns>A string representation of the input value as a float.</returns>
         public static string FormatFloat(float val, int decimalPlaces)
         {
             if (float.IsNaN(val)) return "-";
@@ -133,22 +142,22 @@ namespace Unity.ProjectAuditor.Editor.Utils
 
         static readonly string k_StringSeparator = ", ";
 
-        public static string CombineStrings<T>(IEnumerable<T> strings, string separator = null)
+        internal static string CombineStrings<T>(IEnumerable<T> strings, string separator = null)
         {
             return string.Join(separator ?? k_StringSeparator, strings);
         }
 
-        public static string[] SplitStrings(string combinedString, string separator = null)
+        internal static string[] SplitStrings(string combinedString, string separator = null)
         {
             return combinedString.Split(separator ?? k_StringSeparator, StringSplitOptions.None);
         }
 
-        public static string ReplaceStringSeparators(string combinedString, string separator)
+        internal static string ReplaceStringSeparators(string combinedString, string separator)
         {
             return combinedString.Replace(k_StringSeparator, separator);
         }
 
-        public static string StripRichTextTags(string text)
+        internal static string StripRichTextTags(string text)
         {
             text = RemoveRichTextTag(text, "b", string.Empty);
             text = RemoveRichTextTag(text, "i", string.Empty);
@@ -167,7 +176,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
         }
 
         // Strings to match the new Build Profiles page. We can't access them directly right now, so duplicate.
-        public static string GetModernBuildTargetName(BuildTarget buildTarget)
+        internal static string GetModernBuildTargetName(BuildTarget buildTarget)
         {
             switch (buildTarget)
             {
@@ -194,7 +203,7 @@ namespace Unity.ProjectAuditor.Editor.Utils
             }
         }
 
-        public static string GetModernBuildTargetName(BuildTargetGroup buildTargetGroup)
+        internal static string GetModernBuildTargetName(BuildTargetGroup buildTargetGroup)
         {
             switch (buildTargetGroup)
             {

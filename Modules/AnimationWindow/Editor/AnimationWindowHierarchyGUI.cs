@@ -368,6 +368,8 @@ namespace UnityEditorInternal
                 GUI.Label(labelRect, Styles.content, lineStyle);
 
                 SetStyleTextColor(lineStyle, oldColor);
+
+                GUIView.current?.MarkHotRegion(GUIClip.UnclipToWindow(labelRect));
             }
 
             if (IsRenaming(node.id) && Event.current.type != EventType.Layout)
@@ -529,6 +531,7 @@ namespace UnityEditorInternal
             {
                 case EventType.Repaint:
                     style.Draw(position, content, id, false, position.Contains(evt.mousePosition));
+                    GUIView.current?.MarkHotRegion(GUIClip.UnclipToWindow(position));
                     break;
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition) && evt.button == 0)

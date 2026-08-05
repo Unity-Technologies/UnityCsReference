@@ -59,6 +59,8 @@ namespace Unity.ProjectAuditor.Editor.Core
                         Params = analysisParams
                     };
 
+                    analysisParams.DependencyCrawler.AddToAssetDependencyCache(assetPath);
+
                     foreach (var analyzer in analyzers)
                         analysisParams.OnIncomingIssues(analyzer.Analyze(assetAnalysisContext));
 

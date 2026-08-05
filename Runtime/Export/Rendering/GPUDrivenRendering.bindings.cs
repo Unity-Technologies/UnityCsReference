@@ -362,6 +362,7 @@ namespace UnityEngine.Rendering
             var mesh = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData->mesh, nativeData->rendererCount, Allocator.Invalid);
             var meshLodSettings = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<InternalMeshLodRendererSettings>(nativeData->meshLodSettings, nativeData->rendererCount, Allocator.Invalid);
             var subMeshStartIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ushort>(nativeData->subMeshStartIndex, nativeData->rendererCount, Allocator.Invalid);
+            var staticBatchSubMeshCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ushort>(nativeData->staticBatchSubMeshCount, nativeData->rendererCount, Allocator.Invalid);
             var subMaterialRange = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<RangeInt>(nativeData->subMaterialRange, nativeData->rendererCount, Allocator.Invalid);
             var sceneCullingMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ulong>(nativeData->sceneCullingMask, nativeData->rendererCount, Allocator.Invalid);
             var material = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData->material, nativeData->materialCount, Allocator.Invalid);
@@ -382,6 +383,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref mesh, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref meshLodSettings, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref subMeshStartIndex, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref staticBatchSubMeshCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref subMaterialRange, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref sceneCullingMask, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref material, AtomicSafetyHandle.Create());
@@ -403,6 +405,7 @@ namespace UnityEngine.Rendering
                 mesh = mesh,
                 meshLodSettings = meshLodSettings,
                 subMeshStartIndex = subMeshStartIndex,
+                staticBatchSubMeshCount = staticBatchSubMeshCount,
                 subMaterialRange = subMaterialRange,
                 sceneCullingMask = sceneCullingMask,
                 material = material,
@@ -433,6 +436,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(mesh));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(meshLodSettings));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(subMeshStartIndex));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(staticBatchSubMeshCount));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(subMaterialRange));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(sceneCullingMask));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(material));
@@ -563,6 +567,7 @@ namespace UnityEngine.Rendering
         public EntityId* mesh;
         public InternalMeshLodRendererSettings* meshLodSettings;
         public ushort* subMeshStartIndex;
+        public ushort* staticBatchSubMeshCount;
         public RangeInt* subMaterialRange;
         public uint* rendererUserValues;
         public ulong* sceneCullingMask;
@@ -702,6 +707,7 @@ namespace UnityEngine.Rendering
         public NativeArray<EntityId> mesh;
         public NativeArray<InternalMeshLodRendererSettings> meshLodSettings;
         public NativeArray<ushort> subMeshStartIndex;
+        public NativeArray<ushort> staticBatchSubMeshCount;
         public NativeArray<RangeInt> subMaterialRange;
         public NativeArray<uint> rendererUserValues;
         public NativeArray<ulong> sceneCullingMask;

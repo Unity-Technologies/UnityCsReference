@@ -60,6 +60,12 @@ namespace UnityEngine.Tilemaps
             m_InstancedGameObjectEntityId = m_InstancedGameObject != null ? m_InstancedGameObject.GetEntityId() : EntityId.None;
         }
 
+        public virtual void OnValidate()
+        {
+            m_SpriteEntityId = m_Sprite != null ? m_Sprite.GetEntityId() : EntityId.None;
+            m_InstancedGameObjectEntityId = m_InstancedGameObject != null ? m_InstancedGameObject.GetEntityId() : EntityId.None;
+        }
+
         public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
         {
             tileData.spriteEntityId = m_SpriteEntityId;

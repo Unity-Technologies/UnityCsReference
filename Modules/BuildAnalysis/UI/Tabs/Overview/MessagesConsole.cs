@@ -473,8 +473,13 @@ namespace UnityEditor.Build.Analysis
         {
             var container = new VisualElement();
             container.AddToClassList("messages-cell__log-container");
+
             var label = new Label();
             label.AddToClassList("messages-cell__log");
+            // Elided rows would otherwise show the entire (often multi-paragraph) message as a tooltip.
+            // Suppress it, the full text appears in the detail pane below when a row is selected.
+            label.displayTooltipWhenElided = false;
+
             var count = new Label();
             count.AddToClassList("messages-cell__collapse-count");
             count.style.display = DisplayStyle.None;

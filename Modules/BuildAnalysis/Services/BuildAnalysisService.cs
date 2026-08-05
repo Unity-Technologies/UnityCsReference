@@ -232,10 +232,21 @@ namespace UnityEditor.Build.Analysis
         {
             try
             {
-                BuildAnalysis analysis;
+                BuildAnalysis analysis = null;
                 if (!regenerate && TryGetBuildAnalysisPath(guid, out var analysisPath))
-                    analysis = await Task.Run(() => LoadBuildAnalysisFromDisk(analysisPath), m_Cts.Token);
-                else
+                {
+                    var cached = await Task.Run(() => LoadBuildAnalysisFromDisk(analysisPath), m_Cts.Token);
+
+                    // Only serve a cache written by the current schema. If not regenerate from the source
+                    // BuildReport instead of serving stale data. Keeping this a simple version
+                    // compare makes every future schema bump self-healing.
+                    // If the source report has since been pruned, GenerateAsync throws and the catch below returns
+                    // null; that rare stale-cache-without-report case degrades to empty, which is acceptable.
+                    if (cached.Version == BuildAnalysisConstants.k_SchemaVersion)
+                        analysis = cached;
+                }
+
+                if (analysis == null)
                     analysis = await m_Analyzer.GenerateAsync(entry, m_Cts.Token);
 
                 m_Cache.Put(guid, analysis);

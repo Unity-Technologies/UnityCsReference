@@ -821,6 +821,14 @@ internal static unsafe class SerializationBackendManagedCommands
 #pragma warning restore 0649
     }
 
+    // Cache elementType -> List<elementType> so the expensive MakeGenericType runs once
+    // per element type, not on every null-List allocation during read.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Type>
+        s_ListTypeCache = new System.Collections.Concurrent.ConcurrentDictionary<Type, Type>();
+
+    private static Type GetCachedListType(Type elementType) =>
+        s_ListTypeCache.GetOrAdd(elementType, t => typeof(List<>).MakeGenericType(t));
+
     // Helper for VRT pinning: Unsafe.As<ObjectWrapper>(obj) reinterprets a
     // child object so `fixed (byte* p = &wrapped.Data)` pins the first byte
     // of its post-header data area (offset zero for the nested entries'
@@ -3778,13 +3786,15 @@ internal static unsafe class SerializationBackendManagedCommands
         }
         else
         {
-            Type listType = typeof(List<>).MakeGenericType(elementType);
-            object listObj = RuntimeHelpers.GetUninitializedObject(listType);
-            ListLayout layout = Unsafe.As<ListLayout>(listObj);
+            ref byte fieldSlot = ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset);
+            ListLayout layout = Unsafe.As<byte, ListLayout>(ref fieldSlot);
+            if (layout == null)
+            {
+                layout = Unsafe.As<ListLayout>(RuntimeHelpers.GetUninitializedObject(GetCachedListType(elementType)));
+                Unsafe.As<byte, ListLayout>(ref fieldSlot) = layout;
+            }
             layout._items = dataAsBytes;
             layout._size  = count;
-            Unsafe.As<byte, ListLayout>(
-                ref Unsafe.AddByteOffset(ref baseAddr, (nint)header->fieldOffset)) = layout;
         }
 
         pos = nestedStart + nestedBytes;

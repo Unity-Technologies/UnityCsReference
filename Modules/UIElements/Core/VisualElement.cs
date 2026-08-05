@@ -1883,22 +1883,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Backdrop-filter elements require special handling on transform changes since their UV mapping
-        // depends on world transform. This count tracks descendants with backdrop-filter so we can
-        // efficiently determine when to trigger hierarchical regeneration.
-        internal int backdropFilterDescendantCount = 0;
-
-        internal void ChangeBackdropFilterDescendantCount(int delta)
-        {
-            VisualElement ve = this;
-
-            while (ve != null)
-            {
-                ve.backdropFilterDescendantCount += delta;
-                ve = ve.hierarchy.parent;
-            }
-        }
-
         /// <summary>
         ///  Initializes and returns an instance of VisualElement.
         /// </summary>

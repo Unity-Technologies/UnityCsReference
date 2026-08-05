@@ -29,6 +29,8 @@ namespace UnityEditor.UIElements
         static Action<VisualElement, SerializedProperty> s_UpdateElementStyleFromProperty;
         static Action<VisualElement, SerializedProperty> s_UpdatePrefabStateStyleFromProperty;
 
+        const string k_ScrollTrackingHookedKey = "unity-prefab-override-scroll-tracked";
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal delegate void HandleRightClickMenuDelegate(VisualElement element, ref bool handled);
 
@@ -206,6 +208,7 @@ namespace UnityEditor.UIElements
                         // We intentionally re-register this event on the container per element and
                         // never unregister.
                         container.RegisterCallback<GeometryChangedEvent, BarType>(UpdatePrefabOverrideOrLivePropertyBarStyleEvent, BarType.LiveProperty);
+                        RegisterBarScrollTracking(element, container);
                         element.RegisterCallback<DetachFromPanelEvent>(_ =>
                         {
                             element.RemoveFromClassList(BindingExtensions.livePropertyUssClassName);
@@ -304,6 +307,7 @@ namespace UnityEditor.UIElements
                         // We intentionally re-register this event on the container per element and
                         // never unregister.
                         container.RegisterCallback<GeometryChangedEvent, BarType>(UpdatePrefabOverrideOrLivePropertyBarStyleEvent, BarType.PrefabOverride);
+                        RegisterBarScrollTracking(element, container);
                         element.RegisterCallback<DetachFromPanelEvent>(_ =>
                         {
                             element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
@@ -349,7 +353,8 @@ namespace UnityEditor.UIElements
                 return;
 
             // Move the bar to where the control is in the container.
-            var top = element.worldBound.y - container.worldBound.y;
+            var containerY = container.worldBound.y;
+            var top = element.worldBound.y - containerY;
             if (float.IsNaN(top))     // If this is run before the container has been layed out.
                 return;
 
@@ -364,9 +369,10 @@ namespace UnityEditor.UIElements
 
             if (elementHeight == 0f)
             {
-                bar.style.top = 0f;
-                bar.style.height = 0f;
-                bar.style.left = 0f;
+                CollapseBar(bar);
+                // The field can be transiently zero-height while a ListView recycles rows. Recover
+                // when its geometry resolves so the bar does not stay hidden.
+                element.RegisterCallback<GeometryChangedEvent, VisualElement>(ReUpdateLivePropertyBarStyleEvent, bar);
                 return;
             }
 
@@ -376,9 +382,77 @@ namespace UnityEditor.UIElements
             var bottomOffset = element.resolvedStyle.marginBottom;
             var topOffset = element.resolvedStyle.marginTop;
 
-            bar.style.top = top - topOffset;
-            bar.style.height = elementHeight + bottomOffset + topOffset;
+            var barTop = top - topOffset;
+            var barBottom = barTop + elementHeight + bottomOffset + topOffset;
+
+            // Clip the bar to any scrolling ancestor (e.g. a ListView) between the field and
+            // the inspector so it follows the scroll and stops at the list's edges (UUM-142807).
+            for (var p = element.hierarchy.parent; p != null && p != container; p = p.hierarchy.parent)
+            {
+                if (p is ScrollView scrollView)
+                {
+                    var viewport = scrollView.contentViewport.worldBound;
+                    // Skip clipping until the viewport has a resolved size. A transient
+                    // zero-height viewport (e.g. right after expanding a foldout) would otherwise
+                    // collapse every bar until the next scroll.
+                    if (float.IsNaN(viewport.y) || viewport.height <= 0f)
+                        continue;
+
+                    var viewportTop = viewport.y - containerY;
+                    var viewportBottom = viewportTop + viewport.height;
+                    barTop = Mathf.Max(barTop, viewportTop);
+                    barBottom = Mathf.Min(barBottom, viewportBottom);
+                }
+            }
+
+            if (barBottom <= barTop)
+            {
+                CollapseBar(bar);
+                return;
+            }
+
+            bar.style.top = barTop;
+            bar.style.height = barBottom - barTop;
             bar.style.left = 0.0f;
+        }
+
+        static void RegisterBarScrollTracking(VisualElement element, InspectorElement inspector)
+        {
+            for (var p = element.hierarchy.parent; p != null && p != inspector; p = p.hierarchy.parent)
+            {
+                if (p is ScrollView scrollView && !scrollView.HasProperty(k_ScrollTrackingHookedKey))
+                {
+                    scrollView.SetProperty(k_ScrollTrackingHookedKey, null);
+
+                    // Reposition on scroll (transform), and again after layout settles. The content
+                    // container's geometry changes when the list virtualizes/recycles rows or when
+                    // the foldout expands; the viewport's changes on resize. Repositioning on those
+                    // post-layout events keeps the bars correct after a wheel notch recycles rows,
+                    // which a scroll-only reposition would leave placed against transient geometry.
+                    scrollView.verticalScroller.valueChanged += _ => RepositionAllBars(inspector);
+                    scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(_ => RepositionAllBars(inspector));
+                    scrollView.contentViewport.RegisterCallback<GeometryChangedEvent>(_ => RepositionAllBars(inspector));
+                }
+            }
+        }
+
+        static void RepositionAllBars(InspectorElement inspector)
+        {
+            RepositionBars(inspector.prefabOverrideBlueBarsContainer);
+            RepositionBars(inspector.livePropertyYellowBarsContainer);
+        }
+
+        static void RepositionBars(VisualElement barContainer)
+        {
+            for (var i = 0; i < barContainer.childCount; i++)
+                UpdatePrefabOverrideOrLivePropertyBarStyle(barContainer[i]);
+        }
+
+        static void CollapseBar(VisualElement bar)
+        {
+            bar.style.top = 0f;
+            bar.style.height = 0f;
+            bar.style.left = 0f;
         }
 
         private static void UpdatePrefabOverrideOrLivePropertyBarStyleEvent(GeometryChangedEvent evt, BarType barType)

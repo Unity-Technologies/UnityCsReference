@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements.UIR
         public static readonly string k_RuntimeDropShadowComposite= "Hidden/UIR/DropShadowComposite";
         public static readonly string k_ColorConversionBlit = "Hidden/Internal-UIE-ColorConversionBlit";
         public static readonly string k_ForceGammaKeyword = "_UIE_FORCE_GAMMA";
+        public static readonly string k_OutputLinearKeyword = "_UIE_OUTPUT_LINEAR";
         public static readonly string k_TextureSlotCount1 = "_UIE_TEXTURE_SLOT_COUNT_1";
         public static readonly string k_TextureSlotCount2 = "_UIE_TEXTURE_SLOT_COUNT_2";
         public static readonly string k_TextureSlotCount4 = "_UIE_TEXTURE_SLOT_COUNT_4";

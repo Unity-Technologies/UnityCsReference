@@ -485,7 +485,6 @@ namespace UnityEngine.UIElements.UIR
             {
                 BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
                 renderTreeManager.panel?.DecrementBackdropFilterCount();
-                renderData.owner.ChangeBackdropFilterDescendantCount(-1);
             }
 
             renderTreeManager.ReturnPoolRenderData(renderData);
@@ -1143,8 +1142,8 @@ namespace UnityEngine.UIElements.UIR
         {
             VisualElement ve = renderData.owner;
             bool wasEnabled = renderData.hasBackdropFilterAllocated;
-            // backdrop-filter is not supported on world-space (camera-drawn) panels.
-            bool isEnabled = ve.hasBackdropFilter && !renderTreeManager.drawInCameras;
+            // Unsupported on world-space (camera-drawn) panels; and the parent owns the backdrop, so a nested-render-tree root must not (nothing behind it to capture).
+            bool isEnabled = ve.hasBackdropFilter && !renderTreeManager.drawInCameras && !renderData.isNestedRenderTreeRoot;
 
             if (wasEnabled == isEnabled)
                 return;
@@ -1153,13 +1152,11 @@ namespace UnityEngine.UIElements.UIR
             {
                 BackdropFilterHelper.AllocBackdropFilterTextureId(renderTreeManager, renderData);
                 renderTreeManager.panel?.IncrementBackdropFilterCount();
-                ve.ChangeBackdropFilterDescendantCount(+1);
             }
             else
             {
                 BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
                 renderTreeManager.panel?.DecrementBackdropFilterCount();
-                ve.ChangeBackdropFilterDescendantCount(-1);
             }
         }
 

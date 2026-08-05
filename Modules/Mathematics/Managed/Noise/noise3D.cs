@@ -21,7 +21,7 @@ namespace Unity.Mathematics
     public static partial class noise
     {
         /// <summary>
-        /// Simplex noise.
+        /// Simplex noise. The method returns values approximately in the [-1, 1] range. The actual observed range can be slightly narrower.
         /// </summary>
         /// <param name="v">Input coordinate.</param>
         /// <returns>Noise value.</returns>

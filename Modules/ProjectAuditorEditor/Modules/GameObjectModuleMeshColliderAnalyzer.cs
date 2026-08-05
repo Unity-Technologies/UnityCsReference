@@ -117,7 +117,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             registerDescriptor(k_BuiltInMeshColliderTriangleBakingDescriptor);
         }
 
-        internal override void OnAnalysisStarted()
+        public override void OnAnalysisStarted()
         {
             m_VisitedAssets.Clear();
         }

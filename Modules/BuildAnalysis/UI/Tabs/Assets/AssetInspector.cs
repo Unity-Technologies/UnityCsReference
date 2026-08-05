@@ -75,6 +75,7 @@ namespace UnityEditor.Build.Analysis
     {
         private readonly Image m_Icon;
         private readonly Label m_Name;
+        private readonly Button m_Select;
         private string m_Path;
 
         public InspectorHeader()
@@ -89,9 +90,9 @@ namespace UnityEditor.Build.Analysis
             m_Name.AddToClassList("inspector__header-name");
             Add(m_Name);
 
-            var select = new Button(OnSelectClicked) { text = "Select" };
-            select.AddToClassList("inspector__select-button");
-            Add(select);
+            m_Select = new Button(OnSelectClicked) { text = "Select" };
+            m_Select.AddToClassList("inspector__select-button");
+            Add(m_Select);
         }
 
         internal string Title => m_Name.text;
@@ -101,6 +102,12 @@ namespace UnityEditor.Build.Analysis
             m_Icon.image = icon;
             m_Name.text = title;
             m_Path = assetPath;
+            // Grey out Select when the asset can no longer be resolved
+            var canSelect = AssetActions.CanShowInProject(assetPath);
+            m_Select.SetEnabled(canSelect);
+            m_Select.tooltip = canSelect
+                ? "Select this asset in the Project window"
+                : AssetActions.k_MissingAssetMessage;
         }
 
         private void OnSelectClicked() => AssetActions.ShowInProject(m_Path);

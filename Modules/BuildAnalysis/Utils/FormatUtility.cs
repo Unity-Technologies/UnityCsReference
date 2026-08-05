@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 
 namespace UnityEditor.Build.Analysis
 {
@@ -97,6 +98,14 @@ namespace UnityEditor.Build.Analysis
             if (date == DateTime.MinValue)
                 return "Unknown";
             return date.ToString("MM'/'dd'/'yyyy • HH:mm");
+        }
+
+        /// <summary>
+        /// Parse a build timestamp in ISO-8601 round-trip ("o") format, as written by BuildReportSummary.
+        /// </summary>
+        public static bool TryParseBuildTimestamp(string isoUtc, out DateTimeOffset value)
+        {
+            return DateTimeOffset.TryParseExact(isoUtc, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out value);
         }
 
         /// <summary>

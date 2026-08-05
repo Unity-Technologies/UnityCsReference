@@ -201,6 +201,8 @@ namespace UnityEditor.Build.Reporting
 
         internal extern void SetBuildSessionGUID(GUID guid);
 
+        internal extern void SetContentSourceBuildSessionGUID(GUID guid);
+
         internal void ReplaceAllFileEntries(IEnumerable<NPath> paths)
         {
             if (summary.buildType == BuildType.ContentDirectory)

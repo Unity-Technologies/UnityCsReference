@@ -24,6 +24,10 @@ namespace UnityEngine.UIElements.UIR
         void BuildRenderTreeQuadElement(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
+
+            // Backdrop-filter is resolved here in the parent tree (behind the filter quad); the filter's own nested tree can't capture it.
+            DrawVisualElementBackdrop(mgc);
+
             RenderTree nestedRenderTree = ve.nestedRenderData.renderTree;
             RectInt quad = nestedRenderTree.quadRect;
             var uvRect = nestedRenderTree.quadUVRect;
@@ -46,7 +50,7 @@ namespace UnityEngine.UIElements.UIR
                 indices[4] = 3;
                 indices[5] = 0;
 
-                mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, nestedRenderTree.quadTextureId, true);
+                mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, nestedRenderTree.quadTextureId, true, nestedRenderTree.quadIsGammaEncoded);
             }
 
             mgc.entryRecorder.DrawChildren(mgc.parentEntry);
@@ -204,7 +208,8 @@ namespace UnityEngine.UIElements.UIR
             var ve = mgc.visualElement;
             var renderData = mgc.renderData;
 
-            if (!renderData.hasBackdropFilterAllocated)
+            // A nested-render-tree root's backdrop is drawn by its parent subtree quad, not from inside the nested tree.
+            if (!renderData.hasBackdropFilterAllocated || renderData.isNestedRenderTreeRoot)
                 return;
 
             var veSize = ve.layoutSize;

@@ -7,6 +7,7 @@ using Unity.ProjectAuditor.Editor.Utils;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.PackageManager;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -31,7 +32,7 @@ namespace Unity.ProjectAuditor.Editor
                 PathUtils.GetDirectoryName(PathUtils.GetDirectoryName(asmDefPath));
 
             #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var packageInfo = PackageUtils.GetClientPackages().FirstOrDefault(p => p.name == Name);
+            var packageInfo = PackageInfo.GetAllRegisteredPackages().FirstOrDefault(p => p.name == Name);
 #pragma warning restore UA2001
 
             IsInstalled = (packageInfo != null);

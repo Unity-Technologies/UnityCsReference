@@ -9,6 +9,8 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
@@ -66,22 +68,27 @@ internal partial class DictionaryDrawer
 {
     internal static class SharedStyles
     {
+        [NoAutoStaticsCleanup] // skinned color constant; skin is session-fixed, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor k_RowsSplitColor = new EditorGUIUtility.SkinnedColor(
             new Color(137f / 255f, 137f / 255f, 137f / 255f, 0.3f),
             new Color(36f / 255f, 36f / 255f, 36f / 255f, 0.5f));
 
+        [NoAutoStaticsCleanup] // skinned color constant; skin is session-fixed, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor k_ResizerColor = new EditorGUIUtility.SkinnedColor(
             new Color(137f / 255f, 137f / 255f, 137f / 255f, 0.3f),
             new Color(36f / 255f, 36f / 255f, 36f / 255f, 0.8f));
 
+        [NoAutoStaticsCleanup] // skinned color constant; skin is session-fixed, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor k_AlternatingRowColor = new EditorGUIUtility.SkinnedColor(
             new Color(0f, 0f, 0f, 0.07f),
             new Color(0f, 0f, 0f, 0.04f));
 
+        [NoAutoStaticsCleanup] // skinned color constant; skin is session-fixed, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor k_SelectionOutlineColor = new EditorGUIUtility.SkinnedColor(
             new Color(58f / 255f, 114f / 255f, 176f / 255f),
             new Color(44f / 255f, 93f / 255f, 135f / 255f));
 
+        [NoAutoStaticsCleanup] // skinned color constant; skin is session-fixed, safe to persist
         internal static readonly EditorGUIUtility.SkinnedColor k_SelectionOutlineColorInactive = new EditorGUIUtility.SkinnedColor(
             new Color(174f / 255f, 174f / 255f, 174f / 255f),
             new Color(77f / 255f, 77f / 255f, 77f / 255f));
@@ -179,9 +186,15 @@ internal partial class DictionaryDrawer
     }
 
     // Disk-backed, persistent across editor sessions. Key: Hash128 of normalized path
-    // ([\d+] → []) so list siblings share state (linked resizers). Eviction: only via
+    // ([\d+] → []) so container siblings share state (linked views). Eviction: only via
     // explicit RemoveState from the "Reset to Defaults" context menu.
+    [NoAutoStaticsCleanup] // disk-backed state cache, intentionally persistent across sessions; safe to persist
     static readonly StateCache<DictionaryState> s_StateCache = new StateCache<DictionaryState>("Library/StateCache/DictionaryDrawer/");
+
+    [NoAutoStaticsCleanup] // session-scoped change counter; value is irrelevant across reloads, only that it changes
+    static int s_StateVersion;
+
+    internal static int StateVersion => s_StateVersion;
 
     internal const float k_MinColumnPixelWidth = 40f;
     internal const float k_MinDictionaryPixelWidth = 2f * k_MinColumnPixelWidth;
@@ -195,6 +208,7 @@ internal partial class DictionaryDrawer
 
     // Used by tests to assert that certain changes do not trigger a re-sort. Kept on the
     // shared so a single counter is shared regardless of the per-property DrawerInstance.
+    [NoAutoStaticsCleanup] // test-only diagnostic counter, reset by tests; safe to persist
     internal static int s_SortCount;
 
     // True when totalWidth has hit the floor, i.e. dragging the resizer can't move the
@@ -238,11 +252,15 @@ internal partial class DictionaryDrawer
     }
 
     internal static float GetActiveKeyColumnFraction(Hash128 stateCacheKey, float attributeFraction)
+        => GetActiveKeyColumnFraction(s_StateCache.GetState(stateCacheKey), attributeFraction);
+
+    // Overload for callers that already hold the cached state (e.g. a per-frame sync that reads
+    // several fields), so they resolve all of them from a single GetState lookup.
+    internal static float GetActiveKeyColumnFraction(DictionaryState state, float attributeFraction)
     {
-        var cached = s_StateCache.GetState(stateCacheKey);
-        if (cached == null || cached.keyColumnFractionSetByUser <= 0f)
+        if (state == null || state.keyColumnFractionSetByUser <= 0f)
             return attributeFraction;
-        return cached.keyColumnFractionSetByUser;
+        return state.keyColumnFractionSetByUser;
     }
 
     // Layout follows the same default-vs-override rules as the key column fraction: the
@@ -250,11 +268,13 @@ internal partial class DictionaryDrawer
     // explicitly toggled it from the header context menu (layoutSetByUser). "Reset to
     // Defaults" removes the cache entry, so the attribute default returns.
     internal static DictionaryLayout GetActiveLayout(Hash128 stateCacheKey, DictionaryLayout attributeLayout)
+        => GetActiveLayout(s_StateCache.GetState(stateCacheKey), attributeLayout);
+
+    internal static DictionaryLayout GetActiveLayout(DictionaryState state, DictionaryLayout attributeLayout)
     {
-        var cached = s_StateCache.GetState(stateCacheKey);
-        if (cached == null || !cached.layoutSetByUser)
+        if (state == null || !state.layoutSetByUser)
             return attributeLayout;
-        return cached.layout;
+        return state.layout;
     }
 
     static DictionaryState GetOrCreateCachedState(Hash128 stateCacheKey)
@@ -272,6 +292,7 @@ internal partial class DictionaryDrawer
         var state = GetOrCreateCachedState(stateCacheKey);
         updateState(state);
         s_StateCache.SetState(stateCacheKey, state);
+        s_StateVersion++;
     }
 
     internal static bool HasCachedState(Hash128 stateCacheKey)
@@ -282,6 +303,7 @@ internal partial class DictionaryDrawer
     internal static void ClearCachedState(Hash128 stateCacheKey)
     {
         s_StateCache.RemoveState(stateCacheKey);
+        s_StateVersion++;
     }
 
     internal const string k_SerializedOrderSessionKey = "DictionarySerializedOrderInUI";
@@ -309,6 +331,24 @@ internal partial class DictionaryDrawer
         return Hash128.Compute(normalizedPath);
     }
 
+    // Why siblings share state at all: every collection element at a given level intentionally
+    // shares ONE persisted DictionaryState — their paths all normalize to the same
+    // ComputeStateCacheKey. Two reasons:
+    //   1. Avoid an explosion of persisted StateCache objects: without it, resizing a column (or
+    //      changing sort/layout) inside a container with 100,000+ elements could write 100,000+
+    //      per-element StateCache entries to disk. Collapsing the index means one shared entry per
+    //      level regardless of element count.
+    //   2. Consistency, matching how [DictionaryDisplayForType] configures appearance for ALL
+    //      dictionaries of a given closed type: every element at the same nested level should look
+    //      and behave the same, so the user adjusts sort/layout/column-width once rather than
+    //      re-doing it across every one of many nested dictionaries.
+    // Returns true when the property is a collection element (its path carries a numeric [\d+] index
+    // token), so it has sibling dictionaries whose live views should be linked and kept in sync.
+    internal static bool ShouldLinkViewStateWithSiblings(string propertyPath)
+    {
+        return s_ArrayIndexPattern.IsMatch(propertyPath);
+    }
+
     static Type[] GetDictionaryGenericArguments(FieldInfo fieldInfo)
     {
         return fieldInfo.FieldType.GetGenericArguments();
@@ -316,6 +356,7 @@ internal partial class DictionaryDrawer
 
     internal readonly struct SortedIndexMap
     {
+        [NoAutoStaticsCleanup] // immutable empty sentinel backed by Array.Empty; safe to persist
         public static readonly SortedIndexMap Empty =
             new SortedIndexMap(Array.Empty<int>(), Array.Empty<int>());
 
@@ -558,6 +599,7 @@ internal partial class DictionaryDrawer
     // for a shape it has no stake in (e.g. Dictionary<int,int>) from hijacking every such dictionary in
     // a project. The key is the closed Dictionary<K,V> targetType.
     // Statics reset on domain reload, so the cache rebuilds automatically when assemblies change.
+    [AutoStaticsCleanupOnCodeReload]
     static Dictionary<Type, AssemblyLayoutEntry> s_AssemblyLayoutRegistry;
 
     static Dictionary<Type, AssemblyLayoutEntry> GetAssemblyLayoutRegistry()
@@ -811,6 +853,15 @@ internal partial class DictionaryDrawer
                 current = displayIndex;
         }
         return current;
+    }
+
+    internal static bool RemoveEntryAtDisplayIndex(SerializedProperty arrayProperty, int index, SortedIndexMap sortedIndices)
+    {
+        using (ListPool<int>.Get(out var tempList))
+        {
+            tempList.Add(index);
+            return RemoveEntriesAtDisplayIndices(arrayProperty, tempList, sortedIndices);
+        }
     }
 
     // Performs the dictionary "Remove" mutation: maps the current selection from

@@ -82,7 +82,7 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             PerfCriticalContext = false;
         }
 
-        public override void BuildHierarchy(int depth, DependencyBuildContext context)
+        internal override void BuildHierarchy(int depth, DependencyBuildContext context)
         {
             // this check should be removed. Instead, the deep callstacks should be built on-demand
             if (depth++ == k_MaxDepth)
@@ -124,19 +124,19 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
             }
         }
 
-        public override string GetName()
+        internal override string GetName()
         {
             return MethodFullName;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             if (string.IsNullOrEmpty(PrettyTypeName))
                 return MethodFullName;
             return $"{PrettyTypeName}.{PrettyMethodName}";
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return PerfCriticalContext;
         }

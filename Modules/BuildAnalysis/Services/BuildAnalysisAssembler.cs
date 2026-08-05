@@ -11,13 +11,26 @@ namespace UnityEditor.Build.Analysis
 {
     internal static class BuildAnalysisAssembler
     {
-        private const int k_SchemaVersion = 1;
-
-        public static BuildAnalysis Assemble(BuildReportSummary reportSummary, BuildReportData reportData, RootAssetStats[] rootStats)
+        public static BuildAnalysis Assemble(
+            BuildReportSummary reportSummary,
+            BuildReportData reportData,
+            RootAssetStats[] rootStats,
+            SourceBuildAssets? sourceBuildAssets)
         {
+            // An asset-less build (e.g. scripts-only) borrows the Assets table from an earlier complete build.
+            var assetData = sourceBuildAssets?.Assets ?? reportData.Assets;
+
+            // The content source this asset-less build declared, recorded even when it can't be resolved so the UI
+            // can tell "reused a build that's gone" from "genuinely has no assets". Empty for builds with own content.
+            var declaredContentSource = reportData.Assets.Length == 0
+                && !reportSummary.ContentSourceBuildSessionGUID.Empty()
+                && reportSummary.ContentSourceBuildSessionGUID != reportSummary.BuildSessionGUID
+                    ? reportSummary.ContentSourceBuildSessionGUID
+                    : default;
+
             var stepTable = ConvertSteps(reportData.Steps);
             var analysisMessages = ConvertMessages(reportData.Messages, stepTable.Length);
-            ConvertAssets(reportData.Assets, out var assetTable, out var importerTypeTable);
+            ConvertAssets(assetData, out var assetTable, out var importerTypeTable);
             var rootAssetTable = ConvertRootAssets(rootStats, assetTable);
             var computed = BuildComputed(
                 assetTable,
@@ -27,7 +40,7 @@ namespace UnityEditor.Build.Analysis
 
             var output = new BuildAnalysis
             {
-                Version = k_SchemaVersion,
+                Version = BuildAnalysisConstants.k_SchemaVersion,
                 GeneratedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                 Summary = new BuildAnalysisSummary
                 {
@@ -56,9 +69,26 @@ namespace UnityEditor.Build.Analysis
                 },
                 Messages = analysisMessages,
                 Computed = computed,
+                AssetSource = BuildAssetSource(sourceBuildAssets, declaredContentSource),
             };
 
             return output;
+        }
+
+        private static BuildAnalysisAssetSource BuildAssetSource(SourceBuildAssets? sourceBuildAssets, GUID declaredContentSource)
+        {
+            // Not borrowed: keep the declared source so a still-unresolved one reads as source unavailable.
+            var borrowed = sourceBuildAssets.HasValue;
+            if (!borrowed)
+                return new BuildAnalysisAssetSource { ContentSourceBuildSessionGUID = declaredContentSource };
+
+            var source = sourceBuildAssets.Value;
+            return new BuildAnalysisAssetSource
+            {
+                ContentSourceBuildSessionGUID = source.BuildGuid,
+                BuildStartedAtUtc = source.BuildSummary.BuildStartedAt ?? string.Empty,
+                IsBorrowed = true,
+            };
         }
 
         private static BuildAnalysisStep[] ConvertSteps(BuildReportStepData[] steps)

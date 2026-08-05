@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
-    class AssemblyDependencyNode : DependencyNode
+    internal class AssemblyDependencyNode : DependencyNode
     {
         readonly string m_Name;
 
@@ -19,17 +19,17 @@ namespace Unity.ProjectAuditor.Editor.Core
 #pragma warning restore UA2001
         }
 
-        public override string GetName()
+        internal override string GetName()
         {
             return m_Name;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             return m_Name;
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return false;
         }

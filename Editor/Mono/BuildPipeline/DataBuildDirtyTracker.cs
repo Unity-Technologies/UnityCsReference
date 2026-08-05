@@ -54,6 +54,10 @@ namespace UnityEditor.Mono.BuildPipeline
                 BuildOptions.CompressWithLz4HC;
 
             public string[] assemblyNames;
+
+            // Session GUID of the full build that produced this data cache.
+            // A scripts-only or incremental build that reuses this cache copies it onto its report.
+            public GUID contentSourceBuildSessionGuid;
         }
 
         private BuildData buildData;
@@ -207,7 +211,8 @@ namespace UnityEditor.Mono.BuildPipeline
                     .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude)
                     .ToArray(),
 #pragma warning restore UA2001
-                assemblyNames = sortedAssemblyNames
+                assemblyNames = sortedAssemblyNames,
+                contentSourceBuildSessionGuid = report.summary.buildSessionGuid
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }
@@ -246,6 +251,31 @@ namespace UnityEditor.Mono.BuildPipeline
         {
             NPath buildReportPath = buildDataPath;
             buildReportPath.DeleteIfExists();
+        }
+
+        // Called (from native BuildPlayer) when a build reuses the data cache instead of rebuilding it — both the
+        // explicit scripts-only and the automatic (clean CheckDirty) reuse paths converge here. The reused BuildData
+        // carries the session GUID of the full build that produced the cache; record it on this build's report so it
+        // is written into BuildReportSummary and Build Analysis can borrow that exact source build's asset table.
+        [RequiredByNativeCode]
+        static public void SetContentSourceBuild(BuildReport report, string buildDataPath)
+        {
+            try
+            {
+                NPath path = buildDataPath;
+                if (report == null || !path.FileExists())
+                    return;
+
+                var buildData = JsonUtility.FromJson<BuildData>(path.ReadAllText());
+                if (buildData == null || buildData.contentSourceBuildSessionGuid.Empty())
+                    return;
+
+                report.SetContentSourceBuildSessionGUID(buildData.contentSourceBuildSessionGuid);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to record source content build metadata for this scripts-only build: {e.Message}");
+            }
         }
     }
 }

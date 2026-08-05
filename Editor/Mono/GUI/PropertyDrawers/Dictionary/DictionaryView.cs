@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements.Internal;
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.UIElements
 {
@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
 /// <c>BindingRequest</c> that re-walks the tree on the next panel update
 /// and re-dispatches the bind event, running the rebuild path twice.
 /// </summary>
-internal class DictionaryView : ListView
+internal partial class DictionaryView : ListView
 {
     // All USS classes added by the dictionary view live under the `unity-dictionary-view`
     // block so they're easy to distinguish from classes inherited from BaseListView,
@@ -95,9 +95,20 @@ internal class DictionaryView : ListView
     // foldout, so the value is always visible and the header is plain, non-interactive text.
     static readonly string k_RowValueHeaderClass = ussClassName + "__row-value-header";
 
+    // Holds the live DictionaryView siblings that share one persisted DictionaryState — the elements of a
+    // List/array/Dictionary of dictionaries, whose paths all normalize to the same key. Because
+    // they share a single StateCache entry (avoiding an explosion of per-instance caches), a
+    // sort-direction, layout, or column-width change made in one sibling must propagate live to
+    // the others.
+    // Key is the same Hash128 as s_StateCache (the normalized property path)
+    [AutoStaticsCleanupOnCodeReload]
+    static readonly Dictionary<Hash128, List<DictionaryView>> s_LinkedViews = new();
+
     SerializedProperty m_DictionaryFieldProperty;
     SerializedProperty m_ArrayProperty;
     Hash128 m_StateCacheKey;
+    Hash128 m_LinkedViewsKey;
+    bool m_IsLinked;
 
     readonly Foldout m_Foldout;
     Label m_HeaderInfoLabel;
@@ -215,10 +226,66 @@ internal class DictionaryView : ListView
         destroyItem = DestroyListItem;
         onAdd = _ => OnAddClicked();
         onRemove = _ => OnRemoveClicked();
-        selectionChanged += OnSelectionChanged;
 
-        RegisterCallback<AttachToPanelEvent>(_ => DictionaryDrawer.SerializedOrderChanged += OnSerializedOrderChanged);
-        RegisterCallback<DetachFromPanelEvent>(_ => DictionaryDrawer.SerializedOrderChanged -= OnSerializedOrderChanged);
+        RegisterCallback<AttachToPanelEvent>(_ => OnViewAttachToPanel());
+        RegisterCallback<DetachFromPanelEvent>(_ => OnViewDetachFromPanel());
+    }
+
+    void OnViewAttachToPanel()
+    {
+        DictionaryDrawer.SerializedOrderChanged += OnSerializedOrderChanged;
+        AddLinkedViewIfNeeded();
+    }
+
+    void OnViewDetachFromPanel()
+    {
+        DictionaryDrawer.SerializedOrderChanged -= OnSerializedOrderChanged;
+        RemoveLinkedViewIfNeeded();
+    }
+
+    void AddLinkedViewIfNeeded()
+    {
+        if (m_IsLinked || m_ArrayProperty == null || panel == null)
+            return;
+        if (!DictionaryDrawer.ShouldLinkViewStateWithSiblings(m_DictionaryFieldProperty.propertyPath))
+            return;
+
+        if (!s_LinkedViews.TryGetValue(m_StateCacheKey, out var list))
+        {
+            list = new List<DictionaryView>();
+            s_LinkedViews[m_StateCacheKey] = list;
+        }
+        list.Add(this);
+        m_LinkedViewsKey = m_StateCacheKey;
+        m_IsLinked = true;
+    }
+
+    void RemoveLinkedViewIfNeeded()
+    {
+        if (!m_IsLinked)
+            return;
+
+        if (s_LinkedViews.TryGetValue(m_LinkedViewsKey, out var list))
+        {
+            list.Remove(this);
+            if (list.Count == 0)
+                s_LinkedViews.Remove(m_LinkedViewsKey);
+        }
+        m_IsLinked = false;
+        m_LinkedViewsKey = default;
+    }
+
+    void PerformActionOnLinkedViews(Action<DictionaryView> action)
+    {
+        if (!m_IsLinked || !s_LinkedViews.TryGetValue(m_LinkedViewsKey, out var siblings) || siblings.Count <= 1)
+            return;
+
+        foreach (var view in siblings)
+        {
+            if (view == this)
+                continue;
+            action(view);
+        }
     }
 
     void OnSerializedOrderChanged()
@@ -320,7 +387,6 @@ internal class DictionaryView : ListView
         RebuildSortedIndices();
         RefreshListView();
         UpdateHeaderInfo();
-        UpdateRemoveButtonState();
 
         // Apply the restored persisted layout mode after the header + list are built
         // so the root modifier class and per-row config reflect it on first paint.
@@ -329,12 +395,16 @@ internal class DictionaryView : ListView
         ApplyLayoutMode(refresh: false);
 
         m_IsBound = true;
+
+        AddLinkedViewIfNeeded();
     }
 
     void ResetBoundState()
     {
         if (!m_IsBound)
             return;
+
+        RemoveLinkedViewIfNeeded();
 
         // Tear down everything RebuildFromProperty installs so a rebuild for a
         // different property starts from a clean slate. The foldout itself stays
@@ -373,7 +443,6 @@ internal class DictionaryView : ListView
         makeNoneElement = null;
         onAdd = null;
         onRemove = null;
-        selectionChanged -= OnSelectionChanged;
         UnregisterCallback<ValidateCommandEvent>(OnValidateCommand);
         UnregisterCallback<ExecuteCommandEvent>(OnExecuteCommand);
         UnregisterCallback<KeyDownEvent>(OnDictionaryKeyDown);
@@ -427,11 +496,6 @@ internal class DictionaryView : ListView
         var listFooter = m_Foldout.Q(className: BaseListView.footerUssClassName);
         if (listFooter != null)
             listFooter.style.display = DisplayStyle.None;
-    }
-
-    void OnSelectionChanged(IEnumerable<object> _)
-    {
-        UpdateRemoveButtonState();
     }
 
     void OnTrackedPropertyChanged(object _, SerializedProperty __)
@@ -551,7 +615,7 @@ internal class DictionaryView : ListView
 
         header.Add(m_KeyHeader);
         m_ColumnResizer = new ColumnResizer(
-            header, m_DictionaryFieldProperty.propertyPath, attributeFraction, UpdateColumnWidths);
+            header, m_DictionaryFieldProperty.propertyPath, attributeFraction, onDragged: OnColumnResizerDragged);
         header.Add(m_ColumnResizer.BuildElement());
         header.RegisterCallback<GeometryChangedEvent>(evt =>
         {
@@ -1003,6 +1067,34 @@ internal class DictionaryView : ListView
         }
     }
 
+    void OnColumnResizerDragged()
+    {
+        if (m_ColumnResizer == null)
+            return;
+        UpdateColumnWidths();
+        PropagateColumnFractionToLinkedViews(m_ColumnResizer.KeyColumnFraction);
+    }
+
+    void PropagateColumnFractionToLinkedViews(float fraction)
+    {
+        if (!m_IsLinked || !s_LinkedViews.TryGetValue(m_LinkedViewsKey, out var list) || list.Count <= 1)
+            return;
+
+        foreach (var view in list)
+        {
+            if (view != this)
+                view.SyncColumnFractionFromSibling(fraction);
+        }
+    }
+
+    void SyncColumnFractionFromSibling(float fraction)
+    {
+        if (m_ColumnResizer == null)
+            return;
+        m_ColumnResizer.SetKeyColumnFraction(fraction);
+        UpdateColumnWidths();
+    }
+
     // Marks that the keys may have changed and queues a single deferred pass.
     // Calling this again before the pass runs has no extra effect. The actual
     // decision (hash check + interaction gate) lives in SortIfNeeded, which
@@ -1079,12 +1171,20 @@ internal class DictionaryView : ListView
     {
         if (m_Layout == layout)
             return;
-        m_Layout = layout;
+        ApplyLayout(layout);
         DictionaryDrawer.UpdateCachedState(m_StateCacheKey, state =>
         {
             state.layout = layout;
             state.layoutSetByUser = true;
         });
+        PerformActionOnLinkedViews(v => v.ApplyLayout(layout));
+    }
+
+    void ApplyLayout(DictionaryLayout layout)
+    {
+        if (!m_IsBound || m_Layout == layout)
+            return;
+        m_Layout = layout;
         ApplyLayoutMode();
     }
 
@@ -1176,15 +1276,32 @@ internal class DictionaryView : ListView
         if (DictionaryDrawer.ShowSerializedOrder)
             return;
 
-        m_SortAscending = !m_SortAscending;
+        bool ascending = !m_SortAscending;
+        ApplySortAscending(ascending);
+        DictionaryDrawer.UpdateCachedState(m_StateCacheKey, state => state.sortAscending = ascending);
+        PerformActionOnLinkedViews(v => v.ApplySortAscending(ascending));
+    }
+
+    void ApplySortAscending(bool ascending)
+    {
+        if (!m_IsBound || m_SortAscending == ascending)
+            return;
+        m_SortAscending = ascending;
         UpdateSortIndicatorClass();
-        DictionaryDrawer.UpdateCachedState(m_StateCacheKey, state => state.sortAscending = m_SortAscending);
         RebuildSortedIndicesAndRefresh();
     }
 
     void ResetToDefaults()
     {
         DictionaryDrawer.ClearCachedState(m_StateCacheKey);
+        ApplyResetToDefaults();
+        PerformActionOnLinkedViews(v => v.ApplyResetToDefaults());
+    }
+
+    void ApplyResetToDefaults()
+    {
+        if (!m_IsBound)
+            return;
 
         m_SortAscending = true;
         UpdateSortIndicatorClass();
@@ -1198,6 +1315,7 @@ internal class DictionaryView : ListView
         bool templateChanged = ApplyLayoutMode(refresh: false);
 
         m_ColumnResizer?.ResetToDefaultFraction();
+        UpdateColumnWidths();
         RebuildSortedIndicesAndRefresh(rebuild: templateChanged);
     }
 
@@ -1297,7 +1415,6 @@ internal class DictionaryView : ListView
         schedule.Execute(() => ScrollToItem(newDisplayIndex));
 
         UpdateHeaderInfo();
-        UpdateRemoveButtonState();
     }
 
     void RebuildSortedIndices()
@@ -1426,8 +1543,9 @@ internal class DictionaryView : ListView
         var selected = SelectedDisplayIndices;
         int newSelectedDisplayIndex = selected.Count == 1 ? selected[0] : -1;
 
-        bool removed = DictionaryDrawer.RemoveEntriesAtDisplayIndices(
-            m_ArrayProperty, selected, m_SortedIndexMap);
+        var removed = selected.Count > 0 ?
+            DictionaryDrawer.RemoveEntriesAtDisplayIndices(m_ArrayProperty, selected, m_SortedIndexMap) :
+            DictionaryDrawer.RemoveEntryAtDisplayIndex(m_ArrayProperty, m_ArrayProperty.arraySize - 1, m_SortedIndexMap);
         if (!removed)
             return;
 
@@ -1442,15 +1560,6 @@ internal class DictionaryView : ListView
             SetSelection(Mathf.Min(newSelectedDisplayIndex, newSize - 1));
 
         FocusContentContainer();
-        UpdateRemoveButtonState();
-    }
-
-    void UpdateRemoveButtonState()
-    {
-        // BaseListView.allowRemove drives the built-in remove button's enabled
-        // state through UpdateRemoveButton(), which honors both this flag and
-        // the item count — same UX as the previous hand-built footer.
-        allowRemove = SelectedDisplayIndices.Count > 0;
     }
 
     /// <summary>
@@ -1467,16 +1576,9 @@ internal class DictionaryView : ListView
         // here, for the drag-start width calculation.
         const float k_ResizerLineWidth = 1f;
 
-        // In-memory, editor-process lifetime. Key: same Hash128 as s_StateCache (normalized path).
-        // Holds the set of ColumnResizer instances across which fraction changes propagate.
-        // Eviction: per-resizer in OnDetachFromPanel; entry removed when its list empties.
-        // Registration is gated on m_IsPartOfList, so top-level dictionaries never enter this table.
-        static readonly Dictionary<Hash128, List<ColumnResizer>> s_LinkedResizers = new();
-
         readonly VisualElement m_Header;
         readonly Hash128 m_StateCacheKey;
-        readonly Action m_OnFractionChanged;
-        readonly bool m_IsPartOfList;
+        readonly Action m_OnDragged;
         readonly float m_AttributeFraction;
 
         float m_KeyColumnFraction;
@@ -1487,11 +1589,10 @@ internal class DictionaryView : ListView
 
         public float KeyColumnFraction => m_KeyColumnFraction;
 
-        public ColumnResizer(VisualElement header, string propertyPath, float attributeFraction, Action onFractionChanged)
+        public ColumnResizer(VisualElement header, string propertyPath, float attributeFraction, Action onDragged)
         {
             m_Header = header;
-            m_OnFractionChanged = onFractionChanged;
-            m_IsPartOfList = Regex.IsMatch(propertyPath, @"\[\d+\]");
+            m_OnDragged = onDragged;
             m_AttributeFraction = attributeFraction;
             m_StateCacheKey = DictionaryDrawer.ComputeStateCacheKey(propertyPath);
             m_KeyColumnFraction = DictionaryDrawer.GetActiveKeyColumnFraction(m_StateCacheKey, attributeFraction);
@@ -1515,55 +1616,17 @@ internal class DictionaryView : ListView
             interaction.RegisterCallback<PointerUpEvent>(OnPointerUp);
             interaction.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
 
-            if (m_IsPartOfList)
-            {
-                line.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-                line.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            }
-
             return line;
+        }
+
+        public void SetKeyColumnFraction(float fraction)
+        {
+            m_KeyColumnFraction = fraction;
         }
 
         public void ResetToDefaultFraction()
         {
             m_KeyColumnFraction = m_AttributeFraction;
-            m_OnFractionChanged?.Invoke();
-            if (m_IsPartOfList)
-                NotifyLinkedResizers();
-        }
-
-        void OnAttachToPanel(AttachToPanelEvent evt)
-        {
-            if (!s_LinkedResizers.TryGetValue(m_StateCacheKey, out var list))
-            {
-                list = new List<ColumnResizer>();
-                s_LinkedResizers[m_StateCacheKey] = list;
-            }
-            list.Add(this);
-        }
-
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            if (s_LinkedResizers.TryGetValue(m_StateCacheKey, out var list))
-            {
-                list.Remove(this);
-                if (list.Count == 0)
-                    s_LinkedResizers.Remove(m_StateCacheKey);
-            }
-        }
-
-        void NotifyLinkedResizers()
-        {
-            if (!s_LinkedResizers.TryGetValue(m_StateCacheKey, out var list) || list.Count <= 1)
-                return;
-
-            foreach (var resizer in list)
-            {
-                if (resizer == this)
-                    continue;
-                resizer.m_KeyColumnFraction = m_KeyColumnFraction;
-                resizer.m_OnFractionChanged?.Invoke();
-            }
         }
 
         void OnPointerDown(PointerDownEvent evt)
@@ -1588,9 +1651,7 @@ internal class DictionaryView : ListView
             float deltaX = evt.position.x - m_DragStartX;
             float newFraction = m_DragStartFraction + deltaX / m_DragStartHeaderContentWidth;
             m_KeyColumnFraction = DictionaryDrawer.ClampDraggedKeyColumnFraction(newFraction, m_DragStartHeaderContentWidth);
-            m_OnFractionChanged?.Invoke();
-            if (m_IsPartOfList)
-                NotifyLinkedResizers();
+            m_OnDragged?.Invoke();
             evt.StopPropagation();
         }
 

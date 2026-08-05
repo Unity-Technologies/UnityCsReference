@@ -1977,11 +1977,19 @@ namespace UnityEditor
                 bool resolutionChanged = terrainData.detailResolution != detailResolution;
                 if (resolutionChanged)
                 {
-                    detailResolutionPerPatch = Mathf.Min(detailResolutionPerPatch, detailResolution);
+                    if (detailResolution < kMinDetailResolutionPerPatch)
+                    {
+                        detailResolution = 0;
+                    }
+                    else
+                    {
+                        var maxResolutionPerPatch = Mathf.Max(detailResolution, kMinDetailResolutionPerPatch);
+                        detailResolutionPerPatch = Mathf.Clamp(detailResolutionPerPatch, kMinDetailResolutionPerPatch, maxResolutionPerPatch);
+                    }
                 }
 
                 bool resolutionPerPatchChanged = terrainData.detailResolutionPerPatch != detailResolutionPerPatch;
-                if (resolutionPerPatchChanged)
+                if (resolutionPerPatchChanged && detailResolution != 0)
                 {
                     detailResolution = Mathf.Max(detailResolution, detailResolutionPerPatch);
                 }

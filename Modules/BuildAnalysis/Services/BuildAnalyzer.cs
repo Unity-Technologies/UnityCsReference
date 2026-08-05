@@ -29,15 +29,18 @@ namespace UnityEditor.Build.Analysis
         private readonly IBuildReportConverter m_BuildReportConverter;
         private readonly IBuildAnalysisFileSystem m_FileSystem;
         private readonly IBuildHistoryProvider m_BuildHistory;
+        private readonly ISourceBuildAssetResolver m_AssetResolver;
 
         public BuildAnalyzer(
             IBuildReportConverter buildReportConverter,
             IBuildAnalysisFileSystem fileSystem,
-            IBuildHistoryProvider buildHistory)
+            IBuildHistoryProvider buildHistory,
+            ISourceBuildAssetResolver assetResolver)
         {
             m_BuildReportConverter = buildReportConverter ?? throw new ArgumentNullException(nameof(buildReportConverter));
             m_FileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             m_BuildHistory = buildHistory ?? throw new ArgumentNullException(nameof(buildHistory));
+            m_AssetResolver = assetResolver ?? throw new ArgumentNullException(nameof(assetResolver));
         }
 
         private readonly struct GatheredInputs
@@ -45,12 +48,14 @@ namespace UnityEditor.Build.Analysis
             public readonly BuildReportSummary ReportSummary;
             public readonly BuildReportData ReportData;
             public readonly string MetadataPath;
+            public readonly SourceBuildAssets? SourceBuildAssets;
 
-            public GatheredInputs(BuildReportSummary reportSummary, BuildReportData reportData, string metadataPath)
+            public GatheredInputs(BuildReportSummary reportSummary, BuildReportData reportData, string metadataPath, SourceBuildAssets? sourceBuildAssets)
             {
                 ReportSummary = reportSummary;
                 ReportData = reportData;
                 MetadataPath = metadataPath;
+                SourceBuildAssets = sourceBuildAssets;
             }
         }
 
@@ -119,10 +124,17 @@ namespace UnityEditor.Build.Analysis
             }
             var reportData = m_BuildReportConverter.Convert(buildReport);
 
+            // A Player build that recorded no assets (scripts-only, or an incremental build that reused its data
+            // cache) borrows the asset table from the exact source build the pipeline recorded on this build's
+            // summary. The resolver limits itself to Player builds, so no build-type check is needed here.
+            SourceBuildAssets? sourceBuildAssets = null;
+            if (reportData.Assets.Length == 0 && m_AssetResolver.TryResolveSourceBuildAssets(reportSummary, out var resolved))
+                sourceBuildAssets = resolved;
+
             if (!m_BuildHistory.TryGetBuildReportDirectory(entry.BuildSessionGUID, out var metadataPath))
                 throw new InvalidDataException($"No build report directory available for build '{entry.BuildSessionGUID}'.");
 
-            return new GatheredInputs(reportSummary, reportData, metadataPath);
+            return new GatheredInputs(reportSummary, reportData, metadataPath, sourceBuildAssets);
         }
 
         private BuildAnalysis AssembleAnalysis(GatheredInputs inputs)
@@ -132,7 +144,7 @@ namespace UnityEditor.Build.Analysis
                 : Array.Empty<RootAssetStats>();
 
             using (s_AssembleMarker.Auto())
-                return BuildAnalysisAssembler.Assemble(inputs.ReportSummary, inputs.ReportData, rootStats);
+                return BuildAnalysisAssembler.Assemble(inputs.ReportSummary, inputs.ReportData, rootStats, inputs.SourceBuildAssets);
         }
 
         private void PersistAnalysis(BuildAnalysis analysis, string metadataPath)

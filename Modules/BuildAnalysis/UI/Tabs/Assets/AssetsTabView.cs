@@ -29,6 +29,9 @@ namespace UnityEditor.Build.Analysis
         private Label m_AssetsValue;
         private VisualElement m_RootAssetsCard;
         private Label m_RootAssetsValue;
+        private VisualElement m_ContentMain;
+        private HelpBox m_AssetSourceBanner;
+        private HelpBox m_AssetsEmptyState;
 
         private bool m_HasLaidOut;
         private bool m_InspectorOpen;
@@ -56,6 +59,9 @@ namespace UnityEditor.Build.Analysis
             m_AssetsValue = m_Root.Q<VisualElement>("stat-card-assets").Q<Label>("value");
             m_RootAssetsCard = m_Root.Q<VisualElement>("stat-card-root-assets");
             m_RootAssetsValue = m_RootAssetsCard.Q<Label>("value");
+            m_ContentMain = m_Root.Q<VisualElement>("assets-content-main");
+            m_AssetSourceBanner = m_Root.Q<HelpBox>("asset-source-banner");
+            m_AssetsEmptyState = m_Root.Q<HelpBox>("assets-empty-state");
 
             var sections = m_Root.Q<VisualElement>("assets-sections");
             m_RootAssetTable = new RootAssetTable();
@@ -145,6 +151,8 @@ namespace UnityEditor.Build.Analysis
                 m_CachedAssets = Array.Empty<BuildAnalysisAsset>();
                 m_RootAssetsCard.style.display = DisplayStyle.None;
                 m_RootAssetTable.style.display = DisplayStyle.None;
+                m_AssetSourceBanner.style.display = DisplayStyle.None;
+                m_AssetsEmptyState.style.display = DisplayStyle.None;
                 return;
             }
 
@@ -166,6 +174,30 @@ namespace UnityEditor.Build.Analysis
             }
 
             m_AssetTable.Bind(analysis);
+
+            // Assets-less builds (scripts-only / incremental-clean) borrow the table from an earlier build.
+            // A build whose recorded content source couldn't be resolved hides the table and shows the empty state instead.
+            // Reflect that state instead of a bare empty grid.
+            var unavailable = analysis.AssetSource.SourceUnavailable;
+            m_ContentMain.style.display = unavailable ? DisplayStyle.None : DisplayStyle.Flex;
+
+            m_AssetsEmptyState.style.display = unavailable ? DisplayStyle.Flex : DisplayStyle.None;
+            if (unavailable)
+                m_AssetsEmptyState.text = "No asset data was found for this build. " +
+                                          "Scripts-only and incremental builds show assets from an earlier complete build, but none was found. Run a complete build to record asset data.";
+
+            var borrowed = analysis.AssetSource.IsBorrowed;
+            m_AssetSourceBanner.style.display = borrowed ? DisplayStyle.Flex : DisplayStyle.None;
+            if (borrowed)
+                m_AssetSourceBanner.text = BuildBorrowedBannerText(analysis.AssetSource);
+        }
+
+        private static string BuildBorrowedBannerText(BuildAnalysisAssetSource source)
+        {
+            var date = FormatUtility.TryParseBuildTimestamp(source.BuildStartedAtUtc, out var parsed)
+                ? $" ({FormatUtility.FormatBuildDate(parsed.ToLocalTime().DateTime)})"
+                : string.Empty;
+            return $"The asset data shown is from an earlier complete build{date}. This build did not record any of its own.";
         }
 
         public void OnTabVisibilityChanged(bool isVisible)

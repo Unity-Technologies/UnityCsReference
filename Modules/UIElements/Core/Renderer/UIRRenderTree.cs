@@ -105,7 +105,9 @@ namespace UnityEngine.UIElements.UIR
         public TextureId quadTextureId;
         public RectInt quadRect;
         public Rect quadUVRect;
-        
+        // Gamma-encoded quad (force-gamma); the parent samples it without re-encoding (UI-5094).
+        public bool quadIsGammaEncoded;
+
         public GCHandlePool m_GCHandlePool = new();
 
         internal RenderTreeManager renderTreeManager => m_RenderTreeManager;
@@ -141,6 +143,7 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.owner = this;
 
             quadTextureId = TextureId.invalid;
+            quadIsGammaEncoded = false;
 
             parent = null;
             firstChild = null;
@@ -176,6 +179,7 @@ namespace UnityEngine.UIElements.UIR
 
             // Work
             m_RenderTreeManager.ResetGraphicEntries(renderData);
+            BackdropFilterHelper.ReleaseBackdropFilterResources(m_RenderTreeManager, renderData);
 
             // Recurse
             RenderData child = renderData.firstChild;

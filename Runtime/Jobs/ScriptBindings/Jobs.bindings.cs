@@ -12,7 +12,9 @@ using Unity.Burst;
 
 namespace Unity.Jobs.LowLevel.Unsafe
 {
+    // Preserve JobProducerType so Burst can find the attribute, despite no player references (UUM-147717).
     [AttributeUsage(AttributeTargets.Interface)]
+    [RequireAttributeUsages]
     public sealed class JobProducerTypeAttribute : Attribute
     {
         public Type ProducerType { get; }

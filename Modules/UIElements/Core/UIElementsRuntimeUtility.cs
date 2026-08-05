@@ -431,9 +431,16 @@ namespace UnityEngine.UIElements
 
             var ps = panelRenderer.panelSettings as PanelSettings;
             if (panelRenderer.enabled)
+            {
                 panelRenderer.requiresReinsertion = true;
+
+                // UUM-147875: requiresReinsertion may be already true, which will skip shouldCheckForRequiredReinsertions
+                PanelRenderer.shouldCheckForRequiredReinsertions = true;
+            }
             else
+            {
                 panelRenderer.RemoveFromHierarchy();
+            }
 
             panelRenderer.previousEnabled = panelRenderer.enabled;
         }

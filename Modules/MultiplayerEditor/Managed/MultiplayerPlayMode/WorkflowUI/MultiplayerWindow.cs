@@ -30,14 +30,55 @@ namespace Unity.Multiplayer.PlayMode.Editor
             MultiplayerWindowController.ShouldUpdateUI = true;
         }
 
+        void OnDestroy()
+        {
+            ScenarioManagerProvider.instance.ConfigAssetChanged -= OnScenarioConfigChanged;
+        }
+
         public void CreateGUI()
         {
-            if (!MultiplayerWindowController.IsVirtualProjectWorkflowInitialized)
+            RefreshContent();
+        }
+
+        internal void RefreshContent()
+        {
+            if (MultiplayerWindowController.IsVirtualProjectWorkflowInitialized)
             {
-                DestroyImmediate(this);
+                EnsureWorkflowUIBuilt();
                 return;
             }
 
+            ScenarioManagerProvider.instance.ConfigAssetChanged -= OnScenarioConfigChanged;
+            rootVisualElement.Clear();
+            MainView = null;
+            ShowUnavailableMessage();
+        }
+
+        void ShowUnavailableMessage()
+        {
+            var message = MigrationUtility.ShouldEnableMultiplayerPlayMode()
+                ? "Multiplayer Play Mode is not enabled. [Preferences > Multiplayer Play Mode]"
+                : "Multiplayer Play Mode is not available until the Multiplayer Play Mode package is installed.";
+
+            var helpBox = new HelpBox(message, HelpBoxMessageType.Info);
+            helpBox.style.marginLeft = 6;
+            helpBox.style.marginRight = 16;
+            helpBox.style.marginTop = 8;
+            helpBox.style.marginBottom = 10;
+            rootVisualElement.Add(helpBox);
+        }
+
+        internal void EnsureWorkflowUIBuilt()
+        {
+            if (MainView != null)
+                return;
+
+            rootVisualElement.Clear();
+            BuildWorkflowUI();
+        }
+
+        void BuildWorkflowUI()
+        {
             // Set minimum window size to prevent UI overlapping issues for non-docked mppm window
             minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
 
@@ -52,7 +93,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             rootVisualElement.Add(MainView);
             var currentConfig = PlayModeScenarioManager.ActiveScenario;
             MainView.SetEnabled(currentConfig.name == "Default");
-            UnityPlayer[] players = MultiplayerPlaymode.Players;
             m_DisabledHelpBox.style.display = currentConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
             m_DisabledHelpBox.style.marginLeft = 6;
             m_DisabledHelpBox.style.marginRight = 16;
@@ -62,19 +102,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_DisabledHelpBox.style.height = StyleKeyword.Auto;
             m_DisabledHelpBox.style.flexShrink = 0;
 
-            ScenarioManagerProvider.instance.ConfigAssetChanged += () =>
-            {
-                var newConfig = PlayModeScenarioManager.ActiveScenario;
-                MainView.SetEnabled(newConfig.name == "Default");
-                m_DisabledHelpBox.style.display = newConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
-                foreach (var player in players)
-                {
-                    if (player.PlayerState is PlayerState.Launched or PlayerState.Launching && newConfig.name != "Default")
-                    {
-                        player.Deactivate(out _);
-                    }
-                }
-            };
+            ScenarioManagerProvider.instance.ConfigAssetChanged += OnScenarioConfigChanged;
             // handles domain reload for narrow window UI
             ApplyNarrowWindowClass(position.width, true);
 
@@ -82,6 +110,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
             rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnWindowSizeChanged);
 
             MultiplayerWindowController.ShouldStartWindow = true;
+        }
+
+        void OnScenarioConfigChanged()
+        {
+            var newConfig = PlayModeScenarioManager.ActiveScenario;
+            MainView.SetEnabled(newConfig.name == "Default");
+            m_DisabledHelpBox.style.display = newConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
+            foreach (var player in MultiplayerPlaymode.Players)
+            {
+                if (player.PlayerState is PlayerState.Launched or PlayerState.Launching && newConfig.name != "Default")
+                {
+                    player.Deactivate(out _);
+                }
+            }
         }
 
         void OnWindowSizeChanged(GeometryChangedEvent evt)
@@ -134,6 +176,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        static bool s_RuntimeHooksRegistered;
+
         static MultiplayerWindowController()
         {
             VirtualProjectWorkflow.OnInitialized += isMainEditor =>
@@ -144,6 +188,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     return;
                 }
                 IsVirtualProjectWorkflowInitialized = true;
+                EnsureRuntimeHooksRegistered();
+                RefreshAllWindows();
             };
             VirtualProjectWorkflow.OnDisabled += isMainEditor =>
             {
@@ -153,10 +199,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     return;
                 }
                 IsVirtualProjectWorkflowInitialized = false;
+                s_MultiplayerWindow = null;
+                APIModelToViewMapping.Clear();
+                RefreshAllWindows();
             };
+        }
 
-            if (!IsVirtualProjectWorkflowInitialized)
+        // Registered lazily rather than in the static ctor: some of these (e.g. MultiplayerPlaymode.PlayerTags)
+        // are only valid once the workflow is initialized.
+        static void EnsureRuntimeHooksRegistered()
+        {
+            if (s_RuntimeHooksRegistered)
                 return;
+            s_RuntimeHooksRegistered = true;
 
             // Events that update the UI
             EditorSceneManager.activeSceneChangedInEditMode += OnSceneChanged;
@@ -210,12 +265,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
         }
 
+        static void RefreshAllWindows()
+        {
+            // s_MultiplayerWindow is null until Start() runs, so find open windows directly.
+            foreach (var window in Resources.FindObjectsOfTypeAll<MultiplayerWindow>())
+                window.RefreshContent();
+        }
+
         static void Start()
         {
             if (s_MultiplayerWindow == null)
             {
                 s_MultiplayerWindow = EditorWindow.GetWindow<MultiplayerWindow>();
                 s_MultiplayerWindow.titleContent = new GUIContent(k_Title);
+                s_MultiplayerWindow.EnsureWorkflowUIBuilt();
 
                 APIModelToViewMapping.Clear();
 

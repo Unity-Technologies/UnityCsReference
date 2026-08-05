@@ -542,6 +542,9 @@ namespace UnityEngine.UIElements.UIR
                 if ((entry.flags & EntryFlags.IsPremultiplied) != 0)
                     cmd.flags |= CommandFlags.IsPremultiplied;
 
+                if ((entry.flags & EntryFlags.SamplesGammaSource) != 0)
+                    cmd.flags |= CommandFlags.SkipForceGamma;
+
                 m_VertsFilled += entryVertexCount;
                 m_IndicesFilled += entryIndexCount;
             }

@@ -10,9 +10,12 @@ using UnityEngine.U2D;
 
 namespace Unity.ProjectAuditor.Editor.AssetAnalysis
 {
-    internal class TextureDependencyNode : DependencyNode
+    /// <summary>
+    /// For building a texture dependency tree.
+    /// </summary>
+    public class TextureDependencyNode : DependencyNode
     {
-        public override void BuildHierarchy(int depth, DependencyBuildContext context)
+        internal override void BuildHierarchy(int depth, DependencyBuildContext context)
         {
             var uniquePaths = new HashSet<string>();
 
@@ -36,17 +39,17 @@ namespace Unity.ProjectAuditor.Editor.AssetAnalysis
                 AddChild(new AssetDependencyNode { Location = new Location(path) });
         }
 
-        public override string GetName()
+        internal override string GetName()
         {
             return Location.Filename;
         }
 
-        public override string GetPrettyName()
+        internal override string GetPrettyName()
         {
             return Location.Path;
         }
 
-        public override bool IsPerfCritical()
+        internal override bool IsPerfCritical()
         {
             return false;
         }

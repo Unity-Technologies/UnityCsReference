@@ -31,6 +31,15 @@ namespace UnityEditor
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             BindingExtensions.bindingImpl = new DefaultSerializedObjectBindingImplementation();
             EditorWindowBackendManager.defaultWindowBackend = (model) => model is IEditorWindowModel ? new DefaultEditorWindowBackend() :  new DefaultWindowBackend();
+
+            // GUIView.current is the view being painted during the repaint that drives the panel render, so its aux back buffer is the backdrop source.
+            UnityEngine.UIElements.UIR.BackdropFilterHelper.editorWindowBackdropSource = () =>
+            {
+                var view = GUIView.current;
+                if (view == null)
+                    return (null, false);
+                return (view.GetAuxBackBufferTexture(), view.GetAuxBackBufferTextureIsTopOrigin());
+            };
         }
 
         static void OnBeforeAssemblyReload()
