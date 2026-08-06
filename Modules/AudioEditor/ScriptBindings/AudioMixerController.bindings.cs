@@ -63,15 +63,15 @@ namespace UnityEditor.Audio
             }
             set
             {
-                snapshots_Internal = System.Array.ConvertAll(value, amsc => (AudioMixerSnapshot)amsc);
-                ValidateSnapshots();
+                SetSnapshotsInternal(System.Array.ConvertAll(value, amsc => (AudioMixerSnapshot)amsc));
             }
         }
 
         [NativeName("Snapshots")]
-        private extern AudioMixerSnapshot[] snapshots_Internal { get; set; }
+        private extern AudioMixerSnapshot[] snapshots_Internal { get; }
 
-        private extern void ValidateSnapshots();
+        [NativeMethod("SetSnapshots")]
+        private extern void SetSnapshotsInternal(AudioMixerSnapshot[] snapshots);
 
         [NativeMethod("AudioMixerControllerBindings::GetGroupVUInfo", HasExplicitThis = true, IsFreeFunction = true)]
         public extern int GetGroupVUInfo(GUID group, bool fader, float[] vuLevel, float[] vuPeak);

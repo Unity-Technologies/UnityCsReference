@@ -22,6 +22,7 @@ namespace UnityEngine
 
         internal Object[] m_Result;
         private CancellationToken m_CancellationToken;
+        private CancellationTokenSource m_LinkedCancellation;
 
         public Object[] Result { get { return m_Result; } }
 
@@ -43,7 +44,17 @@ namespace UnityEngine
 
         protected AsyncInstantiateOperation(IntPtr ptr, CancellationToken cancellationToken) : base(ptr)
         {
-            m_CancellationToken = CancellationTokenSource.CreateLinkedTokenSource(s_GlobalCancellation.Token, cancellationToken).Token;
+            if (ptr == IntPtr.Zero)
+                return;
+            m_LinkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(s_GlobalCancellation.Token, cancellationToken);
+            m_CancellationToken = m_LinkedCancellation.Token;
+            completed += DisposeLinkedCancellation;
+        }
+
+        private void DisposeLinkedCancellation(AsyncOperation _)
+        {
+            m_LinkedCancellation?.Dispose();
+            m_LinkedCancellation = null;
         }
 
         public static float GetIntegrationTimeMS()

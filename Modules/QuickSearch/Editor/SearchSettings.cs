@@ -833,7 +833,17 @@ namespace UnityEditor.Search
             return new SettingsProvider("Preferences/Search/Indexing", SettingsScope.User)
             {
                 guiHandler = DrawSearchIndexingSettings,
-                keywords = new[] { "search", "index", "indexer", "custom" },
+                keywords = new[]
+                {
+                    "search", "index", "indexer", "indexing", "custom",
+                    "Custom Indexers",
+                    "Index on editor startup",
+                    "Deep scene and prefab indexing",
+                    "Packages indexing",
+                    "Index Information",
+                    "Force rebuild Index",
+                    "Ignored properties"
+                }
             };
         }
 
