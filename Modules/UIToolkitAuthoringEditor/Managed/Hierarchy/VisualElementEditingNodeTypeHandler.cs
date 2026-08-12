@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
@@ -85,7 +86,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
     protected override bool AcceptRootAsParent() => Context.SubDocumentOptions != SubDocumentOptions.InContext;
 
-    static bool CanReceiveChildren(VisualElement element) => element.contentContainer != null;
+    static bool CanReceiveChildren(VisualElement element) => VisualElementUtility.CanReceiveChildren(element);
 
     protected override bool AcceptParent(HierarchyView view, in HierarchyNode parentNode, VisualElement parent)
     {
@@ -434,7 +435,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
             case DragAndDropPosition.OverItem:
             {
                 if (!TryGetElementFromNode(data.Target, out var parent)
-                    || !IsFullyEditable(parent))
+                    || !IsFullyEditable(parent)
+                    || !CanReceiveChildren(parent))
                     return DragVisualMode.Rejected;
 
                 if (!performDrop)
@@ -518,7 +520,7 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         {
             case DragAndDropPosition.OverItem:
             {
-                if (!TryGetElementFromNode(data.Target, out var parent) || !IsFullyEditable(parent))
+                if (!TryGetElementFromNode(data.Target, out var parent) || !IsFullyEditable(parent) || !CanReceiveChildren(parent))
                     return DragVisualMode.Rejected;
 
                 if (!performDrop)

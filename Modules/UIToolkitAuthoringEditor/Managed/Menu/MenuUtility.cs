@@ -58,7 +58,8 @@ static class MenuUtility
     {
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
         {
-            var parentVea = ResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling);
+            if (!TryResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling, out var parentVea))
+                return;
             ExecuteAdd(activeStage, request, parentVea);
             return;
         }
@@ -80,9 +81,12 @@ static class MenuUtility
             case VisualElementSelection { Element: not null } ves
                 when TryBuildContextFromElement(ves.Element, out var elementContext):
             {
-                var vea = GetFirstSuitableVisualElementAsset(ves.Element, elementContext.EditedVisualTreeAsset);
+                var parentElement = GetFirstSuitableElement(ves.Element, elementContext.EditedVisualTreeAsset);
+                var vea = parentElement?.visualElementAsset;
                 if (addAsSibling)
                     vea = (VisualElementAsset)vea?.parentAsset;
+                else if (parentElement != null && !VisualElementUtility.CanReceiveChildren(parentElement))
+                    return;
                 EnterStageAndAdd(elementContext, request, vea);
                 return;
             }
@@ -164,34 +168,50 @@ static class MenuUtility
         }
     }
 
-    static VisualElementAsset ResolveStageParent(VisualElementEditingStage stage, VisualElementSelection selection, bool addAsSibling)
+    static bool TryResolveStageParent(VisualElementEditingStage stage, VisualElementSelection selection, bool addAsSibling, out VisualElementAsset parentVea)
     {
+        parentVea = null;
+
         var element = selection?.Element;
         if (element == null)
-            return null;
+            return true;
 
         if (stage.Context.GetElementEditFlags(element) != VisualElementEditFlags.FullyEditable)
         {
-            var vea = GetFirstSuitableVisualElementAsset(element, stage.EditedVisualTreeAsset);
+            var suitable = GetFirstSuitableElement(element, stage.EditedVisualTreeAsset);
             if (addAsSibling)
-                vea = (VisualElementAsset)vea?.parentAsset;
+            {
+                parentVea = (VisualElementAsset)suitable?.visualElementAsset?.parentAsset;
+                return true;
+            }
 
-            return vea;
+            if (suitable != null && !VisualElementUtility.CanReceiveChildren(suitable))
+                return false;
+
+            parentVea = suitable?.visualElementAsset;
+            return true;
         }
 
-        var selectedVea = element.visualElementAsset;
         if (addAsSibling)
-            return (VisualElementAsset) selectedVea?.parentAsset;
-        return selectedVea;
+        {
+            parentVea = (VisualElementAsset)element.visualElementAsset?.parentAsset;
+            return true;
+        }
+
+        if (!VisualElementUtility.CanReceiveChildren(element))
+            return false;
+
+        parentVea = element.visualElementAsset;
+        return true;
     }
 
-    static VisualElementAsset GetFirstSuitableVisualElementAsset(VisualElement candidate, VisualTreeAsset targetVta)
+    static VisualElement GetFirstSuitableElement(VisualElement candidate, VisualTreeAsset targetVta)
     {
         var current = candidate;
         while (current != null)
         {
             if (current.visualElementAsset != null && current.visualElementAsset.visualTreeAsset == targetVta)
-                return current.visualElementAsset;
+                return current;
             current = current.hierarchy.parent;
         }
 

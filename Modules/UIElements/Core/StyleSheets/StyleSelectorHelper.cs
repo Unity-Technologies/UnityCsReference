@@ -68,8 +68,13 @@ namespace UnityEngine.UIElements.StyleSheets
             res = a.styleSheetIndexInStack - b.styleSheetIndexInStack;
             if (res != 0) return res;
 
-            // If they are the same, use the index in the imported style sheets of the owner style sheets (later wins)
-            res = a.importedStyleSheetIndex - b.importedStyleSheetIndex;
+            // If they are the same, break the tie by source within the owner style sheet: the owner's own rules
+            // (index -1) always rank above any sheet it imports, and among imports the later one wins. Map -1 to
+            // int.MaxValue so it sorts highest; both operands are then in [0, int.MaxValue], so the subtraction
+            // can't overflow.
+            int aImportIndex = a.importedStyleSheetIndex < 0 ? int.MaxValue : a.importedStyleSheetIndex;
+            int bImportIndex = b.importedStyleSheetIndex < 0 ? int.MaxValue : b.importedStyleSheetIndex;
+            res = aImportIndex - bImportIndex;
             if (res != 0) return res;
 
             // All else being equal, use the order in the style sheet itself

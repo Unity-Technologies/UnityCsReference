@@ -43,6 +43,8 @@ static class VisualElementUtility
         element.style.borderLeftColor = color;
     }
 
+    public static bool CanReceiveChildren(VisualElement element) => element?.contentContainer != null;
+
     public static void GenerateSubDocumentPath(this VisualElement element, List<TemplateAsset> templateAssetPath)
     {
         Assert.IsNotNull(templateAssetPath);

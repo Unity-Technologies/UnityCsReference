@@ -193,7 +193,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         /// </summary>
         public void OnEnable()
         {
-            if (serializedObject == null || serializedObject.targetObject == null)
+            if (target == null || serializedObject == null || serializedObject.targetObject == null)
                 return;
             m_FoldoutState.Clear();
             m_FieldObjects.Clear();
@@ -228,7 +228,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         /// </returns>
         public bool DisplayBaseSettingsBegin(bool isLegacyAPI = true)
         {
-            if (serializedObject == null || serializedObject.targetObject == null)
+            if (target == null || serializedObject == null || serializedObject.targetObject == null)
                 return false;
 
             serializedObject.Update();
@@ -279,7 +279,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         /// </summary>
         public void DisplayBaseSettingsEnd(bool isLegacyAPI = true)
         {
-            if (serializedObject == null || serializedObject.targetObject == null)
+            if (target == null || serializedObject == null || serializedObject.targetObject == null)
                 return;
 
             if (isLegacyAPI)

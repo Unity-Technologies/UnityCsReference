@@ -123,7 +123,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             RegisterCallback<MouseDownEvent>(OnMouseDown);
             RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
+            // Trickle down so the list handles arrow keys before the base ScrollView's nav-scroll (UUM-147017).
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut, TrickleDown.TrickleDown);
 
             m_PageManager.onFiltersChange += OnFiltersChange;
             m_PageManager.onTrimmedSearchTextChanged += OnTrimmedSearchTextChanged;
@@ -133,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UnregisterCallback<MouseDownEvent>(OnMouseDown);
             UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
+            UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut, TrickleDown.TrickleDown);
 
             m_PageManager.onFiltersChange -= OnFiltersChange;
             m_PageManager.onTrimmedSearchTextChanged -= OnTrimmedSearchTextChanged;
@@ -374,6 +375,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
         {
+            // Only when the list itself is focused; let focusable children (e.g. group carets) handle their own navigation.
+            if (evt.target != (object)this)
+                return;
+
             if (!UIUtils.IsElementVisible(this))
                 return;
 

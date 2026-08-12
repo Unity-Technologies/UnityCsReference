@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             IReadOnlyCollection<Sample> samples = version.isInstalled || version.HasTag(PackageTag.Feature)
-                ? m_PackageDatabase.GetSamples(version.package.uniqueId)
+                ? m_PackageDatabase.GetSamples(version.package.name)
                 : Array.Empty<Sample>();
 
             return samples?.Count > 0 || CheckDependenciesForSamples(version);
@@ -61,8 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var package in matchingPackages)
             {
-                var sampleId = package.product != null ? package.product.id.ToString() : package.uniqueId;
-                var samples = m_PackageDatabase.GetSamples(sampleId);
+                var samples = m_PackageDatabase.GetSamples(package.name);
 
                 if (samples?.Count > 0)
                     return true;
@@ -97,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_Version = version;
             m_Samples = m_Version.isInstalled || m_Version.HasTag(PackageTag.Feature)
-                ? m_PackageDatabase.GetSamples(version.package.uniqueId)
+                ? m_PackageDatabase.GetSamples(version.package.name)
                 : Array.Empty<Sample>();
 
             RefreshSamplesHelpBox();
@@ -190,21 +189,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnViewMoreSamplesClicked()
         {
-            var packageIdsToSelect = new HashSet<string>();
+            var packageNamesToSelect = new HashSet<string>();
             if (m_Samples != null && m_Samples.Count > 0)
-                packageIdsToSelect.Add(m_Version.package.uniqueId);
+                packageNamesToSelect.Add(m_Version.package.name);
 
             var matchingPackages = GetMatchingAuthorDependencies(m_Version);
 
             foreach (var package in matchingPackages)
             {
-                var samples = m_PackageDatabase.GetSamples(package.uniqueId);
+                var samples = m_PackageDatabase.GetSamples(package.name);
 
                 if (samples != null && samples.Count > 0)
-                    packageIdsToSelect.Add(package.uniqueId);
+                    packageNamesToSelect.Add(package.name);
             }
 
-            var idsAsList = new List<string>(packageIdsToSelect);
+            var idsAsList = new List<string>(packageNamesToSelect);
             PackageManagerWindowAnalytics.SendEvent("viewMoreSamples", m_Version);
             m_DelayedSelectionHandler.SelectSamplePageWithPackageFilters(idsAsList);
         }

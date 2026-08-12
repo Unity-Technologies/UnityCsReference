@@ -51,6 +51,14 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        // When set in UXML, an inline documentation "?" icon is added after the header label
+        // that opens this doc page on click (UUM-147138). Tooltip comes from documentationTooltip.
+        [UxmlAttribute("documentation-url")]
+        internal string documentationUrl { get; set; }
+
+        [UxmlAttribute("documentation-tooltip")]
+        internal string documentationTooltip { get; set; }
+
         [SerializeField, DontCreateProperty]
         protected bool m_Value;
 
@@ -131,6 +139,16 @@ namespace Unity.UIToolkit.Editor
             overrideContainer = m_Header;
             contentContainer = m_Container;
             value = true;
+
+            RegisterCallback<AttachToPanelEvent>(_ => AddDocumentationIcon());
+        }
+
+        void AddDocumentationIcon()
+        {
+            // Icon insertion is shared with PersistedFoldout via
+            // UnityEditor.UIElements.DocumentationLinkIcon so the two stay in sync (UUM-147138).
+            UnityEditor.UIElements.DocumentationLinkIcon.AddAfterLabel(
+                m_Toggle.Q<Label>(), documentationTooltip, documentationUrl);
         }
 
         internal override void OnViewDataReady()

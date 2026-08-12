@@ -82,8 +82,8 @@ internal class SamplesPage : SimplePage
         var sample = m_PackageDatabase.GetSample(itemUniqueId);
         if (sample.isDefault)
             return false;
-        var packageUniqueIds = filters.packageUniqueIds;
-        if (packageUniqueIds.Count > 0 && !packageUniqueIds.ContainsMatches(sample.packageUniqueId))
+        var packageTechnicalNames = filters.packageTechnicalNames;
+        if (packageTechnicalNames.Count > 0 && !packageTechnicalNames.ContainsMatches(sample.packageTechnicalName))
             return false;
         var filterByStatus = filters.status;
         return (filterByStatus != PageFilterStatus.Imported || sample.isImported || sample.previousImportPaths?.Count > 0)
@@ -109,8 +109,8 @@ internal class SamplesPage : SimplePage
 
         // We do another sort here by package display name we want to the package id filters to always be sorted by package display name
         includedItems.Sort((a, b) => Comparer.CompareDisplayName(a.sample.package, b.sample.package));
-        var supportedPackageUniqueIds = new List<string>(includedItems.SelectAsEnumerable(i => i.sample.packageUniqueId).EnumerateDistinct());
-        UpdateSupportedPackages(supportedPackageUniqueIds, true);
+        var supportedPackageTechnicalNames = new List<string>(includedItems.SelectAsEnumerable(i => i.sample.packageTechnicalName).EnumerateDistinct());
+        UpdateSupportedPackages(supportedPackageTechnicalNames, true);
     }
 
     public string GetGroupName(Sample sample)

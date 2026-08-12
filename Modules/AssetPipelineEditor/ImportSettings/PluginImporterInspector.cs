@@ -491,6 +491,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             // this method is doing a lot of setup and it used to be called in awake for some old reasons, which is not the case anymore.
             DiscardChanges();

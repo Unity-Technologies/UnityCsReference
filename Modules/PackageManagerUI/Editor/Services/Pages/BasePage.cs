@@ -105,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 result |= PageFilters.ChangedTypes.Categories;
             if (!first.labels.IsSequenceEqual(second.labels))
                 result |= PageFilters.ChangedTypes.Labels;
-            if (!first.packageUniqueIds.IsSequenceEqual(second.packageUniqueIds))
+            if (!first.packageTechnicalNames.IsSequenceEqual(second.packageTechnicalNames))
                 result |= PageFilters.ChangedTypes.Packages;
             return result;
         }
@@ -172,8 +172,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected bool UpdateSupportedLabels(IReadOnlyList<string> newLabels, bool triggerChangeEvent)
             => UpdateSupportedFilters(f => f.UpdateSupportedLabels(newLabels), triggerChangeEvent);
 
-        protected bool UpdateSupportedPackages(IReadOnlyList<string> newPackageUniqueIds, bool triggerChangeEvent)
-            => UpdateSupportedFilters(f => f.UpdateSupportedPackages(newPackageUniqueIds), triggerChangeEvent);
+        protected bool UpdateSupportedPackages(IReadOnlyList<string> newPackageTechnicalNames, bool triggerChangeEvent)
+            => UpdateSupportedFilters(f => f.UpdateSupportedPackages(newPackageTechnicalNames), triggerChangeEvent);
 
         public virtual void Activate()
         {

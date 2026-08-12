@@ -518,7 +518,7 @@ internal struct DictionaryHeaderWrite  // 24 + sizeof(IntPtr) bytes
     public uint         entryStride;                   // sizeof(SerializedKeyValue<K,V>)
     public uint         nestedByteCount;               // bytes of FBP-bracketed body that follow
     public int          getEntriesTypedIndex;          // SerializationCommandObjectTable index for closed GetEntriesTyped<K,V>; -1 = falls back to non-typed entry point
-    public uint         reserved3;                     // pad to 8-byte align fieldUniqueIdentifierTemplate
+    public uint         entryWireSize;                 // per-entry wire bytes, for the tail pad; 0 = self-aligned
     public IntPtr       fieldUniqueIdentifierTemplate; // editor-only; IntPtr.Zero in player builds
 }
 
@@ -526,7 +526,7 @@ internal struct DictionaryHeaderWrite  // 24 + sizeof(IntPtr) bytes
 // value as DictionaryHeaderWrite — the dispatchers live in separate switches
 // (write inside ObjectToSerializationBuffer, read inside SerializationBufferToObject)
 // so opcode reuse is unambiguous.
-internal struct DictionaryHeaderRead  // 24 + 2*sizeof(IntPtr) bytes
+internal struct DictionaryHeaderRead  // 32 + 2*sizeof(IntPtr) bytes
 {
     public RttiDataType opCode;                          // = RttiDataType.Dictionary
     public byte         reserved0;
@@ -537,6 +537,8 @@ internal struct DictionaryHeaderRead  // 24 + 2*sizeof(IntPtr) bytes
     public uint         nestedByteCount;                 // bytes of FBP-bracketed body that follow
     public int          dictDefaultAllocateFactoryIndex; // SerializationCommandObjectTable index for Func<object> => new Dictionary<K,V>(); -1 = leave null on read
     public int          setEntriesTypedIndex;            // SerializationCommandObjectTable index for closed SetEntriesTyped<K,V>; -1 = falls back to non-typed entry point
+    public uint         entryWireSize;                   // per-entry wire bytes, for the tail pad; 0 = self-aligned
+    public uint         reserved4;                       // pad to 8-byte align elementTypeHandle
     public IntPtr       elementTypeHandle;               // SerializedKeyValue<K,V> RuntimeTypeHandle.Value for Array.CreateInstance
     public IntPtr       fieldUniqueIdentifierTemplate;   // editor-only; IntPtr.Zero in player builds
 }
@@ -2897,14 +2899,14 @@ internal static unsafe class SerializationBackendManagedCommands
                 pendingAdvance = 0;
             }
 
-            // entryStride doubles as elementWireSize for the dict path — the
-            // probe-built per-entry body's wire bytes equal the managed entry
-            // size by construction (SerializedKeyValue<K,V> has no inline
-            // arrays/strings on the bulk-memcpy path). For bodies that contain
-            // variable-length entries (strings, refs), individual writes are
-            // already self-aligned and the aggregate pad is a no-op.
-            int totalWritten = count * (int)header->entryStride;
-            int padBytes     = (4 - (totalWritten & 3)) & 3;
+            // The pad comes from the per-entry WIRE width, which is not the managed entry
+            // stride: a bool key or value occupies one managed byte but four on the wire, so
+            // SerializedKeyValue<bool,bool> is a 2-byte stride against an 8-byte entry.
+            // entryWireSize is 0 when the entries are self-aligned (variable-length writes),
+            // and the pad is skipped.
+            int entryWireSize = (int)header->entryWireSize;
+            int totalWritten = count * entryWireSize;
+            int padBytes     = entryWireSize > 0 ? (4 - (totalWritten & 3)) & 3 : 0;
             if (padBytes > 0)
             {
                 Unsafe.InitBlockUnaligned(ctx->writerPtr, 0, (uint)padBytes);
@@ -3861,13 +3863,12 @@ internal static unsafe class SerializationBackendManagedCommands
                     }
                 }
 
-                // Skip the 0..3-byte tail pad written by the per-entry write
-                // path. entryStride doubles as the per-entry wire size here
-                // (SerializedKeyValue<K,V> has no inline arrays/strings on
-                // the bulk-memcpy path); for bodies with variable-length
-                // entries individual writes self-align and the pad is 0.
-                int totalBytes = count * (int)header->entryStride;
-                int padBytes   = (4 - (totalBytes & 3)) & 3;
+                // Skip the 0..3-byte tail pad the write path emitted, off the same
+                // per-entry wire width it padded against (see ConsumeDictionary). 0 means
+                // the entries were self-aligned and there is no pad.
+                int entryWireSize = (int)header->entryWireSize;
+                int totalBytes = count * entryWireSize;
+                int padBytes   = entryWireSize > 0 ? (4 - (totalBytes & 3)) & 3 : 0;
                 if (padBytes > 0)
                 {
                     if (ctx->readerAvailable < padBytes)

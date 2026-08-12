@@ -264,6 +264,10 @@ namespace UnityEditor.Experimental.GraphView
         private ITemplateSorter m_TemplateSorter;
         private ITemplateSorter[] m_DefaultTemplateSorter;
         private GraphViewTemplateWindowPrefs m_templateWindowPrefs;
+        private bool m_AdbOnly;
+        private VisualElement m_InfoBanner;
+        private Label m_HiddenQueryMessage;
+        private Label m_IndexingBannerMessage;
 
         private enum CreateMode
         {
@@ -334,6 +338,7 @@ namespace UnityEditor.Experimental.GraphView
             m_CurrentMode = mode;
             m_TemplateHelper = templateHelper;
             m_CustomTemplateIcon = EditorGUIUtility.LoadIcon(m_TemplateHelper.customTemplateIcon);
+            m_AdbOnly = adbOnly;
             m_SearchProvider = new TemplateSearchProvider(m_TemplateHelper, hiddenSearchQuery, adbOnly);
             m_templateWindowPrefs = new GraphViewTemplateWindowPrefs();
             m_templateWindowPrefs.LoadPrefs(m_TemplateHelper.toolKey);
@@ -377,7 +382,11 @@ namespace UnityEditor.Experimental.GraphView
                 closeIndexingBannerButton.clicked += OnClosePackageIndexingBanner;
             }
 
+            SetupInfoBanner();
+
             SetupHiddenQueryBanner(hiddenSearchQuery);
+
+            SetupIndexingBanner();
 
             var actionButton = rootVisualElement.Q<Button>("CreateButton");
             if (m_CurrentMode == CreateMode.Insert)
@@ -463,6 +472,7 @@ namespace UnityEditor.Experimental.GraphView
         private void OnDestroy()
         {
             Dispatcher.Off(SearchEvent.ItemFavoriteStateChanged, SearchEventManager.GetSearchEventHandlerHashCode(OnFavoriteStateChanged));
+            Dispatcher.Off(SearchEvent.SearchIndexReady, OnSearchIndexReady);
             this.m_templateWindowPrefs.LastUsedTemplateGuid = m_SelectedTemplate.assetGuid;
             this.m_templateWindowPrefs?.SavePrefs(this.m_TemplateHelper.toolKey);
         }
@@ -472,18 +482,62 @@ namespace UnityEditor.Experimental.GraphView
             rootVisualElement.Q<VisualElement>("PackageIndexingBanner").style.display = DisplayStyle.None;
         }
 
+        private void SetupInfoBanner()
+        {
+            m_InfoBanner = rootVisualElement.Q<VisualElement>("InfoBanner");
+        }
+
         private void SetupHiddenQueryBanner(string hiddenQuery)
         {
-            var hiddenQueryBanner = rootVisualElement.Q<VisualElement>("HiddenQueryBanner");
+            m_HiddenQueryMessage = rootVisualElement.Q<Label>("HiddenQueryMessage");
             if (string.IsNullOrEmpty(hiddenQuery))
             {
-                hiddenQueryBanner.style.display = DisplayStyle.None;
+                m_HiddenQueryMessage.style.display = DisplayStyle.None;
             }
             else
             {
-                var hiddenQueryMessage = hiddenQueryBanner.Q<Label>("HiddenQueryMessage");
-                hiddenQueryMessage.text = string.Format(hiddenQueryMessage.text, hiddenQuery);
+                m_HiddenQueryMessage.text = string.Format(m_HiddenQueryMessage.text, hiddenQuery);
+                m_HiddenQueryMessage.style.display = DisplayStyle.Flex;
             }
+
+            RefreshInfoBannerVisibility();
+        }
+
+        private void SetupIndexingBanner()
+        {
+            m_IndexingBannerMessage = rootVisualElement.Q<Label>("IndexingBannerMessage");
+            RefreshIndexingBannerState();
+        }
+
+        private void RefreshIndexingBannerState()
+        {
+            if (!m_AdbOnly)
+                Dispatcher.On(SearchEvent.SearchIndexReady, OnSearchIndexReady);
+
+            var isIndexing = !m_AdbOnly && !SearchDatabase.GetDefaultSearchDatabase().ready;
+            m_IndexingBannerMessage.style.display = isIndexing ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (!isIndexing)
+                Dispatcher.Off(SearchEvent.SearchIndexReady, OnSearchIndexReady);
+
+            RefreshInfoBannerVisibility();
+        }
+
+        private void RefreshInfoBannerVisibility()
+        {
+            static bool IsVisible(VisualElement element) => element != null && element.style.display == DisplayStyle.Flex;
+
+            var isAnyMessageVisible = IsVisible(m_HiddenQueryMessage) || IsVisible(m_IndexingBannerMessage);
+            m_InfoBanner.style.display = isAnyMessageVisible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void OnSearchIndexReady(ISearchEvent evt)
+        {
+            if (!SearchDatabase.GetDefaultSearchDatabase().ready)
+                return;
+
+            RefreshIndexingBannerState();
+            m_ViewModel?.SetSearchText(m_ViewModel.context.searchText);
         }
 
         private void OnClosePackageIndexingBanner()
@@ -497,6 +551,7 @@ namespace UnityEditor.Experimental.GraphView
             SearchDatabase.GetDefaultSearchDatabase().settings.EnablePackagesIndexing(true);
             SearchDatabase.GetDefaultSearchDatabase().SaveSettingsOptions(startIndexing: true);
             HidePackageIndexingBanner();
+            RefreshIndexingBannerState();
         }
 
         private void OnCancel()

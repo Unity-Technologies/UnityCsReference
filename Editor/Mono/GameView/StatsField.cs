@@ -109,8 +109,8 @@ namespace UnityEditor
         [CreateProperty] public string hybridBatcherDrawInfo => $"{UnityStats.hybridBatcherDrawCalls} draw calls ({UnityStats.hybridBatcherInstances} instances)";
         [CreateProperty] public string standardDrawInfo => $"{UnityStats.standardDrawCalls} draw calls ({UnityStats.standardInstances} instances)";
         [CreateProperty] public string standardInstancedDrawInfo => $"{UnityStats.standardInstancedDrawCalls} draw calls ({UnityStats.standardInstancedInstances} instances)";
-        [CreateProperty] public string triangles => FormatCounts(UnityStats.triangles);
-        [CreateProperty] public string vertices => FormatCounts(UnityStats.vertices);
+        [CreateProperty] public string triangles => FormatCounts(UnityStats.trianglesLong);
+        [CreateProperty] public string vertices => FormatCounts(UnityStats.verticesLong);
         [CreateProperty] public string desiredTextureMemory => $"{Texture.desiredTextureMemory * k_BytesToMegabytes:F1} MB";
 
         // UnityStats
@@ -144,11 +144,15 @@ namespace UnityEditor
         [CreateProperty] public int animatorComponentsPlaying => UnityStats.animatorComponentsPlaying;
 
 
-        private string FormatCounts(int value)
+        private string FormatCounts(long value)
         {
-            if (value >= 1000)
+            if (value >= 1_000_000)
             {
-                return $"{value / 1000.0f:F1}k";
+                return $"{value / 1_000_000.0f:F1}M";
+            }
+            else if (value >= 1_000)
+            {
+                return $"{value / 1_000.0f:F1}k";
             }
             return value.ToString();
         }

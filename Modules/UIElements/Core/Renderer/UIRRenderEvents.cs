@@ -386,7 +386,9 @@ namespace UnityEngine.UIElements.UIR
 
         static void ResetRenderData(RenderTreeManager renderTreeManager, RenderData renderData)
         {
-            renderData.renderTree.ChildWillBeRemoved(renderData);
+            // Captured before renderData.renderTree is cleared below; the backdrop-filter teardown needs it. UI-5170.
+            RenderTree renderTree = renderData.renderTree;
+            renderTree.ChildWillBeRemoved(renderData);
             CommandManipulator.ResetCommands(renderTreeManager, renderData);
 
             if (renderData.parent == null)
@@ -485,7 +487,15 @@ namespace UnityEngine.UIElements.UIR
             {
                 BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
                 renderTreeManager.panel?.DecrementBackdropFilterCount();
+                renderTree.UnregisterBackdropFilter(renderData);
             }
+
+            // Removal can occur without the chain ever becoming empty, so drop any registration the
+            // sync paths didn't; the blocks themselves were already returned by FreeExtraData above.
+            if (renderData.isRegisteredForFilterCallbacks)
+                renderTreeManager.UnregisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForFilterCallbacks);
+            if (renderData.isRegisteredForBackdropFilterCallbacks)
+                renderTreeManager.UnregisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForBackdropFilterCallbacks);
 
             renderTreeManager.ReturnPoolRenderData(renderData);
         }
@@ -914,6 +924,12 @@ namespace UnityEngine.UIElements.UIR
                     child = child.nextSibling;
                 }
             }
+            else if (transformChanged)
+            {
+                // Recursion stops at group transforms (descendants ride the group matrix). Backdrop-filters are
+                // the exception: their UVs track the world transform, which moved — refresh them via the registry. UI-5170.
+                renderData.renderTree.RefreshBackdropFilterDescendantsOfGroup(renderData);
+            }
         }
 
         static bool PromoteToBone(RenderTreeManager renderTreeManager, RenderData renderData)
@@ -1151,12 +1167,50 @@ namespace UnityEngine.UIElements.UIR
             if (isEnabled)
             {
                 BackdropFilterHelper.AllocBackdropFilterTextureId(renderTreeManager, renderData);
-                renderTreeManager.panel?.IncrementBackdropFilterCount();
+                // Alloc can fail when the texture registry is full; only count/register on success so this stays
+                // symmetric with the free path (also gated on hasBackdropFilterAllocated). UI-5170.
+                if (renderData.hasBackdropFilterAllocated)
+                {
+                    renderTreeManager.panel?.IncrementBackdropFilterCount();
+                    renderData.renderTree.RegisterBackdropFilter(renderData);
+
+                    // isEnabled already excludes the nested-tree root; the subtree quad is the RenderData that records the backdrop (DrawVisualElementBackdrop), so it must register too.
+                    renderTreeManager.RegisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForBackdropFilterCallbacks);
+                }
             }
             else
             {
                 BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
                 renderTreeManager.panel?.DecrementBackdropFilterCount();
+                renderData.renderTree.UnregisterBackdropFilter(renderData);
+                renderTreeManager.UnregisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForBackdropFilterCallbacks);
+            }
+        }
+
+        // Pre-build sync of the `filter` style: registers/unregisters on empty <-> non-empty transitions.
+        // No GPU-resource allocation here, unlike backdrop-filter — the compositor manages its own draw ops.
+        public static void SyncFilterState(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            // A filtered element has two RenderData (subtree quad + nested tree root) with the same
+            // owner; the compositor only reads the blocks of owner.renderData, so skip the nested
+            // root to avoid invoking user callbacks twice per frame for the same element.
+            if (renderData.isNestedRenderTreeRoot)
+                return;
+
+            bool wasEnabled = renderData.isRegisteredForFilterCallbacks;
+            bool isEnabled = renderData.owner.computedStyle.filter.Length > 0;
+
+            if (wasEnabled == isEnabled)
+                return;
+
+            if (isEnabled)
+            {
+                renderTreeManager.RegisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForFilterCallbacks);
+            }
+            else
+            {
+                FilterHelper.ReleaseFilterCallbackResources(renderTreeManager, renderData);
+                renderTreeManager.UnregisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForFilterCallbacks);
             }
         }
 

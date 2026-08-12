@@ -136,6 +136,94 @@ namespace UnityEngine.UIElements.UIR
         bool blockDirtyRegistration { get; set; }
         public TextureSlotCount textureSlotCount { get; set;} = TextureSlotCount.Eight;
 
+        // Per-frame filter/backdrop callback targets; one entry covers both chains.
+        readonly List<RenderData> m_ElementsWithFilterCallbacks = new();
+
+        // Blocks are cleared on release so a pooled block never retains textures/uniforms. collectionCheck
+        // stays off on purpose (O(n) per Release); double-release is prevented by every release path clearing the owning list.
+        const int k_FilterBlockPoolMaxSize = 8192;
+        readonly UnityEngine.Pool.ObjectPool<MaterialPropertyBlock> m_FilterBlockPool =
+            new(() => new MaterialPropertyBlock(), null, b => b.Clear(), null, false, 32, k_FilterBlockPoolMaxSize);
+
+        // Returns true when the count changed: the render-time caller must then re-prime defaults, since
+        // a grow leaves new blocks empty and a shrink leaves survivors holding a previous chain's uniforms.
+        public bool SizeFilterCallbackBlocks(List<MaterialPropertyBlock> blocks, int passCount)
+        {
+            bool changed = blocks.Count != passCount;
+            while (blocks.Count < passCount)
+                blocks.Add(m_FilterBlockPool.Get());
+            for (int i = blocks.Count - 1; i >= passCount; i--)
+            {
+                m_FilterBlockPool.Release(blocks[i]);
+                blocks.RemoveAt(i);
+            }
+            return changed;
+        }
+
+        public void ReleaseFilterCallbackBlocks(List<MaterialPropertyBlock> blocks)
+        {
+            if (blocks == null)
+                return;
+            for (int i = 0; i < blocks.Count; i++)
+                m_FilterBlockPool.Release(blocks[i]);
+            blocks.Clear();
+        }
+
+        // Owns both the registration flag and the list membership; the entry exists while either chain's flag is set.
+        public void RegisterFilterCallbackElement(RenderData renderData, RenderDataFlags flag)
+        {
+            bool wasInList = renderData.isRegisteredForFilterCallbacks || renderData.isRegisteredForBackdropFilterCallbacks;
+            renderData.flags |= flag;
+            if (!wasInList)
+                m_ElementsWithFilterCallbacks.Add(renderData);
+        }
+
+        public void UnregisterFilterCallbackElement(RenderData renderData, RenderDataFlags flag)
+        {
+            renderData.flags &= ~flag;
+            // Keep the entry while the other chain still needs it.
+            if (!renderData.isRegisteredForFilterCallbacks && !renderData.isRegisteredForBackdropFilterCallbacks)
+                m_ElementsWithFilterCallbacks.Remove(renderData);
+        }
+
+        // Snapshot for InvokeAllFilterCallbacks: user callbacks can synchronously unregister entries mid-walk.
+        readonly List<RenderData> m_FilterCallbackScratch = new();
+
+        // The only place user filter code runs: after DepthFirstProcessChanges and before rendering,
+        // so no render target is bound while callbacks execute.
+        void InvokeAllFilterCallbacks()
+        {
+            if (m_ElementsWithFilterCallbacks.Count == 0)
+                return;
+
+            m_FilterCallbackScratch.Clear();
+            m_FilterCallbackScratch.AddRange(m_ElementsWithFilterCallbacks);
+
+            for (int i = 0; i < m_FilterCallbackScratch.Count; i++)
+            {
+                var renderData = m_FilterCallbackScratch[i];
+
+                // Cleared registration flags also invalidate stale snapshot entries; undisplayed
+                // elements are skipped (the pending repaint reprocesses them on re-display).
+                if (renderData.owner == null || !renderData.owner.areAncestorsAndSelfDisplayed)
+                    continue;
+
+                if (renderData.isRegisteredForFilterCallbacks)
+                    FilterHelper.InvokeFilterCallbacksForElement(this, renderData);
+
+                if (renderData.isRegisteredForBackdropFilterCallbacks)
+                    BackdropFilterHelper.InvokeBackdropFilterCallbacks(this, renderData);
+            }
+
+            m_FilterCallbackScratch.Clear();
+        }
+
+        public static class Testing
+        {
+            public static int GetFilterCallbackElementCount(RenderTreeManager rtm) => rtm.m_ElementsWithFilterCallbacks.Count;
+            public static int GetPooledFilterBlockCount(RenderTreeManager rtm) => rtm.m_FilterBlockPool.CountInactive;
+        }
+
         internal RenderData GetPooledRenderData()
         {
             var data = m_RenderDataPool.Get();
@@ -268,6 +356,10 @@ namespace UnityEngine.UIElements.UIR
 
                 m_ElementIdPool.Clear();
 
+                m_ElementsWithFilterCallbacks.Clear();
+                m_FilterCallbackScratch.Clear();
+                m_FilterBlockPool.Clear();
+
                 foreach (var data in m_InsertionList)
                     data.element.insertionIndex = -1;
                 m_InsertionList.Clear();
@@ -372,6 +464,8 @@ namespace UnityEngine.UIElements.UIR
                 shaderInfoAllocator.IssuePendingStorageChanges();
 
                 device.OnFrameRenderingBegin();
+
+                InvokeAllFilterCallbacks();
 
                 // Nested render trees must be rendered before we draw the root tree, in order to avoid render texture
                 // flushes to memory, and for compatibility with render passes. For now, we render them as part of the
@@ -780,6 +874,10 @@ namespace UnityEngine.UIElements.UIR
             m_ExtraData.Remove(renderData, out ExtraRenderData extraData);
 
             m_PerGlyphTcs.FreeAllocs(extraData);
+
+            // The emptied lists stay on the pooled ExtraRenderData for reuse.
+            ReleaseFilterCallbackBlocks(extraData.filterCallbackPropertyBlocks);
+            ReleaseFilterCallbackBlocks(extraData.backdropFilterCallbackPropertyBlocks);
 
             m_ExtraDataPool.Return(extraData);
 

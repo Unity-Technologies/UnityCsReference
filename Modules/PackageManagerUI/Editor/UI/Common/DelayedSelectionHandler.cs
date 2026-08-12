@@ -157,17 +157,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
             {
                 var newPageFilters = new PageFilters(page.filters);
-                var validPackageUniqueIds = new List<string>();
+                var validPackageTechnicalNames = new List<string>();
                 foreach (var packageIdOrName in packagesToSelect)
                 {
-                    var packageUniqueId = m_PackageDatabase.GetPackageByIdOrName(packageIdOrName)?.uniqueId ?? packageIdOrName;
-                    // We don't check if the packageUniqueId is part of the supported filters because sometimes `SelectSamplePage` is called externally before the samples are generated.
-                    // And adding more invalid package uniqueId filters does not affect the filtering behaviours because if no samples will match those package unique ids anyway.
-                    // The next time pageFilters.supportedPackageUniqueIds change, these invalid packageUniqueId filters will be removed.
-                    if (!string.IsNullOrEmpty(packageUniqueId))
-                        validPackageUniqueIds.Add(packageUniqueId);
+                    var packageTechnicalName = m_PackageDatabase.GetPackageByIdOrName(packageIdOrName)?.name ?? packageIdOrName;
+                    // We don't check if the packageTechnicalName is part of the supported filters because sometimes `SelectSamplePage` is called externally before the samples are generated.
+                    // And adding more invalid package technical name filters does not affect the filtering behaviours because no samples will match those technical names anyway.
+                    // The next time pageFilters.supportedPackageTechnicalNames change, these invalid filters will be removed.
+                    if (!string.IsNullOrEmpty(packageTechnicalName))
+                        validPackageTechnicalNames.Add(packageTechnicalName);
                 }
-                newPageFilters.UpdatePackages(validPackageUniqueIds);
+                newPageFilters.UpdatePackages(validPackageTechnicalNames);
                 page.UpdateFilters(newPageFilters);
             }
         }

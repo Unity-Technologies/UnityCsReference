@@ -349,7 +349,7 @@ namespace UnityEngine.AI
         ///
         ///If the raycast terminates on an outer edge, <c>hit.mask</c> is 0; otherwise it contains the area mask of the blocking polygon.
         ///
-        ///This function can be used to check if an agent can walk unobstructed between two points on the NavMesh. For example if you character has an evasive dodge move which needs space, you can shoot a ray from the characters location to multiple directions to find a spot where the character can dodge to.
+        ///This function can be used to check if an agent can walk unobstructed between two points on the NavMesh. For example if your character has an evasive dodge move which needs space, you can shoot a ray from the characters location to multiple directions to find a spot where the character can dodge to.
         ///
         ///The Raycast is different from physics ray cast because it works on “2.5D”, on the NavMesh. The difference to physics ray casts is that NavMesh ray casts can detect all kinds of navigation obstructions, such as holes in the ground, and it can also climb up slopes, if the area is navigable.</para>
         ///  <para>If you want to find the nearest point on the NavMesh, use physics ray cast to find a point in the world. For more information, refer to the <see href="https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMoveToClickPoint.html">Move an Agent to a Position Clicked by the Mouse</see> example.</para>
@@ -578,7 +578,7 @@ namespace UnityEngine.AI
         public static extern void SetAreaCost(int areaIndex, float cost);
 
         ///<summary>Gets the cost for path finding over geometry of the area type.</summary>
-        ///<remarks>The value applies to all agents unless you the value has been customized per agent by calling <see cref="NavMeshAgent.SetAreaCost" />.
+        ///<remarks>The value applies to all agents unless the value has been customized per agent by calling <see cref="NavMeshAgent.SetAreaCost" />.
         ///
         ///Use <see cref="GetAreaFromName" /> to find the area index based on the name of the <see cref="NavMesh" /> area type.</remarks>
         ///<param name="areaIndex">Index of the area to get.</param>

@@ -35,23 +35,12 @@ namespace Unity.UIToolkit.Editor
 
         private ListView m_FilterListView;
         private List<FilterFunction> m_FilterSource;
-        private bool m_AllowCustomFilters = true;
 
         internal ListView filterListView => m_FilterListView;
 
         // Added to prevent the error regarding a missing converter for List<FilterFunction>.
         [UxmlAttribute("value"), HideInInspector]
         internal string valueOverride { get; set; }
-        
-        /// <summary>
-        /// Gets or sets whether custom filters can be added.
-        /// When false, the Custom filter type will not appear in the add filter dropdown.
-        /// </summary>
-        public bool allowCustomFilters
-        {
-            get => m_AllowCustomFilters;
-            set => m_AllowCustomFilters = value;
-        }
 
         public FilterStyleField()
             : this(null) { }
@@ -89,7 +78,6 @@ namespace Unity.UIToolkit.Editor
 
             m_FilterListView.overridingAddButtonBehavior = (_, btn) =>
             {
-                // Build menu dynamically to respect current allowCustomFilters setting
                 var enumData = UnityEngine.EnumDataUtility.GetCachedEnumData(
                     typeof(FilterFunctionType),
                     UnityEngine.EnumDataUtility.CachedType.ExcludeObsolete,
@@ -100,11 +88,6 @@ namespace Unity.UIToolkit.Editor
                 for (int i = 1; i < count; ++i)
                 {
                     var ffType = (FilterFunctionType)i;
-
-                    // Skip Custom filter type if not allowed
-                    if (!m_AllowCustomFilters && ffType == FilterFunctionType.Custom)
-                        continue;
-
                     menu.AddItem(enumData.displayNames[i], false, (_) => OnFilterFunctionAdded(ffType), null);
                 }
 

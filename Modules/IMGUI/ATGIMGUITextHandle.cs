@@ -153,6 +153,7 @@ namespace UnityEngine
         }
 
         const int k_MinPadding = 6;
+        internal const int k_MaxQuadsPerMesh = 16383;
 
         internal static (TextSettings, FontAsset, int) GetTextSettingsFontAssetAndFontSize(GUIStyle style)
         {
@@ -284,20 +285,7 @@ namespace UnityEngine
             }
             textLib.ProcessMeshInfos(nativeTextInfo, nativeSettingsIMGUI, ref s_TextElementIndicesByMesh, false);
 
-            // Count total number of atlases across all mesh infos
-            int totalAtlasCount = 0;
-            for (int i = 0; i < nativeTextInfo.meshInfoCount; i++)
-            {
-                ATGMeshInfo meshInfo = nativeTextInfo.meshInfos[i];
-                var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
-                if (textAsset == null || textAsset is SpriteAsset)
-                    continue;
-                FontAsset fa = textAsset as FontAsset;
-                totalAtlasCount += fa.atlasTextures.Length;
-            }
-
-            meshInfos = new MeshInfoBindings[totalAtlasCount];
-            int meshInfoIndex = 0;
+            var meshInfoList = new List<MeshInfoBindings>(nativeTextInfo.meshInfoCount);
 
             for (int i = 0; i < nativeTextInfo.meshInfoCount; i++)
             {
@@ -315,56 +303,66 @@ namespace UnityEngine
 
                 var textElementInfos = meshInfo.textElementInfos;
 
-                // Create a separate MeshInfoBindings for each atlas
                 for (int j = 0; j < atlasCount; ++j)
                 {
                     var textElementInfoInAtlas = s_TextElementIndicesByMesh[i][j];
-                    int vertexCount = textElementInfoInAtlas.Count * 4;
+                    int atlasQuadCount = textElementInfoInAtlas.Count;
 
-                    if (vertexCount == 0)
+                    if (atlasQuadCount == 0)
                         continue;
 
-                    meshInfos[meshInfoIndex].vertexData = new TextCoreVertex[vertexCount];
-                    meshInfos[meshInfoIndex].vertexCount = vertexCount;
-                    // Get the correct material for this specific atlas texture
-                    meshInfos[meshInfoIndex].material = j == 0 ? fa.material : MaterialManager.GetFallbackMaterial(fa, fa.material, j);
+                    var material = j == 0 ? fa.material : MaterialManager.GetFallbackMaterial(fa, fa.material, j);
 
-                    int vertexOffset = 0;
-                    // Iterate through the indices for this specific atlas
-                    for (int vSrc = 0; vSrc < textElementInfoInAtlas.Count; vSrc++)
+                    for (int quadStart = 0; quadStart < atlasQuadCount; quadStart += k_MaxQuadsPerMesh)
                     {
-                        int textElementIndex = textElementInfoInAtlas[vSrc];
-                        var te = textElementInfos[textElementIndex];
+                        int quadCount = Mathf.Min(k_MaxQuadsPerMesh, atlasQuadCount - quadStart);
+                        int vertexCount = quadCount * 4;
 
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].position = te.bottomLeft.position * invScale;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].position = te.topLeft.position * invScale;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].position = te.topRight.position * invScale;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].position = te.bottomRight.position * invScale;
+                        var binding = new MeshInfoBindings
+                        {
+                            vertexData = new TextCoreVertex[vertexCount],
+                            vertexCount = vertexCount,
+                            material = material
+                        };
 
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].uv0 = te.bottomLeft.uv0;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].uv0 = te.topLeft.uv0;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv0 = te.topRight.uv0;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv0 = te.bottomRight.uv0;
+                        int vertexOffset = 0;
+                        for (int vSrc = quadStart; vSrc < quadStart + quadCount; vSrc++)
+                        {
+                            int textElementIndex = textElementInfoInAtlas[vSrc];
+                            var te = textElementInfos[textElementIndex];
 
-                        float nativeBold = te.bottomLeft.uv2.y;
-                        float signedSdfScale = nativeBold != 0 ? -sdfScale : sdfScale;
-                        var uv2 = new Vector2(1, signedSdfScale);
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].uv2 = uv2;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].uv2 = uv2;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].uv2 = uv2;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].uv2 = uv2;
+                            binding.vertexData[vertexOffset + 0].position = te.bottomLeft.position * invScale;
+                            binding.vertexData[vertexOffset + 1].position = te.topLeft.position * invScale;
+                            binding.vertexData[vertexOffset + 2].position = te.topRight.position * invScale;
+                            binding.vertexData[vertexOffset + 3].position = te.bottomRight.position * invScale;
 
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 0].color = te.bottomLeft.color;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 1].color = te.topLeft.color;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 2].color = te.topRight.color;
-                        meshInfos[meshInfoIndex].vertexData[vertexOffset + 3].color = te.bottomRight.color;
+                            binding.vertexData[vertexOffset + 0].uv0 = te.bottomLeft.uv0;
+                            binding.vertexData[vertexOffset + 1].uv0 = te.topLeft.uv0;
+                            binding.vertexData[vertexOffset + 2].uv0 = te.topRight.uv0;
+                            binding.vertexData[vertexOffset + 3].uv0 = te.bottomRight.uv0;
 
-                        vertexOffset += 4;
+                            float nativeBold = te.bottomLeft.uv2.y;
+                            float signedSdfScale = nativeBold != 0 ? -sdfScale : sdfScale;
+                            var uv2 = new Vector2(1, signedSdfScale);
+                            binding.vertexData[vertexOffset + 0].uv2 = uv2;
+                            binding.vertexData[vertexOffset + 1].uv2 = uv2;
+                            binding.vertexData[vertexOffset + 2].uv2 = uv2;
+                            binding.vertexData[vertexOffset + 3].uv2 = uv2;
+
+                            binding.vertexData[vertexOffset + 0].color = te.bottomLeft.color;
+                            binding.vertexData[vertexOffset + 1].color = te.topLeft.color;
+                            binding.vertexData[vertexOffset + 2].color = te.topRight.color;
+                            binding.vertexData[vertexOffset + 3].color = te.bottomRight.color;
+
+                            vertexOffset += 4;
+                        }
+
+                        meshInfoList.Add(binding);
                     }
-
-                    meshInfoIndex++;
                 }
             }
+
+            meshInfos = meshInfoList.ToArray();
         }
 
         static void PopulateGlyphs(Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset)

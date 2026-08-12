@@ -379,6 +379,23 @@ namespace UnityEditor.AssetImporters
             finishedDefaultHeaderGUI += DrawAssetHasIssuesNotification;
             AssetImporterEditorPostProcessAsset.OnAssetbundleNameChanged += FixImporterAssetbundleName;
 
+            // A target importer's native object can be destroyed while this managed editor is still
+            // alive: the asset was deleted or its .meta guid was rewritten on disk, then a domain
+            // reload re-awakes this editor from backup (MonoBehaviour.DidReloadDomain -> OnEnable).
+            // Target-dependent initialization below would either dereference a dangling EntityId
+            // (native crash in CreateOrReloadInspectorCopy/WriteObjectToVector) or throw
+            // (GetAssetPaths().First() on an empty sequence). A destroyed target is a valid, inert
+            // state for an editor: subscribe/unsubscribe symmetrically, mark it enabled, and stop.
+            if (!AreImporterTargetsValid())
+            {
+                Debug.Log("AssetImporterEditor: one or more inspected importer targets no longer exist (asset deleted or its GUID changed); skipping inspector setup.");
+                m_Postprocessors = new List<PostprocessorInfo>();
+                m_TargetsEntityId = new List<EntityId>();
+                m_OnEnableCalled = true;
+                isInspectorDirty = true;
+                return;
+            }
+
             InitializeAvailableImporters();
             InitializeUnsavedChangesCache();
             InitializePostprocessors();
@@ -393,6 +410,22 @@ namespace UnityEditor.AssetImporters
             // Forces the inspector as dirty allows us to make sure the OnInspectorGUI has been called
             // at least once in the OnDisable in order to show the ApplyRevertGUI error.
             isInspectorDirty = true;
+        }
+
+        // True only when every target importer's native object still exists. A target can be
+        // destroyed (asset deleted, or its .meta GUID rewritten on disk) while this managed editor
+        // is still alive and later re-enabled by a domain reload. Subclasses must call this before
+        // accessing serializedObject or other target-dependent state; otherwise serializedObject
+        // throws SerializedObjectNotCreatableException and native code dereferences a stale EntityId.
+        protected bool AreImporterTargetsValid()
+        {
+            foreach (var t in targets)
+            {
+                var importer = t as AssetImporter;
+                if (importer == null) // UnityEngine.Object overloaded ==: true for null or destroyed
+                    return false;
+            }
+            return true;
         }
 
         public virtual void OnDisable()

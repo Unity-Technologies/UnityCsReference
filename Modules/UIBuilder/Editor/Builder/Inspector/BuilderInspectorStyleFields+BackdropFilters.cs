@@ -23,9 +23,6 @@ namespace Unity.UI.Builder
         {
             filterStyleField.SetContainingRow(styleRow);
 
-            // Custom filters are not supported for backdrop-filter
-            filterStyleField.allowCustomFilters = false;
-
             filterStyleField.SetInspectorStylePropertyName(BackdropFilterConstants.BackdropFilter);
             GetOrCreateFieldListForStyleName(BackdropFilterConstants.BackdropFilter).Add(filterStyleField);
 
@@ -42,25 +39,8 @@ namespace Unity.UI.Builder
                 currentVisualElement.CancelAnimation(StylePropertyId.BackdropFilter);
 
             var result = new List<FilterFunction>();
-            bool hasCustomFilter = false;
-
             foreach (var unmanagedFilter in currentVisualElement.computedStyle.backdropFilter)
-            {
-                var f = (FilterFunction)unmanagedFilter;
-
-                // Skip custom filters - they are not supported for backdrop-filter
-                if (f.type == FilterFunctionType.Custom)
-                {
-                    hasCustomFilter = true;
-                    continue;
-                }
-                result.Add(f);
-            }
-
-            if (hasCustomFilter)
-            {
-                Debug.LogWarning($"Custom filters found in backdrop-filter for element '{currentVisualElement.name}' have been removed. Custom filters are not supported for backdrop-filter.");
-            }
+                result.Add((FilterFunction)unmanagedFilter);
 
             filterStyleField.SetValueWithoutNotify(result);
 
@@ -75,26 +55,7 @@ namespace Unity.UI.Builder
 
         void OnBackdropFilterListChanged(FilterListChangedEvent evt, FilterStyleField filterStyleField)
         {
-            // Custom filters are not supported for backdrop-filter - remove them
-            var validFilters = new List<FilterFunction>();
-            bool hasCustomFilter = false;
-
-            foreach (var filter in evt.newFilterList)
-            {
-                if (filter.type == FilterFunctionType.Custom)
-                {
-                    hasCustomFilter = true;
-                    continue; // Skip custom filters
-                }
-                validFilters.Add(filter);
-            }
-
-            if (hasCustomFilter)
-            {
-                Debug.LogWarning("Custom filters are not supported for backdrop-filter and have been removed.");
-            }
-
-            ApplyBackdropFilterListChange(validFilters, evt.refreshField, evt.elementTarget);
+            ApplyBackdropFilterListChange(evt.newFilterList, evt.refreshField, evt.elementTarget);
         }
 
         void OnBackdropFilterFunctionReordered(FilterFunctionReorderedEvent evt, FilterStyleField filterStyleField)

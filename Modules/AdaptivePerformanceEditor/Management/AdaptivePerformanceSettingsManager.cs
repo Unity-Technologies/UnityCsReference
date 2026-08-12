@@ -17,6 +17,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
     partial class AdaptivePerformanceSettingsManager : SettingsProvider
     {
         const string k_WarningPlaymodePopup = "Adaptive Performance settings cannot be changed while the Editor is in Play mode.";
+        const string k_WarningPackageOperationPopup = "Adaptive Performance is updating its packages. Settings are temporarily unavailable until the operation finishes.";
 
         struct Content
         {
@@ -36,6 +37,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         internal static AdaptivePerformanceSettingsManager Instance => s_SettingsManager;
 
+        // Guards the get-or-create of the general settings config object. A dedicated object rather than
+        // Instance: the provider instance is null until Create() runs (and is cleared again on statics
+        // cleanup), so locking on it both threw ArgumentNullException and changed identity across reloads.
+        [NoAutoStaticsCleanup]
+        static readonly object s_CurrentSettingsLock = new object();
+
         static AdaptivePerformanceGeneralSettingsPerBuildTarget currentSettings
         {
             get
@@ -44,7 +51,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 EditorBuildSettings.TryGetConfigObject(AdaptivePerformanceGeneralSettings.k_SettingsKey, out generalSettings);
                 if (generalSettings == null && s_EnableAdaptivePerformance)
                 {
-                    lock (AdaptivePerformanceSettingsManager.Instance)
+                    lock (s_CurrentSettingsLock)
                     {
                         EditorBuildSettings.TryGetConfigObject(AdaptivePerformanceGeneralSettings.k_SettingsKey, out generalSettings);
                         if (generalSettings == null)
@@ -317,7 +324,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorGUILayout.HelpBox(L10n.Tr(k_WarningPlaymodePopup), MessageType.Warning);
-            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+            else if (EditorUtilities.IsPackageOperationInProgress)
+                EditorGUILayout.HelpBox(L10n.Tr(k_WarningPackageOperationPopup), MessageType.Info);
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode || EditorUtilities.IsPackageOperationInProgress))
             {
                 s_EnableAdaptivePerformance = EditorGUILayout.Toggle("Enable Adaptive Performance", s_EnableAdaptivePerformance);
             }

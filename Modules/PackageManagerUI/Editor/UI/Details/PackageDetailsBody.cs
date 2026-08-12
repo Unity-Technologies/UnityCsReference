@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshSamplesTab(SamplesChangeArgs args)
         {
-            if (m_Version != null && args.added.Join(args.updated, args.removed).AnyMatches(i => i.packageUniqueId == m_Version.package.uniqueId))
+            if (m_Version != null && args.added.Join(args.updated, args.removed).AnyMatches(i => i.packageTechnicalName == m_Version.package.name))
                 m_TabView.RefreshTabs(new[] { PackageDetailsSamplesTab.k_Id }, m_Version);
         }
 

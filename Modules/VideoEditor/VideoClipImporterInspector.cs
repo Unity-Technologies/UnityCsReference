@@ -290,6 +290,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_EncodeAlpha = serializedObject.FindProperty("m_EncodeAlpha");
             m_Deinterlace = serializedObject.FindProperty("m_Deinterlace");

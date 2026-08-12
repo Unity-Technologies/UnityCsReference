@@ -427,6 +427,13 @@ namespace UnityEngine.UIElements
         /// <param name="value">The value to store.</param>
         public void SetBackground(StyleSheet styleSheet, Background value)
         {
+            // No image: write `none` - a null asset reference warns "Invalid image specified" on resolve.
+            if (value.GetSelectedImage() == null)
+            {
+                SetKeyword(styleSheet, StyleValueKeyword.None);
+                return;
+            }
+
             SetSize(ref m_Values, 1);
             styleSheet.WriteAssetReference(ref m_Values[0], value.GetSelectedImage());
             requireVariableResolve = false;

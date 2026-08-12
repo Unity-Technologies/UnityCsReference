@@ -10,4 +10,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.TestPackage.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.Playmode")]
 
+// Lets the Adaptive Performance package's Visual Scripting bridge forward internal events
+// (e.g. AdaptivePerformanceIndexer.ScalerLevelChanged) to the Visual Scripting EventBus.
+[assembly: InternalsVisibleTo("Unity.AdaptivePerformance")]
+
 

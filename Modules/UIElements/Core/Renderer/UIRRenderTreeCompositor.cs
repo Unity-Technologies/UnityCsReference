@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Pool;
 
@@ -25,7 +26,7 @@ namespace UnityEngine.UIElements.UIR
             VisualElement m_VisualElement;
             RenderTree m_RenderTree;
             PostProcessingPass m_FilterPass;
-            int m_FilterPassIndex;
+            int m_FlatPassIndex;
             FilterFunction m_Filter;
 
             public DrawOperationType type => m_Type;
@@ -58,18 +59,23 @@ namespace UnityEngine.UIElements.UIR
             public RenderTree renderTree => m_RenderTree;
 
             public PostProcessingPass FilterPass => m_FilterPass;
-            public int FilterPassIndex => m_FilterPassIndex;
+
+            // Flat slot index of this pass in the element's per-pass MaterialPropertyBlock list
+            // (see FilterHelper.CountFilterChainPasses for the slot layout). Captured at op-build
+            // time so the op ↔ block correspondence is structural rather than re-derived from the
+            // live style at render time.
+            public int FlatPassIndex => m_FlatPassIndex;
             public FilterFunction filter => m_Filter;
 
             // Identifies a specific filter application, all passes belonging to one filter share the same id
             public int filterGroupId;
 
-            public void Init(VisualElement ve, in PostProcessingPass filterPass, int filterPassIndex, FilterFunction filter)
+            public void Init(VisualElement ve, in PostProcessingPass filterPass, int flatPassIndex, FilterFunction filter)
             {
                 m_Type = DrawOperationType.Effect;
                 m_VisualElement = ve;
                 m_FilterPass = filterPass;
-                m_FilterPassIndex = filterPassIndex;
+                m_FlatPassIndex = flatPassIndex;
                 m_Filter = filter;
                 m_RenderTree = ve.nestedRenderData.renderTree;
                 InitPointers();
@@ -101,6 +107,7 @@ namespace UnityEngine.UIElements.UIR
                 m_VisualElement = null;
                 m_RenderTree = null;
                 m_FilterPass = new PostProcessingPass();
+                m_FlatPassIndex = -1;
                 m_Filter = new FilterFunction();
                 filterGroupId = 0;
 
@@ -132,6 +139,8 @@ namespace UnityEngine.UIElements.UIR
         MaterialPropertyBlock m_Block = new();
         ObjectPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation());
         int m_NextFilterGroupId;
+        [NoAutoStaticsCleanup] // per-material log dedup: a persistently broken filter logs once without hiding other filters' failures
+        static readonly HashSet<EntityId> s_EffectDrawErrorLogged = new();
 
         public RenderTreeCompositor(RenderTreeManager owner)
         {
@@ -179,6 +188,10 @@ namespace UnityEngine.UIElements.UIR
             VisualElement ve = renderTree.rootRenderData.owner;
             var computedFilter = ve.computedStyle.filter;
 
+            // Running flat slot base, walked backwards in step with the reverse iteration below so
+            // each op stores its flat block index (filter i pass j = base of filter i + j).
+            int flatBase = FilterHelper.CountFilterChainPasses(computedFilter);
+
             // Reverse iteration: outer pass first becomes innermost child in the operation tree.
             for (int i = computedFilter.Length - 1; i >= 0; i--)
             {
@@ -190,6 +203,7 @@ namespace UnityEngine.UIElements.UIR
                     continue;
 
                 int filterGroupId = m_NextFilterGroupId++;
+                flatBase -= filterDef.passes.Length;
 
                 for (int j = filterDef.passes.Length - 1; j >= 0; j--)
                 {
@@ -198,7 +212,7 @@ namespace UnityEngine.UIElements.UIR
                         continue;
 
                     var operation = m_DrawOperationPool.Get();
-                    operation.Init(ve, pass, j, filterFunc);
+                    operation.Init(ve, pass, flatBase + j, filterFunc);
                     operation.filterGroupId = filterGroupId;
 
                     parentOperation.AddChild(operation);
@@ -386,7 +400,6 @@ namespace UnityEngine.UIElements.UIR
 
         static Vector4[] s_UVRects = new Vector4[1];
 
-        static readonly int s_UnityUIE_UVRectId = Shader.PropertyToID("unity_uie_UVRect");
 
         void ExecuteDrawOperation_PostOrder(DrawOperation op)
         {
@@ -439,7 +452,6 @@ namespace UnityEngine.UIElements.UIR
                         var srcUVRect = srcTexEntry.uvRect;
 
                         bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
-                        bool writesGamma = (QualitySettings.activeColorSpace == ColorSpace.Gamma) || (forceGamma && isLastFilterPass);
 
                         // Calculate adjusted UV rect with texture offsets
                         var texOffsets = op.drawSourceTexOffsets;
@@ -451,14 +463,31 @@ namespace UnityEngine.UIElements.UIR
                             srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
                             srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
 
-                        // Set up additional properties for compositor (UV rects, etc)
-                        m_Block.Clear();
-                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
-                        m_Block.SetVectorArray(s_UnityUIE_UVRectId, s_UVRects);
+                        // Look up the pre-built MaterialPropertyBlock for this pass, populated in
+                        // the update phase by FilterHelper.InvokeFilterCallbacksForElement (default
+                        // parameter bindings + user applySettingsCallback). The compositor layers
+                        // its per-pass uniforms on top; nothing here may run user code.
+                        var elementRenderData = op.visualElement.renderData;
+                        MaterialPropertyBlock perPassBlock = null;
+                        if (elementRenderData != null && elementRenderData.hasExtraData)
+                        {
+                            var perPassBlocks = m_RenderTreeManager.GetExtraData(elementRenderData).filterCallbackPropertyBlocks;
+                            if (perPassBlocks != null && (uint)op.FlatPassIndex < (uint)perPassBlocks.Count)
+                                perPassBlock = perPassBlocks[op.FlatPassIndex];
+                        }
+                        if (perPassBlock == null)
+                        {
+                            // The chain wasn't pre-populated this frame (e.g. it became non-empty
+                            // after the update-phase walk). Fall back to the shared block with the
+                            // default bindings so the pass still produces a valid output.
+                            m_Block.Clear();
+                            FilterHelper.ApplyDefaultParameterBindings(m_Block, op.FilterPass, op.filter, readsGamma);
+                            perPassBlock = m_Block;
+                        }
 
-                        // Apply legacy effect parameters if no callback provided
-                        if (op.FilterPass.applySettingsCallback == null)
-                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
+                        // Set up additional properties for compositor (UV rects, etc)
+                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
+                        perPassBlock.SetVectorArray(FilterHelper.s_UVRectId, s_UVRects);
 
                         // In force-gamma rendering, the last filter pass outputs linear because the parent render tree expects texture reads to output linear.
                         bool outputLinear = forceGamma && isLastFilterPass;
@@ -472,32 +501,29 @@ namespace UnityEngine.UIElements.UIR
                         var viewportRect = new Rect(dstRect.xMin, dstRect.yMin, dstRect.width, dstRect.height);
                         var drawBounds = new RectInt(drawRect.xMin, drawRect.yMin, drawRect.width, drawRect.height);
 
-                        // Preserve trunk's required-input binding (added after this refactor was authored on the branch).
-                        // Mutates m_Block, which FilterHelper.ApplyFilterPass then uses.
                         if (!string.IsNullOrEmpty(op.FilterPass.requiredInputTextureName))
-                            BindRequiredInput(op, drawBounds, uvRect);
+                            BindRequiredInput(perPassBlock, op, drawBounds, uvRect);
 
                         // Use shared filter helper (with custom projection already set).
                         FilterHelper.ApplyFilterPass(
                             source: srcTexEntry.texture,
                             target: dstTex,
                             pass: op.FilterPass,
-                            filterFunc: op.filter,
-                            filterPassIndex: op.FilterPassIndex,
-                            propertyBlock: m_Block,
-                            readsGamma: readsGamma,
-                            writesGamma: writesGamma,
+                            propertyBlock: perPassBlock,
                             outputLinear: outputLinear,
-                            pixelsPerPoint: op.visualElement.scaledPixelsPerPoint,
                             sourceUVRect: uvRect,
                             drawBounds: drawBounds,
                             viewport: viewportRect,
                             usePixelMatrix: false  // We set up projection matrix ourselves
                         );
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        // TODO: Blit instead and report the error
+                        // The pass failed to render (e.g. a misconfigured custom filter material);
+                        // the destination texture is left unwritten.
+                        var material = op.FilterPass.material;
+                        if (s_EffectDrawErrorLogged.Add(material != null ? material.GetEntityId() : EntityId.None))
+                            Debug.LogException(e, material);
                     }
                     break;
                 }
@@ -537,7 +563,7 @@ namespace UnityEngine.UIElements.UIR
             return ids;
         }
 
-        void BindRequiredInput(DrawOperation currentOp, RectInt drawRect, Rect uvRect)
+        void BindRequiredInput(MaterialPropertyBlock block, DrawOperation currentOp, RectInt drawRect, Rect uvRect)
         {
             string name = currentOp.FilterPass.requiredInputTextureName;
 
@@ -553,7 +579,7 @@ namespace UnityEngine.UIElements.UIR
             if (sourceOp.bounds.width <= 0 || sourceOp.bounds.height <= 0)
                 return;
 
-            BindMappedTexture(sourceOp, drawRect, uvRect, GetInputBindingIds(name));
+            BindMappedTexture(block, sourceOp, drawRect, uvRect, GetInputBindingIds(name));
         }
 
         static DrawOperation ResolveInputOp(DrawOperation currentOp, string name)
@@ -583,7 +609,7 @@ namespace UnityEngine.UIElements.UIR
             return null;
         }
 
-        void BindMappedTexture(DrawOperation sourceOp, RectInt drawRect, Rect uvRect, InputBindingIds ids)
+        static void BindMappedTexture(MaterialPropertyBlock block, DrawOperation sourceOp, RectInt drawRect, Rect uvRect, InputBindingIds ids)
         {
             var srcUV = sourceOp.dstAtlasBlock.uvRect;
             var srcBounds = sourceOp.bounds;
@@ -599,29 +625,9 @@ namespace UnityEngine.UIElements.UIR
             float offsetX = srcUV.xMin + Bx * (drawRect.xMin - srcBounds.xMin) - uvRect.xMin * scaleX;
             float offsetY = srcUV.yMax - By * (drawRect.yMin - srcBounds.yMin) - uvRect.yMax * scaleY;
 
-            m_Block.SetTexture(ids.texId, sourceOp.dstAtlasBlock.texture);
-            m_Block.SetVector(ids.scaleOffsetId, new Vector4(scaleX, scaleY, offsetX, offsetY));
-            m_Block.SetVector(ids.uvRectId, new Vector4(srcUV.xMin, srcUV.yMin, srcUV.xMax, srcUV.yMax));
-        }
-
-        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source, bool readsGamma)
-        {
-            if (effect.parameterBindings == null)
-                return;
-
-            var parameters = filter.parameters;
-            var count = filter.parameterCount;
-            for (int i = 0; i < effect.parameterBindings.Length; ++i)
-            {
-                if (i >= count)
-                    break;
-                var binding = effect.parameterBindings[i];
-                var p = parameters[i];
-                if (p.type == FilterParameterType.Float)
-                    m_Block.SetFloat(binding.name, p.floatValue);
-                else if (p.type == FilterParameterType.Color)
-                    m_Block.SetVector(binding.name, readsGamma ? p.colorValue : p.colorValue.linear );
-            }
+            block.SetTexture(ids.texId, sourceOp.dstAtlasBlock.texture);
+            block.SetVector(ids.scaleOffsetId, new Vector4(scaleX, scaleY, offsetX, offsetY));
+            block.SetVector(ids.uvRectId, new Vector4(srcUV.xMin, srcUV.yMin, srcUV.xMax, srcUV.yMax));
         }
 
         void CleanupOperationTree()

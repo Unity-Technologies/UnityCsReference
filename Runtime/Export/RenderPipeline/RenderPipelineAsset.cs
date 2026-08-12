@@ -107,7 +107,9 @@ namespace UnityEngine.Rendering
 
         protected virtual void OnDisable()
         {
-            RenderPipelineManager.CleanupRenderPipeline();
+            // Avoid disposing the current RenderPipeline if we are disabling and not active render pipeline asset
+            if (ReferenceEquals(RenderPipelineManager.currentPipelineAsset , this))
+                RenderPipelineManager.CleanupRenderPipeline();
         }
 
         protected internal virtual bool requiresCompatibleRenderPipelineGlobalSettings { get; } = false;

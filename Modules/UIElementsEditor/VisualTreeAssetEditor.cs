@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
         private VisualTreeAsset m_VTA;
         private VisualElement m_VisualTree;
         protected Texture2D m_FileTypeIcon;
-        protected RenderTexture m_preview_texture;
+        internal RenderTexture m_PreviewTexture;
 
         private int m_LastDirtyCount;
         private int m_LastContentHash;
@@ -230,11 +230,11 @@ namespace UnityEditor.UIElements
 
         protected void OnDestroy()
         {
-            if (m_preview_texture != null)
+            if (m_PreviewTexture != null)
             {
-                m_preview_texture.Release();
-                m_preview_texture.DiscardContents();
-                DestroyImmediate(m_preview_texture);
+                m_PreviewTexture.Release();
+                m_PreviewTexture.DiscardContents();
+                DestroyImmediate(m_PreviewTexture);
             }
         }
 
@@ -307,6 +307,11 @@ namespace UnityEditor.UIElements
                 panel.clearSettings = new PanelClearSettings();
 
                 panel.Repaint();
+
+                // Repaint's filter passes leave the target/viewport on an atlas block, and editor panels don't set their own; restore ours before Render draws the root tree.
+                RenderTexture.active = tex;
+                GL.Viewport(new Rect(0, 0, tex.width, tex.height));
+
                 panel.Render();
 
                 panel.Dispose();
@@ -334,11 +339,11 @@ namespace UnityEditor.UIElements
             // Update of the preview texture has been moved to the editor update loop;
             // In typical IMGUI fashion, updatePreviewTexture((int)r.width, (int)r.height); would be called here
 
-            if (m_preview_texture)
+            if (m_PreviewTexture)
             {
-                Vector2 size = Mathf.Min(r.height / (float)m_preview_texture.height, r.width / (float)m_preview_texture.width) * new Vector2(m_preview_texture.width, m_preview_texture.height);
+                Vector2 size = Mathf.Min(r.height / (float)m_PreviewTexture.height, r.width / (float)m_PreviewTexture.width) * new Vector2(m_PreviewTexture.width, m_PreviewTexture.height);
 
-                EditorGUI.DrawPreviewTexture(new Rect(r.center - size / 2, size), m_preview_texture);
+                EditorGUI.DrawPreviewTexture(new Rect(r.center - size / 2, size), m_PreviewTexture);
             }
         }
 
@@ -358,7 +363,7 @@ namespace UnityEditor.UIElements
 
             if (dirty)
             {
-                RenderStaticPreview(width, height, ref m_preview_texture);
+                RenderStaticPreview(width, height, ref m_PreviewTexture);
             }
 
             return dirty;

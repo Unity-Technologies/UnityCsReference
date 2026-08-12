@@ -207,6 +207,9 @@ namespace UnityEditor.Overlays
 
         public static IOverlayPreset GetDefaultPreset(Type windowType)
         {
+            if (windowType == typeof(MainToolbarWindow))
+                return new UnityOnlyToolbarPreset();
+
             if (TryGetPreset(windowType, defaultPresetName, out OverlayPreset preset))
                 return preset;
 

@@ -46,9 +46,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         }
 
-        private void OnSamplesChanged(IReadOnlyCollection<string> packageUniqueIds)
+        private void OnSamplesChanged(IReadOnlyCollection<string> packageTechnicalNames)
         {
-            GenerateSamplesAndTriggerChangeEvent(packageUniqueIds);
+            GenerateSamplesAndTriggerChangeEvent(packageTechnicalNames);
         }
 
         private void OnImportedSamplesChanged(IReadOnlyCollection<string> sanitizedPackageDisplayNames)
@@ -56,37 +56,36 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (sanitizedPackageDisplayNames.Count == 0)
                 return;
 
-            var packageUniqueIds = new List<string>(sanitizedPackageDisplayNames.Count);
+            var packageTechnicalNames = new List<string>(sanitizedPackageDisplayNames.Count);
             foreach (var collection in m_SampleCache.sampleInfoCollections)
                 if (sanitizedPackageDisplayNames.ContainsMatches(IOUtils.SanitizeFileName(collection.packageDisplayName)))
-                    packageUniqueIds.Add(collection.packageUniqueId);
-            GenerateSamplesAndTriggerChangeEvent(packageUniqueIds);
+                    packageTechnicalNames.Add(collection.packageTechnicalName);
+            GenerateSamplesAndTriggerChangeEvent(packageTechnicalNames);
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            var packageUniqueIds = new List<string>(args.added.Count + args.updated.Count + args.removed.Count);
-            packageUniqueIds.AddRange(args.added.SelectAsEnumerable(i => i.uniqueId));
-            packageUniqueIds.AddRange(args.updated.SelectAsEnumerable(i => i.uniqueId));
-            packageUniqueIds.AddRange(args.removed.SelectAsEnumerable(i => i.uniqueId));
-            GenerateSamplesAndTriggerChangeEvent(packageUniqueIds);
+            var packageTechnicalNames = new List<string>(args.added.Count + args.updated.Count + args.removed.Count);
+            packageTechnicalNames.AddRange(args.added.SelectAsEnumerable(i => i.name));
+            packageTechnicalNames.AddRange(args.updated.SelectAsEnumerable(i => i.name));
+            packageTechnicalNames.AddRange(args.removed.SelectAsEnumerable(i => i.name));
+            GenerateSamplesAndTriggerChangeEvent(packageTechnicalNames);
         }
 
-        public void GenerateSamplesAndTriggerChangeEvent(IReadOnlyCollection<string> packageUniqueIds)
+        public void GenerateSamplesAndTriggerChangeEvent(IReadOnlyCollection<string> packageTechnicalNames)
         {
-            if (packageUniqueIds.Count == 0)
+            if (packageTechnicalNames.Count == 0)
                 return;
 
             var addedOrUpdated = new List<SampleCollection>();
             var removed = new List<string>();
-            foreach (var packageUniqueId in packageUniqueIds)
+            foreach (var packageTechnicalName in packageTechnicalNames)
             {
-                var package = m_PackageDatabase.GetPackage(packageUniqueId);
-                var sampleInfoCollection = m_SampleCache.GetSampleInfoCollection(packageUniqueId);
-                var packageName = package?.name ?? string.Empty;
-                var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
+                var package = m_PackageDatabase.GetPackageByIdOrName(packageTechnicalName);
+                var sampleInfoCollection = m_SampleCache.GetSampleInfoCollection(packageTechnicalName);
+                var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageTechnicalName);
                 if (sampleInfoCollection == null || packageInfo == null || package == null)
-                    removed.Add(packageUniqueId);
+                    removed.Add(packageTechnicalName);
                 else
                     addedOrUpdated.Add(Convert(packageInfo, sampleInfoCollection, package));
             }
@@ -99,7 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var sampleCollection = m_SampleCache.ParseSamples(packageInfo);
             if (sampleCollection == null)
                 return Array.Empty<Sample>();
-            var package = m_PackageDatabase.GetPackage(sampleCollection.packageUniqueId);
+            var package = m_PackageDatabase.GetPackageByIdOrName(sampleCollection.packageTechnicalName);
             return Convert(packageInfo, sampleCollection, package);
         }
 
@@ -125,9 +124,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     : 0;
                 var previousImportPaths = GetPreviousImportPaths(sanitizedPackageDisplayName, sanitizedSampleDisplayName);
                 var assetPackagePath = string.IsNullOrEmpty(resolvedSamplePath) ? null : FindAssetPackagePath(resolvedSamplePath);
-                return new Sample(sample, sampleInfoCollection.packageUniqueId, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths, assetPackagePath, package);
+                return new Sample(sample, sampleInfoCollection.packageTechnicalName, resolvedSamplePath, importPath, isImported, sizeInBytes, previousImportPaths, assetPackagePath, package);
             });
-            return new SampleCollection(sampleInfoCollection.packageUniqueId, samples);
+            return new SampleCollection(sampleInfoCollection.packageTechnicalName, samples);
         }
 
         private string FindAssetPackagePath(string resolvedSamplePath)

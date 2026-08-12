@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -25,11 +26,12 @@ sealed class AddElementDropManipulator : Manipulator
         public readonly bool NearRight;
         public readonly bool NearTop;
         public readonly bool NearBottom;
+        public readonly bool CanDrop;
 
         public bool IsEdgeDrop => NearLeft || NearRight || NearTop || NearBottom;
 
         public Placement(VisualElementAsset parentVea, int index, VisualElement hoveredElement,
-            bool nearLeft, bool nearRight, bool nearTop, bool nearBottom)
+            bool nearLeft, bool nearRight, bool nearTop, bool nearBottom, bool canDrop = true)
         {
             ParentVea      = parentVea;
             Index          = index;
@@ -38,6 +40,7 @@ sealed class AddElementDropManipulator : Manipulator
             NearRight      = nearRight;
             NearTop        = nearTop;
             NearBottom     = nearBottom;
+            CanDrop        = canDrop;
         }
     }
 
@@ -77,9 +80,17 @@ sealed class AddElementDropManipulator : Manipulator
             && !IsValidUxmlDrop())
             return;
 
-        DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-
         var placement = ComputePlacement(evt.mousePosition);
+
+        if (!placement.CanDrop)
+        {
+            DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+            m_Indicator.Hide();
+            evt.StopPropagation();
+            return;
+        }
+
+        DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
         UpdateIndicator(placement);
 
         evt.StopPropagation();
@@ -92,10 +103,16 @@ sealed class AddElementDropManipulator : Manipulator
 
         if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is LibraryItem libraryItem)
         {
+            var placement = ComputePlacement(evt.mousePosition);
+            if (!placement.CanDrop)
+            {
+                m_Indicator.Hide();
+                evt.StopPropagation();
+                return;
+            }
+
             DragAndDrop.AcceptDrag();
             m_Indicator.Hide();
-
-            var placement = ComputePlacement(evt.mousePosition);
 
             AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
 
@@ -106,10 +123,17 @@ sealed class AddElementDropManipulator : Manipulator
 
         if (TryResolveDraggedVisualTreeAssets(out var vtas) && AreAllVisualTreeAssetsValid(vtas))
         {
+            var placement = ComputePlacement(evt.mousePosition);
+            if (!placement.CanDrop)
+            {
+                m_Indicator.Hide();
+                evt.StopPropagation();
+                return;
+            }
+
             DragAndDrop.AcceptDrag();
             m_Indicator.Hide();
 
-            var placement = ComputePlacement(evt.mousePosition);
             var parentAsset = placement.ParentVea ?? EditedVisualTreeAsset.visualTree;
 
             AddTemplatesToElementCommand.Execute(CommandSources.Viewport, parentAsset, placement.Index, vtas);
@@ -229,7 +253,7 @@ sealed class AddElementDropManipulator : Manipulator
         var nearBottom = localPos.y > rect.height - k_EdgeThreshold;
 
         if (!nearLeft && !nearRight && !nearTop && !nearBottom)
-            return new Placement(element.visualElementAsset, -1, element, false, false, false, false);
+            return new Placement(element.visualElementAsset, -1, element, false, false, false, false, VisualElementUtility.CanReceiveChildren(element));
 
         // Sibling insertion — derive parent from the VEA tree, not the runtime element
         // hierarchy, because the runtime root (TemplateContainer) has no visualElementAsset.

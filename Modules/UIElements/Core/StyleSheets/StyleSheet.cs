@@ -1125,6 +1125,11 @@ namespace UnityEngine.UIElements
                 WriteFloat(ref handle, value.value);
         }
 
+        void OnApplyUndoRedoINTERNAL()
+        {
+            RequestRebuild(RebuildOptions.Synchronous);
+        }
+
         internal void MarkAsChanged()
         {
             // Set the contentHash to 0 if the style sheet is empty

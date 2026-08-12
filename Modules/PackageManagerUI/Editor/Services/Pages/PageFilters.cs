@@ -30,8 +30,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IReadOnlyList<string> labels { get; }
         public IReadOnlyList<string> supportedLabels { get; }
 
-        public IReadOnlyList<string> packageUniqueIds { get; }
-        public IReadOnlyList<string> supportedPackageUniqueIds { get; }
+        public IReadOnlyList<string> packageTechnicalNames { get; }
+        public IReadOnlyList<string> supportedPackageTechnicalNames { get; }
 
         public bool anySupportedFilters { get; }
         public bool isFilterSet { get; }
@@ -131,24 +131,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool IsLabelSelected(string label) => m_Labels.selected.Contains(label);
 
         [SerializeField]
-        protected StringFilters m_PackageUniqueIds;
-        public IReadOnlyList<string> packageUniqueIds => m_PackageUniqueIds.selected;
-        public IReadOnlyList<string> supportedPackageUniqueIds => m_PackageUniqueIds.supported;
+        protected StringFilters m_PackageTechnicalNames;
+        public IReadOnlyList<string> packageTechnicalNames => m_PackageTechnicalNames.selected;
+        public IReadOnlyList<string> supportedPackageTechnicalNames => m_PackageTechnicalNames.supported;
 
-        // We don't call RemoveUnsupportedSelections here because sometimes external function calls will set the package unique id filters before samples are generated.
-        // And adding more invalid package uniqueId filters does not affect the filtering behaviours because if no samples will match those package unique ids anyway.
-        // The next time pageFilters.supportedPackageUniqueIds change, these invalid packageUniqueId filters will be removed.
-        public ChangedTypes UpdatePackages(IReadOnlyList<string> newPackageUniqueIds)
-            => UpdateList(m_PackageUniqueIds.selected, newPackageUniqueIds) ? ChangedTypes.Packages : ChangedTypes.None;
+        // We don't call RemoveUnsupportedSelections here because sometimes external function calls will set the package filters before samples are generated.
+        // And adding more invalid package technical name filters does not affect the filtering behaviours because no samples will match those technical names anyway.
+        // The next time pageFilters.supportedPackageTechnicalNames change, these invalid filters will be removed.
+        public ChangedTypes UpdatePackages(IReadOnlyList<string> newPackageTechnicalNames)
+            => UpdateList(m_PackageTechnicalNames.selected, newPackageTechnicalNames) ? ChangedTypes.Packages : ChangedTypes.None;
 
-        public ChangedTypes UpdateSupportedPackages(IReadOnlyList<string> newSupportedPackageUniqueIds)
+        public ChangedTypes UpdateSupportedPackages(IReadOnlyList<string> newSupportedPackageTechnicalNames)
         {
-            if (!UpdateList(m_PackageUniqueIds.supported, newSupportedPackageUniqueIds))
+            if (!UpdateList(m_PackageTechnicalNames.supported, newSupportedPackageTechnicalNames))
                 return ChangedTypes.None;
-            return m_PackageUniqueIds.RemoveUnsupportedSelections() ? ChangedTypes.SupportedPackages | ChangedTypes.Packages : ChangedTypes.SupportedPackages;
+            return m_PackageTechnicalNames.RemoveUnsupportedSelections() ? ChangedTypes.SupportedPackages | ChangedTypes.Packages : ChangedTypes.SupportedPackages;
         }
 
-        public bool IsPackageSelected(string packageUniqueId) => m_PackageUniqueIds.selected.Contains(packageUniqueId);
+        public bool IsPackageSelected(string packageTechnicalName) => m_PackageTechnicalNames.selected.Contains(packageTechnicalName);
 
         [SerializeField]
         private List<PageFilterStatus> m_SupportedStatuses;
@@ -218,8 +218,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         // We don't count sorting options here because there's always a default sorting option even no sorting options are available
-        public bool anySupportedFilters => supportedStatuses.Count > 0 || supportedCategories.Count > 0 || supportedLabels.Count > 0 || supportedPackageUniqueIds.Count > 0;
-        public virtual bool isFilterSet => status != PageFilterStatus.None || categories.Count > 0 || labels.Count > 0 || packageUniqueIds.Count > 0;
+        public bool anySupportedFilters => supportedStatuses.Count > 0 || supportedCategories.Count > 0 || supportedLabels.Count > 0 || supportedPackageTechnicalNames.Count > 0;
+        public virtual bool isFilterSet => status != PageFilterStatus.None || categories.Count > 0 || labels.Count > 0 || packageTechnicalNames.Count > 0;
 
         private static bool UpdateList<T>(List<T> originalList, IReadOnlyList<T> newList)
         {
@@ -246,7 +246,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_Categories = new StringFilters(other?.supportedCategories, other?.categories);
             m_Labels = new StringFilters(other?.supportedLabels, other?.labels);
-            m_PackageUniqueIds = new StringFilters(other?.supportedPackageUniqueIds, other?.packageUniqueIds);
+            m_PackageTechnicalNames = new StringFilters(other?.supportedPackageTechnicalNames, other?.packageTechnicalNames);
         }
 
         public ChangedTypes Clear()
@@ -268,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 sortOption == other.sortOption &&
                 categories.IsSequenceEqual(other.categories) &&
                 labels.IsSequenceEqual(other.labels) &&
-                packageUniqueIds.IsSequenceEqual(other.packageUniqueIds);
+                packageTechnicalNames.IsSequenceEqual(other.packageTechnicalNames);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var result = ImportSample(sample, options);
                 if (result)
                 {
-                    var data = new SampleImportEventData(sample.displayName, sample.packageUniqueId, sample.importPath,
+                    var data = new SampleImportEventData(sample.displayName, sample.packageTechnicalName, sample.importPath,
                         sample.previousImportPaths.Count > 0 ? sample.previousImportPaths[^1] : null);
                     Sample.RaiseOnBeforeImportFinish([data]);
                 }
@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (!ImportSample(sample, options))
                         continue;
                     importedData.Add(new SampleImportEventData(sample.displayName,
-                        sample.packageUniqueId, sample.importPath,
+                        sample.packageTechnicalName, sample.importPath,
                         sample.previousImportPaths.Count > 0 ? sample.previousImportPaths[^1] : null));
                 }
 

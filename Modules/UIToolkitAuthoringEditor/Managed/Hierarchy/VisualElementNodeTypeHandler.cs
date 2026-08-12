@@ -1388,6 +1388,10 @@ internal abstract class VisualElementNodeTypeHandler :
 
     private void ClearSingle(VisualElement element)
     {
+        // PointerLeaveEvent is not fired for virtualized items, so clear the hover state here.
+        if (element == m_HoveredElement)
+            HoveredElement = null;
+
         if (!m_Mappings.TryGetValue(element, out var removedNode))
             return;
 

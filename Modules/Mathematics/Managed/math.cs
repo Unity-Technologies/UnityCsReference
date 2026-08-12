@@ -721,7 +721,8 @@ namespace Unity.Mathematics
         /// <param name="x">Input value.</param>
         /// <returns>True if the component was NaN; false otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool2 isnan(double2 x) {
+        public static bool2 isnan(double2 x)
+        {
             return bool2((asulong(x.x) & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000,
                          (asulong(x.y) & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000);
         }
@@ -2515,7 +2516,7 @@ namespace Unity.Mathematics
         public static double4 asin(double4 x) { return new double4(asin(x.x), asin(x.y), asin(x.z), asin(x.w)); }
 
 
-        /// <summary>Returns the result of rounding a float value up to the nearest integral value less or equal to the original value.</summary>
+        /// <summary>Returns the result of rounding a float value down to the nearest integral value less or equal to the original value.</summary>
         /// <param name="x">Input value.</param>
         /// <returns>The round down to nearest integral value of the input.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2540,7 +2541,7 @@ namespace Unity.Mathematics
         public static float4 floor(float4 x) { return new float4(floor(x.x), floor(x.y), floor(x.z), floor(x.w)); }
 
 
-        /// <summary>Returns the result of rounding a double value up to the nearest integral value less or equal to the original value.</summary>
+        /// <summary>Returns the result of rounding a double value down to the nearest integral value less or equal to the original value.</summary>
         /// <param name="x">Input value.</param>
         /// <returns>The round down to nearest integral value of the input.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3657,7 +3658,7 @@ namespace Unity.Mathematics
         /// <param name="x">Value to use when computing squared length.</param>
         /// <returns>Squared length of x.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float lengthsq(float x) { return x*x; }
+        public static float lengthsq(float x) { return x * x; }
 
         /// <summary>Returns the squared length of a float2 vector.</summary>
         /// <param name="x">Vector to use when computing squared length.</param>
@@ -4128,7 +4129,7 @@ namespace Unity.Mathematics
         /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
         /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int select(int falseValue, int trueValue, bool test)    { return test ? trueValue : falseValue; }
+        public static int select(int falseValue, int trueValue, bool test) { return test ? trueValue : falseValue; }
 
         /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
         /// <param name="falseValue">Value to use if test is false.</param>
@@ -4279,7 +4280,7 @@ namespace Unity.Mathematics
         /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
         /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float select(float falseValue, float trueValue, bool test)    { return test ? trueValue : falseValue; }
+        public static float select(float falseValue, float trueValue, bool test) { return test ? trueValue : falseValue; }
 
         /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
         /// <param name="falseValue">Value to use if test is false.</param>
@@ -5299,7 +5300,8 @@ namespace Unity.Mathematics
         /// <param name="x">Value to reverse.</param>
         /// <returns>Value with reversed bits.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint reversebits(uint x) {
+        public static uint reversebits(uint x)
+        {
             x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
             x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
             x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);

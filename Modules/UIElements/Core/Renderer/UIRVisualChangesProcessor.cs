@@ -117,6 +117,7 @@ namespace UnityEngine.UIElements.UIR
                     RenderEvents.SetColorValues(m_RenderTreeManager, renderData.owner);
 
                 RenderEvents.SyncBackdropFilterState(m_RenderTreeManager, renderData);
+                RenderEvents.SyncFilterState(m_RenderTreeManager, renderData);
 
                 bool effectiveModifiersChanged = RebuildEffectiveModifiers(renderData, inheritedRecursive);
 

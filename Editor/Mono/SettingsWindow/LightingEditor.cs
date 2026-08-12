@@ -42,6 +42,7 @@ namespace UnityEditor
             public static readonly GUIContent ambientDown = EditorGUIUtility.TrTextContent("Ground Color", "Controls the color of light emitted from the ground of the Scene.");
             public static readonly GUIContent ambient = EditorGUIUtility.TrTextContent("Ambient Color", "Controls the color of the ambient light contributed to the Scene.");
             public static readonly GUIContent customReflection = EditorGUIUtility.TrTextContent("Cubemap", "Specifies the custom cube map used for reflection effects in the Scene.");
+            public static readonly GUIContent unusedCustomReflectionWarning = EditorGUIUtility.TrTextContent("A custom cubemap is still assigned and included in builds, even though Source is set to Skybox. To remove it, set Source to Custom and clear the Cubemap field.");
             public static readonly GUIContent SubtractiveColor = EditorGUIUtility.TrTextContent("Realtime Shadow Color", "The color used for mixing realtime shadows with baked lightmaps in Subtractive lighting mode. The color defines the darkest point of the realtime shadow.");
 
             public static readonly GUIContent[] kFullAmbientSource =
@@ -130,6 +131,16 @@ namespace UnityEditor
             SessionState.SetBool(kShowEnvironment, m_bShowEnvironment);
         }
 
+        // Match the RenderSettings.customReflectionTexture setter, which rejects non-cube textures.
+        static Object CustomReflectionValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
+        {
+            var texture = EditorGUI.ValidateObjectFieldAssignment(references, typeof(Texture), property, options) as Texture;
+            if (texture == null || texture.dimension == TextureDimension.Cube)
+                return texture;
+            // A non-cube pick keeps the current value; only an explicit None clears the field.
+            return property.objectReferenceValue;
+        }
+
         private void DrawGUI()
         {
             Material skyboxMaterial = m_SkyboxMaterial.objectReferenceValue as Material;
@@ -204,11 +215,7 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.env_refl_top);
                 EditorGUI.indentLevel++;
 
-                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_DefaultReflectionMode, Styles.env_refl_src);
-                if (EditorGUI.EndChangeCheck())
-                    if ((DefaultReflectionMode)m_DefaultReflectionMode.intValue == DefaultReflectionMode.FromSkybox)
-                        m_CustomReflection.objectReferenceValue = null;
 
                 DefaultReflectionMode defReflectionMode = (DefaultReflectionMode)m_DefaultReflectionMode.intValue;
                 switch (defReflectionMode)
@@ -219,10 +226,12 @@ namespace UnityEditor
                         GUIContent[] reflectionResolutionTextArray = null;
                         ReflectionProbeEditor.GetResolutionArray(ref reflectionResolutionValuesArray, ref reflectionResolutionTextArray);
                         EditorGUILayout.IntPopup(m_DefaultReflectionResolution, reflectionResolutionTextArray, reflectionResolutionValuesArray, Styles.env_refl_res, GUILayout.MinWidth(40));
+                        if (m_CustomReflection.objectReferenceValue != null)
+                            EditorGUILayout.HelpBox(Styles.unusedCustomReflectionWarning.text, MessageType.Warning);
                     }
                     break;
                     case DefaultReflectionMode.Custom:
-                        EditorGUILayout.PropertyField(m_CustomReflection, Styles.customReflection);
+                        EditorGUILayout.ObjectField(m_CustomReflection, typeof(Texture), Styles.customReflection, CustomReflectionValidator);
                         break;
                 }
 

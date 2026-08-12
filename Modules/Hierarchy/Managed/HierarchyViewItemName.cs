@@ -47,7 +47,7 @@ namespace Unity.Hierarchy
 
             TextField.RegisterCallback<MouseUpEvent>(OnMouseUpEvent);
             TextField.RegisterCallback<KeyDownEvent>(OnInterceptKeyDownEvent, TrickleDown.TrickleDown);
-            TextField.RegisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.NoTrickleDown);
+            TextField.RegisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.TrickleDown);
             TextField.RegisterCallback<BlurEvent>(OnBlurEvent);
         }
 
@@ -131,9 +131,10 @@ namespace Unity.Hierarchy
         void OnKeyDownEvent(KeyDownEvent evt)
         {
             if (IsRenaming && evt.keyCode == KeyCode.Escape)
+            {
                 EndRename(true);
-
-            evt.StopPropagation();
+                evt.StopPropagation();
+            }
         }
 
         void OnBlurEvent(BlurEvent evt)

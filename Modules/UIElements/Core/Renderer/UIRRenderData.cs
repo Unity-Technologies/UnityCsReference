@@ -49,6 +49,8 @@ namespace UnityEngine.UIElements.UIR
         IsClippingRectDirty = 1 << 6,
         IsStickyBone = 1 << 7,
         IsElementInfoDirty = 1 << 8,
+        RegisteredForFilterCallbacks = 1 << 9,
+        RegisteredForBackdropFilterCallbacks = 1 << 10,
     }
 
     // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
@@ -60,6 +62,11 @@ namespace UnityEngine.UIElements.UIR
         // Hash-deduped per-glyph TCS allocs written during PostProcessTextVertices.
         // Null until first SetTints; freed in FreeExtraData.
         public Dictionary<TextCoreSettings, BMPAlloc> textCoreSettingsAllocs;
+
+        // One pooled block per pass in flat chain order; populated in the update phase so user
+        // callbacks never run while a render target is bound. The lists persist (empty) across pooled reuse.
+        public List<MaterialPropertyBlock> filterCallbackPropertyBlocks;
+        public List<MaterialPropertyBlock> backdropFilterCallbackPropertyBlocks;
     }
 
     struct GraphicEntry
@@ -270,6 +277,19 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsElementInfoDirty) == RenderDataFlags.IsElementInfoDirty;
+        }
+
+        // Tracked separately from chain emptiness so the sync paths register/unregister once per transition.
+        public bool isRegisteredForFilterCallbacks
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.RegisteredForFilterCallbacks) == RenderDataFlags.RegisteredForFilterCallbacks;
+        }
+
+        public bool isRegisteredForBackdropFilterCallbacks
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.RegisteredForBackdropFilterCallbacks) == RenderDataFlags.RegisteredForBackdropFilterCallbacks;
         }
 
         private Rect m_ClippingRect;

@@ -133,9 +133,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Foldouts[(int)FoldoutType.Status] = foldout;
             }
 
-            private string GetPackageToggleText(string packageUniqueId)
+            private string GetPackageToggleText(string packageTechnicalName)
             {
-                return m_PackageDatabase.GetPackage(packageUniqueId)?.displayName ?? packageUniqueId;
+                return m_PackageDatabase.GetPackageByIdOrName(packageTechnicalName)?.displayName ?? packageTechnicalName;
             }
 
             private void CreateOrUpdateFoldoutByType(FoldoutType foldoutType)
@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         CreateOrUpdateFoldoutHelper(foldoutType, m_Filters.supportedLabels, m_LabelToggles, m_Filters.IsLabelSelected, m_Filters.UpdateLabels);
                         return;
                     case FoldoutType.Package:
-                        CreateOrUpdateFoldoutHelper(foldoutType, m_Filters.supportedPackageUniqueIds, m_PackageToggles, m_Filters.IsPackageSelected, m_Filters.UpdatePackages, GetPackageToggleText);
+                        CreateOrUpdateFoldoutHelper(foldoutType, m_Filters.supportedPackageTechnicalNames, m_PackageToggles, m_Filters.IsPackageSelected, m_Filters.UpdatePackages, GetPackageToggleText);
                         return;
                 }
             }
@@ -222,7 +222,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     CreateOrUpdateFoldoutByType(FoldoutType.Category);
                 if (args.filterTypesChanged.HasFlag(PageFilters.ChangedTypes.SupportedLabels) && m_Filters.UpdateSupportedLabels(newFilters.supportedLabels) != PageFilters.ChangedTypes.None)
                     CreateOrUpdateFoldoutByType(FoldoutType.Label);
-                if (args.filterTypesChanged.HasFlag(PageFilters.ChangedTypes.SupportedPackages) && m_Filters.UpdateSupportedPackages(newFilters.supportedPackageUniqueIds) != PageFilters.ChangedTypes.None)
+                if (args.filterTypesChanged.HasFlag(PageFilters.ChangedTypes.SupportedPackages) && m_Filters.UpdateSupportedPackages(newFilters.supportedPackageTechnicalNames) != PageFilters.ChangedTypes.None)
                     CreateOrUpdateFoldoutByType(FoldoutType.Package);
 
                 Clear();

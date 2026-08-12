@@ -5430,7 +5430,7 @@ namespace UnityEngine
         extern public Vector2 target { get; }
     }
 
-    // The SliderJoint2D constrains the two connected rigid-bodies to have on degree of freedom: translation along a fixed axis.  Relative motion is prevented.
+    // The SliderJoint2D constrains the two connected rigid-bodies to have one degree of freedom: translation along a fixed axis.  Relative motion is prevented.
     [NativeHeader("Modules/Physics2D/SliderJoint2D.h")]
     public sealed class SliderJoint2D : AnchoredJoint2D
     {

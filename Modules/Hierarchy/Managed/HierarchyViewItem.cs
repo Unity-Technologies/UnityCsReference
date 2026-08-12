@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
@@ -342,7 +343,7 @@ namespace Unity.Hierarchy
 
         void OnEndRename(string text, bool canceled)
         {
-            m_View.SetRenamingItem(null);
+            m_View.SetRenamingItem(null, canceled);
 
             if (canceled)
                 return;
@@ -354,6 +355,13 @@ namespace Unity.Hierarchy
                 editorHandler.OnSetName(m_View, in m_Node, text);
             else
                 m_View.Source.SetName(in m_Node, text);
+        }
+
+        internal Rect GetRenameRect()
+        {
+            var renameRect = worldBound;
+            renameRect.xMin = m_Name.worldBound.xMin;
+            return renameRect;
         }
     }
 }

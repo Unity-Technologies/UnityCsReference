@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsUsedByFeature(IPackageVersion version);
         bool HasCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
         IReadOnlyCollection<IPackage> GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
-        SampleCollection GetSamples(string packageUniqueId);
+        SampleCollection GetSamples(string packageTechnicalName);
         Sample GetSample(string sampleUniqueId);
         void UpdateSamples(IReadOnlyCollection<SampleCollection> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
@@ -80,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly Dictionary<string, string> m_TechnicalNameToUniqueIdMap = new();
 
         // We add two dictionaries to speed up sample lookups, but we only serialize the list of SampleCollections once
-        private readonly Dictionary<string, SampleCollection> m_PackageUniqueIdToSampleCollectionsMap = new();
+        private readonly Dictionary<string, SampleCollection> m_PackageTechnicalNameToSampleCollectionsMap = new();
         private readonly Dictionary<string, Sample> m_SampleUniqueIdToSamplesMap = new();
 
         [SerializeField]
@@ -90,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SampleCollection[] m_SerializedSamples = Array.Empty<SampleCollection>();
 
         public IReadOnlyCollection<IPackage> allPackages => m_Packages.Values;
-        public IReadOnlyCollection<SampleCollection> sampleCollections => m_PackageUniqueIdToSampleCollectionsMap.Values;
+        public IReadOnlyCollection<SampleCollection> sampleCollections => m_PackageTechnicalNameToSampleCollectionsMap.Values;
 
         public IPackage GetPackage(long productId)
         {
@@ -252,7 +252,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public SampleCollection GetSamples(string packageUniqueId) => m_PackageUniqueIdToSampleCollectionsMap.GetValueOrDefault(packageUniqueId);
+        public SampleCollection GetSamples(string packageTechnicalName) => m_PackageTechnicalNameToSampleCollectionsMap.GetValueOrDefault(packageTechnicalName);
         public Sample GetSample(string sampleUniqueId) => m_SampleUniqueIdToSamplesMap.GetValueOrDefault(sampleUniqueId);
         public void UpdateSamples(IReadOnlyCollection<SampleCollection> toAddOrUpdate = null, IReadOnlyCollection<string> toRemove = null)
         {
@@ -266,7 +266,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var preUpdate = new List<SampleCollection>();
             foreach (var newSampleCollection in toAddOrUpdate)
             {
-                var oldSamples = GetSamples(newSampleCollection.packageUniqueId);
+                var oldSamples = GetSamples(newSampleCollection.packageTechnicalName);
                 if (oldSamples?.Count > 0)
                 {
                     foreach (var sample in oldSamples)
@@ -281,19 +281,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 foreach (var sample in newSampleCollection)
                     m_SampleUniqueIdToSamplesMap[sample.uniqueId] = sample;
-                m_PackageUniqueIdToSampleCollectionsMap[newSampleCollection.packageUniqueId] = newSampleCollection;
+                m_PackageTechnicalNameToSampleCollectionsMap[newSampleCollection.packageTechnicalName] = newSampleCollection;
             }
 
             var sampleRemoved = new List<SampleCollection>();
-            foreach (var packageUniqueId in toRemove)
+            foreach (var packageTechnicalName in toRemove)
             {
-                var oldSampleCollection = GetSamples(packageUniqueId);
+                var oldSampleCollection = GetSamples(packageTechnicalName);
                 if (oldSampleCollection != null)
                 {
                     sampleRemoved.Add(oldSampleCollection);
                     foreach (var sample in oldSampleCollection)
                         m_SampleUniqueIdToSamplesMap.Remove(sample.uniqueId);
-                    m_PackageUniqueIdToSampleCollectionsMap.Remove(packageUniqueId);
+                    m_PackageTechnicalNameToSampleCollectionsMap.Remove(packageTechnicalName);
                 }
             }
             onSamplesChanged?.Invoke(new SamplesChangeArgs { added = added, updated = updated, removed = sampleRemoved, preUpdate = preUpdate});
@@ -306,7 +306,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var sampleCollection in m_SerializedSamples)
             {
-                var package = GetPackage(sampleCollection.packageUniqueId);
+                var package = GetPackageByIdOrName(sampleCollection.packageTechnicalName);
                 var samples = new Sample[sampleCollection.Count];
                 for (var i = 0; i < sampleCollection.Count; i++)
                 {
@@ -314,14 +314,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_SampleUniqueIdToSamplesMap[sample.uniqueId] = sample;
                     samples[i] = sample;
                 }
-                m_PackageUniqueIdToSampleCollectionsMap[sampleCollection.packageUniqueId] = new SampleCollection(sampleCollection.packageUniqueId, samples);
+                m_PackageTechnicalNameToSampleCollectionsMap[sampleCollection.packageTechnicalName] = new SampleCollection(sampleCollection.packageTechnicalName, samples);
             }
         }
 
         public void OnBeforeSerialize()
         {
             m_SerializedPackages = m_Packages.Values.FilterByType<Package>().ToNewArray(m_Packages.Count);
-            m_PackageUniqueIdToSampleCollectionsMap.Values.ToArray(ref m_SerializedSamples);
+            m_PackageTechnicalNameToSampleCollectionsMap.Values.ToArray(ref m_SerializedSamples);
         }
 
         private void TriggerOnPackagesChanged(IList<IPackage> added = null, IList<IPackage> removed = null, IList<IPackage> updated = null, IList<IPackage> preUpdate = null, IList<IPackage> progressUpdated = null, PackagesChangedSource changedSource = PackagesChangedSource.Other)

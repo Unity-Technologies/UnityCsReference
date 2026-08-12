@@ -241,6 +241,16 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         public StateAction PerformanceAction { get; private set; }
 
+        // Raised when the indexer changes a registered scaler's level (increase or decrease).
+        // Internal so the Visual Scripting bridge in the Adaptive Performance package can forward it
+        // to the Visual Scripting EventBus without expanding the public engine API.
+        internal event System.Action<AdaptivePerformanceScaler> ScalerLevelChanged;
+
+        internal void NotifyScalerLevelChanged(AdaptivePerformanceScaler scaler)
+        {
+            ScalerLevelChanged?.Invoke(scaler);
+        }
+
         /// <summary>
         /// Returns all currently applied scalers.
         /// </summary>

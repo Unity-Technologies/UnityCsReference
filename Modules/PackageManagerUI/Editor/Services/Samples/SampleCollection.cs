@@ -12,20 +12,20 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class SampleCollection : IReadOnlyList<Sample>
     {
-        public string packageUniqueId { get; private set; }
+        public string packageTechnicalName { get; private set; }
 
         [SerializeField]
         private Sample[] m_Samples;
 
-        public SampleCollection(string packageUniqueId, Sample[] samples)
+        public SampleCollection(string packageTechnicalName, Sample[] samples)
         {
-            this.packageUniqueId = packageUniqueId;
+            this.packageTechnicalName = packageTechnicalName;
             m_Samples = samples ?? Array.Empty<Sample>();
         }
 
         public bool IsEquivalent(SampleCollection other)
         {
-            if (m_Samples.Length != other.m_Samples.Length || packageUniqueId != other.packageUniqueId)
+            if (m_Samples.Length != other.m_Samples.Length || packageTechnicalName != other.packageTechnicalName)
                 return false;
 
             for (var i = 0; i < m_Samples.Length; i++)

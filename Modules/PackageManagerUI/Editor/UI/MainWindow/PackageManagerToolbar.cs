@@ -133,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 filtersSelected.Append(filters.status.GetDisplayName()).Append(separator);
             foreach (var filter in filters.categories.Join(filters.labels))
                 filtersSelected.Append(filter).Append(separator);
-            foreach (var filter in filters.packageUniqueIds.SelectNonEmpty(i => m_PackageDatabase.GetPackage(i)?.displayName ?? i))
+            foreach (var filter in filters.packageTechnicalNames.SelectNonEmpty(i => m_PackageDatabase.GetPackageByIdOrName(i)?.displayName ?? i))
                 filtersSelected.Append(filter).Append(separator);
             // Since we always append the separator at the end, we want to make sure to move the ending separator
             filtersSelected.Length = Mathf.Max(0, filtersSelected.Length - separator.Length);

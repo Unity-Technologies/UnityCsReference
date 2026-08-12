@@ -29,6 +29,12 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            if (!AreImporterTargetsValid())
+            {
+                base.OnEnable(); // lets the base mark the editor enabled/inert (OnDisable symmetry)
+                return;
+            }
+
             m_MaterialLocation = serializedObject.FindProperty("m_MaterialLocation");
             m_Materials = serializedObject.FindProperty("m_Materials");
 

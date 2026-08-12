@@ -139,6 +139,18 @@ namespace Unity.Hierarchy.Editor
 
             public static void TriggerPlayModeStateChanged(HierarchyWindow hierarchyWindow, PlayModeStateChange mode) =>
                 hierarchyWindow.OnPlayModeStateChanged(mode);
+
+            public static void SetCachedStageViewState(HierarchyWindow hierarchyWindow, Stage stage, HierarchyViewState viewState)
+            {
+                var key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.m_WindowGUID, stage);
+                s_StateCache.SetState(key, viewState);
+            }
+
+            public static void ClearCachedStageViewState(HierarchyWindow hierarchyWindow, Stage stage)
+            {
+                var key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.m_WindowGUID, stage);
+                s_StateCache.RemoveState(key);
+            }
         }
 
         string ISearchableContainer.SearchText
@@ -428,7 +440,10 @@ namespace Unity.Hierarchy.Editor
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
             StageNavigationManager.instance.stageChanging += OnStageChanging;
-            StageNavigationManager.instance.stageChanged += OnStageChanged;
+            // Use afterSuccessfullySwitchedToStage instead of stageChanged. This is called after
+            // previous stages are closed, and avoids issues with view state restoration when recovering entityIds from GlobalObjectIds.
+            // Otherwise, we might restore from a previous preview stage.
+            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnAfterSuccessfullySwitchedToStage;
             PrefabStage.prefabStageReloading += OnPrefabStageReloading;
             PrefabStage.prefabStageReloaded += OnPrefabStageReloaded;
 
@@ -512,7 +527,7 @@ namespace Unity.Hierarchy.Editor
 
             PrefabStage.prefabStageReloading -= OnPrefabStageReloading;
             PrefabStage.prefabStageReloaded -= OnPrefabStageReloaded;
-            StageNavigationManager.instance.stageChanged -= OnStageChanged;
+            StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnAfterSuccessfullySwitchedToStage;
             StageNavigationManager.instance.stageChanging -= OnStageChanging;
             PrefabUtility.prefabInstanceUpdated -= OnPrefabInstanceUpdated;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
@@ -850,7 +865,7 @@ namespace Unity.Hierarchy.Editor
             SaveStageViewState(previousStage);
         }
 
-        void OnStageChanged(Stage previousStage, Stage currentStage)
+        void OnAfterSuccessfullySwitchedToStage(Stage currentStage)
         {
             // Keep a reference to the current hierarchy to dispose it later
             var oldHierarchy = m_Hierarchy;
@@ -881,7 +896,7 @@ namespace Unity.Hierarchy.Editor
 
         void OnPrefabStageReloaded(PrefabStage stage)
         {
-            OnStageChanged(null, stage);
+            OnAfterSuccessfullySwitchedToStage(stage);
         }
 
         void OnCutGameObjects(GameObject[] gameObjects)
@@ -1229,23 +1244,24 @@ namespace Unity.Hierarchy.Editor
             {
                 m_HierarchyView.EnqueuePostUpdateAction(() =>
                 {
-                    // Only force-expand prefab-stage root nodes when no saved state exists (first open
-                    // or old format). When a state was restored, those flags are already correct.
-                    if (!hasViewModelState && StageUtility.GetCurrentStage() is PrefabStage)
+                    // Always force expand the Preview Scene root "Prefab Mode In Context" node when restoring
+                    // a view model state. This node cannot be serialized since it is recreated every time, and should always be expanded.
+                    // This is in line with the legacy hierarchy behavior, which always expands this node when entering a prefab stage in context.
+                    // When there is no view model state, all nodes will be expanded by default when entering a prefab stage.
+                    // For prefabs in isolation, all nodes represent game objects that are persisted and serializable, therefore their view model
+                    // state can be restored correctly.
+                    if (hasViewModelState && StageUtility.GetCurrentStage() is PrefabStage { mode: PrefabStage.Mode.InContext } ps)
                     {
-                        using var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyView.ViewModel);
-
-                        var rootChildrenCount = m_Hierarchy.GetChildrenCount(in Hierarchy.Root);
-                        using var rootChildren = new RentSpanUnmanaged<HierarchyNode>(rootChildrenCount);
-                        m_Hierarchy.GetChildren(Hierarchy.Root, rootChildren);
-                        m_HierarchyView.ViewModel.SetFlags(rootChildren, HierarchyNodeFlags.Expanded);
-
-                        foreach (ref readonly var node in rootChildren)
+                        // The dummy "Prefab Mode In Context" node only appears if the "openedFromInstance" game object is under
+                        // a valid transform. Therefore, we have to validate that it does in fact exist to expand it.
+                        var contentRootParent = ps.prefabContentsRoot.transform.parent;
+                        var contentRootParentGo = contentRootParent?.gameObject;
+                        if (contentRootParentGo != null && contentRootParentGo.name == PrefabUtility.kDummyPrefabStageRootObjectName)
                         {
-                            var childrenCount = m_Hierarchy.GetChildrenCount(in node);
-                            using var children = new RentSpanUnmanaged<HierarchyNode>(childrenCount);
-                            m_Hierarchy.GetChildren(in node, children);
-                            m_HierarchyView.ViewModel.SetFlags(children, HierarchyNodeFlags.Expanded);
+                            // Handler and node should exist at this point since this is a post update action.
+                            var gameObjectHandler = m_Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
+                            var node = gameObjectHandler.GetOrCreateNode(contentRootParentGo);
+                            m_HierarchyView.ViewModel.SetFlags(in node, HierarchyNodeFlags.Expanded);
                         }
                     }
                     m_SelectionHandler.SyncGlobalSelectionFromViewModel();

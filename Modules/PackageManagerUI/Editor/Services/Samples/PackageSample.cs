@@ -75,22 +75,22 @@ namespace UnityEditor.PackageManager.UI
 
         internal ulong sizeInBytes { get; private set; }
 
-        internal string packageUniqueId { get; private set; }
+        internal string packageTechnicalName { get; private set; }
 
         internal string assetPackagePath { get; private set; }
 
         private Internal.IPackage m_Package;
         internal Internal.IPackage package => m_Package;
 
-        internal string uniqueId => $"{packageUniqueId}/{displayName}";
+        internal string uniqueId => $"{packageTechnicalName}/{displayName}";
 
-        internal Sample(SampleInfo sampleInfo, string packageUniqueId, string resolvedPath, string importPath, bool isImported, ulong sizeInBytes, string[] previousImportPaths, string assetPackagePath, Internal.IPackage package)
+        internal Sample(SampleInfo sampleInfo, string packageTechnicalName, string resolvedPath, string importPath, bool isImported, ulong sizeInBytes, string[] previousImportPaths, string assetPackagePath, Internal.IPackage package)
         {
             displayName = sampleInfo.displayName;
             description = sampleInfo.description;
             interactiveImport = sampleInfo.interactiveImport;
             images = sampleInfo.images;
-            this.packageUniqueId = packageUniqueId;
+            this.packageTechnicalName = packageTechnicalName;
             this.resolvedPath = resolvedPath;
             this.importPath = importPath;
             this.isImported = isImported;
@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI
         {
             return displayName == other.displayName &&
                    description == other.description &&
-                   packageUniqueId == other.packageUniqueId &&
+                   packageTechnicalName == other.packageTechnicalName &&
                    resolvedPath == other.resolvedPath &&
                    importPath == other.importPath &&
                    interactiveImport == other.interactiveImport &&
@@ -118,7 +118,7 @@ namespace UnityEditor.PackageManager.UI
         internal bool isDefault =>
             displayName == null &&
             description == null &&
-            packageUniqueId == null &&
+            packageTechnicalName == null &&
             resolvedPath == null &&
             importPath == null &&
             !interactiveImport &&
