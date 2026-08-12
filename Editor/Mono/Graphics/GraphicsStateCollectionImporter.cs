@@ -154,6 +154,8 @@ namespace UnityEditor.Rendering
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_RuntimePlatform = serializedObject.FindProperty("runtimePlatform");
             m_GraphicsDeviceType = serializedObject.FindProperty("graphicsDeviceType");

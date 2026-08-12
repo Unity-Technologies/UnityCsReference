@@ -243,8 +243,7 @@ namespace UnityEngine.UIElements
             if (fa.nativeFontAsset == IntPtr.Zero)
                 return false;
             nativeSettings.textSettings = textSettings.nativeTextSettings;
-            // TODO: We should expose this to user. Possibly disable it by default.
-            nativeSettings.disableAdvancedFontFeatures = false;
+            nativeSettings.disableAdvancedFontFeatures = m_TextElement.panel?.contextType == ContextType.Editor;
 
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {

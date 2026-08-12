@@ -591,60 +591,9 @@ namespace UnityEngine.TextCore.Text
         }
 #nullable restore
 
-        /// <summary>
-        /// Create a List of Font Assets with a list of fallbacks defined by FamilyNames, all regular styles
-        /// </summary>
-        /// <param name="fallbacksFamilyNames">The desired fonts to be included, ordered by preferred fallback</param>
-        /// <param name="pointSize">Optional point size.</param>
-        /// <returns>A List of FontAsset containing the available fallbacks for the current platform.</returns>
-        internal static List<FontAsset> CreateFontAssetOSFallbackList(string[] fallbacksFamilyNames, int pointSize = 90)
+        internal static FontAsset CreateFontAssetFromFontReference(FontReference fontRef, int pointSize = 90)
         {
-            List<FontAsset> fallbackList = new List<FontAsset>();
-            FontAsset currentFontAsset;
-
-            foreach (var familyName in fallbacksFamilyNames)
-            {
-                currentFontAsset = CreateFontAssetFromFamilyName(familyName, pointSize);
-
-                if (currentFontAsset == null)
-                    continue;
-
-                fallbackList.Add(currentFontAsset);
-            }
-
-            return fallbackList;
-        }
-
-        internal static FontAsset CreateFontAssetWithOSFallbackList(string[] fallbacksFamilyNames, int pointSize = 90)
-        {
-            FontAsset mainFontAsset = null;
-            FontAsset currentFontAsset;
-
-            foreach (var familyName in fallbacksFamilyNames)
-            {
-                currentFontAsset = CreateFontAssetFromFamilyName(familyName, pointSize);
-
-                if (currentFontAsset == null)
-                    continue;
-
-                if (mainFontAsset == null)
-                    mainFontAsset = currentFontAsset;
-
-                if (mainFontAsset.fallbackFontAssetTable == null)
-                    mainFontAsset.fallbackFontAssetTable = new List<FontAsset>();
-
-                mainFontAsset.fallbackFontAssetTable.Add(currentFontAsset);
-            }
-
-            return mainFontAsset;
-        }
-
-        static FontAsset CreateFontAssetFromFamilyName(string familyName, int pointSize = 90)
-        {
-            FontAsset fontAsset = null;
-
-            if (FontEngine.TryGetSystemFontReference(familyName, null, out FontReference fontRef))
-                fontAsset = CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
+            var fontAsset = CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
 
             if (fontAsset == null)
                 return null;
@@ -672,7 +621,7 @@ namespace UnityEngine.TextCore.Text
             return CreateFontAsset(fontFilePath, faceIndex, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, AtlasPopulationMode.Dynamic, true);
         }
 
-        static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport = true)
+        internal static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport = true)
         {
             // Load Font Face
             if (FontEngine.LoadFontFace(fontFilePath, samplingPointSize, faceIndex) != FontEngineError.Success)
@@ -717,28 +666,12 @@ namespace UnityEngine.TextCore.Text
             return CreateFontAsset(font, 0, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
         }
 
-        static FontAsset CreateFontAsset(Font font, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
+        internal static FontAsset CreateFontAsset(Font font, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
         {
-            if (font.name == "LegacyRuntime")
-            {
-                var fonts = Font.GetOSFallbacks();
-                if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) == FontEngineError.Success)
-                {
-                    var mainFontAssset = CreateFontAssetInstance(font, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
-                    var fallbacks = CreateFontAssetOSFallbackList(fonts, samplingPointSize);
-                    mainFontAssset.fallbackFontAssetTable = fallbacks;
-                    return mainFontAssset;
-                }
-
-                var fontAsset = CreateFontAssetWithOSFallbackList(fonts, samplingPointSize);
-                if (fontAsset != null)
-                    return fontAsset;
-            }
-
             // Load Font Face
             if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) != FontEngineError.Success)
             {
-                FontAsset systemFontAsset = CreateFontAsset(font.name, "Regular");
+                FontAsset systemFontAsset = CreateFontAssetInternal(font.name, "Regular");
                 if (systemFontAsset != null)
                     return systemFontAsset;
 
@@ -913,6 +846,11 @@ namespace UnityEngine.TextCore.Text
         //
         // ================================================================================
 
+        void OnDisable()
+        {
+            DestroyNativeFontAsset();
+        }
+
         internal override void OnDestroy()
         {
             base.OnDestroy();
@@ -928,11 +866,16 @@ namespace UnityEngine.TextCore.Text
                 m_Material = null;
             }
 
-            if (m_NativeFontAsset != IntPtr.Zero)
-            {
-                Destroy(m_NativeFontAsset, MarshalledUnityObject.MarshalNotNull(this));
-                m_NativeFontAsset = IntPtr.Zero;
-            }
+            DestroyNativeFontAsset();
+        }
+
+        void DestroyNativeFontAsset()
+        {
+            if (m_NativeFontAsset == IntPtr.Zero)
+                return;
+
+            Destroy(m_NativeFontAsset, MarshalledUnityObject.MarshalNotNull(this));
+            m_NativeFontAsset = IntPtr.Zero;
         }
 
         private void OnValidate()

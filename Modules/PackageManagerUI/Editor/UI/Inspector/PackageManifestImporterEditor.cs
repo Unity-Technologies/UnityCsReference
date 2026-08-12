@@ -259,6 +259,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_UpmCache = ServicesContainer.instance.Resolve<IUpmCache>();
             m_AssetPath = (target as PackageManifestImporter).assetPath;

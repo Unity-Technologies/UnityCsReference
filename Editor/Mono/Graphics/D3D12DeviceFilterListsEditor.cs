@@ -22,6 +22,7 @@ namespace UnityEditor
             public const float kHeightBetweenFields = 3.0f;
             public const float kHeightBetweenRows = 10.0f;
             public const float kComparatorFieldWidth = 170.0f;
+            public const string kGfxJobsNoticeText = "The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.";
 
             public static readonly GUIContent preferredGraphicsJobsMode = EditorGUIUtility.TrTextContent("Preferred Graphics Jobs Mode", "Indicates which graphics jobs mode this filter will enforce at runtime.");
 
@@ -485,7 +486,7 @@ namespace UnityEditor
 
         private void DrawGfxJobsExtraNotice()
         {
-            var content = EditorGUIUtility.TempContent("The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
+            var content = EditorGUIUtility.TempContent(D3D12DeviceFilterUI.Styles.kGfxJobsNoticeText, EditorGUIUtility.GetHelpIcon(MessageType.Info));
 
             // CalcHeight here would measure the Layout-event dummy rect width and clip the box.
             EditorGUILayout.HelpBox(content);

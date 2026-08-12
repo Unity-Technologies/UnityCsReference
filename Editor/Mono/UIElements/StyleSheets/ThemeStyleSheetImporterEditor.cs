@@ -27,6 +27,8 @@ namespace UnityEditor.UIElements.StyleSheets
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_StyleSheetsProperty = extraDataSerializedObject.FindProperty("StyleSheets");
             m_InheritedThemesProperty = extraDataSerializedObject.FindProperty("InheritedThemes");

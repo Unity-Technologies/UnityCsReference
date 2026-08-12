@@ -513,10 +513,15 @@ namespace UnityEngine.UIElements
 
             if (isWorldSpace)
             {
-                if (PanelComponentUtils.IsTransformControlledByGameObject(this))
-                    SetTransform();
-                else
-                    ClearTransform();
+                // UUM-119563: while hidden, PivotOffset()'s 3D bounds collapse to zero; recomputing would cache a
+                // stale zero transform that snaps the panel in one frame after it reappears. Skip until visible.
+                if (m_RootVisualElement.areAncestorsAndSelfDisplayed)
+                {
+                    if (PanelComponentUtils.IsTransformControlledByGameObject(this))
+                        SetTransform();
+                    else
+                        ClearTransform();
+                }
 
                 UpdateRenderer();
                 if (panelSettings.colliderUpdateMode != ColliderUpdateMode.Keep

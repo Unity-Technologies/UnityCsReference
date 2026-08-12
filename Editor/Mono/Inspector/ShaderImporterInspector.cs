@@ -113,6 +113,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_Properties = extraDataSerializedObject.FindProperty("m_Properties");
         }

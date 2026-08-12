@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IIOProxy m_IOProxy;
         private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IPackageProgressTracker m_PackageProgressTracker;
 
         public PackageFactory(
             IUpmCache upmCache,
@@ -38,7 +39,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IFetchStatusTracker fetchStatusTracker,
             IUpmRegistryClient upmRegistryClient,
             IIOProxy ioProxy,
-            IApplicationProxy application)
+            IApplicationProxy application,
+            IPackageProgressTracker packageProgressTracker)
         {
             m_UpmCache = RegisterDependency(upmCache);
             m_UpmClient = RegisterDependency(upmClient);
@@ -53,10 +55,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
             m_IOProxy = RegisterDependency(ioProxy);
             m_ApplicationProxy = RegisterDependency(application);
+            m_PackageProgressTracker = RegisterDependency(packageProgressTracker);
         }
 
         public override void OnEnable()
         {
+            m_PackageProgressTracker.onPackagesProgressChanged += OnPackagesProgressChanged;
             RegisterEventsForUpmPackages();
             RegisterEventsForAssetStorePackages();
             RegisterEventsForUpmOnAssetStorePackages();
@@ -64,9 +68,39 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void OnDisable()
         {
+            m_PackageProgressTracker.onPackagesProgressChanged -= OnPackagesProgressChanged;
             UnregisterEventsForUpmPackages();
             UnregisterEventsForAssetStorePackages();
             UnregisterEventsForUpmOnAssetStorePackages();
+        }
+
+        private void OnPackagesProgressChanged(IEnumerable<(string packageNameOrProductId, PackageProgress progress)> progressUpdates)
+        {
+            var modifiedPackages = new List<IPackage>();
+            foreach (var (packageNameOrProductId, progress) in progressUpdates)
+            {
+                var package = m_PackageDatabase.GetPackageByIdOrName(packageNameOrProductId) as Package;
+
+                // For special installations, we don't want to modify the progress here because that could remove the
+                // package from the `In Project` page too early. The special installation package should stay as installing
+                // in the In Project page and get replaced by the actual package when the installation/creation is done
+                if (package == null || package.versions.primary.HasTag(PackageTag.SpecialInstall))
+                    continue;
+
+                var resolvedProgress = progress;
+                // For upm packages on asset store, it's possible that an UPM operation changed progress, but an AssetStore refresh
+                // is still ongoing. We look up the progress from the ProgressTracker to make sure the progress is correct
+                if (package.product != null && !string.IsNullOrEmpty(package.name))
+                    resolvedProgress = m_PackageProgressTracker.GetProgress(package.name, package.product.id);
+
+                if (package.progress == resolvedProgress)
+                    continue;
+
+                SetProgress(package, resolvedProgress);
+                modifiedPackages.Add(package);
+            }
+            if (modifiedPackages.Count > 0)
+                m_PackageDatabase.OnPackagesModified(modifiedPackages, true);
         }
 
         private bool HasMatchingScopedRegistry(string packageName, out RegistryInfo scopedRegistry)

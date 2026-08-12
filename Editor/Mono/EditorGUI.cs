@@ -6177,10 +6177,21 @@ namespace UnityEditor
             return true;
         }
 
+        // A missing script is fake-null but its native object still exists, so keep drawing its titlebar
+        // and Remove Component menu. A destroyed target has no native object and throws on access, so skip it. (UUM-146874)
+        internal static bool ShouldSkipInspectorTitlebar(Object target)
+        {
+            if (target != null)
+                return false;
+            if ((object)target == null)
+                return true;
+            return !Resources.EntityIdIsValid(target.GetEntityId());
+        }
+
         // Make an inspector-window-like titlebar.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
-            if (targetObjs[0] == null)
+            if (ShouldSkipInspectorTitlebar(targetObjs[0]))
                 return;
 
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;

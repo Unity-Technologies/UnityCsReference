@@ -7,14 +7,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build.Profile;
 using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 using UnityEngine.Assemblies;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
+    [InitializeOnLoad]
     internal static class EditorUtilities
     {
         internal static readonly string[] s_DefaultGeneralSettingsPath = {"Adaptive Performance"};
@@ -431,20 +434,89 @@ namespace UnityEditor.AdaptivePerformance.Editor
             return settings;
         }
 
+        // Toggling Adaptive Performance adds or removes the built-in module package, which triggers an
+        // asynchronous package resolution and domain reload. Interacting with the settings or entering Play
+        // mode while that operation is in flight corrupts state (mismatched DefaultScenario state, duplicate
+        // ScriptableSingletons, missing script references), so we track the pending operation to gate the
+        // settings UI and to veto Play mode entry until it completes.
+        // Resetting this on a Play mode transition would drop the gate while the operation is still resolving,
+        // which is exactly what it exists to prevent. MonitorPackageRequest clears it on completion, and the
+        // package operation itself ends in a domain reload that discards it.
+        [NoAutoStaticsCleanup]
+        static Func<bool> s_PendingPackageOperation;
+
+        const string k_WarningPlaymodeDuringPackageOperation =
+            "Adaptive Performance is updating its packages. Wait for the operation to finish before entering Play mode.";
+
+        static EditorUtilities()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        // True while an Adaptive Performance enable/disable package operation (and its domain reload) is still resolving.
+        internal static bool IsPackageOperationInProgress => s_PendingPackageOperation?.Invoke() ?? false;
+
+        static void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            // ExitingEditMode is the last point at which Play mode entry can be cancelled. Block it while a
+            // package operation is still resolving to avoid entering Play mode mid domain reload.
+            if (state != PlayModeStateChange.ExitingEditMode || !IsPackageOperationInProgress)
+                return;
+
+            Debug.LogWarning(L10n.Tr(k_WarningPlaymodeDuringPackageOperation));
+            EditorApplication.isPlaying = false;
+        }
+
         internal static void EnableAPModule(bool enable)
         {
             var packageID = "com.unity.modules.adaptiveperformance";
 
             if (enable)
             {
-                Client.Add(packageID);
+                TrackPackageRequest(Client.Add(packageID));
             }
             else
             {
                 var settings = EditorUtilities.GetSettingsOrBuildProfilesSettings();
                 if (settings == null)
-                    Client.Remove(packageID); // neither classic platforms (Settings) nor build profiles are enabled
+                    TrackPackageRequest(Client.Remove(packageID)); // neither classic platforms (Settings) nor build profiles are enabled
             }
+        }
+
+        internal static void TrackPackageRequest(Request request)
+        {
+            // Gate the settings UI on the request until UPM reports it complete.
+            TrackPackageOperation(() => request != null && !request.IsCompleted);
+        }
+
+        // Tracks an arbitrary "still in progress" predicate. Separated from TrackPackageRequest so the
+        // gating and cleanup logic can be exercised without a live UnityEditor.PackageManager request,
+        // whose completion state cannot be faked.
+        internal static void TrackPackageOperation(Func<bool> isInProgress)
+        {
+            s_PendingPackageOperation = isInProgress;
+            EditorApplication.update -= MonitorPackageRequest;
+            EditorApplication.update += MonitorPackageRequest;
+        }
+
+        internal static void MonitorPackageRequest()
+        {
+            bool inProgress;
+            try
+            {
+                inProgress = IsPackageOperationInProgress;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                inProgress = false;
+            }
+
+            if (inProgress)
+                return;
+
+            s_PendingPackageOperation = null;
+            EditorApplication.update -= MonitorPackageRequest;
         }
     }
 }

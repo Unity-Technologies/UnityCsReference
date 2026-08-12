@@ -9238,6 +9238,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageManagerPrefs.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageManagerPrefs.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageProgressTracker.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageProgressTracker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageSourceExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageSourceExtension.cs</Link>
     </Compile>

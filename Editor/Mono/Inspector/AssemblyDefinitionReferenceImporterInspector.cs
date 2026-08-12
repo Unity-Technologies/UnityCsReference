@@ -50,6 +50,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             //Ensure UIElements handles the IMGUI container with margins
             alwaysAllowExpansion = true;

@@ -340,6 +340,10 @@ namespace UnityEditor
         void OnEnable()
         {
             hideFlags = HideFlags.DontSave;
+
+            // UUM-144436: Cancel and close the picker before the reload instead of trying to resurrect a broken window.
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+
             m_ShowOverlapPreview.valueChanged.AddListener(Repaint);
             m_ShowOverlapPreview.speed = 1.5f;
             m_ShowWidePreview.valueChanged.AddListener(Repaint);
@@ -375,6 +379,8 @@ namespace UnityEditor
         [UsedImplicitly]
         void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+
             NotifySelectorClosed(false);
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
@@ -1092,6 +1098,18 @@ namespace UnityEditor
             }
             Event.current.Use();
             GUI.changed = true;
+        }
+
+        void OnBeforeAssemblyReload()
+        {
+            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+            m_ListArea?.InitSelection(Array.Empty<EntityId>());
+            m_ObjectTreeWithSearch.Clear();
+            SetSelectedInstanceID(EntityId.None);
+            m_SelectionCancelled = true;
+            m_EditedProperty = null;
+
+            Close();
         }
 
         internal void Cancel()

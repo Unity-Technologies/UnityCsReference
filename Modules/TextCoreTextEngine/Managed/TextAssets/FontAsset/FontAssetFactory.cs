@@ -118,27 +118,25 @@ internal class FontAssetFactory
         }
     }
 
-    internal static FontAsset? ConvertFontToFontAsset(Font font)
+    internal static FontAsset? ConvertFontToFontAsset(Font font, bool persistent = true)
     {
         if (font == null)
             return null;
 
-        FontAsset? fontAsset = null;
-
-        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+        FontAsset? fontAsset = FontAsset.CreateFontAsset(font, 0, 90, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.Dynamic, true);
 
         if (fontAsset != null)
-            SetupFontAssetSettings(fontAsset);
+            SetupFontAssetSettings(fontAsset, persistent);
 
         return fontAsset;
     }
 
-    internal static void SetupFontAssetSettings(FontAsset fontAsset)
+    internal static void SetupFontAssetSettings(FontAsset fontAsset, bool persistent = true)
     {
         if (!fontAsset)
             return;
 
-        SetHideFlags(fontAsset);
+        SetHideFlags(fontAsset, persistent);
         fontAsset.isMultiAtlasTexturesEnabled = true;
         fontAsset.IsEditorFont = true;
     }
@@ -159,14 +157,49 @@ internal class FontAssetFactory
         fontAsset.atlasTexture.filterMode = TextGenerator.EnableCheckerboardPattern ? FilterMode.Bilinear : FilterMode.Point;
     }
 
-    public static void SetHideFlags(FontAsset fontAsset)
+    public static void SetHideFlags(FontAsset fontAsset, bool persistent = true)
     {
         if (!fontAsset)
             return;
 
-        fontAsset.hideFlags = HideFlags.DontSave;
-        fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
-        fontAsset.material.hideFlags = HideFlags.DontSave;
+        // Transient assets drop DontUnloadUnusedAsset so Unity can reclaim them when unreferenced.
+        var flags = persistent ? HideFlags.DontSave : HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+        fontAsset.hideFlags = flags;
+        fontAsset.atlasTextures[0].hideFlags = flags;
+        fontAsset.material.hideFlags = flags;
+    }
+
+    internal static List<FontAsset> CreateFontAssetOSFallbackList(string[] fallbacksFamilyNames, int pointSize = 90, bool persistent = true)
+    {
+        List<FontAsset> fallbackList = new List<FontAsset>();
+
+        foreach (var familyName in fallbacksFamilyNames)
+        {
+            FontAsset? currentFontAsset = CreateFontAssetFromFamilyName(familyName, pointSize, persistent);
+
+            if (currentFontAsset == null)
+                continue;
+
+            fallbackList.Add(currentFontAsset);
+        }
+
+        return fallbackList;
+    }
+
+    internal static FontAsset? CreateFontAssetFromFamilyName(string familyName, int pointSize = 90, bool persistent = true)
+    {
+        FontAsset? fontAsset = null;
+
+        if (FontEngine.TryGetSystemFontReference(familyName, null, out FontReference fontRef))
+            fontAsset = FontAsset.CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
+
+        if (fontAsset == null)
+            return null;
+
+        SetupFontAssetSettings(fontAsset, persistent);
+        fontAsset.InternalDynamicOS = true;
+
+        return fontAsset;
     }
 }
 

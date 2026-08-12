@@ -54,8 +54,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             try
             {
+                var sourcePath = sample.resolvedPath;
+                if (string.IsNullOrEmpty(sourcePath))
+                    return false;
+
                 var interactive = (options & Sample.ImportOptions.HideImportWindow) == Sample.ImportOptions.None && sample.interactiveImport;
-                var unityPackages = m_IOProxy.GetFiles(sample.resolvedPath, "*.unitypackage");
+                var unityPackages = m_IOProxy.GetFiles(sourcePath, "*.unitypackage");
                 if (unityPackages.Length > 0)
                     m_AssetDatabase.ImportPackage(unityPackages[0], interactive);
                 else
@@ -68,10 +72,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                         EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, L10n.Tr("Cleaning previous import..."), 0);
                         m_IOProxy.RemovePathAndMeta(v, true);
                     }
-
-                    var sourcePath = sample.resolvedPath;
-                    if (string.IsNullOrEmpty(sourcePath))
-                        return false;
                     m_IOProxy.DirectoryCopy(sourcePath, sample.importPath, true,
                         (fileName, progress) =>
                         {

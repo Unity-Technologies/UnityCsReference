@@ -289,6 +289,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         description = sample.GetString("description"),
                         interactiveImport = sample.Get("interactiveImport", false)
                     };
+                    if (string.IsNullOrEmpty(sampleInfo.displayName) && string.IsNullOrEmpty(sampleInfo.path))
+                        continue;
                     var imagePaths = new List<string>();
                     if (sample.TryGetValue("images", out var imgObj) && imgObj is List<object> imgList)
                     {

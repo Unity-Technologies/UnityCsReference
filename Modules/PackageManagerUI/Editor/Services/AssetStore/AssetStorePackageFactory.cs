@@ -19,10 +19,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onUpdateInfosChanged += OnUpdateInfosChanged;
             m_AssetStoreCache.onImportedPackagesChanged += OnImportedPackagesChanged;
 
-            m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized += OnDownloadFinalized;
             m_AssetStoreDownloadManager.onDownloadError += OnDownloadError;
-            m_AssetStoreDownloadManager.onDownloadStateChanged += OnDownloadStateChanged;
             m_AssetStoreDownloadManager.onBeforeDownloadStart += OnBeforeDownloadStart;
 
             m_FetchStatusTracker.onProductInfoFetchStatusChanged += OnProductInfoFetchStatusChanged;
@@ -38,10 +36,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onUpdateInfosChanged -= OnUpdateInfosChanged;
             m_AssetStoreCache.onImportedPackagesChanged -= OnImportedPackagesChanged;
 
-            m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadFinalized;
             m_AssetStoreDownloadManager.onDownloadError -= OnDownloadError;
-            m_AssetStoreDownloadManager.onDownloadStateChanged -= OnDownloadStateChanged;
             m_AssetStoreDownloadManager.onBeforeDownloadStart -= OnBeforeDownloadStart;
 
             m_FetchStatusTracker.onProductInfoFetchStatusChanged -= OnProductInfoFetchStatusChanged;
@@ -80,26 +76,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.OnPackagesModified(new[] { package });
         }
 
-        private void SetPackagesProgress(IEnumerable<IPackage> packages, PackageProgress progress)
-        {
-            var packagesUpdated = new List<IPackage>();
-            foreach (var package in packages)
-            {
-                if (package.progress == progress || package is not Package p)
-                    continue;
-                SetProgress(p, progress);
-                packagesUpdated.Add(package);
-            }
-
-            if (packagesUpdated.Count > 0)
-                m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
-        }
-
-        private void SetPackageProgress(IPackage package, PackageProgress progress)
-        {
-            SetPackagesProgress(new[] { package }, progress);
-        }
-
         private void OnBeforeDownloadStart(long productId)
         {
             var package = m_PackageDatabase.GetPackage(productId) as Package;
@@ -114,36 +90,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageDatabase.OnPackagesModified(new[] { package });
         }
 
-        private void OnDownloadStateChanged(AssetStoreDownloadOperation operation)
-        {
-            var package = m_PackageDatabase.GetPackage(operation.packageUniqueId);
-            if (package == null)
-                return;
-
-            switch (operation.state)
-            {
-                case DownloadState.Pausing:
-                    SetPackageProgress(package, PackageProgress.Pausing);
-                    break;
-                case DownloadState.ResumeRequested:
-                    SetPackageProgress(package, PackageProgress.Resuming);
-                    break;
-                case DownloadState.Paused:
-                case DownloadState.AbortRequested:
-                case DownloadState.Aborted:
-                    SetPackageProgress(package, PackageProgress.None);
-                    break;
-            }
-        }
-
-        private void OnDownloadProgress(AssetStoreDownloadOperation operation)
-        {
-            var package = m_PackageDatabase.GetPackage(operation.packageUniqueId);
-            if (package == null)
-                return;
-            SetPackageProgress(package, operation.isInProgress ? PackageProgress.Downloading : PackageProgress.None);
-        }
-
         private void OnDownloadFinalized(AssetStoreDownloadOperation operation)
         {
             var package = m_PackageDatabase.GetPackage(operation.packageUniqueId) as Package;
@@ -154,8 +100,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, operation.errorMessage, UIError.Attribute.Clearable));
             else if (operation.state == DownloadState.Aborted)
                 m_PackageDatabase.OnPackagesModified(new[] { package });
-
-            SetPackageProgress(package, PackageProgress.None);
         }
 
         private void OnDownloadError(AssetStoreDownloadOperation operation, UIError error)
@@ -218,31 +162,31 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
 
             var productFetchStatus = m_FetchStatusTracker.GetProductInfoFetchStatus(productId);
+            Package package;
             if (importedPackage == null && productInfo == null)
             {
                 var version = new PlaceholderPackageVersion(productId.ToString(), purchaseInfo.displayName, tag: PackageTag.LegacyFormat, error: productFetchStatus.error);
-                var placeholderPackage = CreatePackage(string.Empty, new PlaceholderVersionList(version), new Product(productId, null, null));
-                if (productFetchStatus.error == null)
-                    SetProgress(placeholderPackage, PackageProgress.Refreshing);
-                return placeholderPackage;
+                package = CreatePackage(string.Empty, new PlaceholderVersionList(version), new Product(productId, null, null));
             }
-
-            if (importedPackage != null && productInfo == null && productFetchStatus is { inProgress: false, error: null })
+            else
             {
-                m_BackgroundFetchHandler.AddToFetchPurchaseInfoQueue(productId);
-                m_BackgroundFetchHandler.AddToFetchProductInfoQueue(productId);
-                m_BackgroundFetchHandler.PushToCheckUpdateStack(productId);
+                if (importedPackage != null && productInfo == null && productFetchStatus is { inProgress: false, error: null })
+                {
+                    m_BackgroundFetchHandler.AddToFetchPurchaseInfoQueue(productId);
+                    m_BackgroundFetchHandler.AddToFetchProductInfoQueue(productId);
+                    m_BackgroundFetchHandler.PushToCheckUpdateStack(productId);
+                }
+
+                var isDeprecated = productInfo?.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false;
+                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+                var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
+                var versionList = new AssetStoreVersionList(productInfo, localInfo, importedPackage, updateInfo);
+                package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
+                if (productFetchStatus.error != null)
+                    AddError(package, productFetchStatus.error);
             }
 
-            var isDeprecated = productInfo?.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false;
-            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-            var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-            var versionList = new AssetStoreVersionList(productInfo, localInfo, importedPackage, updateInfo);
-            var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
-            if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
-                SetProgress(package, PackageProgress.Downloading);
-            else if (productFetchStatus.error != null)
-                AddError(package, productFetchStatus.error);
+            SetProgress(package, m_PackageProgressTracker.GetProgress(productId.ToString()));
             return package;
         }
     }

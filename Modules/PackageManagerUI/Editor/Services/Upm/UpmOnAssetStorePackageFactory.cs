@@ -77,9 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage);
                 if (productInfoFetchStatus.error != null)
                     AddError(package, productInfoFetchStatus.error);
-                else if (productInfo == null)
-                    SetProgress(package, PackageProgress.Refreshing);
-                else if (packageData.mainSearchInfo != null && packageData.mainSearchInfo.ParseProductId() != productId)
+                else if (productInfo != null && packageData.mainSearchInfo != null && productInfo.productId != packageData.mainSearchInfo.ParseProductId())
                 {
                     // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
                     // Right now there isn't any recommended actions we can suggest the users to take, so we'll just add a message here
@@ -90,17 +88,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else // packageData == null, productInfo != null
             {
-                if (searchInfoFetchStatus.error != null)
-                {
-                    var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat, searchInfoFetchStatus.error);
-                    package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo));
-                }
-                else
-                {
-                    var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat);
-                    package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo));
-                    SetProgress(package, PackageProgress.Refreshing);
-                }
+                var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat, searchInfoFetchStatus.error);
+                package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo));
             }
 
             // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
@@ -109,6 +98,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!primaryVersion.isFullyFetched)
                 m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
 
+            var progress = m_PackageProgressTracker.GetProgress(packageName, productId);
+            SetProgress(package, progress);
             return package;
         }
     }

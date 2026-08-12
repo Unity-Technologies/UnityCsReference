@@ -87,7 +87,12 @@ namespace UnityEditor.Build.Profile.Elements
             if (m_OnReset != null)
                 menu.AddItem(s_ResetContent, false, OnReset);
             if (!m_Provider.GetIsRequired())
-                menu.AddItem(s_RemoveContent, false, OnRemove);
+            {
+                if (EditorApplication.isPlayingOrWillChangePlaymode)
+                    menu.AddDisabledItem(s_RemoveContent);
+                else
+                    menu.AddItem(s_RemoveContent, false, OnRemove);
+            }
             menu.ShowAsContext();
         }
 
@@ -107,6 +112,9 @@ namespace UnityEditor.Build.Profile.Elements
 
         void OnRemove()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
             if (!EditorUtility.DisplayDialog(
                     TrText.removeSettings,
                     TrText.removeMessage,

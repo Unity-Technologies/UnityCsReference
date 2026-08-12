@@ -46,6 +46,12 @@ namespace UnityEditor.SpeedTree.Importer
 
         public override void OnEnable()
         {
+            if (!AreImporterTargetsValid())
+            {
+                base.OnEnable(); // lets the base mark the editor enabled/inert (OnDisable symmetry)
+                return;
+            }
+
             m_STImporter = target as SpeedTree9Importer;
 
             if (tabs == null)

@@ -308,6 +308,7 @@ namespace UnityEngine
         public extern Material material { get; set; }
         public extern string[] fontNames { [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
         public extern bool dynamic { get; }
+        internal extern bool includeFontData { [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")] get; }
         public extern int ascent { get; }
         public extern int fontSize { get; }
 

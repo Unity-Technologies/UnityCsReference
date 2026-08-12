@@ -48,6 +48,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             yield return new DisableIfEntitlementsError(sample);
             yield return new DisableIfPackageIsNotLoaded(sample);
             yield return new DisableIfPackageIsInInvalidLocation(sample);
+            yield return new DisableIfSampleHasNoPath(sample);
+            yield return new DisableIfSamplePathDoesNotExist(sample, m_IOProxy);
         }
     }
 }
