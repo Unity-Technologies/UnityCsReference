@@ -11,11 +11,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IAssetStoreCache : IService
     {
-        event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         event Action<AssetStoreProductInfo> onProductInfoChanged;
-        event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
-        event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+        event Action<IReadOnlyCollection<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
         IEnumerable<AssetStoreLocalInfo> localInfos { get; }
         IEnumerable<AssetStoreImportedPackage> importedPackages { get; }
@@ -75,11 +75,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private Asset[] m_SerializedImportedAssets = new Asset[0];
 
-        public event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         public event Action<AssetStoreProductInfo> onProductInfoChanged;
-        public event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
-        public event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
-        public event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+        public event Action<IReadOnlyCollection<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
         public IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
 
@@ -318,7 +318,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var oldInfo = m_LocalInfos.Get(productId);
             m_LocalInfos[productId] = localInfo;
             if (IsLocalInfoUpdated(oldInfo, localInfo))
-                onLocalInfosChanged?.Invoke(new []{ localInfo }, Enumerable.Empty<AssetStoreLocalInfo>());
+                onLocalInfosChanged?.Invoke(new []{ localInfo }, Array.Empty<AssetStoreLocalInfo>());
         }
 
         private static bool IsLocalInfoUpdated(AssetStoreLocalInfo oldInfo, AssetStoreLocalInfo newInfo)

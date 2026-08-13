@@ -167,9 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(new EditorAnalyticsProxy());
             Register(new LicenceProxy());
             Register(new ExtensionManager(packageManagerPrefs));
-            Register(new AssetStorePackageFactory(upmCache, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
-            Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, ioProxy, applicationProxy, unityConnectProxy));
-            Register(new UpmOnAssetStorePackageFactory(unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmRegistryClient, settingsProxy, ioProxy, applicationProxy, upmClient));
+            Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
             Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator, applicationProxy));
             Register(new ModalManager(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient));

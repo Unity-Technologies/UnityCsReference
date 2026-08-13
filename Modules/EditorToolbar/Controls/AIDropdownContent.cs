@@ -34,7 +34,7 @@ class AIDropdownContent : PopupWindowContent
 
     internal Data data = new()
     {
-        text = "Add the Unity AI packages to your project. AI Assistant is an in-Editor assistant that helps you" +
+        text = "Add the AI packages to your project. AI Assistant is an in-Editor assistant that helps you" +
             " write scripts, generate assets, and solve common Unity problems." +
             "\n\n<link=learnmore><color=#7BAEFA>Learn more.</color></link>",
         links = new()
@@ -50,7 +50,7 @@ class AIDropdownContent : PopupWindowContent
             "com.unity.ai.inference"
         },
 
-        installButtonText = "Install Unity AI"
+        installButtonText = "Install AI tools"
     };
 
     Label m_Text;

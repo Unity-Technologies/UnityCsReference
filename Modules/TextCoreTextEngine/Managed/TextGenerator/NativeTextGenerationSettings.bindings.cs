@@ -44,6 +44,8 @@ namespace UnityEngine.TextCore
         public TextSpan[] textSpans;
         public Color32 color;
 
+        public bool disableAdvancedFontFeatures;
+
         public int characterSpacing;        // Encoded in Fixed Point.
         public int wordSpacing;             // Encoded in Fixed Point.
         public int paragraphSpacing;        // Encoded in Fixed Point.
@@ -143,6 +145,7 @@ namespace UnityEngine.TextCore
             wordSpacing = tgs.wordSpacing;
             paragraphSpacing = tgs.paragraphSpacing;
             preProcessFlags = tgs.preProcessFlags;
+            disableAdvancedFontFeatures = tgs.disableAdvancedFontFeatures;
         }
 
         public override string ToString()
@@ -186,7 +189,8 @@ namespace UnityEngine.TextCore
                 $"{nameof(characterSpacing)}: {characterSpacing}\n" +
                 $"{nameof(paragraphSpacing)}: {paragraphSpacing}\n" +
                 $"{nameof(wordSpacing)}: {wordSpacing}\n" +
-                $"{nameof(preProcessFlags)}: {preProcessFlags}\n";
+                $"{nameof(preProcessFlags)}: {preProcessFlags}\n" +
+                $"{nameof(disableAdvancedFontFeatures)}: {disableAdvancedFontFeatures}\n";
         }
     }
 

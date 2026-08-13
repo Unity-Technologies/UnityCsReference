@@ -169,7 +169,7 @@ namespace UnityEditor.Build.Profile.Elements
                 }
                 else
                 {
-                    m_Profile.scriptingDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+                    m_Profile.scriptingDefines = lastCompiledDefines;
                     EditorUtility.SetDirty(m_Profile);
                 }
             }

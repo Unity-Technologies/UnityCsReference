@@ -546,19 +546,17 @@ namespace UnityEditor.Build.Profile
 
             EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
 
-            var buildProfile = activeProfile;
+            if (activeProfile != null)
+                return;
 
+            var buildProfile = GetForClassicPlatform(EditorUserBuildSettings.activePlatformGuid);
+
+            // profile can be null if we're in the middle of creating classic profiles
             if (buildProfile == null)
-            {
-                buildProfile = GetForClassicPlatform(EditorUserBuildSettings.activePlatformGuid);
+                return;
 
-                // profile can be null if we're in the middle of creating classic profiles
-                if (buildProfile == null)
-                    return;
-
-                // We only copy EditorUserBuildSettings into the build profile for classic platforms as we don't want to modify actual user assets
-                EditorUserBuildSettings.CopyToBuildProfile(buildProfile);
-            }
+            // We only copy EditorUserBuildSettings into the build profile for classic platforms as we don't want to modify actual user assets
+            EditorUserBuildSettings.CopyToBuildProfile(buildProfile);
 
             var extension = ModuleManager.GetBuildProfileExtension(buildProfile.platformGuid);
             if (extension != null)

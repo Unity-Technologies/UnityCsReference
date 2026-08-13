@@ -107,6 +107,11 @@ namespace UnityEditor
                 os?.GrabKeyboardFocus();
             }
 
+            public static bool IsSelectionFramed(ObjectSelector os)
+            {
+                return os?.m_ListArea?.IsSelectionFramed() ?? false;
+            }
+
             public static void NotifySelectionChanged(ObjectSelector os, UnityObject selectedObject, bool exitGUI)
             {
                 os?.NotifySelectionChanged(selectedObject, exitGUI);
@@ -179,6 +184,7 @@ namespace UnityEditor
 
         bool m_SelectionCancelled;
         bool m_PreventSetSelectionOnClose;
+        bool m_FrameInitialSelection;
         EntityId m_LastSelectedInstanceId = 0;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
@@ -316,6 +322,10 @@ namespace UnityEditor
         void OnEnable()
         {
             hideFlags = HideFlags.DontSave;
+
+            // UUM-144436: Cancel and close the picker before the reload instead of trying to resurrect a broken window.
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+
             m_ShowOverlapPreview.valueChanged.AddListener(Repaint);
             m_ShowOverlapPreview.speed = 1.5f;
             m_ShowWidePreview.valueChanged.AddListener(Repaint);
@@ -351,6 +361,8 @@ namespace UnityEditor
         [UsedImplicitly]
         void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+
             NotifySelectorClosed(false);
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
@@ -605,6 +617,7 @@ namespace UnityEditor
             SetSelectedInstanceID(obj?.GetInstanceID() ?? 0);
             m_SelectionCancelled = false;
             m_PreventSetSelectionOnClose = false;
+            m_FrameInitialSelection = false;
             m_ShowNoneItem = showNoneItem;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
@@ -754,7 +767,7 @@ namespace UnityEditor
                 InitIfNeeded();
                 m_ListArea.InitSelection(new[] { initialSelection });
                 if (initialSelection != 0)
-                    m_ListArea.Frame(initialSelection, true, false);
+                    m_FrameInitialSelection = true;
             }
 
             InvokeWindowShown(this);
@@ -1060,6 +1073,18 @@ namespace UnityEditor
             GUI.changed = true;
         }
 
+        void OnBeforeAssemblyReload()
+        {
+            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+            m_ListArea?.InitSelection(Array.Empty<EntityId>());
+            m_ObjectTreeWithSearch.Clear();
+            SetSelectedInstanceID(EntityId.None);
+            m_SelectionCancelled = true;
+            m_EditedProperty = null;
+
+            Close();
+        }
+
         internal void Cancel()
         {
             // Undo changes we have done in the ObjectSelector
@@ -1090,6 +1115,14 @@ namespace UnityEditor
 
         void OnGUIHandler()
         {
+            // Must run before the list area consumes the event, otherwise its type is already EventType.Used.
+            if (m_FrameInitialSelection)
+            {
+                var type = Event.current.type;
+                if (type == EventType.MouseDown || type == EventType.MouseDrag || type == EventType.ScrollWheel || type == EventType.KeyDown)
+                    m_FrameInitialSelection = false;
+            }
+
             HandleKeyboard();
 
             m_Position = m_ImGUIContainer.worldBound;
@@ -1297,6 +1330,9 @@ namespace UnityEditor
             PreviewArea();
 
             GUI.EndGroup();
+
+            if (m_FrameInitialSelection && Event.current.type == EventType.Layout && m_Position.height > 0)
+                m_ListArea.KeepSelectionFramed();
 
             // overlay preview resize widget
             GUI.Label(new Rect(m_Position.width * .5f - 16, m_Position.height - m_PreviewSize + 2, 32, Styles.bottomResize.fixedHeight), GUIContent.none, Styles.bottomResize);

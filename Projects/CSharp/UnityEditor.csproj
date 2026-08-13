@@ -6786,6 +6786,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs</Link>
     </Compile>
@@ -6995,6 +6998,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmOnAssetStorePackageFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmOnAssetStorePackageFactory.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackOperation.cs</Link>
@@ -7253,6 +7259,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SortedColumn.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SortedColumn.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\VersionsGroupHeader.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\VersionsGroupHeader.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
@@ -11667,7 +11676,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_73d1/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_6d1a/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/netstandard2.0/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

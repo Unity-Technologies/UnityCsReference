@@ -16,12 +16,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<PackageInfo> onExtraPackageInfoFetched;
         event Action onScopedRegistriesPotentiallyChanged;
 
-        IEnumerable<PackageInfo> searchPackageInfos { get; }
-        IEnumerable<PackageInfo> installedPackageInfos  { get; }
+        IReadOnlyCollection<PackageInfo> discoverableSearchPackageInfos { get; }
+        IReadOnlyCollection<PackageInfo> nonDiscoverableSearchPackageInfos { get; }
+        IReadOnlyCollection<PackageInfo> installedPackageInfos { get; }
         bool installedPackageInfosReady { get; }
 
-        void SetLoadAllVersions(string packageUniqueId, bool value);
-        void AddExtraPackageInfo(PackageInfo packageInfo);
+        void SetLoadAllVersions(string packageName, bool value);
+        void AddSearchNonDiscoverableResult(string packageName, PackageInfo packageInfo, long timestamp);
+        void AddExtraFetchResult(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
         PackageInfo GetInstalledPackageInfo(string packageName);
         IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changeSource = PackagesChangedSource.Other);
@@ -30,64 +32,64 @@ namespace UnityEditor.PackageManager.UI.Internal
         IUpmPackageData GetPackageData(string packageName);
         IUpmPackageData GetPackageData(long productId);
         void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp);
-        PackageInfo GetProductSearchPackageInfo(long productId);
-        void SetProductSearchPackageInfo(long productId, PackageInfo info, long timestamp);
         Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo);
         void ClearCache();
-        void ClearProductCache();
+        void ClearNonDiscoverableSearchInfos();
         void ClearExtraInfoCache();
     }
 
     [Serializable]
-    internal class UpmCache : BaseService<IUpmCache>, IUpmCache, ISerializationCallbackReceiver
+    internal class PackageInfoDictionary : ISerializationCallbackReceiver
     {
-        private Dictionary<string, PackageInfo> m_SearchPackageInfos = new();
-        private Dictionary<string, PackageInfo> m_PackageNameToInstalledPackageInfosMap = new();
-        private Dictionary<long, PackageInfo> m_ProductIdToInstalledPackageInfosMap = new();
-
-        private Dictionary<long, (PackageInfo info, long timestamp)> m_ProductIdToProductSearchInfosMap = new();
-
-        private Dictionary<string, Dictionary<string, PackageInfo>> m_ExtraPackageInfo = new();
-
-        private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new();
-
-        private HashSet<string> m_LoadAllVersions = new();
+        private Dictionary<string, PackageInfo> m_ByName = new();
+        private readonly Dictionary<long, PackageInfo> m_ByProductId = new();
+        private Dictionary<string, long> m_TimestampByName = new();
 
         [SerializeField]
-        private long m_SearchPackageInfosTimestamp = -1;
+        private PackageInfo[] m_Serialized = Array.Empty<PackageInfo>();
 
         [SerializeField]
-        private long m_InstalledPackageInfosTimestamp = -1;
+        private long[] m_SerializedTimestamps = Array.Empty<long>();
 
-        // arrays created to help serialize dictionaries
         [SerializeField]
-        private PackageInfo[] m_SerializedInstalledPackageInfos;
-        [SerializeField]
-        private PackageInfo[] m_SerializedSearchPackageInfos;
-        [SerializeField]
-        private long[] m_SerializedProductSearchPackageInfoProductIds;
-        [SerializeField]
-        private PackageInfo[] m_SerializedProductSearchPackageInfos;
-        [SerializeField]
-        private long[] m_SerializedProductSearchPackageInfoTimestamps;
-        [SerializeField]
-        private PackageInfo[] m_SerializedExtraPackageInfos;
-        [SerializeField]
-        private string[] m_SerializedLoadAllVersions;
+        private long m_Timestamp = -1;
 
-        public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
-        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
-        public event Action<PackageInfo> onExtraPackageInfoFetched;
-        public event Action onScopedRegistriesPotentiallyChanged;
+        public long timestamp => m_Timestamp;
+        public IReadOnlyCollection<PackageInfo> values => m_ByName.Values;
 
-        public IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
-        public IEnumerable<PackageInfo> installedPackageInfos => m_PackageNameToInstalledPackageInfosMap.Values;
-        public bool installedPackageInfosReady => m_InstalledPackageInfosTimestamp >= 0;
+        public PackageInfo GetByName(string packageName) => m_ByName.GetValueOrDefault(packageName);
+        public PackageInfo GetByProductId(long productId) => m_ByProductId.GetValueOrDefault(productId);
 
-        private readonly IProjectSettingsProxy m_SettingsProxy;
-        public UpmCache(IProjectSettingsProxy settingsProxy)
+        public (PackageInfo info, long timestamp)? GetByNameWithTimestamp(string packageName)
         {
-            m_SettingsProxy = RegisterDependency(settingsProxy);
+            var info = m_ByName.GetValueOrDefault(packageName);
+            return info == null ? null : (info, m_TimestampByName.GetValueOrDefault(packageName, m_Timestamp));
+        }
+
+        public List<(PackageInfo oldInfo, PackageInfo newInfo)> ReplaceAll(IEnumerable<PackageInfo> packageInfos, long timestamp)
+        {
+            m_Timestamp = timestamp;
+            m_TimestampByName.Clear();
+            var old = m_ByName;
+            m_ByName = packageInfos.ToDictionary(p => p.name);
+            RebuildByProductId();
+            return FindUpdatedPackageInfos(old, m_ByName);
+        }
+
+        public (PackageInfo oldInfo, PackageInfo newInfo)? AddOrUpdate(string packageName, PackageInfo packageInfo, long timestamp)
+        {
+            var oldInfo = m_ByName.GetValueOrDefault(packageName);
+            var oldProductId = oldInfo?.ParseProductId() ?? 0;
+            if (oldProductId > 0)
+                m_ByProductId.Remove(oldProductId);
+            m_ByName[packageName] = packageInfo;
+            m_TimestampByName[packageName] = timestamp;
+            var newProductId = packageInfo.ParseProductId();
+            if (newProductId > 0)
+                m_ByProductId[newProductId] = packageInfo;
+            if (oldInfo == null || IsDifferent(oldInfo, packageInfo))
+                return (oldInfo, packageInfo);
+            return null;
         }
 
         private static List<(PackageInfo oldInfo, PackageInfo newInfo)> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
@@ -132,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 !p1.compliance.IsEquivalentTo(p2.compliance))
                 return true;
 
-            if (p1.source == PackageSource.BuiltIn || p1.source == PackageSource.Registry)
+            if (p1.source is PackageSource.BuiltIn or PackageSource.Registry)
                 return false;
 
             if (p1.source == PackageSource.Git)
@@ -140,75 +142,147 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             return true;
         }
-        public bool IsLoadAllVersions(string packageUniqueId)
+
+        public void Clear()
         {
-            return m_LoadAllVersions.Contains(packageUniqueId);
+            m_ByName.Clear();
+            m_ByProductId.Clear();
+            m_TimestampByName.Clear();
+            m_Serialized = Array.Empty<PackageInfo>();
+            m_SerializedTimestamps = Array.Empty<long>();
+            m_Timestamp = -1;
         }
 
-        public void SetLoadAllVersions(string packageUniqueId, bool value)
+        private void RebuildByProductId()
         {
-            if (string.IsNullOrEmpty(packageUniqueId) || value == IsLoadAllVersions(packageUniqueId))
-                return;
-            if (value)
-                m_LoadAllVersions.Add(packageUniqueId);
-            else
-                m_LoadAllVersions.Remove(packageUniqueId);
-            onLoadAllVersionsChanged?.Invoke(packageUniqueId, value);
+            m_ByProductId.Clear();
+            foreach (var info in m_ByName.Values)
+            {
+                var productId = info.ParseProductId();
+                if (productId > 0)
+                    m_ByProductId[productId] = info;
+            }
         }
 
         public void OnBeforeSerialize()
         {
-            m_SerializedInstalledPackageInfos = m_PackageNameToInstalledPackageInfosMap.Values.ToArray();
-            m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
-            m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
+            m_Serialized = m_ByName.Values.ToArray();
+            m_SerializedTimestamps = m_TimestampByName.Count > 0
+                ? m_Serialized.Select(p => m_TimestampByName.GetValueOrDefault(p.name)).ToArray()
+                : Array.Empty<long>();
+        }
 
-            m_SerializedProductSearchPackageInfoProductIds = m_ProductIdToProductSearchInfosMap.Keys.ToArray();
-            m_SerializedProductSearchPackageInfos = m_ProductIdToProductSearchInfosMap.Values.Select(i => i.info).ToArray();
-            m_SerializedProductSearchPackageInfoTimestamps = m_ProductIdToProductSearchInfosMap.Values.Select(i => i.timestamp).ToArray();
+        public void OnAfterDeserialize()
+        {
+            m_ByName = m_Serialized.ToDictionary(p => p.name);
+            m_TimestampByName = new Dictionary<string, long>();
+            for (var i = 0; i < m_SerializedTimestamps.Length && i < m_Serialized.Length; i++)
+                m_TimestampByName[m_Serialized[i].name] = m_SerializedTimestamps[i];
+            RebuildByProductId();
+        }
+    }
+
+    [Serializable]
+    internal class UpmCache : BaseService<IUpmCache>, IUpmCache, ISerializationCallbackReceiver
+    {
+        [SerializeField]
+        private PackageInfoDictionary m_SearchPackageInfos = new();
+        [SerializeField]
+        private PackageInfoDictionary m_InstalledPackageInfos = new();
+        [SerializeField]
+        private PackageInfoDictionary m_NonDiscoverableSearchInfos = new();
+
+        private Dictionary<string, Dictionary<string, PackageInfo>> m_ExtraPackageInfosByVersion = new();
+
+        private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new();
+
+        private HashSet<string> m_LoadAllVersions = new();
+
+        // arrays created to help serialize dictionaries
+        [SerializeField]
+        private List<PackageInfo> m_SerializedExtraPackageInfosByVersion = new ();
+        [SerializeField]
+        private string[] m_SerializedLoadAllVersions;
+
+        public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
+        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
+        public event Action<PackageInfo> onExtraPackageInfoFetched;
+        public event Action onScopedRegistriesPotentiallyChanged;
+
+        public IReadOnlyCollection<PackageInfo> discoverableSearchPackageInfos => m_SearchPackageInfos.values;
+        public IReadOnlyCollection<PackageInfo> nonDiscoverableSearchPackageInfos => m_NonDiscoverableSearchInfos.values;
+        public IReadOnlyCollection<PackageInfo> installedPackageInfos => m_InstalledPackageInfos.values;
+        public bool installedPackageInfosReady => m_InstalledPackageInfos.timestamp >= 0;
+
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        public UpmCache(IProjectSettingsProxy settingsProxy)
+        {
+            m_SettingsProxy = RegisterDependency(settingsProxy);
+        }
+
+        public bool IsLoadAllVersions(string packageName)
+        {
+            return m_LoadAllVersions.Contains(packageName);
+        }
+
+        public void SetLoadAllVersions(string packageName, bool value)
+        {
+            if (string.IsNullOrEmpty(packageName) || value == IsLoadAllVersions(packageName))
+                return;
+            if (value)
+                m_LoadAllVersions.Add(packageName);
+            else
+                m_LoadAllVersions.Remove(packageName);
+            onLoadAllVersionsChanged?.Invoke(packageName, value);
+        }
+
+        public void OnBeforeSerialize()
+        {
+            m_SerializedExtraPackageInfosByVersion.Clear();
+            foreach (var infoDictionary in m_ExtraPackageInfosByVersion.Values)
+                m_SerializedExtraPackageInfosByVersion.AddRange(infoDictionary.Values);
 
             m_SerializedLoadAllVersions = m_LoadAllVersions.ToArray();
         }
 
         public void OnAfterDeserialize()
         {
-            m_PackageNameToInstalledPackageInfosMap = m_SerializedInstalledPackageInfos.ToDictionary(p => p.name, p => p);
-            foreach (var info in m_SerializedInstalledPackageInfos)
-            {
-                m_PackageNameToInstalledPackageInfosMap[info.name] = info;
-                UpdateProductIdToInstalledPackageInfoMap(null, info);
-            }
-
-            m_SearchPackageInfos = m_SerializedSearchPackageInfos.ToDictionary(p => p.name, p => p);
-
-            foreach (var p in m_SerializedExtraPackageInfos)
-                AddExtraPackageInfo(p);
-
-            for (var i = 0; i < m_SerializedProductSearchPackageInfoProductIds.Length; i++)
-            {
-                var productId = m_SerializedProductSearchPackageInfoProductIds[i];
-                var info = m_SerializedProductSearchPackageInfos[i];
-                var timestamp = m_SerializedProductSearchPackageInfoTimestamps[i];
-                m_ProductIdToProductSearchInfosMap[productId] = (info, timestamp);
-            }
+            foreach (var p in m_SerializedExtraPackageInfosByVersion)
+                AddExtraPackageInfoByVersion(p, false);
 
             m_LoadAllVersions = new HashSet<string>(m_SerializedLoadAllVersions);
         }
 
-        public void AddExtraPackageInfo(PackageInfo packageInfo)
+        public void AddSearchNonDiscoverableResult(string packageName, PackageInfo packageInfo, long timestamp)
+        {
+            if (packageInfo == null)
+                return;
+            var change = m_NonDiscoverableSearchInfos.AddOrUpdate(packageName, packageInfo, timestamp);
+            if (change.HasValue)
+                TriggerOnPackageInfosUpdated(new[] { change.Value });
+        }
+
+        public void AddExtraFetchResult(PackageInfo packageInfo)
+        {
+            AddExtraPackageInfoByVersion(packageInfo, true);
+        }
+
+        private void AddExtraPackageInfoByVersion(PackageInfo packageInfo, bool triggerEvent)
         {
             if (packageInfo == null)
                 return;
 
-            if (!m_ExtraPackageInfo.TryGetValue(packageInfo.name, out var dict))
+            if (!m_ExtraPackageInfosByVersion.TryGetValue(packageInfo.name, out var dict))
             {
                 dict = new Dictionary<string, PackageInfo>();
-                m_ExtraPackageInfo[packageInfo.name] = dict;
+                m_ExtraPackageInfosByVersion[packageInfo.name] = dict;
             }
             dict[packageInfo.version] = packageInfo;
-            onExtraPackageInfoFetched?.Invoke(packageInfo);
+            if (triggerEvent)
+                onExtraPackageInfoFetched?.Invoke(packageInfo);
         }
 
-        public Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName) => m_ExtraPackageInfo.Get(packageName);
+        public Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName) => m_ExtraPackageInfosByVersion.Get(packageName);
 
         public PackageInfo GetExtraPackageInfo(string packageId)
         {
@@ -218,45 +292,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public bool IsPackageInstalled(string packageName) => m_PackageNameToInstalledPackageInfosMap.ContainsKey(packageName);
+        public bool IsPackageInstalled(string packageName) => m_InstalledPackageInfos.GetByName(packageName) != null;
 
-        public PackageInfo GetInstalledPackageInfo(string packageName) => m_PackageNameToInstalledPackageInfosMap.Get(packageName);
+        public PackageInfo GetInstalledPackageInfo(string packageName) => m_InstalledPackageInfos.GetByName(packageName);
 
-        public PackageInfo GetProductInstalledPackageInfo(long productId) => m_ProductIdToInstalledPackageInfosMap.GetValueOrDefault(productId);
-
-        private void UpdateProductIdToInstalledPackageInfoMap(PackageInfo oldInfo, PackageInfo newInfo)
+        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
-            var oldProductId = oldInfo?.ParseProductId() ?? 0;
-            var newProductId = newInfo?.ParseProductId() ?? 0;
-            if (oldProductId != newProductId && oldProductId > 0)
-                m_ProductIdToInstalledPackageInfosMap.Remove(oldProductId);
-            if (newProductId > 0)
-                m_ProductIdToInstalledPackageInfosMap[newProductId] = newInfo;
-        }
-
-        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changeSource = PackagesChangedSource.Other)
-        {
-            var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
-
-            var oldPackageInfos = m_PackageNameToInstalledPackageInfosMap;
-            m_PackageNameToInstalledPackageInfosMap = newPackageInfos;
-            m_InstalledPackageInfosTimestamp = timestamp;
-
-            m_ProductIdToInstalledPackageInfosMap.Clear();
-            foreach (var info in newPackageInfos.Values)
-                UpdateProductIdToInstalledPackageInfoMap(null, info);
-
-            var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
-
+            var updatedInfos = m_InstalledPackageInfos.ReplaceAll(packageInfos, timestamp);
             if (updatedInfos.Count > 0)
             {
-                TriggerOnPackageInfosUpdated(updatedInfos, changeSource);
+                TriggerOnPackageInfosUpdated(updatedInfos, changedSource);
                 DetectScopedRegistriesChanges(updatedInfos, false);
             }
             return updatedInfos;
         }
 
-        public PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
+        public PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.GetByName(packageName) ?? m_NonDiscoverableSearchInfos.GetByName(packageName);
 
         public PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null)
         {
@@ -264,62 +315,40 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
             if (isInstalled)
                 return GetInstalledPackageInfo(packageName);
-            var searchInfo = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfo(packageName);
-            if (string.IsNullOrEmpty(version) || searchInfo?.version == version)
-                return searchInfo;
-            return GetExtraPackageInfos(packageName)?.Get(version) ?? searchInfo;
+            var result = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfo(packageName);
+            if (string.IsNullOrEmpty(version) || result?.version == version)
+                return result;
+            return GetExtraPackageInfos(packageName)?.Get(version) ?? result;
         }
 
         public IUpmPackageData GetPackageData(string packageName)
         {
             var installedInfo = GetInstalledPackageInfo(packageName);
-            var searchInfo = GetSearchPackageInfo(packageName);
+            var (searchInfo, searchTimestamp) = m_SearchPackageInfos.GetByNameWithTimestamp(packageName) ?? m_NonDiscoverableSearchInfos.GetByNameWithTimestamp(packageName) ?? (null, -1);
             if (installedInfo == null && searchInfo == null)
                 return null;
             var isLoadAllVersion = IsLoadAllVersions(packageName);
-            return new UpmPackageData(installedInfo, m_InstalledPackageInfosTimestamp, searchInfo, m_SearchPackageInfosTimestamp, isLoadAllVersion, GetExtraPackageInfos(packageName));
+            return new UpmPackageData(installedInfo, m_InstalledPackageInfos.timestamp, searchInfo, searchTimestamp, isLoadAllVersion, GetExtraPackageInfos(packageName));
         }
 
         public IUpmPackageData GetPackageData(long productId)
         {
-            var installedInfo = GetProductInstalledPackageInfo(productId);
-            var searchInfo = GetProductSearchPackageInfo(productId);
-            if (installedInfo == null && searchInfo == null)
-                return null;
-            // We check installed info first because when we switch between scoped registries, we would clear the product search infos immediately
-            // while the installed info will remain until the next list result comes in
-            var packageName = installedInfo?.name ?? searchInfo?.name;
-            var isLoadAllVersion = IsLoadAllVersions(productId.ToString());
-            return new UpmPackageData(installedInfo, m_InstalledPackageInfosTimestamp, searchInfo, m_SearchPackageInfosTimestamp, isLoadAllVersion, GetExtraPackageInfos(packageName));
+            // We check non-discoverable search info first because UpmOnAssetStorePackage are currently not discoverable, but that could change in the future
+            // so we still fall back to looking at discoverable search infos
+            var packageName = m_NonDiscoverableSearchInfos.GetByProductId(productId)?.name ??
+                              m_SearchPackageInfos.GetByProductId(productId)?.name ??
+                              m_InstalledPackageInfos.GetByProductId(productId)?.name;
+            return string.IsNullOrEmpty(packageName) ? null : GetPackageData(packageName);
         }
 
         public void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp)
         {
-            var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
-
-            var oldPackageInfos = m_SearchPackageInfos;
-            m_SearchPackageInfos = newPackageInfos;
-            m_SearchPackageInfosTimestamp = timestamp;
-
-            var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
+            var updatedInfos = m_SearchPackageInfos.ReplaceAll(packageInfos, timestamp);
             if (updatedInfos.Count > 0)
             {
                 TriggerOnPackageInfosUpdated(updatedInfos);
                 DetectScopedRegistriesChanges(updatedInfos, true);
             }
-        }
-
-        public PackageInfo GetProductSearchPackageInfo(long productId) => GetProductSearchPackageInfoAndTimestamp(productId).info;
-
-        private (PackageInfo info, long timestamp) GetProductSearchPackageInfoAndTimestamp(long productId)
-            => productId > 0 && m_ProductIdToProductSearchInfosMap.TryGetValue(productId, out var result) ? result : (info: null, timestamp: 0);
-
-        public void SetProductSearchPackageInfo(long productId, PackageInfo info, long timestamp)
-        {
-            var oldInfo = GetProductSearchPackageInfo(productId);
-            m_ProductIdToProductSearchInfosMap[productId] = (info, timestamp);
-            if (oldInfo == null || IsDifferent(oldInfo, info))
-                TriggerOnPackageInfosUpdated(new [] { (oldInfo, newInfo: info) });
         }
 
         // This is to detected changes to the scoped registry compliance data, as that is something that will change without the users modifying the project manifest.
@@ -399,28 +428,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ClearCache()
         {
-            m_PackageNameToInstalledPackageInfosMap.Clear();
-            m_ProductIdToInstalledPackageInfosMap.Clear();
+            m_InstalledPackageInfos.Clear();
 
             m_SearchPackageInfos.Clear();
 
-            m_SerializedInstalledPackageInfos = new PackageInfo[0];
-            m_SerializedSearchPackageInfos = new PackageInfo[0];
-
-            ClearProductCache();
+            ClearNonDiscoverableSearchInfos();
             ClearExtraInfoCache();
         }
 
-        public void ClearProductCache()
+        public void ClearNonDiscoverableSearchInfos()
         {
-            m_ProductIdToProductSearchInfosMap.Clear();
-            m_SerializedProductSearchPackageInfos = new PackageInfo[0];
+            m_NonDiscoverableSearchInfos.Clear();
         }
 
         public void ClearExtraInfoCache()
         {
-            m_ExtraPackageInfo.Clear();
-            m_SerializedExtraPackageInfos = new PackageInfo[0];
+            m_ExtraPackageInfosByVersion.Clear();
         }
     }
 }

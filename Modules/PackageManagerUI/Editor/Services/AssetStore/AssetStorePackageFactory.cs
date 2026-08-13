@@ -8,33 +8,9 @@ using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class AssetStorePackageFactory : Package.Factory
+    internal partial class PackageFactory
     {
-        private readonly IUpmCache m_UpmCache;
-        private readonly IUnityConnectProxy m_UnityConnect;
-        private readonly IAssetStoreCache m_AssetStoreCache;
-        private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private readonly IPackageDatabase m_PackageDatabase;
-        private readonly IFetchStatusTracker m_FetchStatusTracker;
-        private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
-        public AssetStorePackageFactory(IUpmCache upmCache,
-            IUnityConnectProxy unityConnect,
-            IAssetStoreCache assetStoreCache,
-            IAssetStoreDownloadManager assetStoreDownloadManager,
-            IPackageDatabase packageDatabase,
-            IFetchStatusTracker fetchStatusTracker,
-            IBackgroundFetchHandler backgroundFetchHandler)
-        {
-            m_UpmCache = RegisterDependency(upmCache);
-            m_UnityConnect = RegisterDependency(unityConnect);
-            m_AssetStoreCache = RegisterDependency(assetStoreCache);
-            m_AssetStoreDownloadManager = RegisterDependency(assetStoreDownloadManager);
-            m_PackageDatabase = RegisterDependency(packageDatabase);
-            m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
-            m_BackgroundFetchHandler = RegisterDependency(backgroundFetchHandler);
-        }
-
-        public override void OnEnable()
+        private void RegisterEventsForAssetStorePackages()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
@@ -50,10 +26,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager.onDownloadStateChanged += OnDownloadStateChanged;
             m_AssetStoreDownloadManager.onBeforeDownloadStart += OnBeforeDownloadStart;
 
-            m_FetchStatusTracker.onFetchStatusChanged += OnFetchStatusChanged;
+            m_FetchStatusTracker.onProductInfoFetchStatusChanged += OnProductInfoFetchStatusChanged;
         }
 
-        public override void OnDisable()
+        private void UnregisterEventsForAssetStorePackages()
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
@@ -69,34 +45,34 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager.onDownloadStateChanged -= OnDownloadStateChanged;
             m_AssetStoreDownloadManager.onBeforeDownloadStart -= OnBeforeDownloadStart;
 
-            m_FetchStatusTracker.onFetchStatusChanged -= OnFetchStatusChanged;
+            m_FetchStatusTracker.onProductInfoFetchStatusChanged -= OnProductInfoFetchStatusChanged;
         }
 
-        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
+        private void OnUserLoginStateChange(bool _, bool loggedIn)
         {
             if (loggedIn)
                 return;
 
             m_AssetStoreCache.ClearOnlineCache();
-            m_FetchStatusTracker.ClearCache();
+            m_FetchStatusTracker.ClearProductInfoFetchStatuses();
 
-            // We only regenerate and remove packages from the Asset Store that are of Legacy format. We handle the UPM format in UpmPackageFactory.
-            var packagesToRemove = new List<IPackage>();
-            var packagesToRegenerate = new List<IPackage>();
-            foreach (var package in m_PackageDatabase.allPackages.Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.LegacyFormat))))
+            var packageUniqueIdsToRemove = new List<string>();
+            var productIdsToGenerate = new List<long>();
+            foreach (var p in m_PackageDatabase.allPackages)
             {
-                if (package.versions.imported != null)
-                    packagesToRegenerate.Add(package);
+                if (p.product == null)
+                    continue;
+
+                if (p.versions.imported == null && p.versions.installed == null)
+                    packageUniqueIdsToRemove.Add(p.uniqueId);
                 else
-                    packagesToRemove.Add(package);
+                    productIdsToGenerate.Add(p.product.id);
             }
 
-            // We use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't
-            if (packagesToRemove.Any())
-                m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove.Select(p => p.uniqueId).ToArray());
+            if (packageUniqueIdsToRemove.Count > 0)
+                m_PackageDatabase.UpdatePackages(toRemove: packageUniqueIdsToRemove);
 
-            if (packagesToRegenerate.Any())
-                GeneratePackagesAndTriggerChangeEvent(packagesToRegenerate.Select(p => p.product.id));
+            GeneratePackagesAndTriggerChangeEvent(productIdsToGenerate);
         }
 
         private void AddPackageError(Package package, UIError error)
@@ -107,10 +83,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetPackagesProgress(IEnumerable<IPackage> packages, PackageProgress progress)
         {
-            var packagesUpdated = packages.OfType<Package>().Where(p => p.progress != progress).ToArray();
-            foreach (var package in packagesUpdated)
-                SetProgress(package, progress);
-            if (packagesUpdated.Any())
+            var packagesUpdated = new List<IPackage>();
+            foreach (var package in packages)
+            {
+                if (package.progress == progress || package is not Package p)
+                    continue;
+                SetProgress(p, progress);
+                packagesUpdated.Add(package);
+            }
+
+            if (packagesUpdated.Count > 0)
                 m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
         }
 
@@ -139,12 +121,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package == null)
                 return;
 
-            if (operation.state == DownloadState.Pausing)
-                SetPackageProgress(package, PackageProgress.Pausing);
-            else if (operation.state == DownloadState.ResumeRequested)
-                SetPackageProgress(package, PackageProgress.Resuming);
-            else if (operation.state == DownloadState.Paused || operation.state == DownloadState.AbortRequested || operation.state == DownloadState.Aborted)
-                SetPackageProgress(package, PackageProgress.None);
+            switch (operation.state)
+            {
+                case DownloadState.Pausing:
+                    SetPackageProgress(package, PackageProgress.Pausing);
+                    break;
+                case DownloadState.ResumeRequested:
+                    SetPackageProgress(package, PackageProgress.Resuming);
+                    break;
+                case DownloadState.Paused:
+                case DownloadState.AbortRequested:
+                case DownloadState.Aborted:
+                    SetPackageProgress(package, PackageProgress.None);
+                    break;
+            }
         }
 
         private void OnDownloadProgress(AssetStoreDownloadOperation operation)
@@ -178,102 +168,83 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddPackageError(package, error);
         }
 
-        private void OnLocalInfosChanged(IEnumerable<AssetStoreLocalInfo> addedOrUpdated, IEnumerable<AssetStoreLocalInfo> removed)
+        private void OnLocalInfosChanged(IReadOnlyCollection<AssetStoreLocalInfo> addedOrUpdated, IReadOnlyCollection<AssetStoreLocalInfo> removed)
         {
             // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
             // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
-            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0])?.
-                Where(id => m_AssetStoreCache.GetProductInfo(id) != null);
+            var productIds = new List<long>(addedOrUpdated.Count + removed.Count);
+            foreach (var info in addedOrUpdated.Concat(removed))
+                if (m_AssetStoreCache.GetProductInfo(info.productId) != null)
+                    productIds.Add(info.productId);
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
-        private void OnImportedPackagesChanged(IEnumerable<AssetStoreImportedPackage> addedOrUpdated, IEnumerable<AssetStoreImportedPackage> removed)
+        private void OnImportedPackagesChanged(IReadOnlyCollection<AssetStoreImportedPackage> addedOrUpdated, IReadOnlyCollection<AssetStoreImportedPackage> removed)
         {
-            // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
-            // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
-            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0]);
+            var productIds = new List<long>(addedOrUpdated.Count + removed.Count);
+            foreach (var info in addedOrUpdated.Concat(removed))
+                productIds.Add(info.productId);
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
-        private void OnUpdateInfosChanged(IEnumerable<AssetStoreUpdateInfo> updateInfos)
+        private void OnUpdateInfosChanged(IReadOnlyCollection<AssetStoreUpdateInfo> updateInfos)
         {
             // Right now updateInfo goes hands in hands with localInfo, so we handle it the same way as localInfo changes
             // and only check packages we already checked before (the ones with productInfos). This behaviour might change in the future
-            GeneratePackagesAndTriggerChangeEvent(updateInfos?.Select(info => info.productId).Where(id => m_AssetStoreCache.GetProductInfo(id) != null));
+            var productIds = new List<long>(updateInfos.Count);
+            foreach (var info in updateInfos)
+                if (m_AssetStoreCache.GetProductInfo(info.productId) != null)
+                    productIds.Add(info.productId);
+            GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
         private void OnProductInfoChanged(AssetStoreProductInfo productInfo)
         {
-            GeneratePackagesAndTriggerChangeEvent(new[] { productInfo.productId });
+            GeneratePackagesAndTriggerChangeEvent(new [] { productInfo.productId });
         }
 
-        private void OnPurchaseInfosChanged(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
+        private void OnPurchaseInfosChanged(IReadOnlyCollection<AssetStorePurchaseInfo> purchaseInfos)
         {
-            GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
+            GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId).ToArray());
         }
 
-        private void OnFetchStatusChanged(FetchStatus fetchStatus)
+        private void OnProductInfoFetchStatusChanged(long productId)
         {
-            GeneratePackagesAndTriggerChangeEvent(new[] { fetchStatus.productId });
+            GeneratePackagesAndTriggerChangeEvent(new [] { productId });
         }
 
-        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
+        private IPackage CreateAssetStorePackage(long productId, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, AssetStoreImportedPackage importedPackage)
         {
-            if (productIds?.Any() != true)
-                return;
+            if (purchaseInfo == null && productInfo == null && importedPackage == null)
+                return null;
 
-            var packagesChanged = new List<IPackage>();
-            var packagesToRemove = new List<string>();
-            foreach (var productId in productIds)
+            var productFetchStatus = m_FetchStatusTracker.GetProductInfoFetchStatus(productId);
+            if (importedPackage == null && productInfo == null)
             {
-                var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId);
-                var productInfo = m_AssetStoreCache.GetProductInfo(productId);
-                var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
-                // Asset store products that are potentially UPM packages are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
-                var packageName = productInfo?.packageName ?? m_UpmCache.GetPackageData(productId)?.name;
-                if (!string.IsNullOrEmpty(packageName))
-                    continue;
-
-                if (purchaseInfo == null && productInfo == null && importedPackage == null)
-                {
-                    packagesToRemove.Add(productId.ToString());
-                    continue;
-                }
-
-                var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
-                var productInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductInfo);
-                if (importedPackage == null && productInfo == null)
-                {
-                    var version = new PlaceholderPackageVersion(productId.ToString(), purchaseInfo.displayName, tag: PackageTag.LegacyFormat, error: productInfoFetchError?.error);
-                    var placeholderPackage = CreatePackage(string.Empty, new PlaceholderVersionList(version), new Product(productId, null, null));
-                    if (productInfoFetchError == null)
-                        SetProgress(placeholderPackage, PackageProgress.Refreshing);
-                    packagesChanged.Add(placeholderPackage);
-                    continue;
-                }
-
-                var isFetchingProductInfo = fetchStatus.IsFetchInProgress(FetchType.ProductInfo);
-                if (importedPackage != null && productInfo == null && !isFetchingProductInfo && productInfoFetchError == null)
-                {
-                    m_BackgroundFetchHandler.AddToFetchPurchaseInfoQueue(productId);
-                    m_BackgroundFetchHandler.AddToFetchProductInfoQueue(productId);
-                    m_BackgroundFetchHandler.PushToCheckUpdateStack(productId);
-                }
-
-                var isDeprecated = productInfo?.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false;
-                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-                var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-                var versionList = new AssetStoreVersionList(productInfo, localInfo, importedPackage, updateInfo);
-                var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
-                if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
-                    SetProgress(package, PackageProgress.Downloading);
-                else if (productInfoFetchError != null)
-                    AddError(package, productInfoFetchError.error);
-                packagesChanged.Add(package);
+                var version = new PlaceholderPackageVersion(productId.ToString(), purchaseInfo.displayName, tag: PackageTag.LegacyFormat, error: productFetchStatus.error);
+                var placeholderPackage = CreatePackage(string.Empty, new PlaceholderVersionList(version), new Product(productId, null, null));
+                if (productFetchStatus.error == null)
+                    SetProgress(placeholderPackage, PackageProgress.Refreshing);
+                return placeholderPackage;
             }
 
-            if (packagesChanged.Any() || packagesToRemove.Any())
-                m_PackageDatabase.UpdatePackages(packagesChanged, packagesToRemove);
+            if (importedPackage != null && productInfo == null && productFetchStatus is { inProgress: false, error: null })
+            {
+                m_BackgroundFetchHandler.AddToFetchPurchaseInfoQueue(productId);
+                m_BackgroundFetchHandler.AddToFetchProductInfoQueue(productId);
+                m_BackgroundFetchHandler.PushToCheckUpdateStack(productId);
+            }
+
+            var isDeprecated = productInfo?.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false;
+            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
+            var versionList = new AssetStoreVersionList(productInfo, localInfo, importedPackage, updateInfo);
+            var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
+            if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
+                SetProgress(package, PackageProgress.Downloading);
+            else if (productFetchStatus.error != null)
+                AddError(package, productFetchStatus.error);
+            return package;
         }
     }
 }

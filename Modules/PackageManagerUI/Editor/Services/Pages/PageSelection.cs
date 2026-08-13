@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PageSelection : IEnumerable<string>, ISerializationCallbackReceiver
     {
-        private IEnumerable<string> m_PreviousSelections = Enumerable.Empty<string>();
+        private string[] m_PreviousSelections = Array.Empty<string>();
 
         private HashSet<string> m_SelectionsLookup = new ();
 
@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string[] m_SerializedSelectionsLookup = Array.Empty<string>();
 
-        public IEnumerable<string> previousSelections => m_PreviousSelections;
+        public IReadOnlyList<string> previousSelections => m_PreviousSelections;
         public IEnumerable<string> orderedSelections => m_OrderedSelections.Where(s => Contains(s));
 
         public string firstSelection => orderedSelections.FirstOrDefault();

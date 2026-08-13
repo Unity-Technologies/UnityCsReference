@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IResourceLoader m_ResourceLoader;
         private IUnityConnectProxy m_UnityConnect;
         private IPackageManagerPrefs m_PackageManagerPrefs;
+        private IPackageDatabase m_PackageDatabase;
         private IPageManager m_PageManager;
         private IUpmCache m_UpmCache;
         private IBackgroundFetchHandler m_BackgroundFetchHandler;
@@ -31,6 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<IResourceLoader>();
             m_UnityConnect = container.Resolve<IUnityConnectProxy>();
             m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
+            m_PackageDatabase = container.Resolve<IPackageDatabase>();
             m_PageManager = container.Resolve<IPageManager>();
             m_UpmCache = container.Resolve<IUpmCache>();
             m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
@@ -157,8 +159,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!args.isExplicitUserSelection)
                 currentView.ScrollToSelection();
 
-            if (args.selection.previousSelections.Count() == 1)
-                m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault(), false);
+            var lastSelectedPackage = args.selection.previousSelections.Count == 1 ? m_PackageDatabase.GetPackage(args.selection.previousSelections[0]) : null;
+            if (!string.IsNullOrEmpty(lastSelectedPackage?.name))
+                m_UpmCache.SetLoadAllVersions(lastSelectedPackage.name, false);
         }
 
         private void OnCheckUpdateProgress()

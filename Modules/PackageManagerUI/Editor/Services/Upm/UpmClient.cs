@@ -43,7 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         void RemoveEmbeddedByName(string packageName);
         void Embed(string packageName);
         void SearchAll(bool offlineMode = false);
-        void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null);
+        void SearchNonDiscoverable(string packageName, Action doneCallback = null);
+        void ExtraFetchPackageInfo(string packageId, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null);
         void ClearCache();
         void Resolve(bool delayCall = false);
         void Pack(string packageName, string packageFolder, string exportPath, string orgId);
@@ -91,6 +92,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmPackOperation packOperation => CreateOperation(ref m_PackOperation);
 
         [SerializeField]
+        private UpmSearchOperation[] m_SerializedInProgressSearchNonDiscoverableOperations = Array.Empty<UpmSearchOperation>();
+
+        [SerializeField]
         private UpmSearchOperation[] m_SerializedInProgressExtraFetchOperations = Array.Empty<UpmSearchOperation>();
 
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new();
@@ -100,6 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private long m_RegisteredPackagesTimestamp = -1;
+        private readonly Dictionary<string, UpmSearchOperation> m_SearchNonDiscoverableOperations = new();
 
         private readonly IUpmCache m_UpmCache;
         private readonly IFetchStatusTracker m_FetchStatusTracker;
@@ -129,7 +134,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
+            m_SerializedInProgressSearchNonDiscoverableOperations = m_SearchNonDiscoverableOperations?.Values.Where(i => i.isInProgress).ToArray() ?? Array.Empty<UpmSearchOperation>();
+            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? Array.Empty<UpmSearchOperation>();
         }
 
         public void OnAfterDeserialize()
@@ -405,42 +411,46 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.SetSearchPackageInfos(request.Result, searchOfflineOperation.dataTimestamp);
         }
 
-        public void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null)
+        public void SearchNonDiscoverable(string packageName, Action doneCallback = null)
         {
-            if (!m_ExtraFetchOperations.TryGetValue(packageIdOrName, out var operation))
+            if (!m_SearchNonDiscoverableOperations.TryGetValue(packageName, out var operation))
             {
                 operation = new UpmSearchOperation();
                 operation.ResolveDependencies(m_ClientProxy, m_Application);
-                operation.Search(packageIdOrName, productId);
-                operation.onProcessResult += request => OnProcessExtraFetchResult(request, operation.dataTimestamp, productId);
-                operation.onOperationFinalized += _ => m_ExtraFetchOperations.Remove(packageIdOrName);
-                m_ExtraFetchOperations[packageIdOrName] = operation;
-
-                if (productId > 0)
+                operation.Search(packageName);
+                operation.onProcessResult += request =>
                 {
-                    operation.onOperationError += (_, error) => m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
-                    m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductSearchInfo);
-                }
+                    var packageInfo = request.Result.Length > 0 ? request.Result[0] : null;
+                    m_UpmCache.AddSearchNonDiscoverableResult(packageName, packageInfo, operation.dataTimestamp);
+                    m_FetchStatusTracker.SetSearchInfoFetchSuccess(packageName);
+                };
+                operation.onOperationFinalized += _ => m_SearchNonDiscoverableOperations.Remove(packageName);
+                operation.onOperationError += (_, error) => m_FetchStatusTracker.SetSearchInfoFetchError(packageName, error);
+                m_FetchStatusTracker.SetSearchInfoFetchInProgress(packageName);
+                m_SearchNonDiscoverableOperations[packageName] = operation;
             }
-
-            if (successCallback != null)
-                operation.onProcessResult += request => successCallback.Invoke(request.Result.FirstOrDefault());
-            if (errorCallback != null)
-                operation.onOperationError += (_, error) => errorCallback.Invoke(error);
             if (doneCallback != null)
                 operation.onOperationFinalized += _ => doneCallback.Invoke();
         }
 
-        private void OnProcessExtraFetchResult(SearchRequest request, long timestamp, long productId = 0)
+        public void ExtraFetchPackageInfo(string packageId, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null)
         {
-            var packageInfo = request.Result.FirstOrDefault();
-            if (productId > 0)
+            if (!m_ExtraFetchOperations.TryGetValue(packageId, out var operation))
             {
-                m_UpmCache.SetProductSearchPackageInfo(productId, packageInfo, timestamp);
-                m_FetchStatusTracker.SetFetchSuccess(productId, FetchType.ProductSearchInfo);
+                operation = new UpmSearchOperation();
+                operation.ResolveDependencies(m_ClientProxy, m_Application);
+                operation.Search(packageId);
+                operation.onProcessResult += request => m_UpmCache.AddExtraFetchResult(request.Result.Length > 0 ? request.Result[0] : null);
+                operation.onOperationFinalized += _ => m_ExtraFetchOperations.Remove(packageId);
+                m_ExtraFetchOperations[packageId] = operation;
             }
-            else
-                m_UpmCache.AddExtraPackageInfo(packageInfo);
+
+            if (successCallback != null)
+                operation.onProcessResult += request => successCallback.Invoke(request.Result.Length > 0 ? request.Result[0] : null);
+            if (errorCallback != null)
+                operation.onOperationError += (_, error) => errorCallback.Invoke(error);
+            if (doneCallback != null)
+                operation.onOperationFinalized += _ => doneCallback.Invoke();
         }
 
         public void OnRegisteredPackages()
@@ -481,8 +491,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_SearchOperation?.isInProgress ?? false)
                 SearchAll();
 
+            foreach (var operation in m_SerializedInProgressSearchNonDiscoverableOperations)
+                SearchNonDiscoverable(operation.packageIdOrName);
+
             foreach (var operation in m_SerializedInProgressExtraFetchOperations)
-                ExtraFetchPackageInfo(operation.packageIdOrName, operation.productId);
+                ExtraFetchPackageInfo(operation.packageIdOrName);
         }
 
         public override void OnEnable()
@@ -496,6 +509,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ClearCache()
         {
+            m_SearchNonDiscoverableOperations.Clear();
             m_ExtraFetchOperations.Clear();
             m_UpmCache.ClearCache();
         }

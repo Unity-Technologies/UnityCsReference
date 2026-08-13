@@ -282,6 +282,7 @@ namespace UnityEngine.UIElements
             if (fa.nativeFontAsset == IntPtr.Zero)
                 return false;
             nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
+			nativeSettings.disableAdvancedFontFeatures = m_TextElement.panel?.contextType == ContextType.Editor;
 
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {

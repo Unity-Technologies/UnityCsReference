@@ -13,7 +13,8 @@ namespace UnityEditor
          */
         protected abstract class Group
         {
-            readonly protected float kGroupSeparatorHeight = EditorStyles.toolbar.fixedHeight;
+            // Evaluating it lazily avoids touching the style off-GUI.
+            protected float kGroupSeparatorHeight => EditorStyles.toolbar.fixedHeight;
             protected string m_GroupSeparatorTitle;
 
             protected static int[] s_Empty;
