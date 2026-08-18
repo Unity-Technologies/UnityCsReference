@@ -11,6 +11,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
+    [MigratedToRulesPackage(2)]
     class MaterialAnalyzer : MaterialModuleAnalyzer
     {
         internal const string PAA5000 = nameof(PAA5000);

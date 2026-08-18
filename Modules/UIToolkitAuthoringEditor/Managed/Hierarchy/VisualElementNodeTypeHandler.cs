@@ -644,7 +644,7 @@ internal abstract class VisualElementNodeTypeHandler :
 
     DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
 
-    void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
+    DragVisualMode IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
 
     DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
 

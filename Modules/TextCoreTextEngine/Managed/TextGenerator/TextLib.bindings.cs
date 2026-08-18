@@ -270,6 +270,16 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(IsThreadSafe = true)]
         public static extern int GetLogicalIndexFromGlyphIndex(IntPtr ptr, int glyphIndex);
 
+        [NativeMethod(IsThreadSafe = true)]
+        static extern IntPtr GetParsedTextBuffer(IntPtr ptr, ref int length);
+
+        public static unsafe string GetParsedText(IntPtr ptr)
+        {
+            int length = 0;
+            var buffer = GetParsedTextBuffer(ptr, ref length);
+            return buffer != IntPtr.Zero && length > 0 ? new string((char*)buffer, 0, length) : string.Empty;
+        }
+
         // Used for testing purposes
         public static extern NativeTextInfo GetTextInfo(IntPtr ptr);
 

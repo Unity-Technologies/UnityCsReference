@@ -180,7 +180,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
     }
 
     DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
-    void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data) { }
+    DragVisualMode IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
     DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, false);
     DragVisualMode IHierarchyEditorNodeTypeHandler.OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => HandleDrop(in data, true);
 

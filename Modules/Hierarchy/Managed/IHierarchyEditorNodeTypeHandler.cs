@@ -64,11 +64,19 @@ namespace Unity.Hierarchy
         DragVisualMode CanReorder(in HierarchyViewDragAndDropHandlingData data);
 
         /// <summary>
-        /// Applies the reorder/reparent operation to the underlying objects (e.g. Transform, Scene) after
-        /// <see cref="HierarchyViewModel.SetParentOfSelection"/> has already moved the hierarchy nodes.
-        /// Only called when at least one node of this handler's type is in the dragged nodes and no handler rejected the reorder.
+        /// Applies the reorder/reparent operation to the underlying objects (e.g. Transform, Scene) before
+        /// the hierarchy moves any nodes.
+        /// Only called when at least one node of this handler's type is in the dragged nodes and no handler
+        /// rejected the reorder in <see cref="CanReorder"/>.
+        /// This is also the drop-phase rejection point: a handler may permit the drag in <see cref="CanReorder"/>
+        /// (so hovering is allowed), then decide here (for example after showing a confirmation dialog) and
+        /// return <see cref="DragVisualMode.Rejected"/> to decline the drop. A handler that returns
+        /// <see cref="DragVisualMode.Rejected"/> should be free of side effects. The hierarchy then simply never
+        /// moves this handler's nodes.
+        /// Return <see cref="DragVisualMode.None"/> to indicate no opinion; the move is kept. Any non-rejected
+        /// return value keeps the move.
         /// </summary>
-        void OnReorder(in HierarchyViewDragAndDropHandlingData data);
+        DragVisualMode OnReorder(in HierarchyViewDragAndDropHandlingData data);
 
         /// <summary>
         /// Determines whether this handler can accept an external drop (e.g. assets dragged from the Project window).

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.TextCore.Text;
@@ -68,13 +69,29 @@ namespace UnityEngine.UIElements
             public readonly GlyphKind kind;
 
             internal readonly TextElement m_TextElement;
+            readonly RangeInt m_TextRange;
 
-            internal Glyph(NativeSlice<Vertex> vertices, int line, string linkID, GlyphKind kind, TextElement textElement)
+            /// <summary>
+            /// Range of characters (UTF-16 code units) of <see cref="parsedText"/> that this
+            /// glyph renders.
+            /// </summary>
+            public RangeInt textRange
+            {
+                get
+                {
+                    if (m_TextRange.start < 0)
+                        throw new NotImplementedException("Glyph.textRange is only implemented for the Advanced text generator.");
+                    return m_TextRange;
+                }
+            }
+
+            internal Glyph(NativeSlice<Vertex> vertices, int line, string linkID, GlyphKind kind, RangeInt textRange, TextElement textElement)
             {
                 this.vertices = vertices;
                 this.line = line;
                 this.linkID = linkID;
                 this.kind = kind;
+                m_TextRange = textRange;
                 m_TextElement = textElement;
             }
 
@@ -230,7 +247,7 @@ namespace UnityEngine.UIElements
                         continue;
 
                     var slice = m_Vertices[ei.materialReferenceIndex].Slice(ei.vertexIndex, 4);
-                    Current = new Glyph(slice, ei.lineNumber, null, GlyphKind.Character, m_TextElement);
+                    Current = new Glyph(slice, ei.lineNumber, null, GlyphKind.Character, new RangeInt(-1, 0), m_TextElement);
                     return true;
                 }
 
@@ -259,7 +276,8 @@ namespace UnityEngine.UIElements
                         continue;
 
                     string linkID = ResolveLinkID(handle, info.linkID);
-                    Current = new Glyph(slice, info.lineIndex, linkID, (GlyphKind)info.kind, m_TextElement);
+                    var textRange = new RangeInt(info.textRangeStart, info.textRangeLength);
+                    Current = new Glyph(slice, info.lineIndex, linkID, (GlyphKind)info.kind, textRange, m_TextElement);
                     return true;
                 }
 

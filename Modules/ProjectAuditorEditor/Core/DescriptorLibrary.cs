@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 
@@ -16,9 +15,6 @@ namespace Unity.ProjectAuditor.Editor.Core
     {
         [AutoStaticsCleanupOnCodeReload] // Lazy-initialized descriptor registry; must be reset on code reload so descriptors are re-registered
         static Dictionary<int, Descriptor> s_Descriptors;
-
-        [NoAutoStaticsCleanup] // Lazy-initialized cache of area strings; data is still valid after code reload
-        static Dictionary<Areas, string> s_DescriptorAreaStrings;
 
         [SerializeField]
         internal List<Descriptor> m_SerializedDescriptors;
@@ -43,19 +39,6 @@ namespace Unity.ProjectAuditor.Editor.Core
             if (!s_Descriptors.TryGetValue(idAsInt, out var descriptor))
                 throw new InvalidOperationException($"Descriptor with id {idAsInt} is not registered. Ensure Initialize() registers all descriptors used in Analyze(). This can happen if you report an issue without checking context.IsDescriptorEnabled(descriptor), for example if the issue is only applicable on a subset of platforms.");
             return descriptor;
-        }
-
-        public static string GetAreasString(Areas areas)
-        {
-            if (s_DescriptorAreaStrings == null)
-                s_DescriptorAreaStrings = new Dictionary<Areas, string>();
-
-            if (s_DescriptorAreaStrings.TryGetValue(areas, out string desc))
-                return desc;
-
-            desc = ObjectNames.NicifyVariableName(areas.ToString());
-            s_DescriptorAreaStrings[areas] = desc;
-            return desc;
         }
 
         public void OnBeforeSerialize()

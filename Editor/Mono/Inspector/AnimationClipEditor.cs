@@ -2095,14 +2095,17 @@ namespace UnityEditor
             {
                 // Draw body of tooltip
                 GUIStyle style = (GUIStyle)"AnimationEventTooltip";
-                Vector2 size = style.CalcSize(new GUIContent(m_InstantTooltipText));
-                Rect rect = new Rect(window.x + m_InstantTooltipPoint.x, window.y + m_InstantTooltipPoint.y, size.x, size.y);
+                using (new SDFStyleScope(style))
+                {
+                    Vector2 size = style.CalcSize(new GUIContent(m_InstantTooltipText));
+                    Rect rect = new Rect(window.x + m_InstantTooltipPoint.x, window.y + m_InstantTooltipPoint.y, size.x, size.y);
 
-                // Right align tooltip rect if it would otherwise exceed the bounds of the window
-                if (rect.xMax > window.width)
-                    rect.x = window.width - rect.width;
+                    // Right align tooltip rect if it would otherwise exceed the bounds of the window
+                    if (rect.xMax > window.width)
+                        rect.x = window.width - rect.width;
 
-                GUI.Label(rect, m_InstantTooltipText, style);
+                    GUI.Label(rect, m_InstantTooltipText, style);
+                }
             }
         }
 

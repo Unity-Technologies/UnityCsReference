@@ -60,7 +60,7 @@ class UxmlAttributesEditingContext : IDisposable
         public static TempSerializedData Create(VisualElement element, bool isTemplateInstance)
         {
             var instance = ScriptableObject.CreateInstance<TempSerializedData>();
-            var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+            instance.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
             var type = element.GetType();
             var elementAsset = new VisualElementAsset(type.FullName);

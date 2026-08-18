@@ -378,14 +378,21 @@ namespace Unity.UI.Builder
             minSize = new Vector2(972, 400);
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
 
-            if (rootVisualElement.panel != null)
-                SetupPanel();
-            // Sometimes, the panel is not already set
-            else
-                rootVisualElement.RegisterCallback<AttachToPanelEvent>(SetupPanelAttach);
+            SetupPanelHandling();
         }
 
-        void SetupPanelAttach(AttachToPanelEvent evt)
+        // The root can be adopted by a different EditorPanel when the dock area changes (UUM-130011), so
+        // re-register on every attach; a layout-restored window is already attached at OnEnable and gets
+        // no AttachToPanelEvent, so set its panel up immediately.
+        internal void SetupPanelHandling()
+        {
+            rootVisualElement.RegisterCallback<AttachToPanelEvent>(SetupPanelAttach);
+
+            if (rootVisualElement.panel != null)
+                SetupPanel();
+        }
+
+        internal void SetupPanelAttach(AttachToPanelEvent evt)
         {
             SetupPanel();
         }

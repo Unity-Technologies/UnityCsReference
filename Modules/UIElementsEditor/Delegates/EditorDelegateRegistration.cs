@@ -45,7 +45,7 @@ namespace UnityEditor.UIElements
         private static void SetICUDataAsset(PanelSettings target)
         {
             Debug.Assert(target != null, "target PanelSetting is null");
-            var asset = ICUDataAssetUtilities.GetEditorICUAsset();
+            var asset = TextLib.GetICUAssetEditorDelegate?.Invoke();
             Debug.Assert(asset != null, "ICU data in the default resources is not found");
 
             if (asset != null && target.m_ICUDataAsset != asset)

@@ -79,7 +79,8 @@ namespace UnityEditor.Search
                 RemoveFromSelection,
                 Frame,
                 GetVisibleItemCount,
-                null);
+                null,
+                GetAllowMultiSelectionCommands);
 
             m_DragHandler = new SearchResultViewDragHandler(m_ViewModel, this)
             {
@@ -403,6 +404,11 @@ namespace UnityEditor.Search
         int GetVisibleItemCount()
         {
             return m_HierarchyView.ListView.m_DisplayedList.Count;
+        }
+
+        bool GetAllowMultiSelectionCommands()
+        {
+            return viewModel.multiselect;
         }
         #endregion
 

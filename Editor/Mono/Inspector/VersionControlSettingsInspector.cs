@@ -38,6 +38,9 @@ namespace UnityEditor
             public static GUIContent overwriteFailedCheckoutAssets =
                 new GUIContent("Overwrite Failed Checkout Assets",
                     "When on, assets that can not be checked out will get saved anyway.");
+            public static GUIContent autoRevertUnchangedFiles =
+                new GUIContent("Auto Revert Unchanged Files",
+                    "Automatically revert files that were checked out during asset import but have no actual content changes. Uses server-side hash verification, so files with real changes are preserved.");
             public static GUIContent overlayIcons = new GUIContent("Overlay Icons",
                 "Should version control status icons be shown.");
             public static GUIContent projectOverlayIcons = new GUIContent("Project Window",
@@ -403,6 +406,10 @@ namespace UnityEditor
                     EditorUserSettings.overwriteFailedCheckoutAssets = EditorGUILayout.Toggle(
                         Styles.overwriteFailedCheckoutAssets, EditorUserSettings.overwriteFailedCheckoutAssets);
                 }
+
+                if (Provider.hasRevertUnchangedSupport)
+                    EditorUserSettings.autoRevertUnchangedFiles = EditorGUILayout.Toggle(
+                        Styles.autoRevertUnchangedFiles, EditorUserSettings.autoRevertUnchangedFiles);
 
                 EditorUserSettings.semanticMergeMode = (SemanticMergeMode)EditorGUILayout.Popup(Styles.smartMerge,
                     (int)EditorUserSettings.semanticMergeMode, semanticMergePopupList);

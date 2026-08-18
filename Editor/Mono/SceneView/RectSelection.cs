@@ -182,7 +182,8 @@ namespace UnityEditor
                 if (!handledIt)
                 {
                     var picked = HandleUtility.PickObject(mousePos, true);
-                    UpdateSelection(m_SelectionStart, hoveredObj, SelectionType.Additive, false);
+                    var pickedObj = Object.FindObjectFromInstanceID(picked.targetId);
+                    UpdateSelection(m_SelectionStart, pickedObj, SelectionType.Additive, false);
                 }
             }
             else // With no modifier keys, we do the "cycle through overlapped" picking logic in SceneViewPicking.cs

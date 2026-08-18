@@ -274,6 +274,9 @@ namespace Unity.Hierarchy.Editor
         // update goes through HierarchyGameObjectHandler.OnReorder. For mixed SubScene+GO drags
         // GameObjectHandler is also participating and runs its own CanReorder/OnReorder - we skip
         // here to keep that single coordinated two-phase pass and avoid double-execution.
+        // Abstaining is safe: SubScene nodes share GameObjectHandler's sort type (see OverrideNodeSortType in
+        // HierarchyEditorModule.cpp), so a rejection from GameObjectHandler covers them too and the hierarchy
+        // leaves them in place along with the GameObjects.
         DragVisualMode IHierarchyEditorNodeTypeHandler.CanReorder(in HierarchyViewDragAndDropHandlingData data)
         {
             if (HasGameObjectInSelection(data.View.ViewModel))
@@ -287,13 +290,17 @@ namespace Unity.Hierarchy.Editor
             return DragVisualMode.Rejected;
         }
 
-        void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
         {
             if (HasGameObjectInSelection(data.View.ViewModel))
-                return;
+                return DragVisualMode.None;
 
             if (Hierarchy.GetOrCreateNodeTypeHandler<HierarchyGameObjectHandler>() is IHierarchyEditorNodeTypeHandler handler)
-                handler.OnReorder(in data);
+                return handler.OnReorder(in data);
+
+            // If there is no GameObject handler, we shouldn't allow reordering of SubScene nodes,
+            // because the necessary transform and sibling-index updates won't happen.
+            return DragVisualMode.Rejected;
         }
 
         DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;

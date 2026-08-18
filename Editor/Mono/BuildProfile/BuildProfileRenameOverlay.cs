@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -49,20 +50,24 @@ namespace UnityEditor.Build.Profile
                 // automatically on hover. So we use the TooltipView to display the
                 // error message (same way as the RenameOverlay used for assets)
                 TooltipView.Show(k_ErrorMessage, errorRect);
-                m_TextField.SetValueWithoutNotify(previousValue);
 
                 // The cursor should be kept in place when adding an invalid character
+                // cursorIndex is clamped to the current text length, so read it before reverting,
+                // while the length still includes the invalid char, that keeps an end-of-string
+                // cursorIndex from being clamped. The '- 1' then undoes the inserted char's advance for
+                // both end-of-string and middle edits (middle edits are never clamped either way).
                 var targetIndex = Mathf.Max(m_TextField.cursorIndex - 1, 0);
+                m_TextField.SetValueWithoutNotify(previousValue);
                 m_TextField.cursorIndex = targetIndex;
                 m_TextField.selectIndex = targetIndex;
             }
             else if (System.Text.Encoding.UTF8.GetByteCount(newValue) > BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension)
             {
                 TooltipView.Show(k_ErrorMessageLength, errorRect);
-                m_TextField.SetValueWithoutNotify(previousValue);
 
                 // The cursor should be kept in place when adding too much
                 var targetIndex = Mathf.Max(m_TextField.cursorIndex - 1, 0);
+                m_TextField.SetValueWithoutNotify(previousValue);
                 m_TextField.cursorIndex = targetIndex;
                 m_TextField.selectIndex = targetIndex;
             }

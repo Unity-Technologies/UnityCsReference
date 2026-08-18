@@ -39,12 +39,127 @@ namespace UnityEditor.Search
     {
         // Default max fetch time for an auto updated search session. This is a max per frame update, no matter how many providers there are in the session.
         internal static readonly TimeSpan k_MaxFetchTime = TimeSpan.FromMilliseconds(16);
-        static SearchProvider s_SearchServiceProvider;
+
+        class LazyInitStatics
+        {
+            List<SearchProvider> m_Providers;
+            List<AdvancedObjectSelector> m_ObjectSelectors;
+
+            public List<SearchProvider> Providers => m_Providers;
+            public List<AdvancedObjectSelector> ObjectSelectors => m_ObjectSelectors;
+
+            public LazyInitStatics()
+            {
+                Refresh();
+                RefreshObjectSelectors();
+            }
+
+            public void Refresh()
+            {
+                RefreshProviders();
+                RefreshProviderActions();
+            }
+
+            public void RefreshObjectSelectors()
+            {
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                var validators = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator>(
+#pragma warning restore UA2001
+                    (loaded, mi, attribute, handler) =>
+                        LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator, AdvancedObjectSelectorValidatorHandler>(
+                        loaded, mi, attribute, handler, "Advanced Object Selector Validator", (a, h) => GenerateAdvancedObjectSelectorValidatorWrapper(a, h)),
+                    MethodSignature.FromDelegate<AdvancedObjectSelectorValidatorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToDictionary(validator => validator.id.GetHashCode());
+
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                m_ObjectSelectors = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector>(
+#pragma warning restore UA2001
+                    (loaded, mi, attribute, handler) =>
+                        LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector, AdvancedObjectSelectorHandler>(
+                        loaded, mi, attribute, handler, "Advanced Object Selector", (a, h) => GenerateAdvancedObjectSelectorWrapper(validators, a, h)),
+                    MethodSignature.FromDelegate<AdvancedObjectSelectorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToList();
+            }
+
+            static THandlerWrapper LoadAdvancedObjectSelectorAttribute<TAttribute, THandlerWrapper, TDelegate>(IReadOnlyCollection<THandlerWrapper> loaded, MethodInfo mi, TAttribute attribute, Delegate handler, string attributeName, Func<TAttribute, TDelegate, THandlerWrapper> wrapperGenerator)
+            where TAttribute : Attribute, IAdvancedObjectSelectorAttribute
+            where THandlerWrapper : IAdvancedObjectSelector
+            {
+                if (string.IsNullOrEmpty(attribute.id))
+                    throw new CustomAttributeFormatException($"Null or empty {attributeName} id for handler \"{ReflectionUtils.GetMethodFullName(mi)}\"");
+
+                if (handler is TDelegate selectorHandler)
+                {
+                    if (loaded.Exists(p => p.id.Equals(attribute.id, StringComparison.Ordinal)))
+                        throw new CustomAttributeFormatException($"{attributeName} id \"{attribute.id}\" for \"{ReflectionUtils.GetMethodFullName(mi)}\" is already used by another handler.");
+                    return wrapperGenerator(attribute, selectorHandler);
+                }
+                throw new CustomAttributeFormatException($"Invalid {attributeName} handler \"{attribute.id}\" using \"{ReflectionUtils.GetMethodFullName(mi)}\"");
+            }
+
+            void RefreshProviders()
+            {
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                m_Providers = SearchUtils.SortProvider(TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>()
+                #pragma warning restore UA2001
+                    .Select(LoadProvider)
+                    .Where(provider => provider != null))
+                .ToList();
+            }
+
+            void RefreshProviderActions()
+            {
+                #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
+                foreach (SearchAction action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
+                #pragma warning restore UA2001
+                     .Select(methodInfo => {
+                         try
+                         {
+                             return methodInfo.Invoke(null, null) as IEnumerable<object>;
+                         }
+                         catch (Exception ex)
+                         {
+                             Debug.LogWarning($"Cannot load register Search Actions method: {methodInfo.Name} ({ex.Message})");
+                             return null;
+                         }
+                     }).Where(actionArray => actionArray != null)
+                     .SelectMany(actionArray => actionArray)
+                     .Where(action => action != null))
+                {
+                    var provider = m_Providers.Find(p => p.id == action.providerId);
+                    if (provider == null)
+                        continue;
+                    provider.actions.Add(action);
+                }
+                SearchSettings.SortActionsPriority(NoAllocHelpers.CreateReadOnlySpan(m_Providers));
+            }
+
+            static AdvancedObjectSelectorValidator GenerateAdvancedObjectSelectorValidatorWrapper(AdvancedObjectSelectorValidatorAttribute attribute, AdvancedObjectSelectorValidatorHandler handler)
+            {
+                return new AdvancedObjectSelectorValidator(attribute.id, handler);
+            }
+
+            static AdvancedObjectSelector GenerateAdvancedObjectSelectorWrapper(Dictionary<int, AdvancedObjectSelectorValidator> validators, AdvancedObjectSelectorAttribute attribute, AdvancedObjectSelectorHandler handler)
+            {
+                if (!validators.TryGetValue(attribute.id.GetHashCode(), out var validator))
+                    throw new CustomAttributeFormatException($"Advanced Object Selector id \"{attribute.id}\" does not have a matching validator.");
+
+                var priority = attribute.defaultPriority;
+                var active = attribute.defaultActive;
+                var displayName = string.IsNullOrEmpty(attribute.displayName) ? SearchUtils.ToPascalWithSpaces(attribute.id) : attribute.displayName;
+                if (SearchSettings.TryGetObjectSelectorSettings(attribute.id, out var settings))
+                {
+                    priority = settings.priority;
+                    active = settings.active;
+                }
+                return new AdvancedObjectSelector(attribute.id, displayName, priority, active, handler, validator);
+            }
+        }
+
+        static readonly Lazy<LazyInitStatics> s_ScopedLazy = new(() => new LazyInitStatics());
 
         /// <summary>
         /// Returns the list of all providers (active or not)
         /// </summary>
-        public static List<SearchProvider> Providers { get; private set; }
+        public static List<SearchProvider> Providers => s_ScopedLazy.Value.Providers;
 
         /// <summary>
         /// Returns the list of providers sorted by priority.
@@ -57,22 +172,12 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static List<AdvancedObjectSelector> ObjectSelectors { get; private set; }
+        internal static List<AdvancedObjectSelector> ObjectSelectors => s_ScopedLazy.Value.ObjectSelectors;
 
         #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
         internal static IEnumerable<AdvancedObjectSelector> OrderedObjectSelectors => ObjectSelectors.OrderBy(p => p.priority);
 #pragma warning restore UA2001
 
-        static SearchService()
-        {
-            Initialize();
-        }
-
-        internal static void Initialize()
-        {
-            Refresh();
-            RefreshObjectSelectors();
-        }
         /// <summary>
         /// Returns the data of a search provider given its ID.
         /// </summary>
@@ -85,7 +190,7 @@ namespace UnityEditor.Search
 
         internal static SearchProvider GetDefaultProvider()
         {
-            return s_SearchServiceProvider;
+            return SearchServiceProvider.Instance;
         }
 
         internal static SearchProvider GetProvider(Type providerType)
@@ -135,8 +240,7 @@ namespace UnityEditor.Search
         /// <remarks>Use with care. Useful for unit tests.</remarks>
         public static void Refresh()
         {
-            RefreshProviders();
-            RefreshProviderActions();
+            s_ScopedLazy.Value.Refresh();
         }
 
         /// <summary>
@@ -166,58 +270,7 @@ namespace UnityEditor.Search
 
         internal static void RefreshObjectSelectors()
         {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            var validators = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator>(
-#pragma warning restore UA2001
-                (loaded, mi, attribute, handler) =>
-                    LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator, AdvancedObjectSelectorValidatorHandler>(
-                    loaded, mi, attribute, handler, "Advanced Object Selector Validator", (a, h) => GenerateAdvancedObjectSelectorValidatorWrapper(a, h)),
-                MethodSignature.FromDelegate<AdvancedObjectSelectorValidatorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToDictionary(validator => validator.id.GetHashCode());
-
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            ObjectSelectors = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector>(
-#pragma warning restore UA2001
-                (loaded, mi, attribute, handler) =>
-                    LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector, AdvancedObjectSelectorHandler>(
-                    loaded, mi, attribute, handler, "Advanced Object Selector", (a, h) => GenerateAdvancedObjectSelectorWrapper(validators, a, h)),
-                MethodSignature.FromDelegate<AdvancedObjectSelectorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToList();
-        }
-
-        static THandlerWrapper LoadAdvancedObjectSelectorAttribute<TAttribute, THandlerWrapper, TDelegate>(IReadOnlyCollection<THandlerWrapper> loaded, MethodInfo mi, TAttribute attribute, Delegate handler, string attributeName, Func<TAttribute, TDelegate, THandlerWrapper> wrapperGenerator)
-        where TAttribute : Attribute, IAdvancedObjectSelectorAttribute
-        where THandlerWrapper : IAdvancedObjectSelector
-        {
-            if (string.IsNullOrEmpty(attribute.id))
-                throw new CustomAttributeFormatException($"Null or empty {attributeName} id for handler \"{ReflectionUtils.GetMethodFullName(mi)}\"");
-
-            if (handler is TDelegate selectorHandler)
-            {
-                if (loaded.Exists(p => p.id.Equals(attribute.id, StringComparison.Ordinal)))
-                    throw new CustomAttributeFormatException($"{attributeName} id \"{attribute.id}\" for \"{ReflectionUtils.GetMethodFullName(mi)}\" is already used by another handler.");
-                return wrapperGenerator(attribute, selectorHandler);
-            }
-            throw new CustomAttributeFormatException($"Invalid {attributeName} handler \"{attribute.id}\" using \"{ReflectionUtils.GetMethodFullName(mi)}\"");
-        }
-
-        static AdvancedObjectSelectorValidator GenerateAdvancedObjectSelectorValidatorWrapper(AdvancedObjectSelectorValidatorAttribute attribute, AdvancedObjectSelectorValidatorHandler handler)
-        {
-            return new AdvancedObjectSelectorValidator(attribute.id, handler);
-        }
-
-        static AdvancedObjectSelector GenerateAdvancedObjectSelectorWrapper(Dictionary<int, AdvancedObjectSelectorValidator> validators, AdvancedObjectSelectorAttribute attribute, AdvancedObjectSelectorHandler handler)
-        {
-            if (!validators.TryGetValue(attribute.id.GetHashCode(), out var validator))
-                throw new CustomAttributeFormatException($"Advanced Object Selector id \"{attribute.id}\" does not have a matching validator.");
-
-            var priority = attribute.defaultPriority;
-            var active = attribute.defaultActive;
-            var displayName = string.IsNullOrEmpty(attribute.displayName) ? SearchUtils.ToPascalWithSpaces(attribute.id) : attribute.displayName;
-            if (SearchSettings.TryGetObjectSelectorSettings(attribute.id, out var settings))
-            {
-                priority = settings.priority;
-                active = settings.active;
-            }
-            return new AdvancedObjectSelector(attribute.id, displayName, priority, active, handler, validator);
+            s_ScopedLazy.Value.RefreshObjectSelectors();
         }
 
         internal static AdvancedObjectSelector GetObjectSelector(string selectorId)
@@ -348,11 +401,11 @@ namespace UnityEditor.Search
             context.options |= options;
 
             var allItems = new List<SearchItem>();
-
+            var defaultProvider = GetDefaultProvider();
             if (TryParseExpression(context, out var expression))
             {
                 var iterator = EvaluateExpression(expression, context);
-                PrepareProviderSession(session, s_SearchServiceProvider, iterator);
+                PrepareProviderSession(session, defaultProvider, iterator);
             }
             else
             {
@@ -365,7 +418,7 @@ namespace UnityEditor.Search
             // In either case, they did not return an iterator, so we have to handle the items as an additional enumerator in the session
             if (allItems.Count > 0)
             {
-                session.AddProviderEnumerator(new SearchProviderFetchEnumerator(s_SearchServiceProvider, allItems));
+                session.AddProviderEnumerator(new SearchProviderFetchEnumerator(defaultProvider, allItems));
             }
         }
 
@@ -606,17 +659,6 @@ namespace UnityEditor.Search
             context.searchFinishTime = DateTime.UtcNow.Ticks;
         }
 
-        private static void RefreshProviders()
-        {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            Providers = SearchUtils.SortProvider(TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>()
-#pragma warning restore UA2001
-                .Select(LoadProvider)
-                .Where(provider => provider != null))
-                .ToList();
-            s_SearchServiceProvider = SearchServiceProvider.CreateProvider();
-        }
-
         private static SearchProvider LoadProvider(System.Reflection.MethodInfo methodInfo)
         {
             try
@@ -644,33 +686,6 @@ namespace UnityEditor.Search
                 Debug.LogWarning($"Cannot load Search Provider method: {methodInfo.Name} ({ex.Message})");
                 return null;
             }
-        }
-
-        private static void RefreshProviderActions()
-        {
-            #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-            foreach (SearchAction action in TypeCache.GetMethodsWithAttribute<SearchActionsProviderAttribute>()
-#pragma warning restore UA2001
-                     .Select(methodInfo => {
-                         try
-                         {
-                             return methodInfo.Invoke(null, null) as IEnumerable<object>;
-                         }
-                         catch (Exception ex)
-                         {
-                             Debug.LogWarning($"Cannot load register Search Actions method: {methodInfo.Name} ({ex.Message})");
-                             return null;
-                         }
-                     }).Where(actionArray => actionArray != null)
-                     .SelectMany(actionArray => actionArray)
-                     .Where(action => action != null))
-            {
-                var provider = Providers.Find(p => p.id == action.providerId);
-                if (provider == null)
-                    continue;
-                provider.actions.Add(action);
-            }
-            SearchSettings.SortActionsPriority();
         }
 
         /// <summary>
@@ -896,7 +911,7 @@ namespace UnityEditor.Search
             catch (SearchExpressionParseException ex)
             {
                 var queryError = new SearchQueryError(ex.index, ex.length, ex.Message,
-                    context, s_SearchServiceProvider, fromSearchQuery: false, SearchQueryErrorType.Error);
+                    context, GetDefaultProvider(), fromSearchQuery: false, SearchQueryErrorType.Error);
                 context.AddSearchQueryError(queryError);
                 return null;
             }
@@ -924,7 +939,7 @@ namespace UnityEditor.Search
             catch (SearchExpressionEvaluatorException ex)
             {
                 var queryError = new SearchQueryError(ex.errorView.startIndex, ex.errorView.length, ex.Message,
-                    context, s_SearchServiceProvider, fromSearchQuery: false, SearchQueryErrorType.Error);
+                    context, GetDefaultProvider(), fromSearchQuery: false, SearchQueryErrorType.Error);
                 context.AddSearchQueryError(queryError);
                 return false;
             }

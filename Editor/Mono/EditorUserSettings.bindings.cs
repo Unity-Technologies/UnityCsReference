@@ -64,6 +64,9 @@ namespace UnityEditor
         [NativeProperty("VCScanLocalPackagesOnConnect")]
         public static extern bool scanLocalPackagesOnConnect { get; set; }
 
+        [NativeProperty("VCAutoRevertUnchangedFiles")]
+        public static extern bool autoRevertUnchangedFiles { get; set; }
+
         [NativeProperty("VCDebugCmd")]
         internal static extern bool DebugCmd { get; set; }
 

@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
+    [MigratedToRulesPackage(2)]
     class MeshAnalyzer : MeshModuleAnalyzer
     {
         internal const string PAA1000 = nameof(PAA1000);

@@ -113,15 +113,7 @@ namespace UnityEngine.Accessibility
         /// You can also use <see cref="AssistiveSupport.isScreenReaderEnabled"/> to determine whether the screen reader
         /// is turned on or off.
         /// </para>
-        /// <para>
-        /// **Platform support**: This event is not supported by Narrator, the Windows built-in screen reader.
-        /// </para>
         /// </remarks>
-        /// <example>
-        /// The following example demonstrates a potential workaround for polling the status of Narrator and sending a
-        /// custom event.
-        /// <code source="../Tests/AccessibilityExamples/Assets/Examples/NarratorStatusManager.cs"/>
-        /// </example>
         public static event Action<bool> screenReaderStatusChanged;
 
         static event Action<AccessibilityHierarchy> s_ActiveHierarchyChanged;

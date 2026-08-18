@@ -402,6 +402,7 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal bool IsRaster() => m_AtlasRenderMode == FontAssetFactory.k_RasterEditorBitmapGlyphRenderMode;
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal bool IsColor() => ((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_COLOR);
 
         /// <summary>

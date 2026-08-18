@@ -1386,6 +1386,11 @@ namespace UnityEditor.Search
         internal static SearchProviderSettings GetProviderSettings(string providerId)
         {
             var provider = SearchService.GetProvider(providerId);
+            return GetProviderSettings(providerId, provider);
+        }
+
+        internal static SearchProviderSettings GetProviderSettings(string providerId, SearchProvider provider)
+        {
             SearchProviderSettings defaultSettings = null;
             if (provider == null)
                 defaultSettings = new SearchProviderSettings();
@@ -1471,12 +1476,18 @@ namespace UnityEditor.Search
                 SortActionsPriority(searchProvider);
         }
 
+        internal static void SortActionsPriority(ReadOnlySpan<SearchProvider> providers)
+        {
+            foreach (var searchProvider in providers)
+                SortActionsPriority(searchProvider);
+        }
+
         private static void SortActionsPriority(SearchProvider searchProvider)
         {
             if (searchProvider.actions.Count == 1)
                 return;
 
-            var defaultActionId = GetProviderSettings(searchProvider.id).defaultAction;
+            var defaultActionId = GetProviderSettings(searchProvider.id, searchProvider).defaultAction;
             if (string.IsNullOrEmpty(defaultActionId))
                 return;
             if (searchProvider.actions.Count == 0 || defaultActionId == searchProvider.actions[0].id)

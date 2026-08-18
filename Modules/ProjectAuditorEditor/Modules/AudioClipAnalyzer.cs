@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
+    [MigratedToRulesPackage(2)]
     class AudioClipAnalyzer : AudioClipModuleAnalyzer
     {
         internal const string PAA4000 = nameof(PAA4000);    // Long AudioClips which aren’t set to streaming

@@ -85,6 +85,11 @@ internal class CustomDisplayDialogContent : ModalContent
         UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
 
         var fixedSize = new Vector2(340f, lowerContainer.layout.height + upperContainer.layout.height);
+        // Sometimes with the modal window, the height of each element is miscalculated, this if ensures the window is
+        // at least big enough to see everything correctly.
+        if (fixedSize.y < args.minSizeOfWindow.y)
+            fixedSize = args.minSizeOfWindow;
+
         container.minSize = fixedSize;
         container.maxSize = fixedSize;
     }

@@ -10,6 +10,7 @@ using Unity.ProjectAuditor.Editor.Core;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
+    [MigratedToRulesPackage(2)]
     internal class AssetsModuleResourcesAnalyzer : AssetsModuleAnalyzer
     {
         internal const string PAA3000 = nameof(PAA3000);

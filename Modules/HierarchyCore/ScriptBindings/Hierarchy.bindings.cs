@@ -594,6 +594,12 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyBindings::GetNodeTypeFromType", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyNodeType GetNodeTypeFromType(Type type);
 
+        // The sort type of a node. Defaults to the node's own type, but a handler can opt into another handler's
+        // sort type (see OverrideNodeSortType), meaning its nodes are ordered as part of that group.
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        [FreeFunction("HierarchyBindings::GetNodeSortType", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        internal extern HierarchyNodeType GetNodeSortType(in HierarchyNode node);
+
         [FreeFunction("HierarchyBindings::AddNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern HierarchyNode AddNode(in HierarchyNode parent);
 

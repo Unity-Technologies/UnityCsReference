@@ -292,7 +292,7 @@ namespace UnityEditor.Search
         }
 
         public DragVisualMode CanReorder(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
-        public void OnReorder(in HierarchyViewDragAndDropHandlingData data) { }
+        public DragVisualMode OnReorder(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
         public DragVisualMode CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
         public DragVisualMode OnAcceptDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.Rejected;
         #endregion

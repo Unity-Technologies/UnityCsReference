@@ -126,12 +126,17 @@ namespace UnityEditor
 
             public bool MethodDomainReload { get; }
 
+            // Cached: PostprocessAllAssets runs for every import batch and building this
+            // marker name there would allocate a string per callback per batch.
+            public string PerformanceMarkerName { get; }
+
             public override string name => classType.FullName;
 
             public MethodInfoCallback(MethodInfo method, bool methodDomainReload)
             {
                 Method = method;
                 MethodDomainReload = methodDomainReload;
+                PerformanceMarkerName = $"{method.DeclaringType.Name}.OnPostprocessAllAssets";
             }
 
             public override IEnumerable<T> GetCustomAttributes<T>() => Method.GetCustomAttributes<T>();
@@ -323,7 +328,7 @@ namespace UnityEditor
                 {
                     if (assetPostProcessor.MethodDomainReload)
                     {
-                        using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
+                        using (new EditorPerformanceMarker(assetPostProcessor.PerformanceMarkerName, assetPostProcessor.classType).Auto())
                             InvokeMethod(assetPostProcessor.Method, argsWithDidDomainReload);
                     }
                     else
@@ -331,7 +336,7 @@ namespace UnityEditor
                         if (containsNoAssets)
                             continue;
 
-                        using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
+                        using (new EditorPerformanceMarker(assetPostProcessor.PerformanceMarkerName, assetPostProcessor.classType).Auto())
                             InvokeMethod(assetPostProcessor.Method, args);
                     }
                 }

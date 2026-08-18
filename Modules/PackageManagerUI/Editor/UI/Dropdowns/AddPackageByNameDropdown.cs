@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (ShouldBlockDueToComplianceViolation(compliance))
             {
-                var displayDialogArgs = new CustomDisplayDialogArgs(k_NonCompliantDialogTitle, idForAnalytics: "addByNameNonCompliantPackage", L10n.Tr("OK"))
+                var displayDialogArgs = new CustomDisplayDialogArgs(k_NonCompliantDialogTitle, idForAnalytics: "addByNameNonCompliantPackage", L10n.Tr("OK"), new Vector2(340f, 165f))
                 {
                     headerIcon = Icon.PackageErrorLarge,
                     headerMainText = packageDisplayName,

@@ -2226,25 +2226,6 @@ namespace UnityEngine.UIElements.HierarchyV2
             (itemsSource[lhs], itemsSource[rhs]) = (itemsSource[rhs], itemsSource[lhs]);
         }
 
-        void SelectAll()
-        {
-            if (selectionType != SelectionType.Multiple)
-                return;
-
-            m_Selection.SelectAll();
-
-            foreach (var recycledItem in m_IndexToItemDictionary.Values)
-            {
-                recycledItem.SetSelected(true);
-            }
-
-            if (m_StickyRow != null && m_StickyRow.index >= 0)
-                m_StickyRow.SetSelected(true);
-
-            NotifyOfSelectionChange();
-            SaveViewData();
-        }
-
         bool Apply(KeyboardNavigationOperation op, bool shiftKey)
         {
             if (selectionType == SelectionType.None)
@@ -2272,9 +2253,6 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             switch (op)
             {
-                case KeyboardNavigationOperation.SelectAll:
-                    SelectAll();
-                    return true;
                 case KeyboardNavigationOperation.Cancel:
                     ClearSelection();
                     return true;
@@ -2388,8 +2366,6 @@ namespace UnityEngine.UIElements.HierarchyV2
                 case KeyboardNavigationOperation.MoveRight:
                 case KeyboardNavigationOperation.MoveLeft:
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
 
             return false;

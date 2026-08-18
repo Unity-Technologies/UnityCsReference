@@ -125,6 +125,11 @@ namespace UnityEditor.Modules
         [RequiredByNativeCode]
         static void EndProfile() => UnityBeeDriverProfilerSession.Finish();
 
+        // The session only writes its output file when it is finished, so consumers of that file can use
+        // this to check they are not running too early.
+        [RequiredByNativeCode]
+        static bool IsProfilerSessionActive() => UnityBeeDriverProfilerSession.PerformingPlayerBuild;
+
         [RequiredByNativeCode]
         static void BeginBuildSection(string name) => UnityBeeDriverProfilerSession.BeginSection(name);
 

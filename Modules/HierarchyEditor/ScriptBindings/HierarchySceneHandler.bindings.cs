@@ -323,91 +323,68 @@ namespace Unity.Hierarchy.Editor
             return DragVisualMode.Move;
         }
 
-        void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
         {
-            // SetParentOfSelection has already moved the scene nodes in the hierarchy.
-            // Sync the SceneManager scene order to match the new hierarchy order.
+            // Compute the SceneManager move purely from the drop information in
+            // `data` (the insertion child index under the root), the nodes have not been moved yet.
+            // We read the sibling order from the ViewModel rather than the Source. The ViewModel
+            // still reflects the PRE-move layout at this point.
             var viewModel = data.View.ViewModel;
             var sceneNodeType = GetNodeType();
             var root = data.View.Source.Root;
 
-            // Collect scenes in their new hierarchy order, tracking which are selected (moved).
-            // Use Source.GetChildren (not viewModel.GetChild): ViewModel read buffer is stale until
-            // Update(); Source's children array is synchronously updated by SetParentOfSelection.
-            using var _ = ListPool<(Scene scene, bool isSelected)>.Get(out var scenesWithSelection);
-            foreach (var child in data.View.Source.EnumerateChildren(in root))
+            var childCount = viewModel.GetChildrenCount(in root);
+            var insertChildIndex = data.ChildIndex;
+
+            // Single pass over the root's children (pre-move order):
+            //   - collect the scenes being moved (the selected scene nodes), preserving their relative order
+            //   - find a non-selected reference scene adjacent to the insertion point
+            using var _ = ListPool<Scene>.Get(out var movedScenes);
+            Scene referenceAbove = default;   // last non-selected scene before the insertion point -> MoveSceneAfter
+            Scene referenceBelow = default;   // first non-selected scene at/after the insertion point -> MoveSceneBefore
+            bool hasReferenceBelow = false;
+
+            for (var i = 0; i < childCount; i++)
             {
-                if (data.View.Source.GetNodeType(in child) != sceneNodeType)
+                var child = viewModel.GetChild(in root, i);
+                if (viewModel.GetNodeType(in child) != sceneNodeType)
                     continue;
+
                 var scene = GetScene(in child);
                 if (!scene.IsValid())
                     continue;
-                scenesWithSelection.Add((scene, viewModel.HasFlags(in child, HierarchyNodeFlags.Selected)));
-            }
 
-            // Gather moved scenes
-            using var __ = ListPool<Scene>.Get(out var movedScenes);
-            foreach (var (scene, isSelected) in scenesWithSelection)
-            {
-                if (isSelected)
+                if (viewModel.HasFlags(in child, HierarchyNodeFlags.Selected))
                     movedScenes.Add(scene);
+                else if (i < insertChildIndex)
+                    referenceAbove = scene;
+                else if (!hasReferenceBelow)
+                {
+                    referenceBelow = scene;
+                    hasReferenceBelow = true;
+                }
             }
 
             if (movedScenes.Count == 0)
-                return;
+                return DragVisualMode.Rejected;
 
-            // Find the reference scene: the non-selected scene immediately before the moved group.
-            Scene dstScene = default;
-            bool dropAbove = false;
-            Scene lastNonSelected = default;
-            for (var i = 0; i < scenesWithSelection.Count; i++)
-            {
-                var (scene, isSelected) = scenesWithSelection[i];
-                if (!isSelected)
-                {
-                    lastNonSelected = scene;
-                }
-                else
-                {
-                    if (lastNonSelected.IsValid())
-                    {
-                        dstScene = lastNonSelected;
-                        dropAbove = false;
-                    }
-                    else
-                    {
-                        // No non-selected scene before the moved group; find the first after
-                        for (var j = i; j < scenesWithSelection.Count; j++)
-                        {
-                            var (nextScene, nextIsSelected) = scenesWithSelection[j];
-                            if (!nextIsSelected)
-                            {
-                                dstScene = nextScene;
-                                dropAbove = true;
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-
-            if (!dstScene.IsValid())
-                return;
-
-            if (dropAbove)
-            {
-                for (var i = 0; i < movedScenes.Count; i++)
-                    EditorSceneManager.MoveSceneBefore(movedScenes[i], dstScene);
-            }
-            else
+            // Prefer anchoring after the non-selected scene above the insertion point; otherwise anchor
+            // before the first non-selected scene at/after it. If neither exists (e.g. every scene is
+            // selected) there is no reference to move relative to, so leave the order unchanged.
+            if (referenceAbove.IsValid())
             {
                 for (var i = movedScenes.Count - 1; i >= 0; i--)
-                    EditorSceneManager.MoveSceneAfter(movedScenes[i], dstScene);
+                    EditorSceneManager.MoveSceneAfter(movedScenes[i], referenceAbove);
+            }
+            else if (hasReferenceBelow)
+            {
+                for (var i = 0; i < movedScenes.Count; i++)
+                    EditorSceneManager.MoveSceneBefore(movedScenes[i], referenceBelow);
             }
 
             // Sort index sync is handled by HierarchySceneHandler::UpdateEnd, which runs every
             // hierarchy update and iterates scenes in their current SceneManager order.
+            return DragVisualMode.Move;
         }
 
         DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data)

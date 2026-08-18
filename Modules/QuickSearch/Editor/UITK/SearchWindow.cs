@@ -140,6 +140,8 @@ namespace UnityEditor.Search
             body.style.flexGrow = 1.0f;
             body.RegisterCallback<KeyDownEvent>(OnGlobalKeyDownEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
             body.RegisterCallback<NavigationSubmitEvent>(OnGlobalNavigationSubmitEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
+            body.RegisterCallback<ValidateCommandEvent>(OnGlobalValidateCommandEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
+            body.RegisterCallback<ExecuteCommandEvent>(OnGlobalExecuteCommandEvent, callbackOptions: CallbackOptions.IncludeDisabled | CallbackOptions.TrickleDown);
 
             // Create main layout
             if (m_ViewState.flags.HasNone(SearchViewFlags.HideSearchBar))
@@ -241,6 +243,20 @@ namespace UnityEditor.Search
         }
 
         private void OnGlobalNavigationSubmitEvent(NavigationSubmitEvent evt)
+        {
+            var result = SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt);
+            if (result.Handled)
+                evt.StopImmediatePropagation();
+        }
+
+        private void OnGlobalValidateCommandEvent(ValidateCommandEvent evt)
+        {
+            var result = SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt);
+            if (result.Handled)
+                evt.StopImmediatePropagation();
+        }
+
+        private void OnGlobalExecuteCommandEvent(ExecuteCommandEvent evt)
         {
             var result = SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt);
             if (result.Handled)

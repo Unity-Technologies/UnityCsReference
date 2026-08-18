@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -19,14 +20,16 @@ internal abstract class CustomDialogArgsBase
     public string bodyText;
     public string readMoreUrl;
     public string readMoreClickedAnalyticsId;
+    public Vector2 minSizeOfWindow;
 
     public abstract IEnumerable<(string text, DialogResult result)> buttons { get; }
 
-    protected CustomDialogArgsBase(string windowTitle, string idForAnalytics)
+    protected CustomDialogArgsBase(string windowTitle, string idForAnalytics, Vector2 minSizeOfWindow)
     {
         this.windowTitle = windowTitle;
         this.idForAnalytics = idForAnalytics;
         headerColor = HeaderColor.Default;
+        this.minSizeOfWindow = minSizeOfWindow;
     }
 }
 
@@ -34,7 +37,7 @@ internal class CustomDisplayDialogArgs : CustomDialogArgsBase
 {
     public readonly string buttonText;
 
-    public CustomDisplayDialogArgs(string windowTitle, string idForAnalytics, string buttonText) : base(windowTitle, idForAnalytics)
+    public CustomDisplayDialogArgs(string windowTitle, string idForAnalytics, string buttonText, Vector2 minSizeOfWindow) : base(windowTitle, idForAnalytics, minSizeOfWindow)
     {
         this.buttonText = buttonText;
     }
@@ -53,7 +56,7 @@ internal class CustomDecisionDialogArgs : CustomDialogArgsBase
     public readonly string defaultButtonText;
     public readonly string cancelButtonText;
 
-    public CustomDecisionDialogArgs(string windowTitle, string idForAnalytics, string defaultButtonText, string cancelButtonText) : base(windowTitle, idForAnalytics)
+    public CustomDecisionDialogArgs(string windowTitle, string idForAnalytics, string defaultButtonText, string cancelButtonText, Vector2 minSizeOfWindow) : base(windowTitle, idForAnalytics, minSizeOfWindow)
     {
         this.defaultButtonText = defaultButtonText;
         this.cancelButtonText = cancelButtonText;

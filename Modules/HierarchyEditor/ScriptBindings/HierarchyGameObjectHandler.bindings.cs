@@ -327,7 +327,7 @@ namespace Unity.Hierarchy.Editor
             return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
         }
 
-        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => CanStartDrag(nodes);
+        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
 
         string IHierarchyEditorNodeTypeHandler.GetDragTitle(HierarchyView view, in HierarchyNode node)
         {
@@ -404,11 +404,11 @@ namespace Unity.Hierarchy.Editor
             return DragAndDropHelpers.ConvertDragAndDropVisualModeToDragVisualMode(visualMode);
         }
 
-        void IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnReorder(in HierarchyViewDragAndDropHandlingData data)
         {
             var parent = data.Parent;
             if (parent == HierarchyNode.Null)
-                return;
+                return DragVisualMode.Rejected;
 
             var view = data.View;
             var viewModel = view.ViewModel;
@@ -421,9 +421,12 @@ namespace Unity.Hierarchy.Editor
             var targetNodeType = viewModel.GetNodeType(in target);
             var entityId = GetDropTargetEntityId(in target, in targetNodeType, flags);
             if (entityId == EntityId.None)
-                return;
+                return DragVisualMode.Rejected;
 
-            DragAndDrop.DropOnHierarchyWindow(entityId, flags, null, perform: true);
+            // A full-batch rejection (e.g. search active, or the out-of-prefab confirmation dialog being cancelled)
+            // surfaces here as Rejected.
+            var visualMode = DragAndDrop.DropOnHierarchyWindow(entityId, flags, null, perform: true);
+            return DragAndDropHelpers.ConvertDragAndDropVisualModeToDragVisualMode(visualMode);
         }
 
         DragVisualMode IHierarchyEditorNodeTypeHandler.CanAcceptDrop(in HierarchyViewDragAndDropHandlingData data)
@@ -1063,9 +1066,6 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true)]
         extern void SetPendingExternalDrop(HierarchyNode parentNode, int dropIndex);
-
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        extern bool CanStartDrag(ReadOnlySpan<HierarchyNode> nodes);
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

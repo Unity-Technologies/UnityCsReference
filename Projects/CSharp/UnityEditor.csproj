@@ -9956,6 +9956,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AnalyticsScrubberProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AnalyticsScrubberProxy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
     </Compile>
@@ -10597,6 +10600,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Sidebar\SidebarRow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Sidebar\SidebarRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AnalyticsScrubber.bindings.cs">
+      <Link>Modules\PackageManager\Editor\Managed\AnalyticsScrubber.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ArtifactType.cs">
       <Link>Modules\PackageManager\Editor\Managed\ArtifactType.cs</Link>
@@ -15542,9 +15548,6 @@
     <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsCreationMenu.cs">
       <Link>Modules\UIElementsEditor\Text\PanelTextSettingsCreationMenu.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsEditor.cs">
-      <Link>Modules\UIElementsEditor\Text\PanelTextSettingsEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsImporter.cs">
       <Link>Modules\UIElementsEditor\Text\PanelTextSettingsImporter.cs</Link>
     </Compile>
@@ -17084,7 +17087,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_e256\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_7199\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\UnityEditor.MSBuild.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\msbuild.host\Unity.BuildService.Host.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_60e6\buildTools\Unity.BuildService.dll" />
@@ -17122,7 +17125,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_jvpucg0_/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_y0ng3l8c/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

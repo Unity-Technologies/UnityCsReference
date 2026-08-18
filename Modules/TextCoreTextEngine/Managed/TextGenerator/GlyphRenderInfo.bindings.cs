@@ -33,5 +33,7 @@ namespace UnityEngine.TextCore
         public int lineIndex;
         public int linkID;
         public NativeGlyphKind kind;
+        public int textRangeStart;
+        public int textRangeLength;
     }
 }

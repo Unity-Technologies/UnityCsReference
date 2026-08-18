@@ -17,6 +17,7 @@ namespace Unity.Scripting.LifecycleManagement
 
         private readonly StackOrderedAssemblyList _assemblyList = new();
         private readonly LifecycleMethodRegistry _lifecycleMethodRegistry;
+        private readonly Dictionary<Type, Profiling.ProfilerMarker> _processMarkers = new();
 
         internal INativeCallbackProvider? NativeCallbackProvider { get; set; }
 
@@ -33,6 +34,22 @@ namespace Unity.Scripting.LifecycleManagement
         private List<LifecycleMethodData> FindStaticMethodsWithAttribute(Type attributeType, IReadOnlyList<Assembly> assemblies)
         {
             return _lifecycleMethodRegistry.Get(attributeType, assemblies);
+        }
+
+        private Profiling.ProfilerMarker GetProcessMarker(Type attributeType)
+        {
+            // Cache markers per attribute type: creating one allocates a string and calls into
+            // the native profiler, and this runs on every scope transition.
+            if (!_processMarkers.TryGetValue(attributeType, out var marker))
+            {
+                marker = new Profiling.ProfilerMarker(k_ProfilerMarkerPrefix + attributeType.Name);
+                if (marker.ptr != IntPtr.Zero)
+                {
+                    _processMarkers.Add(attributeType, marker);
+                }
+            }
+
+            return marker;
         }
 
         /// <summary>
@@ -52,15 +69,16 @@ namespace Unity.Scripting.LifecycleManagement
 
         private void ExecuteMethodsInOrder(Type attributeType, IReadOnlyList<Assembly> assemblies)
         {
-            using var executeMethodsProfilerScope = new Profiling.ProfilerMarker(k_ProfilerMarkerPrefix + attributeType.Name).Auto();
-
             var methods = FindStaticMethodsWithAttribute(attributeType, assemblies);
             if (methods.Count == 0)
             {
                 return;
             }
 
-            DebugLifecycle.Log($"Lifecycle : *inside scope transition* executing {methods.Count} hooks for type {attributeType}");
+            using var executeMethodsProfilerScope = GetProcessMarker(attributeType).Auto();
+
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : *inside scope transition* executing {methods.Count} hooks for type {attributeType}");
 
             // Check if detailed profiling is enabled and create a marker which would wrap each method invocation
             Profiling.ProfilerMarker? detailedInvokeMarker = EnableDetailedProfiling ? new Profiling.ProfilerMarker(k_DetailedInvokeMarkerPrefix + attributeType.Name) : null;
@@ -101,15 +119,16 @@ namespace Unity.Scripting.LifecycleManagement
 
         private void ExecuteMethodsInReverseOrder(Type attributeType, IReadOnlyList<Assembly> assemblies)
         {
-            using var executeMethodsProfilerScope = new Profiling.ProfilerMarker(k_ProfilerMarkerPrefix + attributeType.Name).Auto();
-
             var methods = FindStaticMethodsWithAttribute(attributeType, assemblies);
             if (methods.Count == 0)
             {
                 return;
             }
 
-            DebugLifecycle.Log($"Lifecycle : *inside scope transition* executing {methods.Count} hooks for type {attributeType} in reverse");
+            using var executeMethodsProfilerScope = GetProcessMarker(attributeType).Auto();
+
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : *inside scope transition* executing {methods.Count} hooks for type {attributeType} in reverse");
 
             // Check if detailed profiling is enabled and create a marker which would wrap each method invocation
             Profiling.ProfilerMarker? detailedInvokeMarker = EnableDetailedProfiling ? new Profiling.ProfilerMarker(k_DetailedInvokeMarkerPrefix + attributeType.Name) : null;

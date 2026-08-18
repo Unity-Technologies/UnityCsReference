@@ -66,6 +66,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (window == null)
                 return;
 
+            // UUM-148037 - There are some cases where object types (e.g. scriptable objects) fail to load
+            // and fall back to a FallbackEditorWindow even though those objects are not actually windows.
+            // In those cases we should just ignore the object as attempting to close it will cause an error
+            // and logging a warning would be misleading.
+            if (window is FallbackEditorWindow && (window.m_Parent == null || window.m_Parent.window == null))
+                return;
+
             // Compare if the active window is of a type should be allowed (whitelisted), Else close if not.
             var windowType = window.GetType().FullName;
             if (!LayoutFlagsUtil.IsWindowTypeSupported(windowType))

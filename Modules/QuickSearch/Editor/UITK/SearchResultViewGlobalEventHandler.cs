@@ -24,6 +24,7 @@ namespace UnityEditor.Search
         public Action<int> Frame { get; set; }
         public Func<int> GetVisibleItemCount { get; set; }
         public Func<KeyDownEvent, KeyDownEvent> GenerateLocalKeyDownEvent { get; set; }
+        public Func<bool> AllowMultiSelectionCommands { get; set; }
 
         public SearchResultViewGlobalEventHandler(SearchElement resultView,
             VisualElement targetEventHandler,
@@ -36,7 +37,8 @@ namespace UnityEditor.Search
             Action<int> removeFromSelection,
             Action<int> frame,
             Func<int> getVisibleItemCount,
-            Func<KeyDownEvent, KeyDownEvent> generateLocalKeyDownEvent)
+            Func<KeyDownEvent, KeyDownEvent> generateLocalKeyDownEvent,
+            Func<bool> allowMultiSelectionCommands = null)
         {
             ResultView = resultView;
             TargetEventHandler = targetEventHandler;
@@ -50,6 +52,7 @@ namespace UnityEditor.Search
             Frame = frame ?? (i => { });
             GetVisibleItemCount = getVisibleItemCount ?? (() => 0);
             GenerateLocalKeyDownEvent = generateLocalKeyDownEvent ?? DefaultGenerateLocalKeyDownEvent;
+            AllowMultiSelectionCommands = allowMultiSelectionCommands;
         }
 
         public SearchResultViewGlobalEventHandler(SearchElement resultView, VisualElement targetEventHandler)
@@ -62,12 +65,16 @@ namespace UnityEditor.Search
         {
             ResultView.RegisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyDownEvent, 20);
             ResultView.RegisterGlobalEventHandler<NavigationSubmitEvent>(OnGlobalNavigationSubmitEvent, 20);
+            ResultView.RegisterGlobalEventHandler<ValidateCommandEvent>(OnValidateCommand, 20);
+            ResultView.RegisterGlobalEventHandler<ExecuteCommandEvent>(OnExecuteCommand, 20);
         }
 
         public void UnregisterGlobalEventHandler()
         {
             ResultView.UnregisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyDownEvent);
             ResultView.UnregisterGlobalEventHandler<NavigationSubmitEvent>(OnGlobalNavigationSubmitEvent);
+            ResultView.UnregisterGlobalEventHandler<ValidateCommandEvent>(OnValidateCommand);
+            ResultView.UnregisterGlobalEventHandler<ExecuteCommandEvent>(OnExecuteCommand);
         }
 
         SearchGlobalEventHandlerResult OnGlobalNavigationSubmitEvent(NavigationSubmitEvent evt)
@@ -139,6 +146,79 @@ namespace UnityEditor.Search
             }
 
             return VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
+        }
+
+        SearchGlobalEventHandlerResult OnValidateCommand(ValidateCommandEvent evt)
+        {
+            if (evt.target is not VisualElement ve)
+                return false;
+
+            if (ve != ResultView && !ResultView.Contains(ve))
+                return false;
+
+            if (AllowMultiSelectionCommands != null && AllowMultiSelectionCommands())
+            {
+                switch (evt.commandName)
+                {
+                    case EventCommandNames.SelectAll:
+                    case EventCommandNames.DeselectAll:
+                    case EventCommandNames.InvertSelection:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        SearchGlobalEventHandlerResult OnExecuteCommand(ExecuteCommandEvent evt)
+        {
+            if (evt.target is not VisualElement ve)
+                return false;
+
+            if (ve != ResultView && !ResultView.Contains(ve))
+                return false;
+
+            switch (evt.commandName)
+            {
+                case EventCommandNames.SelectAll:
+                {
+                    var itemCount = GetItemCount();
+                    if (itemCount > 0)
+                    {
+                        using var pooled = new RentSpanUnmanaged<int>(itemCount);
+                        for (var i = 0; i < itemCount; ++i)
+                            pooled.Span[i] = i;
+                        AddToSelection(pooled.Span);
+                    }
+                    return true;
+                }
+
+                case EventCommandNames.DeselectAll:
+                    SetSelectedIndex(-1);
+                    return true;
+
+                case EventCommandNames.InvertSelection:
+                {
+                    var itemCount = GetItemCount();
+                    if (itemCount > 0)
+                    {
+                        using var toAdd = new RentSpanUnmanaged<int>(itemCount);
+                        var addCount = 0;
+                        for (var i = 0; i < itemCount; ++i)
+                        {
+                            if (SelectionContains(i))
+                                RemoveFromSelection(i);
+                            else
+                                toAdd.Span[addCount++] = i;
+                        }
+                        if (addCount > 0)
+                            AddToSelection(toAdd.Span[..addCount]);
+                    }
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         void ExecuteActionForSelection(SearchSelection selection, bool executeSecondary)

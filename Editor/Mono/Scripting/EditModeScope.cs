@@ -34,13 +34,15 @@ namespace UnityEditor.Scripting.LifecycleManagement
                 return;
             }
 
-            DebugLifecycle.Log($"Lifecycle : Entering {ScopeName} scope");
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : Entering {ScopeName} scope");
             scopeTransitionHelper.ExecuteMethodsInOrder<OnEnteringEditModeAttribute>();
         }
 
         protected override void Exit(ScopeTransitionHelper scopeTransitionHelper)
         {
-            DebugLifecycle.Log($"Lifecycle : Exiting {ScopeName} scope");
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : Exiting {ScopeName} scope");
             scopeTransitionHelper.ExecuteMethodsInReverseOrder<OnExitingEditModeAttribute>();
         }
     }

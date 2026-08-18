@@ -17,9 +17,6 @@ namespace Unity.ProjectAuditor.Editor
     {
         internal const string k_NotAvailable = "N/A";
 
-        // -2 because we're not interested in "None" or "All"
-        static readonly int s_NumAreaEnumValues = Enum.GetNames(typeof(Areas)).Length - 2;
-
         // Map of category+format to custom comparison functions. See usage of AddCustomComparer in eg. AudioClipModule
         [AutoStaticsCleanupOnCodeReload]
         static Dictionary<ulong, Func<ReportItem, ReportItem, int>> s_CustomComparers = new Dictionary<ulong, Func<ReportItem, ReportItem, int>>();
@@ -126,20 +123,19 @@ namespace Unity.ProjectAuditor.Editor
                 case PropertyType.Severity:
                     return ((int)issueA.Severity).CompareTo((int)issueB.Severity);
                 case PropertyType.Areas:
-                    var areasA = (int)issueA.Id.GetDescriptor().Areas.Value;
-                    var areasB = (int)issueB.Id.GetDescriptor().Areas.Value;
+                    var areasA = issueA.Id.GetDescriptor().Areas.Value;
+                    var areasB = issueB.Id.GetDescriptor().Areas.Value;
 
                     if (areasA == areasB)
                         return 0;
 
-                    // Sort according to differences in the least significant bit
-                    // (i.e. the smallest enum value, which is the one that comes first alphabetically)
-                    for (int i = 0; i < s_NumAreaEnumValues; ++i)
+                    // Sort according to the first area (in alphabetical order) which only one of the two issues has
+                    foreach (var area in AreasExtensions.AlphabeticalAreas)
                     {
-                        var mask = 1 << i;
-                        var c = (areasB & mask) - (areasA & mask);
-                        if (c != 0)
-                            return c;
+                        var hasAreaA = (areasA & area) != 0;
+                        var hasAreaB = (areasB & area) != 0;
+                        if (hasAreaA != hasAreaB)
+                            return hasAreaA ? -1 : 1;
                     }
                     return 0;
                 case PropertyType.Description:

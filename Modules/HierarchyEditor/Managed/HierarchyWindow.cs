@@ -151,6 +151,9 @@ namespace Unity.Hierarchy.Editor
                 var key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.m_WindowGUID, stage);
                 s_StateCache.RemoveState(key);
             }
+
+            public static void OnEnable(HierarchyWindow hierarchyWindow) => hierarchyWindow.OnEnable();
+            public static void OnDisable(HierarchyWindow hierarchyWindow) => hierarchyWindow.OnDisable();
         }
 
         string ISearchableContainer.SearchText
@@ -390,6 +393,7 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView.BindViewItem += OnBindViewItem;
             m_HierarchyView.UnbindViewItem += OnUnbindViewItem;
             m_HierarchyView.PopulateContextMenu += OnPopulateContextMenu;
+            m_HierarchyView.ContextMenuRequested += OnContextMenuRequested;
             m_HierarchyView.GetTooltip += OnGetTooltip;
 
             m_HierarchyView.ListView.showAlternatingRowBackgrounds = HierarchyPreferences.AlternatingRowBackground
@@ -410,7 +414,11 @@ namespace Unity.Hierarchy.Editor
             m_SearchView = new HierarchySearchView(this);
             m_SearchView.state.queryBuilderEnabled = HierarchyPreferences.UseQueryBuilder;
             m_SearchField = new SearchFieldElement(nameof(SearchFieldElement), m_SearchView, SearchQueryBuilderViewFlags.None);
-            var addNewBlockContent = (Texture2D)EditorGUIUtility.IconContent("search_menu").image;
+            // GUIUtility.pixelsPerPoint is only reliable while a view is being painted, so when
+            // OnEnable runs it may not reflect the actual screen scale yet and IconContent would
+            // resolve the low-resolution variant. Force the @2x variant so the loaded texture does
+            // not depend on load timing; it is also pixel-exact at the 22x16pt display size (UUM-147596).
+            var addNewBlockContent = (Texture2D)EditorGUIUtility.IconContent("search_menu@2x").image;
             m_SearchField.addNewBlockIcon = addNewBlockContent;
             toolbar.Add(m_SearchField);
 
@@ -581,6 +589,7 @@ namespace Unity.Hierarchy.Editor
                 m_HierarchyView.BindViewItem -= OnBindViewItem;
                 m_HierarchyView.UnbindViewItem -= OnUnbindViewItem;
                 m_HierarchyView.PopulateContextMenu -= OnPopulateContextMenu;
+                m_HierarchyView.ContextMenuRequested -= OnContextMenuRequested;
                 m_HierarchyView.GetTooltip -= OnGetTooltip;
                 m_HierarchyView.Dispose();
                 m_HierarchyView = null;
@@ -630,26 +639,15 @@ namespace Unity.Hierarchy.Editor
         {
             // Update last interacted hierarchy when user presses mouse button (including right-click).
             s_LastInteractedHierarchy = this;
+        }
 
-            // Synchronize global selection from view model on right-click.
+        void OnContextMenuRequested(HierarchyViewItem item)
+        {
+            // Synchronize global selection from view model on right-click (context menu request).
             // This makes sure the element currently selected by the right click in the view
             // is set to the global selection. This is important since some context-menu operations
             // don't take parameters and instead are reading directly from Selection.activeObject or Selection.entityIds.
-            if (IsRightClick((MouseButton)evt.button, evt.modifiers))
-                m_SelectionHandler.SyncGlobalSelectionFromViewModel();
-
-            static bool IsRightClick(MouseButton btn, EventModifiers modifiers)
-            {
-                // on OSX a right click can be either right click or ctrl+left click
-                if (UIElementsUtility.isOSXContextualMenuPlatform)
-                {
-                    return btn == MouseButton.RightMouse
-                           || (btn == MouseButton.LeftMouse
-                               && modifiers == EventModifiers.Control);
-                }
-
-                return btn == MouseButton.RightMouse;
-            }
+            m_SelectionHandler.SyncGlobalSelectionFromViewModel();
         }
 
         void OnHierarchyWindowDragExited(DragExitedEvent evt)

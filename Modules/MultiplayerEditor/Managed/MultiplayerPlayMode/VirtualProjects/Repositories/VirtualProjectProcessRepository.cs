@@ -56,6 +56,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 allArgs.Add(CommandLineParameters.k_StandaloneBuildSubtarget + $" {EditorUserBuildSettings.standaloneBuildSubtarget}");
 
             }
+
+            var forceGraphicsApi = CommandLineParameters.BuildForceGraphicsApiArgument(SystemInfo.graphicsDeviceType);
+            if (!string.IsNullOrEmpty(forceGraphicsApi))
+            {
+                allArgs.Add(forceGraphicsApi);
+            }
+
             var arguments = string.Join(" ", allArgs);
             var executablePath = Paths.GetApplicationPath(Application.platform == RuntimePlatform.OSXEditor ? "Contents/MacOS/Unity" : "");
 

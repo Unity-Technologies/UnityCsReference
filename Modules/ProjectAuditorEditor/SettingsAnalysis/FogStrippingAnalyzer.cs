@@ -23,6 +23,7 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         ExponentialSquared
     }
 
+    [MigratedToRulesPackage(2)]
     class FogStrippingAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS1003 = nameof(PAS1003);

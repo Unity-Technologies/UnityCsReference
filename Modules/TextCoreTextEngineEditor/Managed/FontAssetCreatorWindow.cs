@@ -21,7 +21,7 @@ using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
 using System;
 
-#pragma warning disable CS0618 // Font feature tables and OTL feature tags; TextCoreShaderGUI, TextCoreShaderGUISDF, TextCoreShaderGUIBitmap, TextShaderUtilities are obsolete; handled natively by ATG
+#pragma warning disable CS0618 // TextShaderUtilities is obsolete (handled natively by ATG); AtlasPopulationMode.Static is obsolete but kept as a legacy option
 
 namespace UnityEditor.TextCore.Text
 {
@@ -48,6 +48,7 @@ namespace UnityEditor.TextCore.Text
             window.ClearGeneratedData();
             window.m_LegacyFontAsset = null;
             window.m_SelectedFontAsset = null;
+            window.m_AtlasPopulationMode = AtlasPopulationMode.Dynamic;
 
             // Override selected font asset
             window.m_SourceFont = font;
@@ -89,6 +90,9 @@ namespace UnityEditor.TextCore.Text
 
             // Even if we don't have any saved generation settings, we still want to pre-select the source font file.
             window.m_SelectedFontAsset = fontAsset;
+
+            bool isDynamic = fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS;
+            window.m_AtlasPopulationMode = isDynamic ? AtlasPopulationMode.Dynamic : AtlasPopulationMode.Static;
 
             // Make sure TMP Essential Resources have been imported.
             window.CheckEssentialResources();
@@ -193,7 +197,9 @@ namespace UnityEditor.TextCore.Text
         // OnDisable so testing multiple fonts in one session doesn't leave faces in the shared cache.
         private readonly HashSet<FontFaceHandle> m_LoadedFaceHandles = new HashSet<FontFaceHandle>();
 
-        bool m_IncludeFontFeatures;
+        const string k_ShowLegacyOptionsKey = "TextCore.FontAssetCreator.ShowLegacyOptions";
+        bool m_ShowLegacyOptions;
+        AtlasPopulationMode m_AtlasPopulationMode = AtlasPopulationMode.Dynamic;
 
 
         public void OnEnable()
@@ -203,6 +209,8 @@ namespace UnityEditor.TextCore.Text
 
             // Set Editor window size.
             minSize = new Vector2(315, minSize.y);
+
+            m_ShowLegacyOptions = EditorPrefs.GetBool(k_ShowLegacyOptionsKey, false);
 
             // Initialize & Get shader property IDs.
             TextShaderUtilities.GetShaderPropertyIDs();
@@ -436,7 +444,15 @@ namespace UnityEditor.TextCore.Text
 
             GUILayout.Space(5f);
 
+            GUILayout.BeginHorizontal();
             GUILayout.Label(m_SelectedFontAsset != null ? string.Format("Font Settings [{0}]", m_SelectedFontAsset.name) : "Font Settings", EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(m_ShowLegacyOptions ? "Hide Legacy Options" : "Show Legacy Options", EditorStyles.miniButton))
+            {
+                m_ShowLegacyOptions = !m_ShowLegacyOptions;
+                EditorPrefs.SetBool(k_ShowLegacyOptionsKey, m_ShowLegacyOptions);
+            }
+            GUILayout.EndHorizontal();
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
@@ -452,6 +468,7 @@ namespace UnityEditor.TextCore.Text
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SelectedFontAsset = null;
+                    m_AtlasPopulationMode = AtlasPopulationMode.Dynamic;
                     m_IsFontAtlasInvalid = true;
                     m_SourceFontFaces = GetFontFaces();
                     m_SourceFontFaceIndex = 0;
@@ -706,7 +723,18 @@ namespace UnityEditor.TextCore.Text
                     m_GlyphRenderMode = (GlyphRenderMode)selectedUIMode;
                 }
 
-                m_IncludeFontFeatures = EditorGUILayout.Toggle("Get Font Features", m_IncludeFontFeatures);
+                // Stay visible while Static is pending so the saved mode is never hidden.
+                if (m_ShowLegacyOptions || m_AtlasPopulationMode == AtlasPopulationMode.Static)
+                {
+                    m_AtlasPopulationMode = (AtlasPopulationMode)EditorGUILayout.IntPopup(
+                        new GUIContent("Atlas Population Mode"),
+                        (int)m_AtlasPopulationMode,
+                        new[] { new GUIContent("Dynamic"), new GUIContent("Static (Obsolete)") },
+                        new[] { (int)AtlasPopulationMode.Dynamic, (int)AtlasPopulationMode.Static });
+
+                    if (m_AtlasPopulationMode == AtlasPopulationMode.Static)
+                        EditorGUILayout.HelpBox("Static font assets are obsolete and not supported by the Advanced Text Generator. Use the Font Subsetter window to reduce font file size instead.", MessageType.Warning);
+                }
 
                 EditorGUILayout.Space();
             }
@@ -733,7 +761,7 @@ namespace UnityEditor.TextCore.Text
 
                     if (errorCode != FontEngineError.Success)
                     {
-                        Debug.LogWarning("Unable to load font face for [" + m_SourceFont.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings. You may disable it after creating the static Font Asset.", m_SourceFont);
+                        Debug.LogWarning("Unable to load font face for [" + m_SourceFont.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings.", m_SourceFont);
                     }
                     else
                     {
@@ -1513,11 +1541,6 @@ namespace UnityEditor.TextCore.Text
                 // Sort glyph and character tables.
                 fontAsset.SortAllTables();
 
-                // Get and Add Kerning Pairs to Font Asset
-                if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetAllFontFeatures();
-
-
                 // Add Font Atlas as Sub-Asset
                 fontAsset.atlasTextures = new Texture2D[] { m_FontAtlasTexture };
                 m_FontAtlasTexture.name = tex_FileName + " Atlas";
@@ -1544,6 +1567,9 @@ namespace UnityEditor.TextCore.Text
                 // Set version number of font asset
                 fontAsset.version = "1.1.0";
 
+                // Rebind to the font the atlas was just generated from.
+                fontAsset.SourceFont_EditorRef = m_SourceFont;
+
                 //Set Font Asset Type
                 fontAsset.atlasRenderMode = m_GlyphRenderMode;
 
@@ -1558,10 +1584,6 @@ namespace UnityEditor.TextCore.Text
 
                 // Sort glyph and character tables.
                 fontAsset.SortAllTables();
-
-                // Get and Add Kerning Pairs to Font Asset
-                if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetAllFontFeatures();
 
                 // Destroy Assets that will be replaced.
                 if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0)
@@ -1614,9 +1636,7 @@ namespace UnityEditor.TextCore.Text
                 //}
             }
 
-            // Set texture to non readable
-            if (fontAsset.atlasPopulationMode == AtlasPopulationMode.Static)
-                FontEngineEditorUtilities.SetAtlasTextureIsReadable(fontAsset.atlasTexture, false);
+            ApplyAtlasPopulationMode(fontAsset);
 
             // Add list of GlyphRects to font asset.
             fontAsset.freeGlyphRects = m_FreeGlyphRects;
@@ -1690,10 +1710,6 @@ namespace UnityEditor.TextCore.Text
                 // Sort glyph and character tables.
                 fontAsset.SortAllTables();
 
-                // Get and Add Kerning Pairs to Font Asset
-                if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetAllFontFeatures();
-
                 // Add Font Atlas as Sub-Asset
                 fontAsset.atlasTextures = new Texture2D[] { m_FontAtlasTexture };
                 m_FontAtlasTexture.name = tex_FileName + " Atlas";
@@ -1730,6 +1746,9 @@ namespace UnityEditor.TextCore.Text
                 // Set version number of font asset
                 fontAsset.version = "1.1.0";
 
+                // Rebind to the font the atlas was just generated from.
+                fontAsset.SourceFont_EditorRef = m_SourceFont;
+
                 //Set Font Asset Type
                 fontAsset.atlasRenderMode = m_GlyphRenderMode;
 
@@ -1744,11 +1763,6 @@ namespace UnityEditor.TextCore.Text
 
                 // Sort glyph and character tables.
                 fontAsset.SortAllTables();
-
-                // Get and Add Kerning Pairs to Font Asset
-                // TODO: Check and preserve existing adjustment pairs.
-                if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetAllFontFeatures();
 
                 // Destroy Assets that will be replaced.
                 if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0)
@@ -1805,9 +1819,7 @@ namespace UnityEditor.TextCore.Text
             //var pngData = destination_Atlas.EncodeToPNG();
             //File.WriteAllBytes("Assets/Textures/Debug Distance Field.png", pngData);
 
-            // Set texture to non readable
-            if (fontAsset.atlasPopulationMode == AtlasPopulationMode.Static)
-                FontEngineEditorUtilities.SetAtlasTextureIsReadable(fontAsset.atlasTexture, false);
+            ApplyAtlasPopulationMode(fontAsset);
 
             // Add list of GlyphRects to font asset.
             fontAsset.freeGlyphRects = m_FreeGlyphRects;
@@ -1830,6 +1842,46 @@ namespace UnityEditor.TextCore.Text
 
             // NEED TO GENERATE AN EVENT TO FORCE A REDRAW OF ANY TEXTMESHPRO INSTANCES THAT MIGHT BE USING THIS FONT ASSET
             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
+        }
+
+        void ApplyAtlasPopulationMode(FontAsset fontAsset)
+        {
+            if (m_AtlasPopulationMode == AtlasPopulationMode.Static)
+            {
+                fontAsset.atlasPopulationMode = AtlasPopulationMode.Static;
+                FontEngineEditorUtilities.SetAtlasTextureIsReadable(fontAsset.atlasTexture, false);
+                return;
+            }
+
+            EnsureDynamicFontAsset(fontAsset);
+        }
+
+        // Keeps the baked atlas while the asset stays Dynamic.
+        internal static void EnsureDynamicFontAsset(FontAsset fontAsset)
+        {
+            // A dynamic font asset needs a dynamic source font, or the switch to Dynamic mode reverts itself.
+            Font sourceFont = fontAsset.SourceFont_EditorRef;
+            if (sourceFont != null && AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(sourceFont)) is TrueTypeFontImporter importer && importer.fontTextureCase != FontTextureCase.Dynamic)
+            {
+                importer.fontTextureCase = FontTextureCase.Dynamic;
+                importer.SaveAndReimport();
+            }
+
+            if (fontAsset.atlasPopulationMode != AtlasPopulationMode.Dynamic && fontAsset.atlasPopulationMode != AtlasPopulationMode.DynamicOS)
+                fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+
+            // Without this the baked glyph/character tables are cleared on the next build or editor quit.
+            fontAsset.clearDynamicDataOnBuild = false;
+
+            Texture2D[] atlasTextures = fontAsset.atlasTextures;
+            if (atlasTextures != null)
+            {
+                foreach (Texture2D texture in atlasTextures)
+                {
+                    if (texture != null && !texture.isReadable)
+                        FontEngineEditorUtilities.SetAtlasTextureIsReadable(texture, true);
+                }
+            }
         }
 
         /// <summary>
@@ -1855,7 +1907,6 @@ namespace UnityEditor.TextCore.Text
             settings.referencedFontAssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m_ReferencedFontAsset));
             settings.referencedTextAssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m_CharactersFromFile));
             settings.renderMode = (int)m_GlyphRenderMode;
-            settings.includeFontFeatures = m_IncludeFontFeatures;
 
             return settings;
         }
@@ -1882,7 +1933,6 @@ namespace UnityEditor.TextCore.Text
             m_ReferencedFontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(AssetDatabase.GUIDToAssetPath(settings.referencedFontAssetGUID));
             m_CharactersFromFile = AssetDatabase.LoadAssetAtPath<TextAsset>(AssetDatabase.GUIDToAssetPath(settings.referencedTextAssetGUID));
             m_GlyphRenderMode = (GlyphRenderMode)settings.renderMode;
-            m_IncludeFontFeatures = settings.includeFontFeatures;
         }
 
         /// <summary>
@@ -1993,140 +2043,6 @@ namespace UnityEditor.TextCore.Text
                         m_GlyphRenderMode = GlyphRenderMode.SDFAA;
                         break;
                 }
-            }
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
-        FontFeatureTable GetAllFontFeatures()
-        {
-            FontFeatureTable fontFeatureTable = new FontFeatureTable();
-
-            PopulateGlyphAdjustmentTable(fontFeatureTable);
-            PopulateLigatureTable(fontFeatureTable);
-            PopulateDiacriticalMarkAdjustmentTables(fontFeatureTable);
-
-            return fontFeatureTable;
-        }
-
-        void PopulateGlyphAdjustmentTable(FontFeatureTable fontFeatureTable)
-        {
-            GlyphPairAdjustmentRecord[] adjustmentRecords = FontEngine.GetPairAdjustmentRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
-
-            if (adjustmentRecords == null)
-                return;
-
-            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
-
-            for (int i = 0; i < adjustmentRecords.Length && adjustmentRecords[i].firstAdjustmentRecord.glyphIndex != 0; i++)
-            {
-                GlyphPairAdjustmentRecord record = adjustmentRecords[i];
-
-                // Adjust values currently in Units per EM to make them relative to Sampling Point Size.
-                GlyphValueRecord valueRecord = record.firstAdjustmentRecord.glyphValueRecord;
-                valueRecord.xAdvance *= emScale;
-
-                GlyphPairAdjustmentRecord newRecord = new GlyphPairAdjustmentRecord { firstAdjustmentRecord = new GlyphAdjustmentRecord { glyphIndex = record.firstAdjustmentRecord.glyphIndex, glyphValueRecord = valueRecord }, secondAdjustmentRecord = record.secondAdjustmentRecord };
-
-                fontFeatureTable.glyphPairAdjustmentRecords.Add(newRecord);
-            }
-
-            fontFeatureTable.SortGlyphPairAdjustmentRecords();
-        }
-
-        void PopulateLigatureTable(FontFeatureTable fontFeatureTable)
-        {
-            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] ligatureRecords = FontEngine.GetLigatureSubstitutionRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
-            if (ligatureRecords != null)
-                AddLigatureRecords(fontFeatureTable, ligatureRecords);
-        }
-
-        void AddLigatureRecords(FontFeatureTable fontFeatureTable, LigatureSubstitutionRecord[] records)
-        {
-            for (int i = 0; i < records.Length; i++)
-            {
-                LigatureSubstitutionRecord record = records[i];
-
-                if (records[i].componentGlyphIDs == null || records[i].ligatureGlyphID == 0)
-                    return;
-
-                uint firstComponentGlyphIndex = record.componentGlyphIDs[0];
-
-                LigatureSubstitutionRecord newRecord = new LigatureSubstitutionRecord() { componentGlyphIDs = record.componentGlyphIDs, ligatureGlyphID = record.ligatureGlyphID };
-
-                // Add new record to lookup
-                if (!fontFeatureTable.m_LigatureSubstitutionRecordLookup.ContainsKey(firstComponentGlyphIndex))
-                {
-                    fontFeatureTable.m_LigatureSubstitutionRecordLookup.Add(firstComponentGlyphIndex, new List<LigatureSubstitutionRecord> { newRecord });
-                }
-                else
-                {
-                    fontFeatureTable.m_LigatureSubstitutionRecordLookup[firstComponentGlyphIndex].Add(newRecord);
-                }
-
-                fontFeatureTable.m_LigatureSubstitutionRecords.Add(newRecord);
-            }
-        }
-
-        void PopulateDiacriticalMarkAdjustmentTables(FontFeatureTable fontFeatureTable)
-        {
-            MarkToBaseAdjustmentRecord[] markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
-            if (markToBaseRecords != null)
-                AddMarkToBaseAdjustmentRecords(fontFeatureTable, markToBaseRecords);
-
-            MarkToMarkAdjustmentRecord[] markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_FontFaceHandle, m_AvailableGlyphsToAdd);
-            if (markToMarkRecords != null)
-                AddMarkToMarkAdjustmentRecords(fontFeatureTable, markToMarkRecords);
-
-        }
-
-        void AddMarkToBaseAdjustmentRecords(FontFeatureTable fontFeatureTable, MarkToBaseAdjustmentRecord[] records)
-        {
-            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
-
-            for (int i = 0; i < records.Length; i++)
-            {
-                MarkToBaseAdjustmentRecord record = records[i];
-
-                uint key = record.markGlyphID << 16 | record.baseGlyphID;
-
-                if (fontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.ContainsKey(key))
-                    continue;
-
-                MarkToBaseAdjustmentRecord newRecord = new MarkToBaseAdjustmentRecord {
-                    baseGlyphID = record.baseGlyphID,
-                    baseGlyphAnchorPoint = new GlyphAnchorPoint { xCoordinate = record.baseGlyphAnchorPoint.xCoordinate * emScale, yCoordinate = record.baseGlyphAnchorPoint.yCoordinate * emScale },
-                    markGlyphID = record.markGlyphID,
-                    markPositionAdjustment = new MarkPositionAdjustment { xPositionAdjustment = record.markPositionAdjustment.xPositionAdjustment * emScale, yPositionAdjustment = record.markPositionAdjustment.yPositionAdjustment * emScale } };
-
-                fontFeatureTable.MarkToBaseAdjustmentRecords.Add(newRecord);
-                fontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.Add(key, newRecord);
-            }
-        }
-
-        void AddMarkToMarkAdjustmentRecords(FontFeatureTable fontFeatureTable, MarkToMarkAdjustmentRecord[] records)
-        {
-            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
-
-            for (int i = 0; i < records.Length; i++)
-            {
-                MarkToMarkAdjustmentRecord record = records[i];
-
-                uint key = record.combiningMarkGlyphID << 16 | record.baseMarkGlyphID;
-
-                if (fontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.ContainsKey(key))
-                    continue;
-
-                MarkToMarkAdjustmentRecord newRecord = new MarkToMarkAdjustmentRecord {
-                    baseMarkGlyphID = record.baseMarkGlyphID,
-                    baseMarkGlyphAnchorPoint = new GlyphAnchorPoint { xCoordinate = record.baseMarkGlyphAnchorPoint.xCoordinate * emScale, yCoordinate = record.baseMarkGlyphAnchorPoint.yCoordinate * emScale},
-                    combiningMarkGlyphID = record.combiningMarkGlyphID,
-                    combiningMarkPositionAdjustment = new MarkPositionAdjustment { xPositionAdjustment = record.combiningMarkPositionAdjustment.xPositionAdjustment * emScale, yPositionAdjustment = record.combiningMarkPositionAdjustment.yPositionAdjustment * emScale } };
-
-                fontFeatureTable.MarkToMarkAdjustmentRecords.Add(newRecord);
-                fontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.Add(key, newRecord);
             }
         }
     }

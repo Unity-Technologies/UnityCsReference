@@ -27,15 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsDiscoverable;
         public bool isDiscoverable => m_IsDiscoverable;
 
-        public string displayName
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(m_Product?.displayName))
-                    return m_Product.displayName;
-                return m_VersionList?.primary.displayName ?? string.Empty;
-            }
-        }
+        public string displayName => m_VersionList?.primary.displayName ?? string.Empty;
 
         public PackageState state
         {

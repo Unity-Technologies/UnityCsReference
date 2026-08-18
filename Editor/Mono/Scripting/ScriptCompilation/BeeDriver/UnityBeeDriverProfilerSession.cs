@@ -33,17 +33,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (m_CurrentPlayerBuildProfilerOutputFile == null)
                 return;
 
+            // Clear the session before writing, so a failed write still leaves it finished. Otherwise the
+            // next Finish() retries the write and reports the same failure again.
+            var outputFile = m_CurrentPlayerBuildProfilerOutputFile;
+            var tinyProfiler = _tinyProfiler;
+            m_CurrentPlayerBuildProfilerOutputFile = null;
+            _tinyProfiler = null;
+
             foreach (var task in m_TasksToWaitForBeforeFinishing)
                 task.Wait();
 
-            _tinyProfiler.Write(m_CurrentPlayerBuildProfilerOutputFile.ToString(), new ChromeTraceOptions
+            tinyProfiler.Write(outputFile.ToString(), new ChromeTraceOptions
             {
                 ProcessName = "Unity",
                 ProcessId = System.Diagnostics.Process.GetCurrentProcess().Id,
                 ProcessSortIndex = -100
             });
-            m_CurrentPlayerBuildProfilerOutputFile = null;
-            _tinyProfiler = null;
         }
 
         static public void BeginSection(string name)

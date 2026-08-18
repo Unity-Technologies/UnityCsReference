@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -68,7 +69,9 @@ namespace UnityEditor.UIElements
                     }
                     else
                     {
-                        if (!string.IsNullOrEmpty(overriddenFieldName))
+                        // An attribute that overrides an inherited one binds against the original field, unless it
+                        // declares its own binding property with [CreateProperty], in which case it binds to itself.
+                        if (!string.IsNullOrEmpty(overriddenFieldName) && serializedField.GetCustomAttribute<CreatePropertyAttribute>() == null)
                         {
                             // Extract the binding path from the overridden field if it exists, otherwise use the overridden field name as the binding path.
                             var member = dataDescription.serializedDataType.GetMember(overriddenFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -76,9 +79,11 @@ namespace UnityEditor.UIElements
                             {
                                 m_BindingPath = overriddenBindingPathAttribute.path;
                             }
+
+                            m_BindingPath ??= overriddenFieldName;
                         }
 
-                        m_BindingPath ??= overriddenFieldName ?? serializedField.Name;
+                        m_BindingPath ??= serializedField.Name;
                     }
                 }
 
@@ -321,11 +326,34 @@ namespace UnityEditor.UIElements
                 {
                     SetSerializedValue(uxmlSerializedData, defaultValueClone, UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
                 }
+                else if (isUxmlObject)
+                {
+                    // The importer builds nested UxmlObject data without default values. (UUM-148774)
+                    var value = GetSerializedValue(uxmlSerializedData);
+                    if (value is IList list)
+                    {
+                        for (var i = 0; i < list.Count; ++i)
+                            SyncNestedDefaultValues(list[i] as UxmlSerializedData);
+                    }
+                    else
+                    {
+                        SyncNestedDefaultValues(value as UxmlSerializedData);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Debug.LogException(new Exception($"Failed to sync {serializedField.Name} default value", ex));
             }
+        }
+
+        static void SyncNestedDefaultValues(UxmlSerializedData nestedData)
+        {
+            if (nestedData == null)
+                return;
+
+            var desc = UxmlSerializedDataRegistry.GetDescription(nestedData.GetType().DeclaringType.FullName);
+            desc?.SyncDefaultValues(nestedData, false);
         }
 
         public bool TryGetValueFromObject(object objInstance, out object value)

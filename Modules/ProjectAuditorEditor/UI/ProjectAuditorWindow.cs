@@ -35,12 +35,21 @@ namespace Unity.ProjectAuditor.Editor.UI
             Valid
         }
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        static readonly string[] AreaNames = Enum.GetNames(typeof(Areas)).Where(a => a != "None" && a != "All").ToArray();
-#pragma warning restore UA2001
-        static string[] NicifiedAreaNames { get { if (s_NicifiedAreaNames == null) s_NicifiedAreaNames = Array.ConvertAll(AreaNames, ObjectNames.NicifyVariableName); return s_NicifiedAreaNames; } }
-        [AutoStaticsCleanupOnCodeReload]
+        static readonly string[] s_AreaNames = Array.ConvertAll(AreasExtensions.AlphabeticalAreas, (a) => a.ToString());
+
+        static string[] NicifiedAreaNames
+        {
+            get
+            {
+                if (s_NicifiedAreaNames == null)
+                    s_NicifiedAreaNames = Array.ConvertAll(AreasExtensions.AlphabeticalAreas, (a) => a.ToFrontendString());
+                return s_NicifiedAreaNames;
+            }
+        }
+
+        [NoAutoStaticsCleanup]
         static string[] s_NicifiedAreaNames;
+
         [AutoStaticsCleanupOnCodeReload]
         static ProjectAuditorWindow s_Instance;
 
@@ -1781,7 +1790,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         internal void SetAreaSelection(TreeViewSelection selection)
         {
-            var selectedStrings = selection.GetSelectedStrings(AreaNames, true, true);
+            var selectedStrings = selection.GetSelectedStrings(s_AreaNames, true, true);
 
             m_SelectedAreas = Areas.None;
             foreach (var areaString in selectedStrings)

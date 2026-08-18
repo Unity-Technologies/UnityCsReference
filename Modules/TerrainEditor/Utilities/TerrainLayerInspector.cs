@@ -215,7 +215,7 @@ namespace UnityEditor
                 if (maskMapUsed)
                 {
                     ++EditorGUI.indentLevel;
-                    m_ShowMaskRemap = EditorGUILayout.Foldout(m_ShowMaskRemap, s_Styles.channelRemapping);
+                    m_ShowMaskRemap = EditorGUILayout.Foldout(m_ShowMaskRemap, s_Styles.channelRemapping, true);
                     if (m_ShowMaskRemap)
                     {
                         DoMinMaxLabels(s_Styles.min, s_Styles.max, EditorStyles.miniLabel);

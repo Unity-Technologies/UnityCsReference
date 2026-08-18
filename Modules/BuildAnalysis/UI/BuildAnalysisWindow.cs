@@ -20,12 +20,11 @@ namespace UnityEditor.Build.Analysis
         void RegenerateAnalysis(BuildEntry build);
     }
 
-    [EditorWindowTitle(title = "Build Analysis", icon = "UnityEditor.ProfilerWindow")]
+    [EditorWindowTitle(title = "Build Analysis", icon = "BuildAnalysisWindow")]
     internal class BuildAnalysisWindow : EditorWindow, IBuildListActions
     {
         private const string k_OpenWindowCommand = "ContentBuild/OpenBuildAnalysisWindow";
 
-        private const string k_WindowTitle = "Build Analysis";
         private const string k_UxmlPath = "BuildAnalysis/UXML/BuildAnalysisWindow.uxml";
         private const string k_UssPath = "BuildAnalysis/StyleSheets/BuildAnalysisWindow.uss";
         private const string k_UssClassDark = "build-analysis-window--dark";
@@ -38,6 +37,10 @@ namespace UnityEditor.Build.Analysis
 
         private const string k_InspectorToggleTooltip = "Toggle Inspector";
         private const string k_InspectorToggleDisabledTooltip = "The inspector is only available on the Assets tab";
+
+        private const string k_HelpButtonTooltip = "Open Build Analysis documentation";
+        // Manual topic slug (Documentation/ManualDocs/md/build-analysis-window-reference.md).
+        private const string k_DocumentationPage = "build-analysis-window-reference";
 
         private const string k_LoadingMessage = "Analyzing build…";
 
@@ -65,7 +68,6 @@ namespace UnityEditor.Build.Analysis
             }
 
             var window = GetWindow<BuildAnalysisWindow>(false);
-            window.titleContent = new GUIContent(k_WindowTitle);
             window.minSize = new Vector2(750, 400);
         }
 
@@ -144,6 +146,8 @@ namespace UnityEditor.Build.Analysis
             if (tabViewport == null)
                 throw new InvalidOperationException($"{BuildAnalysisConstants.k_ConsoleLogPrefix} TabView content viewport  .unity-tab-view__content-viewport not found.");
 
+            SetupHelpButton(tabViewport);
+
             m_InspectorToggle = new ToolbarToggle
             {
                 name = "inspector-toggle",
@@ -158,6 +162,23 @@ namespace UnityEditor.Build.Analysis
                 EditorPrefs.SetBool(k_InspectorOpenKey, evt.newValue);
                 m_TabHost.SetInspectorOpen(evt.newValue);
             });
+        }
+
+        private void SetupHelpButton(VisualElement tabViewport)
+        {
+            var helpButton = new ToolbarButton(() => Help.BrowseURL(GetDocumentationUrl()))
+            {
+                name = "help-button",
+                tooltip = k_HelpButtonTooltip,
+            };
+            helpButton.AddToClassList("help-button");
+            tabViewport.Add(helpButton);
+        }
+
+        private static string GetDocumentationUrl()
+        {
+            var version = UnityEditorInternal.InternalEditorUtility.GetUnityVersion();
+            return $"https://docs.unity3d.com/{version.Major}.{version.Minor}/Documentation/Manual/{k_DocumentationPage}.html";
         }
 
         private void SetupTabs()

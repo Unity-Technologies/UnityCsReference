@@ -11,6 +11,7 @@ using UnityEditor;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class StreamingAssetsFolderAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAA3002 = nameof(PAA3002);

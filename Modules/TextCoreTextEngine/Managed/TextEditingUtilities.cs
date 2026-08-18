@@ -145,10 +145,10 @@ namespace UnityEngine
                 var newText = value ?? string.Empty;
                 if (useAdvancedText)
                 {
-                    if (newText == m_Text)
+                    bool nativeChanged = TextEditingService.SetText(nativeTgi, newText);
+                    if (!nativeChanged && newText == m_Text)
                         return;
                     m_Text = newText;
-                    TextEditingService.SetText(nativeTgi, newText);
                 }
                 else
                 {

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -221,7 +222,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                {
                    if (registryInfo.compliance.status == RegistryComplianceStatus.NonCompliant)
                    {
-                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry", L10n.Tr("OK"))
+                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry", L10n.Tr("OK"), new Vector2(340f, 165f))
                        {
                            headerIcon = Icon.RegistryErrorLarge,
                            headerMainText = registryInfo.name,

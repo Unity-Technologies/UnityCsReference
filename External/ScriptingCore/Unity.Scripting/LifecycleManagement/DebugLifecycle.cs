@@ -11,6 +11,11 @@ namespace Unity.Scripting.LifecycleManagement
             verificationEnabled = IsVerificationEnabled();
         }
 
+        /// <summary>
+        /// Check before building log messages on hot paths to avoid interpolation allocations when logging is disabled.
+        /// </summary>
+        public static bool LoggingEnabled => loggingEnabled;
+
         public static void Log(string message)
         {
             if (loggingEnabled)

@@ -145,7 +145,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
 
         if (invalidSignaturePackage != null)
         {
-            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Invalid Signature"),"invalidSignatureInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"))
+            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Invalid Signature"),"invalidSignatureInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"), new Vector2(340f, 150f))
             {
                 headerIcon = Icon.PackageErrorLarge,
                 headerMainText = L10n.Tr("This project contains one or more packages with invalid signatures."),
@@ -159,7 +159,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         }
         else if (unsignedPackage != null)
         {
-            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Missing Signature"), "unsignedPackageInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"))
+            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Missing Signature"), "unsignedPackageInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"), new Vector2(340f, 150f))
             {
                 headerIcon = Icon.PackageWarningLarge,
                 headerMainText = L10n.Tr("This project contains one or more unsigned packages."),

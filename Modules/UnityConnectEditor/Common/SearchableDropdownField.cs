@@ -42,8 +42,12 @@ namespace UnityEditor.Connect
         void ShowPicker()
         {
             var input = this.Q(className: BasePopupField<string, string>.inputUssClassName) ?? (VisualElement)this;
-            var anchor = EditorMenuExtensions.GUIToScreenRect(this, input.worldBound);
-            new SearchablePicker(this, input.worldBound.width).Show(anchor);
+            // AdvancedDropdown.Show applies GUIUtility.GUIToScreenRect internally, which is
+            // unreliable from UI Toolkit pointer callbacks. Compute the correct screen rect
+            // via the panel-aware helper, then pre-invert so the internal conversion cancels.
+            var screenRect = EditorMenuExtensions.GUIToScreenRect(this, input.worldBound);
+            var anchor = GUIUtility.ScreenToGUIRect(screenRect);
+            new SearchablePicker(this).Show(anchor);
         }
 
         sealed class SearchablePicker : AdvancedDropdown
@@ -51,11 +55,14 @@ namespace UnityEditor.Connect
             readonly SearchableDropdownField m_Field;
             string[] m_Items;
 
-            public SearchablePicker(SearchableDropdownField field, float anchorWidth)
+            public SearchablePicker(SearchableDropdownField field)
                 : base(new AdvancedDropdownState())
             {
                 m_Field = field;
-                minimumSize = new Vector2(Mathf.Max(anchorWidth, 200f), 250f);
+                // AdvancedDropdown grows to fit content and only caps at the screen edge; for a
+                // field embedded in a settings tab, an org with many projects would flip the
+                // popup upward against the top of the screen. Cap the height so it stays anchored.
+                maximumSize = new Vector2(4000f, 400f);
             }
 
             protected override AdvancedDropdownItem BuildRoot()

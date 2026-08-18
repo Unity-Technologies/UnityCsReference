@@ -10,6 +10,7 @@ using UnityEditor;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class StrippingAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS0009 = nameof(PAS0009);
