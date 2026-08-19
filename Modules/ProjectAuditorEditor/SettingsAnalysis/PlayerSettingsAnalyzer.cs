@@ -12,6 +12,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class PlayerSettingsAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS0002 = nameof(PAS0002);

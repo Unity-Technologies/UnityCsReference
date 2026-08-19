@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.TextCore;
@@ -88,27 +87,23 @@ namespace UnityEngine.UIElements
             /// </summary>
             public readonly int Count;
             readonly List<NativeSlice<Vertex>> m_Vertices;
+            readonly UIRQuadMap m_QuadMap;
             readonly TextElement m_TextElement;
 
             internal GlyphsEnumerable(TextElement te, List<NativeSlice<Vertex>> vertices)
             {
                 m_TextElement = te;
                 m_Vertices = vertices;
+                m_QuadMap = null;
                 Count = ComputeCount(vertices);
             }
 
-            internal GlyphsEnumerable(TextElement te, List<NativeSlice<Vertex>> vertices, Span<ATGMeshInfo> meshInfos)
+            internal GlyphsEnumerable(TextElement te, List<NativeSlice<Vertex>> vertices, UIRQuadMap quadMap)
             {
                 m_TextElement = te;
                 m_Vertices = vertices;
+                m_QuadMap = quadMap;
                 Count = ComputeCount(vertices);
-
-                foreach (var meshInfo in meshInfos)
-                {
-                    var textAsset = Object.FindObjectFromInstanceIDThreadSafe(meshInfo.textAssetId) as TextCore.Text.TextAsset;
-                    if (textAsset is FontAsset fa && fa.atlasTextureCount > 1)
-                        Debug.LogWarning("PostProcessTextVertices with ATG does not support this Multi-Atlas.");
-                }
             }
 
             static int ComputeCount(List<NativeSlice<Vertex>> verts)
@@ -124,7 +119,7 @@ namespace UnityEngine.UIElements
             /// </summary>
             public GlyphsEnumerator GetEnumerator()
             {
-                return new GlyphsEnumerator(m_TextElement, m_Vertices);
+                return new GlyphsEnumerator(m_TextElement, m_Vertices, m_QuadMap);
             }
         }
 
@@ -141,12 +136,14 @@ namespace UnityEngine.UIElements
 
             readonly TextElement m_TextElement;
             readonly List<NativeSlice<Vertex>> m_Vertices;
+            readonly UIRQuadMap m_QuadMap;
             int m_NextIndex;
 
-            internal GlyphsEnumerator(TextElement textElement, List<NativeSlice<Vertex>> vertices)
+            internal GlyphsEnumerator(TextElement textElement, List<NativeSlice<Vertex>> vertices, UIRQuadMap quadMap)
             {
                 m_TextElement = textElement;
                 m_Vertices = vertices;
+                m_QuadMap = quadMap;
                 m_NextIndex = 0;
                 Current = default;
             }
@@ -192,6 +189,9 @@ namespace UnityEngine.UIElements
 
             bool MoveNextAdvanced()
             {
+                if (m_QuadMap == null)
+                    return false;
+
                 var handle = m_TextElement.uitkTextHandle;
                 var tgi = handle.textGenerationInfo;
                 var count = TextGenerationInfo.GetGlyphCount(tgi);
@@ -205,9 +205,10 @@ namespace UnityEngine.UIElements
                     if (info.textElementInfoIndex < 0 || info.meshIndex < 0)
                         continue;
 
-                    string linkID = ResolveLinkID(handle, info.linkID);
+                    if (!m_QuadMap.TryGetQuad(info.meshIndex, info.textElementInfoIndex, m_Vertices, out var slice))
+                        continue;
 
-                    var slice = m_Vertices[info.meshIndex].Slice(info.textElementInfoIndex * 4, 4);
+                    string linkID = ResolveLinkID(handle, info.linkID);
                     Current = new Glyph(slice, info.lineIndex, linkID, (GlyphKind)info.kind);
                     return true;
                 }

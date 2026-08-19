@@ -12,6 +12,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
+    [MigratedToRulesPackage(2)]
     class TextureUtilizationAnalyzer : TextureModuleAnalyzer
     {
         internal const string PAA0005 = nameof(PAA0005);

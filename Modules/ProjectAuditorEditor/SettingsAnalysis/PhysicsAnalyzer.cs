@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class PhysicsAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS0013 = nameof(PAS0013);

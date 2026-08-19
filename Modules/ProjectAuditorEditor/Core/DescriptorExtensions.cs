@@ -18,7 +18,7 @@ namespace Unity.ProjectAuditor.Editor.Core
     {
         internal static string GetAreasSummary(this Descriptor descriptor)
         {
-            return DescriptorLibrary.GetAreasString(descriptor.Areas);
+            return descriptor.Areas.Value.ToFrontendString();
         }
 
         internal static bool MatchesAnyAreas(this Descriptor descriptor, Areas areasToMatch)

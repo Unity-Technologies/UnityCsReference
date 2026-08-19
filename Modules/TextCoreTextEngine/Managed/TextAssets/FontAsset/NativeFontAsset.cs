@@ -120,7 +120,16 @@ namespace UnityEngine.TextCore.Text
                     continue;
                 }
 
-                fallbackList.Add(fallback.nativeFontAsset);
+                // When native creation fails (e.g. missing source font), hoist the fallback's own
+                // chain so its descendants stay reachable instead of dropping the whole subtree
+                var nativeFallback = fallback.nativeFontAsset;
+                if (nativeFallback == IntPtr.Zero)
+                {
+                    fallbackList.AddRange(fallback.GetFallbacks());
+                    continue;
+                }
+
+                fallbackList.Add(nativeFallback);
             }
             return fallbackList.ToArray();
         }
@@ -148,6 +157,9 @@ namespace UnityEngine.TextCore.Text
                 // Recursively check children for recursion
                 foreach (var child in fontAsset.fallbackFontAssetTable)
                 {
+                    if (child == null)
+                        continue;
+
                     if (HasRecursionInternal(child))
                     {
                         return true;

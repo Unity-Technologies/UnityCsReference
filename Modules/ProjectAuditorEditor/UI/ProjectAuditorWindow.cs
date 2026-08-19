@@ -34,9 +34,20 @@ namespace Unity.ProjectAuditor.Editor.UI
             Valid
         }
 
-        #pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code. This pre-existing usage has been suppressed, but should be rewritten if possible.
-        static readonly string[] AreaNames = Enum.GetNames(typeof(Areas)).Where(a => a != "None" && a != "All").ToArray();
-#pragma warning restore UA2001
+        static readonly string[] s_AreaNames = Array.ConvertAll(AreasExtensions.AlphabeticalAreas, (a) => a.ToString());
+
+        static string[] NicifiedAreaNames
+        {
+            get
+            {
+                if (s_NicifiedAreaNames == null)
+                    s_NicifiedAreaNames = Array.ConvertAll(AreasExtensions.AlphabeticalAreas, (a) => a.ToFrontendString());
+                return s_NicifiedAreaNames;
+            }
+        }
+
+        static string[] s_NicifiedAreaNames;
+
         static ProjectAuditorWindow s_Instance;
 
         public static ProjectAuditorWindow Instance
@@ -1376,7 +1387,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 EditorGUILayout.LabelField(Contents.AreaFilter, LayoutSize.FilterOptionsLabelWidth);
 
-                if (AreaNames.Length > 0)
+                if (s_AreaNames.Length > 0)
                 {
                     using (new EditorGUI.DisabledScope(!IsAnalysisValid() || SelectionWindow.IsOpen<AreaSelectionWindow>()))
                     {
@@ -1398,7 +1409,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                                 var screenPosition = GUIUtility.GUIToScreenPoint(windowPosition);
 
                                 SelectionWindow.Open<AreaSelectionWindow>("Areas", screenPosition.x, screenPosition.y, m_AreaSelection,
-                                    AreaNames, selection =>
+                                    s_AreaNames, selection =>
                                     {
                                         var selectEvent = AnalyticsReporter.BeginAnalytic();
                                         SetAreaSelection(selection);
@@ -1738,7 +1749,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         internal void SetAreaSelection(TreeViewSelection selection)
         {
-            var selectedStrings = selection.GetSelectedStrings(AreaNames, true);
+            var selectedStrings = selection.GetSelectedStrings(s_AreaNames, true);
 
             m_SelectedAreas = Areas.None;
             foreach (var areaString in selectedStrings)
@@ -1765,7 +1776,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (m_AreaSelectionSummary == "All")
                     {
-                        m_AreaSelection.SetAll(AreaNames);
+                        m_AreaSelection.SetAll(s_AreaNames);
                         m_SelectedAreas = Areas.All;
                     }
                     else if (m_AreaSelectionSummary != "None")
@@ -1777,7 +1788,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }
                 else
                 {
-                    m_AreaSelection.SetAll(AreaNames);
+                    m_AreaSelection.SetAll(s_AreaNames);
                     m_SelectedAreas = Areas.All;
                 }
             }

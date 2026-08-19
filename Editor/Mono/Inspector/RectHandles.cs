@@ -251,6 +251,7 @@ namespace UnityEditor
         }
 
         static Vector3[] s_TempVectors = System.Array.Empty<Vector3>();
+
         public static void DrawPolyLineWithShadow(Color shadowColor, Vector2 screenOffset, params Vector3[] points)
         {
             Camera cam = Camera.current;
@@ -261,7 +262,7 @@ namespace UnityEditor
                 s_TempVectors = new Vector3[points.Length];
 
             for (int i = 0; i < points.Length; i++)
-                s_TempVectors[i] = cam.ScreenToWorldPoint(cam.WorldToScreenPoint(points[i]) + (Vector3)screenOffset);
+                s_TempVectors[i] = HandleUtility.WorldPointWithScreenOffset(cam, points[i], screenOffset);
 
             Color oldColor = Handles.color;
 
@@ -287,8 +288,8 @@ namespace UnityEditor
             shadowColor.a = shadowColor.a * oldColor.a;
             Handles.color = shadowColor;
             Handles.DrawDottedLine(
-                cam.ScreenToWorldPoint(cam.WorldToScreenPoint(p1) + (Vector3)screenOffset),
-                cam.ScreenToWorldPoint(cam.WorldToScreenPoint(p2) + (Vector3)screenOffset), screenSpaceSize);
+                HandleUtility.WorldPointWithScreenOffset(cam, p1, screenOffset),
+                HandleUtility.WorldPointWithScreenOffset(cam, p2, screenOffset), screenSpaceSize);
 
             // line itself
             Handles.color = oldColor;

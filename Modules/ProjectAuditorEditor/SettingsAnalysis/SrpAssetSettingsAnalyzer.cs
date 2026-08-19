@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class SrpAssetSettingsAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS1008 = nameof(PAS1008);

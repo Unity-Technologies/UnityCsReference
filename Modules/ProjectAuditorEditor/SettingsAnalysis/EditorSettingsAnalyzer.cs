@@ -9,6 +9,7 @@ using UnityEditor;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class EditorSettingsAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS0035 = nameof(PAS0035);

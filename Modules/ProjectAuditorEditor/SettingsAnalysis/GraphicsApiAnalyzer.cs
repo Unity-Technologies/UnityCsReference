@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class GraphicsApiAnalyzer : SettingsModuleAnalyzer
     {
         const string documentationUrl = "https://docs.unity3d.com/Manual/GraphicsAPIs.html";

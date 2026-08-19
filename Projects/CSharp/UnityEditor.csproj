@@ -9595,6 +9595,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AnalyticsScrubberProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AnalyticsScrubberProxy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
     </Compile>
@@ -10182,6 +10185,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Sidebar\SidebarRow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Sidebar\SidebarRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AnalyticsScrubber.bindings.cs">
+      <Link>Modules\PackageManager\Editor\Managed\AnalyticsScrubber.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs</Link>
@@ -14652,9 +14658,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsCreationMenu.cs">
       <Link>Modules\UIElementsEditor\Text\PanelTextSettingsCreationMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsEditor.cs">
-      <Link>Modules\UIElementsEditor\Text\PanelTextSettingsEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\Text\PanelTextSettingsImporter.cs">
       <Link>Modules\UIElementsEditor\Text\PanelTextSettingsImporter.cs</Link>

@@ -108,6 +108,8 @@ namespace UnityEditor.UIElements
                 var editorThemes = ThemeUtility.GetEditorThemesToDisplayName();
                 var runtimeThemes = ThemeUtility.GetRuntimeThemesToDisplayName();
 
+                // Build into locals so a re-entrant themeFilesChanged callback can't null the
+                // fields mid-build and cause an NRE when we continue iterating.
                 var newChoices = new List<string>();
                 var newData = new Dictionary<string, (CanvasTheme, ThemeStyleSheet)>();
 

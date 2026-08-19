@@ -11,7 +11,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor.TextCore.Text
 {
-    [CustomEditor(typeof(TextSettings))]
+    [CustomEditor(typeof(TextSettings), editorForChildClasses: true)]
     public class TextSettingsEditor : Editor
     {
         internal class Styles

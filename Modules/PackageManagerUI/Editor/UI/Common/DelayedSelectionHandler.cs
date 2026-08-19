@@ -93,6 +93,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package != null && page != null)
             {
                 m_PageManager.activePage = page;
+                if (page.visualStates.Get(package.uniqueId) is { visible: false })
+                {
+                    page.searchText = string.Empty;
+                    page.ClearFilters();
+                }
                 page.SetNewSelection(package.uniqueId, false);
                 return;
             }

@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
+    [MigratedToRulesPackage(2)]
     class ShaderAnalyzer : ShaderModuleAnalyzer
     {
         internal const string PAA2000 = nameof(PAA2000);

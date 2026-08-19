@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
+    [MigratedToRulesPackage(2)]
     class TimeSettingsAnalyzer : SettingsModuleAnalyzer
     {
         internal const string PAS0016 = nameof(PAS0016);

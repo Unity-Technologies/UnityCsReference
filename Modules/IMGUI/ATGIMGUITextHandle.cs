@@ -288,6 +288,7 @@ namespace UnityEngine
                     continue;
                 fa = textAsset as FontAsset;
                 int atlasCount = fa.atlasTextures.Length;
+                bool isColorFont = fa.IsColor();
 
                 var sdfScale = 0;
                 if (!fa.IsBitmap())
@@ -341,10 +342,20 @@ namespace UnityEngine
                             binding.vertexData[vertexOffset + 2].uv2 = uv2;
                             binding.vertexData[vertexOffset + 3].uv2 = uv2;
 
-                            binding.vertexData[vertexOffset + 0].color = te.bottomLeft.color;
-                            binding.vertexData[vertexOffset + 1].color = te.topLeft.color;
-                            binding.vertexData[vertexOffset + 2].color = te.topRight.color;
-                            binding.vertexData[vertexOffset + 3].color = te.bottomRight.color;
+                            if (isColorFont)
+                            {
+                                binding.vertexData[vertexOffset + 0].color = new Color32(255, 255, 255, te.bottomLeft.color.a);
+                                binding.vertexData[vertexOffset + 1].color = new Color32(255, 255, 255, te.topLeft.color.a);
+                                binding.vertexData[vertexOffset + 2].color = new Color32(255, 255, 255, te.topRight.color.a);
+                                binding.vertexData[vertexOffset + 3].color = new Color32(255, 255, 255, te.bottomRight.color.a);
+                            }
+                            else
+                            {
+                                binding.vertexData[vertexOffset + 0].color = te.bottomLeft.color;
+                                binding.vertexData[vertexOffset + 1].color = te.topLeft.color;
+                                binding.vertexData[vertexOffset + 2].color = te.topRight.color;
+                                binding.vertexData[vertexOffset + 3].color = te.bottomRight.color;
+                            }
 
                             vertexOffset += 4;
                         }

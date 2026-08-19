@@ -133,6 +133,19 @@ namespace UnityEditor
             return -(Vector2.Dot(x1 - x0, x2 - x1) / (x2 - x1).sqrMagnitude);
         }
 
+        internal static Vector3 WorldPointWithScreenOffset(Camera cam, Vector3 worldPoint, Vector2 screenOffset)
+        {
+            Transform camTransform = cam.transform;
+            Vector2 screenPoint = cam.WorldToScreenPoint(worldPoint);
+            Vector2 rightPixels = (Vector2)cam.WorldToScreenPoint(worldPoint + camTransform.right) - screenPoint;
+            Vector2 upPixels = (Vector2)cam.WorldToScreenPoint(worldPoint + camTransform.up) - screenPoint;
+
+            float alongRight = rightPixels.sqrMagnitude > Mathf.Epsilon ? screenOffset.x / rightPixels.magnitude : 0f;
+            float alongUp = upPixels.sqrMagnitude > Mathf.Epsilon ? screenOffset.y / upPixels.magnitude : 0f;
+
+            return worldPoint + camTransform.right * alongRight + camTransform.up * alongUp;
+        }
+
         // This limits the "shoot off into infinity" factor when the cursor ray and constraint are near parallel.
         // Increase this value to more conservatively restrict movement, lower to allow more extreme values.
         // Ex, with a camera roughly 30 degrees to the handle a value of .1 restricts translation to ~1500m, whereas a

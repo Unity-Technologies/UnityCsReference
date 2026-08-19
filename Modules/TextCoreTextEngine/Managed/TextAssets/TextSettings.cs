@@ -456,6 +456,17 @@ namespace UnityEngine.TextCore.Text
         IntPtr[] GetGlobalFallbacks()
         {
             List<IntPtr> globalFontAssetFallbacks = new List<IntPtr>();
+
+            // nativeFontAsset is Zero when native creation failed (e.g. missing source font)
+            void AddNativeFallback(FontAsset fallback)
+            {
+                var nativeFallback = fallback.nativeFontAsset;
+                if (nativeFallback != IntPtr.Zero)
+                    globalFontAssetFallbacks.Add(nativeFallback);
+                else
+                    globalFontAssetFallbacks.AddRange(fallback.GetFallbacks());
+            }
+
             fallbackFontAssets?.ForEach(fallback =>
             {
                 if (fallback == null)
@@ -465,7 +476,7 @@ namespace UnityEngine.TextCore.Text
                     Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
                     return;
                 }
-                globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+                AddNativeFallback(fallback);
             });
 
             emojiFallbackTextAssets?.ForEach(fallback =>
@@ -477,7 +488,7 @@ namespace UnityEngine.TextCore.Text
                         Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
                         return;
                     }
-                    globalFontAssetFallbacks.Add(fontAsset.nativeFontAsset);
+                    AddNativeFallback(fontAsset);
                 }
             });
 
@@ -490,7 +501,7 @@ namespace UnityEngine.TextCore.Text
                     Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
                     return;
                 }
-                globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+                AddNativeFallback(fallback);
             });
 
             emojiFallbackTextAssets?.ForEach(fallback =>
@@ -505,7 +516,7 @@ namespace UnityEngine.TextCore.Text
                         Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
                         return;
                     }
-                    globalFontAssetFallbacks.Add(fontAsset.nativeFontAsset);
+                    AddNativeFallback(fontAsset);
                 }
             });
 

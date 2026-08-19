@@ -4177,6 +4177,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextUtilities.cs">
       <Link>Modules\UIElements\Core\Text\TextUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\UIRQuadMap.cs">
+      <Link>Modules\UIElements\Core\Text\UIRQuadMap.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\UITKTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\UITKTextHandle.cs</Link>
     </Compile>
