@@ -35,6 +35,7 @@ namespace UnityEditor
             public static readonly GUIContent kExtraAllocatorTitle = EditorGUIUtility.TrTextContent("Other Allocators");
             public static readonly GUIContent kCacheBlockSize = EditorGUIUtility.TrTextContent("File Cache Block Size", "Block size used by file cache allocator. Setting this value to 0 will cause the file cache allocations to be passed to the main allocator");
             public static readonly GUIContent kTypetreeBlockSize = EditorGUIUtility.TrTextContent("Type Tree Block Size", "Block size used by the tree allocator. Setting this value to 0 will cause the type tree allocations to be passed to the main allocator");
+            public static readonly GUIContent kRemapperInitialCapacity = EditorGUIUtility.TrTextContent("Remapper Initial Capacity", "Initial capacity of the Remapper allocation");
 
             public static readonly GUIContent kTempAllocatorTitle_Player = EditorGUIUtility.TrTextContent("Fast Per Thread Temporary Allocators", "Block size can grow to twice the initial size");
             public static readonly GUIContent kTempAllocatorTitle_Editor = EditorGUIUtility.TrTextContent("Fast Per Thread Temporary Allocators", "Block size can grow to 8 times the initial size");
@@ -397,6 +398,7 @@ namespace UnityEditor
                 {
                     OptionalVariableField(currentSettings, "m_CacheBlockSize", Content.kCacheBlockSize);
                     OptionalVariableField(currentSettings, "m_TypetreeBlockSize", Content.kTypetreeBlockSize);
+                    OptionalVariableField(currentSettings, "m_RemapperInitialCapacity", Content.kRemapperInitialCapacity);
                 }
                 EndGroup();
                 if (BeginGroup(4, Content.kBucketAllocatorTitle))

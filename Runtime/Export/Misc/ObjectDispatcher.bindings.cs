@@ -13,6 +13,7 @@ using System.Collections.Generic;
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.GPUDriven.Runtime")]
 [assembly: InternalsVisibleTo("Unity.ObjectDispatcher.Tests")]
 [assembly: InternalsVisibleTo("Unity.PathTracing.Runtime")]
+[assembly: InternalsVisibleTo("UnityEditor.Modules.Multiplayer.tests.MultiplayerRoles")]
 
 namespace UnityEngine
 {

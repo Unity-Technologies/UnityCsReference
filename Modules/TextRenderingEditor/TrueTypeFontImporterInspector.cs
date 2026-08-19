@@ -51,6 +51,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_FontSize = serializedObject.FindProperty("m_FontSize");
             m_TextureCase = serializedObject.FindProperty("m_ForceTextureCase");

@@ -216,6 +216,45 @@ namespace UnityEngine
             return ((ulong)numerator * other.denominator).CompareTo((ulong)denominator * other.numerator);
         }
 
+        public override bool Equals(object obj)
+        {
+            return obj is RefreshRate other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            // Equals compares ratios by cross-multiplication (e.g. 60/1 equals 120/2), so the
+            // hash must be computed from the reduced fraction for equal values to hash equally.
+            // All rates with a 0 denominator are equal to each other and share one hash.
+            if (denominator == 0)
+                return 0;
+
+            var gcd = Gcd(numerator, denominator);
+            return HashCode.Combine(numerator / gcd, denominator / gcd);
+        }
+
+        static uint Gcd(uint a, uint b)
+        {
+            while (b != 0)
+            {
+                (a, b) = (b, a % b);
+            }
+
+            return a;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator==(RefreshRate lhs, RefreshRate rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator!=(RefreshRate lhs, RefreshRate rhs)
+        {
+            return !lhs.Equals(rhs);
+        }
+
         public override string ToString()
         {
             return value.ToString(CultureInfo.InvariantCulture.NumberFormat);

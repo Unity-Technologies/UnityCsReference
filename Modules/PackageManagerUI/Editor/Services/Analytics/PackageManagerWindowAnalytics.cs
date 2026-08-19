@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine.Analytics;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -36,10 +35,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerWindowAnalytics(string action, string packageId, IEnumerable<string> packageIds, string packageTag, IEnumerable<string> packageTags)
         {
             var servicesContainer = ServicesContainer.instance;
+            var analyticsScrubber = servicesContainer.Resolve<IAnalyticsScrubberProxy>();
 
-            // remove sensitive part of the id: file path or url is not tracked
-            if (!string.IsNullOrEmpty(packageId))
-                packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
+            // drop local file paths from package ids (Personally Identifiable Information)
+            packageId = analyticsScrubber.ScrubPackageId(packageId);
+            if (packageIds != null)
+            {
+                var scrubbedPackageIds = new List<string>();
+                foreach (var id in packageIds)
+                    scrubbedPackageIds.Add(analyticsScrubber.ScrubPackageId(id));
+                packageIds = scrubbedPackageIds;
+            }
 
             var packageManagerPrefs = servicesContainer.Resolve<IPackageManagerPrefs>();
             var pageManager = servicesContainer.Resolve<IPageManager>();

@@ -5655,6 +5655,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\RegistryInfoOriginalData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\AnalyticsScrubberProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\AnalyticsScrubberProxy.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ApplicationProxy.cs</Link>
     </Compile>
@@ -6131,6 +6134,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\VersionInfoIcon.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\VersionInfoIcon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AnalyticsScrubber.bindings.cs">
+      <Link>Modules\PackageManager\Editor\Managed\AnalyticsScrubber.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs</Link>
